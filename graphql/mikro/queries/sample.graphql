@@ -1,0 +1,18 @@
+query DetailSample($id: ID!) {
+  sample(id: $id) {
+    ...DetailSample
+  }
+}
+
+query MySamples($limit: Int, $offset: Int) {
+  mysamples(limit: $limit, offset: $offset) {
+    ...ListSample
+  }
+}
+
+query SearchSample($search: String) {
+  options: samples(name: $search, limit: 20) {
+    value: id
+    label: name
+  }
+}

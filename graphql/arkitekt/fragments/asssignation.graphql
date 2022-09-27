@@ -1,0 +1,104 @@
+fragment DetailAssignation on Assignation {
+  status
+  id
+  args
+  kwargs
+  reference
+  progress
+  provision {
+    status
+    id
+    reference
+    params {
+      autoUnprovide
+    }
+    agent {
+      name
+    }
+    createdAt
+    template {
+      id
+      node {
+        id
+        name
+        package
+        interface
+        interfaces
+      }
+      registry {
+        id
+        app {
+          name
+        }
+      }
+      extensions
+      version
+    }
+    creator {
+      email
+    }
+    app {
+      name
+    }
+  }
+  reservation {
+    id
+    reference
+    status
+    node {
+      id
+      package
+      interface
+      name
+      interfaces
+      meta
+      ...Ports
+    }
+    app {
+      name
+    }
+    creator {
+      email
+    }
+  }
+  app {
+    name
+  }
+  creator {
+    email
+  }
+  log(o: "time") {
+    message
+    level
+  }
+  returns
+}
+
+fragment ListAssignation on Assignation {
+  status
+  id
+  args
+  kwargs
+  reference
+  createdAt
+  progress
+  reservation {
+    id
+    title
+    node {
+      id
+      name
+      interfaces
+    }
+    template {
+      name
+      registry {
+        app {
+          name
+        }
+      }
+    }
+  }
+  returns
+  statusmessage
+}

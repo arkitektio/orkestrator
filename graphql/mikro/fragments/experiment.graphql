@@ -1,0 +1,21 @@
+fragment DetailExperiment on Experiment {
+  id
+  name
+  description
+  samples {
+    id
+    name
+  }
+  tags
+  createdAt
+  creator {
+    id
+    email
+  }
+}
+
+fragment ListExperiment on Experiment {
+  id
+  name
+  description
+}

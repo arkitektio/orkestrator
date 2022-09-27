@@ -1,0 +1,27 @@
+query DetailAssignation($id: ID!) {
+  assignation(id: $id) {
+    ...DetailAssignation
+  }
+}
+
+query Requests {
+  requests(exclude: [DONE, CRITICAL]) {
+    ...ListAssignation
+  }
+}
+
+query MyRequests {
+  myrequests(exclude: [DONE, CRITICAL]) {
+    ...ListAssignation
+  }
+}
+
+query FilteredAssignations(
+  $exclude: [AssignationStatusInput]
+  $filter: [AssignationStatusInput]
+  $limit: Int
+) {
+  myrequests(exclude: $exclude, filter: $filter, limit: $limit) {
+    ...ListAssignation
+  }
+}

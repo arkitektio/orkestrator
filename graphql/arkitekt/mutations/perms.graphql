@@ -1,0 +1,15 @@
+mutation ChangePermissions(
+  $type: AvailableModels!
+  $object: ID!
+  $userAssignments: [UserAssignmentInput]
+  $groupAssignments: [GroupAssignmentInput]
+) {
+  changePermissions(
+    type: $type
+    object: $object
+    userAssignments: $userAssignments
+    groupAssignments: $groupAssignments
+  ) {
+    success
+  }
+}

@@ -1,0 +1,139 @@
+fragment DetailReservation on Reservation {
+  title
+  status
+  id
+  reference
+  statusmessage
+  params {
+    autoProvide
+    autoUnprovide
+    minimalInstances
+    desiredInstances
+  }
+  allowAutoRequest
+  provision {
+    reference
+    id
+    access
+    status
+    creator {
+      id
+      username
+    }
+    app {
+      id
+      name
+    }
+  }
+  waiter {
+    id
+    registry {
+      app {
+        id
+        name
+      }
+      user {
+        id
+        email
+      }
+    }
+  }
+  channel
+  node {
+    id
+    kind
+    name
+    package
+    interface
+    args {
+      __typename
+      key
+      kind
+      child {
+        ...ChildPort
+      }
+      identifier
+      nullable
+    }
+    returns {
+      __typename
+      key
+      kind
+      child {
+        ...ChildPort
+      }
+      identifier
+      nullable
+    }
+    interfaces
+  }
+  template {
+    registry {
+      id
+      app {
+        id
+        name
+      }
+    }
+  }
+  provisions {
+    ...ListProvision
+  }
+  log(o: "time") {
+    message
+    level
+  }
+  creator {
+    email
+  }
+}
+
+fragment ListReservation on Reservation {
+  title
+  status
+  statusmessage
+  id
+  reference
+  allowAutoRequest
+  node {
+    id
+    kind
+    name
+    package
+    interface
+    args {
+      __typename
+      key
+      kind
+      child {
+        ...ChildPort
+      }
+      identifier
+      nullable
+    }
+    returns {
+      __typename
+      key
+      kind
+      child {
+        ...ChildPort
+      }
+      identifier
+      nullable
+    }
+    interfaces
+  }
+  waiter {
+    id
+    registry {
+      app {
+        id
+        name
+      }
+      user {
+        id
+        email
+      }
+    }
+  }
+}

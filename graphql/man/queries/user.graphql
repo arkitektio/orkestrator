@@ -1,0 +1,30 @@
+query Me {
+  me {
+    ...DetailUser
+  }
+}
+
+query User($email: String!) {
+  user(email: $email) {
+    ...DetailUser
+  }
+}
+
+query DetailUser($id: ID) {
+  user(id: $id) {
+    ...DetailUser
+  }
+}
+
+query UserOptions($search: String) {
+  options: users(username: $search) {
+    value: email
+    label: username
+  }
+}
+
+query Profile {
+  me {
+    ...MeUser
+  }
+}

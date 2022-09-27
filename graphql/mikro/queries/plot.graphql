@@ -1,0 +1,11 @@
+query DetailPlot($id: ID!) {
+  plot(id: $id) {
+    ...Plot
+  }
+}
+
+query MyPlots {
+  myplots {
+    ...ListPlot
+  }
+}

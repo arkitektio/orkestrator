@@ -1,0 +1,19 @@
+fragment DetailAppRepository on AppRepository {
+  installedAt
+  app {
+    name
+  }
+}
+
+fragment DetailMirrorRepository on MirrorRepository {
+  url
+}
+
+fragment DetailRepository on Repository {
+  name
+  ...DetailAppRepository
+  ...DetailMirrorRepository
+  nodes {
+    ...NodeListItem
+  }
+}

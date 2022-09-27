@@ -1,0 +1,20 @@
+mutation UpdateMirror($id: ID!) {
+  updateMirror(id: $id) {
+    id
+  }
+}
+
+mutation DeleteRepo($id: ID!) {
+  deleterepo(id: $id) {
+    id
+  }
+}
+
+mutation CreateMirror($url: String!, $name: String!) {
+  createMirror(url: $url, name: $name) {
+    created
+    repo {
+      ...ListRepository
+    }
+  }
+}

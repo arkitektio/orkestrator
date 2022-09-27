@@ -1,0 +1,56 @@
+subscription WatchAssignation($id: ID!) {
+  assignation(id: $id) {
+    log {
+      message
+      level
+    }
+  }
+}
+
+subscription WatchMyRequests {
+  myrequests {
+    create {
+      ...ListAssignation
+    }
+    delete
+    update {
+      ...ListAssignation
+    }
+  }
+}
+
+subscription WatchRequests($identifier: String!) {
+  requests(identifier: $identifier) {
+    create {
+      ...ListAssignation
+    }
+    delete
+    update {
+      ...ListAssignation
+    }
+  }
+}
+
+subscription WatchMyTodos {
+  mytodos {
+    create {
+      ...ListAssignation
+    }
+    update {
+      ...ListAssignation
+    }
+    delete
+  }
+}
+
+subscription WatchTodos($identifier: String!) {
+  todos(identifier: $identifier) {
+    create {
+      ...ListAssignation
+    }
+    update {
+      ...ListAssignation
+    }
+    delete
+  }
+}

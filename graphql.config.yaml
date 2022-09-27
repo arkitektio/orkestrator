@@ -1,0 +1,339 @@
+projects:
+  mikro:
+    schema: http://localhost:8080/graphql
+    documents: graphql/mikro/*/**.graphql
+    extensions:
+      turms:
+        out_dir: mikro/api
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: mikro.rath.MikroRath
+                key: rath
+                description: "The mikro rath client"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: mikro.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: mikro.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: mikro.funcs.aexecute
+              - type: subscription
+                use: mikro.funcs.subscribe
+              - type: query
+                use: mikro.funcs.execute
+              - type: mutation
+                use: mikro.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          XArray: mikro.scalars.ArrayInput
+          File: mikro.scalars.File
+          ImageFile: mikro.scalars.File
+          Upload: mikro.scalars.Upload
+          DataFrame: mikro.scalars.DataFrame
+          Store: mikro.scalars.Store
+          ID: rath.scalars.ID
+        additional_bases:
+          Representation:
+            - mikro.traits.Representation
+          Table:
+            - mikro.traits.Table
+          ROI:
+            - mikro.traits.ROI
+          InputVector:
+            - mikro.traits.Vectorizable
+  arkitekt:
+    schema: http://localhost:8090/graphql
+    documents: graphql/arkitekt/**/**.graphql
+    extensions:
+      turms:
+        out_dir: arkitekt/api
+        always_resolve_interfaces: True
+        parsers:
+          - type: turms.parsers.polyfill.PolyfillParser
+            python_version: 3.7
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: arkitekt.rath.ArkitektRath
+                key: rath
+                description: "The arkitekt rath client"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: arkitekt.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: arkitekt.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: arkitekt.funcs.aexecute
+              - type: subscription
+                use: arkitekt.funcs.subscribe
+              - type: query
+                use: arkitekt.funcs.execute
+              - type: mutation
+                use: arkitekt.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          uuid: str
+          Callback: str
+          Any: typing.Any
+          QString: arkitekt.scalars.QString
+          ID: rath.scalars.ID
+        additional_bases:
+          Node:
+            - arkitekt.traits.node.Reserve
+          IntArgPort:
+            - arkitekt.traits.ports.IntExpander
+          IntKwargPort:
+            - arkitekt.traits.ports.IntExpander
+          IntReturnPort:
+            - arkitekt.traits.ports.IntExpander
+          StructureArgPort:
+            - arkitekt.traits.ports.StructureExpander
+          StructureKwargPort:
+            - arkitekt.traits.ports.StructureExpander
+          StructureReturnPort:
+            - arkitekt.traits.ports.StructureExpander
+          ListArgPort:
+            - arkitekt.traits.ports.ListExpander
+          ListKwargPort:
+            - arkitekt.traits.ports.ListExpander
+          ListReturnPort:
+            - arkitekt.traits.ports.ListExpander
+          DictArgPort:
+            - arkitekt.traits.ports.DictExpander
+          DictKwargPort:
+            - arkitekt.traits.ports.DictExpander
+          DictReturnPort:
+            - arkitekt.traits.ports.DictExpander
+          BoolArgPort:
+            - arkitekt.traits.ports.BoolExpander
+          BoolKwargPort:
+            - arkitekt.traits.ports.BoolExpander
+          BoolReturnPort:
+            - arkitekt.traits.ports.BoolExpander
+          StringArgPort:
+            - arkitekt.traits.ports.StringExpander
+          StringKwargPort:
+            - arkitekt.traits.ports.StringExpander
+          StringReturnPort:
+            - arkitekt.traits.ports.StringExpander
+          EnumArgPort:
+            - arkitekt.traits.ports.EnumExpander
+          EnumKwargPort:
+            - arkitekt.traits.ports.EnumExpander
+          EnumReturnPort:
+            - arkitekt.traits.ports.EnumExpander
+  napari:
+    schema: http://localhost:8080/graphql
+    documents: graphql/mikro-napari/*/**.graphql
+    extensions:
+      turms:
+        out_dir: mikro_napari/api
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: mikro.rath.MikroRath
+                key: rath
+                description: "The mikro rath client"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: mikro.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: mikro.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: mikro.funcs.aexecute
+              - type: subscription
+                use: mikro.funcs.subscribe
+              - type: query
+                use: mikro.funcs.execute
+              - type: mutation
+                use: mikro.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          XArray: mikro.scalars.ArrayInput
+          File: mikro.scalars.File
+          ImageFile: mikro.scalars.File
+          Upload: mikro.scalars.Upload
+          DataFrame: mikro.scalars.DataFrame
+          Store: mikro.scalars.Store
+          ID: rath.scalars.ID
+        additional_bases:
+          Representation:
+            - mikro.traits.Representation
+          Table:
+            - mikro.traits.Table
+          ROI:
+            - mikro.traits.ROI
+          InputVector:
+            - mikro.traits.Vectorizable
+  fluss:
+    schema: http://localhost:8070/graphql
+    documents: graphql/fluss/*/**.graphql
+    extensions:
+      turms:
+        out_dir: fluss/api
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: fluss.rath.FlussRath
+                key: rath
+                description: "The client we want to use (defaults to the currently active client)"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: fluss.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: fluss.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: fluss.funcs.aexecute
+              - type: subscription
+                use: fluss.funcs.subscribe
+              - type: query
+                use: fluss.funcs.execute
+              - type: mutation
+                use: fluss.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          uuid: str
+          Callback: str
+          Any: typing.Any
+          ID: rath.scalars.ID
+        additional_config:
+          EdgeInput:
+            allow_population_by_field_name: True
+        additional_bases:
+          FlowGraph:
+            - fluss.traits.Graph
+  kuay:
+    schema: http://localhost:8050/graphql
+    documents: graphql/kuay/*/**.graphql
+    extensions:
+      turms:
+        out_dir: kuay/api
+        freeze: True
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: kuay.rath.KuayRath
+                key: rath
+                description: "The client we want to use (defaults to the currently active client)"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: kuay.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: kuay.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: kuay.funcs.aexecute
+              - type: subscription
+                use: kuay.funcs.subscribe
+              - type: query
+                use: kuay.funcs.execute
+              - type: mutation
+                use: kuay.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          uuid: str
+          Any: typing.Any
+          ID: rath.scalars.ID
+  man:
+    schema: http://localhost:8000/graphql
+    documents: graphql/man/*/**.graphql
+    extensions:
+      turms:
+        out_dir: man/api
+        freeze: True
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: man.rath.ManRath
+                key: rath
+                description: "The client we want to use (defaults to the currently active client)"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: man.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: man.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: man.funcs.aexecute
+              - type: subscription
+                use: man.funcs.subscribe
+              - type: query
+                use: man.funcs.execute
+              - type: mutation
+                use: man.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          uuid: str
+          Any: typing.Any
+          ID: rath.scalars.ID

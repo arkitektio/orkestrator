@@ -1,0 +1,33 @@
+query ArgPortTypes {
+	args: __type(name: "ArgPort") {
+		possibleTypes {
+			value: name
+			label: description
+		}
+	}
+}
+
+query KwargPortTypes {
+	kwargs: __type(name: "KwargPort") {
+		possibleTypes {
+			value: name
+			label: description
+		}
+	}
+}
+
+query ReturnPortTypes {
+	returns: __type(name: "ReturnPort") {
+		possibleTypes {
+			value: name
+			label: description
+		}
+	}
+}
+
+query StructureOptions {
+	options: structures {
+		value: identifier
+		label: identifier
+	}
+}

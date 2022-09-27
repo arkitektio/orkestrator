@@ -1,0 +1,18 @@
+query MyExperiments($limit: Int, $offset: Int) {
+  myexperiments(limit: $limit, offset: $offset) {
+    ...ListExperiment
+  }
+}
+
+query DetailExperiment($id: ID!) {
+  experiment(id: $id) {
+    ...DetailExperiment
+  }
+}
+
+query SearchExperiments($search: String) {
+  options: experiments(name: $search, limit: 10) {
+    label: name
+    value: id
+  }
+}

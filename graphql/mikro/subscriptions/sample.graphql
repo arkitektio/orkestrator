@@ -1,0 +1,11 @@
+subscription MySamplesEvent {
+  mySamples {
+    deleted
+    create {
+      ...ListSample
+    }
+    update {
+      ...ListSample
+    }
+  }
+}

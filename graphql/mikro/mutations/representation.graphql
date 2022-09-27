@@ -1,0 +1,23 @@
+mutation DeleteRepresentation($id: ID!) {
+  deleteRepresentation(id: $id) {
+    id
+  }
+}
+
+mutation UpdateRepresentation(
+  $id: ID!
+  $tags: [String]
+  $sample: ID
+  $variety: RepresentationVarietyInput
+  $origins: [ID]
+) {
+  updateRepresentation(
+    rep: $id
+    tags: $tags
+    sample: $sample
+    variety: $variety
+    origins: $origins
+  ) {
+    ...DetailRepresentation
+  }
+}

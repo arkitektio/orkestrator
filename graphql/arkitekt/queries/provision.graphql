@@ -1,0 +1,32 @@
+query DetailProvision($id: ID!) {
+  provision(id: $id) {
+    ...DetailProvision
+  }
+}
+
+query MyProvisions {
+  myprovisions(exclude: [ENDED, CRITICAL, CANCELLED]) {
+    ...ListProvision
+  }
+}
+
+query Provisions {
+  provisions(exclude: [ENDED, CRITICAL, CANCELLED]) {
+    ...ListProvision
+  }
+}
+
+query FilteredProvisions(
+  $exclude: [ProvisionStatusInput]
+  $filter: [ProvisionStatusInput]
+) {
+  myprovisions(exclude: $exclude, filter: $filter) {
+    ...ListProvision
+  }
+}
+
+query AgentProvisions($agent: ID!) {
+  allprovisions(agent: $agent) {
+    ...ListProvision
+  }
+}

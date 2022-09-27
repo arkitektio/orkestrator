@@ -1,0 +1,11 @@
+mutation Link($reservation: ID!, $provision: ID!) {
+  link(reservation: $reservation, provision: $provision) {
+    reference
+  }
+}
+
+mutation Unlink($reservation: ID!, $provision: ID!, $safe: Boolean) {
+  unlink(reservation: $reservation, provision: $provision, safe: $safe) {
+    reference
+  }
+}

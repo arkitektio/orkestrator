@@ -1,0 +1,11 @@
+fragment DetailGraph on Graph {
+	diagram
+	id
+	template
+}
+
+fragment ListGraph on Graph {
+	id
+	name
+	template
+}

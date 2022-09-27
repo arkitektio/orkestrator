@@ -1,0 +1,82 @@
+query Templates(
+  $active: Boolean
+  $package: String
+  $interface: String
+  $node: ID
+) {
+  templates(
+    providable: $active
+    package: $package
+    interface: $interface
+    node: $node
+  ) {
+    id
+    name
+    node {
+      id
+      name
+      package
+      interface
+    }
+  }
+}
+
+query AssignableTemplates($node: ID) {
+  templates(node: $node) {
+    id
+    name
+    node {
+      id
+      name
+      package
+      interface
+    }
+    version
+    registry {
+      app {
+        name
+      }
+      user {
+        username
+      }
+    }
+  }
+}
+
+query DetailTemplate($id: ID!) {
+  template(id: $id) {
+    ...DetailTemplate
+  }
+}
+
+query MiniTemplateByID($id: ID!) {
+  template(id: $id) {
+    ...MiniTemplate
+  }
+}
+
+query TemplateOptions($node: ID!) {
+  options: templates(node: $node) {
+    value: id
+    label: name
+    node {
+      id
+      name
+      package
+      interface
+    }
+  }
+}
+
+query SearchTemplateOptions($node: ID!, $search: String) {
+  options: templates(node: $node, name: $search) {
+    value: id
+    label: name
+    node {
+      id
+      name
+      package
+      interface
+    }
+  }
+}

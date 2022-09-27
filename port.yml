@@ -1,0 +1,18 @@
+overwrite: true
+schema: "http://localhost:8050/graphql"
+documents: "src/port/graphql/**/*.graphql"
+generates:
+  src/port/api/fragments.ts:
+    plugins:
+      - "fragment-matcher"
+  src/port/api/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      withHooks: true
+      reactApolloVersion: 3
+  src/port/graphql.schema.json:
+    plugins:
+      - "introspection"

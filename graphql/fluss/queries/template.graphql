@@ -1,0 +1,11 @@
+query ReactiveTemplate($id: ID!) {
+  reactivetemplate(id: $id) {
+    ...ReactiveTemplate
+  }
+}
+
+query ReactiveTemplates($search: String) {
+  reactivetemplates(name: $search) {
+    ...ReactiveTemplate
+  }
+}

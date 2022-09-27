@@ -1,0 +1,5 @@
+mutation Provide($node: ID, $template: ID, $params: GenericScalar) {
+  provide(node: $node, template: $template, params: $params) {
+    reference
+  }
+}

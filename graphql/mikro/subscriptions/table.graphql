@@ -1,0 +1,11 @@
+subscription MyTablesEvent {
+	myTables {
+		deleted
+		create {
+			...ListTable
+		}
+		update {
+			...ListTable
+		}
+	}
+}

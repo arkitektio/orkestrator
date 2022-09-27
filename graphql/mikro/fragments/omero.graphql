@@ -1,0 +1,40 @@
+fragment Omero on Omero {
+  id
+  physicalSize {
+    x
+    y
+    z
+    t
+  }
+  planes {
+    z
+    z
+    t
+    exposureTime
+    deltaT
+  }
+  channels {
+    name
+    emmissionWavelength
+    excitationWavelength
+    color
+  }
+  acquisitionDate
+  objectiveSettings {
+    correctionCollar
+    medium
+  }
+  instrument {
+    id
+    name
+    model
+  }
+  imagingEnvironment {
+    airPressure
+    co2Percent
+    humidity
+    temperature
+  }
+
+  scale
+}

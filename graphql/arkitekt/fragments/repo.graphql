@@ -1,0 +1,31 @@
+fragment ListRepository on Repository {
+  __typename
+  ...AppRepository
+  ...MirrorRepository
+}
+
+fragment AppRepository on AppRepository {
+  id
+  app {
+    name
+    grantType
+  }
+  name
+
+  nodes {
+    id
+    name
+    interface
+  }
+}
+
+fragment MirrorRepository on MirrorRepository {
+  id
+  url
+  name
+  nodes {
+    id
+    name
+    interface
+  }
+}

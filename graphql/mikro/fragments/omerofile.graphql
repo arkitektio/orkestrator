@@ -1,0 +1,19 @@
+fragment DetailOmeroFile on OmeroFile {
+  id
+  name
+  type
+  createdAt
+  file
+  tags
+  derivedRepresentations {
+    ...ListRepresentation
+  }
+}
+
+fragment ListOmeroFile on OmeroFile {
+  id
+  name
+  type
+  createdAt
+  file
+}

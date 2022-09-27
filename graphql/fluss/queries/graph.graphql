@@ -1,0 +1,29 @@
+query Flow($id: ID) {
+  flow(id: $id) {
+    ...Flow
+  }
+}
+
+query Diagram($id: ID!) {
+  diagram(id: $id) {
+    ...Diagram
+  }
+}
+
+query MyDiagrams {
+  mydiagrams {
+    ...ListDiagram
+  }
+}
+
+query SearchDiagrams($name: String) {
+  diagrams(name: $name) {
+    ...ListDiagram
+  }
+}
+
+query SearchFlows($name: String, $diagram: ID) {
+  flows(name: $name, diagram: $diagram) {
+    ...ListFlow
+  }
+}

@@ -1,0 +1,21 @@
+fragment DetailGithubRepo on GithubRepo {
+	id
+	user
+	repo
+	branch
+	whale {
+		id
+		template
+	}
+}
+
+fragment ListGithubRepo on GithubRepo {
+	id
+	user
+	repo
+	branch
+	whale {
+		id
+		template
+	}
+}

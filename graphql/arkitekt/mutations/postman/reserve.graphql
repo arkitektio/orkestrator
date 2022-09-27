@@ -1,0 +1,20 @@
+mutation Reserve(
+  $node: ID!
+  $template: ID
+  $params: ReserveParamsInput
+  $title: String
+  $imitate: String
+  $allowAutoRequest: Boolean
+) {
+  reserve(
+    node: $node
+    template: $template
+    params: $params
+    title: $title
+    allowAutoRequest: $allowAutoRequest
+    imitate: $imitate
+  ) {
+    id
+    reference
+  }
+}

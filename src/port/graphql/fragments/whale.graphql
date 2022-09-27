@@ -1,0 +1,18 @@
+fragment DetailWhale on Whale {
+	id
+	githubrepo {
+		id
+	}
+	image
+	config
+	template
+}
+
+fragment ListWhale on Whale {
+	id
+	githubrepo {
+		id
+	}
+	image
+	template
+}

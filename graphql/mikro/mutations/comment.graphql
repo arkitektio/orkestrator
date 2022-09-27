@@ -1,0 +1,15 @@
+mutation CreateComment(
+  $id: ID!
+  $model: CommentableModels!
+  $descendents: [DescendendInput]!
+  $parent: ID
+) {
+  createComment(
+    object: $id
+    type: $model
+    descendents: $descendents
+    parent: $parent
+  ) {
+    ...ListComment
+  }
+}

@@ -1,0 +1,15 @@
+fragment RunLog on RunLog {
+  id
+  node
+  log
+}
+
+fragment RunEvent on RunEvent {
+  id
+  source
+  handle
+  type
+  createdAt
+  value
+  t
+}

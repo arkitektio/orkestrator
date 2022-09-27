@@ -1,0 +1,59 @@
+query GlobalSearch(
+  $search: String
+  $createdBefore: DateTime
+  $createdAfter: DateTime
+  $tags: [String]
+  $creator: ID
+) {
+  experiments: myexperiments(
+    name: $search
+    limit: 10
+    createdBefore: $createdBefore
+    createdAfter: $createdAfter
+    tags: $tags
+    creator: $creator
+  ) {
+    id
+    name
+    description
+  }
+
+  samples: mysamples(
+    name: $search
+    limit: 10
+    createdBefore: $createdBefore
+    createdAfter: $createdAfter
+    tags: $tags
+    creator: $creator
+  ) {
+    id
+    name
+  }
+
+  tables: mytables(
+    name: $search
+    limit: 10
+    createdBefore: $createdBefore
+    createdAfter: $createdAfter
+    tags: $tags
+    creator: $creator
+  ) {
+    id
+    name
+  }
+
+  representations: myrepresentations(
+    name: $search
+    limit: 10
+    createdBefore: $createdBefore
+    createdAfter: $createdAfter
+    tags: $tags
+    creator: $creator
+  ) {
+    id
+    name
+    latestThumbnail {
+      image
+    }
+  }
+}

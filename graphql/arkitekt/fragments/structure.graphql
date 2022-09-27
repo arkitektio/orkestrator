@@ -1,0 +1,15 @@
+fragment DetailStructure on Structure {
+	id
+	repository {
+		...DetailRepository
+	}
+	identifier
+}
+
+fragment ListStructure on Structure {
+	id
+	identifier
+	repository {
+		...ListRepository
+	}
+}

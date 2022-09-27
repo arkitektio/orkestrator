@@ -1,0 +1,52 @@
+fragment DetailNode on Node {
+  name
+  description
+  package
+  interface
+  kind
+  id
+  interfaces
+  meta
+  ...Ports
+  templates {
+    id
+    registry {
+      app {
+        name
+      }
+      user {
+        email
+      }
+    }
+    extensions
+  }
+}
+
+fragment NodeListItem on Node {
+  id
+  name
+  kind
+  description
+  package
+  interface
+  interfaces
+  meta
+}
+
+fragment MiniNode on Node {
+  name
+  description
+  kind
+  id
+  package
+  interface
+  meta
+}
+
+fragment CompleteNode on Node {
+  name
+  description
+  args {
+    ...ArgPort
+  }
+}

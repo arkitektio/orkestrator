@@ -1,0 +1,5 @@
+mutation Draw($node: ID!) {
+	draw(node: $node) {
+		...DetailGraph
+	}
+}

@@ -1,0 +1,26 @@
+fragment DetailSample on Sample {
+  name
+  id
+  createdAt
+  experiments {
+    id
+    name
+  }
+  representations {
+    ...ListRepresentation
+  }
+  tags
+
+  creator {
+    id
+    email
+  }
+}
+
+fragment ListSample on Sample {
+  name
+  id
+  experiments {
+    name
+  }
+}

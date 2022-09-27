@@ -1,0 +1,5 @@
+fragment ProvisionLog on ProvisionLog {
+  message
+  level
+  createdAt
+}

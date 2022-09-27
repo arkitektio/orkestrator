@@ -1,0 +1,11 @@
+subscription AgentsEvent {
+	agentsEvent {
+		created {
+			...ListAgent
+		}
+		deleted
+		updated {
+			...ListAgent
+		}
+	}
+}

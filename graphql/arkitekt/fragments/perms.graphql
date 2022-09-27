@@ -1,0 +1,15 @@
+fragment UserAssignment on UserAssignment {
+  user {
+    id
+    username
+    email
+  }
+  permissions
+}
+
+fragment GroupAssignment on GroupAssignment {
+  group {
+    name
+  }
+  permissions
+}

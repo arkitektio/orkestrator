@@ -1,0 +1,5 @@
+mutation Assign($reservation: ID!, $args: [AnyInput]!) {
+  assign(reservation: $reservation, args: $args) {
+    ...DetailAssignation
+  }
+}

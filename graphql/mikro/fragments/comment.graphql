@@ -1,0 +1,101 @@
+fragment Leaf on Leaf {
+  typename: __typename
+  bold
+  italic
+  code
+  text
+}
+
+fragment Node on Node {
+  typename: __typename
+  children {
+    typename: __typename
+    ...Leaf
+    ...LevelDownParagraph
+    ...LevelDownMention
+  }
+}
+
+fragment LevelDownParagraph on ParagraphDescendent {
+  size
+  untypedChildren
+}
+
+fragment LevelDownMention on MentionDescendent {
+  user
+}
+
+fragment LevelDownDescendent on Descendent {
+  typename: __typename
+  ...Leaf
+}
+
+fragment Mention on MentionDescendent {
+  user
+  ...Node
+}
+
+fragment Paragraph on ParagraphDescendent {
+  size
+  ...Node
+}
+
+fragment Descendent on Descendent {
+  typename: __typename
+
+  ...Mention
+  ...Paragraph
+  ...Leaf
+}
+
+fragment SubthreadComment on Comment {
+  user {
+    email
+  }
+  parent {
+    id
+  }
+  createdAt
+  descendents {
+    ...Descendent
+  }
+}
+
+fragment ListComment on Comment {
+  user {
+    email
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  id
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+}
+
+fragment MentionComment on Comment {
+  user {
+    email
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  id
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+  mentions {
+    email
+  }
+  objectId
+  contentType
+}

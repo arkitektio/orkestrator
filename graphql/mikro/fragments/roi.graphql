@@ -1,0 +1,44 @@
+fragment RepRoi on ROI {
+  id
+  type
+  createdAt
+  creator {
+    id
+  }
+  vectors {
+    x
+    y
+    z
+    t
+    c
+  }
+  tags
+}
+
+fragment DetailRoi on ROI {
+  id
+  type
+  creator {
+    id
+  }
+  tags
+  representation {
+    id
+    name
+    variety
+    creator {
+      id
+    }
+    tags
+  }
+  derivedRepresentations {
+    id
+    name
+  }
+  createdAt
+  vectors {
+    x
+    y
+    z
+  }
+}

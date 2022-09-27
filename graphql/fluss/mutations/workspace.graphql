@@ -1,0 +1,5 @@
+mutation DeleteWorkspace($id: ID!) {
+  deleteWorkspace(id: $id) {
+    id
+  }
+}

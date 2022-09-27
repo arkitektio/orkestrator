@@ -1,0 +1,15 @@
+fragment ReactiveTemplate on ReactiveTemplate {
+  constream {
+    ...StreamItem
+  }
+  instream {
+    ...StreamItem
+  }
+  outstream {
+    ...StreamItem
+  }
+  name
+  implementation
+  description
+  id
+}

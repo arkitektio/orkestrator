@@ -1,0 +1,27 @@
+mutation CreateExperiment($name: String!, $description: String!) {
+  createExperiment(name: $name, description: $description) {
+    ...DetailExperiment
+  }
+}
+
+mutation DeleteExperiment($id: ID!) {
+  deleteExperiment(id: $id) {
+    id
+  }
+}
+
+mutation UpdateExperiment(
+  $id: ID!
+  $description: String
+  $tags: [String]
+  $name: String!
+) {
+  updateExperiment(
+    id: $id
+    description: $description
+    tags: $tags
+    name: $name
+  ) {
+    ...DetailExperiment
+  }
+}

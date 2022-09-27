@@ -1,0 +1,21 @@
+query DetailTable(
+  $id: ID!
+  $only: [String]
+  $limit: Int = 200
+  $offset: Int = 3
+  $query: String
+) {
+  table(id: $id) {
+    ...DetailTable
+    columns(only: $only) {
+      ...Column
+    }
+    query(only: $only, limit: $limit, offset: $offset, query: $query)
+  }
+}
+
+query MyTables {
+  mytables {
+    ...ListTable
+  }
+}

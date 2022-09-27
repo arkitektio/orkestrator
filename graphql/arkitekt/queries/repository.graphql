@@ -1,0 +1,5 @@
+query DetailRepository($id: ID) {
+	repository(id: $id) {
+		...DetailRepository
+	}
+}

@@ -1,0 +1,23 @@
+subscription MyRepresentationsEvent {
+  myRepresentations {
+    deleted
+    create {
+      ...ListRepresentation
+    }
+    update {
+      ...ListRepresentation
+    }
+  }
+}
+
+subscription MyRepresentationsOrigin($origin: ID!) {
+  myRepresentations(origin: $origin) {
+    deleted
+    create {
+      ...ListRepresentation
+    }
+    update {
+      ...ListRepresentation
+    }
+  }
+}

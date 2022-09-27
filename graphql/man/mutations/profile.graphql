@@ -1,0 +1,5 @@
+mutation ChangeMe($firstName: String, $lastName: String, $email: Email) {
+  changeMe(firstName: $firstName, lastName: $lastName, email: $email) {
+    ...MeUser
+  }
+}

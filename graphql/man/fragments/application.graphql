@@ -1,0 +1,23 @@
+fragment DetailApplication on Application {
+	id
+	clientId
+	authorizationGrantType
+	name
+	image
+	user {
+		username
+	}
+	created
+	redirectUris
+}
+
+fragment ListApplication on Application {
+	id
+	clientId
+	name
+	user {
+		username
+	}
+	created
+	redirectUris
+}

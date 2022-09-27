@@ -1,0 +1,10 @@
+fragment DetailGroup on Group {
+  id
+  name
+  userSet {
+    id
+    username
+    email
+  }
+  avatar
+}

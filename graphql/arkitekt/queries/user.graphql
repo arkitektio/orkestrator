@@ -1,0 +1,21 @@
+query UserOptions($search: String) {
+  options: users(username: $search) {
+    value: id
+    label: username
+  }
+}
+
+query Me {
+  me {
+    id
+    email
+  }
+}
+
+query User($email: String) {
+  user(email: $email) {
+    id
+    username
+    email
+  }
+}

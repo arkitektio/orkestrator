@@ -1,0 +1,29 @@
+mutation ResetAgents {
+	resetAgents {
+		ok
+	}
+}
+
+mutation ResetProvisions {
+	resetProvisions {
+		ok
+	}
+}
+
+mutation ResetReservations {
+	resetReservations {
+		ok
+	}
+}
+
+mutation ResetAssignations {
+	resetAssignations {
+		ok
+	}
+}
+
+mutation ResetNodes {
+	resetNodes {
+		ok
+	}
+}

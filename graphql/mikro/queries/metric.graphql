@@ -1,0 +1,6 @@
+query DetailMetric($id: ID!) {
+  metric(id: $id) {
+    key
+    value
+  }
+}

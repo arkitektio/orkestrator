@@ -1,0 +1,47 @@
+subscription WatchReservation($id: ID!) {
+  reservation(id: $id) {
+    log {
+      message
+      level
+    }
+  }
+}
+
+subscription WatchReservations($identifier: String!) {
+  reservations(identifier: $identifier) {
+    create {
+      ...ListReservation
+    }
+    delete
+    update {
+      ...ListReservation
+    }
+  }
+}
+
+subscription WatchMyReservations {
+  myreservations {
+    create {
+      ...ListReservation
+    }
+    delete
+    update {
+      ...ListReservation
+    }
+  }
+}
+
+subscription WatchReservationsOnProvision(
+  $identifier: String!
+  $provision: String!
+) {
+  reservations(identifier: $identifier, provision: $provision) {
+    create {
+      ...ListReservation
+    }
+    delete
+    update {
+      ...ListReservation
+    }
+  }
+}

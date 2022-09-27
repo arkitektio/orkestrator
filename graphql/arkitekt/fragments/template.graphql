@@ -1,0 +1,53 @@
+fragment MiniTemplate on Template {
+  id
+  node {
+    name
+  }
+}
+
+fragment DetailTemplate on Template {
+  id
+  extensions
+  version
+  creator {
+    email
+  }
+  node {
+    repository {
+      id
+    }
+    id
+    name
+    package
+    interface
+  }
+  provisions(status: [ACTIVE, PENDING, CRITICAL, PENDING, DISCONNECTED]) {
+    title
+    id
+    createdAt
+    app {
+      name
+    }
+    reference
+    status
+    creator {
+      email
+    }
+    reservation {
+      title
+      node {
+        name
+      }
+      waiter {
+        registry {
+          app {
+            name
+          }
+          user {
+            email
+          }
+        }
+      }
+    }
+  }
+}

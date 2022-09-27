@@ -1,0 +1,11 @@
+query RoisForRepresentation($representation: ID!, $type: [RoiTypeInput]) {
+  rois(representation: $representation, type: $type) {
+    ...RepRoi
+  }
+}
+
+query DetailRoi($id: ID!) {
+  roi(id: $id) {
+    ...DetailRoi
+  }
+}

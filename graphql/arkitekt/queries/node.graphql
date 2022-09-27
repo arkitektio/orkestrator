@@ -1,0 +1,29 @@
+query DetailNode($id: ID, $package: String, $interface: String) {
+  node(id: $id, package: $package, interface: $interface) {
+    ...DetailNode
+  }
+}
+
+query MiniNodeByID($id: ID!) {
+  node(id: $id) {
+    ...MiniNode
+  }
+}
+
+query Nodes($search: String, $interfaces: [String]) {
+  allnodes(search: $search, interfaces: $interfaces) {
+    ...NodeListItem
+  }
+}
+
+query RespositoryNodes($repository: ID) {
+  allnodes(repository: $repository) {
+    ...NodeListItem
+  }
+}
+
+query AssignNode($id: ID) {
+  node(id: $id) {
+    ...CompleteNode
+  }
+}

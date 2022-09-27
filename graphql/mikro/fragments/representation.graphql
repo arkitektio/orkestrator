@@ -1,0 +1,101 @@
+fragment ListRepresentation on Representation {
+  name
+  id
+  origins {
+    name
+  }
+  latestThumbnail {
+    image
+    majorColor
+  }
+  sample {
+    name
+    experiments {
+      name
+    }
+  }
+  variety
+}
+
+fragment ListSharedRepresentation on Representation {
+  name
+  id
+  origins {
+    name
+  }
+  latestThumbnail {
+    image
+  }
+  sample {
+    name
+    experiments {
+      name
+    }
+  }
+  variety
+  creator {
+    email
+  }
+}
+
+fragment DetailRepresentation on Representation {
+  id
+  name
+  shape
+  dims
+  tags
+  store
+  createdAt
+  latestThumbnail {
+    image
+    majorColor
+  }
+  sample {
+    id
+    name
+  }
+  metrics {
+    id
+    key
+    value
+  }
+  omero {
+    ...Omero
+  }
+  origins {
+    id
+    name
+    tags
+    latestThumbnail {
+      image
+    }
+  }
+  derived {
+    id
+    name
+    tags
+    latestThumbnail {
+      image
+    }
+  }
+  rois {
+    ...RepRoi
+  }
+
+  fileOrigins {
+    id
+    name
+    type
+  }
+
+  roiOrigins {
+    id
+    label
+    type
+  }
+
+  creator {
+    id
+    email
+  }
+}

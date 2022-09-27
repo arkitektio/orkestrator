@@ -1,0 +1,11 @@
+query DetailStructure($identifier: String) {
+	structure(identifier: $identifier) {
+		...DetailStructure
+	}
+}
+
+query Structures {
+	structures {
+		...ListStructure
+	}
+}

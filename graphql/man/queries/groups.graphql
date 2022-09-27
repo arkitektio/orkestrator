@@ -1,0 +1,24 @@
+query GroupOptions($search: String) {
+  options: groups(name: $search) {
+    value: name
+    label: name
+  }
+}
+
+query MyGroups($search: String) {
+  mygroups(name: $search) {
+    id
+    name
+    userSet {
+      id
+      username
+      email
+    }
+  }
+}
+
+query DetailGroup($id: ID!) {
+  group(id: $id) {
+    ...DetailGroup
+  }
+}

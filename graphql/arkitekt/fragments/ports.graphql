@@ -1,0 +1,138 @@
+fragment IntWidget on IntWidget {
+  kind
+  dependencies
+}
+
+fragment StringWidget on StringWidget {
+  kind
+  dependencies
+  placeholder
+}
+
+fragment BoolWidget on BoolWidget {
+  kind
+  dependencies
+}
+
+fragment SliderWidget on SliderWidget {
+  kind
+  dependencies
+  min
+  max
+}
+
+fragment SearchWidget on SearchWidget {
+  kind
+  query
+  ward
+  dependencies
+}
+
+fragment CustomWidget on CustomWidget {
+  kind
+  hook
+  dependencies
+}
+
+fragment ChoiceWidget on ChoiceWidget {
+  kind
+  choices {
+    value
+    label
+  }
+}
+
+fragment LinkWidget on LinkWidget {
+  kind
+  linkbuilder
+}
+
+fragment ChildPortNested on ChildPort {
+  kind
+  child {
+    kind
+  }
+}
+
+fragment ChildPort on ChildPort {
+  kind
+  identifier
+  child {
+    ...ChildPortNested
+  }
+  nullable
+}
+
+fragment InputWidget on Widget {
+  kind
+  ...IntWidget
+  ...StringWidget
+  ...SearchWidget
+  ...SliderWidget
+  ...ChoiceWidget
+  ...CustomWidget
+}
+
+fragment ArgPort on ArgPort {
+  __typename
+  key
+  label
+  nullable
+  description
+  widget {
+    ...InputWidget
+  }
+  kind
+  identifier
+  child {
+    ...ChildPort
+  }
+  default
+  nullable
+}
+
+fragment ImageReturnWidget on ImageReturnWidget {
+  __typename
+  query
+  kind
+  ward
+}
+
+fragment CustomReturnWidget on CustomReturnWidget {
+  __typename
+  kind
+  hook
+  ward
+}
+
+fragment ReturnWidget on ReturnWidget {
+  __typename
+  kind
+  ...ImageReturnWidget
+  ...CustomReturnWidget
+}
+
+fragment ReturnPort on ReturnPort {
+  __typename
+  label
+  key
+  nullable
+  description
+  identifier
+  widget {
+    ...ReturnWidget
+  }
+  kind
+  child {
+    ...ChildPort
+  }
+}
+
+fragment Ports on Node {
+  args {
+    ...ArgPort
+  }
+  returns {
+    ...ReturnPort
+  }
+}

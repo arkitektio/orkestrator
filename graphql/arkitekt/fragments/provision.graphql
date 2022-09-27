@@ -1,0 +1,131 @@
+fragment DetailProvision on Provision {
+  statusmessage
+  status
+  id
+  reference
+  params {
+    autoUnprovide
+  }
+  agent {
+    registry {
+      id
+      name
+      app {
+        name
+      }
+      user {
+        email
+      }
+    }
+    name
+    identifier
+  }
+  mode
+  createdAt
+  template {
+    id
+    node {
+      id
+      name
+      package
+      interface
+      interfaces
+      meta
+    }
+    registry {
+      id
+      app {
+        name
+      }
+    }
+    extensions
+    version
+  }
+  creator {
+    email
+  }
+  app {
+    name
+  }
+  causedReservations {
+    ...ListReservation
+  }
+  assignations {
+    id
+    reference
+    status
+    creator {
+      email
+    }
+    app {
+      name
+    }
+  }
+
+  reservations {
+    title
+    node {
+      name
+    }
+    id
+    reference
+    status
+    waiter {
+      registry {
+        user {
+          email
+        }
+        app {
+          name
+        }
+      }
+    }
+  }
+  log(o: "time", level: INFO) {
+    ...ProvisionLog
+  }
+}
+
+fragment ListProvision on Provision {
+  status
+  id
+  reference
+  template {
+    id
+    node {
+      name
+    }
+    registry {
+      app {
+        name
+      }
+      user {
+        email
+      }
+    }
+    extensions
+  }
+  agent {
+    registry {
+      id
+      app {
+        name
+      }
+      user {
+        email
+      }
+    }
+    name
+    identifier
+  }
+  reservations {
+    id
+    reference
+    creator {
+      username
+    }
+    app {
+      name
+    }
+  }
+}

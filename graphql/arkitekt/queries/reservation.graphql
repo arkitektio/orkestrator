@@ -1,0 +1,47 @@
+query DetailReservation($id: ID!) {
+  reservation(id: $id) {
+    ...DetailReservation
+  }
+
+  linkableprovisions(id: $id) {
+    id
+    template {
+      registry {
+        app {
+          name
+        }
+        user {
+          id
+          email
+        }
+      }
+    }
+  }
+}
+
+query MyReservations {
+  myreservations(exclude: [ENDED, CRITICAL, CANCELLED]) {
+    ...ListReservation
+  }
+}
+
+query Reservations {
+  reservations(exclude: [ENDED, CRITICAL, CANCELLED]) {
+    ...ListReservation
+  }
+}
+
+query FilteredReservations(
+  $exclude: [ReservationStatusInput]
+  $filter: [ReservationStatusInput]
+) {
+  myreservations(exclude: $exclude, filter: $filter) {
+    ...ListReservation
+  }
+}
+
+query LinkableProvisions($reservation: ID!) {
+  linkableprovisions(id: $reservation) {
+    ...ListProvision
+  }
+}

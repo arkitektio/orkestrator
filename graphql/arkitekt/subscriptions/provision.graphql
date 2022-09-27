@@ -1,0 +1,32 @@
+subscription WatchProvision($id: ID!) {
+  provision(id: $id) {
+    log {
+      message
+      level
+    }
+  }
+}
+
+subscription WatchProvisions($identifier: String!) {
+  provisions(identifier: $identifier) {
+    create {
+      ...ListProvision
+    }
+    delete
+    update {
+      ...ListProvision
+    }
+  }
+}
+
+subscription WatchMyProvisions {
+  myprovisions {
+    create {
+      ...ListProvision
+    }
+    delete
+    update {
+      ...ListProvision
+    }
+  }
+}

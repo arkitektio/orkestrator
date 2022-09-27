@@ -1,0 +1,228 @@
+fragment FlowNodeCommons on FlowNodeCommons {
+  instream {
+    ...StreamItem
+  }
+  outstream {
+    ...StreamItem
+  }
+  constream {
+    ...StreamItem
+  }
+  constants
+}
+
+fragment ArkitektNode on ArkitektNode {
+  ...FlowNodeCommons
+  __typename
+  name
+  description
+  package
+  interface
+  kind
+  defaults
+}
+
+fragment ReactiveNode on ReactiveNode {
+  ...FlowNodeCommons
+  __typename
+  implementation
+}
+
+fragment Widget on Widget {
+  kind
+  query
+  hook
+  ward
+}
+
+fragment ReturnWidget on ReturnWidget {
+  kind
+  query
+  hook
+  ward
+}
+
+fragment ArgPortChild on ArgPortChild {
+  identifier
+  kind
+  nullable
+  child {
+    identifier
+    kind
+  }
+}
+
+fragment ReturnPortChild on ReturnPortChild {
+  identifier
+  kind
+  nullable
+  child {
+    identifier
+    kind
+  }
+}
+
+fragment ArgPort on ArgPort {
+  key
+  label
+  identifier
+  kind
+  name
+  description
+  widget {
+    ...Widget
+  }
+  child {
+    ...ArgPortChild
+  }
+  nullable
+}
+
+fragment ReturnPort on ReturnPort {
+  key
+  label
+  identifier
+  kind
+  name
+  description
+  widget {
+    ...ReturnWidget
+  }
+  child {
+    ...ReturnPortChild
+  }
+  nullable
+}
+
+fragment ArgNode on ArgNode {
+  ...FlowNodeCommons
+  __typename
+}
+
+fragment KwargNode on KwargNode {
+  ...FlowNodeCommons
+  __typename
+}
+
+fragment ReturnNode on ReturnNode {
+  ...FlowNodeCommons
+  __typename
+}
+
+fragment FlowNode on FlowNode {
+  id
+  position {
+    x
+    y
+  }
+  typename
+  ...ArkitektNode
+  ...ReactiveNode
+  ...ArgNode
+  ...KwargNode
+  ...ReturnNode
+}
+
+fragment FlowEdgeCommons on FlowEdgeCommons {
+  stream {
+    ...StreamItem
+  }
+}
+
+fragment LabeledEdge on LabeledEdge {
+  ...FlowEdgeCommons
+  __typename
+}
+
+fragment FancyEdge on FancyEdge {
+  ...FlowEdgeCommons
+  __typename
+}
+
+fragment FlowEdge on FlowEdge {
+  id
+  source
+  sourceHandle
+  target
+  targetHandle
+  typename
+  ...LabeledEdge
+  ...FancyEdge
+}
+
+fragment Global on Global {
+  locked
+  key
+  value
+  mapped
+  identifier
+  typename
+  widget
+}
+
+fragment StreamItemChild on StreamItemChild {
+  kind
+  identifier
+  child {
+    kind
+    identifier
+  }
+}
+
+fragment StreamItem on StreamItem {
+  key
+  kind
+  identifier
+  nullable
+  child {
+    ...StreamItemChild
+  }
+}
+
+fragment Flow on Flow {
+  __typename
+  id
+  graph {
+    nodes {
+      ...FlowNode
+    }
+    edges {
+      ...FlowEdge
+    }
+    globals {
+      ...Global
+    }
+    args {
+      ...ArgPort
+    }
+    returns {
+      ...ReturnPort
+    }
+  }
+  name
+  screenshot
+  createdAt
+}
+
+fragment ListFlow on Flow {
+  id
+  name
+  screenshot
+  createdAt
+}
+
+fragment ListDiagram on Diagram {
+  id
+  name
+  latestFlow {
+    ...ListFlow
+  }
+}
+
+fragment Diagram on Diagram {
+  id
+  name
+  latestFlow {
+    ...Flow
+  }
+}

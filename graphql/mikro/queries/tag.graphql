@@ -1,0 +1,6 @@
+query TagSearch($search: String) {
+  options: tags(name: $search, limit: 20) {
+    value: name
+    label: slug
+  }
+}

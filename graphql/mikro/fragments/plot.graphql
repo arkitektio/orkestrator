@@ -1,0 +1,19 @@
+fragment Plot on Plot {
+  id
+  query
+  name
+  description
+  createdAt
+  updatedAt
+  creator {
+    username
+  }
+}
+
+fragment ListPlot on Plot {
+  id
+  name
+  creator {
+    username
+  }
+}

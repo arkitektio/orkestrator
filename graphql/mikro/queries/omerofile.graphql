@@ -1,0 +1,11 @@
+query MyOmeroFiles($limit: Int, $offset: Int) {
+  myomerofiles(limit: $limit, offset: $offset) {
+    ...ListOmeroFile
+  }
+}
+
+query DetailOmeroFile($id: ID!) {
+  omerofile(id: $id) {
+    ...DetailOmeroFile
+  }
+}

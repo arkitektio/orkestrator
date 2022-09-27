@@ -1,0 +1,11 @@
+mutation define($definition: DefinitionInput!) {
+  define(definition: $definition) {
+    id
+  }
+}
+
+mutation template($node: ID!) {
+  createTemplate(node: $node) {
+    id
+  }
+}

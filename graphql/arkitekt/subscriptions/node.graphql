@@ -1,0 +1,35 @@
+subscription NodesEvent {
+  nodes {
+    updated {
+      ...NodeListItem
+    }
+    created {
+      ...NodeListItem
+    }
+    deleted
+  }
+}
+
+subscription AssignNodeEvent($id: ID!) {
+  nodeEvent(id: $id) {
+    ...CompleteNode
+  }
+}
+
+subscription DetailNodeEvent($id: ID!) {
+  nodeEvent(id: $id) {
+    ...DetailNode
+  }
+}
+
+subscription WatchInterface($interface: String) {
+  nodes(interface: $interface) {
+    updated {
+      ...NodeListItem
+    }
+    created {
+      ...NodeListItem
+    }
+    deleted
+  }
+}

@@ -1,0 +1,11 @@
+subscription Events($id: ID!) {
+  events(id: $id) {
+    deleted
+    create {
+      ...RunEvent
+    }
+    update {
+      ...RunEvent
+    }
+  }
+}

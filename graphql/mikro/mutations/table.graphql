@@ -1,0 +1,5 @@
+mutation DeleteTable($id: ID!) {
+	deleteTable(id: $id) {
+		id
+	}
+}

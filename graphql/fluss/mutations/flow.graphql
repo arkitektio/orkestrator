@@ -1,0 +1,17 @@
+mutation UpdateFlow($id: ID!, $graph: GraphInput!, $screenshot: ImageFile) {
+  updatediagram(id: $id, graph: $graph, screenshot: $screenshot) {
+    ...Diagram
+  }
+}
+
+mutation DeleteFlow($id: ID!) {
+  deleteFlow(id: $id) {
+    id
+  }
+}
+
+mutation CreateVanillaDiagram($name: String) {
+  drawvanilla(name: $name) {
+    ...Diagram
+  }
+}

@@ -1,0 +1,17 @@
+mutation UploadOmeroFile($file: ImageFile!) {
+  uploadOmeroFile(file: $file) {
+    ...DetailOmeroFile
+  }
+}
+
+mutation DeleteOmeroFile($id: ID!) {
+  deleteOmeroFile(id: $id) {
+    id
+  }
+}
+
+mutation UpdateOmeroFile($id: ID!, $tags: [String]) {
+  updateOmeroFile(id: $id, tags: $tags) {
+    ...DetailOmeroFile
+  }
+}

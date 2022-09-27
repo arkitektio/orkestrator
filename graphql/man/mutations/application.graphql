@@ -1,0 +1,32 @@
+mutation CreateApplication(
+	$grantType: GrantType!
+	$name: String!
+	$redirectUris: [String]
+) {
+	createApplication(
+		grantType: $grantType
+		name: $name
+		redirectUris: $redirectUris
+	) {
+		...DetailApplication
+	}
+}
+
+mutation CreateUserLoginApp($name: String!, $redirectUris: [String]) {
+	createUserLoginApp(name: $name, redirectUris: $redirectUris) {
+		...DetailApplication
+	}
+}
+
+mutation CreateUserBackendApp($name: String!) {
+	createUserBackendApp(name: $name) {
+		clientSecret
+		clientId
+	}
+}
+
+mutation DeleteApplication($clientId: ID!) {
+	deleteApplication(clientId: $clientId) {
+		clientId
+	}
+}

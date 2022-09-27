@@ -1,0 +1,38 @@
+fragment Column on Column {
+  name
+  fieldName
+  pandasType
+  numpyType
+  metadata
+}
+
+fragment DetailTable on Table {
+  id
+  name
+  representation {
+    id
+  }
+  sample {
+    id
+  }
+  experiment {
+    id
+  }
+}
+
+fragment ListTable on Table {
+  id
+  name
+  columns {
+    ...Column
+  }
+  representation {
+    id
+  }
+  sample {
+    id
+  }
+  experiment {
+    id
+  }
+}
