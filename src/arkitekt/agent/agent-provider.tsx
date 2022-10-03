@@ -2,8 +2,8 @@ import { preventOverflow } from "@popperjs/core";
 import React, { useEffect, useState } from "react";
 import { v4 } from "uuid";
 import { Assign } from "yup/lib/object";
-import { useFakts } from "../../fakts";
-import { useHerre } from "../../herre";
+import { useFakts } from "fakts";
+import { useHerre } from "herre";
 import {
   AssignationStatus,
   DefinitionInput,

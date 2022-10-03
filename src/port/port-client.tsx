@@ -1,6 +1,6 @@
 import { ApolloClient, createHttpLink, InMemoryCache } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
-import { Token } from "../herre/herre-types";
+import { Token } from "herre";
 import result from "./api/fragments";
 import { Port } from "./port-types";
 

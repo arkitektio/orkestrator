@@ -1,7 +1,7 @@
 import { ApolloClient, gql, NormalizedCacheObject } from "@apollo/client";
 import React, { useEffect, useState } from "react";
-import { useFakts } from "../fakts";
-import { useHerre } from "../herre";
+import { useFakts } from "fakts";
+import { useHerre } from "herre";
 import { createMikroClient } from "./client";
 import { MikroContext } from "./mikro-types";
 

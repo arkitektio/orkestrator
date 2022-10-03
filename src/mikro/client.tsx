@@ -2,7 +2,7 @@ import { ApolloClient, ApolloLink, InMemoryCache, split } from "@apollo/client";
 import { WebSocketLink } from "@apollo/client/link/ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { createUploadLink } from "apollo-upload-client";
-import { Token } from "../herre/herre-types";
+import { Token } from "herre";
 import result from "./api/fragments";
 import { MikroConfig } from "./mikro-types";
 

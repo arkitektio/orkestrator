@@ -3,7 +3,7 @@ import { setContext } from "@apollo/client/link/context";
 import { WebSocketLink } from "@apollo/client/link/ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { createUploadLink } from "apollo-upload-client";
-import { Token } from "../herre/herre-types";
+import { Token } from "herre";
 import result from "./api/fragments";
 import { Fluss } from "./fluss-types";
 

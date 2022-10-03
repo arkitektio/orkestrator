@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createGraphiQLFetcher, Fetcher } from "@graphiql/toolkit";
 import { useMikro } from "../../mikro-types";
-import { useHerre } from "../../../herre/herre-context";
+import { useHerre } from "herre";
 import { GraphiQLProvider } from "graphiql";
 import { IQL } from "./IQL";
 import { DocumentNode } from "@apollo/client";

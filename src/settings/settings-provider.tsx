@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useFakts } from "../fakts";
+import { useFakts } from "fakts";
 import { Settings, SettingsContext } from "./settings-context";
 import * as yup from "yup";
 

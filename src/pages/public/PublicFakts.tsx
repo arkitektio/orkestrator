@@ -3,7 +3,7 @@ import React from "react";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
-import { useFakts } from "../../fakts";
+import { useFakts } from "fakts";
 
 export interface PublicHomeProps {}
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
-import { useFakts } from "../../fakts";
+import { useFakts } from "fakts";
 import { useHealthz } from "../../healthz/context";
 
 export interface PublicHomeProps {}

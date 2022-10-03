@@ -6,7 +6,7 @@ import {
   useNotificationCenter,
 } from "react-toastify/addons/use-notification-center";
 import { useAgent } from "../../arkitekt/agent/agent-context";
-import { useHerre } from "../../herre";
+import { useHerre } from "herre";
 import { useProfileQuery } from "../../man/api/graphql";
 import { withMan } from "../../man/context";
 

@@ -20,7 +20,7 @@ import { NavigationBar } from "./components/navigation/NavigationBar";
 import { FlussProvider } from "./fluss/fluss-provider";
 import { FlussGuard } from "./fluss/guard";
 import { FlussWard } from "./fluss/ward";
-import { HerreGuard } from "./herre";
+import { HerreGuard } from "herre";
 import "./index.css";
 import { ManGuard } from "./man/guard";
 import { ManProvider } from "./man/provider";

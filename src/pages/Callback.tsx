@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useSearchParams } from "react-router-dom";
-import { useHerre } from "../herre";
+import { useHerre } from "herre";
 
 export interface CallbackProps {}
 

@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect } from "react";
-import { useHerre } from "../herre";
+import { useHerre } from "herre";
 
 export interface CallbackProps {}
 

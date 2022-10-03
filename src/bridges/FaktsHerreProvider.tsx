@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api";
 import React from "react";
-import { useFakts } from "../fakts";
-import { HerreProvider } from "../herre/HerreProvider";
+import { useFakts } from "fakts";
+import { HerreProvider } from "herre";
 
 export type FaktsHerreProps = {
   children?: React.ReactNode;

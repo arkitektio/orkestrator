@@ -1,6 +1,6 @@
 import { ApolloClient, InMemoryCache } from "@apollo/client";
 import { createUploadLink } from "apollo-upload-client";
-import { Token } from "../herre/herre-types";
+import { Token } from "herre";
 import result from "./api/fragments";
 import { Man } from "./types";
 

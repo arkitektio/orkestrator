@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { toast } from "react-toastify";
 import { useAlert } from "../../../components/alerter/alerter-context";
-import { useFakts } from "../../../fakts";
+import { useFakts } from "fakts";
 import {
   AgentsEventDocument,
   AgentsEventSubscriptionResult,
