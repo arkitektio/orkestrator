@@ -80,7 +80,7 @@ import { TauriProvider } from "./tauri/provider";
 import { PublicHealthz } from "./pages/public/PublicHealthz";
 import { HealthzProvider } from "./healthz/provider";
 import { FaktsHerreProvider } from "./bridges/FaktsHerreProvider";
-import { TauriCallback } from "./tauri/TauriCallback";
+import { TauriHerreCallback } from "./bridges/TauriHerreCallback";
 
 export const HTML5toTouch = {
   backends: [
@@ -137,7 +137,7 @@ export const MainApp: React.FC<Props> = (props) => {
             <HealthzProvider>
               <HealthzGuard fallback={<PublicHealthz />}>
                 <FaktsHerreProvider>
-                  {window.__TAURI__ && <TauriCallback />}
+                  {window.__TAURI__ && <TauriHerreCallback />}
                   <Routes>
                     {/* Public */}
                     <Route path="/" element={<PublicApp />}>

@@ -4,7 +4,7 @@ import { useHerre } from "herre";
 
 export interface CallbackProps {}
 
-export const TauriCallback: React.FC<CallbackProps> = (props) => {
+export const TauriHerreCallback: React.FC<CallbackProps> = (props) => {
   const { setCode } = useHerre();
 
   useEffect(() => {

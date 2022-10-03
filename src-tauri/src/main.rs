@@ -2,9 +2,7 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-use std::collections::HashMap;
 
-use tauri::{http::ResponseBuilder, async_runtime::Sender};
 use tauri::Manager;
 use warp::Filter;
 use serde_derive::Deserialize;
@@ -62,8 +60,8 @@ fn main() {
 
 
             let routes = warp::any().and(warp::query::<Query>()).map(move |x: Query| {
-                let window = app_handle.get_window("main").unwrap().emit("code", x.code);
-                let login = app_handle.get_window("login").unwrap().hide();
+                let _window = app_handle.get_window("main").unwrap().emit("code", x.code);
+                let _login = app_handle.get_window("login").unwrap().hide();
                 
                 
                 format!("Hello, World {}!", "nn")
