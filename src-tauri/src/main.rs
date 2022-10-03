@@ -3,10 +3,13 @@
     windows_subsystem = "windows"
 )]
 
+
+use serde::Serialize;
 use tauri::Manager;
 use warp::Filter;
 use serde_derive::Deserialize;
-
+use tokio::time::{sleep, Duration};
+use net2::UdpBuilder;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -29,6 +32,13 @@ fn login(app: tauri::AppHandle, url: &str) -> String {
 struct Query {
     code: String,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+struct Beacon {
+    name: String,
+    base_url: String,
+}
+
 
 
 fn main() {
@@ -57,15 +67,49 @@ fn main() {
             // send a message to the renderer process
            
             let app_handle = app.handle();
+            let next_handle = app.handle();
 
 
             let routes = warp::any().and(warp::query::<Query>()).map(move |x: Query| {
+                println!("code: {}", x.code);
                 let _window = app_handle.get_window("main").unwrap().emit("code", x.code);
-                let _login = app_handle.get_window("login").unwrap().hide();
-                
-                
+                let _login = app_handle.get_window("login").unwrap().hide();              
                 format!("Hello, World {}!", "nn")
-        });
+            });
+
+
+            tauri::async_runtime::spawn(async move {
+            // listen for udp broadcasts on port 8080
+                let socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:45678");
+
+                let socket = match socket {
+                    Ok(s) => s,
+                    Err(e) => panic!("couldn't bind socket: {:?}", e),
+                };
+
+                // receive a single datagram
+                let mut buf = [0u8; 1500];
+
+                while let Ok((amt, src)) = socket.recv_from(&mut buf) {
+                    let data = &buf[..amt];
+                    let s = std::str::from_utf8(data).unwrap();
+                    println!("received {} bytes from {}", amt, src);
+                    println!("received {}", s);
+
+                   
+
+
+
+                    if s.starts_with("beacon-fakts"){
+                        let x: Beacon = serde_json::from_str(s.strip_prefix("beacon-fakts").unwrap()).unwrap();
+                        let _window = next_handle.get_window("main").unwrap().emit("fakts", x);
+                    }
+                    sleep(Duration::from_millis(100)).await;
+                }
+                    
+
+            });
+
 
 
             tauri::async_runtime::spawn(async move {

@@ -81,6 +81,7 @@ import { PublicHealthz } from "./pages/public/PublicHealthz";
 import { HealthzProvider } from "./healthz/provider";
 import { FaktsHerreProvider } from "./bridges/FaktsHerreProvider";
 import { TauriHerreCallback } from "./bridges/TauriHerreCallback";
+import { TauriFaktsFallback } from "./bridges/TauriFaktsFallback";
 
 export const HTML5toTouch = {
   backends: [
@@ -133,7 +134,11 @@ export const MainApp: React.FC<Props> = (props) => {
           8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X"
           graph="localhost"
         >
-          <FaktsGuard fallback={<PublicFakts />}>
+          <FaktsGuard
+            fallback={
+              window.__TAURI__ ? <TauriFaktsFallback /> : <PublicFakts />
+            }
+          >
             <HealthzProvider>
               <HealthzGuard fallback={<PublicHealthz />}>
                 <FaktsHerreProvider>

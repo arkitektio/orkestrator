@@ -19,6 +19,8 @@ serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.1", features = ["api-all"] }
 warp = "0.3.3"
 serde_derive = "1.0.145"
+net2 = "0.2.37"
+tokio = "1.21.2"
 
 [features]
 # by default Tauri runs in production mode
