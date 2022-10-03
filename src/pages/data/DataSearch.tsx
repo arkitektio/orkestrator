@@ -14,6 +14,7 @@ import {
 import "react-datepicker/dist/react-datepicker.css";
 import { DateInputField } from "../../components/forms/fields/date_input";
 import { withMikro } from "../../mikro/mikro-types";
+import { SwitchInputField } from "../../components/forms/fields/switch_input";
 
 interface NodeFilterBoxProps {
   onFilterChanged: (values: GlobalSearchQueryVariables) => any;
@@ -93,6 +94,7 @@ export const DataSearch: React.FC<NodeFilterBoxProps> = ({
                       label="Created before"
                     />
                     <DateInputField name="createdAfter" label="Created after" />
+                    <SwitchInputField name="pinned" label="Pinned" />
                   </div>
                 </div>
               </>

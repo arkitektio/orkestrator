@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useFakts } from "../../fakts/fakts-config";
-import { useHerre } from "../../herre/herre-context";
+import { useFakts } from "../../fakts/";
+import { useHerre } from "../../herre";
 import TextTransition, { presets } from "react-text-transition";
 import { RekuestLink } from "../../linker";
 

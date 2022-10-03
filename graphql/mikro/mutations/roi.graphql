@@ -1,0 +1,10 @@
+mutation PinRoi($id: ID!, $pin: Boolean!) {
+  pinROI(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}

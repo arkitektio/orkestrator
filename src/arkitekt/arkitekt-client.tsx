@@ -7,7 +7,7 @@ import {
 import { setContext } from "@apollo/client/link/context";
 import { WebSocketLink } from "@apollo/client/link/ws";
 import { getMainDefinition } from "@apollo/client/utilities";
-import { Token } from "../herre/herre-types";
+import { Token } from "../herre/types";
 import result from "./api/fragments";
 import { Arkitekt } from "./arkitekt-types";
 

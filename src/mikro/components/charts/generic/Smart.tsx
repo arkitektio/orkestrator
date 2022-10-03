@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import Timestamp from "react-timestamp";
+import { number } from "yup";
 import { SmartModel } from "../../../../arkitekt/selection/SmartModel";
 import { SelfActions } from "../../../../components/SelfActions";
 import { get_identifier_for_type } from "../../plot/helpers";
@@ -8,7 +10,7 @@ import { buildSmartModel } from "../../plot/Tree";
 export interface SmartProps {
   type: string;
   object: string;
-  value: string;
+  value: string | number | Date | undefined;
   datakey: string;
 }
 
@@ -28,7 +30,11 @@ export const Smart: React.FC<SmartProps> = ({
           <div className="text-xs">{type}</div>
         </div>
         <div className="flex-grow"></div>
-        <div className="text-xl my-auto">{value}</div>
+        <div className="text-xl my-auto">
+          {value && typeof value == "number" && value.toPrecision(3)}
+          {value && typeof value == "object" && <Timestamp date={value} />}
+          {value && typeof value == "string" && value}
+        </div>
       </div>
       <div className="flex-inital flex flex-wrap mt-2 gap-1">
         {/* <Link

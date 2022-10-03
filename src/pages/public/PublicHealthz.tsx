@@ -1,15 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { useFakts } from "../../fakts/fakts-config";
-import { useHerre } from "../../herre/herre-context";
-import TextTransition, { presets } from "react-text-transition";
-import { RekuestLink } from "../../linker";
-import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
-import { Form, Formik } from "formik";
-import { TextInputField } from "../../components/forms/fields/text_input";
-import { SubmitButton } from "../../components/forms/fields/SubmitButton";
-import BreadCrumbs from "../../components/navigation/Breadcrumbs";
-import { useHealthz } from "../../healthz/context";
+import React from "react";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
+import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
+import { useFakts } from "../../fakts";
+import { useHealthz } from "../../healthz/context";
 
 export interface PublicHomeProps {}
 

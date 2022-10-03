@@ -64,6 +64,7 @@ fragment ChildPort on ChildPort {
 }
 
 fragment InputWidget on Widget {
+  __typename
   kind
   ...IntWidget
   ...StringWidget

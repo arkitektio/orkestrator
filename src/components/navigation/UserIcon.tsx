@@ -1,13 +1,12 @@
 import { Popover } from "@headlessui/react";
 import React, { useState } from "react";
-import ReactDOM from "react-dom";
 import { usePopper } from "react-popper";
 import {
   NotificationCenterItem,
   useNotificationCenter,
 } from "react-toastify/addons/use-notification-center";
 import { useAgent } from "../../arkitekt/agent/agent-context";
-import { useHerre } from "../../herre/herre-context";
+import { useHerre } from "../../herre";
 import { useProfileQuery } from "../../man/api/graphql";
 import { withMan } from "../../man/context";
 

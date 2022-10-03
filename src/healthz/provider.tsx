@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useFakts } from "../fakts/fakts-config";
+import { useFakts } from "../fakts";
 import { DeadJSON, HealthReturn, HealthyJSON, HealthzContext } from "./context";
 
 export interface HealthzProviderProps {

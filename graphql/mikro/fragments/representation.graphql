@@ -15,6 +15,7 @@ fragment ListRepresentation on Representation {
     }
   }
   variety
+  pinned
 }
 
 fragment ListSharedRepresentation on Representation {
@@ -98,4 +99,11 @@ fragment DetailRepresentation on Representation {
     id
     email
   }
+
+  pinnedBy {
+    id
+    email
+  }
+
+  pinned
 }

@@ -1,6 +1,6 @@
 import { Form, Formik } from "formik";
 import React, { useState } from "react";
-import { BsTrash } from "react-icons/bs";
+import { BsPinAngle, BsPinFill, BsTrash } from "react-icons/bs";
 import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
@@ -18,6 +18,7 @@ import {
   UpdateExperimentMutationVariables,
   useDeleteSampleMutation,
   useDetailExperimentQuery,
+  usePinExperimentMutation,
   useTagSearchLazyQuery,
   useUpdateExperimentMutation,
 } from "../api/graphql";
@@ -36,7 +37,8 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
   const [searchTags, _t] = withMikro(useTagSearchLazyQuery)();
   const [show, setshow] = useState(false);
 
-  const [updateExperiment, _] = withMikro(useUpdateExperimentMutation)();
+  const [updateExperiment] = withMikro(useUpdateExperimentMutation)();
+  const [pinExperiment] = withMikro(usePinExperimentMutation)();
 
   const { confirm } = useConfirm();
 
@@ -72,8 +74,29 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
       }
     >
       {!error && data && (
-        <div className="p-3 flex-grow">
-          <SectionTitle>{data?.experiment?.name}</SectionTitle>
+        <div className="p-3 flex-grow flex flex-col">
+          <div className="flex flex-row">
+            <div className="flex">
+              <SectionTitle>{data?.experiment?.name}</SectionTitle>
+            </div>
+            <div className="flex-grow" />
+            <div className="flex text-white">
+              {data?.experiment?.id && (
+                <button
+                  onClick={() =>
+                    pinExperiment({
+                      variables: {
+                        id: data?.experiment?.id || "",
+                        pin: !data?.experiment?.pinned || false,
+                      },
+                    })
+                  }
+                >
+                  {data?.experiment?.pinned ? <BsPinFill /> : <BsPinAngle />}
+                </button>
+              )}
+            </div>
+          </div>
           <div className="flex flex-col bg-white p-3 rounded rounded-md mt-2 mb-2">
             <div className="font-light mt-2 ">Description</div>
             <div className="text-md mt-2 ">{data?.experiment?.description}</div>

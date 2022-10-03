@@ -12,6 +12,11 @@ fragment DetailExperiment on Experiment {
     id
     email
   }
+  pinned
+  pinnedBy {
+    id
+    email
+  }
 }
 
 fragment ListExperiment on Experiment {

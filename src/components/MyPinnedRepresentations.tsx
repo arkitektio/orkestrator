@@ -5,7 +5,7 @@ import {
   BsPlusCircle,
   BsTrash,
 } from "react-icons/bs";
-import { ResponsiveGrid } from "../components/layout/ResponsiveGrid";
+import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 import { notEmpty } from "../floating/utils";
 import { Representation } from "../linker";
 import {
@@ -156,110 +156,57 @@ export const RepresentationCard: React.FC<{
   );
 };
 
-const MyRepresentations: React.FC<IMyRepresentationsProps> = () => {
+const MyPinnedRepresentations: React.FC<IMyRepresentationsProps> = () => {
   const [offset, setOffset] = useState(0);
 
-  const {
-    data: reps,
-    loading: all_loading,
-    subscribeToMore,
-    refetch,
-  } = withMikro(useMyRepresentationsQuery)({
-    variables: { limit: limit, offset: 0, order: ["-created_at"] },
-    //pollInterval: 1000,
-  });
-
-  useEffect(() => {
-    console.log("Subscribing to My Representations");
-    const unsubscribe = subscribeToMore({
-      document: MyRepresentationsEventDocument,
-      variables: {},
-      updateQuery: (prev, { subscriptionData }) => {
-        console.log("Received Representation", subscriptionData);
-        var data = subscriptionData as MyRepresentationsEventSubscriptionResult;
-        let action = data.data?.myRepresentations;
-        let newelements;
-        // Try to update
-        if (action?.update) {
-          let updated_res = action.update;
-          newelements = prev.myrepresentations?.map((item: any) =>
-            item.id === updated_res?.id
-              ? { ...item, data: { ...item.data, ...updated_res } }
-              : item
-          );
-        }
-
-        if (action?.deleted) {
-          let ended_res = action.deleted;
-          newelements = prev.myrepresentations
-            ?.map((item: any) => (item.id === ended_res ? null : item))
-            .filter((item) => item != null);
-        }
-
-        if (action?.create) {
-          let updated_res = action.create;
-          if (prev.myrepresentations) {
-            newelements = [updated_res, ...prev.myrepresentations];
-          } else {
-            newelements = [updated_res];
-          }
-        }
-
-        console.log("Received ", subscriptionData);
-        return {
-          ...prev,
-          myrepresentations: newelements,
-        } as MyRepresentationsQuery;
-      },
-    });
-    return () => unsubscribe();
-  }, [subscribeToMore]);
-
-  useEffect(() => {
-    refetch({ limit: 20, offset: offset });
-  }, [offset, limit]);
+  const { data: pinned_reps } = withMikro(usePinnedRepresentationsQuery)();
 
   return (
     <div>
-      {reps && reps.myrepresentations && reps.myrepresentations.length > 0 && (
-        <>
-          <div className="font-light text-xl flex mr-2 dark:text-white">
-            <div className="flex-0">Latest Images</div>
-            <div className="flex-grow"></div>
-            <div className="flex-0">
-              {offset != 0 && (
-                <button
-                  className="p-1 text-gray-600 rounded"
-                  onClick={() => setOffset(offset - limit)}
-                >
-                  {" "}
-                  <BsCaretLeft />{" "}
-                </button>
-              )}
-              {reps?.myrepresentations &&
-                reps?.myrepresentations.length == limit && (
+      {pinned_reps &&
+        pinned_reps.representations &&
+        pinned_reps.representations.length > 0 && (
+          <>
+            <div className="font-light text-xl flex mr-2 dark:text-white">
+              <div className="flex-0">Latest Images</div>
+              <div className="flex-grow"></div>
+              <div className="flex-0">
+                {offset != 0 && (
                   <button
                     className="p-1 text-gray-600 rounded"
-                    onClick={() => setOffset(offset + limit)}
+                    onClick={() => setOffset(offset - limit)}
                   >
                     {" "}
-                    <BsCaretRight />{" "}
+                    <BsCaretLeft />{" "}
                   </button>
                 )}
+                {pinned_reps?.representations &&
+                  pinned_reps?.representations.length == limit && (
+                    <button
+                      className="p-1 text-gray-600 rounded"
+                      onClick={() => setOffset(offset + limit)}
+                    >
+                      {" "}
+                      <BsCaretRight />{" "}
+                    </button>
+                  )}
+              </div>
             </div>
-          </div>
-          <ResponsiveGrid>
-            {reps?.myrepresentations
-              ?.slice(0, limit)
-              .filter(notEmpty)
-              .map((rep, index) => (
-                <RepresentationCard rep={rep} key={rep?.id} />
-              ))}
-          </ResponsiveGrid>
-        </>
-      )}
+            <div className="flex">
+              <div className="mt-4">Pinned Reps </div>
+              <ResponsiveGrid>
+                {pinned_reps?.representations
+                  ?.slice(0, limit)
+                  .filter(notEmpty)
+                  .map((rep, index) => (
+                    <RepresentationCard rep={rep} key={rep?.id} />
+                  ))}
+              </ResponsiveGrid>
+            </div>
+          </>
+        )}
     </div>
   );
 };
 
-export { MyRepresentations };
+export { MyPinnedRepresentations };

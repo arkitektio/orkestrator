@@ -21,3 +21,14 @@ mutation UpdateRepresentation(
     ...DetailRepresentation
   }
 }
+
+mutation PinRepresentation($id: ID!, $pin: Boolean!) {
+  pinRepresentation(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}

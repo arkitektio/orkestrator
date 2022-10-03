@@ -2,10 +2,10 @@ import React, { CSSProperties } from "react";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-import { FaktsGuard } from "./fakts/fakts-guard";
-import { FaktsProvider } from "./fakts/fakts-provider";
+import { FaktsGuard } from "./fakts";
+import { FaktsProvider } from "./fakts";
 import { HealthzGuard } from "./healthz/guard";
-import { HerreProvider } from "./herre/herre-provider";
+import { HerreProvider } from "./herre";
 import { Dashboard } from "./pages/Dashboard";
 import { DashboardAssignation } from "./pages/dashboard/assignations/DashboardAssignation";
 import { DashboardAssignations } from "./pages/dashboard/assignations/DashboardAssignations";
@@ -49,7 +49,7 @@ import "./popping.css";
 
 import "allotment/dist/style.css";
 import { MouseTransition, Preview } from "react-dnd-multi-backend";
-import { Callback } from "./herre/Callback";
+import { Callback } from "./pages/Callback";
 import "./index.css";
 import { DashboardAgent } from "./pages/dashboard/agents/DashboardAgent";
 import { DashboardAgents } from "./pages/dashboard/agents/DashboardAgents";
@@ -79,6 +79,8 @@ import { PublicApp } from "./PublicApp";
 import { TauriProvider } from "./tauri/provider";
 import { PublicHealthz } from "./pages/public/PublicHealthz";
 import { HealthzProvider } from "./healthz/provider";
+import { FaktsHerreProvider } from "./bridges/FaktsHerreProvider";
+import { TauriCallback } from "./tauri/TauriCallback";
 
 export const HTML5toTouch = {
   backends: [
@@ -134,7 +136,8 @@ export const MainApp: React.FC<Props> = (props) => {
           <FaktsGuard fallback={<PublicFakts />}>
             <HealthzProvider>
               <HealthzGuard fallback={<PublicHealthz />}>
-                <HerreProvider>
+                <FaktsHerreProvider>
+                  {window.__TAURI__ && <TauriCallback />}
                   <Routes>
                     {/* Public */}
                     <Route path="/" element={<PublicApp />}>
@@ -289,7 +292,7 @@ export const MainApp: React.FC<Props> = (props) => {
                       <Route element={<NoRoute />} />
                     </Route>
                   </Routes>
-                </HerreProvider>
+                </FaktsHerreProvider>
               </HealthzGuard>
             </HealthzProvider>
           </FaktsGuard>

@@ -13,6 +13,7 @@ fragment RepRoi on ROI {
     c
   }
   tags
+  pinned
 }
 
 fragment DetailRoi on ROI {
@@ -40,5 +41,10 @@ fragment DetailRoi on ROI {
     x
     y
     z
+  }
+  pinned
+  pinnedBy {
+    id
+    email
   }
 }

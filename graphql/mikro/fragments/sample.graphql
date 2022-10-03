@@ -15,6 +15,11 @@ fragment DetailSample on Sample {
     id
     email
   }
+  pinned
+  pinnedBy {
+    id
+    email
+  }
 }
 
 fragment ListSample on Sample {
@@ -23,4 +28,5 @@ fragment ListSample on Sample {
   experiments {
     name
   }
+  pinned
 }

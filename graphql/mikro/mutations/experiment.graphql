@@ -25,3 +25,14 @@ mutation UpdateExperiment(
     ...DetailExperiment
   }
 }
+
+mutation PinExperiment($id: ID!, $pin: Boolean!) {
+  pinExperiment(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}

@@ -1,5 +1,5 @@
 import React from "react";
-import { useHerre } from "../../herre/herre-context";
+import { useHerre } from "../../herre";
 
 interface Props {}
 

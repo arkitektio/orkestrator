@@ -1,21 +1,13 @@
 import React, { useEffect } from "react";
 import { toast } from "react-toastify";
-import { v4 as uuidv4 } from "uuid";
 import { useAlert } from "../../../components/alerter/alerter-context";
-import { useFakts } from "../../../fakts/fakts-config";
-import { notEmpty } from "../../../floating/utils";
-import { useSettings } from "../../../settings/settings-context";
+import { useFakts } from "../../../fakts";
 import {
   AgentsEventDocument,
   AgentsEventSubscriptionResult,
   AgentsQuery,
   AgentStatusInput,
   AssignationStatus,
-  AssignMutationVariables,
-  ListReservationFragment,
-  MyProvisionsQuery,
-  MyReservationsQuery,
-  ReservationStatus,
   useAcknowledgeMutation,
   useAgentsQuery,
   useAssignMutation,

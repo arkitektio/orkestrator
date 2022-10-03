@@ -31,7 +31,7 @@ export const SwitchInputField: React.FC<Props> = (props) => {
               <div
                 className={`${
                   field.value
-                    ? "bg-green-700 text-white"
+                    ? "bg-primary-300 text-white"
                     : "bg-gray-500 opacity-50 text-white"
                 } border flex flex-row mt-2 mb-2 cursor-pointer p-1 shadow border-grey-800 rounded px-2 relative focus:shadow`}
                 onClick={() => form.setFieldValue(props.name, !field.value)}

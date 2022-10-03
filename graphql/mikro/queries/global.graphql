@@ -4,6 +4,7 @@ query GlobalSearch(
   $createdAfter: DateTime
   $tags: [String]
   $creator: ID
+  $pinned: Boolean
 ) {
   experiments: myexperiments(
     name: $search
@@ -12,6 +13,7 @@ query GlobalSearch(
     createdAfter: $createdAfter
     tags: $tags
     creator: $creator
+    pinned: $pinned
   ) {
     id
     name
@@ -25,6 +27,7 @@ query GlobalSearch(
     createdAfter: $createdAfter
     tags: $tags
     creator: $creator
+    pinned: $pinned
   ) {
     id
     name
@@ -37,6 +40,7 @@ query GlobalSearch(
     createdAfter: $createdAfter
     tags: $tags
     creator: $creator
+    pinned: $pinned
   ) {
     id
     name
@@ -49,6 +53,7 @@ query GlobalSearch(
     createdAfter: $createdAfter
     tags: $tags
     creator: $creator
+    pinned: $pinned
   ) {
     id
     name

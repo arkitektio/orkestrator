@@ -1,7 +1,7 @@
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import React, { useEffect, useState } from "react";
-import { useFakts } from "../fakts/fakts-config";
-import { useHerre } from "../herre/herre-context";
+import { useFakts } from "../fakts";
+import { useHerre } from "../herre";
 import { createArkitektClient } from "./arkitekt-client";
 import { ArkitektContext } from "./arkitekt-context";
 

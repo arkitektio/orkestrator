@@ -1,7 +1,5 @@
-import React from "react";
 import { useNavigate } from "react-router";
-import { Link } from "react-router-dom";
-import { useHerre } from "../herre/herre-context";
+import { useHerre } from "../herre";
 import { MikroLink, RekuestLink } from "../linker";
 
 interface Props {}

@@ -85,3 +85,9 @@ query RepresentationFilterSearch($value: String!) {
     value: name
   }
 }
+
+query PinnedRepresentations {
+  representations(pinned: true) {
+    ...ListRepresentation
+  }
+}

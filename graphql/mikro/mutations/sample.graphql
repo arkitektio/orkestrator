@@ -20,3 +20,14 @@ mutation UpdateSample(
     ...DetailSample
   }
 }
+
+mutation PinSample($id: ID!, $pin: Boolean!) {
+  pinSample(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}

@@ -1,5 +1,7 @@
 import { Form, Formik } from "formik";
 import React, { useEffect, useState } from "react";
+import { AiFillPushpin } from "react-icons/ai";
+import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
@@ -29,6 +31,7 @@ import {
   MyRepresentationsOriginSubscriptionVariables,
   UpdateRepresentationMutationVariables,
   useDetailRepresentationQuery,
+  usePinRepresentationMutation,
   useSearchSampleLazyQuery,
   useTagSearchLazyQuery,
   useUpdateRepresentationMutation,
@@ -49,6 +52,10 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
   const { data, subscribeToMore } = withMikro(useDetailRepresentationQuery)({
     variables: { id: id },
   });
+
+  const [pinRepresentation, pindata] = withMikro(
+    usePinRepresentationMutation
+  )();
 
   const [updateRepresentation, _] = withMikro(
     useUpdateRepresentationMutation
@@ -195,9 +202,25 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
       }
     >
       <div className="p-5">
-        <div className="text-xl font-semibold text-white flex flex-col">
+        <div className="text-xl font-semibold text-white flex flex-row">
           {data?.representation?.name}
           <div className="flex-grow"></div>
+          <div className="flex">
+            {data?.representation?.id && (
+              <button
+                onClick={() =>
+                  pinRepresentation({
+                    variables: {
+                      id: data?.representation?.id || "",
+                      pin: !data?.representation?.pinned || false,
+                    },
+                  })
+                }
+              >
+                {data?.representation?.pinned ? <BsPinFill /> : <BsPinAngle />}
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex sm:flex-row-reverse flex-col rounded-md gap-4 mt-2">
           <div className="flex-initial flex">

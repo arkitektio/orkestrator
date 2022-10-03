@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { createGraphiQLFetcher, Fetcher } from "@graphiql/toolkit";
-import { useMikro } from "../../mikro-types";
-import { useHerre } from "../../../herre/herre-context";
-import { GraphiQLProvider } from "graphiql";
-import { IQL } from "./IQL";
-import { Field, FieldHookConfig, useField, useFormikContext } from "formik";
 import { DocumentNode } from "@apollo/client";
+import { Fetcher } from "@graphiql/toolkit";
+import { FieldHookConfig, useField } from "formik";
+import { GraphiQLProvider } from "graphiql";
+import React from "react";
+import { useHerre } from "../../../herre";
+import { useMikro } from "../../mikro-types";
+import { IQL } from "./IQL";
 
 export interface MikroIQLFieldProps {
   name: string;
