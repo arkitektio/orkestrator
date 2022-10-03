@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "xun",
-    "version": "0.0.0"
+    "version": "0.0.1"
   },
   "tauri": {
     "allowlist": {
@@ -62,7 +62,6 @@
         "width": 800
       },
       {
-        
         "height": 300,
         "resizable": false,
         "title": "login",
