@@ -8,8 +8,10 @@ use serde::Serialize;
 use tauri::Manager;
 use warp::Filter;
 use serde_derive::Deserialize;
-use tokio::time::{sleep, Duration};
-use net2::UdpBuilder;
+use tokio::{time::{sleep, Duration}};
+use net2::{UdpBuilder};
+use std::net::{TcpListener, TcpStream};
+
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -69,6 +71,13 @@ fn main() {
             let app_handle = app.handle();
             let next_handle = app.handle();
 
+            match TcpListener::bind("127.0.0.1:3000") {
+                Ok(s) => s,
+                Err(e) => {
+                    app_handle.get_window("main").unwrap().emit("bind-error", e.to_string()).unwrap();
+                    panic!("couldn't bind socket: {:?}", e)}
+            };
+
 
             let routes = warp::any().and(warp::query::<Query>()).map(move |x: Query| {
                 println!("code: {}", x.code);
@@ -117,7 +126,9 @@ fn main() {
             tauri::async_runtime::spawn(async move {
 
                 // Check if port is available
-            
+                
+
+                
 
                 warp::serve(routes)
                 .run(([127, 0, 0, 1], 3030))
