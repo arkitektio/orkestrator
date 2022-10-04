@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api";
 import React, { useEffect } from "react";
 import { TauriContext } from "./context";
+import { appWindow } from "@tauri-apps/api/window";
 
 export type TauriProviderProps = {
   children?: React.ReactNode;
@@ -8,11 +9,33 @@ export type TauriProviderProps = {
 
 export const TauriProvider: React.FC<TauriProviderProps> = (props) => {
   useEffect(() => {
-    if (import.meta.env.TAURI) {
+    if (window.__TAURI__) {
       console.log("Running within tauri");
       invoke("hello").then((user) => {
         console.log(user);
       });
+
+      let dmini = document
+        ?.getElementById("titlebar-minimize")
+        ?.addEventListener("click", () => appWindow.minimize());
+      let dmaxi = document
+        ?.getElementById("titlebar-maximize")
+        ?.addEventListener("click", () => appWindow.toggleMaximize());
+      let dclose = document
+        ?.getElementById("titlebar-close")
+        ?.addEventListener("click", () => appWindow.close());
+
+      return () => {
+        document
+          ?.getElementById("titlebar-minimize")
+          ?.removeEventListener("click", () => appWindow.minimize());
+        document
+          ?.getElementById("titlebar-maximize")
+          ?.removeEventListener("click", () => appWindow.toggleMaximize());
+        document
+          ?.getElementById("titlebar-close")
+          ?.removeEventListener("click", () => appWindow.close());
+      };
     }
   }, []);
 

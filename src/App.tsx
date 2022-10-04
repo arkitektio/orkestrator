@@ -82,6 +82,8 @@ import { HealthzProvider } from "./healthz/provider";
 import { FaktsHerreProvider } from "./bridges/FaktsHerreProvider";
 import { TauriHerreCallback } from "./bridges/TauriHerreCallback";
 import { TauriFaktsFallback } from "./bridges/TauriFaktsFallback";
+import { ConfirmerProvider } from "./components/confirmer/confirmer-provider";
+import { AlerterProvider } from "./components/alerter/alerter-provider";
 
 export const HTML5toTouch = {
   backends: [
@@ -127,182 +129,205 @@ const ComponentPreview = ({ text }: { text: string }): JSX.Element => {
 export const MainApp: React.FC<Props> = (props) => {
   return (
     <Router>
-      <TauriProvider>
-        <FaktsProvider
-          clientId="PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO"
-          clientSecret="
-          8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X"
-          graph="localhost"
-        >
-          <FaktsGuard
-            fallback={
-              window.__TAURI__ ? <TauriFaktsFallback /> : <PublicFakts />
-            }
-          >
-            <HealthzProvider>
-              <HealthzGuard fallback={<PublicHealthz />}>
-                <FaktsHerreProvider>
-                  {window.__TAURI__ && <TauriHerreCallback />}
-                  <Routes>
-                    {/* Public */}
-                    <Route path="/" element={<PublicApp />}>
-                      <Route path="callback" element={<Callback />} />
-                      <Route index element={<PublicHome />} />
-                    </Route>
-                    {/* Private */}
-
-                    <Route path="/user" element={<ProtectedApp />}>
-                      <Route index element={<Home />} />
-
-                      {/* Mikro */}
-                      <Route path="mikro" element={<Data />}>
-                        <Route
-                          path="experiments/:experiment"
-                          element={<DataExperiment />}
-                        />
-                        <Route
-                          path="experiments"
-                          element={<DataExperiments />}
-                        />
-
-                        <Route
-                          path="samples/:sample"
-                          element={<DataSample />}
-                        />
-                        <Route path="samples" element={<DataSamples />} />
-                        <Route
-                          path="representations/:representation"
-                          element={<DataRepresentation />}
-                        />
-                        <Route
-                          path="representations"
-                          element={<DataRepresentations />}
-                        />
-                        <Route path="tables/:table" element={<DataTable />} />
-                        <Route path="tables" element={<DataTables />} />
-                        <Route path="files/:file" element={<DataFile />} />
-                        <Route path="labels/:label" element={<DataLabel />} />
-                        <Route path="labels" element={<DataLabels />} />
-                        <Route
-                          path="metrics/:metric"
-                          element={<DataMetric />}
-                        />
-                        <Route path="metrics" element={<DataMetrics />} />
-                        <Route path="files" element={<DataFiles />} />
-                        <Route path="rois/:roi" element={<DataRoi />} />
-                        <Route path="plots" element={<DataPlots />} />
-                        <Route path="plots/:plot" element={<DataPlot />} />
-                        <Route
-                          path="omerofiles/:file"
-                          element={<FileScreen />}
-                        />
-
-                        <Route index element={<DataHome />} />
-                      </Route>
-
-                      {/* man */}
-                      <Route path="man" element={<Team />}>
-                        <Route index element={<TeamHome />} />
-                        <Route path="teams/:team" element={<ManTeam />} />
-                        <Route path="teams" element={<ManTeams />} />
-                        <Route path="users/:user" element={<ManUser />} />
-                        <Route path="users" element={<ManUsers />} />
-                        <Route path="me" element={<Profile />} />
-                      </Route>
-
-                      {/* Fluss */}
-
-                      <Route path="fluss" element={<Fluss />}>
-                        <Route index element={<FlowHome />} />
-                        <Route
-                          path="workspaces/:diagram"
-                          element={<FlowDiagram />}
-                        >
-                          <Route index element={<FlowDiagramHome />} />
+      <ConfirmerProvider>
+        <AlerterProvider>
+          <TauriProvider>
+            <FaktsProvider>
+              <FaktsGuard
+                fallback={
+                  window.__TAURI__ ? <TauriFaktsFallback /> : <PublicFakts />
+                }
+              >
+                <HealthzProvider>
+                  <HealthzGuard fallback={<PublicHealthz />}>
+                    <FaktsHerreProvider>
+                      {window.__TAURI__ && <TauriHerreCallback />}
+                      <Routes>
+                        {/* Public */}
+                        <Route path="/" element={<PublicApp />}>
+                          <Route path="callback" element={<Callback />} />
+                          <Route index element={<PublicHome />} />
                         </Route>
-                        <Route
-                          path="flows/:flow"
-                          element={<FlowDiagramFlow />}
-                        />
-                        <Route path="runs/:runid" element={<RunScreen />} />
-                      </Route>
+                        {/* Private */}
 
-                      {/* Rekuest */}
-                      <Route path="rekuest" element={<Dashboard />}>
-                        <Route index element={<DashBoardHome />} />
-                        <Route
-                          path="reservations/:reservation"
-                          element={<DashboardReservation />}
-                        />
+                        <Route path="/user" element={<ProtectedApp />}>
+                          <Route index element={<Home />} />
 
-                        <Route path="agents" element={<DashboardAgents />} />
-                        <Route path="agents/:id" element={<DashboardAgent />} />
-                        <Route
-                          path="reservations"
-                          element={<DashboardReservations />}
-                        />
-                        <Route
-                          path="assignations"
-                          element={<DashboardAssignations />}
-                        />
-                        <Route
-                          path="assignations/:id"
-                          element={<DashboardAssignation />}
-                        />
-                        <Route
-                          path="provisions/:provision"
-                          element={<DashboardProvision />}
-                        />
-                        <Route
-                          path="repositories/:id"
-                          element={<DashboardRepository />}
-                        />
-                        <Route
-                          path="repositories"
-                          element={<DashboardRepositories />}
-                        />
-                        <Route
-                          path="provisions"
-                          element={<DashboardProvisions />}
-                        />
-                        <Route path="nodes/:id" element={<DashboardNode />} />
-                        <Route path="nodes" element={<DashboardNodes />} />
-                        <Route
-                          path="templates/:id"
-                          element={<DashboardTemplate />}
-                        />
-                        <Route
-                          path="templates"
-                          element={<DashboardTemplates />}
-                        />
-                      </Route>
+                          {/* Mikro */}
+                          <Route path="mikro" element={<Data />}>
+                            <Route
+                              path="experiments/:experiment"
+                              element={<DataExperiment />}
+                            />
+                            <Route
+                              path="experiments"
+                              element={<DataExperiments />}
+                            />
 
-                      {/* kuay */}
-                      <Route path="whales" element={<Whales />}>
-                        <Route index element={<WhalesHome />} />
-                      </Route>
-                      <Route path="template/:id" element={<TemplateScreen />} />
-                      <Route path="table/:table" element={<TableScreen />} />
+                            <Route
+                              path="samples/:sample"
+                              element={<DataSample />}
+                            />
+                            <Route path="samples" element={<DataSamples />} />
+                            <Route
+                              path="representations/:representation"
+                              element={<DataRepresentation />}
+                            />
+                            <Route
+                              path="representations"
+                              element={<DataRepresentations />}
+                            />
+                            <Route
+                              path="tables/:table"
+                              element={<DataTable />}
+                            />
+                            <Route path="tables" element={<DataTables />} />
+                            <Route path="files/:file" element={<DataFile />} />
+                            <Route
+                              path="labels/:label"
+                              element={<DataLabel />}
+                            />
+                            <Route path="labels" element={<DataLabels />} />
+                            <Route
+                              path="metrics/:metric"
+                              element={<DataMetric />}
+                            />
+                            <Route path="metrics" element={<DataMetrics />} />
+                            <Route path="files" element={<DataFiles />} />
+                            <Route path="rois/:roi" element={<DataRoi />} />
+                            <Route path="plots" element={<DataPlots />} />
+                            <Route path="plots/:plot" element={<DataPlot />} />
+                            <Route
+                              path="omerofiles/:file"
+                              element={<FileScreen />}
+                            />
 
-                      <Route path="snapshot/:id" element={<SnapshotScreen />} />
-                      <Route path="search" element={<Search />}>
-                        <Route index element={<SearchHome />} />
-                      </Route>
+                            <Route index element={<DataHome />} />
+                          </Route>
 
-                      {/* Settings */}
-                      <Route path="settings" element={<Settings />}>
-                        <Route index element={<SettingsHome />} />
-                      </Route>
+                          {/* man */}
+                          <Route path="man" element={<Team />}>
+                            <Route index element={<TeamHome />} />
+                            <Route path="teams/:team" element={<ManTeam />} />
+                            <Route path="teams" element={<ManTeams />} />
+                            <Route path="users/:user" element={<ManUser />} />
+                            <Route path="users" element={<ManUsers />} />
+                            <Route path="me" element={<Profile />} />
+                          </Route>
 
-                      <Route element={<NoRoute />} />
-                    </Route>
-                  </Routes>
-                </FaktsHerreProvider>
-              </HealthzGuard>
-            </HealthzProvider>
-          </FaktsGuard>
-        </FaktsProvider>
-      </TauriProvider>
+                          {/* Fluss */}
+
+                          <Route path="fluss" element={<Fluss />}>
+                            <Route index element={<FlowHome />} />
+                            <Route
+                              path="workspaces/:diagram"
+                              element={<FlowDiagram />}
+                            >
+                              <Route index element={<FlowDiagramHome />} />
+                            </Route>
+                            <Route
+                              path="flows/:flow"
+                              element={<FlowDiagramFlow />}
+                            />
+                            <Route path="runs/:runid" element={<RunScreen />} />
+                          </Route>
+
+                          {/* Rekuest */}
+                          <Route path="rekuest" element={<Dashboard />}>
+                            <Route index element={<DashBoardHome />} />
+                            <Route
+                              path="reservations/:reservation"
+                              element={<DashboardReservation />}
+                            />
+
+                            <Route
+                              path="agents"
+                              element={<DashboardAgents />}
+                            />
+                            <Route
+                              path="agents/:id"
+                              element={<DashboardAgent />}
+                            />
+                            <Route
+                              path="reservations"
+                              element={<DashboardReservations />}
+                            />
+                            <Route
+                              path="assignations"
+                              element={<DashboardAssignations />}
+                            />
+                            <Route
+                              path="assignations/:id"
+                              element={<DashboardAssignation />}
+                            />
+                            <Route
+                              path="provisions/:provision"
+                              element={<DashboardProvision />}
+                            />
+                            <Route
+                              path="repositories/:id"
+                              element={<DashboardRepository />}
+                            />
+                            <Route
+                              path="repositories"
+                              element={<DashboardRepositories />}
+                            />
+                            <Route
+                              path="provisions"
+                              element={<DashboardProvisions />}
+                            />
+                            <Route
+                              path="nodes/:id"
+                              element={<DashboardNode />}
+                            />
+                            <Route path="nodes" element={<DashboardNodes />} />
+                            <Route
+                              path="templates/:id"
+                              element={<DashboardTemplate />}
+                            />
+                            <Route
+                              path="templates"
+                              element={<DashboardTemplates />}
+                            />
+                          </Route>
+
+                          {/* kuay */}
+                          <Route path="whales" element={<Whales />}>
+                            <Route index element={<WhalesHome />} />
+                          </Route>
+                          <Route
+                            path="template/:id"
+                            element={<TemplateScreen />}
+                          />
+                          <Route
+                            path="table/:table"
+                            element={<TableScreen />}
+                          />
+
+                          <Route
+                            path="snapshot/:id"
+                            element={<SnapshotScreen />}
+                          />
+                          <Route path="search" element={<Search />}>
+                            <Route index element={<SearchHome />} />
+                          </Route>
+
+                          {/* Settings */}
+                          <Route path="settings" element={<Settings />}>
+                            <Route index element={<SettingsHome />} />
+                          </Route>
+
+                          <Route element={<NoRoute />} />
+                        </Route>
+                      </Routes>
+                    </FaktsHerreProvider>
+                  </HealthzGuard>
+                </HealthzProvider>
+              </FaktsGuard>
+            </FaktsProvider>
+          </TauriProvider>
+        </AlerterProvider>
+      </ConfirmerProvider>
     </Router>
   );
 };

@@ -1,10 +1,12 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useState } from "react";
-import { useFakts } from "fakts";
+import { Fakts, useFakts } from "fakts";
 import { PublicNavigationBar } from "../components/navigation/PublicNavigationBar";
 import { SubmitButton } from "../components/forms/fields/SubmitButton";
 import { TextInputField } from "../components/forms/fields/text_input";
 import { Form, Formik } from "formik";
+import { useAlert } from "../components/alerter/alerter-context";
+import CancelablePromise from "cancelable-promise";
 
 export interface CallbackProps {}
 
@@ -20,6 +22,8 @@ export interface Beacon {
 export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
   const { load } = useFakts();
   const [endpoints, setEndpoints] = useState<Beacon[]>([]);
+  const { alert } = useAlert();
+  const [future, setFuture] = useState<CancelablePromise<Fakts> | null>(null);
 
   useEffect(() => {
     const unlisten = listen("fakts", async (event) => {
@@ -66,7 +70,14 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                   <button
                     key={endpoint.name}
                     className="rounded rounded-md border border-gray-300 p-3 flex flex-col hover:bg-primary-300 cursor-pointer"
-                    onClick={() => load(endpoint)}
+                    onClick={() =>
+                      load({
+                        endpoint,
+                        clientId: "PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO",
+                        clientSecret:
+                          "8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X",
+                      })
+                    }
                   >
                     {endpoint.name}
                     <span className="text-gray-500 text-xs">
@@ -83,10 +94,28 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                   }}
                   onSubmit={({ host }, { setSubmitting }) => {
                     setSubmitting(true);
-                    load({
-                      name: "Localhost",
-                      base_url: `http://${host}/f/`,
-                    });
+                    setFuture(
+                      load({
+                        endpoint: {
+                          name: "Localhost",
+                          base_url: `http://${host}/f/`,
+                        },
+                        clientId: "PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO",
+                        clientSecret:
+                          "8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X",
+                      })
+                        .then(() => {
+                          setFuture(null);
+                          setSubmitting(false);
+                        })
+                        .catch((e) => {
+                          alert({ message: e.message, subtitle: e.stack });
+                        })
+                        .finally(() => {
+                          setFuture(null);
+                          setSubmitting(false);
+                        }, true)
+                    );
                   }}
                 >
                   {(formikProps) => (
@@ -106,10 +135,19 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                           </div>
                         </div>
                         <div className="pb-2">
-                          <SubmitButton className="w-full shadow-lg shadow-primary-700/90 flex items-center justify-center px-2 py-1 border border-transparent text-base font-medium rounded-md text-white bg-primary-300 hover:bg-primary-500 md:py-1 md:text-lg md:px-10">
-                            {" "}
-                            Use
-                          </SubmitButton>
+                          {future ? (
+                            <button
+                              onClick={() => future.cancel()}
+                              className="w-full shadow-lg shadow-red-700/90 flex items-center justify-center px-2 py-1 border border-transparent text-base font-medium rounded-md text-white bg-red-300 hover:bg-red-400 md:py-1 md:text-lg md:px-10"
+                            >
+                              {" "}
+                              Cancel{" "}
+                            </button>
+                          ) : (
+                            <SubmitButton className="w-full shadow-lg shadow-primary-700/90 flex items-center justify-center px-2 py-1 border border-transparent text-base font-medium rounded-md text-white bg-primary-300 hover:bg-primary-400 md:py-1 md:text-lg md:px-10">
+                              Use
+                            </SubmitButton>
+                          )}
                         </div>
                       </div>
                     </Form>

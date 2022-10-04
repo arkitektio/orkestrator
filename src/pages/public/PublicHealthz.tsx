@@ -11,7 +11,7 @@ export interface ConfigValues {
 }
 
 export const PublicHealthz: React.FC<PublicHomeProps> = (props) => {
-  const { load, changeFakts } = useFakts();
+  const { load, setFakts } = useFakts();
   const { errors } = useHealthz();
 
   return (
@@ -58,7 +58,7 @@ export const PublicHealthz: React.FC<PublicHomeProps> = (props) => {
             </div>
             <div className="mt-8">
               <button
-                onClick={() => changeFakts(null)}
+                onClick={() => setFakts(null)}
                 className="shadow-lg shadow-primary-500/30 flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-300 hover:bg-primary-500 md:py-4 md:text-lg md:px-10"
               >
                 Change Config{" "}

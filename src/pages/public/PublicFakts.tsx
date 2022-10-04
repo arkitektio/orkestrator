@@ -41,8 +41,13 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 onSubmit={({ host }, { setSubmitting }) => {
                   setSubmitting(true);
                   load({
-                    name: "Localhost",
-                    base_url: `http://${host}/f/`,
+                    endpoint: {
+                      name: "Localhost",
+                      base_url: `http://${host}/f/`,
+                    },
+                    clientId: "PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO",
+                    clientSecret:
+                      "8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X",
                   });
                 }}
               >

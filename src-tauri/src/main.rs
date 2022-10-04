@@ -84,7 +84,9 @@ fn main() {
 
                 let socket = match socket {
                     Ok(s) => s,
-                    Err(e) => panic!("couldn't bind socket: {:?}", e),
+                    Err(e) => {
+                        next_handle.get_window("main").unwrap().emit("bind-error", e.to_string()).unwrap();
+                        panic!("couldn't bind socket: {:?}", e)}
                 };
 
                 // receive a single datagram
@@ -113,9 +115,15 @@ fn main() {
 
 
             tauri::async_runtime::spawn(async move {
+
+                // Check if port is available
+            
+
                 warp::serve(routes)
                 .run(([127, 0, 0, 1], 3030))
                 .await;
+
+                    
             });
             Ok(())
         })

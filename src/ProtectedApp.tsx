@@ -121,50 +121,44 @@ export const ProtectedApp: React.FC<Props> = () => {
                           <SettingsProvider>
                             <MikroGuard>
                               <MikroWard>
-                                <ConfirmerProvider>
-                                  <AlerterProvider>
-                                    <GeneralMenuProvider>
-                                      <PostmanProvider>
-                                        <ReserverProvider>
-                                          <RequesterProvider>
-                                            <MaterProvider>
-                                              <AgentProvider>
-                                                <MikroDoer />
-                                                <DndProvider
-                                                  options={HTML5toTouch}
-                                                >
-                                                  <SelectionProvider>
-                                                    <ToastContainer
-                                                      position="bottom-right"
-                                                      theme="dark"
-                                                    />
-                                                    <ComponentPreview
-                                                      text={"sdfsdf"}
-                                                    />
-                                                    <GeneralMenu />
-                                                    <NavigationActions />
-                                                    <SearchActions />
-                                                    <NodesExtension />
-                                                    <SelectionActions />
-                                                    <MentionListener />
-                                                    <div className="flex flex-col h-screen sm:flex-row-reverse">
-                                                      <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
-                                                        <Outlet />
-                                                      </div>
-                                                      <div className="flex-initial sm:flex-initial sm:static sm:w-20">
-                                                        <NavigationBar />
-                                                      </div>
-                                                    </div>
-                                                  </SelectionProvider>
-                                                </DndProvider>
-                                              </AgentProvider>
-                                            </MaterProvider>
-                                          </RequesterProvider>
-                                        </ReserverProvider>
-                                      </PostmanProvider>
-                                    </GeneralMenuProvider>
-                                  </AlerterProvider>
-                                </ConfirmerProvider>
+                                <GeneralMenuProvider>
+                                  <PostmanProvider>
+                                    <ReserverProvider>
+                                      <RequesterProvider>
+                                        <MaterProvider>
+                                          <AgentProvider>
+                                            <MikroDoer />
+                                            <DndProvider options={HTML5toTouch}>
+                                              <SelectionProvider>
+                                                <ToastContainer
+                                                  position="bottom-right"
+                                                  theme="dark"
+                                                />
+                                                <ComponentPreview
+                                                  text={"sdfsdf"}
+                                                />
+                                                <GeneralMenu />
+                                                <NavigationActions />
+                                                <SearchActions />
+                                                <NodesExtension />
+                                                <SelectionActions />
+                                                <MentionListener />
+                                                <div className="flex flex-col h-screen sm:flex-row-reverse">
+                                                  <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
+                                                    <Outlet />
+                                                  </div>
+                                                  <div className="flex-initial sm:flex-initial sm:static sm:w-20">
+                                                    <NavigationBar />
+                                                  </div>
+                                                </div>
+                                              </SelectionProvider>
+                                            </DndProvider>
+                                          </AgentProvider>
+                                        </MaterProvider>
+                                      </RequesterProvider>
+                                    </ReserverProvider>
+                                  </PostmanProvider>
+                                </GeneralMenuProvider>
                               </MikroWard>
                             </MikroGuard>
                           </SettingsProvider>

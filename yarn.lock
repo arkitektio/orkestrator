@@ -2675,6 +2675,11 @@ camelize@^1.0.0:
   resolved "https://registry.yarnpkg.com/camelize/-/camelize-1.0.0.tgz#164a5483e630fa4321e5af07020e531831b2609b"
   integrity sha512-W2lPwkBkMZwFlPCXhIlYgxu+7gC/NUlCtdK652DAJ1JdgV0sTrvuPFshNPrFa1TY2JOkLhgdeEBplB4ezEa+xg==
 
+cancelable-promise@^4.3.0:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/cancelable-promise/-/cancelable-promise-4.3.0.tgz#13059151a52622ff282df3d07c4838ac8de93086"
+  integrity sha512-sh4IYH3YLhi1AlNIBeka4WqRIJ8m8msgc8Och0DFRY4rgf83UnhYD0hQ83to4M/lZ3TLzDIwQeQP6wcyA2JJow==
+
 caniuse-lite@^1.0.30001400, caniuse-lite@^1.0.30001407:
   version "1.0.30001409"
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001409.tgz#6135da9dcab34cd9761d9cdb12a68e6740c5e96e"
@@ -3546,10 +3551,12 @@ extract-files@^9.0.0:
   resolved "https://registry.yarnpkg.com/extract-files/-/extract-files-9.0.0.tgz#8a7744f2437f81f5ed3250ed9f1550de902fe54a"
   integrity sha512-CvdFfHkC95B4bBBk36hcEmvdR2awOdhhVUYH6S/zrVj3477zven/fJMYg7121h4T1xHZC+tetUpubpAhxwI7hQ==
 
-fakts@^0.0.6:
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/fakts/-/fakts-0.0.6.tgz#b09d778abb2d1dcbb855725ae485e6a42bac1bd4"
-  integrity sha512-MID8ymkeOVVQEYO5m6rDQmz6WniWCQTF3RSqwbBn6e02fiR2Cq3W8hCuOSdDAihwMEcemX9nENHXHIEBj6qF9g==
+fakts@0.0.11:
+  version "0.0.11"
+  resolved "https://registry.yarnpkg.com/fakts/-/fakts-0.0.11.tgz#5563844175a136f5c1efb69276a6e998f93f085b"
+  integrity sha512-gmlvvZFXy9AVhlmAMp+vx6RxGCGacqP505YQzYW0+HAPN/+qghYi+tCJfzBf/8XXbIRXmpZj4CcfbX64Il2SCA==
+  dependencies:
+    cancelable-promise "^4.3.0"
 
 fast-deep-equal@^3.1.3:
   version "3.1.3"

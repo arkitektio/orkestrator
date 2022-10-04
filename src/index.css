@@ -4,11 +4,10 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Oxygen",  "Droid Sans", "Roboto",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-family: 'Segoe UI', sans-serif;
+  overflow-y: hidden;
 }
 
 .shadow-element {
@@ -18,6 +17,34 @@ body {
 .shadow-element-left {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.75);
 }
+
+#root {
+  overflow-y: scroll;
+}
+
+.titlebar {
+  height: 30px;
+  user-select: none;
+  display: flex;
+  justify-content: flex-end;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+.titlebar-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 30px;
+  color: "white";
+}
+
+.titlebar-button:hover {
+  background: rgb(var(--color-primary-400))
+}
+
 
 :root {
   --color-primary-50:  240 253 144;
@@ -129,7 +156,7 @@ code {
 
 ::-webkit-scrollbar {
   width: 20px;
-  background-color: transparent;
+  background-color: #0f172a;
 }
 
 ::-webkit-scrollbar-track {
