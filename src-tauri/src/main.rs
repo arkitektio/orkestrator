@@ -73,6 +73,7 @@ fn main() {
         .setup(move |app| {
             WindowBuilder::new(app, "xun".to_string(), window_url)
                 .title("Arkitekt")
+                .disable_file_drop_handler()
                 .build()?;
 
             let app_handle = app.handle();
