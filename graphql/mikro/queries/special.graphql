@@ -1,6 +1,5 @@
 query TestBoard($exp: ID!) {
   experiment(id: $exp) {
-    meta
     name
     id
     samples {
@@ -46,7 +45,6 @@ query TestBoardChanged(
   $samples: [ID]
 ) {
   experiment(id: $exp) {
-    meta
     name
     id
     samples(order: ["meta__p"], ids: $samples) {

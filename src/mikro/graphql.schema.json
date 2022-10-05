@@ -58,11 +58,11 @@
       {
         "kind": "OBJECT",
         "name": "Channel",
-        "description": null,
+        "description": "A channel in an image\n\nChannels can be highly variable in their properties. This class is a\nrepresentation of the most common properties of a channel.",
         "fields": [
           {
             "name": "acquisitionMode",
-            "description": null,
+            "description": "The acquisition mode of the channel",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -74,7 +74,7 @@
           },
           {
             "name": "color",
-            "description": null,
+            "description": "The default color for the channel (might be ommited by the rendered)",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -86,7 +86,7 @@
           },
           {
             "name": "emmissionWavelength",
-            "description": null,
+            "description": "The emmission wavelength of the fluorophore in nm",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -98,7 +98,7 @@
           },
           {
             "name": "excitationWavelength",
-            "description": null,
+            "description": "The excitation wavelength of the fluorophore in nm",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -110,7 +110,7 @@
           },
           {
             "name": "name",
-            "description": null,
+            "description": "The name of the channel",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -129,12 +129,12 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "ChannelInput",
-        "description": null,
+        "description": "A channel in an image\n\nChannels can be highly variable in their properties. This class is a\nrepresentation of the most common properties of a channel.",
         "fields": null,
         "inputFields": [
           {
             "name": "acquisitionMode",
-            "description": null,
+            "description": "The acquisition mode of the channel",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -146,7 +146,7 @@
           },
           {
             "name": "color",
-            "description": null,
+            "description": "The default color for the channel (might be ommited by the rendered)",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -158,7 +158,7 @@
           },
           {
             "name": "emmissionWavelength",
-            "description": null,
+            "description": "The emmission wavelength of the fluorophore in nm",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -170,7 +170,7 @@
           },
           {
             "name": "excitationWavelength",
-            "description": null,
+            "description": "The excitation wavelength of the fluorophore in nm",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -182,7 +182,7 @@
           },
           {
             "name": "name",
-            "description": null,
+            "description": "The name of the channel",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -200,7 +200,7 @@
       {
         "kind": "OBJECT",
         "name": "Column",
-        "description": null,
+        "description": "A column in a table\n\nA Column describes the associated name and metadata of a column in a table.\nIt gives access to the pandas and numpy dtypes of the column.",
         "fields": [
           {
             "name": "fieldName",
@@ -275,11 +275,11 @@
       {
         "kind": "OBJECT",
         "name": "Comment",
-        "description": null,
+        "description": "A comment\n\nA comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.\nComments can be nested to any depth. A comment can be edited and deleted by the user that created it.",
         "fields": [
           {
             "name": "children",
-            "description": null,
+            "description": "Comments that are replies to this comment",
             "args": [
               {
                 "name": "limit",
@@ -320,7 +320,7 @@
           },
           {
             "name": "contentType",
-            "description": null,
+            "description": "The content type of the commentable object",
             "args": [],
             "type": {
               "kind": "ENUM",
@@ -348,7 +348,7 @@
           },
           {
             "name": "descendents",
-            "description": null,
+            "description": "The descendents of the comment (this referes to the Comment Tree)",
             "args": [],
             "type": {
               "kind": "LIST",
@@ -905,7 +905,7 @@
       {
         "kind": "INTERFACE",
         "name": "Descendent",
-        "description": null,
+        "description": "A descendent of a node in the comment tree",
         "fields": [
           {
             "name": "typename",
@@ -944,11 +944,11 @@
       {
         "kind": "OBJECT",
         "name": "Experiment",
-        "description": "A Representation is a multi-dimensional Array that can do what ever it wants @elements/experiment",
+        "description": "\n    An experiment is a collection of samples and their representations.\n    It mimics the concept of an experiment in the lab and is the top level\n    object in the data model.\n\n    You can use the experiment to group samples and representations likewise\n    to how you would group files into folders in a file system.\n\n    \n    \n    \n    \n    ",
         "fields": [
           {
             "name": "createdAt",
-            "description": "",
+            "description": "The time the experiment was created",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -964,7 +964,7 @@
           },
           {
             "name": "creator",
-            "description": "",
+            "description": "The user that created the experiment",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -976,7 +976,7 @@
           },
           {
             "name": "description",
-            "description": "",
+            "description": "A short description of the experiment",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -988,7 +988,7 @@
           },
           {
             "name": "descriptionLong",
-            "description": "",
+            "description": "A long description of the experiment",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -1016,7 +1016,7 @@
           },
           {
             "name": "image",
-            "description": "",
+            "description": "An image to be used as a banner for the experiment",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -1028,23 +1028,11 @@
           },
           {
             "name": "linkedPaper",
-            "description": "",
+            "description": "A link to a paper describing the experiment",
             "args": [],
             "type": {
               "kind": "SCALAR",
               "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "meta",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "GenericScalar",
               "ofType": null
             },
             "isDeprecated": false,
@@ -1076,7 +1064,7 @@
           },
           {
             "name": "name",
-            "description": "",
+            "description": "The name of the experiment",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -1104,7 +1092,7 @@
           },
           {
             "name": "pinnedBy",
-            "description": "",
+            "description": "The users that have pinned the experiment",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -1321,7 +1309,7 @@
           },
           {
             "name": "tables",
-            "description": "",
+            "description": "The Experiment this Table belongs to.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -1345,7 +1333,7 @@
           },
           {
             "name": "tags",
-            "description": "A comma-separated list of tags.",
+            "description": "Tags for the experiment",
             "args": [],
             "type": {
               "kind": "LIST",
@@ -1415,11 +1403,11 @@
       {
         "kind": "OBJECT",
         "name": "Feature",
-        "description": null,
+        "description": " A Feature is a numerical key value pair that is attached to a Label.\n     \n    You can model it for example as a key value pair of a class instance of a segmentation mask.\n    Representation -> Label0 -> Feature0\n                             -> Feature1\n                   -> Label1 -> Feature0 \n\n    Features can be used to store any numerical value that is attached to a class instance.\n    THere can only ever be one key per label. If you want to store multiple values for a key, you can\n    store them as a list in the value field.\n\n    Feature are analogous to metrics on a representation, but for a specific class instance (Label)\n    \n    ",
         "fields": [
           {
             "name": "creator",
-            "description": "",
+            "description": "The user that created the Feature",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -1447,7 +1435,7 @@
           },
           {
             "name": "key",
-            "description": "The sKesyss",
+            "description": "The key of the feature",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -1463,7 +1451,7 @@
           },
           {
             "name": "label",
-            "description": "",
+            "description": "The Label this Feature belongs to",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -1494,7 +1482,7 @@
       {
         "kind": "SCALAR",
         "name": "FeatureValue",
-        "description": "A Representation of a Metric Value",
+        "description": "A Feature Value\n\nThis scalar ensures serializaiton of feature values. Feature values\ncan be of different types, such as int, float, string, datetime, etc.\n\nHowever we impose a few rules on the metric values:\n- The value must be a scalar\n- The value must be a scalar that can be serialized to JSON",
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -1504,7 +1492,7 @@
       {
         "kind": "SCALAR",
         "name": "File",
-        "description": "A Representation of a Django File",
+        "description": "A Representation of a Django File\n    ",
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -1534,7 +1522,7 @@
       {
         "kind": "OBJECT",
         "name": "Group",
-        "description": null,
+        "description": "Group\n\nThis object represents a group in the system. Groups are used to\ncontrol access to different parts of the system. Groups are assigned\nto users. A user has access to a part of the system if the user is\na member of a group that has the permission assigned to it.",
         "fields": [
           {
             "name": "id",
@@ -1739,11 +1727,11 @@
       {
         "kind": "OBJECT",
         "name": "ImagingEnvironment",
-        "description": null,
+        "description": "The imaging environment during the acquisition \n\nFollows the OME model for imaging environment",
         "fields": [
           {
             "name": "airPressure",
-            "description": null,
+            "description": "The air pressure during the acquisition",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -1755,7 +1743,7 @@
           },
           {
             "name": "co2Percent",
-            "description": null,
+            "description": "The CO2 percentage in the environment",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -1767,7 +1755,7 @@
           },
           {
             "name": "humidity",
-            "description": null,
+            "description": "The humidity of the imaging environment",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -1779,7 +1767,7 @@
           },
           {
             "name": "map",
-            "description": null,
+            "description": "A map of the imaging environment. Key value based",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -1791,7 +1779,7 @@
           },
           {
             "name": "temperature",
-            "description": null,
+            "description": "The temperature of the imaging environment",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -1810,12 +1798,12 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "ImagingEnvironmentInput",
-        "description": null,
+        "description": "The imaging environment during the acquisition \n\nFollows the OME model for imaging environment",
         "fields": null,
         "inputFields": [
           {
-            "name": "airPessure",
-            "description": null,
+            "name": "airPressure",
+            "description": "The air pressure during the acquisition",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -1827,7 +1815,7 @@
           },
           {
             "name": "co2Percent",
-            "description": null,
+            "description": "The CO2 percentage in the environment",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -1839,7 +1827,7 @@
           },
           {
             "name": "humidity",
-            "description": null,
+            "description": "The humidity of the imaging environment",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -1851,7 +1839,7 @@
           },
           {
             "name": "map",
-            "description": null,
+            "description": "A map of the imaging environment. Key value based",
             "type": {
               "kind": "SCALAR",
               "name": "GenericScalar",
@@ -1863,7 +1851,7 @@
           },
           {
             "name": "temperature",
-            "description": null,
+            "description": "The temperature of the imaging environment",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -1952,7 +1940,7 @@
       {
         "kind": "OBJECT",
         "name": "Instrument",
-        "description": null,
+        "description": "Instrument(id, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number)",
         "fields": [
           {
             "name": "detectors",
@@ -2113,11 +2101,11 @@
       {
         "kind": "OBJECT",
         "name": "Label",
-        "description": null,
+        "description": "A Label is a trough model for image and features.\n    \n    Its map an instance value of a representation\n    (e.g. a pixel value of a segmentation mask) to a set of corresponding features of the segmented\n    class instance.\n\n    There can only be one label per representation and class instance. You can then attach\n    features to the label.\n    \n    \n    ",
         "fields": [
           {
             "name": "createdAt",
-            "description": "",
+            "description": "The time the Label was created",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -2133,7 +2121,7 @@
           },
           {
             "name": "creator",
-            "description": "",
+            "description": "The user that created the Label",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -2210,7 +2198,7 @@
               },
               {
                 "name": "label",
-                "description": null,
+                "description": "The corresponding label that you want to filter by",
                 "type": {
                   "kind": "SCALAR",
                   "name": "ID",
@@ -2287,7 +2275,7 @@
           },
           {
             "name": "instance",
-            "description": "",
+            "description": "The instance value of the representation (pixel value). Must be a value of the image array",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -2303,7 +2291,7 @@
           },
           {
             "name": "name",
-            "description": "",
+            "description": "The name of the instance",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -2327,7 +2315,7 @@
           },
           {
             "name": "pinnedBy",
-            "description": "",
+            "description": "The users that pinned this Label",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -2351,7 +2339,7 @@
           },
           {
             "name": "representation",
-            "description": "",
+            "description": "The Representation this Label instance belongs to",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -2386,7 +2374,7 @@
       {
         "kind": "OBJECT",
         "name": "Leaf",
-        "description": null,
+        "description": "A leaf in the comment tree. Representations some sort of text",
         "fields": [
           {
             "name": "bold",
@@ -2463,7 +2451,7 @@
       {
         "kind": "ENUM",
         "name": "Medium",
-        "description": null,
+        "description": "The medium of the imaging environment \n\nImportant for the objective settings",
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -2504,7 +2492,7 @@
       {
         "kind": "OBJECT",
         "name": "MentionDescendent",
-        "description": null,
+        "description": "A mention in the comment tree. This  is a reference to another user on the platform",
         "fields": [
           {
             "name": "children",
@@ -2717,7 +2705,7 @@
           },
           {
             "name": "sample",
-            "description": "The Representatoin this Metric belongs to",
+            "description": "The Sample this Metric belongs to",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -2748,7 +2736,7 @@
       {
         "kind": "SCALAR",
         "name": "MetricValue",
-        "description": "A Representation of a Metric Value",
+        "description": "A Metric Value\n\nThis scalar ensures serializaiton of metric values. Metric values\ncan be of different types, such as int, float, string, datetime, etc.\n\nHowever we impose a few rules on the metric values:\n- The value must be a scalar\n- The value must be a scalar that can be serialized to JSON",
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -2839,11 +2827,11 @@
           },
           {
             "name": "createComment",
-            "description": "Create an experiment (only signed in users)",
+            "description": "Create an Comment \n    \n    This mutation creates a comment. It takes a commentable_id and a commentable_type.\n    If this is the first comment on the commentable, it will create a new comment thread.\n    If there is already a comment thread, it will add the comment to the thread (by setting\n    it's parent to the last parent comment in the thread).\n\n    CreateComment takes a list of Descendents, which are the comment tree. The Descendents\n    are a recursive structure, where each Descendent can have a list of Descendents as children.\n    The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a\n    reference to another user on the platform.\n\n    Please convert your comment tree to a list of Descendents before sending it to the server.\n    TODO: Add a converter from a comment tree to a list of Descendents.\n\n    \n    (only signed in users)",
             "args": [
               {
                 "name": "descendents",
-                "description": null,
+                "description": "The comment tree",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -2891,7 +2879,7 @@
               },
               {
                 "name": "type",
-                "description": null,
+                "description": "The type model you want to comment on",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -2916,11 +2904,11 @@
           },
           {
             "name": "createExperiment",
-            "description": "Create an experiment (only signed in users)",
+            "description": "Create an Experiment\n    \n    This mutation creates an Experiment and returns the created Experiment.\n    ",
             "args": [
               {
                 "name": "creator",
-                "description": "The Email of the user creating the Representation (only for backend apps)",
+                "description": "The user that created this experiment (defaults to the logined user)",
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
@@ -2943,20 +2931,8 @@
                 "deprecationReason": null
               },
               {
-                "name": "meta",
-                "description": "Meta Parameters",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "GenericScalar",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
                 "name": "name",
-                "description": "A cleartext description what this representation represents as data",
+                "description": "A name for the experiment",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -2972,7 +2948,7 @@
               },
               {
                 "name": "tags",
-                "description": "Do you want to tag the representation?",
+                "description": "Tags for the experiment",
                 "type": {
                   "kind": "LIST",
                   "name": null,
@@ -2997,7 +2973,7 @@
           },
           {
             "name": "createInstrument",
-            "description": "Creates a Representation",
+            "description": "Creates an Instrument\n    \n    This mutation creates an Instrument and returns the created Instrument.\n    The serial number is required and the manufacturer is inferred from the serial number.\n    ",
             "args": [
               {
                 "name": "detectors",
@@ -3122,11 +3098,11 @@
           },
           {
             "name": "createLabel",
-            "description": "Creates a Sample",
+            "description": "Creates a Label\n    \n    This mutation creates a Label and returns the created Label.\n    We require a reference to the image pixel value that the label belongs to.\n    (Labels can be created for any pixel in an image, no matter if this image\n    is a mask or not). However labels can only be created for pixels that are\n    integer values.\n\n    \n\n    ",
             "args": [
               {
                 "name": "creator",
-                "description": "The creator of this feature",
+                "description": "The creator of this label",
                 "type": {
                   "kind": "SCALAR",
                   "name": "ID",
@@ -3138,7 +3114,7 @@
               },
               {
                 "name": "instance",
-                "description": "The Representation this ROI belongs to",
+                "description": "The instance this Label belongs to",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -3166,7 +3142,7 @@
               },
               {
                 "name": "representation",
-                "description": "The Representation this ROI belongs to",
+                "description": "The Representation this Label belongs to",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -3191,7 +3167,7 @@
           },
           {
             "name": "createMetric",
-            "description": "Creates a Representation",
+            "description": "Create a metric\n\n    This mutation creates a metric and returns the created metric.\n    \n    ",
             "args": [
               {
                 "name": "creator",
@@ -3616,7 +3592,7 @@
           },
           {
             "name": "createfeature",
-            "description": "Creates a Sample",
+            "description": "Creates a Feature\n    \n    This mutation creates a Feature and returns the created Feature.\n    We require a reference to the label that the feature belongs to.\n    As well as the key and value of the feature.\n    \n    There can be multiple features with the same label, but only one feature per key\n    per label",
             "args": [
               {
                 "name": "creator",
@@ -3644,7 +3620,7 @@
               },
               {
                 "name": "label",
-                "description": "The Representation this ROI belongs to",
+                "description": "The Label this Feature belongs to",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -3660,7 +3636,7 @@
               },
               {
                 "name": "value",
-                "description": "The size",
+                "description": "The value of the feature",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -3685,11 +3661,11 @@
           },
           {
             "name": "deleteExperiment",
-            "description": "Create an experiment (only signed in users)",
+            "description": "Delete Experiment\n    \n    This mutation deletes an Experiment and returns the deleted Experiment.",
             "args": [
               {
                 "name": "id",
-                "description": "A cleartext description what this representation represents as data",
+                "description": "The ID of the experiment to delete",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -3714,11 +3690,11 @@
           },
           {
             "name": "deleteOmeroFile",
-            "description": "Create an experiment (only signed in users)",
+            "description": "Delete OmeroFile",
             "args": [
               {
                 "name": "id",
-                "description": "The ID of the two deletet Representation",
+                "description": "The ID of the two deleted File",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -4195,7 +4171,7 @@
           },
           {
             "name": "pinExperiment",
-            "description": "Sets the pin",
+            "description": "Pin Experiment\n    \n    This mutation pins an Experiment and returns the pinned Experiment.",
             "args": [
               {
                 "name": "id",
@@ -4215,7 +4191,7 @@
               },
               {
                 "name": "pin",
-                "description": "The pin",
+                "description": "The pin state",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -4375,11 +4351,11 @@
           },
           {
             "name": "updateExperiment",
-            "description": "Create an experiment (only signed in users)",
+            "description": " Update an Experiment\n    \n    This mutation updates an Experiment and returns the updated Experiment.",
             "args": [
               {
                 "name": "creator",
-                "description": "The Email of the user creating the Representation (only for backend apps)",
+                "description": "The user that created this experiment (defaults to the logined user)",
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
@@ -4418,20 +4394,8 @@
                 "deprecationReason": null
               },
               {
-                "name": "meta",
-                "description": "Meta Parameters",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "GenericScalar",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
                 "name": "name",
-                "description": "A cleartext description what this representation represents as data",
+                "description": "The name of the experiment",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -4447,7 +4411,7 @@
               },
               {
                 "name": "tags",
-                "description": "Do you want to tag the representation?",
+                "description": "Tags for the experiment",
                 "type": {
                   "kind": "LIST",
                   "name": null,
@@ -4472,11 +4436,11 @@
           },
           {
             "name": "updateOmeroFile",
-            "description": "Updates an Representation (also retriggers meta-data retrieval from data stored in)",
+            "description": "Update an omero file",
             "args": [
               {
                 "name": "id",
-                "description": "Which sample does this representation belong to",
+                "description": "The omero file you want to update",
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
@@ -4492,7 +4456,7 @@
               },
               {
                 "name": "tags",
-                "description": "Tags",
+                "description": "The updated tags ( old tags will be deleted)",
                 "type": {
                   "kind": "LIST",
                   "name": null,
@@ -4769,7 +4733,7 @@
           },
           {
             "name": "uploadOmeroFile",
-            "description": null,
+            "description": "Upload a file to Mikro\n\n    This mutation uploads a file to Omero and returns the created OmeroFile.\n    ",
             "args": [
               {
                 "name": "file",
@@ -4874,7 +4838,7 @@
       {
         "kind": "INTERFACE",
         "name": "Node",
-        "description": null,
+        "description": "A node in the comment tree",
         "fields": [
           {
             "name": "children",
@@ -4924,11 +4888,11 @@
       {
         "kind": "OBJECT",
         "name": "ObjectiveSettings",
-        "description": null,
+        "description": "Settings of the objective used to acquire the image \n\nFollows the OME model for objective settings",
         "fields": [
           {
             "name": "correctionCollar",
-            "description": null,
+            "description": "The correction collar of the objective",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -4940,7 +4904,7 @@
           },
           {
             "name": "medium",
-            "description": null,
+            "description": "The medium of the objective",
             "args": [],
             "type": {
               "kind": "ENUM",
@@ -4952,7 +4916,7 @@
           },
           {
             "name": "numericalAperture",
-            "description": null,
+            "description": "The numerical aperture of the objective",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -4964,7 +4928,7 @@
           },
           {
             "name": "workingDistance",
-            "description": null,
+            "description": "The working distance of the objective",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -4983,12 +4947,12 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "ObjectiveSettingsInput",
-        "description": null,
+        "description": "Settings of the objective used to acquire the image \n\nFollows the OME model for objective settings",
         "fields": null,
         "inputFields": [
           {
             "name": "correctionCollar",
-            "description": null,
+            "description": "The correction collar of the objective",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -5000,7 +4964,7 @@
           },
           {
             "name": "medium",
-            "description": null,
+            "description": "The medium of the objective",
             "type": {
               "kind": "ENUM",
               "name": "Medium",
@@ -5012,7 +4976,7 @@
           },
           {
             "name": "numericalAperture",
-            "description": null,
+            "description": "The numerical aperture of the objective",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -5024,7 +4988,7 @@
           },
           {
             "name": "workingDistance",
-            "description": null,
+            "description": "The working distance of the objective",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -5042,7 +5006,7 @@
       {
         "kind": "OBJECT",
         "name": "Omero",
-        "description": null,
+        "description": "Omero is a model that stores the omero meta data\n    \n    This model is used to store the omero meta data. It is used to store the meta data of the omero file.\n    Its implementation is based on the omero meta data model. Refer to the omero documentation for more information.\n\n\n    \n    ",
         "fields": [
           {
             "name": "acquisitionDate",
@@ -5197,7 +5161,7 @@
         "fields": [
           {
             "name": "createdAt",
-            "description": "",
+            "description": "The time the file was created",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -5213,7 +5177,7 @@
           },
           {
             "name": "creator",
-            "description": "",
+            "description": "The user that created/uploaded the file",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -5249,7 +5213,7 @@
           },
           {
             "name": "file",
-            "description": "",
+            "description": "The file",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -5277,7 +5241,7 @@
           },
           {
             "name": "name",
-            "description": "",
+            "description": "The name of the file",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -5293,7 +5257,7 @@
           },
           {
             "name": "tags",
-            "description": "A comma-separated list of tags.",
+            "description": "Tags for the file",
             "args": [],
             "type": {
               "kind": "LIST",
@@ -5321,7 +5285,7 @@
           },
           {
             "name": "type",
-            "description": "",
+            "description": "The type of the file",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -5385,7 +5349,7 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "OmeroRepresentationInput",
-        "description": null,
+        "description": "The Omero Meta Data of an Image\n\nFollows closely the omexml model. With a few alterations:\n- The data model of the datasets and experimenters is\npart of the mikro datamodel and are not accessed here.\n- Some parameters are ommited as they are not really used",
         "fields": null,
         "inputFields": [
           {
@@ -5563,7 +5527,7 @@
       {
         "kind": "OBJECT",
         "name": "ParagraphDescendent",
-        "description": null,
+        "description": "A paragraph in the comment tree. This paragraph contains other nodes (list nodes)",
         "fields": [
           {
             "name": "children",
@@ -5637,7 +5601,7 @@
       {
         "kind": "SCALAR",
         "name": "Parquet",
-        "description": "A Representation of a Parquet file on the s3",
+        "description": "A Parquet file\n\nThis scalar is used to represent parquet files and allows them to be accesed trough\nthe code generator python libraries with the correct type.\n\nOn the python side this will be converted from and to a pandas dataframe.",
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -5647,7 +5611,7 @@
       {
         "kind": "OBJECT",
         "name": "Permission",
-        "description": null,
+        "description": "A Permission object\n\nThis object represents a permission in the system. Permissions are\nused to control access to different parts of the system. Permissions\nare assigned to groups and users. A user has access to a part of the\nsystem if the user is a member of a group that has the permission\nassigned to it.",
         "fields": [
           {
             "name": "codename",
@@ -5829,11 +5793,11 @@
       {
         "kind": "OBJECT",
         "name": "PhysicalSize",
-        "description": null,
+        "description": "Physical size of the image \n\nEach dimensions of the image has a physical size. This is the size of the\npixel in the image. The physical size is given in micrometers on a PIXEL\nbasis. This means that the physical size of the image is the size of the    \npixel in the image * the number of pixels in the image. For example, if \nthe image is 1000x1000 pixels and the physical size of the image is 3 (x params) x 3 (y params),\nmicrometer, the physical size of the image is 3000x3000 micrometer. If the image\n\nThe t dimension is given in ms, since the time is given in ms.\nThe C dimension is given in nm, since the wavelength is given in nm.",
         "fields": [
           {
             "name": "c",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the c dimension (in µm)",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -5845,7 +5809,7 @@
           },
           {
             "name": "t",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the t dimension (in ms)",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -5857,7 +5821,7 @@
           },
           {
             "name": "x",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the x dimension (in µm)",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -5869,7 +5833,7 @@
           },
           {
             "name": "y",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the t dimension (in µm)",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -5881,7 +5845,7 @@
           },
           {
             "name": "z",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the z dimension (in µm)",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -5900,12 +5864,12 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "PhysicalSizeInput",
-        "description": null,
+        "description": "Physical size of the image \n\nEach dimensions of the image has a physical size. This is the size of the\npixel in the image. The physical size is given in micrometers on a PIXEL\nbasis. This means that the physical size of the image is the size of the    \npixel in the image * the number of pixels in the image. For example, if \nthe image is 1000x1000 pixels and the physical size of the image is 3 (x params) x 3 (y params),\nmicrometer, the physical size of the image is 3000x3000 micrometer. If the image\n\nThe t dimension is given in ms, since the time is given in ms.\nThe C dimension is given in nm, since the wavelength is given in nm.",
         "fields": null,
         "inputFields": [
           {
             "name": "c",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the c dimension (in nm)",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -5917,7 +5881,7 @@
           },
           {
             "name": "t",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the t dimension (in ms)",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -5929,7 +5893,7 @@
           },
           {
             "name": "x",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the x dimension (in µm)",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -5941,7 +5905,7 @@
           },
           {
             "name": "y",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the t dimension (in µm)",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -5953,7 +5917,7 @@
           },
           {
             "name": "z",
-            "description": null,
+            "description": "Physical size of *one* Pixel in the z dimension (in µm)",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -5971,11 +5935,11 @@
       {
         "kind": "OBJECT",
         "name": "Plane",
-        "description": null,
+        "description": "A plane in an image \n\nPlane follows the convention of the OME model, where the first index is the\nZ axis, the second is the Y axis, the third is the X axis, the fourth is the\nC axis, and the fifth is the T axis.\n\nIt attached the image at the indicated index to the image and gives information\nabout the plane (e.g. exposure time, delta t to the origin, etc.)",
         "fields": [
           {
             "name": "c",
-            "description": null,
+            "description": "C index of the plane",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -5987,7 +5951,7 @@
           },
           {
             "name": "deltaT",
-            "description": null,
+            "description": "The Delta T to the origin of the image acqusition",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -5999,7 +5963,7 @@
           },
           {
             "name": "exposureTime",
-            "description": null,
+            "description": "The exposure time of the plane (e.g. Laser exposure)",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -6011,7 +5975,7 @@
           },
           {
             "name": "positionX",
-            "description": null,
+            "description": "The planes X position on the stage of the microscope",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -6023,7 +5987,7 @@
           },
           {
             "name": "positionY",
-            "description": null,
+            "description": "The planes Y position on the stage of the microscope",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -6035,7 +5999,7 @@
           },
           {
             "name": "positionZ",
-            "description": null,
+            "description": "The planes Z position on the stage of the microscope",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -6047,7 +6011,7 @@
           },
           {
             "name": "t",
-            "description": null,
+            "description": "Z index of the plane",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -6059,7 +6023,7 @@
           },
           {
             "name": "x",
-            "description": null,
+            "description": "X index of the plane",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -6071,7 +6035,7 @@
           },
           {
             "name": "y",
-            "description": null,
+            "description": "Y index of the plane",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -6083,7 +6047,7 @@
           },
           {
             "name": "z",
-            "description": null,
+            "description": "Z index of the plane",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -6102,12 +6066,12 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "PlaneInput",
-        "description": null,
+        "description": "\" A plane in an image \n\nPlane follows the convention of the OME model, where the first index is the\nZ axis, the second is the Y axis, the third is the X axis, the fourth is the\nC axis, and the fifth is the T axis.\n\nIt attached the image at the indicated index to the image and gives information\nabout the plane (e.g. exposure time, delta t to the origin, etc.)",
         "fields": null,
         "inputFields": [
           {
             "name": "c",
-            "description": null,
+            "description": "C index of the plane",
             "type": {
               "kind": "SCALAR",
               "name": "Int",
@@ -6119,7 +6083,7 @@
           },
           {
             "name": "deltaT",
-            "description": null,
+            "description": "The Delta T to the origin of the image acqusition",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -6131,7 +6095,7 @@
           },
           {
             "name": "exposureTime",
-            "description": null,
+            "description": "The exposure time of the plane (e.g. Laser exposure)",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -6143,7 +6107,7 @@
           },
           {
             "name": "positionX",
-            "description": null,
+            "description": "The planes X position on the stage of the microscope",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -6155,7 +6119,7 @@
           },
           {
             "name": "positionY",
-            "description": null,
+            "description": "The planes Y position on the stage of the microscope",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -6167,7 +6131,7 @@
           },
           {
             "name": "positionZ",
-            "description": null,
+            "description": "The planes Z position on the stage of the microscope",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
@@ -6179,7 +6143,7 @@
           },
           {
             "name": "t",
-            "description": null,
+            "description": "Z index of the plane",
             "type": {
               "kind": "SCALAR",
               "name": "Int",
@@ -6191,7 +6155,7 @@
           },
           {
             "name": "x",
-            "description": null,
+            "description": "X index of the plane",
             "type": {
               "kind": "SCALAR",
               "name": "Int",
@@ -6203,7 +6167,7 @@
           },
           {
             "name": "y",
-            "description": null,
+            "description": "Y index of the plane",
             "type": {
               "kind": "SCALAR",
               "name": "Int",
@@ -6215,7 +6179,7 @@
           },
           {
             "name": "z",
-            "description": null,
+            "description": "Z index of the plane",
             "type": {
               "kind": "SCALAR",
               "name": "Int",
@@ -6233,11 +6197,11 @@
       {
         "kind": "OBJECT",
         "name": "Plot",
-        "description": null,
+        "description": "A plot is a template to generate a graph\n\nIts store a PlotQL query and a list of variables that can be used in the\nquery. The variables are stored as a JSON object. The variables are\nvalidated against the query before the query is executed.\n\nThis query then returns a graph that can be rendered in the frontend.",
         "fields": [
           {
             "name": "createdAt",
-            "description": "",
+            "description": "When was this plot created",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -6253,7 +6217,7 @@
           },
           {
             "name": "creator",
-            "description": "",
+            "description": "The user who created this plot",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -6269,7 +6233,7 @@
           },
           {
             "name": "description",
-            "description": "",
+            "description": "A description of the plot",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -6301,7 +6265,7 @@
           },
           {
             "name": "name",
-            "description": "",
+            "description": "The name of the plot",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -6317,7 +6281,7 @@
           },
           {
             "name": "query",
-            "description": "",
+            "description": "The PlotQL query (see documentation for PlotQL)",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -6333,7 +6297,7 @@
           },
           {
             "name": "updatedAt",
-            "description": "",
+            "description": "When was this plot last updated",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -6437,7 +6401,7 @@
           },
           {
             "name": "commentsfor",
-            "description": null,
+            "description": "Comments for a specific object\n    \n    This query returns all comments for a specific object. The object is\n    specified by the `model` and `id` arguments. The `model` argument is\n    a string that is the name of the model. The `id` argument is the id of\n    the object.\n\n    You can only query for comments for objects that you have access to.\n    \n    ",
             "args": [
               {
                 "name": "id",
@@ -6482,7 +6446,7 @@
           },
           {
             "name": "experiment",
-            "description": "Get a single representation by ID",
+            "description": "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    ",
             "args": [
               {
                 "name": "id",
@@ -6511,7 +6475,7 @@
           },
           {
             "name": "experiments",
-            "description": "All Samples",
+            "description": "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    ",
             "args": [
               {
                 "name": "createdAfter",
@@ -6640,7 +6604,7 @@
           },
           {
             "name": "feature",
-            "description": "Get a single representation by ID",
+            "description": "Get a single feature by ID\n    \n    Returns a single feature by ID. If the user does not have access\n    to the feature, an error will be raised.\n    ",
             "args": [
               {
                 "name": "id",
@@ -6665,7 +6629,7 @@
           },
           {
             "name": "features",
-            "description": "All represetations",
+            "description": "All features\n    \n    This query returns all features that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all features that the user has access to. If the user is an amdin\n    or superuser, all features will be returned.\n    ",
             "args": [
               {
                 "name": "creator",
@@ -6697,7 +6661,7 @@
               },
               {
                 "name": "label",
-                "description": null,
+                "description": "The corresponding label that you want to filter by",
                 "type": {
                   "kind": "SCALAR",
                   "name": "ID",
@@ -6770,7 +6734,7 @@
           },
           {
             "name": "instrument",
-            "description": "Get a single representation by ID",
+            "description": "Get a single instrumes by ID\n    \n    Returns a single instrument by ID. If the user does not have access\n    to the instrument, an error will be raised.",
             "args": [
               {
                 "name": "id",
@@ -6807,7 +6771,7 @@
           },
           {
             "name": "instruments",
-            "description": "All represetations",
+            "description": "All Instruments\n    \n    This query returns all Instruments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Instruments that the user has access to. If the user is an amdin\n    or superuser, all Instruments will be returned.",
             "args": [
               {
                 "name": "limit",
@@ -6860,7 +6824,7 @@
           },
           {
             "name": "label",
-            "description": "Get a single representation by ID",
+            "description": "Get a single label by ID\n    \n    Returns a single label by ID. If the user does not have access\n    to the label, an error will be raised.",
             "args": [
               {
                 "name": "id",
@@ -6885,7 +6849,7 @@
           },
           {
             "name": "labelFor",
-            "description": "Get a label for a specific instance on a specific representation",
+            "description": "Get a label for a specific instance on a specific representation\n    \n    ",
             "args": [
               {
                 "name": "instance",
@@ -6930,7 +6894,7 @@
           },
           {
             "name": "labels",
-            "description": "All represetations",
+            "description": "All Labels\n    \n    This query returns all Labels that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Labels that the user has access to. If the user is an amdin\n    or superuser, all Labels will be returned.\n    ",
             "args": [
               {
                 "name": "creator",
@@ -6995,7 +6959,7 @@
           },
           {
             "name": "metric",
-            "description": "Get a single representation by ID",
+            "description": "Get a single Metric by ID\n    \n    Returns a single Metric by ID. If the user does not have access\n    to the Metric, an error will be raised.\n    ",
             "args": [
               {
                 "name": "id",
@@ -7024,7 +6988,7 @@
           },
           {
             "name": "metrics",
-            "description": "All Samples",
+            "description": "All Metric\n    \n    This query returns all Metric that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Metric that the user has access to. If the user is an amdin\n    or superuser, all Metric will be returned.\n    ",
             "args": [
               {
                 "name": "creator",
@@ -7145,7 +7109,7 @@
           },
           {
             "name": "myexperiments",
-            "description": "My samples return all of the users samples attached to the current user",
+            "description": "My Experiments runs a fast query on the database to return all\n    Experiments that the user has created. This query is faster than\n    the `experiments` query, but it does not return all Experiments that\n    the user has access to.",
             "args": [
               {
                 "name": "createdAfter",
@@ -7290,7 +7254,7 @@
           },
           {
             "name": "myomerofiles",
-            "description": "My samples return all of the users samples attached to the current user",
+            "description": "My Omerofiles runs a fast query on the database to return all\n    Omerofile that the user has created. This query is faster than\n    the `omerofiles` query, but it does not return all OmeroFile that\n    the user has access to.",
             "args": [
               {
                 "name": "limit",
@@ -7359,7 +7323,7 @@
           },
           {
             "name": "myrepresentations",
-            "description": "My Representations returns all of the Representations, attached to the current user",
+            "description": "My Representatoin runs a fast query on the database to return all\n    Representation that the user has created. This query is faster than\n    the `representations` query, but it does not return all Representation that\n    the user has access to.",
             "args": [
               {
                 "name": "createdAfter",
@@ -7616,7 +7580,7 @@
           },
           {
             "name": "mysamples",
-            "description": "My samples return all of the users samples attached to the current user",
+            "description": "My Samples runs a fast query on the database to return all\n    Samples that the user has *created*. This query is faster than\n    the `samples` query, but it does not return all Samples that\n    the user has access to.",
             "args": [
               {
                 "name": "bioseries",
@@ -7926,7 +7890,7 @@
           },
           {
             "name": "omerofile",
-            "description": "Get a single representation by ID",
+            "description": "Get a single Omero File by ID\n    \n    Returns a single Omero File by ID. If the user does not have access\n    to the Omero File, an error will be raised.",
             "args": [
               {
                 "name": "id",
@@ -7955,7 +7919,7 @@
           },
           {
             "name": "omerofiles",
-            "description": "My samples return all of the users samples attached to the current user",
+            "description": "All OmeroFiles\n\n    This query returns all OmeroFiles that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all OmeroFiles that the user has access to. If the user is an amdin\n    or superuser, all OmeroFiles will be returned.\n    \n    ",
             "args": [
               {
                 "name": "limit",
@@ -8123,7 +8087,7 @@
           },
           {
             "name": "randomRepresentation",
-            "description": "Get a single representation by ID",
+            "description": "Get a random Representation\n    \n    Gets a random Representation from the database. This is used for\n    testing purposes\n    \n    ",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -8135,7 +8099,7 @@
           },
           {
             "name": "representation",
-            "description": "Get a single representation by ID",
+            "description": "Get a single Representation by ID\n    \n    Returns a single Representation by ID. If the user does not have access\n    to the Representation, an error will be raised.\n    ",
             "args": [
               {
                 "name": "id",
@@ -8164,7 +8128,7 @@
           },
           {
             "name": "representations",
-            "description": "All represetations",
+            "description": "All Representations\n    \n    This query returns all Representations that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Representations that the user has access to. If the user is an amdin\n    or superuser, all Representations will be returned.",
             "args": [
               {
                 "name": "createdAfter",
@@ -8487,7 +8451,7 @@
           },
           {
             "name": "request",
-            "description": "Get a single representation by ID",
+            "description": "Requets a new set of credentials from the S3 server\n    encompassing the users credentials and the access key and secret key",
             "args": [
               {
                 "name": "id",
@@ -8512,7 +8476,7 @@
           },
           {
             "name": "roi",
-            "description": "Get a single representation by ID",
+            "description": "Get a single Roi by ID\"\n    \n    Returns a single Roi by ID. If the user does not have access\n    to the Roi, an error will be raised.",
             "args": [
               {
                 "name": "id",
@@ -8541,7 +8505,7 @@
           },
           {
             "name": "rois",
-            "description": "All represetations",
+            "description": "All Rois\n    \n    This query returns all Rois that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Rois that the user has access to. If the user is an amdin\n    or superuser, all Rois will be returned.",
             "args": [
               {
                 "name": "createdAfter",
@@ -8698,7 +8662,7 @@
           },
           {
             "name": "sample",
-            "description": "Get a single representation by ID",
+            "description": "Get a Sample by ID\n    \n    Returns a single Sample by ID. If the user does not have access\n    to the Sample, an error will be raised.\n    ",
             "args": [
               {
                 "name": "id",
@@ -8727,7 +8691,7 @@
           },
           {
             "name": "samples",
-            "description": "All Samples",
+            "description": "All Samples\n    \n    This query returns all Samples that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Samples that the user has access to. If the user is an amdin\n    or superuser, all Samples will be returned.\n    \n    ",
             "args": [
               {
                 "name": "bioseries",
@@ -9082,7 +9046,7 @@
           },
           {
             "name": "tags",
-            "description": "All Samples",
+            "description": "All Tags\n    \n    Returns all Tags that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Tags that the user has access to. If the user is an amdin\n    or superuser, all Tags will be returned.\n    ",
             "args": [
               {
                 "name": "limit",
@@ -9135,7 +9099,7 @@
           },
           {
             "name": "thumbnail",
-            "description": "Get a single representation by ID",
+            "description": "Get a single Thumbnail by ID\n    \n    Get a single Thumbnail by ID. If the user does not have access\n    to the Thumbnail, an error will be raised.\n    ",
             "args": [
               {
                 "name": "id",
@@ -9164,7 +9128,7 @@
           },
           {
             "name": "thumbnails",
-            "description": "All represetations",
+            "description": "All Thumbnails\n    \n    This query returns all Thumbnails that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Thumbnails that the user has access to. If the user is an amdin\n    or superuser, all Thumbnails will be returned.\n    \n    ",
             "args": [
               {
                 "name": "creator",
@@ -9305,11 +9269,11 @@
       {
         "kind": "OBJECT",
         "name": "ROI",
-        "description": null,
+        "description": "A ROI is a region of interest in a representation.\n\n    This region is to be regarded as a view on the representation. Depending\n    on the implementatoin (type) of the ROI, the view can be constructed\n    differently. For example, a rectangular ROI can be constructed by cropping\n    the representation according to its 2 vectors. while a polygonal ROI can be constructed by masking the\n    representation with the polygon.\n\n    The ROI can also store a name and a description. This is used to display the ROI in the UI.\n\n    ",
         "fields": [
           {
             "name": "color",
-            "description": "",
+            "description": "The color of the ROI (for UI)",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -9321,7 +9285,7 @@
           },
           {
             "name": "createdAt",
-            "description": "",
+            "description": "The time the ROI was created",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -9337,7 +9301,7 @@
           },
           {
             "name": "creator",
-            "description": "",
+            "description": "The user that created the ROI",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -9393,19 +9357,7 @@
           },
           {
             "name": "label",
-            "description": "",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "nodeid",
-            "description": "",
+            "description": "The label of the ROI (for UI)",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -9417,7 +9369,7 @@
           },
           {
             "name": "pinned",
-            "description": null,
+            "description": "Is the ROI pinned by the active user",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -9429,7 +9381,7 @@
           },
           {
             "name": "pinnedBy",
-            "description": "",
+            "description": "The users that pinned this ROI",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -9453,23 +9405,11 @@
           },
           {
             "name": "representation",
-            "description": "",
+            "description": "The Representation this ROI was original used to create (drawn on)",
             "args": [],
             "type": {
               "kind": "OBJECT",
               "name": "Representation",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "signature",
-            "description": "",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
@@ -9493,7 +9433,7 @@
           },
           {
             "name": "type",
-            "description": "The Representation can have varying types, consult your API",
+            "description": "The Roi can have varying types, consult your API",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -9509,7 +9449,7 @@
           },
           {
             "name": "vectors",
-            "description": null,
+            "description": "The vectors of the ROI",
             "args": [],
             "type": {
               "kind": "LIST",
@@ -9597,20 +9537,8 @@
       {
         "kind": "OBJECT",
         "name": "Representation",
-        "description": "A Representation is a multi-dimensional Array that can do what ever it wants\n\n\n@elements/rep:latest",
+        "description": "A Representation is 5-dimensional representation of an image\n\n    Mikro stores each image as a 5-dimensional representation. The dimensions are:\n    - t: time\n    - c: channel\n    - z: z-stack\n    - x: x-dimension\n    - y: y-dimension\n\n    This ensures a unified api for all images, regardless of their original dimensions. Another main\n    determining factor for a representation is its variety:\n    A representation can be a raw image representating voxels (VOXEL)\n    or a segmentation mask representing instances of a class. (MASK)\n    It can also representate a human perception of the image (RGB) or a human perception of the mask (RGBMASK)\n\n    # Meta\n\n    Meta information is stored in the omero field which gives access to the omero-meta data. Refer to the omero documentation for more information.\n\n\n    #Origins and Derivations\n\n    Images can be filtered, which means that a new representation is created from the other (original) representations. This new representation is then linked to the original representations. This way, we can always trace back to the original representation.\n    Both are encapsulaed in the origins and derived fields.\n\n    Representations belong to *one* sample. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample\n    Each iamge has also a name, which is used to identify the image. The name is unique within a sample.\n    File and Rois that are used to create images are saved in the file origins and roi origins repectively.\n\n\n    ",
         "fields": [
-          {
-            "name": "chain",
-            "description": "",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
           {
             "name": "comments",
             "description": null,
@@ -10030,7 +9958,7 @@
           },
           {
             "name": "labels",
-            "description": "",
+            "description": "The Representation this Label instance belongs to",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -10210,18 +10138,6 @@
             "deprecationReason": null
           },
           {
-            "name": "nodeid",
-            "description": "",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "omero",
             "description": null,
             "args": [],
@@ -10271,7 +10187,7 @@
           },
           {
             "name": "pinnedBy",
-            "description": "",
+            "description": "The users that have pinned the representation",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -10676,18 +10592,6 @@
             "deprecationReason": null
           },
           {
-            "name": "type",
-            "description": "The Representation can have varying types, consult your API",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "unique",
             "description": "A unique identifier for this array",
             "args": [],
@@ -10957,11 +10861,11 @@
       {
         "kind": "OBJECT",
         "name": "Sample",
-        "description": "Samples are storage containers for representations. A Sample is to be understood analogous to a Biological Sample. It existed in Time (the time of acquisiton and experimental procedure),\n    was measured in space (x,y,z) and in different modalities (c). Sample therefore provide a datacontainer where each Representation of\n    the data shares the same dimensions. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample\n    ",
+        "description": "Samples are storage containers for representations. A Sample is to be understood analogous to a Biological Sample. It existed in Time (the time of acquisiton and experimental procedure), was measured in space (x,y,z) and in different modalities (c). Sample therefore provide a datacontainer where each Representation of the data shares the same dimensions. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample",
         "fields": [
           {
             "name": "createdAt",
-            "description": "",
+            "description": "The time the sample was created",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -10977,7 +10881,7 @@
           },
           {
             "name": "creator",
-            "description": "",
+            "description": "The user that created the sample",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -10989,7 +10893,7 @@
           },
           {
             "name": "experiments",
-            "description": "",
+            "description": "The experiments this sample belongs to",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -11041,7 +10945,7 @@
           },
           {
             "name": "metrics",
-            "description": "The Representatoin this Metric belongs to",
+            "description": "The Sample this Metric belongs to",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -11065,7 +10969,7 @@
           },
           {
             "name": "name",
-            "description": "",
+            "description": "The name of the sample",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -11075,18 +10979,6 @@
                 "name": "String",
                 "ofType": null
               }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "nodeid",
-            "description": "",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -11105,7 +10997,7 @@
           },
           {
             "name": "pinnedBy",
-            "description": "",
+            "description": "The users that have pinned the sample",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -11129,7 +11021,7 @@
           },
           {
             "name": "representations",
-            "description": null,
+            "description": "Associated representations of this Sample",
             "args": [
               {
                 "name": "createdAfter",
@@ -11386,7 +11278,7 @@
           },
           {
             "name": "tables",
-            "description": "",
+            "description": "Sample this table belongs to",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -11480,7 +11372,7 @@
       {
         "kind": "ENUM",
         "name": "SharableModels",
-        "description": null,
+        "description": "Sharable Models are models that can be shared amongst users and groups. They representent the models of the DB",
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -11587,7 +11479,7 @@
       {
         "kind": "SCALAR",
         "name": "Store",
-        "description": "A Representation of a Django File",
+        "description": "Store\n\nThis scalar is used to represent zarr store objects and allows them to\nbe serialized correct.\nZarr Stores are used to retrieve multidimensional data, such as\ntime series, images, and other data.\n\nThis scalar is used to represent the data stored as an object on a S3 bucket\nthis object representats a zarr store of an xarray",
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -11684,7 +11576,7 @@
           },
           {
             "name": "mymentions",
-            "description": null,
+            "description": "My Mentions\n\n    Returns an event of a new mention for the user if the user \n    was mentioned in a comment.\n    ",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -11732,7 +11624,7 @@
       {
         "kind": "OBJECT",
         "name": "Table",
-        "description": null,
+        "description": " A Table is a collection of tabular data.\n\n    It provides a way to store data in a tabular format and associate it with a Representation,\n    Sample or Experiment. It is a way to store data that might be to large to store in a\n    Feature or Metric on this Experiments. Or it might be data that is not easily represented\n    as a Feature or Metric.\n\n    Tables can be easily created from a pandas DataFrame and can be converted to a pandas DataFrame.\n    Its columns are defined by the columns of the DataFrame.\n\n    \n    ",
         "fields": [
           {
             "name": "columns",
@@ -11769,7 +11661,7 @@
           },
           {
             "name": "createdAt",
-            "description": "",
+            "description": "When the Table was created",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -11785,7 +11677,7 @@
           },
           {
             "name": "creator",
-            "description": "",
+            "description": "The creator of the Table",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -11797,7 +11689,7 @@
           },
           {
             "name": "experiment",
-            "description": "",
+            "description": "The Experiment this Table belongs to.",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -11841,7 +11733,7 @@
           },
           {
             "name": "pinned",
-            "description": null,
+            "description": "Is the table pinned by the active user",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -11881,7 +11773,7 @@
             "args": [
               {
                 "name": "limit",
-                "description": "The Offset for the query",
+                "description": "The Limit for the query",
                 "type": {
                   "kind": "SCALAR",
                   "name": "Int",
@@ -11946,7 +11838,7 @@
           },
           {
             "name": "representation",
-            "description": "",
+            "description": "The Representation this Table belongs to",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -11958,7 +11850,7 @@
           },
           {
             "name": "sample",
-            "description": "",
+            "description": "Sample this table belongs to",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -11970,7 +11862,7 @@
           },
           {
             "name": "store",
-            "description": null,
+            "description": "The parquet store for the table",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -12111,7 +12003,7 @@
       {
         "kind": "OBJECT",
         "name": "Thumbnail",
-        "description": "Thumbnail(id, representation, image, major_color)",
+        "description": "A Thumbnail is a render of a representation that is used to display the representation in the UI.\n\n    Thumbnails can also store the major color of the representation. This is used to color the representation in the UI.\n    ",
         "fields": [
           {
             "name": "id",
@@ -12188,11 +12080,11 @@
       {
         "kind": "OBJECT",
         "name": "User",
-        "description": null,
+        "description": "User\n\nThis object represents a user in the system. Users are used to\ncontrol access to different parts of the system. Users are assigned \nto groups. A user has access to a part of the system if the user is\na member of a group that has the permission assigned to it.\n\nUsers can be be \"creator\" of objects. This means that the user has\ncreated the object. This is used to control access to objects. A user\ncan only access objects that they have created, or objects that they\nhave access to through a group that they are a member of.\n\nSee the documentation for \"Object Level Permissions\" for more information.",
         "fields": [
           {
             "name": "color",
-            "description": "The color of the user",
+            "description": "The prefered color of the user",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -12484,7 +12376,7 @@
       {
         "kind": "SCALAR",
         "name": "XArray",
-        "description": "DateTime Scalar Description",
+        "description": "XArray scalar\n\nThis scalar is used to represent xarray objects and allows them to\nbe serialized correct.\nXArray objects are used to represent multidimensional data, such as\ntime series, images, and other data.\n\nThey are used in this project to represent the data of a Representation.\nThe Python interface can used to extra and manipulate the data.\n\nThis scalar is used to represent the data stored as an object on a S3 bucket\nthis object representats a zarr store of an xarray",
         "fields": null,
         "inputFields": null,
         "interfaces": null,

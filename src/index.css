@@ -19,7 +19,7 @@ body {
 }
 
 #root {
-  overflow-y: scroll;
+  overflow-y: hidden;
 }
 
 .titlebar {

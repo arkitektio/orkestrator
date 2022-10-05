@@ -32,23 +32,51 @@ export type ChangePermissionsResult = {
   success?: Maybe<Scalars['Boolean']>;
 };
 
+/**
+ * A channel in an image
+ *
+ * Channels can be highly variable in their properties. This class is a
+ * representation of the most common properties of a channel.
+ */
 export type Channel = {
   __typename?: 'Channel';
+  /** The acquisition mode of the channel */
   acquisitionMode?: Maybe<Scalars['String']>;
+  /** The default color for the channel (might be ommited by the rendered) */
   color?: Maybe<Scalars['String']>;
+  /** The emmission wavelength of the fluorophore in nm */
   emmissionWavelength?: Maybe<Scalars['Float']>;
+  /** The excitation wavelength of the fluorophore in nm */
   excitationWavelength?: Maybe<Scalars['Float']>;
+  /** The name of the channel */
   name?: Maybe<Scalars['String']>;
 };
 
+/**
+ * A channel in an image
+ *
+ * Channels can be highly variable in their properties. This class is a
+ * representation of the most common properties of a channel.
+ */
 export type ChannelInput = {
+  /** The acquisition mode of the channel */
   acquisitionMode?: InputMaybe<Scalars['String']>;
+  /** The default color for the channel (might be ommited by the rendered) */
   color?: InputMaybe<Scalars['String']>;
+  /** The emmission wavelength of the fluorophore in nm */
   emmissionWavelength?: InputMaybe<Scalars['Float']>;
+  /** The excitation wavelength of the fluorophore in nm */
   excitationWavelength?: InputMaybe<Scalars['Float']>;
+  /** The name of the channel */
   name?: InputMaybe<Scalars['String']>;
 };
 
+/**
+ * A column in a table
+ *
+ * A Column describes the associated name and metadata of a column in a table.
+ * It gives access to the pandas and numpy dtypes of the column.
+ */
 export type Column = {
   __typename?: 'Column';
   /** The FIeld Name */
@@ -63,11 +91,20 @@ export type Column = {
   pandasType?: Maybe<PandasDType>;
 };
 
+/**
+ * A comment
+ *
+ * A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+ * Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+ */
 export type Comment = {
   __typename?: 'Comment';
+  /** Comments that are replies to this comment */
   children?: Maybe<Array<Maybe<Comment>>>;
+  /** The content type of the commentable object */
   contentType?: Maybe<CommentableModels>;
   createdAt: Scalars['DateTime'];
+  /** The descendents of the comment (this referes to the Comment Tree) */
   descendents?: Maybe<Array<Maybe<Descendent>>>;
   id: Scalars['ID'];
   mentions: Array<User>;
@@ -78,6 +115,12 @@ export type Comment = {
 };
 
 
+/**
+ * A comment
+ *
+ * A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+ * Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+ */
 export type CommentChildrenArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -160,34 +203,71 @@ export type DescendendInput = {
   user?: InputMaybe<Scalars['String']>;
 };
 
+/** A descendent of a node in the comment tree */
 export type Descendent = {
   typename?: Maybe<Scalars['String']>;
 };
 
-/** A Representation is a multi-dimensional Array that can do what ever it wants @elements/experiment */
+/**
+ *
+ *     An experiment is a collection of samples and their representations.
+ *     It mimics the concept of an experiment in the lab and is the top level
+ *     object in the data model.
+ *
+ *     You can use the experiment to group samples and representations likewise
+ *     to how you would group files into folders in a file system.
+ *
+ *
+ *
+ *
+ *
+ *
+ */
 export type Experiment = {
   __typename?: 'Experiment';
+  /** The time the experiment was created */
   createdAt: Scalars['DateTime'];
+  /** The user that created the experiment */
   creator?: Maybe<User>;
+  /** A short description of the experiment */
   description?: Maybe<Scalars['String']>;
+  /** A long description of the experiment */
   descriptionLong?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
+  /** An image to be used as a banner for the experiment */
   image?: Maybe<Scalars['String']>;
+  /** A link to a paper describing the experiment */
   linkedPaper?: Maybe<Scalars['String']>;
-  meta?: Maybe<Scalars['GenericScalar']>;
   /** The Representatoin this Metric belongs to */
   metrics: Array<Metric>;
+  /** The name of the experiment */
   name: Scalars['String'];
   pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the experiment */
   pinnedBy: Array<User>;
   samples?: Maybe<Array<Maybe<Sample>>>;
+  /** The Experiment this Table belongs to. */
   tables: Array<Table>;
-  /** A comma-separated list of tags. */
+  /** Tags for the experiment */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
 };
 
 
-/** A Representation is a multi-dimensional Array that can do what ever it wants @elements/experiment */
+/**
+ *
+ *     An experiment is a collection of samples and their representations.
+ *     It mimics the concept of an experiment in the lab and is the top level
+ *     object in the data model.
+ *
+ *     You can use the experiment to group samples and representations likewise
+ *     to how you would group files into folders in a file system.
+ *
+ *
+ *
+ *
+ *
+ *
+ */
 export type ExperimentSamplesArgs = {
   bioseries?: InputMaybe<Scalars['String']>;
   createdAfter?: InputMaybe<Scalars['DateTime']>;
@@ -211,17 +291,43 @@ export type ExperimentsEvent = {
   update?: Maybe<Experiment>;
 };
 
+/**
+ *  A Feature is a numerical key value pair that is attached to a Label.
+ *
+ *     You can model it for example as a key value pair of a class instance of a segmentation mask.
+ *     Representation -> Label0 -> Feature0
+ *                              -> Feature1
+ *                    -> Label1 -> Feature0
+ *
+ *     Features can be used to store any numerical value that is attached to a class instance.
+ *     THere can only ever be one key per label. If you want to store multiple values for a key, you can
+ *     store them as a list in the value field.
+ *
+ *     Feature are analogous to metrics on a representation, but for a specific class instance (Label)
+ *
+ *
+ */
 export type Feature = {
   __typename?: 'Feature';
+  /** The user that created the Feature */
   creator?: Maybe<User>;
   id: Scalars['ID'];
-  /** The sKesyss */
+  /** The key of the feature */
   key: Scalars['String'];
+  /** The Label this Feature belongs to */
   label?: Maybe<Label>;
   /** Value */
   value?: Maybe<Scalars['FeatureValue']>;
 };
 
+/**
+ * Group
+ *
+ * This object represents a group in the system. Groups are used to
+ * control access to different parts of the system. Groups are assigned
+ * to users. A user has access to a part of the system if the user is
+ * a member of a group that has the permission assigned to it.
+ */
 export type Group = {
   __typename?: 'Group';
   id: Scalars['ID'];
@@ -243,20 +349,40 @@ export type GroupAssignmentInput = {
   permissions: Array<InputMaybe<Scalars['String']>>;
 };
 
+/**
+ * The imaging environment during the acquisition
+ *
+ * Follows the OME model for imaging environment
+ */
 export type ImagingEnvironment = {
   __typename?: 'ImagingEnvironment';
+  /** The air pressure during the acquisition */
   airPressure?: Maybe<Scalars['Float']>;
+  /** The CO2 percentage in the environment */
   co2Percent?: Maybe<Scalars['Float']>;
+  /** The humidity of the imaging environment */
   humidity?: Maybe<Scalars['Float']>;
+  /** A map of the imaging environment. Key value based */
   map?: Maybe<Scalars['GenericScalar']>;
+  /** The temperature of the imaging environment */
   temperature?: Maybe<Scalars['Float']>;
 };
 
+/**
+ * The imaging environment during the acquisition
+ *
+ * Follows the OME model for imaging environment
+ */
 export type ImagingEnvironmentInput = {
-  airPessure?: InputMaybe<Scalars['Float']>;
+  /** The air pressure during the acquisition */
+  airPressure?: InputMaybe<Scalars['Float']>;
+  /** The CO2 percentage in the environment */
   co2Percent?: InputMaybe<Scalars['Float']>;
+  /** The humidity of the imaging environment */
   humidity?: InputMaybe<Scalars['Float']>;
+  /** A map of the imaging environment. Key value based */
   map?: InputMaybe<Scalars['GenericScalar']>;
+  /** The temperature of the imaging environment */
   temperature?: InputMaybe<Scalars['Float']>;
 };
 
@@ -273,6 +399,7 @@ export type InputVector = {
   z?: InputMaybe<Scalars['Float']>;
 };
 
+/** Instrument(id, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number) */
 export type Instrument = {
   __typename?: 'Instrument';
   detectors?: Maybe<Scalars['GenericScalar']>;
@@ -287,29 +414,74 @@ export type Instrument = {
   serialNumber?: Maybe<Scalars['String']>;
 };
 
+/**
+ * A Label is a trough model for image and features.
+ *
+ *     Its map an instance value of a representation
+ *     (e.g. a pixel value of a segmentation mask) to a set of corresponding features of the segmented
+ *     class instance.
+ *
+ *     There can only be one label per representation and class instance. You can then attach
+ *     features to the label.
+ *
+ *
+ *
+ */
 export type Label = {
   __typename?: 'Label';
+  /** The time the Label was created */
   createdAt: Scalars['DateTime'];
+  /** The user that created the Label */
   creator: User;
   feature?: Maybe<Feature>;
   /** Features attached to this Label */
   features?: Maybe<Array<Maybe<Feature>>>;
   id: Scalars['ID'];
+  /** The instance value of the representation (pixel value). Must be a value of the image array */
   instance: Scalars['Int'];
+  /** The name of the instance */
   name?: Maybe<Scalars['String']>;
   pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that pinned this Label */
   pinnedBy: Array<User>;
+  /** The Representation this Label instance belongs to */
   representation?: Maybe<Representation>;
   /** A comma-separated list of tags. */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
 };
 
 
+/**
+ * A Label is a trough model for image and features.
+ *
+ *     Its map an instance value of a representation
+ *     (e.g. a pixel value of a segmentation mask) to a set of corresponding features of the segmented
+ *     class instance.
+ *
+ *     There can only be one label per representation and class instance. You can then attach
+ *     features to the label.
+ *
+ *
+ *
+ */
 export type LabelFeatureArgs = {
   key: Scalars['String'];
 };
 
 
+/**
+ * A Label is a trough model for image and features.
+ *
+ *     Its map an instance value of a representation
+ *     (e.g. a pixel value of a segmentation mask) to a set of corresponding features of the segmented
+ *     class instance.
+ *
+ *     There can only be one label per representation and class instance. You can then attach
+ *     features to the label.
+ *
+ *
+ *
+ */
 export type LabelFeaturesArgs = {
   creator?: InputMaybe<Scalars['Float']>;
   keys?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
@@ -319,6 +491,7 @@ export type LabelFeaturesArgs = {
   substring?: InputMaybe<Scalars['String']>;
 };
 
+/** A leaf in the comment tree. Representations some sort of text */
 export type Leaf = Descendent & {
   __typename?: 'Leaf';
   /** Is this a bold leaf? */
@@ -332,6 +505,11 @@ export type Leaf = Descendent & {
   typename?: Maybe<Scalars['String']>;
 };
 
+/**
+ * The medium of the imaging environment
+ *
+ * Important for the objective settings
+ */
 export enum Medium {
   Air = 'AIR',
   Glycerol = 'GLYCEROL',
@@ -340,6 +518,7 @@ export enum Medium {
   Water = 'WATER'
 }
 
+/** A mention in the comment tree. This  is a reference to another user on the platform */
 export type MentionDescendent = Descendent & Node & {
   __typename?: 'MentionDescendent';
   children?: Maybe<Array<Maybe<Descendent>>>;
@@ -367,7 +546,7 @@ export type Metric = {
   key: Scalars['String'];
   /** The Representatoin this Metric belongs to */
   representation?: Maybe<Representation>;
-  /** The Representatoin this Metric belongs to */
+  /** The Sample this Metric belongs to */
   sample?: Maybe<Sample>;
   /** Value */
   value?: Maybe<Scalars['MetricValue']>;
@@ -378,15 +557,62 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Creates a Sample */
   changePermissions?: Maybe<ChangePermissionsResult>;
-  /** Create an experiment (only signed in users) */
+  /**
+   * Create an Comment
+   *
+   *     This mutation creates a comment. It takes a commentable_id and a commentable_type.
+   *     If this is the first comment on the commentable, it will create a new comment thread.
+   *     If there is already a comment thread, it will add the comment to the thread (by setting
+   *     it's parent to the last parent comment in the thread).
+   *
+   *     CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+   *     are a recursive structure, where each Descendent can have a list of Descendents as children.
+   *     The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+   *     reference to another user on the platform.
+   *
+   *     Please convert your comment tree to a list of Descendents before sending it to the server.
+   *     TODO: Add a converter from a comment tree to a list of Descendents.
+   *
+   *
+   *     (only signed in users)
+   */
   createComment?: Maybe<Comment>;
-  /** Create an experiment (only signed in users) */
+  /**
+   * Create an Experiment
+   *
+   *     This mutation creates an Experiment and returns the created Experiment.
+   *
+   */
   createExperiment?: Maybe<Experiment>;
-  /** Creates a Representation */
+  /**
+   * Creates an Instrument
+   *
+   *     This mutation creates an Instrument and returns the created Instrument.
+   *     The serial number is required and the manufacturer is inferred from the serial number.
+   *
+   */
   createInstrument?: Maybe<Instrument>;
-  /** Creates a Sample */
+  /**
+   * Creates a Label
+   *
+   *     This mutation creates a Label and returns the created Label.
+   *     We require a reference to the image pixel value that the label belongs to.
+   *     (Labels can be created for any pixel in an image, no matter if this image
+   *     is a mask or not). However labels can only be created for pixels that are
+   *     integer values.
+   *
+   *
+   *
+   *
+   */
   createLabel?: Maybe<Label>;
-  /** Creates a Representation */
+  /**
+   * Create a metric
+   *
+   *     This mutation creates a metric and returns the created metric.
+   *
+   *
+   */
   createMetric?: Maybe<Metric>;
   /** Create an experiment (only signed in users) */
   createPlot?: Maybe<Plot>;
@@ -396,11 +622,24 @@ export type Mutation = {
   createSample?: Maybe<Sample>;
   /** Creates a Representation */
   createTable?: Maybe<Table>;
-  /** Creates a Sample */
+  /**
+   * Creates a Feature
+   *
+   *     This mutation creates a Feature and returns the created Feature.
+   *     We require a reference to the label that the feature belongs to.
+   *     As well as the key and value of the feature.
+   *
+   *     There can be multiple features with the same label, but only one feature per key
+   *     per label
+   */
   createfeature?: Maybe<Feature>;
-  /** Create an experiment (only signed in users) */
+  /**
+   * Delete Experiment
+   *
+   *     This mutation deletes an Experiment and returns the deleted Experiment.
+   */
   deleteExperiment?: Maybe<DeleteExperimentResult>;
-  /** Create an experiment (only signed in users) */
+  /** Delete OmeroFile */
   deleteOmeroFile?: Maybe<DeleteOmeroFileResult>;
   /** Create an experiment (only signed in users) */
   deletePlot?: Maybe<DeletePlotResult>;
@@ -417,7 +656,11 @@ export type Mutation = {
   /** Creates a Representation */
   fromXArray?: Maybe<Representation>;
   negotiate?: Maybe<Scalars['GenericScalar']>;
-  /** Sets the pin */
+  /**
+   * Pin Experiment
+   *
+   *     This mutation pins an Experiment and returns the pinned Experiment.
+   */
   pinExperiment?: Maybe<Experiment>;
   /** Sets the pin */
   pinROI?: Maybe<Roi>;
@@ -425,9 +668,13 @@ export type Mutation = {
   pinRepresentation?: Maybe<Representation>;
   /** Sets the pin */
   pinSample?: Maybe<Sample>;
-  /** Create an experiment (only signed in users) */
+  /**
+   *  Update an Experiment
+   *
+   *     This mutation updates an Experiment and returns the updated Experiment.
+   */
   updateExperiment?: Maybe<Experiment>;
-  /** Updates an Representation (also retriggers meta-data retrieval from data stored in) */
+  /** Update an omero file */
   updateOmeroFile?: Maybe<OmeroFile>;
   /** Create an experiment (only signed in users) */
   updatePlot?: Maybe<Plot>;
@@ -437,6 +684,12 @@ export type Mutation = {
   updateSample?: Maybe<Sample>;
   /** Updates an Representation (also retriggers meta-data retrieval from data stored in) */
   updateTable?: Maybe<Table>;
+  /**
+   * Upload a file to Mikro
+   *
+   *     This mutation uploads a file to Omero and returns the created OmeroFile.
+   *
+   */
   uploadOmeroFile?: Maybe<OmeroFile>;
   uploadThumbnail?: Maybe<Thumbnail>;
 };
@@ -464,7 +717,6 @@ export type MutationCreateCommentArgs = {
 export type MutationCreateExperimentArgs = {
   creator?: InputMaybe<Scalars['String']>;
   description?: InputMaybe<Scalars['String']>;
-  meta?: InputMaybe<Scalars['GenericScalar']>;
   name: Scalars['String'];
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
@@ -662,7 +914,6 @@ export type MutationUpdateExperimentArgs = {
   creator?: InputMaybe<Scalars['String']>;
   description?: InputMaybe<Scalars['String']>;
   id: Scalars['ID'];
-  meta?: InputMaybe<Scalars['GenericScalar']>;
   name: Scalars['String'];
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
@@ -723,26 +974,55 @@ export type MutationUploadThumbnailArgs = {
   rep: Scalars['ID'];
 };
 
+/** A node in the comment tree */
 export type Node = {
   children?: Maybe<Array<Maybe<Descendent>>>;
   untypedChildren?: Maybe<Scalars['GenericScalar']>;
 };
 
+/**
+ * Settings of the objective used to acquire the image
+ *
+ * Follows the OME model for objective settings
+ */
 export type ObjectiveSettings = {
   __typename?: 'ObjectiveSettings';
+  /** The correction collar of the objective */
   correctionCollar?: Maybe<Scalars['Float']>;
+  /** The medium of the objective */
   medium?: Maybe<Medium>;
+  /** The numerical aperture of the objective */
   numericalAperture?: Maybe<Scalars['Float']>;
+  /** The working distance of the objective */
   workingDistance?: Maybe<Scalars['Float']>;
 };
 
+/**
+ * Settings of the objective used to acquire the image
+ *
+ * Follows the OME model for objective settings
+ */
 export type ObjectiveSettingsInput = {
+  /** The correction collar of the objective */
   correctionCollar?: InputMaybe<Scalars['Float']>;
+  /** The medium of the objective */
   medium?: InputMaybe<Medium>;
+  /** The numerical aperture of the objective */
   numericalAperture?: InputMaybe<Scalars['Float']>;
+  /** The working distance of the objective */
   workingDistance?: InputMaybe<Scalars['Float']>;
 };
 
+/**
+ * Omero is a model that stores the omero meta data
+ *
+ *     This model is used to store the omero meta data. It is used to store the meta data of the omero file.
+ *     Its implementation is based on the omero meta data model. Refer to the omero documentation for more information.
+ *
+ *
+ *
+ *
+ */
 export type Omero = {
   __typename?: 'Omero';
   acquisitionDate?: Maybe<Scalars['DateTime']>;
@@ -759,16 +1039,21 @@ export type Omero = {
 
 export type OmeroFile = {
   __typename?: 'OmeroFile';
+  /** The time the file was created */
   createdAt: Scalars['DateTime'];
+  /** The user that created/uploaded the file */
   creator?: Maybe<User>;
   derivedRepresentations: Array<Representation>;
+  /** The file */
   file?: Maybe<Scalars['File']>;
   id: Scalars['ID'];
+  /** The name of the file */
   name: Scalars['String'];
-  /** A comma-separated list of tags. */
+  /** Tags for the file */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
   /** Url of a thumbnail */
   thumbnail?: Maybe<Scalars['String']>;
+  /** The type of the file */
   type: OmeroFileType;
 };
 
@@ -786,6 +1071,14 @@ export enum OmeroFileType {
   Unknown = 'UNKNOWN'
 }
 
+/**
+ * The Omero Meta Data of an Image
+ *
+ * Follows closely the omexml model. With a few alterations:
+ * - The data model of the datasets and experimenters is
+ * part of the mikro datamodel and are not accessed here.
+ * - Some parameters are ommited as they are not really used
+ */
 export type OmeroRepresentationInput = {
   acquisitionDate?: InputMaybe<Scalars['DateTime']>;
   channels?: InputMaybe<Array<InputMaybe<ChannelInput>>>;
@@ -808,6 +1101,7 @@ export enum PandasDType {
   Unicode = 'UNICODE'
 }
 
+/** A paragraph in the comment tree. This paragraph contains other nodes (list nodes) */
 export type ParagraphDescendent = Descendent & Node & {
   __typename?: 'ParagraphDescendent';
   children?: Maybe<Array<Maybe<Descendent>>>;
@@ -817,6 +1111,15 @@ export type ParagraphDescendent = Descendent & Node & {
   untypedChildren?: Maybe<Scalars['GenericScalar']>;
 };
 
+/**
+ * A Permission object
+ *
+ * This object represents a permission in the system. Permissions are
+ * used to control access to different parts of the system. Permissions
+ * are assigned to groups and users. A user has access to a part of the
+ * system if the user is a member of a group that has the permission
+ * assigned to it.
+ */
 export type Permission = {
   __typename?: 'Permission';
   codename: Scalars['String'];
@@ -836,58 +1139,149 @@ export type PermissionsOfReturn = {
   userAssignments?: Maybe<Array<Maybe<UserAssignment>>>;
 };
 
+/**
+ * Physical size of the image
+ *
+ * Each dimensions of the image has a physical size. This is the size of the
+ * pixel in the image. The physical size is given in micrometers on a PIXEL
+ * basis. This means that the physical size of the image is the size of the
+ * pixel in the image * the number of pixels in the image. For example, if
+ * the image is 1000x1000 pixels and the physical size of the image is 3 (x params) x 3 (y params),
+ * micrometer, the physical size of the image is 3000x3000 micrometer. If the image
+ *
+ * The t dimension is given in ms, since the time is given in ms.
+ * The C dimension is given in nm, since the wavelength is given in nm.
+ */
 export type PhysicalSize = {
   __typename?: 'PhysicalSize';
+  /** Physical size of *one* Pixel in the c dimension (in µm) */
   c?: Maybe<Scalars['Float']>;
+  /** Physical size of *one* Pixel in the t dimension (in ms) */
   t?: Maybe<Scalars['Float']>;
+  /** Physical size of *one* Pixel in the x dimension (in µm) */
   x?: Maybe<Scalars['Float']>;
+  /** Physical size of *one* Pixel in the t dimension (in µm) */
   y?: Maybe<Scalars['Float']>;
+  /** Physical size of *one* Pixel in the z dimension (in µm) */
   z?: Maybe<Scalars['Float']>;
 };
 
+/**
+ * Physical size of the image
+ *
+ * Each dimensions of the image has a physical size. This is the size of the
+ * pixel in the image. The physical size is given in micrometers on a PIXEL
+ * basis. This means that the physical size of the image is the size of the
+ * pixel in the image * the number of pixels in the image. For example, if
+ * the image is 1000x1000 pixels and the physical size of the image is 3 (x params) x 3 (y params),
+ * micrometer, the physical size of the image is 3000x3000 micrometer. If the image
+ *
+ * The t dimension is given in ms, since the time is given in ms.
+ * The C dimension is given in nm, since the wavelength is given in nm.
+ */
 export type PhysicalSizeInput = {
+  /** Physical size of *one* Pixel in the c dimension (in nm) */
   c?: InputMaybe<Scalars['Float']>;
+  /** Physical size of *one* Pixel in the t dimension (in ms) */
   t?: InputMaybe<Scalars['Float']>;
+  /** Physical size of *one* Pixel in the x dimension (in µm) */
   x?: InputMaybe<Scalars['Float']>;
+  /** Physical size of *one* Pixel in the t dimension (in µm) */
   y?: InputMaybe<Scalars['Float']>;
+  /** Physical size of *one* Pixel in the z dimension (in µm) */
   z?: InputMaybe<Scalars['Float']>;
 };
 
+/**
+ * A plane in an image
+ *
+ * Plane follows the convention of the OME model, where the first index is the
+ * Z axis, the second is the Y axis, the third is the X axis, the fourth is the
+ * C axis, and the fifth is the T axis.
+ *
+ * It attached the image at the indicated index to the image and gives information
+ * about the plane (e.g. exposure time, delta t to the origin, etc.)
+ */
 export type Plane = {
   __typename?: 'Plane';
+  /** C index of the plane */
   c?: Maybe<Scalars['Int']>;
+  /** The Delta T to the origin of the image acqusition */
   deltaT?: Maybe<Scalars['Float']>;
+  /** The exposure time of the plane (e.g. Laser exposure) */
   exposureTime?: Maybe<Scalars['Float']>;
+  /** The planes X position on the stage of the microscope */
   positionX?: Maybe<Scalars['Float']>;
+  /** The planes Y position on the stage of the microscope */
   positionY?: Maybe<Scalars['Float']>;
+  /** The planes Z position on the stage of the microscope */
   positionZ?: Maybe<Scalars['Float']>;
+  /** Z index of the plane */
   t?: Maybe<Scalars['Int']>;
+  /** X index of the plane */
   x?: Maybe<Scalars['Int']>;
+  /** Y index of the plane */
   y?: Maybe<Scalars['Int']>;
+  /** Z index of the plane */
   z?: Maybe<Scalars['Int']>;
 };
 
+/**
+ * " A plane in an image
+ *
+ * Plane follows the convention of the OME model, where the first index is the
+ * Z axis, the second is the Y axis, the third is the X axis, the fourth is the
+ * C axis, and the fifth is the T axis.
+ *
+ * It attached the image at the indicated index to the image and gives information
+ * about the plane (e.g. exposure time, delta t to the origin, etc.)
+ */
 export type PlaneInput = {
+  /** C index of the plane */
   c?: InputMaybe<Scalars['Int']>;
+  /** The Delta T to the origin of the image acqusition */
   deltaT?: InputMaybe<Scalars['Float']>;
+  /** The exposure time of the plane (e.g. Laser exposure) */
   exposureTime?: InputMaybe<Scalars['Float']>;
+  /** The planes X position on the stage of the microscope */
   positionX?: InputMaybe<Scalars['Float']>;
+  /** The planes Y position on the stage of the microscope */
   positionY?: InputMaybe<Scalars['Float']>;
+  /** The planes Z position on the stage of the microscope */
   positionZ?: InputMaybe<Scalars['Float']>;
+  /** Z index of the plane */
   t?: InputMaybe<Scalars['Int']>;
+  /** X index of the plane */
   x?: InputMaybe<Scalars['Int']>;
+  /** Y index of the plane */
   y?: InputMaybe<Scalars['Int']>;
+  /** Z index of the plane */
   z?: InputMaybe<Scalars['Int']>;
 };
 
+/**
+ * A plot is a template to generate a graph
+ *
+ * Its store a PlotQL query and a list of variables that can be used in the
+ * query. The variables are stored as a JSON object. The variables are
+ * validated against the query before the query is executed.
+ *
+ * This query then returns a graph that can be rendered in the frontend.
+ */
 export type Plot = {
   __typename?: 'Plot';
+  /** When was this plot created */
   createdAt: Scalars['DateTime'];
+  /** The user who created this plot */
   creator: User;
+  /** A description of the plot */
   description: Scalars['String'];
   id: Scalars['ID'];
+  /** The name of the plot */
   name: Scalars['String'];
+  /** The PlotQL query (see documentation for PlotQL) */
   query: Scalars['String'];
+  /** When was this plot last updated */
   updatedAt: Scalars['DateTime'];
 };
 
@@ -896,77 +1290,272 @@ export type Query = {
   __typename?: 'Query';
   accessiblerepresentations?: Maybe<Array<Maybe<Representation>>>;
   columnsof?: Maybe<Array<Maybe<Column>>>;
+  /**
+   * Comments for a specific object
+   *
+   *     This query returns all comments for a specific object. The object is
+   *     specified by the `model` and `id` arguments. The `model` argument is
+   *     a string that is the name of the model. The `id` argument is the id of
+   *     the object.
+   *
+   *     You can only query for comments for objects that you have access to.
+   *
+   *
+   */
   commentsfor?: Maybe<Array<Maybe<Comment>>>;
-  /** Get a single representation by ID */
+  /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
   experiment?: Maybe<Experiment>;
-  /** All Samples */
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
   experiments?: Maybe<Array<Maybe<Experiment>>>;
-  /** Get a single representation by ID */
+  /**
+   * Get a single feature by ID
+   *
+   *     Returns a single feature by ID. If the user does not have access
+   *     to the feature, an error will be raised.
+   *
+   */
   feature?: Maybe<Feature>;
-  /** All represetations */
+  /**
+   * All features
+   *
+   *     This query returns all features that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all features that the user has access to. If the user is an amdin
+   *     or superuser, all features will be returned.
+   *
+   */
   features?: Maybe<Array<Maybe<Feature>>>;
   hello?: Maybe<Scalars['String']>;
-  /** Get a single representation by ID */
+  /**
+   * Get a single instrumes by ID
+   *
+   *     Returns a single instrument by ID. If the user does not have access
+   *     to the instrument, an error will be raised.
+   */
   instrument?: Maybe<Instrument>;
-  /** All represetations */
+  /**
+   * All Instruments
+   *
+   *     This query returns all Instruments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Instruments that the user has access to. If the user is an amdin
+   *     or superuser, all Instruments will be returned.
+   */
   instruments?: Maybe<Array<Maybe<Instrument>>>;
-  /** Get a single representation by ID */
+  /**
+   * Get a single label by ID
+   *
+   *     Returns a single label by ID. If the user does not have access
+   *     to the label, an error will be raised.
+   */
   label?: Maybe<Label>;
-  /** Get a label for a specific instance on a specific representation */
+  /**
+   * Get a label for a specific instance on a specific representation
+   *
+   *
+   */
   labelFor?: Maybe<Label>;
-  /** All represetations */
+  /**
+   * All Labels
+   *
+   *     This query returns all Labels that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Labels that the user has access to. If the user is an amdin
+   *     or superuser, all Labels will be returned.
+   *
+   */
   labels?: Maybe<Array<Maybe<Label>>>;
-  /** Get a single representation by ID */
+  /**
+   * Get a single Metric by ID
+   *
+   *     Returns a single Metric by ID. If the user does not have access
+   *     to the Metric, an error will be raised.
+   *
+   */
   metric?: Maybe<Metric>;
-  /** All Samples */
+  /**
+   * All Metric
+   *
+   *     This query returns all Metric that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Metric that the user has access to. If the user is an amdin
+   *     or superuser, all Metric will be returned.
+   *
+   */
   metrics?: Maybe<Array<Maybe<Metric>>>;
-  /** My samples return all of the users samples attached to the current user */
+  /**
+   * My Experiments runs a fast query on the database to return all
+   *     Experiments that the user has created. This query is faster than
+   *     the `experiments` query, but it does not return all Experiments that
+   *     the user has access to.
+   */
   myexperiments?: Maybe<Array<Maybe<Experiment>>>;
   mymentions?: Maybe<Array<Maybe<Comment>>>;
-  /** My samples return all of the users samples attached to the current user */
+  /**
+   * My Omerofiles runs a fast query on the database to return all
+   *     Omerofile that the user has created. This query is faster than
+   *     the `omerofiles` query, but it does not return all OmeroFile that
+   *     the user has access to.
+   */
   myomerofiles?: Maybe<Array<Maybe<OmeroFile>>>;
   myplots?: Maybe<Array<Maybe<Plot>>>;
-  /** My Representations returns all of the Representations, attached to the current user */
+  /**
+   * My Representatoin runs a fast query on the database to return all
+   *     Representation that the user has created. This query is faster than
+   *     the `representations` query, but it does not return all Representation that
+   *     the user has access to.
+   */
   myrepresentations?: Maybe<Array<Maybe<Representation>>>;
-  /** My samples return all of the users samples attached to the current user */
+  /**
+   * My Samples runs a fast query on the database to return all
+   *     Samples that the user has *created*. This query is faster than
+   *     the `samples` query, but it does not return all Samples that
+   *     the user has access to.
+   */
   mysamples?: Maybe<Array<Maybe<Sample>>>;
   /** My samples return all of the users samples attached to the current user */
   mytables?: Maybe<Array<Maybe<Table>>>;
-  /** Get a single representation by ID */
+  /**
+   * Get a single Omero File by ID
+   *
+   *     Returns a single Omero File by ID. If the user does not have access
+   *     to the Omero File, an error will be raised.
+   */
   omerofile?: Maybe<OmeroFile>;
-  /** My samples return all of the users samples attached to the current user */
+  /**
+   * All OmeroFiles
+   *
+   *     This query returns all OmeroFiles that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all OmeroFiles that the user has access to. If the user is an amdin
+   *     or superuser, all OmeroFiles will be returned.
+   *
+   *
+   */
   omerofiles?: Maybe<Array<Maybe<OmeroFile>>>;
   permissionsFor?: Maybe<Array<Maybe<Permission>>>;
   permissionsOf?: Maybe<PermissionsOfReturn>;
   plot?: Maybe<Plot>;
-  /** Get a single representation by ID */
+  /**
+   * Get a random Representation
+   *
+   *     Gets a random Representation from the database. This is used for
+   *     testing purposes
+   *
+   *
+   */
   randomRepresentation?: Maybe<Representation>;
-  /** Get a single representation by ID */
+  /**
+   * Get a single Representation by ID
+   *
+   *     Returns a single Representation by ID. If the user does not have access
+   *     to the Representation, an error will be raised.
+   *
+   */
   representation?: Maybe<Representation>;
-  /** All represetations */
+  /**
+   * All Representations
+   *
+   *     This query returns all Representations that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Representations that the user has access to. If the user is an amdin
+   *     or superuser, all Representations will be returned.
+   */
   representations?: Maybe<Array<Maybe<Representation>>>;
   representationsForGroup?: Maybe<Array<Maybe<Representation>>>;
   representationsForUser?: Maybe<Array<Maybe<Representation>>>;
-  /** Get a single representation by ID */
+  /**
+   * Requets a new set of credentials from the S3 server
+   *     encompassing the users credentials and the access key and secret key
+   */
   request?: Maybe<Credentials>;
-  /** Get a single representation by ID */
+  /**
+   * Get a single Roi by ID"
+   *
+   *     Returns a single Roi by ID. If the user does not have access
+   *     to the Roi, an error will be raised.
+   */
   roi?: Maybe<Roi>;
-  /** All represetations */
+  /**
+   * All Rois
+   *
+   *     This query returns all Rois that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Rois that the user has access to. If the user is an amdin
+   *     or superuser, all Rois will be returned.
+   */
   rois?: Maybe<Array<Maybe<Roi>>>;
-  /** Get a single representation by ID */
+  /**
+   * Get a Sample by ID
+   *
+   *     Returns a single Sample by ID. If the user does not have access
+   *     to the Sample, an error will be raised.
+   *
+   */
   sample?: Maybe<Sample>;
-  /** All Samples */
+  /**
+   * All Samples
+   *
+   *     This query returns all Samples that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Samples that the user has access to. If the user is an amdin
+   *     or superuser, all Samples will be returned.
+   *
+   *
+   */
   samples?: Maybe<Array<Maybe<Sample>>>;
   sharedrepresentations?: Maybe<Array<Maybe<Representation>>>;
   /** Get a single representation by ID */
   table?: Maybe<Table>;
   /** My samples return all of the users samples attached to the current user */
   tables?: Maybe<Array<Maybe<Table>>>;
-  /** All Samples */
+  /**
+   * All Tags
+   *
+   *     Returns all Tags that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Tags that the user has access to. If the user is an amdin
+   *     or superuser, all Tags will be returned.
+   *
+   */
   tags?: Maybe<Array<Maybe<Tag>>>;
-  /** Get a single representation by ID */
+  /**
+   * Get a single Thumbnail by ID
+   *
+   *     Get a single Thumbnail by ID. If the user does not have access
+   *     to the Thumbnail, an error will be raised.
+   *
+   */
   thumbnail?: Maybe<Thumbnail>;
-  /** All represetations */
+  /**
+   * All Thumbnails
+   *
+   *     This query returns all Thumbnails that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Thumbnails that the user has access to. If the user is an amdin
+   *     or superuser, all Thumbnails will be returned.
+   *
+   *
+   */
   thumbnails?: Maybe<Array<Maybe<Thumbnail>>>;
   /** Get a list of users */
   users?: Maybe<Array<Maybe<User>>>;
@@ -1334,23 +1923,42 @@ export type QueryUsersArgs = {
   username?: InputMaybe<Scalars['String']>;
 };
 
+/**
+ * A ROI is a region of interest in a representation.
+ *
+ *     This region is to be regarded as a view on the representation. Depending
+ *     on the implementatoin (type) of the ROI, the view can be constructed
+ *     differently. For example, a rectangular ROI can be constructed by cropping
+ *     the representation according to its 2 vectors. while a polygonal ROI can be constructed by masking the
+ *     representation with the polygon.
+ *
+ *     The ROI can also store a name and a description. This is used to display the ROI in the UI.
+ *
+ *
+ */
 export type Roi = {
   __typename?: 'ROI';
+  /** The color of the ROI (for UI) */
   color?: Maybe<Scalars['String']>;
+  /** The time the ROI was created */
   createdAt: Scalars['DateTime'];
+  /** The user that created the ROI */
   creator: User;
   derivedRepresentations: Array<Representation>;
   id: Scalars['ID'];
+  /** The label of the ROI (for UI) */
   label?: Maybe<Scalars['String']>;
-  nodeid?: Maybe<Scalars['String']>;
+  /** Is the ROI pinned by the active user */
   pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that pinned this ROI */
   pinnedBy: Array<User>;
+  /** The Representation this ROI was original used to create (drawn on) */
   representation?: Maybe<Representation>;
-  signature?: Maybe<Scalars['String']>;
   /** A comma-separated list of tags. */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
-  /** The Representation can have varying types, consult your API */
+  /** The Roi can have varying types, consult your API */
   type: RoiType;
+  /** The vectors of the ROI */
   vectors?: Maybe<Array<Maybe<Vector>>>;
 };
 
@@ -1377,14 +1985,40 @@ export enum RoiType {
 }
 
 /**
- * A Representation is a multi-dimensional Array that can do what ever it wants
+ * A Representation is 5-dimensional representation of an image
+ *
+ *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     - t: time
+ *     - c: channel
+ *     - z: z-stack
+ *     - x: x-dimension
+ *     - y: y-dimension
+ *
+ *     This ensures a unified api for all images, regardless of their original dimensions. Another main
+ *     determining factor for a representation is its variety:
+ *     A representation can be a raw image representating voxels (VOXEL)
+ *     or a segmentation mask representing instances of a class. (MASK)
+ *     It can also representate a human perception of the image (RGB) or a human perception of the mask (RGBMASK)
+ *
+ *     # Meta
+ *
+ *     Meta information is stored in the omero field which gives access to the omero-meta data. Refer to the omero documentation for more information.
  *
  *
- * @elements/rep:latest
+ *     #Origins and Derivations
+ *
+ *     Images can be filtered, which means that a new representation is created from the other (original) representations. This new representation is then linked to the original representations. This way, we can always trace back to the original representation.
+ *     Both are encapsulaed in the origins and derived fields.
+ *
+ *     Representations belong to *one* sample. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
+ *     Each iamge has also a name, which is used to identify the image. The name is unique within a sample.
+ *     File and Rois that are used to create images are saved in the file origins and roi origins repectively.
+ *
+ *
+ *
  */
 export type Representation = {
   __typename?: 'Representation';
-  chain?: Maybe<Scalars['String']>;
   comments?: Maybe<Array<Maybe<Comment>>>;
   createdAt: Scalars['DateTime'];
   creator?: Maybe<User>;
@@ -1401,6 +2035,7 @@ export type Representation = {
   id: Scalars['ID'];
   /** The Arkitekt identifier */
   identifier?: Maybe<Scalars['String']>;
+  /** The Representation this Label instance belongs to */
   labels: Array<Label>;
   latestThumbnail?: Maybe<Thumbnail>;
   meta?: Maybe<Scalars['GenericScalar']>;
@@ -1408,10 +2043,10 @@ export type Representation = {
   metrics?: Maybe<Array<Maybe<Metric>>>;
   /** Cleartext name */
   name?: Maybe<Scalars['String']>;
-  nodeid?: Maybe<Scalars['String']>;
   omero?: Maybe<Omero>;
   origins: Array<Representation>;
   pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the representation */
   pinnedBy: Array<User>;
   roiOrigins: Array<Roi>;
   /** Associated rois */
@@ -1427,8 +2062,6 @@ export type Representation = {
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
   /** The Sample this representation belongs to */
   thumbnails: Array<Thumbnail>;
-  /** The Representation can have varying types, consult your API */
-  type?: Maybe<Scalars['String']>;
   /** A unique identifier for this array */
   unique: Scalars['UUID'];
   /** The Representation can have vasrying types, consult your API */
@@ -1437,10 +2070,37 @@ export type Representation = {
 
 
 /**
- * A Representation is a multi-dimensional Array that can do what ever it wants
+ * A Representation is 5-dimensional representation of an image
+ *
+ *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     - t: time
+ *     - c: channel
+ *     - z: z-stack
+ *     - x: x-dimension
+ *     - y: y-dimension
+ *
+ *     This ensures a unified api for all images, regardless of their original dimensions. Another main
+ *     determining factor for a representation is its variety:
+ *     A representation can be a raw image representating voxels (VOXEL)
+ *     or a segmentation mask representing instances of a class. (MASK)
+ *     It can also representate a human perception of the image (RGB) or a human perception of the mask (RGBMASK)
+ *
+ *     # Meta
+ *
+ *     Meta information is stored in the omero field which gives access to the omero-meta data. Refer to the omero documentation for more information.
  *
  *
- * @elements/rep:latest
+ *     #Origins and Derivations
+ *
+ *     Images can be filtered, which means that a new representation is created from the other (original) representations. This new representation is then linked to the original representations. This way, we can always trace back to the original representation.
+ *     Both are encapsulaed in the origins and derived fields.
+ *
+ *     Representations belong to *one* sample. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
+ *     Each iamge has also a name, which is used to identify the image. The name is unique within a sample.
+ *     File and Rois that are used to create images are saved in the file origins and roi origins repectively.
+ *
+ *
+ *
  */
 export type RepresentationDerivedArgs = {
   createdAfter?: InputMaybe<Scalars['DateTime']>;
@@ -1465,10 +2125,37 @@ export type RepresentationDerivedArgs = {
 
 
 /**
- * A Representation is a multi-dimensional Array that can do what ever it wants
+ * A Representation is 5-dimensional representation of an image
+ *
+ *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     - t: time
+ *     - c: channel
+ *     - z: z-stack
+ *     - x: x-dimension
+ *     - y: y-dimension
+ *
+ *     This ensures a unified api for all images, regardless of their original dimensions. Another main
+ *     determining factor for a representation is its variety:
+ *     A representation can be a raw image representating voxels (VOXEL)
+ *     or a segmentation mask representing instances of a class. (MASK)
+ *     It can also representate a human perception of the image (RGB) or a human perception of the mask (RGBMASK)
+ *
+ *     # Meta
+ *
+ *     Meta information is stored in the omero field which gives access to the omero-meta data. Refer to the omero documentation for more information.
  *
  *
- * @elements/rep:latest
+ *     #Origins and Derivations
+ *
+ *     Images can be filtered, which means that a new representation is created from the other (original) representations. This new representation is then linked to the original representations. This way, we can always trace back to the original representation.
+ *     Both are encapsulaed in the origins and derived fields.
+ *
+ *     Representations belong to *one* sample. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
+ *     Each iamge has also a name, which is used to identify the image. The name is unique within a sample.
+ *     File and Rois that are used to create images are saved in the file origins and roi origins repectively.
+ *
+ *
+ *
  */
 export type RepresentationMetricsArgs = {
   creator?: InputMaybe<Scalars['ID']>;
@@ -1483,10 +2170,37 @@ export type RepresentationMetricsArgs = {
 
 
 /**
- * A Representation is a multi-dimensional Array that can do what ever it wants
+ * A Representation is 5-dimensional representation of an image
+ *
+ *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     - t: time
+ *     - c: channel
+ *     - z: z-stack
+ *     - x: x-dimension
+ *     - y: y-dimension
+ *
+ *     This ensures a unified api for all images, regardless of their original dimensions. Another main
+ *     determining factor for a representation is its variety:
+ *     A representation can be a raw image representating voxels (VOXEL)
+ *     or a segmentation mask representing instances of a class. (MASK)
+ *     It can also representate a human perception of the image (RGB) or a human perception of the mask (RGBMASK)
+ *
+ *     # Meta
+ *
+ *     Meta information is stored in the omero field which gives access to the omero-meta data. Refer to the omero documentation for more information.
  *
  *
- * @elements/rep:latest
+ *     #Origins and Derivations
+ *
+ *     Images can be filtered, which means that a new representation is created from the other (original) representations. This new representation is then linked to the original representations. This way, we can always trace back to the original representation.
+ *     Both are encapsulaed in the origins and derived fields.
+ *
+ *     Representations belong to *one* sample. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
+ *     Each iamge has also a name, which is used to identify the image. The name is unique within a sample.
+ *     File and Rois that are used to create images are saved in the file origins and roi origins repectively.
+ *
+ *
+ *
  */
 export type RepresentationRoisArgs = {
   createdAfter?: InputMaybe<Scalars['DateTime']>;
@@ -1504,10 +2218,37 @@ export type RepresentationRoisArgs = {
 
 
 /**
- * A Representation is a multi-dimensional Array that can do what ever it wants
+ * A Representation is 5-dimensional representation of an image
+ *
+ *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     - t: time
+ *     - c: channel
+ *     - z: z-stack
+ *     - x: x-dimension
+ *     - y: y-dimension
+ *
+ *     This ensures a unified api for all images, regardless of their original dimensions. Another main
+ *     determining factor for a representation is its variety:
+ *     A representation can be a raw image representating voxels (VOXEL)
+ *     or a segmentation mask representing instances of a class. (MASK)
+ *     It can also representate a human perception of the image (RGB) or a human perception of the mask (RGBMASK)
+ *
+ *     # Meta
+ *
+ *     Meta information is stored in the omero field which gives access to the omero-meta data. Refer to the omero documentation for more information.
  *
  *
- * @elements/rep:latest
+ *     #Origins and Derivations
+ *
+ *     Images can be filtered, which means that a new representation is created from the other (original) representations. This new representation is then linked to the original representations. This way, we can always trace back to the original representation.
+ *     Both are encapsulaed in the origins and derived fields.
+ *
+ *     Representations belong to *one* sample. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
+ *     Each iamge has also a name, which is used to identify the image. The name is unique within a sample.
+ *     File and Rois that are used to create images are saved in the file origins and roi origins repectively.
+ *
+ *
+ *
  */
 export type RepresentationTablesArgs = {
   createdAfter?: InputMaybe<Scalars['DateTime']>;
@@ -1580,38 +2321,34 @@ export enum RoiTypeInput {
   Unknown = 'UNKNOWN'
 }
 
-/**
- * Samples are storage containers for representations. A Sample is to be understood analogous to a Biological Sample. It existed in Time (the time of acquisiton and experimental procedure),
- *     was measured in space (x,y,z) and in different modalities (c). Sample therefore provide a datacontainer where each Representation of
- *     the data shares the same dimensions. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
- *
- */
+/** Samples are storage containers for representations. A Sample is to be understood analogous to a Biological Sample. It existed in Time (the time of acquisiton and experimental procedure), was measured in space (x,y,z) and in different modalities (c). Sample therefore provide a datacontainer where each Representation of the data shares the same dimensions. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample */
 export type Sample = {
   __typename?: 'Sample';
+  /** The time the sample was created */
   createdAt: Scalars['DateTime'];
+  /** The user that created the sample */
   creator?: Maybe<User>;
+  /** The experiments this sample belongs to */
   experiments: Array<Experiment>;
   id: Scalars['ID'];
   meta?: Maybe<Scalars['GenericScalar']>;
-  /** The Representatoin this Metric belongs to */
+  /** The Sample this Metric belongs to */
   metrics: Array<Metric>;
+  /** The name of the sample */
   name: Scalars['String'];
-  nodeid?: Maybe<Scalars['String']>;
   pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the sample */
   pinnedBy: Array<User>;
+  /** Associated representations of this Sample */
   representations?: Maybe<Array<Maybe<Representation>>>;
+  /** Sample this table belongs to */
   tables: Array<Table>;
   /** A comma-separated list of tags. */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
 };
 
 
-/**
- * Samples are storage containers for representations. A Sample is to be understood analogous to a Biological Sample. It existed in Time (the time of acquisiton and experimental procedure),
- *     was measured in space (x,y,z) and in different modalities (c). Sample therefore provide a datacontainer where each Representation of
- *     the data shares the same dimensions. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
- *
- */
+/** Samples are storage containers for representations. A Sample is to be understood analogous to a Biological Sample. It existed in Time (the time of acquisiton and experimental procedure), was measured in space (x,y,z) and in different modalities (c). Sample therefore provide a datacontainer where each Representation of the data shares the same dimensions. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample */
 export type SampleRepresentationsArgs = {
   createdAfter?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
@@ -1640,6 +2377,7 @@ export type SamplesEvent = {
   update?: Maybe<Sample>;
 };
 
+/** Sharable Models are models that can be shared amongst users and groups. They representent the models of the DB */
 export enum SharableModels {
   BordTable = 'BORD_TABLE',
   GrunnlagAnimal = 'GRUNNLAG_ANIMAL',
@@ -1666,6 +2404,13 @@ export type Subscription = {
   myRepresentations?: Maybe<RepresentationEvent>;
   mySamples?: Maybe<SamplesEvent>;
   myTables?: Maybe<TablesEvent>;
+  /**
+   * My Mentions
+   *
+   *     Returns an event of a new mention for the user if the user
+   *     was mentioned in a comment.
+   *
+   */
   mymentions?: Maybe<MentionEvent>;
   rois?: Maybe<RoiEvent>;
 };
@@ -1683,32 +2428,81 @@ export type SubscriptionRoisArgs = {
   representation: Scalars['ID'];
 };
 
+/**
+ *  A Table is a collection of tabular data.
+ *
+ *     It provides a way to store data in a tabular format and associate it with a Representation,
+ *     Sample or Experiment. It is a way to store data that might be to large to store in a
+ *     Feature or Metric on this Experiments. Or it might be data that is not easily represented
+ *     as a Feature or Metric.
+ *
+ *     Tables can be easily created from a pandas DataFrame and can be converted to a pandas DataFrame.
+ *     Its columns are defined by the columns of the DataFrame.
+ *
+ *
+ *
+ */
 export type Table = {
   __typename?: 'Table';
   /** Columns Data */
   columns?: Maybe<Array<Maybe<Column>>>;
+  /** When the Table was created */
   createdAt: Scalars['DateTime'];
+  /** The creator of the Table */
   creator?: Maybe<User>;
+  /** The Experiment this Table belongs to. */
   experiment?: Maybe<Experiment>;
   id: Scalars['ID'];
   name: Scalars['String'];
+  /** Is the table pinned by the active user */
   pinned?: Maybe<Scalars['Boolean']>;
   pinnedBy: Array<User>;
   /** List of Records */
   query?: Maybe<Array<Maybe<Scalars['GenericScalar']>>>;
+  /** The Representation this Table belongs to */
   representation?: Maybe<Representation>;
+  /** Sample this table belongs to */
   sample?: Maybe<Sample>;
+  /** The parquet store for the table */
   store?: Maybe<Scalars['Parquet']>;
   /** A comma-separated list of tags. */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
 };
 
 
+/**
+ *  A Table is a collection of tabular data.
+ *
+ *     It provides a way to store data in a tabular format and associate it with a Representation,
+ *     Sample or Experiment. It is a way to store data that might be to large to store in a
+ *     Feature or Metric on this Experiments. Or it might be data that is not easily represented
+ *     as a Feature or Metric.
+ *
+ *     Tables can be easily created from a pandas DataFrame and can be converted to a pandas DataFrame.
+ *     Its columns are defined by the columns of the DataFrame.
+ *
+ *
+ *
+ */
 export type TableColumnsArgs = {
   only?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
 
 
+/**
+ *  A Table is a collection of tabular data.
+ *
+ *     It provides a way to store data in a tabular format and associate it with a Representation,
+ *     Sample or Experiment. It is a way to store data that might be to large to store in a
+ *     Feature or Metric on this Experiments. Or it might be data that is not easily represented
+ *     as a Feature or Metric.
+ *
+ *     Tables can be easily created from a pandas DataFrame and can be converted to a pandas DataFrame.
+ *     Its columns are defined by the columns of the DataFrame.
+ *
+ *
+ *
+ */
 export type TableQueryArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -1730,7 +2524,12 @@ export type Tag = {
   slug: Scalars['String'];
 };
 
-/** Thumbnail(id, representation, image, major_color) */
+/**
+ * A Thumbnail is a render of a representation that is used to display the representation in the UI.
+ *
+ *     Thumbnails can also store the major color of the representation. This is used to color the representation in the UI.
+ *
+ */
 export type Thumbnail = {
   __typename?: 'Thumbnail';
   id: Scalars['ID'];
@@ -1740,9 +2539,24 @@ export type Thumbnail = {
   representation: Representation;
 };
 
+/**
+ * User
+ *
+ * This object represents a user in the system. Users are used to
+ * control access to different parts of the system. Users are assigned
+ * to groups. A user has access to a part of the system if the user is
+ * a member of a group that has the permission assigned to it.
+ *
+ * Users can be be "creator" of objects. This means that the user has
+ * created the object. This is used to control access to objects. A user
+ * can only access objects that they have created, or objects that they
+ * have access to through a group that they are a member of.
+ *
+ * See the documentation for "Object Level Permissions" for more information.
+ */
 export type User = {
   __typename?: 'User';
-  /** The color of the user */
+  /** The prefered color of the user */
   color: Scalars['String'];
   email: Scalars['String'];
   firstName: Scalars['String'];
@@ -2231,7 +3045,7 @@ export type TestBoardQueryVariables = Exact<{
 }>;
 
 
-export type TestBoardQuery = { __typename?: 'Query', experiment?: { __typename?: 'Experiment', meta?: any | null, name: string, id: string, samples?: Array<{ __typename?: 'Sample', meta?: any | null, name: string, id: string, representations?: Array<{ __typename?: 'Representation', id: string, meta?: any | null, name?: string | null, createdAt: any, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, createdAt: any } | null> | null, thumbnails: Array<{ __typename?: 'Thumbnail', id: string }> } | null> | null } | null> | null } | null };
+export type TestBoardQuery = { __typename?: 'Query', experiment?: { __typename?: 'Experiment', name: string, id: string, samples?: Array<{ __typename?: 'Sample', meta?: any | null, name: string, id: string, representations?: Array<{ __typename?: 'Representation', id: string, meta?: any | null, name?: string | null, createdAt: any, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, createdAt: any } | null> | null, thumbnails: Array<{ __typename?: 'Thumbnail', id: string }> } | null> | null } | null> | null } | null };
 
 export type TestBoardFilterQueryVariables = Exact<{
   value?: InputMaybe<Scalars['String']>;
@@ -2250,7 +3064,7 @@ export type TestBoardChangedQueryVariables = Exact<{
 }>;
 
 
-export type TestBoardChangedQuery = { __typename?: 'Query', experiment?: { __typename?: 'Experiment', meta?: any | null, name: string, id: string, samples?: Array<{ __typename?: 'Sample', meta?: any | null, name: string, id: string, display_rep?: Array<{ __typename?: 'Representation', id: string, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } | null> | null, data_reps?: Array<{ __typename?: 'Representation', id: string, meta?: any | null, variety: RepresentationVariety, metrics?: Array<{ __typename?: 'Metric', value?: any | null } | null> | null } | null> | null } | null> | null } | null };
+export type TestBoardChangedQuery = { __typename?: 'Query', experiment?: { __typename?: 'Experiment', name: string, id: string, samples?: Array<{ __typename?: 'Sample', meta?: any | null, name: string, id: string, display_rep?: Array<{ __typename?: 'Representation', id: string, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } | null> | null, data_reps?: Array<{ __typename?: 'Representation', id: string, meta?: any | null, variety: RepresentationVariety, metrics?: Array<{ __typename?: 'Metric', value?: any | null } | null> | null } | null> | null } | null> | null } | null };
 
 export type TestBoardTableKeysQueryVariables = Exact<{
   value?: InputMaybe<Scalars['String']>;
@@ -4624,7 +5438,6 @@ export type SearchSampleQueryResult = Apollo.QueryResult<SearchSampleQuery, Sear
 export const TestBoardDocument = gql`
     query TestBoard($exp: ID!) {
   experiment(id: $exp) {
-    meta
     name
     id
     samples {
@@ -4722,7 +5535,6 @@ export type TestBoardFilterQueryResult = Apollo.QueryResult<TestBoardFilterQuery
 export const TestBoardChangedDocument = gql`
     query TestBoardChanged($exp: ID!, $order: [String], $keys: [String], $tags: [String], $samples: [ID]) {
   experiment(id: $exp) {
-    meta
     name
     id
     samples(order: ["meta__p"], ids: $samples) {
