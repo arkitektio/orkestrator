@@ -59,7 +59,7 @@ export const PublicHome: React.FC<PublicHomeProps> = (props) => {
                       clientSecret: fakts.herre.client_secret,
                       scopes: fakts.herre.scopes,
                       redirectUri: window.__TAURI__
-                        ? "http://localhost:6790"
+                        ? window.location.origin + "/callback" //"http://localhost:6790"
                         : window.location.origin + "/callback",
                     },
                     {

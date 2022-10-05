@@ -13,7 +13,8 @@ export const FaktsHerreProvider: React.FC<FaktsHerreProps> = (props) => {
   const doRedirect = (url: string) => {
     console.log("Redirecting to", url);
     if (window.__TAURI__) {
-      invoke("login", { url: url });
+      //invoke("login", { url: url });
+      window.location.replace(url);
     } else {
       window.location.replace(url);
     }
