@@ -3903,10 +3903,10 @@ heap@0.2.5:
   resolved "https://registry.yarnpkg.com/heap/-/heap-0.2.5.tgz#713b65590ebcc40fcbeeaf55e851694092b39af1"
   integrity sha512-G7HLD+WKcrOyJP5VQwYZNC3Z6FcQ7YYjEFiFoIj8PfEr73mu421o8B1N5DKUcc8K37EsJ2XXWA8DtrDz/2dReg==
 
-herre@0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/herre/-/herre-0.0.2.tgz#d104f28efe3651935e4a125f63855a500090d2c2"
-  integrity sha512-df0Y66HSY/dfaeg+U5Nf7jp0MEpyXIThfdyuo7wEQx1w2JFEjILEi2nzC9H58DsfmttZZpUhbqe6iiZ+WgO8rg==
+herre@0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/herre/-/herre-0.0.3.tgz#ab2d0d43a53bead3039e209ce49d9cd83f7b8e80"
+  integrity sha512-mZZnFy4GJ+AAywUgocWZknUiszGdjRzt3ici1lWVljYHaUshsp5zSq7I3RSClzglEbLBwtg1Z6MPOy2oaIojoA==
   dependencies:
     pkce-challenge "^3.0.0"
 

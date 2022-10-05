@@ -3,15 +3,14 @@
     windows_subsystem = "windows"
 )]
 
-
+use net2::UdpBuilder;
 use serde::Serialize;
-use tauri::Manager;
-use warp::Filter;
 use serde_derive::Deserialize;
-use tokio::{time::{sleep, Duration}};
-use net2::{UdpBuilder};
 use std::net::{TcpListener, TcpStream};
-
+use tauri::Manager;
+use tauri::{utils::config::AppUrl, window::WindowBuilder, WindowUrl};
+use tokio::time::{sleep, Duration};
+use warp::Filter;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -41,10 +40,16 @@ struct Beacon {
     base_url: String,
 }
 
-
-
 fn main() {
+    let port = 6789;
+    let redirect_port = 6790;
 
+    let mut context = tauri::generate_context!();
+    let url = format!("http://localhost:{}", port).parse().unwrap();
+    let window_url = WindowUrl::External(url);
+    // rewrite the config so the IPC is enabled on this URL
+    context.config_mut().build.dist_dir = AppUrl::Url(window_url.clone());
+    context.config_mut().build.dev_path = AppUrl::Url(window_url.clone());
 
     tauri::Builder::default()
         // .register_uri_scheme_protocol("arkitekt", |app, _re| {
@@ -64,38 +69,38 @@ fn main() {
         //         .mimetype("text/html")
         //         .body("hello!".as_bytes().to_vec())
         // })
-        
-        .setup(|app| {
-            // send a message to the renderer process
-           
+        .plugin(tauri_plugin_localhost::Builder::new(port).build())
+        .setup(move |app| {
+            WindowBuilder::new(app, "xun".to_string(), window_url)
+                .title("Arkitekt")
+                .build()?;
+
             let app_handle = app.handle();
             let next_handle = app.handle();
 
-            match TcpListener::bind("127.0.0.1:3000") {
-                Ok(s) => s,
-                Err(e) => {
-                    app_handle.get_window("main").unwrap().emit("bind-error", e.to_string()).unwrap();
-                    panic!("couldn't bind socket: {:?}", e)}
-            };
-
-
-            let routes = warp::any().and(warp::query::<Query>()).map(move |x: Query| {
-                println!("code: {}", x.code);
-                let _window = app_handle.get_window("main").unwrap().emit("code", x.code);
-                let _login = app_handle.get_window("login").unwrap().hide();              
-                format!("Hello, World {}!", "nn")
-            });
-
+            let routes = warp::any()
+                .and(warp::query::<Query>())
+                .map(move |x: Query| {
+                    println!("code: {}", x.code);
+                    let _window = app_handle.get_window("main").unwrap().emit("code", x.code);
+                    let _login = app_handle.get_window("login").unwrap().hide();
+                    format!("Hello, World {}!", "nn")
+                });
 
             tauri::async_runtime::spawn(async move {
-            // listen for udp broadcasts on port 8080
+                // listen for udp broadcasts on port 8080
                 let socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:45678");
 
                 let socket = match socket {
                     Ok(s) => s,
                     Err(e) => {
-                        next_handle.get_window("main").unwrap().emit("bind-error", e.to_string()).unwrap();
-                        panic!("couldn't bind socket: {:?}", e)}
+                        next_handle
+                            .get_window("main")
+                            .unwrap()
+                            .emit("bind-error", e.to_string())
+                            .unwrap();
+                        panic!("couldn't bind socket: {:?}", e)
+                    }
                 };
 
                 // receive a single datagram
@@ -107,34 +112,21 @@ fn main() {
                     println!("received {} bytes from {}", amt, src);
                     println!("received {}", s);
 
-                   
-
-
-
-                    if s.starts_with("beacon-fakts"){
-                        let x: Beacon = serde_json::from_str(s.strip_prefix("beacon-fakts").unwrap()).unwrap();
+                    if s.starts_with("beacon-fakts") {
+                        let x: Beacon =
+                            serde_json::from_str(s.strip_prefix("beacon-fakts").unwrap()).unwrap();
                         let _window = next_handle.get_window("main").unwrap().emit("fakts", x);
                     }
                     sleep(Duration::from_millis(100)).await;
                 }
-                    
-
             });
 
-
-
             tauri::async_runtime::spawn(async move {
-
                 // Check if port is available
-                
-
-                
 
                 warp::serve(routes)
-                .run(([127, 0, 0, 1], 3030))
-                .await;
-
-                    
+                    .run(([127, 0, 0, 1], redirect_port))
+                    .await;
             });
             Ok(())
         })
@@ -154,6 +146,6 @@ fn main() {
                 wry_window.hide().unwrap();
             }
         })
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running tauri application");
 }
