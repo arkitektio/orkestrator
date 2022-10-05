@@ -28,21 +28,6 @@ export const FaktsHerreProvider: React.FC<FaktsHerreProps> = (props) => {
     );
 
   return (
-    <HerreProvider
-      clientId={fakts.herre.client_id}
-      clientSecret={fakts.herre.client_secret}
-      redirectUri={
-        window.__TAURI__
-          ? "http://localhost:3030"
-          : window.location.origin + "/callback"
-      }
-      tokenUrl={fakts.herre.base_url + "/token/"}
-      userInfoUrl={fakts.herre.base_url + "/userinfo/"}
-      authUrl={fakts.herre.base_url + "/authorize/"}
-      scopes={fakts.herre.scopes}
-      doRedirect={doRedirect}
-    >
-      {props.children}
-    </HerreProvider>
+    <HerreProvider doRedirect={doRedirect}>{props.children}</HerreProvider>
   );
 };

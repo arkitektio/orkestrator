@@ -52,7 +52,24 @@ export const PublicHome: React.FC<PublicHomeProps> = (props) => {
               </div>
             ) : (
               <button
-                onClick={() => login()}
+                onClick={() =>
+                  login(
+                    {
+                      clientId: fakts.herre.client_id,
+                      clientSecret: fakts.herre.client_secret,
+                      scopes: fakts.herre.scopes,
+                      redirectUri: window.__TAURI__
+                        ? "http://localhost:6790"
+                        : window.location.origin + "/callback",
+                    },
+                    {
+                      base_url: fakts.herre.base_url,
+                      tokenUrl: fakts.herre.base_url + "/token/",
+                      userInfoEndpoint: fakts.herre.base_url + "/userinfo/",
+                      authUrl: fakts.herre.base_url + "/authorize/",
+                    }
+                  )
+                }
                 className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10"
               >
                 Login with {fakts.herre.base_url}
