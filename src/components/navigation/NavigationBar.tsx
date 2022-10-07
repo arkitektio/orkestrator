@@ -40,7 +40,8 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
           <NavLink to={"/"} className="rounded-md text-xl font-light">
             <Logo
               width={"4rem"}
-              cubeColor={"rgb(var(--color-primary-300))"}
+              height={"4rem"}
+              cubeColor={"rgb(var(--color-primary-400))"}
               aColor={"var(--color-back-700)"}
               strokeColor={"var(--color-back-700)"}
             />

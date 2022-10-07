@@ -38,7 +38,7 @@ export const RepresentationItem = ({ re }: any) => {
             }
       }
     >
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 truncate">
         <Representation.DetailLink
           className={({ isActive } /*  */) =>
             "font-bold text-md mb-2 cursor-pointer " +
@@ -72,7 +72,7 @@ export const SampleItem = ({ sa }: any) => {
         }`
       }
     >
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 truncate">
         <Sample.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +
@@ -104,7 +104,7 @@ export const ExperimentItem = ({ experiment }: any) => {
         }`
       }
     >
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 truncate">
         <Experiment.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +

@@ -65,19 +65,30 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                   Found these endpoints
                 </div>
               )}
-              <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start text-white">
+              <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start text-white gap-2">
                 {endpoints.map((endpoint) => (
                   <button
                     key={endpoint.name}
                     className="rounded rounded-md border border-gray-300 p-3 flex flex-col hover:bg-primary-300 cursor-pointer"
-                    onClick={() =>
-                      load({
-                        endpoint,
-                        clientId: "PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO",
-                        clientSecret:
-                          "8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X",
-                      })
-                    }
+                    onClick={() => {
+                      setFuture(
+                        load({
+                          endpoint,
+                          clientId: "PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO",
+                          clientSecret:
+                            "8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X",
+                        })
+                          .then(() => {
+                            setFuture(null);
+                          })
+                          .catch((e) => {
+                            alert({ message: e.message, subtitle: e.stack });
+                          })
+                          .finally(() => {
+                            setFuture(null);
+                          }, true)
+                      );
+                    }}
                   >
                     {endpoint.name}
                     <span className="text-gray-500 text-xs">

@@ -23,6 +23,7 @@ const PublicNavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
           <NavLink to={"/"} className="rounded-md text-xl font-light">
             <Logo
               width={"4rem"}
+              height={"4rem"}
               cubeColor={"rgb(var(--color-primary-300))"}
               aColor={"var(--color-back-700)"}
               strokeColor={"var(--color-back-700)"}

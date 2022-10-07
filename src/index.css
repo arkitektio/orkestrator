@@ -156,7 +156,7 @@ code {
 
 ::-webkit-scrollbar {
   width: 20px;
-  background-color: #0f172a;
+  background-color: transparent;
 }
 
 ::-webkit-scrollbar-track {

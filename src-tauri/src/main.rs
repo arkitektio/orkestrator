@@ -3,14 +3,12 @@
     windows_subsystem = "windows"
 )]
 
-use net2::UdpBuilder;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use std::net::{TcpListener, TcpStream};
 use tauri::Manager;
 use tauri::{utils::config::AppUrl, window::WindowBuilder, WindowUrl};
+use tokio::net::UdpSocket;
 use tokio::time::{sleep, Duration};
-use warp::Filter;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -29,11 +27,6 @@ fn login(app: tauri::AppHandle, url: &str) -> String {
     "Hello, world!".to_string()
 }
 
-#[derive(Deserialize, Debug)]
-struct Query {
-    code: String,
-}
-
 #[derive(Deserialize, Serialize, Debug, Clone)]
 struct Beacon {
     name: String,
@@ -42,7 +35,6 @@ struct Beacon {
 
 fn main() {
     let port = 6789;
-    let redirect_port = 6790;
 
     let mut context = tauri::generate_context!();
     let url = format!("http://localhost:{}", port).parse().unwrap();
@@ -71,32 +63,22 @@ fn main() {
         // })
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(move |app| {
-            WindowBuilder::new(app, "xun".to_string(), window_url)
-                .title("Arkitekt")
+            WindowBuilder::new(app, "orkestrator".to_string(), window_url)
+                .title("orkestrator")
                 .disable_file_drop_handler()
                 .build()?;
 
-            let app_handle = app.handle();
             let next_handle = app.handle();
-
-            let routes = warp::any()
-                .and(warp::query::<Query>())
-                .map(move |x: Query| {
-                    println!("code: {}", x.code);
-                    let _window = app_handle.get_window("main").unwrap().emit("code", x.code);
-                    let _login = app_handle.get_window("login").unwrap().hide();
-                    format!("Hello, World {}!", "nn")
-                });
 
             tauri::async_runtime::spawn(async move {
                 // listen for udp broadcasts on port 8080
-                let socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:45678");
+                let socket = UdpSocket::bind("0.0.0.0:45678").await;
 
                 let socket = match socket {
                     Ok(s) => s,
                     Err(e) => {
                         next_handle
-                            .get_window("main")
+                            .get_window("orkestrator")
                             .unwrap()
                             .emit("bind-error", e.to_string())
                             .unwrap();
@@ -107,7 +89,7 @@ fn main() {
                 // receive a single datagram
                 let mut buf = [0u8; 1500];
 
-                while let Ok((amt, src)) = socket.recv_from(&mut buf) {
+                while let Ok((amt, src)) = socket.recv_from(&mut buf).await {
                     let data = &buf[..amt];
                     let s = std::str::from_utf8(data).unwrap();
                     println!("received {} bytes from {}", amt, src);
@@ -116,19 +98,25 @@ fn main() {
                     if s.starts_with("beacon-fakts") {
                         let x: Beacon =
                             serde_json::from_str(s.strip_prefix("beacon-fakts").unwrap()).unwrap();
-                        let _window = next_handle.get_window("main").unwrap().emit("fakts", x);
+
+                        let window = next_handle.get_window("orkestrator");
+
+                        match window {
+                            Some(w) => {
+                                w.emit("fakts", x).unwrap();
+                            }
+                            None => {
+                                println!("no window");
+                                break;
+                            }
+                        }
                     }
                     sleep(Duration::from_millis(100)).await;
                 }
+
+                println!("Done here");
             });
 
-            tauri::async_runtime::spawn(async move {
-                // Check if port is available
-
-                warp::serve(routes)
-                    .run(([127, 0, 0, 1], redirect_port))
-                    .await;
-            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![greet])

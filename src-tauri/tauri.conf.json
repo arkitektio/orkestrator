@@ -6,7 +6,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "xun",
+    "productName": "orkestrator",
     "version": "0.0.4"
   },
   "tauri": {
@@ -33,7 +33,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.xun.dev",
+      "identifier": "com.orkestrator.dev",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -58,14 +58,6 @@
       "active": false
     },
     "windows": [
-      {
-        "height": 300,
-        "resizable": false,
-        "title": "login",
-        "label": "login",
-        "width": 800,
-        "visible": false
-      }
     ]
   }
 }

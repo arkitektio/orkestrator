@@ -66,9 +66,9 @@ const ExperimentCard: React.FC<{
         ];
       }}
     >
-      <div className="px-1 py-2">
+      <div className="px-1 py-2 truncate">
         <Experiment.DetailLink
-          className="flex-grow cursor-pointer font-semibold truncate"
+          className="flex-grow cursor-pointer font-semibold"
           object={experiment.id}
         >
           {experiment?.name}
