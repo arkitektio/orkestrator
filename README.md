@@ -20,3 +20,5 @@ if you want to develop with tauri make sure to also install [tauri](https://taur
 To run the application mode run
 
 `yarn tauri dev`
+
+## Have fun
