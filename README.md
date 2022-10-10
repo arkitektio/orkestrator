@@ -1,5 +1,7 @@
 # Orkestrator
 
+
+
 This repository includes the Orkestrator frontend for the arkitekt platform
 it is used to build both the orkestrator web frontend as well as the orkestrator
 application (build with tauri).
@@ -21,4 +23,11 @@ To run the application mode run
 
 `yarn tauri dev`
 
-## Have fun
+
+## Datainterface
+
+![alt text](datainterface.png "Title")
+
+## Workflows
+
+![alt text](workflow.png "Title")
