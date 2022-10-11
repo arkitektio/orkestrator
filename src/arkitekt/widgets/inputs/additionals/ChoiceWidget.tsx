@@ -4,6 +4,7 @@ import Select from "react-select";
 import {
   ArgPortFragment,
   ChoiceWidgetFragment,
+  PortKind,
   SliderWidgetFragment,
 } from "../../../api/graphql";
 import { InputWidgetProps } from "../../types";
@@ -13,28 +14,40 @@ export type ISliderProps = {
   widget?: SliderWidgetFragment;
 };
 
-export type SearchOptions = [{ label: string; value: string }];
+export type SelectOption = { label: string; value: string };
 
 interface EnumSelectWidgetProps extends FieldProps {
   options: { value: any; label: any }[];
+  isMulti?: boolean;
 }
 
 export const EnumSelectWidget: React.FC<EnumSelectWidgetProps> = ({
   field,
   form,
+  isMulti,
   options: selectOptions,
   meta,
 }) => {
   function onChange(option: any) {
-    console.log(option);
-    form.setFieldValue(field.name, option.value);
+    form.setFieldValue(
+      field.name,
+      option
+        ? isMulti
+          ? (option as SelectOption[]).map((item: SelectOption) => item.value)
+          : (option as SelectOption).value
+        : isMulti
+        ? []
+        : null
+    );
   }
 
-  let initialValue = meta?.initialValue || field.value;
+  let initialValue = meta?.initialValue || field.value || [];
 
-  const defaultValue = selectOptions.find((option) => {
-    return option.value === initialValue;
-  });
+  const defaultValue = isMulti
+    ? selectOptions.filter((o) => initialValue.includes(o.value))
+    : selectOptions.find((option) => {
+        return option.value === initialValue;
+      });
 
   return (
     <>
@@ -42,6 +55,7 @@ export const EnumSelectWidget: React.FC<EnumSelectWidgetProps> = ({
         options={selectOptions}
         onChange={onChange}
         value={defaultValue}
+        isMulti={isMulti}
       />
     </>
   );
@@ -58,7 +72,7 @@ const ChoiceWidget: React.FC<InputWidgetProps<ChoiceWidgetFragment>> = ({
       </label>
       <div className="w-full mt-2 mb-2 relative">
         <Field
-          isMulti={false}
+          isMulti={port.kind == PortKind.List}
           name={port.key || "fake"}
           component={EnumSelectWidget}
           className="mb-2"
