@@ -13,7 +13,8 @@
     "arkitekt": "graphql-codegen --config arkitekt.yml",
     "mikro": "graphql-codegen --config mikro.yml",
     "herre": "graphql-codegen --config herre.yml",
-    "man": "graphql-codegen --config man.yml"
+    "man": "graphql-codegen --config man.yml",
+    "dockbuild": "vite build && docker build -t jhnnsrs/orkestrator:prod ."
   },
   "dependencies": {
     "@air/react-drag-to-select": "^5.0.2",

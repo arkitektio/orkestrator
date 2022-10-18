@@ -36,14 +36,14 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
             <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
               <Formik<ConfigValues>
                 initialValues={{
-                  host: `${window.location.hostname}:8000`,
+                  host: `${window.location}`,
                 }}
                 onSubmit={({ host }, { setSubmitting }) => {
                   setSubmitting(true);
                   load({
                     endpoint: {
                       name: "Localhost",
-                      base_url: `http://${host}/f/`,
+                      base_url: `${host}/f/`,
                     },
                     clientId: "PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO",
                     clientSecret:
