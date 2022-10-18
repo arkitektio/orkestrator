@@ -45,6 +45,22 @@ const ResponsiveGrid: React.FC<IResponsiveGridProps> = ({ children }) => {
     <div
       className="pt-2 pb-2 pr-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 xl:grid-cols-6 gap-4"
       ref={parent}
+      onMouseMove={(e) => {
+        if (parent.current) {
+          const selectables = Array.from<HTMLElement>(
+            parent.current.children as unknown as HTMLElement[]
+          );
+
+          for (const card of selectables) {
+            const rect = card.getBoundingClientRect(),
+              x = e.clientX - rect.left,
+              y = e.clientY - rect.top;
+
+            card.style.setProperty("--mouse-x", `${x}px`);
+            card.style.setProperty("--mouse-y", `${y}px`);
+          }
+        }
+      }}
     >
       {children}
     </div>

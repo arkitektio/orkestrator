@@ -46,7 +46,7 @@ export const RepresentationCard: React.FC<{
       //   rep.latestThumbnail?.majorColor || "#00ff00"
       // }]`}
       dropClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `rounded group text-white bg-center bg-cover shadow-lg ${
+        `thecard rounded group text-white bg-center bg-cover shadow-lg ${
           isOver && !isDragging && "border-primary-200 border"
         } ${isDragging && "border-primary-200 border"} ${
           isSelected && "ring-2 ring-secondary-500 "
@@ -65,7 +65,7 @@ export const RepresentationCard: React.FC<{
               }30`,
             }
           : {
-              background: "black",
+              background: "rgba(0,0,0,0.3)",
               boxShadow: `0px 10px  15px -3px ${"#000000"}50`,
             }
       }
