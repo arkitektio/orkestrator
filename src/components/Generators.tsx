@@ -1,9 +1,9 @@
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import React from "react";
-import { NodeKind, ReservationStatus } from "../arkitekt/api/graphql";
-import { usePostman } from "../arkitekt/postman/graphql/postman-context";
-import { useRequester } from "../arkitekt/postman/requester/requester-context";
-import { useReserver } from "../arkitekt/postman/reserver/reserver-context";
+import { NodeKind, ReservationStatus } from "../rekuest/api/graphql";
+import { usePostman } from "../rekuest/postman/graphql/postman-context";
+import { useRequester } from "../rekuest/postman/requester/requester-context";
+import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 
 export type IGeneratorsProps = {};
 

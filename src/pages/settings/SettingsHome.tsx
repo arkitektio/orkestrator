@@ -1,6 +1,6 @@
 import { Form, Formik } from "formik";
 import React, { useState, useEffect } from "react";
-import { ChangeSubmitHelper } from "../../arkitekt/ui/helpers/ChangeSubmitter";
+import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 import { SelectInputField } from "../../components/forms/fields/select_input";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import { PageLayout } from "../../layout/PageLayout";

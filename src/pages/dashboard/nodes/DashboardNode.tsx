@@ -12,12 +12,12 @@ import {
   PortKind,
   ReturnPortFragment,
   useDetailNodeQuery,
-} from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
+} from "../../../rekuest/api/graphql";
 import { notEmpty } from "../../../floating/utils";
 import { FlussNode } from "../../../fluss/components/FlussNode";
 import { PageLayout } from "../../../layout/PageLayout";
 import { Template } from "../../../linker";
+import { withRekuest } from "../../../rekuest";
 
 export type INodeScreenProps = {};
 
@@ -85,7 +85,7 @@ export const portMapper = (
 
 const DashboardNode: React.FC<INodeScreenProps> = (props) => {
   let { id } = useParams<{ id: string }>();
-  const { data, subscribeToMore } = withArkitekt(useDetailNodeQuery)({
+  const { data, subscribeToMore } = withRekuest(useDetailNodeQuery)({
     variables: { id: id },
   });
 

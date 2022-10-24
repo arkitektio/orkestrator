@@ -1,25 +1,16 @@
-import React, { useEffect, useState } from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
+import React, { useState } from "react";
+import { BsCaretLeft, BsCaretRight, BsTrash } from "react-icons/bs";
 import { notEmpty } from "../floating/utils";
 import { Representation } from "../linker";
 import {
   ListRepresentationFragment,
-  MyRepresentationsEventDocument,
-  MyRepresentationsEventSubscriptionResult,
-  MyRepresentationsQuery,
   useDeleteRepresentationMutation,
-  useMyRepresentationsQuery,
   usePinnedRepresentationsQuery,
   useUpdateRepresentationMutation,
 } from "../mikro/api/graphql";
-import { useMikro, withMikro } from "../mikro/mikro-types";
+import { useMikro, withMikro } from "../mikro/MikroContext";
 import { useConfirm } from "./confirmer/confirmer-context";
+import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
 export type IMyRepresentationsProps = {};
 

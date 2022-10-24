@@ -2,21 +2,21 @@ import { useParams } from "react-router";
 import {
   AvailableModels,
   useDetailTemplateQuery,
-} from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
-import { ShareModal } from "../../../arkitekt/components/dialogs/ShareModal";
+} from "../../../rekuest/api/graphql";
+import { ShareModal } from "../../../rekuest/components/dialogs/ShareModal";
 import { Modal } from "../../../components/modals/Modal";
 import { notEmpty } from "../../../floating/utils";
 import { Actionbar } from "../../../layout/Actionbar";
 import { PageLayout } from "../../../layout/PageLayout";
 import { Provision } from "../../../linker";
+import { withRekuest } from "../../../rekuest";
 
 export interface DashboardTemplateProps {}
 
 export const DashboardTemplate: React.FC<DashboardTemplateProps> = (props) => {
   const { id } = useParams<{ id: string }>();
   if (!id) return <></>;
-  const { data } = withArkitekt(useDetailTemplateQuery)({
+  const { data } = withRekuest(useDetailTemplateQuery)({
     variables: { id: id },
   });
 

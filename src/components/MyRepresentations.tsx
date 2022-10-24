@@ -18,7 +18,7 @@ import {
   usePinnedRepresentationsQuery,
   useUpdateRepresentationMutation,
 } from "../mikro/api/graphql";
-import { useMikro, withMikro } from "../mikro/mikro-types";
+import { useMikro, withMikro } from "../mikro/MikroContext";
 import { useConfirm } from "./confirmer/confirmer-context";
 
 export type IMyRepresentationsProps = {};
@@ -46,7 +46,7 @@ export const RepresentationCard: React.FC<{
       //   rep.latestThumbnail?.majorColor || "#00ff00"
       // }]`}
       dropClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `thecard rounded group text-white bg-center bg-cover shadow-lg ${
+        `rounded group text-white bg-center bg-cover shadow-lg ${
           isOver && !isDragging && "border-primary-200 border"
         } ${isDragging && "border-primary-200 border"} ${
           isSelected && "ring-2 ring-secondary-500 "

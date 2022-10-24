@@ -7,13 +7,13 @@ import {
   MirrorRepositoryFragment,
   useDeleteRepoMutation,
   useRepositoriesQuery,
-} from "../arkitekt/api/graphql";
-import { withArkitekt } from "../arkitekt/arkitekt";
+} from "../rekuest/api/graphql";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { AppRepository, MirrorRepository } from "../linker";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
+import { withRekuest } from "../rekuest";
 
 export type IActiveClientsProps = {};
 
@@ -57,7 +57,7 @@ export const AppRepositoryItem = ({
 }: {
   repository: AppRepositoryFragment;
 }) => {
-  const [deleteRepo] = withArkitekt(useDeleteRepoMutation)();
+  const [deleteRepo] = withRekuest(useDeleteRepoMutation)();
 
   const { confirm } = useConfirm();
 
@@ -123,7 +123,7 @@ export const AppRepositoryItem = ({
 };
 
 export const MyRepositories: React.FC<IActiveClientsProps> = ({}) => {
-  const { data } = withArkitekt(useRepositoriesQuery)();
+  const { data } = withRekuest(useRepositoriesQuery)();
   const navigate = useNavigate();
 
   return (

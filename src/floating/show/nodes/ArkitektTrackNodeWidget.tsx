@@ -3,16 +3,16 @@ import "react-contexify/dist/ReactContexify.css";
 import { Handle, Position } from "react-flow-renderer";
 import { NavLink } from "react-router-dom";
 import ReactTooltip from "react-tooltip";
-import { NodeKind, useDetailNodeQuery } from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
+import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { Node } from "../../../linker";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps } from "../../types";
 import { NodeShowLayout } from "./layout/NodeTrack";
+import { withRekuest } from "../../../rekuest";
 
 export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id }) => {
-    const { data: node_data, error } = withArkitekt(useDetailNodeQuery)({
+    const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
       variables: { package: data.package, interface: data.interface },
     });
     const { isExpanded, toggleExpanded } = useNodeLayout();

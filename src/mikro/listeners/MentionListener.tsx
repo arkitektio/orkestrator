@@ -6,7 +6,7 @@ import {
   WatchMentionsSubscription,
   WatchMentionsSubscriptionVariables,
 } from "../api/graphql";
-import { withMikro } from "../mikro-types";
+import { withMikro } from "../MikroContext";
 
 export interface MentionListenerProps {}
 

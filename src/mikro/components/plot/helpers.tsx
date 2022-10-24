@@ -1,4 +1,4 @@
-import { Identifier } from "../../../arkitekt/api/scalars";
+import { Identifier } from "../../../rekuest/api/scalars";
 import { bisector } from "d3-array";
 import { scaleLinear, scaleTime, scaleBand } from "@visx/scale";
 import { Datum } from "./types";

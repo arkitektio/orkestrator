@@ -1,10 +1,10 @@
 import React, { Children, useCallback, useEffect } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useSelectionContainer, Box } from "@air/react-drag-to-select";
-import { SmartModelProps } from "../../arkitekt/selection/SmartModel";
+import { SmartModelProps } from "../../rekuest/selection/SmartModel";
 import { notEmpty } from "../../floating/utils";
-import { Identifier } from "../../arkitekt/api/scalars";
-import { useModelSelector } from "../../arkitekt/selection/context";
+import { Identifier } from "../../rekuest/api/scalars";
+import { useModelSelector } from "../../rekuest/selection/context";
 
 export type IResponsiveGridProps = {
   children?: React.ReactNode;

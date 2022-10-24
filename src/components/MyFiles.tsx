@@ -9,7 +9,7 @@ import {
 import { ImCancelCircle } from "react-icons/im";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
-import { Mate } from "../arkitekt/postman/mater/mater-context";
+import { Mate } from "../rekuest/postman/mater/mater-context";
 import { SectionTitle } from "../layout/SectionTitle";
 import { MikroFile } from "../linker";
 import {
@@ -20,7 +20,7 @@ import {
   useMyOmeroFilesQuery,
   useUploadOmeroFileMutation,
 } from "../mikro/api/graphql";
-import { useMikro, withMikro } from "../mikro/mikro-types";
+import { useMikro, withMikro } from "../mikro/MikroContext";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 import { preventOverflow } from "@popperjs/core";

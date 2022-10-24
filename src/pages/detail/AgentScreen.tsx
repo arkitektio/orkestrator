@@ -1,8 +1,8 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router";
-import { useDetailAgentQuery } from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
+import { useDetailAgentQuery } from "../../rekuest/api/graphql";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
+import { withRekuest } from "../../rekuest";
 
 export type IAppProps = {};
 
@@ -10,7 +10,7 @@ const AgentScreen: React.FC<IAppProps> = ({}) => {
   const { agentid } = useParams<{ agentid: string }>();
 
   if (!agentid) return <></>;
-  const { data, error, loading } = withArkitekt(useDetailAgentQuery)({
+  const { data, error, loading } = withRekuest(useDetailAgentQuery)({
     variables: { id: agentid },
   });
 

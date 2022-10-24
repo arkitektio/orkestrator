@@ -1,9 +1,8 @@
 import * as React from "react";
 import Timestamp from "react-timestamp";
-import { useNodesQuery } from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
-import { usePostman } from "../../../arkitekt/postman/graphql/postman-context";
-import { useRequester } from "../../../arkitekt/postman/requester/requester-context";
+import { useNodesQuery } from "../../../rekuest/api/graphql";
+import { usePostman } from "../../../rekuest/postman/graphql/postman-context";
+import { useRequester } from "../../../rekuest/postman/requester/requester-context";
 import { notEmpty } from "../../../floating/utils";
 import {
   ListFlowFragment,
@@ -12,6 +11,7 @@ import {
 import { withFluss } from "../../../fluss/fluss";
 import { useFluss } from "../../../fluss/fluss-context";
 import { Flow } from "../../../linker";
+import { withRekuest } from "../../../rekuest";
 
 interface IDataSidebarProps {
   diagram: string;
@@ -67,7 +67,7 @@ const FlowDiagramSidebar: React.FunctionComponent<IDataSidebarProps> = ({
   const { reservations } = usePostman();
   const { assign } = useRequester();
 
-  const { data: deployable } = withArkitekt(useNodesQuery)({
+  const { data: deployable } = withRekuest(useNodesQuery)({
     variables: { interfaces: [`diagram:${diagram}`] },
   });
 

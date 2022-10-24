@@ -6,15 +6,15 @@ import {
   useLinkableProvisionsQuery,
   useLinkMutation,
   useUnlinkMutation,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
-import { ProvisionPulse } from "../../arkitekt/components/generic/StatusPulse";
-import { SmartModel } from "../../arkitekt/selection/SmartModel";
+} from "../../rekuest/api/graphql";
+import { ProvisionPulse } from "../../rekuest/components/generic/StatusPulse";
+import { SmartModel } from "../../rekuest/selection/SmartModel";
 import { notEmpty } from "../../floating/utils";
 import { Provision } from "../../linker";
 import { UserEmblem } from "../../man/components/UserEmblem";
 import { useAlert } from "../alerter/alerter-context";
 import { ReserveEvent } from "./types";
+import { withRekuest } from "../../rekuest";
 
 export type ReservationTimelineProps = {
   reservation: DetailReservationFragment;
@@ -26,12 +26,12 @@ type ArrayElement<ArrayType extends readonly unknown[]> =
 export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
   reservation,
 }) => {
-  let { data: provisions } = withArkitekt(useLinkableProvisionsQuery)({
+  let { data: provisions } = withRekuest(useLinkableProvisionsQuery)({
     variables: { reservation: reservation?.id },
   });
 
-  const [unlink] = withArkitekt(useUnlinkMutation)();
-  const [link] = withArkitekt(useLinkMutation)();
+  const [unlink] = withRekuest(useUnlinkMutation)();
+  const [link] = withRekuest(useLinkMutation)();
   const { alert } = useAlert();
 
   return (

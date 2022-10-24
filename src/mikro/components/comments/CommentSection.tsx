@@ -16,7 +16,7 @@ import { object } from "yup";
 import {
   AdditionalMate,
   Mate,
-} from "../../../arkitekt/postman/mater/mater-context";
+} from "../../../rekuest/postman/mater/mater-context";
 import { getDefaultSmartModel, User } from "../../../linker";
 import {
   useUserOptionsLazyQuery,
@@ -35,7 +35,7 @@ import {
   useCommentsForQuery,
   useCreateCommentMutation,
 } from "../../api/graphql";
-import { withMikro } from "../../mikro-types";
+import { withMikro } from "../../MikroContext";
 import { ElementProps, MyEditor, RenderProps } from "./decs";
 
 interface ICommentEditProps {

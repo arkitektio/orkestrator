@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Timestamp from "react-timestamp";
 import { number } from "yup";
-import { SmartModel } from "../../../../arkitekt/selection/SmartModel";
+import { SmartModel } from "../../../../rekuest/selection/SmartModel";
 import { SelfActions } from "../../../../components/SelfActions";
 import { get_identifier_for_type } from "../../plot/helpers";
 import { buildSmartModel } from "../../plot/Tree";

@@ -10,7 +10,7 @@ const GroupScreen: React.FC<IRoiScreenProps> = () => {
   if (!group) return <></>;
   return (
     <div className="h-full relative">
-      <Group name={group} />
+      <Group id={group} />
     </div>
   );
 };

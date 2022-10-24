@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useModelSelector } from "../../arkitekt/selection/context";
+import { useModelSelector } from "../../rekuest/selection/context";
 import { useGeneralMenu } from "./GeneralMenuContext";
 
 export interface NavigationActionsProps {}

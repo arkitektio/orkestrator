@@ -5,7 +5,7 @@ import {
   RiArrowLeftSFill,
   RiArrowRightSFill,
 } from "react-icons/ri";
-import { MeDocument } from "../arkitekt/api/graphql";
+import { MeDocument } from "../rekuest/api/graphql";
 import BreadCrumbs from "../components/navigation/Breadcrumbs";
 import { Actionbar } from "./Actionbar";
 

@@ -20,7 +20,7 @@ import {
   useChangePermissionsMutation,
   usePermissionsOfQuery,
 } from "../../api/graphql";
-import { withMikro } from "../../mikro-types";
+import { withMikro } from "../../MikroContext";
 
 export const PermissionUserInfo = (props: { email: string }) => {
   const { data } = withMan(useUserQuery)({ variables: { email: props.email } });
@@ -51,9 +51,9 @@ export const PermissionUserInfo = (props: { email: string }) => {
   );
 };
 
-export const PermisionGroupInfo = (props: { name: string }) => {
+export const PermisionGroupInfo = (props: { id: string }) => {
   const { data } = withMan(useDetailGroupQuery)({
-    variables: { name: props.name },
+    variables: { id: props.id },
   });
 
   return (
@@ -214,7 +214,7 @@ export const ShareModal: React.FC<{
                                     <div className="flex-1 my-auto">
                                       {groupAssignment?.group ? (
                                         <PermisionGroupInfo
-                                          name={groupAssignment?.group}
+                                          id={groupAssignment?.group}
                                         />
                                       ) : (
                                         <SearchSelectInput

@@ -11,7 +11,7 @@ import {
   useDetailOmeroFileQuery,
 } from "../../../mikro/api/graphql";
 import CommentSection from "../../../mikro/components/comments/CommentSection";
-import { useMikro, withMikro } from "../../../mikro/mikro-types";
+import { useMikro, withMikro } from "../../../mikro/MikroContext";
 
 export interface DataFileProps {}
 

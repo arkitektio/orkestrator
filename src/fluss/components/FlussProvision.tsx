@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   DetailProvisionFragment,
   DetailReservationFragment,
-} from "../../arkitekt/api/graphql";
+} from "../../rekuest/api/graphql";
 import { MonitorRiver } from "../../floating/monitor/MonitorRiver";
 import { ShowRiver } from "../../floating/show/ShowRiver";
 import { useFlowQuery } from "../api/graphql";

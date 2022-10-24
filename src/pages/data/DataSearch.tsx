@@ -3,7 +3,7 @@ import { Field, Form, Formik } from "formik";
 import { useState } from "react";
 import { BiSearch } from "react-icons/bi";
 import { FiArrowDown } from "react-icons/fi";
-import { ChangeSubmitHelper } from "../../arkitekt/ui/helpers/ChangeSubmitter";
+import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 import { SearchSelectInput } from "../../components/forms/fields/search_select_input";
 import {
   GlobalSearchQueryVariables,
@@ -13,7 +13,7 @@ import {
 
 import "react-datepicker/dist/react-datepicker.css";
 import { DateInputField } from "../../components/forms/fields/date_input";
-import { withMikro } from "../../mikro/mikro-types";
+import { withMikro } from "../../mikro/MikroContext";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
 
 interface NodeFilterBoxProps {

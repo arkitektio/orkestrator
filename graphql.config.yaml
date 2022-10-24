@@ -54,12 +54,12 @@ projects:
             - mikro.traits.ROI
           InputVector:
             - mikro.traits.Vectorizable
-  arkitekt:
+  rekuest:
     schema: http://localhost:8090/graphql
     documents: graphql/arkitekt/**/**.graphql
     extensions:
       turms:
-        out_dir: arkitekt/api
+        out_dir: rekuest/api
         always_resolve_interfaces: True
         parsers:
           - type: turms.parsers.polyfill.PolyfillParser

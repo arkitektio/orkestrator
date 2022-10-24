@@ -12,18 +12,18 @@ import {
   WatchReservationsOnProvisionDocument,
   WatchReservationsOnProvisionSubscription,
   WatchReservationsOnProvisionSubscriptionVariables,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
-import { ProvisionPulse } from "../../arkitekt/components/generic/StatusPulse";
+} from "../../rekuest/api/graphql";
+import { ProvisionPulse } from "../../rekuest/components/generic/StatusPulse";
 import { FlussProvision } from "../../fluss/components/FlussProvision";
 import { PageLayout } from "../../layout/PageLayout";
+import { withRekuest } from "../../rekuest";
 export type IProvisionScreenProps = {};
 export type ProvisionToolBarProps = {
   provision: Maybe<DetailProvisionFragment>;
 };
 
 export const DetailProvision: React.FC<{ id: string }> = ({ id }) => {
-  let { data, subscribeToMore } = withArkitekt(useDetailProvisionQuery)({
+  let { data, subscribeToMore } = withRekuest(useDetailProvisionQuery)({
     variables: { id },
   });
 

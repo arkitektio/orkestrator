@@ -8,10 +8,10 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
-import { ProvisionStatus } from "../arkitekt/api/graphql";
-import { UnprovideButton } from "../arkitekt/components/UnprovideButton";
-import { usePostman } from "../arkitekt/postman/graphql/postman-context";
-import { colorFromProvisionStatus } from "../arkitekt/ui/utils";
+import { ProvisionStatus } from "../rekuest/api/graphql";
+import { UnprovideButton } from "../rekuest/components/UnprovideButton";
+import { usePostman } from "../rekuest/postman/graphql/postman-context";
+import { colorFromProvisionStatus } from "../rekuest/ui/utils";
 import { notEmpty } from "../floating/utils";
 import { Provision } from "../linker";
 import { UserEmblem } from "../man/components/UserEmblem";

@@ -3,10 +3,10 @@ import { useNavigate } from "react-router";
 import {
   ListReservationFragment,
   ReservationStatus,
-} from "../arkitekt/api/graphql";
-import { AdditionalMate, Mate } from "../arkitekt/postman/mater/mater-context";
-import { useRequester } from "../arkitekt/postman/requester/requester-context";
-import { useReserver } from "../arkitekt/postman/reserver/reserver-context";
+} from "../rekuest/api/graphql";
+import { AdditionalMate, Mate } from "../rekuest/postman/mater/mater-context";
+import { useRequester } from "../rekuest/postman/requester/requester-context";
+import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 import { notEmpty } from "../floating/utils";
 import { Reservation } from "../linker";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";

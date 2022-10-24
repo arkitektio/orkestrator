@@ -11,7 +11,7 @@ import {
   useTagSearchLazyQuery,
   useUpdateOmeroFileMutation,
 } from "../api/graphql";
-import { useMikro, withMikro } from "../mikro-types";
+import { withMikro } from "../MikroContext";
 
 export type ISampleProps = {
   id: string;
@@ -27,10 +27,6 @@ const File: React.FC<ISampleProps> = ({ id }) => {
   const [searchTags, _t] = withMikro(useTagSearchLazyQuery)();
 
   const [updateOmero, _] = withMikro(useUpdateOmeroFileMutation)();
-
-  const { confirm } = useConfirm();
-  const navigate = useNavigate();
-  const { s3resolve } = useMikro();
 
   return (
     <div className="p-5">

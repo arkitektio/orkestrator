@@ -16,9 +16,9 @@ import {
   DetailNodeDocument,
   DetailNodeQuery,
   NodeKind,
-} from "../../arkitekt/api/graphql";
-import { useArkitekt } from "../../arkitekt/arkitekt-context";
-import { useAutoSelect } from "../../arkitekt/selection/context";
+} from "../../rekuest/api/graphql";
+import { useRekuest } from "../../rekuest/RekuestContext";
+import { useAutoSelect } from "../../rekuest/selection/context";
 import { useAlert } from "../../components/alerter/alerter-context";
 import {
   ArgPortFragment,
@@ -182,7 +182,7 @@ export const EditRiver: React.FC<Props> = ({
   onFlowSave,
   connectionHandler = defaultConnectionHandler,
 }) => {
-  const { client: arkitektapi } = useArkitekt();
+  const { client: arkitektapi } = useRekuest();
   const { client: flussapi } = useFluss();
   const [sidebar, setSidebar] = useState<React.ReactNode>(<EditSidebar />);
 

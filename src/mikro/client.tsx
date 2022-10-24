@@ -2,9 +2,7 @@ import { ApolloClient, ApolloLink, InMemoryCache, split } from "@apollo/client";
 import { WebSocketLink } from "@apollo/client/link/ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { createUploadLink } from "apollo-upload-client";
-import { Token } from "herre";
-import result from "./api/fragments";
-import { MikroConfig } from "./mikro-types";
+import { MikroConfig } from "./types";
 
 const parseHeaders = (rawHeaders: any) => {
   const headers = new Headers();
@@ -22,8 +20,13 @@ const parseHeaders = (rawHeaders: any) => {
   return headers;
 };
 
-export const uploadFetch = (url: string, options: ExtraRequest) =>
-  new Promise((resolve, reject) => {
+export const uploadFetch = (
+  url: RequestInfo | URL,
+  options?:
+    | (RequestInit & { onProgress?: (ev: ProgressEvent) => void })
+    | undefined
+) =>
+  new Promise<Response>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.onload = () => {
       const opts: any = {
@@ -44,25 +47,31 @@ export const uploadFetch = (url: string, options: ExtraRequest) =>
     xhr.ontimeout = () => {
       reject(new TypeError("Network request failed"));
     };
-    xhr.open(options.method, url, true);
 
-    Object.keys(options.headers).forEach((key) => {
-      xhr.setRequestHeader(key, options.headers[key]);
-    });
+    xhr.open(options?.method || "POST", url.toString(), true);
 
-    if (xhr.upload) {
-      xhr.upload.onprogress = options.onProgress;
-    }
-    let signal = options.signal;
-
-    if (signal) {
-      signal.addEventListener("abort", () => {
-        xhr.abort();
-        reject(new DOMException("Aborted", "AbortError"));
+    if (options?.headers) {
+      Object.entries(options.headers).forEach(([key, value]) => {
+        xhr.setRequestHeader(key, value);
       });
     }
 
-    xhr.send(options.body);
+    if (xhr.upload && options?.onProgress) {
+      xhr.upload.onprogress = options.onProgress;
+    }
+
+    if (options?.signal) {
+      let signal = options.signal;
+
+      if (signal) {
+        signal.addEventListener("abort", () => {
+          xhr.abort();
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      }
+    }
+
+    xhr.send(options?.body as any);
   });
 
 export type ExtraRequest = RequestInit & {
@@ -76,9 +85,11 @@ const customFetch = (uri: any, options: ExtraRequest) => {
   return fetch(uri, options);
 };
 
-export const createMikroClient = (config: MikroConfig, token: Token) => {
+export const createMikroClient = (config: MikroConfig) => {
+  let token = config.retrieveToken();
+
   const httpLink = createUploadLink({
-    uri: config.endpoint_url,
+    uri: config.endpointUrl,
     headers: {
       authorization: token ? `Bearer ${token}` : "",
     },
@@ -88,7 +99,7 @@ export const createMikroClient = (config: MikroConfig, token: Token) => {
   const queryLink = httpLink;
 
   const wsLink = new WebSocketLink({
-    uri: `${config.ws_endpoint_url}?token=${token}`,
+    uri: `${config.wsEndpointUrl}?token=${token}`,
     options: {
       reconnect: true,
     },
@@ -108,6 +119,6 @@ export const createMikroClient = (config: MikroConfig, token: Token) => {
 
   return new ApolloClient({
     link: splitLink,
-    cache: new InMemoryCache({ possibleTypes: result.possibleTypes }),
+    cache: new InMemoryCache({ possibleTypes: config.possibleTypes }),
   });
 };

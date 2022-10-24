@@ -4,7 +4,7 @@ import {
   ChildPortFragment,
   PortKind,
   ReturnPortFragment,
-} from "../arkitekt/api/graphql";
+} from "../rekuest/api/graphql";
 import {
   EdgeInput,
   FlowFragment,

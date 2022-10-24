@@ -22,7 +22,7 @@ import {
   useTagSearchLazyQuery,
   useUpdateExperimentMutation,
 } from "../api/graphql";
-import { withMikro } from "../mikro-types";
+import { withMikro } from "../MikroContext";
 import CommentSection from "./comments/CommentSection";
 
 export type IExperimentProps = {

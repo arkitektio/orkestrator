@@ -10,7 +10,7 @@ import { bin } from "d3-array";
 import { Form, Formik } from "formik";
 import React, { useEffect } from "react";
 import * as s from "simple-statistics";
-import { ChangeSubmitHelper } from "../../../arkitekt/ui/helpers/ChangeSubmitter";
+import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { SelectInputField } from "../../../components/forms/fields/select_input";
 import { PopMenu } from "../../../layout/PopMenu";
 import { Group } from "../plot/types";

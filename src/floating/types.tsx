@@ -8,7 +8,7 @@ import {
 import {
   DetailNodeFragment,
   ListReservationFragment,
-} from "../arkitekt/api/graphql";
+} from "../rekuest/api/graphql";
 import {
   ArgNodeFragment,
   ArgPort,

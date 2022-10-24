@@ -7,15 +7,15 @@ import {
   NodesQuery,
   useDeleteNodeMutation,
   useNodesQuery,
-} from "../arkitekt/api/graphql";
-import { withArkitekt } from "../arkitekt/arkitekt";
-import { AdditionalMate, Mate } from "../arkitekt/postman/mater/mater-context";
-import { useReserver } from "../arkitekt/postman/reserver/reserver-context";
+} from "../rekuest/api/graphql";
+import { AdditionalMate, Mate } from "../rekuest/postman/mater/mater-context";
+import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Flow, Node } from "../linker";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
+import { withRekuest } from "../rekuest";
 
 export type IMyNodesProps = {};
 
@@ -24,7 +24,7 @@ export const NodeCard = ({ node }: { node: NodeListItemFragment }) => {
   const navigate = useNavigate();
   const { confirm } = useConfirm();
 
-  const [deleteNode] = withArkitekt(useDeleteNodeMutation)();
+  const [deleteNode] = withRekuest(useDeleteNodeMutation)();
 
   return (
     <Node.Smart
@@ -82,7 +82,7 @@ export const NodeCard = ({ node }: { node: NodeListItemFragment }) => {
 };
 
 const MyNodes: React.FC<IMyNodesProps> = ({}) => {
-  const { data, loading, subscribeToMore } = withArkitekt(useNodesQuery)({
+  const { data, loading, subscribeToMore } = withRekuest(useNodesQuery)({
     pollInterval: 30000,
   });
 

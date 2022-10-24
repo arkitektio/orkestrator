@@ -1,18 +1,18 @@
 import React from "react";
 import "react-contexify/dist/ReactContexify.css";
 import { Handle, Position } from "react-flow-renderer";
-import { useDetailNodeQuery } from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
+import { useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { Reservation } from "../../../linker";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps } from "../../types";
 import { useMonitorRiver } from "../context";
 import { NodeMonitorLayout } from "./layout/NodeTrack";
+import { withRekuest } from "../../../rekuest";
 
 export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id }) => {
     const { reserveState } = useMonitorRiver();
-    const { data: node_data, error } = withArkitekt(useDetailNodeQuery)({
+    const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
       variables: { package: data.package, interface: data.interface },
     });
     const { isExpanded, toggleExpanded } = useNodeLayout();

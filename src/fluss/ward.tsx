@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import React, { useEffect } from "react";
-import { useArkitekt } from "../arkitekt/arkitekt-context";
-import { useWidgetRegistry } from "../arkitekt/widgets/widget-context";
+import { useRekuest } from "../rekuest/RekuestContext";
+import { useWidgetRegistry } from "../rekuest/widgets/widget-context";
 import { useFluss } from "./fluss-context";
 
 export const FlussWard: React.FC<{

@@ -13,7 +13,7 @@ import {
   useDeleteRepresentationMutation,
   useSharedRepresentationsQuery,
 } from "../mikro/api/graphql";
-import { useMikro, withMikro } from "../mikro/mikro-types";
+import { useMikro, withMikro } from "../mikro/MikroContext";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMyRepresentationsProps = {};

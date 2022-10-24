@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DetailAssignationFragment } from "../../arkitekt/api/graphql";
+import { DetailAssignationFragment } from "../../rekuest/api/graphql";
 import { useDetailRunQuery } from "../api/graphql";
 import { withFluss } from "../fluss";
 import { Run } from "./Run";

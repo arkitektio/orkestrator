@@ -7,15 +7,15 @@ import {
   WatchInterfaceSubscription,
   WatchInterfaceSubscriptionVariables,
   WatchInterfaceDocument,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
-import { usePostman } from "../../arkitekt/postman/graphql/postman-context";
-import { useRequester } from "../../arkitekt/postman/requester/requester-context";
-import { useReserver } from "../../arkitekt/postman/reserver/reserver-context";
+} from "../../rekuest/api/graphql";
+import { usePostman } from "../../rekuest/postman/graphql/postman-context";
+import { useRequester } from "../../rekuest/postman/requester/requester-context";
+import { useReserver } from "../../rekuest/postman/reserver/reserver-context";
 import { FlowFragment } from "../../fluss/api/graphql";
 import { ActionButton } from "../../layout/ActionButton";
 import { Node } from "../../linker";
 import { useEditRiver } from "./context";
+import { withRekuest } from "../../rekuest";
 
 export interface EditActionsProps {
   flow: FlowFragment;
@@ -27,7 +27,7 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
   const { reservations, reserve } = useReserver();
   const navigate = useNavigate();
 
-  const { data: deployable, subscribeToMore } = withArkitekt(useNodesQuery)({
+  const { data: deployable, subscribeToMore } = withRekuest(useNodesQuery)({
     variables: { interfaces: [`flow:${flow?.id}`] },
   });
 

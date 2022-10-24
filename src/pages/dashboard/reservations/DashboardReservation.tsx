@@ -4,14 +4,14 @@ import { useNavigate, useParams } from "react-router";
 import {
   DetailReservationFragment,
   useDetailReservationQuery,
-} from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
-import { ReservationPulse } from "../../../arkitekt/components/generic/StatusPulse";
-import { useRequester } from "../../../arkitekt/postman/requester/requester-context";
+} from "../../../rekuest/api/graphql";
+import { ReservationPulse } from "../../../rekuest/components/generic/StatusPulse";
+import { useRequester } from "../../../rekuest/postman/requester/requester-context";
 import { ReservationTimeline } from "../../../components/timelines/ReserverationTimeline";
 import { ActionButton } from "../../../layout/ActionButton";
 import { PageLayout } from "../../../layout/PageLayout";
 import { Assignation, Node } from "../../../linker";
+import { withRekuest } from "../../../rekuest";
 
 export type ReservationToolbarProps = {
   reservation: Maybe<DetailReservationFragment>;
@@ -58,7 +58,7 @@ export type IReservationProps = {};
 const DashboardReservation: React.FC<IReservationProps> = ({}) => {
   let { reservation } = useParams<{ reservation: string }>();
   if (!reservation) return <></>;
-  let { data, subscribeToMore, refetch } = withArkitekt(
+  let { data, subscribeToMore, refetch } = withRekuest(
     useDetailReservationQuery
   )({
     variables: { id: reservation },

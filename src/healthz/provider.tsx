@@ -27,7 +27,7 @@ export const checkHealth = async (
 };
 
 export const HealthzProvider: React.FC<HealthzProviderProps> = (props) => {
-  const { fakts, changeFakts } = useFakts();
+  const { fakts } = useFakts();
   const [global_error, setGlobalError] = useState<string | null>(null);
   const [errors, setErrors] = useState<HealthReturn[] | undefined>();
   const [reload, setReload] = useState<boolean>(false);

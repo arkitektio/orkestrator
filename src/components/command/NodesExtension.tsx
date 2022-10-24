@@ -1,11 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { useNodesLazyQuery } from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
-import { usePostman } from "../../arkitekt/postman/graphql/postman-context";
-import { useRequester } from "../../arkitekt/postman/requester/requester-context";
-import { useReserver } from "../../arkitekt/postman/reserver/reserver-context";
 import { Node } from "../../linker";
+import { withRekuest } from "../../rekuest";
+import { useNodesLazyQuery } from "../../rekuest/api/graphql";
+import { useRequester } from "../../rekuest/postman/requester/requester-context";
+import { useReserver } from "../../rekuest/postman/reserver/reserver-context";
 import { queryfiltered } from "./GeneralMenu";
 import { Extension, ModifyingAction, useExtension } from "./GeneralMenuContext";
 
@@ -21,7 +20,7 @@ export type ReserveModifierParams = {
 };
 
 export const NodesExtension: React.FC<NavigationActionsProps> = ({}) => {
-  const [searchNodes] = withArkitekt(useNodesLazyQuery)();
+  const [searchNodes] = withRekuest(useNodesLazyQuery)();
 
   const { reserve } = useReserver();
   const { assign } = useRequester();

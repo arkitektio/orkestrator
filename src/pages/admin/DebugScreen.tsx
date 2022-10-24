@@ -1,20 +1,20 @@
 import React from "react";
+import { withRekuest } from "../../rekuest";
 import {
   useResetAgentsMutation,
   useResetAssignationsMutation,
   useResetNodesMutation,
   useResetProvisionsMutation,
   useResetReservationsMutation,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
+} from "../../rekuest/api/graphql";
 export type IApplicationsProps = {};
 
 const DebugScreen: React.FC<IApplicationsProps> = ({}) => {
-  const [resetAg] = withArkitekt(useResetAgentsMutation)();
-  const [resetA] = withArkitekt(useResetAssignationsMutation)();
-  const [resetP] = withArkitekt(useResetProvisionsMutation)();
-  const [resetR] = withArkitekt(useResetReservationsMutation)();
-  const [resetN] = withArkitekt(useResetNodesMutation)();
+  const [resetAg] = withRekuest(useResetAgentsMutation)();
+  const [resetA] = withRekuest(useResetAssignationsMutation)();
+  const [resetP] = withRekuest(useResetProvisionsMutation)();
+  const [resetR] = withRekuest(useResetReservationsMutation)();
+  const [resetN] = withRekuest(useResetNodesMutation)();
 
   return (
     <div className={"grid grid-cols-12 gap-5 h-screen"}>

@@ -8,19 +8,19 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
-import { ProvisionStatus, useMyProvisionsQuery } from "../arkitekt/api/graphql";
-import { withArkitekt } from "../arkitekt/arkitekt";
-import { UnprovideButton } from "../arkitekt/components/UnprovideButton";
-import { colorFromProvisionStatus } from "../arkitekt/ui/utils";
+import { ProvisionStatus, useMyProvisionsQuery } from "../rekuest/api/graphql";
+import { UnprovideButton } from "../rekuest/components/UnprovideButton";
+import { colorFromProvisionStatus } from "../rekuest/ui/utils";
 import { notEmpty } from "../floating/utils";
 import { Provision } from "../linker";
 import { UserEmblem } from "../man/components/UserEmblem";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
+import { withRekuest } from "../rekuest";
 
 export type IMyProvisionsProps = {};
 
 const MyProvisions: React.FC<IMyProvisionsProps> = () => {
-  const { data } = withArkitekt(useMyProvisionsQuery)();
+  const { data } = withRekuest(useMyProvisionsQuery)();
   const navigate = useNavigate();
 
   return (

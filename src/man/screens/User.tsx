@@ -2,18 +2,18 @@ import React from "react";
 import {
   AvailableModels,
   useUserQuery as useArkitektUserQuery,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
-import { ShareModal } from "../../arkitekt/components/dialogs/ShareModal";
+} from "../../rekuest/api/graphql";
+import { ShareModal } from "../../rekuest/components/dialogs/ShareModal";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { Modal } from "../../components/modals/Modal";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { Team } from "../../linker";
 import { useRepresentationsForUserQuery } from "../../mikro/api/graphql";
-import { withMikro } from "../../mikro/mikro-types";
+import { withMikro } from "../../mikro/MikroContext";
 import { useDetailUserQuery } from "../api/graphql";
 import { withMan } from "../man";
+import { withRekuest } from "../../rekuest";
 
 export type UserProps = {
   id: string;
@@ -43,7 +43,7 @@ export const ManageMikro = ({ email }: { email: string }) => {
 };
 
 export const ManageArkitekt = ({ email }: { email: string }) => {
-  const { data } = withArkitekt(useArkitektUserQuery)({
+  const { data } = withRekuest(useArkitektUserQuery)({
     variables: { email: email },
   });
 

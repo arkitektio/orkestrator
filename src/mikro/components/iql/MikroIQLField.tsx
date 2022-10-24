@@ -4,8 +4,8 @@ import { FieldHookConfig, useField } from "formik";
 import { GraphiQLProvider } from "graphiql";
 import React from "react";
 import { useHerre } from "herre";
-import { useMikro } from "../../mikro-types";
 import { IQL } from "./IQL";
+import { useMikro } from "../../MikroContext";
 
 export interface MikroIQLFieldProps {
   name: string;
@@ -25,8 +25,8 @@ export const MikroQLProvider = (props: {
 
   const passingFetcher: Fetcher = async (graphQLParams, fetcherOpts) => {
     console.log("passingFetcher", graphQLParams, fetcherOpts);
-    if (config?.endpoint_url && token) {
-      const data = await fetch(config?.endpoint_url, {
+    if (config?.endpointUrl && token) {
+      const data = await fetch(config?.endpointUrl, {
         method: "POST",
         body: JSON.stringify(graphQLParams),
         headers: {

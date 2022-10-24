@@ -1,17 +1,15 @@
 import React from "react";
-import { useNavigate } from "react-router";
-import { useTemplatesQuery } from "../arkitekt/api/graphql";
-import { withArkitekt } from "../arkitekt/arkitekt";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Template } from "../linker";
+import { withRekuest } from "../rekuest";
+import { useTemplatesQuery } from "../rekuest/api/graphql";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { Modal } from "./modals/Modal";
 
 export type IMyNodesProps = {};
 
 const MyTemplates: React.FC<IMyNodesProps> = ({}) => {
-  const { data, loading, subscribeToMore } = withArkitekt(useTemplatesQuery)({
+  const { data, loading, subscribeToMore } = withRekuest(useTemplatesQuery)({
     pollInterval: 30000,
   });
 

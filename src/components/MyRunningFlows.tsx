@@ -1,6 +1,6 @@
 import React from "react";
-import { ProvisionStatus } from "../arkitekt/api/graphql";
-import { usePostman } from "../arkitekt/postman/graphql/postman-context";
+import { ProvisionStatus } from "../rekuest/api/graphql";
+import { usePostman } from "../rekuest/postman/graphql/postman-context";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Flow } from "../linker";
 

@@ -38,7 +38,7 @@ import {
   WatchRoisDocument,
   WatchRoisSubscriptionResult,
 } from "../api/graphql";
-import { useMikro, withMikro } from "../mikro-types";
+import { useMikro, withMikro } from "../MikroContext";
 import CommentSection from "./comments/CommentSection";
 
 export type ISampleProps = {
@@ -167,8 +167,6 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
 
   const { s3resolve } = useMikro();
 
-  const { confirm } = useConfirm();
-  const navigate = useNavigate();
   const [show, setshow] = useState(false);
 
   const rep_to_input = (rep: DetailRepresentationFragment) => {

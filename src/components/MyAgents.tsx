@@ -1,8 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { ListAgentFragment, LokAppGrantType } from "../arkitekt/api/graphql";
-import { AgentPulse } from "../arkitekt/components/generic/StatusPulse";
-import { usePostman } from "../arkitekt/postman/graphql/postman-context";
+import { ListAgentFragment, LokAppGrantType } from "../rekuest/api/graphql";
+import { AgentPulse } from "../rekuest/components/generic/StatusPulse";
+import { usePostman } from "../rekuest/postman/graphql/postman-context";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Agent } from "../linker";
@@ -39,6 +39,7 @@ export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {
             <AgentPulse status={agent?.status} />
           </div>
         </div>
+        <p className="text-sm text-gray-500">{agent?.identifier}</p>
         <p className="text-gray-700 text-base">
           {agent?.registry?.app?.grantType ===
             LokAppGrantType.ClientCredentials &&

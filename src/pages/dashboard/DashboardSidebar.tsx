@@ -7,17 +7,17 @@ import {
   NodesQuery,
   NodesQueryVariables,
   useNodesQuery,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
+} from "../../rekuest/api/graphql";
 import {
   AdditionalMate,
   Mate,
-} from "../../arkitekt/postman/mater/mater-context";
-import { useReserver } from "../../arkitekt/postman/reserver/reserver-context";
+} from "../../rekuest/postman/mater/mater-context";
+import { useReserver } from "../../rekuest/postman/reserver/reserver-context";
 import { ResponsiveList } from "../../components/layout/ResponsiveList";
 import { notEmpty } from "../../floating/utils";
 import { Flow, Node } from "../../linker";
 import { DashboardSearchFilter } from "./DashboardSearch";
+import { withRekuest } from "../../rekuest";
 
 interface IDashBoardSidebarProps {}
 
@@ -97,7 +97,7 @@ const DashBoardSidebar: React.FunctionComponent<IDashBoardSidebarProps> = (
   props
 ) => {
   const { data, loading, subscribeToMore, refetch } =
-    withArkitekt(useNodesQuery)();
+    withRekuest(useNodesQuery)();
   const [filter, setFilter] = React.useState<NodesQueryVariables>({
     search: "",
   });

@@ -2,7 +2,7 @@ import { addEdge } from "react-flow-renderer";
 import {
   ArgPortFragment as ArkitektArgPortFragment,
   ReturnPortFragment as ArkitektReturnPortFragment,
-} from "../../../arkitekt/api/graphql";
+} from "../../../rekuest/api/graphql";
 import {
   ArgPortFragment,
   ReturnPortFragment,

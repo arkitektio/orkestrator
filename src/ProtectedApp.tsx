@@ -1,46 +1,45 @@
+import { HerreGuard } from "herre";
 import React, { CSSProperties } from "react";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Outlet } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { AgentProvider } from "./arkitekt/agent/agent-provider";
-import { ArkitektProvider } from "./arkitekt/arkitekt-provider";
-import { PostmanProvider } from "./arkitekt/postman/graphql/postman-provider";
-import { SelectionProvider } from "./arkitekt/selection/provider";
-import { WidgetRegistryProvider } from "./arkitekt/widgets/widget-provider";
-import { AlerterProvider } from "./components/alerter/alerter-provider";
+import { MikroDoer } from "./bridges/MikroDoer";
 import { GeneralMenu } from "./components/command/GeneralMenu";
 import { GeneralMenuProvider } from "./components/command/GeneralMenuProvider";
 import { NavigationActions } from "./components/command/NavigationActions";
 import { NodesExtension } from "./components/command/NodesExtension";
 import { SearchActions } from "./components/command/SearchActions";
 import { SelectionActions } from "./components/command/SelectionActions";
-import { ConfirmerProvider } from "./components/confirmer/confirmer-provider";
 import { NavigationBar } from "./components/navigation/NavigationBar";
 import { FlussProvider } from "./fluss/fluss-provider";
 import { FlussGuard } from "./fluss/guard";
 import { FlussWard } from "./fluss/ward";
-import { HerreGuard } from "herre";
 import "./index.css";
 import { ManGuard } from "./man/guard";
 import { ManProvider } from "./man/provider";
-import { MikroDoer } from "./mikro/doer";
 import { MentionListener } from "./mikro/listeners/MentionListener";
-import { MikroGuard } from "./mikro/mikro-guard";
-import { MikroProvider } from "./mikro/mikro-provider";
-import { MikroWard } from "./mikro/ward";
+import { MikroGuard } from "./mikro/MikroGuard";
+import { MikroProvider } from "./mikro/MikroProvider";
 import "./popping.css";
 import { PortGuard } from "./port/port-guard";
 import { PortProvider } from "./port/port-provider";
+import { AgentProvider } from "./rekuest/agent/AgentProvider";
+import { PostmanProvider } from "./rekuest/postman/graphql/postman-provider";
+import { RekuestProvider } from "./rekuest/RekuestProvider";
+import { SelectionProvider } from "./rekuest/selection/provider";
+import { WidgetRegistryProvider } from "./rekuest/widgets/widget-provider";
 
 import { DndProvider, MouseTransition, Preview } from "react-dnd-multi-backend";
-import { ReserverProvider } from "./arkitekt/postman/reserver/reserver-provider";
+import { ReserverProvider } from "./rekuest/postman/reserver/reserver-provider";
 import { SettingsProvider } from "./settings/settings-provider";
 
-import { MaterProvider } from "./arkitekt/postman/mater/mater-provider";
-import { RequesterProvider } from "./arkitekt/postman/requester/requester-provider";
-import { PublicHome } from "./pages/public/PublicHome";
 import { PublicLogin } from "./pages/public/PublicLogin";
+import { MaterProvider } from "./rekuest/postman/mater/mater-provider";
+import { RequesterProvider } from "./rekuest/postman/requester/requester-provider";
+import { RekuestGuard } from "./rekuest/RekuestGuard";
+import { MikroAutoConfigure } from "./bridges/MikroAutoConfigure";
+import { MikroWard } from "./bridges/MikroWard";
 
 /* try {
   import("virtual:pwa-register")
@@ -108,70 +107,75 @@ const ComponentPreview = ({ text }: { text: string }): JSX.Element => {
 export const ProtectedApp: React.FC<Props> = () => {
   return (
     <HerreGuard fallback={<PublicLogin />}>
-      <ArkitektProvider>
-        <WidgetRegistryProvider>
-          <ManProvider>
-            <ManGuard>
-              <FlussProvider>
-                <FlussGuard>
-                  <FlussWard>
-                    <PortProvider>
-                      <PortGuard>
-                        <MikroProvider>
-                          <SettingsProvider>
-                            <MikroGuard>
-                              <MikroWard>
-                                <GeneralMenuProvider>
-                                  <PostmanProvider>
-                                    <ReserverProvider>
-                                      <RequesterProvider>
-                                        <MaterProvider>
-                                          <AgentProvider>
-                                            <MikroDoer />
-                                            <DndProvider options={HTML5toTouch}>
-                                              <SelectionProvider>
-                                                <ToastContainer
-                                                  position="bottom-right"
-                                                  theme="dark"
-                                                />
-                                                <ComponentPreview
-                                                  text={"sdfsdf"}
-                                                />
-                                                <GeneralMenu />
-                                                <NavigationActions />
-                                                <SearchActions />
-                                                <NodesExtension />
-                                                <SelectionActions />
-                                                <MentionListener />
-                                                <div className="flex flex-col h-screen sm:flex-row-reverse">
-                                                  <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
-                                                    <Outlet />
+      <RekuestProvider>
+        <RekuestGuard>
+          <WidgetRegistryProvider>
+            <ManProvider>
+              <ManGuard>
+                <FlussProvider>
+                  <FlussGuard>
+                    <FlussWard>
+                      <PortProvider>
+                        <PortGuard>
+                          <MikroProvider>
+                            <MikroAutoConfigure />
+                            <SettingsProvider>
+                              <MikroGuard>
+                                <MikroWard>
+                                  <GeneralMenuProvider>
+                                    <PostmanProvider>
+                                      <ReserverProvider>
+                                        <RequesterProvider>
+                                          <MaterProvider>
+                                            <AgentProvider>
+                                              <MikroDoer />
+                                              <DndProvider
+                                                options={HTML5toTouch}
+                                              >
+                                                <SelectionProvider>
+                                                  <ToastContainer
+                                                    position="bottom-right"
+                                                    theme="dark"
+                                                  />
+                                                  <ComponentPreview
+                                                    text={"sdfsdf"}
+                                                  />
+                                                  <GeneralMenu />
+                                                  <NavigationActions />
+                                                  <SearchActions />
+                                                  <NodesExtension />
+                                                  <SelectionActions />
+                                                  <MentionListener />
+                                                  <div className="flex flex-col h-screen sm:flex-row-reverse">
+                                                    <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
+                                                      <Outlet />
+                                                    </div>
+                                                    <div className="flex-initial sm:flex-initial sm:static sm:w-20">
+                                                      <NavigationBar />
+                                                    </div>
                                                   </div>
-                                                  <div className="flex-initial sm:flex-initial sm:static sm:w-20">
-                                                    <NavigationBar />
-                                                  </div>
-                                                </div>
-                                              </SelectionProvider>
-                                            </DndProvider>
-                                          </AgentProvider>
-                                        </MaterProvider>
-                                      </RequesterProvider>
-                                    </ReserverProvider>
-                                  </PostmanProvider>
-                                </GeneralMenuProvider>
-                              </MikroWard>
-                            </MikroGuard>
-                          </SettingsProvider>
-                        </MikroProvider>
-                      </PortGuard>
-                    </PortProvider>
-                  </FlussWard>
-                </FlussGuard>
-              </FlussProvider>
-            </ManGuard>
-          </ManProvider>
-        </WidgetRegistryProvider>
-      </ArkitektProvider>
+                                                </SelectionProvider>
+                                              </DndProvider>
+                                            </AgentProvider>
+                                          </MaterProvider>
+                                        </RequesterProvider>
+                                      </ReserverProvider>
+                                    </PostmanProvider>
+                                  </GeneralMenuProvider>
+                                </MikroWard>
+                              </MikroGuard>
+                            </SettingsProvider>
+                          </MikroProvider>
+                        </PortGuard>
+                      </PortProvider>
+                    </FlussWard>
+                  </FlussGuard>
+                </FlussProvider>
+              </ManGuard>
+            </ManProvider>
+          </WidgetRegistryProvider>
+        </RekuestGuard>
+      </RekuestProvider>
     </HerreGuard>
   );
 };

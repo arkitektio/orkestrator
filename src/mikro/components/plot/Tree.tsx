@@ -1,7 +1,7 @@
 import { Form, Formik } from "formik";
 import React from "react";
 import { VscGraphLine } from "react-icons/vsc";
-import { ChangeSubmitHelper } from "../../../arkitekt/ui/helpers/ChangeSubmitter";
+import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { SelectInputField } from "../../../components/forms/fields/select_input";
 import { PopMenu } from "../../../layout/PopMenu";
 import { getDefaultSmartModel } from "../../../linker";

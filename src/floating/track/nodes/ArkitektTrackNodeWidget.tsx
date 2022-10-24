@@ -3,19 +3,19 @@ import React from "react";
 import "react-contexify/dist/ReactContexify.css";
 import { Handle, Position } from "react-flow-renderer";
 import ReactTooltip from "react-tooltip";
-import { NodeKind, useDetailNodeQuery } from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
-import { ReturnWidgetsContainer } from "../../../arkitekt/widgets/containers/ReturnWidgetsContainer";
+import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
+import { ReturnWidgetsContainer } from "../../../rekuest/widgets/containers/ReturnWidgetsContainer";
 import { RunEventType } from "../../../fluss/api/graphql";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps } from "../../types";
 import { useTrackRiver } from "../context";
 import { NodeTrackLayout } from "./layout/NodeTrack";
+import { withRekuest } from "../../../rekuest";
 
 export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id }) => {
     const { runState } = useTrackRiver();
-    const { data: node_data, error } = withArkitekt(useDetailNodeQuery)({
+    const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
       variables: { package: data.package, interface: data.interface },
     });
     const { isExpanded, toggleExpanded } = useNodeLayout();

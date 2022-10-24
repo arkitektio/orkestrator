@@ -25,7 +25,7 @@ import {
   useTagSearchLazyQuery,
   useUpdateSampleMutation,
 } from "../api/graphql";
-import { useMikro, withMikro } from "../mikro-types";
+import { useMikro, withMikro } from "../MikroContext";
 import CommentSection from "./comments/CommentSection";
 
 export type ISampleProps = {

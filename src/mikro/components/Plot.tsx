@@ -1,23 +1,14 @@
 import { gql } from "@apollo/client";
 import { Form, Formik } from "formik";
 import React, { useEffect, useState } from "react";
-import { FiAirplay } from "react-icons/fi";
-import {
-  RiArrowDownFill,
-  RiDownload2Line,
-  RiPlayFill,
-  RiStopFill,
-} from "react-icons/ri";
-import { Icons } from "react-toastify";
+import { RiArrowDownFill, RiPlayFill, RiStopFill } from "react-icons/ri";
 import { useAlert } from "../../components/alerter/alerter-context";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
-import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { PageLayout } from "../../layout/PageLayout";
-import { DataPlot } from "../../pages/data/plots/DataPlot";
 import { useDetailPlotQuery, useUpdatePlotMutation } from "../api/graphql";
-import { useMikro, withMikro } from "../mikro-types";
-import { MikroIQLField, MikroQLProvider } from "./iql/MikroIQLField";
+import { useMikro, withMikro } from "../MikroContext";
+import { MikroIQLField } from "./iql/MikroIQLField";
 import { parseQueryData } from "./plot/parser";
 import { Tree } from "./plot/Tree";
 import { PlotTree } from "./plot/types";

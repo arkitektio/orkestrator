@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router";
 import { Representation } from "../../linker";
 import { useSearchableRepresentationsLazyQuery } from "../../mikro/api/graphql";
-import { withMikro } from "../../mikro/mikro-types";
+import { withMikro } from "../../mikro/MikroContext";
 import { queryfiltered } from "./GeneralMenu";
 import { Extension, useExtension } from "./GeneralMenuContext";
 

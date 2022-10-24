@@ -5,13 +5,13 @@ import {
   AssignationStatus,
   ListAssignationFragment,
   UnassignMutationFn,
-} from "../arkitekt/api/graphql";
-import { usePostman } from "../arkitekt/postman/graphql/postman-context";
+} from "../rekuest/api/graphql";
+import { usePostman } from "../rekuest/postman/graphql/postman-context";
 import {
   Accept,
   AdditionalMate,
   Mate,
-} from "../arkitekt/postman/mater/mater-context";
+} from "../rekuest/postman/mater/mater-context";
 import { notEmpty } from "../floating/utils";
 import { Assignation, Node } from "../linker";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";

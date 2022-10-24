@@ -1,11 +1,11 @@
 import React from "react";
-import { AgentStatus, useAgentsQuery } from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
+import { AgentStatus, useAgentsQuery } from "../../rekuest/api/graphql";
 import {
   ApplicationAuthorizationGrantType,
   useDetailApplicationQuery,
 } from "../../man/api/graphql";
 import { withMan } from "../man";
+import { withRekuest } from "../../rekuest";
 
 export type IAppProps = {
   clientId: string;
@@ -22,7 +22,7 @@ const Application: React.FC<IAppProps> = ({ clientId }) => {
     variables: { clientId: clientId },
   });
 
-  const { data: prov_data } = withArkitekt(useAgentsQuery)({
+  const { data: prov_data } = withRekuest(useAgentsQuery)({
     variables: { app: clientId },
   });
 

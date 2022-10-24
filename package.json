@@ -10,7 +10,7 @@
     "tauri": "tauri",
     "fluss": "graphql-codegen --config fluss.yml",
     "port": "graphql-codegen --config port.yml",
-    "arkitekt": "graphql-codegen --config arkitekt.yml",
+    "rekuest": "graphql-codegen --config rekuest.yml",
     "mikro": "graphql-codegen --config mikro.yml",
     "herre": "graphql-codegen --config herre.yml",
     "man": "graphql-codegen --config man.yml",

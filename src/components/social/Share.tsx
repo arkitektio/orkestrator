@@ -16,7 +16,7 @@ import {
   usePermissionsOfQuery,
   SharableModels,
 } from "../../mikro/api/graphql";
-import { withMikro } from "../../mikro/mikro-types";
+import { withMikro } from "../../mikro/MikroContext";
 import { SearchSelectInput } from "../forms/fields/search_select_input";
 import { SelectInputField } from "../forms/fields/select_input";
 import { SubmitButton } from "../forms/fields/SubmitButton";
@@ -50,9 +50,9 @@ export const PermissionUserInfo = (props: { email: string }) => {
   );
 };
 
-export const PermisionGroupInfo = (props: { name: string }) => {
+export const PermisionGroupInfo = (props: { id: string }) => {
   const { data } = withMan(useDetailGroupQuery)({
-    variables: { name: props.name },
+    variables: { id: props.id },
   });
 
   return (
@@ -196,7 +196,7 @@ export const Share: React.FC<{
                             <div className="flex-1 my-auto">
                               {groupAssignment?.group ? (
                                 <PermisionGroupInfo
-                                  name={groupAssignment?.group}
+                                  id={groupAssignment?.group}
                                 />
                               ) : (
                                 <SearchSelectInput

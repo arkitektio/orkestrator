@@ -1,9 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { usePostman } from "../arkitekt/postman/graphql/postman-context";
-import { useReserver } from "../arkitekt/postman/reserver/reserver-context";
 import { ActionButton } from "../layout/ActionButton";
 import { Reservation } from "../linker";
+import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 
 export interface NodeActionsProps {
   node?: { id?: string } | null;

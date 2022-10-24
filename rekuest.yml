@@ -1,0 +1,24 @@
+overwrite: true
+schema: "http://localhost:8090/graphql"
+documents: "graphql/rekuest/**/*.graphql"
+generates:
+  src/rekuest/api/fragments.ts:
+    plugins:
+      - "fragment-matcher"
+  src/rekuest/api/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+      - add:
+          content: "import {Identifier} from './scalars'"
+    config:
+      withHooks: true
+      reactApolloVersion: 3
+      arrayInputCoercion: false
+      scalars:
+        Identifier: Identifier
+
+  src/rekuest/api/graphql.schema.json:
+    plugins:
+      - "introspection"

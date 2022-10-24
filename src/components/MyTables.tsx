@@ -15,7 +15,7 @@ import {
   useDeleteTableMutation,
   useMyTablesQuery,
 } from "../mikro/api/graphql";
-import { withMikro } from "../mikro/mikro-types";
+import { withMikro } from "../mikro/MikroContext";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMyRepresentationsProps = {};

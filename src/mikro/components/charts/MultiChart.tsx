@@ -2,7 +2,7 @@ import { LinearGradient } from "@visx/gradient";
 import ParentSize from "@visx/responsive/lib/components/ParentSize";
 import { Form, Formik } from "formik";
 import React, { useEffect, useRef } from "react";
-import { ChangeSubmitHelper } from "../../../arkitekt/ui/helpers/ChangeSubmitter";
+import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { SelectInputField } from "../../../components/forms/fields/select_input";
 import { SwitchInputField } from "../../../components/forms/fields/switch_input";
 import { PopMenu } from "../../../layout/PopMenu";

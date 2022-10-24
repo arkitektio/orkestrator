@@ -6,13 +6,13 @@ import {
   AssignationStatus,
   DetailAssignationFragment,
   useDetailAssignationQuery,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
-import { ReturnWidgetsContainer } from "../../arkitekt/widgets/containers/ReturnWidgetsContainer";
+} from "../../rekuest/api/graphql";
+import { ReturnWidgetsContainer } from "../../rekuest/widgets/containers/ReturnWidgetsContainer";
 import { TrackRiver } from "../../floating/track/TrackRiver";
 import { FlussAssignation } from "../../fluss/components/FlussAssignation";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
+import { withRekuest } from "../../rekuest";
 
 export type AssignationToolbarProps = {
   assignation: Maybe<DetailAssignationFragment>;
@@ -58,7 +58,7 @@ export type IAssignationProps = {
 export const AssignationDetail: React.FC<IAssignationProps> = ({
   id,
 }: IAssignationProps) => {
-  const { data, subscribeToMore } = withArkitekt(useDetailAssignationQuery)({
+  const { data, subscribeToMore } = withRekuest(useDetailAssignationQuery)({
     variables: { id: id },
   });
 

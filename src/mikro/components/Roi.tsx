@@ -7,7 +7,7 @@ import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { Representation } from "../../linker";
 import { CommentableModels, useDetailRoiQuery } from "../api/graphql";
-import { withMikro } from "../mikro-types";
+import { withMikro } from "../MikroContext";
 import CommentSection from "./comments/CommentSection";
 import { DiscussionSidebar } from "./comments/DiscussionSidebar";
 

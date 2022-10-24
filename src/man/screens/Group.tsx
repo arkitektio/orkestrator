@@ -4,7 +4,7 @@ import { Modal } from "../../components/modals/Modal";
 import { notEmpty } from "../../floating/utils";
 import { Representation, Team, User } from "../../linker";
 import { useRepresentationsForQuery } from "../../mikro/api/graphql";
-import { withMikro } from "../../mikro/mikro-types";
+import { withMikro } from "../../mikro/MikroContext";
 import { useDetailGroupQuery } from "../api/graphql";
 import { UploadGroupAvatarModal } from "../components/dialogs/UploadGroupAvatarModal";
 import { UserEmblem } from "../components/UserEmblem";
@@ -87,7 +87,7 @@ const Group: React.FC<GroupProps> = ({ id }) => {
         )}
 
         <div className="absolute bottom-0 right-0 mr-4 mb-4">
-          {data?.group?.name && (
+          {data?.group?.id && (
             <Modal
               child={
                 <button className="bg-primary-300 hover:bg-primary-400 text-salte-50 font-bold py-2 px-4 rounded-full">
@@ -95,7 +95,7 @@ const Group: React.FC<GroupProps> = ({ id }) => {
                 </button>
               }
             >
-              <UploadGroupAvatarModal name={data?.group?.name} />
+              <UploadGroupAvatarModal id={data?.group?.id} />
             </Modal>
           )}
         </div>

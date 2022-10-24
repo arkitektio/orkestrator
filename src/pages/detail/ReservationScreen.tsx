@@ -6,13 +6,13 @@ import {
   AvailableModels,
   DetailReservationFragment,
   useDetailReservationQuery,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
-import { ShareModal } from "../../arkitekt/components/dialogs/ShareModal";
-import { ReservationPulse } from "../../arkitekt/components/generic/StatusPulse";
+} from "../../rekuest/api/graphql";
+import { ShareModal } from "../../rekuest/components/dialogs/ShareModal";
+import { ReservationPulse } from "../../rekuest/components/generic/StatusPulse";
 import { IconButton } from "../../components/buttons/IconButton";
 import { Modal } from "../../components/modals/Modal";
 import { ReservationTimeline } from "../../components/timelines/ReserverationTimeline";
+import { withRekuest } from "../../rekuest";
 
 export type ReservationToolbarProps = {
   reservation: Maybe<DetailReservationFragment>;
@@ -73,7 +73,7 @@ export type IReservationProps = {};
 const ReservationScreen: React.FC<IReservationProps> = ({}) => {
   let { reservation } = useParams<{ reservation: string }>();
   if (!reservation) return <></>;
-  let { data, subscribeToMore } = withArkitekt(useDetailReservationQuery)({
+  let { data, subscribeToMore } = withRekuest(useDetailReservationQuery)({
     variables: { id: reservation },
   });
 

@@ -4,9 +4,9 @@ import { animation, Item, Menu, Separator } from "react-contexify";
 import "react-contexify/dist/ReactContexify.css";
 import { Handle, Position } from "react-flow-renderer";
 import ReactTooltip from "react-tooltip";
-import { NodeKind, useDetailNodeQuery } from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
-import { ConstantsForm } from "../../../arkitekt/components/ConstantsForm";
+import { withRekuest } from "../../../rekuest";
+import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
+import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps } from "../../types";
 import { port_to_type as port_to_kind } from "../../utils";
@@ -16,7 +16,7 @@ import { NodeEditLayout } from "./layout/NodeEdit";
 export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id }) => {
     const { updateNodeIn, updateNodeOut, updateNodeExtras } = useEditRiver();
-    const { data: node_data, error } = withArkitekt(useDetailNodeQuery)({
+    const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
       variables: { package: data.package, interface: data.interface },
     });
 

@@ -2,7 +2,7 @@ import {
   AssignationLogLevel,
   ProvisionStatus,
   ReservationStatus,
-} from "../../arkitekt/api/graphql";
+} from "../../rekuest/api/graphql";
 
 export interface LogMessage {
   level: AssignationLogLevel;

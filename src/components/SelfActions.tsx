@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { ReservationStatus } from "../arkitekt/api/graphql";
-import { usePostman } from "../arkitekt/postman/graphql/postman-context";
-import { useRequester } from "../arkitekt/postman/requester/requester-context";
-import { useReserver } from "../arkitekt/postman/reserver/reserver-context";
+import { ReservationStatus } from "../rekuest/api/graphql";
+import { usePostman } from "../rekuest/postman/graphql/postman-context";
+import { useRequester } from "../rekuest/postman/requester/requester-context";
+import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
 

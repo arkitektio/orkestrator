@@ -9,7 +9,7 @@ import {
   UploadOmeroFileMutationVariables,
   useUploadOmeroFileMutation,
 } from "../../api/graphql";
-import { withMikro } from "../../mikro-types";
+import { withMikro } from "../../MikroContext";
 
 export const UploadOmeroFileModal: React.FC<{
   experiments?: [string];

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DetailNodeFragment } from "../../arkitekt/api/graphql";
+import { DetailNodeFragment } from "../../rekuest/api/graphql";
 import { ShowRiver } from "../../floating/show/ShowRiver";
 import { useFlowQuery } from "../api/graphql";
 import { withFluss } from "../fluss";

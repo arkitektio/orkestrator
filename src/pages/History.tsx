@@ -4,9 +4,9 @@ import Select from "react-select";
 import {
   AssignationStatusInput,
   useFilteredAssignationsQuery,
-} from "../arkitekt/api/graphql";
-import { withArkitekt } from "../arkitekt/arkitekt";
+} from "../rekuest/api/graphql";
 import { Assignation } from "../linker";
+import { withRekuest } from "../rekuest";
 
 const options = Object.values(AssignationStatusInput).map((val) => ({
   label: val,
@@ -22,7 +22,7 @@ export const History: React.FC<Props> = (props) => {
     value: AssignationStatusInput.Critical,
   };
 
-  const { data, refetch } = withArkitekt(useFilteredAssignationsQuery)({
+  const { data, refetch } = withRekuest(useFilteredAssignationsQuery)({
     variables: { filter: startc },
   });
 

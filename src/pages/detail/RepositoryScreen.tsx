@@ -5,23 +5,23 @@ import {
   NodesDocument,
   useDeleteNodeMutation,
   useDetailRepositoryQuery,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
+} from "../../rekuest/api/graphql";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { NodeCard } from "../../components/MyNodes";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
+import { withRekuest } from "../../rekuest";
 
 export type IRepositoryScreenProps = {
   id: string;
 };
 
 const RepositoryScreen: React.FC<IRepositoryScreenProps> = ({ id }) => {
-  const { data } = withArkitekt(useDetailRepositoryQuery)({
+  const { data } = withRekuest(useDetailRepositoryQuery)({
     variables: { id: id },
   });
 
-  const [deleteNode, _] = withArkitekt(useDeleteNodeMutation)({
+  const [deleteNode, _] = withRekuest(useDeleteNodeMutation)({
     update(cache, result) {
       const existing: any = cache.readQuery({ query: NodesDocument });
       cache.writeQuery({

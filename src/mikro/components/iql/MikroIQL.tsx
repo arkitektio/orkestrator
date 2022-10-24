@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createGraphiQLFetcher, Fetcher } from "@graphiql/toolkit";
-import { useMikro } from "../../mikro-types";
+import { useMikro } from "../../types";
 import { useHerre } from "herre";
 import { GraphiQLProvider } from "graphiql";
 import { IQL } from "./IQL";

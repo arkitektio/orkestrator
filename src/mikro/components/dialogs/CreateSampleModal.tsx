@@ -9,7 +9,7 @@ import {
   useCreateSampleMutation,
   useMyExperimentsQuery,
 } from "../../api/graphql";
-import { withMikro } from "../../mikro-types";
+import { withMikro } from "../../MikroContext";
 
 export const CreateSampleModal = modalfy(
   ({

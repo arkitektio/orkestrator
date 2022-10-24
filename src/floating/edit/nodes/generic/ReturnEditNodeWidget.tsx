@@ -2,7 +2,7 @@ import { Form, Formik } from "formik";
 import React, { useState } from "react";
 import { Handle, Position } from "react-flow-renderer";
 import ReactTooltip from "react-tooltip";
-import { ChangeSubmitHelper } from "../../../../arkitekt/ui/helpers/ChangeSubmitter";
+import { ChangeSubmitHelper } from "../../../../rekuest/ui/helpers/ChangeSubmitter";
 import { ParagraphInputField } from "../../../../components/forms/fields/paragraph_input";
 import { SelectInputField } from "../../../../components/forms/fields/select_input";
 import { TextInputField } from "../../../../components/forms/fields/text_input";

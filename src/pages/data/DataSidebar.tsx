@@ -4,7 +4,7 @@ import {
   GlobalSearchQueryVariables,
   useGlobalSearchLazyQuery,
 } from "../../mikro/api/graphql";
-import { useMikro, withMikro } from "../../mikro/mikro-types";
+import { useMikro, withMikro } from "../../mikro/MikroContext";
 import { DataSearch } from "./DataSearch";
 
 interface IDataSidebarProps {}

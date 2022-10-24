@@ -1,15 +1,15 @@
 import { buildSchema } from "graphql";
 import { NavLink, NavLinkProps } from "react-router-dom";
 import { object } from "yup";
-import { Identifier } from "./arkitekt/api/scalars";
-import { Accept } from "./arkitekt/postman/mater/mater-context";
+import { Identifier } from "./rekuest/api/scalars";
+import { Accept } from "./rekuest/postman/mater/mater-context";
 import { isIdentifier } from "typescript";
 import React, { useState, useEffect } from "react";
 import {
   ClassNameOptions,
   SmartModel,
   SmartModelProps,
-} from "./arkitekt/selection/SmartModel";
+} from "./rekuest/selection/SmartModel";
 import { CommentableModels } from "./mikro/api/graphql";
 
 export interface CreatedSmartSmartProps<T extends Accept>

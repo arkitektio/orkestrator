@@ -14,11 +14,11 @@ import { ArgNodeProps, FlowNode } from "../../../types";
 import { withLayout } from "../../../base/node/layout";
 import { useEditRiver } from "../../context";
 import { TextInputField } from "../../../../components/forms/fields/text_input";
-import { PortKind } from "../../../../arkitekt/api/graphql";
+import { PortKind } from "../../../../rekuest/api/graphql";
 import { SubmitButton } from "../../../../components/forms/fields/SubmitButton";
 import { SelectInputField } from "../../../../components/forms/fields/select_input";
 import { ParagraphInputField } from "../../../../components/forms/fields/paragraph_input";
-import { ChangeSubmitHelper } from "../../../../arkitekt/ui/helpers/ChangeSubmitter";
+import { ChangeSubmitHelper } from "../../../../rekuest/ui/helpers/ChangeSubmitter";
 
 const widget_options = [
   {

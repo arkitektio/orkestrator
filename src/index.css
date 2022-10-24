@@ -212,7 +212,7 @@ code {
     rgba(255, 255, 255, 0.06),
     transparent 40%
   );
-  z-index: 3;
+  z-index: -2;
 }
 
 .thecard::after {  
@@ -221,9 +221,9 @@ code {
     rgba(255, 255, 255, 0.4),
     transparent 40%
   );
-  z-index: 1;
+  z-index: -1;
 }
 
 .thecard > div  {
-  z-index: 100;
+  z-index: 0;
 }

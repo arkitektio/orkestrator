@@ -17,7 +17,7 @@ import {
 } from "../mikro/api/graphql";
 import { CreatePlotModal } from "../mikro/components/dialogs/CreatePlotModal";
 import { CreateSampleModal } from "../mikro/components/dialogs/CreateSampleModal";
-import { withMikro } from "../mikro/mikro-types";
+import { withMikro } from "../mikro/MikroContext";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMySamplesProps = {};

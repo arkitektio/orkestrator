@@ -3,12 +3,12 @@ import { useNavigate, useParams } from "react-router";
 import {
   DetailTemplateFragment,
   useDetailTemplateQuery,
-} from "../../arkitekt/api/graphql";
-import { withArkitekt } from "../../arkitekt/arkitekt";
-import { ProvisionPulse } from "../../arkitekt/components/generic/StatusPulse";
+} from "../../rekuest/api/graphql";
+import { ProvisionPulse } from "../../rekuest/components/generic/StatusPulse";
 import { notEmpty } from "../../floating/utils";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Provision } from "../../linker";
+import { withRekuest } from "../../rekuest";
 export type TemplateScreenProps = {};
 
 export type TemplateToolBarProps = {
@@ -72,7 +72,7 @@ const TemplateToolBar: React.FC<TemplateToolBarProps> = ({ template }) => {
 const TemplateScreen: React.FC<TemplateScreenProps> = ({}) => {
   const { id } = useParams<{ id: string }>();
   if (!id) return <></>;
-  const { data } = withArkitekt(useDetailTemplateQuery)({
+  const { data } = withRekuest(useDetailTemplateQuery)({
     variables: { id: id },
   });
 

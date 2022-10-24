@@ -5,7 +5,7 @@ import {
   MentionCommentFragment,
   useMyMentionsQuery,
 } from "../../mikro/api/graphql";
-import { withMikro } from "../../mikro/mikro-types";
+import { withMikro } from "../../mikro/MikroContext";
 import Timestamp from "react-timestamp";
 import { CommentView } from "../../mikro/components/comments/CommentView";
 import { PageLayout } from "../../layout/PageLayout";

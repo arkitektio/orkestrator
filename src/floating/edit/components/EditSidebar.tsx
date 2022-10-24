@@ -9,11 +9,10 @@ import {
   NodeListItemFragment,
   NodeKind,
   useNodesQuery,
-} from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
-import { useArkitekt } from "../../../arkitekt/arkitekt-context";
-import { SmartModel } from "../../../arkitekt/selection/SmartModel";
-import { ChangeSubmitHelper } from "../../../arkitekt/ui/helpers/ChangeSubmitter";
+} from "../../../rekuest/api/graphql";
+import { useRekuest, withRekuest } from "../../../rekuest/RekuestContext";
+import { SmartModel } from "../../../rekuest/selection/SmartModel";
+import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { useModal } from "../../../components/modals/modal-context";
 import {
   ArkitektNodeFragment,
@@ -77,7 +76,7 @@ export const ReactiveItem = ({ node }: { node: any }) => {
 
 export const NodeList: React.FC<NodeListProps> = ({ nodes }) => {
   const { addArkitekt, saveDiagram } = useEditRiver();
-  const { client } = useArkitekt();
+  const { client } = useRekuest();
 
   return (
     <div className="grid grid-cols-1 gap-4 text-gray-800 w-full mt-5">
@@ -159,7 +158,7 @@ export const NodeFilterBox: React.FC<NodeFilterBoxProps> = ({
 interface EditSidebarProps {}
 
 export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
-  const { data, loading, refetch } = withArkitekt(useNodesQuery)();
+  const { data, loading, refetch } = withRekuest(useNodesQuery)();
 
   const { data: reactiveNodes, refetch: refetchReactiveNodes } = withFluss(
     useReactiveTemplatesQuery

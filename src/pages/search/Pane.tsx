@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { BiSearch } from "react-icons/bi";
 import { FiArrowDown } from "react-icons/fi";
 import { useSearchParams } from "react-router-dom";
-import { ChangeSubmitHelper } from "../../arkitekt/ui/helpers/ChangeSubmitter";
+import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 import { SearchSelectInput } from "../../components/forms/fields/search_select_input";
 import { useUserOptionsLazyQuery } from "../../man/api/graphql";
 import { withMan } from "../../man/man";
@@ -12,7 +12,7 @@ import {
   GlobalSearchQueryVariables,
   useGlobalSearchLazyQuery,
 } from "../../mikro/api/graphql";
-import { withMikro } from "../../mikro/mikro-types";
+import { withMikro } from "../../mikro/MikroContext";
 import { DataSearch } from "../data/DataSearch";
 import {
   ExperimentItem,

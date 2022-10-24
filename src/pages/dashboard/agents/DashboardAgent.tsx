@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router";
-import { useDetailAgentQuery } from "../../../arkitekt/api/graphql";
-import { withArkitekt } from "../../../arkitekt/arkitekt";
-import { ProvisionPulse } from "../../../arkitekt/components/generic/StatusPulse";
-import { SmartModel } from "../../../arkitekt/selection/SmartModel";
+import { useDetailAgentQuery } from "../../../rekuest/api/graphql";
+import { ProvisionPulse } from "../../../rekuest/components/generic/StatusPulse";
+import { SmartModel } from "../../../rekuest/selection/SmartModel";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../../floating/utils";
 import { PageLayout } from "../../../layout/PageLayout";
 import { Provision, Reservation } from "../../../linker";
+import { withRekuest } from "../../../rekuest";
 
 export interface DashboardAgentProps {}
 
@@ -15,7 +15,7 @@ export const DashboardAgent: React.FC<DashboardAgentProps> = (props) => {
   const { id } = useParams<{ id: string }>();
   if (!id) return <>ssss</>;
 
-  const { data } = withArkitekt(useDetailAgentQuery)({
+  const { data } = withRekuest(useDetailAgentQuery)({
     variables: { id },
   });
 
