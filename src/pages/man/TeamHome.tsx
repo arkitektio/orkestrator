@@ -15,6 +15,11 @@ import {
   getIdentifierForCommentableModel,
 } from "../../linker";
 import { notEmpty } from "../../floating/utils";
+import { MyPublicFakts } from "../../man/components/MyPublicFakts";
+import { MyPrivateFakts } from "../../man/components/MyPrivateFakts";
+import { ActionButton } from "../../layout/ActionButton";
+import { useDialog } from "../../layout/dialog/DialogProvider";
+import { CreatePublicFaktDialgog } from "../../man/components/dialogs/CreatePublicFaktDialog";
 
 interface IFlowHomeProps {}
 
@@ -75,15 +80,28 @@ export const MentionedComment = ({
 
 const TeamHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
   const { data } = withMikro(useMyMentionsQuery)();
-
+  const { ask } = useDialog();
   return (
-    <PageLayout>
+    <PageLayout
+      actions={
+        <>
+          <ActionButton
+            label="Create Public App"
+            onAction={async () => {
+              const x = await ask(CreatePublicFaktDialgog, {});
+            }}
+          />
+        </>
+      }
+    >
       <div className="flex-initial flex flex-row mb-2">
         <div className="text-xl dark:text-white">My Feed</div>
       </div>
       {data?.mymentions?.filter(notEmpty).map((x, index) => (
         <MentionedComment key={index} comment={x} />
       ))}
+      <MyPublicFakts />
+      <MyPrivateFakts />
     </PageLayout>
   );
 };

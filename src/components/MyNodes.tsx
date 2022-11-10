@@ -73,9 +73,7 @@ export const NodeCard = ({ node }: { node: NodeListItemFragment }) => {
     >
       <Node.DetailLink className="cursor-pointer" object={node?.id}>
         <div className="text-xl font-light mb-2">{node?.name}</div>
-        <p className="text-sm">
-          {node?.package} on {node?.interface}
-        </p>
+        <p className="text-sm">{node?.interfaces?.join(", ")}</p>
       </Node.DetailLink>
     </Node.Smart>
   );

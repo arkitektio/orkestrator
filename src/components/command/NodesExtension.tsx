@@ -89,7 +89,7 @@ export const NodesExtension: React.FC<NavigationActionsProps> = ({}) => {
             type: "node",
             node: node?.id,
           },
-          description: node?.package + "/" + node?.interface,
+          description: node?.description,
         };
       });
 

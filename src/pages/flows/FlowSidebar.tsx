@@ -1,12 +1,12 @@
 import * as React from "react";
-import { useSearchDiagramsLazyQuery } from "../../fluss/api/graphql";
+import { useSearchWorkspacesLazyQuery } from "../../fluss/api/graphql";
 import { withFluss } from "../../fluss/fluss";
 import { useFluss } from "../../fluss/fluss-context";
 import { Workspace } from "../../linker";
 
 interface IDataSidebarProps {}
 
-export const DiagramCard = ({ diagram }: any) => {
+export const WorkspaceCard = ({ diagram }: any) => {
   const { s3resolve } = useFluss();
 
   return (
@@ -39,7 +39,7 @@ export const DiagramCard = ({ diagram }: any) => {
 };
 
 const FlowSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
-  const [fetch, { data }] = withFluss(useSearchDiagramsLazyQuery)();
+  const [fetch, { data }] = withFluss(useSearchWorkspacesLazyQuery)();
   const [filter, setFilter] = React.useState<{ search?: string }>({
     search: "",
   });
@@ -52,8 +52,8 @@ const FlowSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
     <>
       <div className="flex-initial p-5 dark:text-slate-50"></div>
       <div className="flex-grow flex flex-col gap-2 p-5 overflow-y-auto">
-        {data?.diagrams?.map((diagram, index) => (
-          <DiagramCard key={index} diagram={diagram} />
+        {data?.workspaces?.map((diagram, index) => (
+          <WorkspaceCard key={index} diagram={diagram} />
         ))}
       </div>
     </>

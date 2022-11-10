@@ -86,18 +86,12 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
   const deployed = deployable?.allnodes?.at(0);
 
   const deployRes = reservations?.reservations
-    ?.filter(
-      (res) =>
-        res?.node?.package == "@fluss" && res.node.interface == "deploy_graph"
-    )
+    ?.filter((res) => res?.node?.interfaces?.includes("fluss::deploy"))
     ?.filter((res) => res?.status == ReservationStatus.Active)
     .at(0);
 
   const undeployRes = reservations?.reservations
-    ?.filter(
-      (res) =>
-        res?.node?.package == "@fluss" && res.node.interface == "undeploy_graph"
-    )
+    ?.filter((res) => res?.node?.interfaces?.includes("fluss::undeploy"))
     .at(0);
 
   return (

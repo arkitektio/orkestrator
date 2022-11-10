@@ -2,11 +2,14 @@ import { Dialog } from "@headlessui/react";
 import { Form, Formik } from "formik";
 import { useNavigate } from "react-router";
 import { useAlert } from "../../../components/alerter/alerter-context";
+import { SearchSelectInput } from "../../../components/forms/fields/search_select_input";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { implementValidationSchema } from "../../../components/forms/implement/schema";
 import { modalfy } from "../../../layout/Modal";
 import { Workspace } from "../../../linker";
+import { withRekuest } from "../../../rekuest";
+import { useRegistryOptionsLazyQuery } from "../../../rekuest/api/graphql";
 import {
   CreateVanillaDiagramMutationVariables,
   useCreateVanillaDiagramMutation,
@@ -40,6 +43,8 @@ export const CreateFlowModal = modalfy(({ setShow, show }) => {
       // });
     },
   });
+
+  const [searchRestrict] = withRekuest(useRegistryOptionsLazyQuery)();
   const { alert } = useAlert();
 
   const navigate = useNavigate();
@@ -48,6 +53,7 @@ export const CreateFlowModal = modalfy(({ setShow, show }) => {
     <Formik<CreateVanillaDiagramMutationVariables>
       initialValues={{
         name: "",
+        restrict: [],
       }}
       validateOnBlur
       validateOnChange
@@ -55,7 +61,7 @@ export const CreateFlowModal = modalfy(({ setShow, show }) => {
       onSubmit={(values, { setSubmitting }) => {
         console.log(values);
         setSubmitting(true);
-        createGraph({ variables: { name: values.name } }).then((graph) => {
+        createGraph({ variables: { ...values } }).then((graph) => {
           let test = graph.data?.drawvanilla?.id;
           if (test) {
             navigate(Workspace.linkBuilder(test));
@@ -81,10 +87,12 @@ export const CreateFlowModal = modalfy(({ setShow, show }) => {
                       label="Name"
                       description="How should your workflow be Called?"
                     />
-                    <TextInputField
-                      name="version"
-                      label="Specify a Version"
-                      description="Version numbers are right now ignored"
+                    <SearchSelectInput
+                      lazySearch={searchRestrict}
+                      isMulti={true}
+                      name="restrict"
+                      label="Restrict"
+                      description="Restrict the workflow to specific nodes of an app only. This can allow you to create a workflow that can run locally on this app"
                     />
                   </div>
                 </div>

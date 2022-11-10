@@ -13,7 +13,7 @@ import { withRekuest } from "../../../rekuest";
 export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id }) => {
     const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
-      variables: { package: data.package, interface: data.interface },
+      variables: { hash: data?.hash },
     });
     const { isExpanded, toggleExpanded } = useNodeLayout();
 
@@ -77,7 +77,7 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
               {node_data?.node?.name}{" "}
             </Node.DetailLink>
             <p className="flex-initial text-xs font-extralight truncate">
-              {node_data?.node?.package}/{node_data?.node?.package}
+              {node_data?.node?.description}
             </p>
           </>
         )}

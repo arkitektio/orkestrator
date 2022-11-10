@@ -39,11 +39,7 @@ export const SampleCard: React.FC<{
   return (
     <Sample.Smart
       object={sample?.id}
-      dragClassName={({ isOver, canDrop }) =>
-        `bg-slate-700 text-white rounded overflow-hidden shadow-md pl-3 pr-2 py-2 flex group ${
-          isOver && "border-primary-200 border"
-        }`
-      }
+      className={"bg-slate-700 text-white rounded shadow-md pl-3  group"}
       additionalMates={(accept, self) => {
         if (!self) return [];
 
@@ -99,12 +95,14 @@ export const SampleCard: React.FC<{
         return [];
       }}
     >
-      <Sample.DetailLink
-        className="cursor-pointer font-semibold"
-        object={sample.id}
-      >
-        {sample?.name}
-      </Sample.DetailLink>
+      <div className="my-2">
+        <Sample.DetailLink
+          className="cursor-pointer font-semibold"
+          object={sample.id}
+        >
+          {sample?.name}
+        </Sample.DetailLink>
+      </div>
     </Sample.Smart>
   );
 };

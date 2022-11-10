@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useParams } from "react-router";
 import { EditRiver } from "../../../floating/edit/Edit";
 import { noTypename } from "../../../floating/utils";
 import {
-  DiagramDocument,
   GraphInput,
   SearchFlowsDocument,
   SearchFlowsQuery,
-  useDiagramQuery,
   useUpdateFlowMutation,
+  useWorkspaceQuery,
 } from "../../../fluss/api/graphql";
 import { withFluss } from "../../../fluss/fluss";
 
@@ -19,7 +18,7 @@ export const FlowDiagramHome: React.FC<FlowDiagramHomeProps> = (props) => {
 
   if (!diagram) return <></>;
 
-  let { data } = withFluss(useDiagramQuery)({
+  let { data } = withFluss(useWorkspaceQuery)({
     variables: { id: diagram },
   });
 
@@ -29,26 +28,26 @@ export const FlowDiagramHome: React.FC<FlowDiagramHomeProps> = (props) => {
         variables: { id: diagram },
         query: SearchFlowsDocument,
       });
-      if (data?.updatediagram?.latestFlow) {
+      if (data?.updateworkspace?.latestFlow) {
         cache.writeQuery({
           query: SearchFlowsDocument,
           variables: { id: diagram },
           data: {
             flows:
-              x?.flows && x.flows.concat([data?.updatediagram?.latestFlow]),
+              x?.flows && x.flows.concat([data?.updateworkspace?.latestFlow]),
           },
         });
       }
     },
   });
 
-  if (!data?.diagram?.latestFlow?.id) return <>Loading</>;
+  if (!data?.workspace?.latestFlow?.id) return <>Loading</>;
 
   const saveDiagram = async (graph_input: GraphInput) => {
-    if (!data?.diagram?.id) return;
+    if (!data?.workspace?.id) return;
 
     let variables = {
-      id: data?.diagram?.id,
+      id: data?.workspace?.id,
       graph: graph_input,
     };
 
@@ -59,7 +58,7 @@ export const FlowDiagramHome: React.FC<FlowDiagramHomeProps> = (props) => {
 
   return (
     <>
-      <EditRiver flow={data?.diagram?.latestFlow} onFlowSave={saveDiagram} />
+      <EditRiver flow={data?.workspace?.latestFlow} onFlowSave={saveDiagram} />
     </>
   );
 };

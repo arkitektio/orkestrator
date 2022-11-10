@@ -85,9 +85,7 @@ export const NodeItem = ({ node }: { node: NodeListItemFragment }) => {
         >
           <span className="truncate">{node?.name}</span>
         </Node.DetailLink>
-        <p className="text-white-700 text-base">
-          {node?.package}/{node?.interface}
-        </p>
+        <p className="text-white-700 text-base truncate">{node?.description}</p>
       </div>
     </Node.Smart>
   );

@@ -1,18 +1,18 @@
 query Agents($app: String, $status: [AgentStatusInput]) {
-	agents(app: $app, status: $status) {
-		...ListAgent
-	}
+  agents(app: $app, status: $status) {
+    ...ListAgent
+  }
 }
 
 query DetailAgent($id: ID!) {
-	agent(id: $id) {
-		...DetailAgent
-	}
+  agent(id: $id) {
+    ...DetailAgent
+  }
 }
 
-query AgentOptions {
-	agents {
-		value: id
-		label: name
-	}
+query AgentOptions($registry: ID, $search: String) {
+  options: agents(registry: $registry, search: $search) {
+    value: id
+    label: identifier
+  }
 }

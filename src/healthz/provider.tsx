@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useFakts } from "fakts";
+import { useFakts } from "@jhnnsrs/fakts";
 import { DeadJSON, HealthReturn, HealthyJSON, HealthzContext } from "./context";
 
 export interface HealthzProviderProps {
   children: React.ReactNode;
 }
 
-export const checkHealth = async (
+const checkHealth = async (
   name: string,
   healthz: string
 ): Promise<HealthReturn> => {

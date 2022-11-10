@@ -1,0 +1,4 @@
+fragment Registry on Registry {
+  unique
+  name
+}

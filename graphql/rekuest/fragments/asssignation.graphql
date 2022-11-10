@@ -18,11 +18,10 @@ fragment DetailAssignation on Assignation {
     createdAt
     template {
       id
+      interface
       node {
         id
         name
-        package
-        interface
         interfaces
       }
       registry {
@@ -32,7 +31,6 @@ fragment DetailAssignation on Assignation {
         }
       }
       extensions
-      version
     }
     creator {
       email
@@ -47,8 +45,6 @@ fragment DetailAssignation on Assignation {
     status
     node {
       id
-      package
-      interface
       name
       interfaces
       meta
@@ -91,7 +87,7 @@ fragment ListAssignation on Assignation {
       interfaces
     }
     template {
-      name
+      interface
       registry {
         app {
           name

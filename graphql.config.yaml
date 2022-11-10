@@ -56,7 +56,7 @@ projects:
             - mikro.traits.Vectorizable
   rekuest:
     schema: http://localhost:8090/graphql
-    documents: graphql/arkitekt/**/**.graphql
+    documents: graphql/rekuest/**/**.graphql
     extensions:
       turms:
         out_dir: rekuest/api

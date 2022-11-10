@@ -3,7 +3,7 @@ import React from "react";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
-import { useFakts } from "fakts";
+import { useFakts } from "@jhnnsrs/fakts";
 
 export interface PublicHomeProps {}
 
@@ -45,9 +45,8 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                       name: "Localhost",
                       base_url: `${host}/f/`,
                     },
-                    clientId: "PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO",
-                    clientSecret:
-                      "8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X",
+                    identifier: "github.io.jhnnsrs.orkestrator",
+                    version: "latest",
                   });
                 }}
               >

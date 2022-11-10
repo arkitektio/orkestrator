@@ -1,0 +1,43 @@
+mutation CreatePrivateFakt(
+  $identifier: String!
+  $version: String!
+  $scopes: [String!]!
+) {
+  createPrivateFakt(
+    identifier: $identifier
+    version: $version
+    scopes: $scopes
+  ) {
+    ...PrivateFakt
+  }
+}
+
+mutation CreatePublicFakt(
+  $identifier: String!
+  $version: String!
+  $redirectUris: [String!]!
+  $scopes: [String!]!
+) {
+  createPublicFakt(
+    identifier: $identifier
+    version: $version
+    redirectUris: $redirectUris
+    scopes: $scopes
+  ) {
+    id
+    clientId
+    clientSecret
+  }
+}
+
+mutation DeletePublicFakt($id: ID!) {
+  deletePublicFakt(id: $id) {
+    id
+  }
+}
+
+mutation DeletePrivateFakt($id: ID!) {
+  deletePrivateFakt(id: $id) {
+    id
+  }
+}

@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { toast } from "react-toastify";
 import { useAlert } from "../../../components/alerter/alerter-context";
-import { useFakts } from "fakts";
+import { useFakts } from "@jhnnsrs/fakts";
 import {
   AgentsEventDocument,
   AgentsEventSubscriptionResult,
@@ -106,7 +106,6 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
         identifier: "default",
       },
       updateQuery: (prev, { subscriptionData }) => {
-        console.log("Received MyReservationsEvent", subscriptionData);
         let action = subscriptionData.data?.reservations;
         let newelements;
         // Try to update
@@ -135,7 +134,6 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
 
         if (!newelements) return prev;
 
-        console.log("Received ", subscriptionData);
         return {
           ...prev,
           reservations: [...newelements],
@@ -156,7 +154,6 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
         identifier: "default",
       },
       updateQuery: (prev, { subscriptionData }) => {
-        console.log("Received MyProvisionsEvent", subscriptionData);
         let action = subscriptionData.data?.provisions;
         let newelements;
         // Try to update
@@ -184,7 +181,6 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
         }
 
         if (!newelements) return prev;
-        console.log("Received ", subscriptionData);
         return {
           ...prev,
           provisions: [...newelements],
@@ -203,7 +199,6 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
       document: WatchRequestsDocument,
       variables: { identifier: "default" },
       updateQuery: (prev, { subscriptionData }) => {
-        console.log("Received MyAssignationsEvent", subscriptionData);
         if (!subscriptionData.data) return prev;
         let action = subscriptionData.data?.requests;
         let newelements;
@@ -250,7 +245,6 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
       document: AgentsEventDocument,
       variables: {},
       updateQuery: (prev, { subscriptionData }) => {
-        console.log("Received AgentsEvent", subscriptionData);
         var data = subscriptionData as AgentsEventSubscriptionResult;
         let action = data.data?.agentsEvent;
         let newelements;
@@ -278,8 +272,6 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
           }
         }
 
-        console.log(newelements);
-        console.log("Received ", subscriptionData);
         return { ...prev, agents: newelements } as AgentsQuery;
       },
     });

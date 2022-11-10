@@ -8,7 +8,7 @@ import {
   UpdateFlowDocument,
   UpdateFlowMutation,
   UpdateFlowMutationVariables,
-  useDiagramQuery,
+  useWorkspaceQuery,
 } from "../fluss/api/graphql";
 import { withFluss } from "../fluss/fluss";
 import { useFluss } from "../fluss/fluss-context";
@@ -21,17 +21,17 @@ export const Flow: React.FC<Props> = (props) => {
   const { client } = useFluss();
   const { alert } = useAlert();
   if (!flowid) return <></>;
-  let { data } = withFluss(useDiagramQuery)({
+  let { data } = withFluss(useWorkspaceQuery)({
     variables: { id: flowid },
   });
 
-  if (!data?.diagram?.latestFlow?.id) return <>Loading</>;
+  if (!data?.workspace?.latestFlow?.id) return <>Loading</>;
 
   const saveDiagram = async (graph_input: GraphInput) => {
-    if (!data?.diagram?.id) return;
+    if (!data?.workspace?.id) return;
 
     let variables = {
-      id: data?.diagram?.id,
+      id: data?.workspace?.id,
       graph: graph_input,
     };
 
@@ -59,7 +59,7 @@ export const Flow: React.FC<Props> = (props) => {
 
   return (
     <ModuleLayout sidebar={<> Versions</>}>
-      <EditRiver flow={data?.diagram?.latestFlow} onFlowSave={saveDiagram} />
+      <EditRiver flow={data?.workspace?.latestFlow} onFlowSave={saveDiagram} />
     </ModuleLayout>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useFakts } from "fakts";
+import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "herre";
 import { useMikro } from "../mikro/MikroContext";
 import result from "../mikro/api/fragments";

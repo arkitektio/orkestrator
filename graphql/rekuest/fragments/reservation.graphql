@@ -43,8 +43,6 @@ fragment DetailReservation on Reservation {
     id
     kind
     name
-    package
-    interface
     args {
       __typename
       key
@@ -68,6 +66,8 @@ fragment DetailReservation on Reservation {
     interfaces
   }
   template {
+    id
+    interface
     registry {
       id
       app {
@@ -99,8 +99,6 @@ fragment ListReservation on Reservation {
     id
     kind
     name
-    package
-    interface
     args {
       __typename
       key

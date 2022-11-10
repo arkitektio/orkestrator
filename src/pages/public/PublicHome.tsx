@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useFakts } from "fakts";
+import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "herre";
 import TextTransition, { presets } from "react-text-transition";
 import { RekuestLink } from "../../linker";

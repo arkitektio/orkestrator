@@ -1,17 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
-import { EditRiver } from "../../../floating/edit/Edit";
+import React, { useEffect } from "react";
+import { useParams } from "react-router";
 import { ShowRiver } from "../../../floating/show/ShowRiver";
-import { noTypename } from "../../../floating/utils";
-import {
-  DiagramDocument,
-  GraphInput,
-  SearchFlowsDocument,
-  SearchFlowsQuery,
-  useDiagramQuery,
-  useFlowQuery,
-  useUpdateFlowMutation,
-} from "../../../fluss/api/graphql";
+import { useFlowQuery } from "../../../fluss/api/graphql";
 import { withFluss } from "../../../fluss/fluss";
 
 export interface FlowDiagramHomeProps {}

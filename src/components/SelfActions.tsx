@@ -34,7 +34,7 @@ export const SelfActions: React.FC<SelfActionsProps> = ({
       {available_res?.map((res) => (
         <ActionButton
           label={res.title || res.node?.name || "Unknown"}
-          description={res.node?.interface || "No description"}
+          description={res.node.kind || "No description"}
           className={buttonClassName}
           inactive={res.status != ReservationStatus.Active}
           onAction={async () => {

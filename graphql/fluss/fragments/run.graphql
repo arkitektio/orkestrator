@@ -49,7 +49,7 @@ fragment ListRun on Run {
   flow {
     id
     name
-    diagram {
+    workspace {
       name
     }
   }

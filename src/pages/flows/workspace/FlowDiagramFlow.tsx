@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { EditRiver } from "../../../floating/edit/Edit";
 import { noTypename } from "../../../floating/utils";
 import {
-  DiagramDocument,
   GraphInput,
   SearchFlowsDocument,
   SearchFlowsQuery,
-  useDiagramQuery,
   useFlowQuery,
   useUpdateFlowMutation,
 } from "../../../fluss/api/graphql";
@@ -37,13 +35,13 @@ export const FlowDiagramFlow: React.FC<FlowDiagramHomeProps> = (props) => {
         variables: { id: diagram },
         query: SearchFlowsDocument,
       });
-      if (data?.updatediagram?.latestFlow) {
+      if (data?.updateworkspace?.latestFlow) {
         cache.writeQuery({
           query: SearchFlowsDocument,
           variables: { id: diagram },
           data: {
             flows:
-              x?.flows && x.flows.concat([data?.updatediagram?.latestFlow]),
+              x?.flows && x.flows.concat([data?.updateworkspace?.latestFlow]),
           },
         });
       }

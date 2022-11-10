@@ -4,26 +4,26 @@ query Flow($id: ID) {
   }
 }
 
-query Diagram($id: ID!) {
-  diagram(id: $id) {
-    ...Diagram
+query Workspace($id: ID!) {
+  workspace(id: $id) {
+    ...Workspace
   }
 }
 
-query MyDiagrams {
-  mydiagrams {
-    ...ListDiagram
+query MyWorkspaces {
+  myworkspaces {
+    ...ListWorkspace
   }
 }
 
-query SearchDiagrams($name: String) {
-  diagrams(name: $name) {
-    ...ListDiagram
+query SearchWorkspaces($name: String) {
+  workspaces(name: $name) {
+    ...ListWorkspace
   }
 }
 
-query SearchFlows($name: String, $diagram: ID) {
-  flows(name: $name, diagram: $diagram) {
+query SearchFlows($name: String, $workspace: ID) {
+  flows(name: $name, workspace: $workspace) {
     ...ListFlow
   }
 }

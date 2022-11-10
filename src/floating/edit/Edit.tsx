@@ -184,7 +184,9 @@ export const EditRiver: React.FC<Props> = ({
 }) => {
   const { client: arkitektapi } = useRekuest();
   const { client: flussapi } = useFluss();
-  const [sidebar, setSidebar] = useState<React.ReactNode>(<EditSidebar />);
+  const [sidebar, setSidebar] = useState<React.ReactNode>(
+    <EditSidebar flow={flow} />
+  );
 
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
@@ -421,8 +423,7 @@ export const EditRiver: React.FC<Props> = ({
                         ],
                         constream: [],
                         name: event.data?.node?.name || "no-name",
-                        package: event.data?.node?.package || "",
-                        interface: event.data?.node?.interface || "",
+                        hash: event.data?.node?.hash || "",
                         kind: event.data?.node?.kind || NodeKind.Generator,
                       },
                       position: position,
@@ -521,7 +522,7 @@ export const EditRiver: React.FC<Props> = ({
         >
           <div ref={dropref} className="flex flex-grow h-full w-full">
             <Graph
-              onPaneClick={() => setSidebar(<EditSidebar />)}
+              onPaneClick={() => setSidebar(<EditSidebar flow={flow} />)}
               onDragOver={onDragOver}
               nodes={nodes}
               edges={edges}

@@ -1,15 +1,15 @@
 import { useParams } from "react-router";
-import {
-  AvailableModels,
-  useDetailTemplateQuery,
-} from "../../../rekuest/api/graphql";
-import { ShareModal } from "../../../rekuest/components/dialogs/ShareModal";
-import { Modal } from "../../../components/modals/Modal";
 import { notEmpty } from "../../../floating/utils";
-import { Actionbar } from "../../../layout/Actionbar";
+import { ActionButton } from "../../../layout/ActionButton";
+import { useDialog } from "../../../layout/dialog/DialogProvider";
 import { PageLayout } from "../../../layout/PageLayout";
 import { Provision } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
+import {
+  useDetailTemplateQuery,
+  useProvideMutation,
+} from "../../../rekuest/api/graphql";
+import { ProvideDialog } from "../../../rekuest/components/dialogs/ProvideDialog";
 
 export interface DashboardTemplateProps {}
 
@@ -20,14 +20,33 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = (props) => {
     variables: { id: id },
   });
 
+  const { ask } = useDialog();
+
   return (
-    <PageLayout>
-      <div className="flex-initial h-20">{data?.template?.id}</div>
+    <PageLayout
+      sidebar={<></>}
+      actions={
+        <>
+          <ActionButton
+            label="Provide"
+            onAction={async () => {
+              if (data?.template) {
+                let x = await ask(ProvideDialog, {
+                  template: data.template,
+                });
+                console.log(x);
+              }
+            }}
+            description="Provide this Template"
+          />
+        </>
+      }
+    >
+      <div className="flex-initial h-20 text-white">
+        {data?.template?.interface} implements {data?.template?.node.name}
+      </div>
       <div className="flex-grow dark:text-white">
         Fullfills extensions: {data?.template?.extensions?.map((ext) => ext)}
-        <Modal child={<button>OPEN SHARE</button>}>
-          <ShareModal type={AvailableModels.FacadeTemplate} object={id} />
-        </Modal>
         <div className="flex-initial">
           <div className="font-light mt-3 mb-1 text-xl"> Provided by </div>
           {data?.template?.provisions?.filter(notEmpty).map((prov) => (
@@ -35,12 +54,11 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = (props) => {
               object={prov.id}
               className="bg-blue-800 rounded shadow-md text-xl text-white p-1 mr-2 my-auto"
             >
-              {prov?.reservation?.waiter?.registry?.user?.email}
+              {prov?.agent?.identifier}
             </Provision.DetailLink>
           ))}
         </div>
       </div>
-      <Actionbar>Hallo</Actionbar>
     </PageLayout>
   );
 };

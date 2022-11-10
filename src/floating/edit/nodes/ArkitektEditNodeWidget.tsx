@@ -17,7 +17,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id }) => {
     const { updateNodeIn, updateNodeOut, updateNodeExtras } = useEditRiver();
     const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
-      variables: { package: data.package, interface: data.interface },
+      variables: { hash: data.hash },
     });
 
     useEffect(() => {
@@ -195,8 +195,8 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           </div>
           <div className="flex-grow"></div>
         </div>
-        <p className="text-xs font-extralight">
-          {node_data?.node?.package}/{node_data?.node?.interface}
+        <p className="text-xs font-extralight truncate">
+          {node_data?.node?.description}
         </p>
         {isExpanded && (
           <>

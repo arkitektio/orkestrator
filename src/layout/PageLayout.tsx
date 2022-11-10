@@ -39,11 +39,7 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
 
   return (
     <div className="flex-initial h-full w-full page-layout">
-      <Allotment
-        onChange={(size) => {
-          console.log(size);
-        }}
-      >
+      <Allotment onChange={(size) => {}}>
         <Allotment.Pane
           preferredSize={isOpen ? "70%" : "100%"}
           className="flex"
@@ -54,7 +50,10 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
           >
             <BreadCrumbs />
             {props.actions && <Actionbar>{props.actions}</Actionbar>}
-            <div className="flex-grow p-2 sm:p-4 overflow-y-scroll w-full">
+            <div
+              className="flex-grow p-2 sm:p-4 overflow-y-scroll w-full"
+              data-enableselect="true"
+            >
               {props.children}
             </div>
             {props.sidebar && (

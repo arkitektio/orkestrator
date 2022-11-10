@@ -1,0 +1,11 @@
+query RepoScans {
+  reposcans {
+    ...ListRepoScan
+  }
+}
+
+query DetailRepoScan($id: ID!) {
+  reposcan(id: $id) {
+    ...DetailRepoScan
+  }
+}

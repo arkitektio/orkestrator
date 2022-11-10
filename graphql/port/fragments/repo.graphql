@@ -1,0 +1,13 @@
+fragment DetailGithubRepo on GithubRepo {
+  id
+  user
+  repo
+  branch
+}
+
+fragment ListGithubRepo on GithubRepo {
+  id
+  user
+  repo
+  branch
+}

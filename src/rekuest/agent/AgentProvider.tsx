@@ -2,13 +2,12 @@ import { preventOverflow } from "@popperjs/core";
 import React, { useEffect, useState } from "react";
 import { v4 } from "uuid";
 import { Assign } from "yup/lib/object";
-import { useFakts } from "fakts";
+import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "herre";
 import {
   AssignationStatus,
   DefinitionInput,
   ProvisionStatus,
-  useDefineMutation,
   useTemplateMutation,
 } from "../api/graphql";
 import {
@@ -33,7 +32,6 @@ export const AgentProvider: React.FC<ArkitektProps> = ({ children }) => {
   const { fakts } = useFakts();
   const { token } = useHerre();
 
-  const [define] = withRekuest(useDefineMutation)();
   const [template] = withRekuest(useTemplateMutation)();
 
   const [registry, setRegistry] = useState<ActorBuilderRegistry>({});
@@ -42,7 +40,7 @@ export const AgentProvider: React.FC<ArkitektProps> = ({ children }) => {
   const [ws, setWebsocket] = useState<WebSocket | undefined>(undefined);
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
-    `${fakts.arkitekt.agent.endpoint_url}?token=${token}`
+    `${fakts.rekuest.agent.endpoint_url}?token=${token}`
   );
 
   useEffect(() => {
@@ -185,12 +183,8 @@ export const AgentProvider: React.FC<ArkitektProps> = ({ children }) => {
   };
 
   const register = async (definition: DefinitionInput, actor: ActorBuilder) => {
-    const node = await define({ variables: { definition: definition } });
-    if (!node.data?.define?.id) {
-      throw new Error("Definition failed");
-    }
     const temp = await template({
-      variables: { node: node.data?.define?.id },
+      variables: { definition: definition },
     });
     if (!temp.data?.createTemplate?.id) {
       throw new Error("Templating failed");

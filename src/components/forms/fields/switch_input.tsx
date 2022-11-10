@@ -14,6 +14,7 @@ interface Props {
   label: string;
   falseLabel?: string;
   description?: string;
+  falseDescription?: string;
   placeholder?: string;
 }
 
@@ -54,17 +55,19 @@ export const SwitchInputField: React.FC<Props> = (props) => {
             {meta.touched && meta.error && (
               <Alert prepend="Error" message={meta.error} />
             )}
+            {(props.description || props.falseDescription) && (
+              <div
+                id={`${props.name}-help`}
+                className="text-xs text-gray-600 mb-4 font-light"
+              >
+                {field.value
+                  ? props.description
+                  : props.falseDescription || props.description}
+              </div>
+            )}
           </>
         )}
       </Field>
-      {props.description && (
-        <div
-          id={`${props.name}-help`}
-          className="text-xs text-gray-600 mb-4 font-light"
-        >
-          {props.description}
-        </div>
-      )}
     </div>
   );
 };

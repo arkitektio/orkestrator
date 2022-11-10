@@ -13,7 +13,7 @@ import {
   useGithubReposQuery,
 } from "../port/api/graphql";
 import { CreateWhaleModal } from "../port/components/dialogs/CreateWhaleModal";
-import { withPort } from "../port/port";
+import { withPort } from "../port/PortContext";
 import { IconButton } from "./buttons/IconButton";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
@@ -87,7 +87,7 @@ const MyRepos: React.FC<IMyWhalesProps> = ({}) => {
                     </IconButton>
                   }
                 >
-                  <CreateWhaleModal repo={repo.id} />
+                  <CreateWhaleModal />
                 </Modal>
               )}
             </div>

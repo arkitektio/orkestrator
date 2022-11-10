@@ -1,0 +1,35 @@
+mutation RunWhale($id: ID!, $instance: String) {
+  runWhale(id: $id, instance: $instance) {
+    ...DetailContainer
+  }
+}
+
+mutation DeleteWhale($id: ID!) {
+  deleteWhale(id: $id) {
+    id
+  }
+}
+
+mutation CreateWhale(
+  $identifier: String!
+  $version: String!
+  $image: String!
+  $clientId: String!
+  $clientSecret: String!
+  $scopes: [String]!
+  $faktEndpoint: String!
+  $runtime: DockerRuntime
+) {
+  createWhale(
+    version: $version
+    identifier: $identifier
+    image: $image
+    clientId: $clientId
+    clientSecret: $clientSecret
+    scopes: $scopes
+    faktEndpoint: $faktEndpoint
+    runtime: $runtime
+  ) {
+    ...DetailWhale
+  }
+}

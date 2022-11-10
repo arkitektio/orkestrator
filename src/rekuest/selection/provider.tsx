@@ -112,7 +112,6 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
         let lala = item.item.getBoundingClientRect();
         if (lala && boxesIntersect(scrollAwareBox, lala)) {
           indexesToSelect.push(index);
-          console.log("Intersecting", item);
         }
       });
 
@@ -122,9 +121,6 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
           .filter((_, index) => indexesToSelect.includes(index))
       );
       setIsMultiSelecting(true);
-    } else {
-      setSelection([]);
-      setIsMultiSelecting(false);
     }
   };
 
@@ -135,12 +131,10 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
        * In this example, we're preventing users from selecting in elements
        * that have a data-disableselect attribute on them or one of their parents
        */
+
       if (target instanceof HTMLElement) {
         let el = target;
-        while (el.parentElement && !el.dataset.disableselect) {
-          el = el.parentElement;
-        }
-        return el.dataset.disableselect !== "true";
+        return el.dataset.enableselect == "true";
       }
 
       /**
@@ -151,9 +145,9 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
     },
     selectionProps: {
       style: {
-        border: "2px var(--color-primary-400)",
+        border: "2px rgb(var(--color-primary-400))",
         borderRadius: 4,
-        backgroundColor: "var(--color-primary-300)",
+        backgroundColor: "rgb(var(--color-primary-300))",
         opacity: 0.5,
       },
     },

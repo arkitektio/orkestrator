@@ -1,9 +1,9 @@
 import React from "react";
 import {
-  MyDiagramsDocument,
-  MyDiagramsQuery,
+  MyWorkspacesDocument,
+  MyWorkspacesQuery,
   useDeleteWorkspaceMutation,
-  useMyDiagramsQuery,
+  useMyWorkspacesQuery,
 } from "../fluss/api/graphql";
 import { withFluss } from "../fluss/fluss";
 import { useFluss } from "../fluss/fluss-context";
@@ -15,7 +15,7 @@ import { BsTrash } from "react-icons/bs";
 export type IMyGraphsProps = {};
 
 const DiagramCard: React.FC<{
-  diagram: Exclude<MyDiagramsQuery["mydiagrams"], null | undefined>[number];
+  diagram: Exclude<MyWorkspacesQuery["myworkspaces"], null | undefined>[number];
 }> = ({ diagram }) => {
   const { s3resolve } = useFluss();
 
@@ -24,12 +24,12 @@ const DiagramCard: React.FC<{
   const [deleteGraph] = withFluss(useDeleteWorkspaceMutation)({
     update(cache, result) {
       const existing: any = cache.readQuery({
-        query: MyDiagramsDocument,
+        query: MyWorkspacesDocument,
       });
       cache.writeQuery({
-        query: MyDiagramsDocument,
+        query: MyWorkspacesDocument,
         data: {
-          mydiagrams: existing.mydiagrams.filter(
+          myworkspaces: existing.myworkspaces.filter(
             (t: any) => t.id !== result.data?.deleteWorkspace?.id
           ),
         },
@@ -109,7 +109,7 @@ const DiagramCard: React.FC<{
 };
 
 const MyWorkspaces: React.FC<IMyGraphsProps> = ({}) => {
-  const { data } = withFluss(useMyDiagramsQuery)();
+  const { data } = withFluss(useMyWorkspacesQuery)();
 
   return (
     <div>

@@ -1,0 +1,6 @@
+query RegistryOptions($search: String) {
+  options: registries(unique: $search) {
+    label: unique
+    value: unique
+  }
+}

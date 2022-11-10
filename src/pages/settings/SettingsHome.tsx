@@ -5,6 +5,7 @@ import { SelectInputField } from "../../components/forms/fields/select_input";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import { PageLayout } from "../../layout/PageLayout";
 import { useSettings } from "../../settings/settings-context";
+import { DebugScreen } from "../admin/DebugScreen";
 
 export interface SettingsHomeProps {}
 
@@ -60,6 +61,7 @@ export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
           </Formik>
         </div>
       </div>
+      <DebugScreen />
     </PageLayout>
   );
 };

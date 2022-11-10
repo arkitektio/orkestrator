@@ -31,9 +31,7 @@ export const NodeList: React.FC<NodeListProps> = ({
             <div className="font-light text-md mb-1">{node?.name}</div>
             <p className="text-xs">{node?.description}</p>
           </div>
-          <div className="p-1 text-xs">
-            @{node?.package}/{node?.interface}
-          </div>
+          <div className="p-1 text-xs">@{node?.hash}</div>
         </div>
       ))}
     </div>

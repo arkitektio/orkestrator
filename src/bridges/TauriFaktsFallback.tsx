@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useState } from "react";
-import { Fakts, useFakts } from "fakts";
+import { Fakts, useFakts } from "@jhnnsrs/fakts";
 import { PublicNavigationBar } from "../components/navigation/PublicNavigationBar";
 import { SubmitButton } from "../components/forms/fields/SubmitButton";
 import { TextInputField } from "../components/forms/fields/text_input";
@@ -74,9 +74,8 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                       setFuture(
                         load({
                           endpoint,
-                          clientId: "PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO",
-                          clientSecret:
-                            "8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X",
+                          identifier: "github.io.jhnnsrs.orkestrator",
+                          version: "latest",
                         })
                           .then(() => {
                             setFuture(null);
@@ -111,9 +110,9 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                           name: "Localhost",
                           base_url: `http://${host}/f/`,
                         },
-                        clientId: "PsdU71PlUYeC4hP4aDf8pTdm2Hv9xYKdrxCFI5RO",
-                        clientSecret:
-                          "8jXSNhrH7fllN8cGjxg7y2Jl1INb22wlDSmUBepb9aRDGV3al5pfNzswS85MPEvpN5vnfrPkrIERQ6kcMHLiISr4HcYirivdtrnyMjFMlzKGvlCrwfkNJmtQgCLZmH4X",
+
+                        identifier: "github.io.jhnnsrs.orkestrator",
+                        version: "v0.0.1",
                       })
                         .then(() => {
                           setFuture(null);

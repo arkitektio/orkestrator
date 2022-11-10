@@ -116,9 +116,7 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
           <div className="flex-initial">
             <div className="flex flex-row">
               <div className="font-light text-2xl">{data?.node?.name}</div>
-              <div className="font-light mt-auto ml-4 ">
-                {data?.node?.package}/{data?.node?.interface}
-              </div>
+              <div className="font-light mt-auto ml-4 ">{data?.node?.hash}</div>
             </div>
           </div>
           <div className="flex-grow"></div>
@@ -158,19 +156,31 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
           </div>
         </div>
       </div>
-      {data?.node?.interfaces?.includes("workflow") &&
-        data?.node?.meta?.flow && <FlussNode node={data?.node} />}
-
+      <div className="flex-grow">
+        {data?.node?.interfaces?.includes("workflow") &&
+          data?.node?.meta?.flow && <FlussNode node={data?.node} />}
+      </div>
       <div className="flex-initial">
-        <div className="font-light mt-3 mb-1 text-xl"> Implemented by </div>
-        {data?.node?.templates?.filter(notEmpty).map((template) => (
-          <Template.DetailLink
-            object={template.id}
-            className="bg-blue-800 rounded shadow-md text-xl text-white p-1 mr-2 my-auto"
-          >
-            {template?.registry.app?.name} by {template?.registry.user?.email}
-          </Template.DetailLink>
-        ))}
+        <div className="font-light mt-3 mb-1 text-xl text-white">
+          {" "}
+          Implemented by{" "}
+        </div>
+        <div className="grid gap-2">
+          {data?.node?.templates?.filter(notEmpty).map((template) => (
+            <Template.Smart
+              object={template.id}
+              className="bg-back-800 rounded shadow-md text-xl text-white p-1 mr-2 my-auto flex flex-col"
+            >
+              <Template.DetailLink object={template.id}>
+                {template?.interface}
+              </Template.DetailLink>
+              <div>
+                {template?.registry.app?.name} by{" "}
+                {template?.registry.user?.email}
+              </div>
+            </Template.Smart>
+          ))}
+        </div>
       </div>
     </PageLayout>
   );

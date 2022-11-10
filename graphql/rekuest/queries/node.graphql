@@ -1,5 +1,5 @@
-query DetailNode($id: ID, $package: String, $interface: String) {
-  node(id: $id, package: $package, interface: $interface) {
+query DetailNode($id: ID, $hash: String) {
+  node(id: $id, hash: $hash) {
     ...DetailNode
   }
 }
@@ -10,8 +10,18 @@ query MiniNodeByID($id: ID!) {
   }
 }
 
-query Nodes($search: String, $interfaces: [String]) {
-  allnodes(search: $search, interfaces: $interfaces) {
+query Nodes(
+  $search: String
+  $interfaces: [String]
+  $restrict: [String]
+  $templated: Boolean
+) {
+  allnodes(
+    search: $search
+    interfaces: $interfaces
+    restrict: $restrict
+    templated: $templated
+  ) {
     ...NodeListItem
   }
 }

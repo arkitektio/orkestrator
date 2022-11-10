@@ -22,8 +22,6 @@ import { MentionListener } from "./mikro/listeners/MentionListener";
 import { MikroGuard } from "./mikro/MikroGuard";
 import { MikroProvider } from "./mikro/MikroProvider";
 import "./popping.css";
-import { PortGuard } from "./port/port-guard";
-import { PortProvider } from "./port/port-provider";
 import { AgentProvider } from "./rekuest/agent/AgentProvider";
 import { PostmanProvider } from "./rekuest/postman/graphql/postman-provider";
 import { RekuestProvider } from "./rekuest/RekuestProvider";
@@ -40,6 +38,10 @@ import { RequesterProvider } from "./rekuest/postman/requester/requester-provide
 import { RekuestGuard } from "./rekuest/RekuestGuard";
 import { MikroAutoConfigure } from "./bridges/MikroAutoConfigure";
 import { MikroWard } from "./bridges/MikroWard";
+import { PortAutoConfigure } from "./bridges/PortAutoConfigure";
+import { PortProvider } from "./port/PortProvider";
+import { PortGuard } from "./port/PortGuard";
+import { DialogProvider } from "./layout/dialog/DialogProvider";
 
 /* try {
   import("virtual:pwa-register")
@@ -116,6 +118,7 @@ export const ProtectedApp: React.FC<Props> = () => {
                   <FlussGuard>
                     <FlussWard>
                       <PortProvider>
+                        <PortAutoConfigure />
                         <PortGuard>
                           <MikroProvider>
                             <MikroAutoConfigure />
@@ -133,27 +136,29 @@ export const ProtectedApp: React.FC<Props> = () => {
                                                 options={HTML5toTouch}
                                               >
                                                 <SelectionProvider>
-                                                  <ToastContainer
-                                                    position="bottom-right"
-                                                    theme="dark"
-                                                  />
-                                                  <ComponentPreview
-                                                    text={"sdfsdf"}
-                                                  />
-                                                  <GeneralMenu />
-                                                  <NavigationActions />
-                                                  <SearchActions />
-                                                  <NodesExtension />
-                                                  <SelectionActions />
-                                                  <MentionListener />
-                                                  <div className="flex flex-col h-screen sm:flex-row-reverse">
-                                                    <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
-                                                      <Outlet />
+                                                  <DialogProvider>
+                                                    <ToastContainer
+                                                      position="bottom-right"
+                                                      theme="dark"
+                                                    />
+                                                    <ComponentPreview
+                                                      text={"sdfsdf"}
+                                                    />
+                                                    <GeneralMenu />
+                                                    <NavigationActions />
+                                                    <SearchActions />
+                                                    <NodesExtension />
+                                                    <SelectionActions />
+                                                    <MentionListener />
+                                                    <div className="flex flex-col h-screen sm:flex-row-reverse">
+                                                      <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
+                                                        <Outlet />
+                                                      </div>
+                                                      <div className="flex-initial sm:flex-initial sm:static sm:w-20">
+                                                        <NavigationBar />
+                                                      </div>
                                                     </div>
-                                                    <div className="flex-initial sm:flex-initial sm:static sm:w-20">
-                                                      <NavigationBar />
-                                                    </div>
-                                                  </div>
+                                                  </DialogProvider>
                                                 </SelectionProvider>
                                               </DndProvider>
                                             </AgentProvider>

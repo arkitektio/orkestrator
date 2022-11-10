@@ -21,7 +21,7 @@ interface SearchSelectProps extends FieldProps {
 
 type IsMulti = boolean;
 
-export const SearchSelectWidget: React.FC<SearchSelectProps> = ({
+const SearchSelectWidget: React.FC<SearchSelectProps> = ({
   field,
   form,
   isMulti,

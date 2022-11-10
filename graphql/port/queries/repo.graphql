@@ -1,0 +1,11 @@
+query GithubRepos {
+  githubRepos {
+    ...ListGithubRepo
+  }
+}
+
+query DetailGithubRepo($id: ID!) {
+  githubRepo(id: $id) {
+    ...DetailGithubRepo
+  }
+}

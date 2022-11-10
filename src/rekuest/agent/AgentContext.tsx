@@ -121,6 +121,4 @@ export const AgentContext = React.createContext<AgentContextType>({
   assignations: {},
 });
 
-export const actify = (actifiable: (...args: any[]) => any) => {};
-
 export const useAgent = () => useContext(AgentContext);

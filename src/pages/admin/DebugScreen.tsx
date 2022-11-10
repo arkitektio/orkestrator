@@ -1,4 +1,5 @@
 import React from "react";
+import { SectionTitle } from "../../layout/SectionTitle";
 import { withRekuest } from "../../rekuest";
 import {
   useResetAgentsMutation,
@@ -17,40 +18,41 @@ const DebugScreen: React.FC<IApplicationsProps> = ({}) => {
   const [resetN] = withRekuest(useResetNodesMutation)();
 
   return (
-    <div className={"grid grid-cols-12 gap-5 h-screen"}>
-      <div className={"col-span-1 pl-2 pr-2"}>
+    <>
+      <SectionTitle>Debug Options</SectionTitle>
+      <div className={"flex flex-row gap-1 mt-1"}>
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetAg()}
         >
           Reset Agents{" "}
         </button>
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetP()}
         >
           Reset Provisions{" "}
         </button>
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetA()}
         >
           Reset Assigantions{" "}
         </button>
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetR()}
         >
           Reset Reservation{" "}
         </button>
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetN()}
         >
           Reset Nodes{" "}
         </button>
       </div>
-    </div>
+    </>
   );
 };
 

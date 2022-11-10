@@ -297,9 +297,40 @@ export const Application = buildSmart("@man/application", "applications", [
   "item:@man/user",
 ]);
 
+export const PrivateFakt = buildSmart("@man/privatefakt", "privatefakts", [
+  "list:@man/privatefakt",
+  "item:@man/privatefakt",
+]);
+
+export const PublicFakt = buildSmart("@man/publicfakt", "publicfakts", [
+  "list:@man/publicfakt",
+  "item:@man/publicfakt",
+]);
+
+export const Container = buildSmart("@port/container", "containers", [
+  "list:@port/container",
+  "item:@port/container",
+]);
+
+export const Whale = buildSmart("@port/whale", "whales", [
+  "list:@port/whale",
+  "item:@port/whale",
+]);
+
+export const GithubRepo = buildSmart("@port/githubrepo", "githubrepos", [
+  "list:@port/githubrepo",
+  "item:@port/githubrepo",
+]);
+
+export const RepoScan = buildSmart("@port/reposcan", "reposcans", [
+  "list:@port/reposcan",
+  "item:@port/reposcan",
+]);
+
 export const RekuestLink = buildModuleLink("rekuest");
 export const FlussLink = buildModuleLink("fluss");
 export const MikroLink = buildModuleLink("mikro");
+export const PortLink = buildModuleLink("port");
 
 export const FakeSmartModel = {
   DetailLink: buildModelLink("fake/fake", "fake"),

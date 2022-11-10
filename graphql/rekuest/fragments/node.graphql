@@ -1,9 +1,8 @@
 fragment DetailNode on Node {
   name
   description
-  package
-  interface
   kind
+  hash
   id
   interfaces
   meta
@@ -18,6 +17,7 @@ fragment DetailNode on Node {
         email
       }
     }
+    interface
     extensions
   }
 }
@@ -26,9 +26,8 @@ fragment NodeListItem on Node {
   id
   name
   kind
+  hash
   description
-  package
-  interface
   interfaces
   meta
 }
@@ -38,13 +37,13 @@ fragment MiniNode on Node {
   description
   kind
   id
-  package
-  interface
   meta
+  hash
 }
 
 fragment CompleteNode on Node {
   name
+  hash
   description
   args {
     ...ArgPort

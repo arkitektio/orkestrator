@@ -1,0 +1,15 @@
+fragment DetailRepoScan on RepoScan {
+  id
+  identifier
+  version
+  scopes
+  image
+}
+
+fragment ListRepoScan on RepoScan {
+  id
+  identifier
+  version
+  scopes
+  image
+}

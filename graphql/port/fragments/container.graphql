@@ -1,0 +1,26 @@
+fragment DetailContainer on Container {
+  id
+  name
+  image {
+    ...DetailImage
+  }
+  logs
+  labels
+  status
+  whale {
+    ...DetailWhale
+  }
+}
+
+fragment ListContainer on Container {
+  id
+  name
+  image {
+    ...DetailImage
+  }
+  labels
+  status
+  whale {
+    ...DetailWhale
+  }
+}

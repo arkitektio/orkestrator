@@ -15,8 +15,6 @@ query Templates(
     node {
       id
       name
-      package
-      interface
     }
   }
 }
@@ -28,10 +26,7 @@ query AssignableTemplates($node: ID) {
     node {
       id
       name
-      package
-      interface
     }
-    version
     registry {
       app {
         name
@@ -62,8 +57,6 @@ query TemplateOptions($node: ID!) {
     node {
       id
       name
-      package
-      interface
     }
   }
 }
@@ -75,8 +68,6 @@ query SearchTemplateOptions($node: ID!, $search: String) {
     node {
       id
       name
-      package
-      interface
     }
   }
 }

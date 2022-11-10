@@ -1,5 +1,6 @@
 fragment MiniTemplate on Template {
   id
+  interface
   node {
     name
   }
@@ -8,18 +9,16 @@ fragment MiniTemplate on Template {
 fragment DetailTemplate on Template {
   id
   extensions
-  version
   creator {
     email
   }
+  interface
   node {
-    repository {
-      id
-    }
     id
     name
-    package
-    interface
+  }
+  registry {
+    id
   }
   provisions(status: [ACTIVE, PENDING, CRITICAL, PENDING, DISCONNECTED]) {
     title
@@ -32,6 +31,9 @@ fragment DetailTemplate on Template {
     status
     creator {
       email
+    }
+    agent {
+      identifier
     }
     reservation {
       title

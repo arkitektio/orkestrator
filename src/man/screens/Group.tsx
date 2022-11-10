@@ -67,18 +67,21 @@ const Group: React.FC<GroupProps> = ({ id }) => {
       <div className="text-md mt-2">
         <div className="text-xl font-light">Members of this Group</div>
         <ResponsiveGrid>
-          {data?.group?.userSet?.map((u, index) => (
-            <User.DetailLink
+          {data?.group?.userSet?.filter(notEmpty).map((u, index) => (
+            <User.Smart
               object={u.id}
-              className="mt-2 p-6 rounded shadow-md bg-white border-gray-200 group text-black relative"
+              className="mt-2 rounded shadow-md bg-white border-gray-200 group text-black relative"
             >
-              <div className="flex">
-                <span className="flex-grow cursor-pointer font-semibold">
+              <div className="flex p-6">
+                <User.DetailLink
+                  object={u.id}
+                  className="flex-grow cursor-pointer font-semibold"
+                >
                   {u.username}
-                </span>
+                </User.DetailLink>
               </div>
               <UserEmblem email={u.email} />
-            </User.DetailLink>
+            </User.Smart>
           ))}
         </ResponsiveGrid>
         <div className="text-xl font-light">My Shared Data with this Team</div>

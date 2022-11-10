@@ -16,8 +16,7 @@ fragment ArkitektNode on ArkitektNode {
   __typename
   name
   description
-  package
-  interface
+  hash
   kind
   defaults
 }
@@ -199,6 +198,7 @@ fragment Flow on Flow {
       ...ReturnPort
     }
   }
+  restrict
   name
   screenshot
   createdAt
@@ -211,7 +211,7 @@ fragment ListFlow on Flow {
   createdAt
 }
 
-fragment ListDiagram on Diagram {
+fragment ListWorkspace on Workspace {
   id
   name
   latestFlow {
@@ -219,7 +219,7 @@ fragment ListDiagram on Diagram {
   }
 }
 
-fragment Diagram on Diagram {
+fragment Workspace on Workspace {
   id
   name
   latestFlow {

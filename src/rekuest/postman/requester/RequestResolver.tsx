@@ -10,7 +10,7 @@ export type PortValues = {
   [key: string]: any;
 };
 
-export const ResolveOnce = ({ request }: { request: AssignRequest }) => {
+const ResolveOnce = ({ request }: { request: AssignRequest }) => {
   const { alert } = useAlert();
   const { resolve, reject } = useRequester();
   const [params, setParams] = useState<PortValues>({});

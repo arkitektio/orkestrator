@@ -2167,7 +2167,7 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "DefinitionInput",
-        "description": "A definition for a node",
+        "description": "A definition for a template",
         "fields": null,
         "inputFields": [
           {
@@ -2199,16 +2199,24 @@
             "deprecationReason": null
           },
           {
-            "name": "interface",
-            "description": "The Interface",
+            "name": "idempotent",
+            "description": null,
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": "false",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "interface",
+            "description": "The interface of this template",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -2247,18 +2255,6 @@
             "deprecationReason": null
           },
           {
-            "name": "meta",
-            "description": "The metadata",
-            "type": {
-              "kind": "SCALAR",
-              "name": "GenericScalar",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "name",
             "description": "The name of this template",
             "type": {
@@ -2275,14 +2271,14 @@
             "deprecationReason": null
           },
           {
-            "name": "package",
-            "description": "The Package",
+            "name": "pure",
+            "description": null,
             "type": {
               "kind": "SCALAR",
-              "name": "String",
+              "name": "Boolean",
               "ofType": null
             },
-            "defaultValue": null,
+            "defaultValue": "false",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -3468,14 +3464,14 @@
             "description": null,
             "args": [
               {
-                "name": "extensions",
-                "description": "Desired Extensions",
+                "name": "definition",
+                "description": null,
                 "type": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String",
+                    "kind": "INPUT_OBJECT",
+                    "name": "DefinitionInput",
                     "ofType": null
                   }
                 },
@@ -3484,14 +3480,14 @@
                 "deprecationReason": null
               },
               {
-                "name": "node",
-                "description": "The Node you offer to give an implementation for",
+                "name": "extensions",
+                "description": "Desired Extensions",
                 "type": {
-                  "kind": "NON_NULL",
+                  "kind": "LIST",
                   "name": null,
                   "ofType": {
                     "kind": "SCALAR",
-                    "name": "ID",
+                    "name": "String",
                     "ofType": null
                   }
                 },
@@ -3522,52 +3518,11 @@
                 "defaultValue": null,
                 "isDeprecated": false,
                 "deprecationReason": null
-              },
-              {
-                "name": "version",
-                "description": "Desired Extensions",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
               }
             ],
             "type": {
               "kind": "OBJECT",
               "name": "Template",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "define",
-            "description": "Defines a node according to is definition",
-            "args": [
-              {
-                "name": "definition",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "INPUT_OBJECT",
-                    "name": "DefinitionInput",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "OBJECT",
-              "name": "Node",
               "ofType": null
             },
             "isDeprecated": false,
@@ -3681,12 +3636,16 @@
             "description": "Scan allows you to add Datapoints to your Arnheim Schema, this is only available to Admin users",
             "args": [
               {
-                "name": "node",
+                "name": "agent",
                 "description": null,
                 "type": {
-                  "kind": "SCALAR",
-                  "name": "ID",
-                  "ofType": null
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -3705,24 +3664,16 @@
                 "deprecationReason": null
               },
               {
-                "name": "reference",
-                "description": null,
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
                 "name": "template",
                 "description": null,
                 "type": {
-                  "kind": "SCALAR",
-                  "name": "ID",
-                  "ofType": null
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -4146,7 +4097,7 @@
             "description": null,
             "args": [
               {
-                "name": "provision",
+                "name": "id",
                 "description": "The reference of the Provision you want to ruin",
                 "type": {
                   "kind": "SCALAR",
@@ -4160,7 +4111,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "Provision",
+              "name": "UnprovideReturn",
               "ofType": null
             },
             "isDeprecated": false,
@@ -4268,6 +4219,22 @@
             "deprecationReason": null
           },
           {
+            "name": "hash",
+            "description": "The hash of the Node (completely unique)",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": "",
             "args": [],
@@ -4284,6 +4251,22 @@
             "deprecationReason": null
           },
           {
+            "name": "idempotent",
+            "description": "Is this function pure. e.g can we cache the result?",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "image",
             "description": "Beautiful images for beautiful Nodes",
             "args": [],
@@ -4291,22 +4274,6 @@
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "interface",
-            "description": "Interface (think Function)",
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -4372,22 +4339,6 @@
             "deprecationReason": null
           },
           {
-            "name": "package",
-            "description": "Package (think Module)",
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "pure",
             "description": "Is this function pure. e.g can we cache the result?",
             "args": [],
@@ -4399,18 +4350,6 @@
                 "name": "Boolean",
                 "ofType": null
               }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "repository",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "INTERFACE",
-              "name": "Repository",
-              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -5963,7 +5902,7 @@
       {
         "kind": "SCALAR",
         "name": "QString",
-        "description": "A q-string is a universal identifier for a node on the\narkitekt platform, its akin to a npm package or pip package\nand follows the following syntax:\n\n@package/interface",
+        "description": "A q-string is a universal identifier for a node on the\narkitekt platform, its a hash of the node's name and the\nand its functional signature.",
         "fields": null,
         "inputFields": null,
         "interfaces": null,
@@ -6007,6 +5946,30 @@
               {
                 "name": "app",
                 "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "registry",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "search",
+                "description": "Search",
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
@@ -6106,11 +6069,39 @@
                 "deprecationReason": null
               },
               {
+                "name": "restrict",
+                "description": "Restrict",
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "search",
                 "description": "Search",
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "templated",
+                "description": "Currently Templated",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -6312,6 +6303,30 @@
               {
                 "name": "app",
                 "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "registry",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "search",
+                "description": "Search",
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
@@ -6591,35 +6606,23 @@
             "description": "Asss\n\n    Is A query for all of these specials in the world\n    ",
             "args": [
               {
+                "name": "hash",
+                "description": "The query node",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "id",
                 "description": "The query node",
                 "type": {
                   "kind": "SCALAR",
                   "name": "ID",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
-                "name": "interface",
-                "description": "The interface of this node",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
-                "name": "package",
-                "description": "The package of this node",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "String",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -6839,6 +6842,60 @@
                 "name": "Provision",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "registries",
+            "description": null,
+            "args": [
+              {
+                "name": "unique",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Registry",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "registry",
+            "description": null,
+            "args": [
+              {
+                "name": "id",
+                "description": "The query pod",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Registry",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -10065,6 +10122,22 @@
             "deprecationReason": null
           },
           {
+            "name": "interface",
+            "description": "Interface (think Function)",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "name",
             "description": "A name for this Template",
             "args": [],
@@ -10220,18 +10293,6 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
-          },
-          {
-            "name": "version",
-            "description": "A short descriptor for the kind of version",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -10293,6 +10354,29 @@
         "fields": null,
         "inputFields": null,
         "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "UnprovideReturn",
+        "description": null,
+        "fields": [
+          {
+            "name": "id",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
         "enumValues": null,
         "possibleTypes": null
       },

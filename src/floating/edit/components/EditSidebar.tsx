@@ -20,6 +20,7 @@ import {
   ReactiveTemplateFragment,
   StreamKind,
   useReactiveTemplateQuery,
+  FlowFragment,
   useReactiveTemplatesQuery,
 } from "../../../fluss/api/graphql";
 import { withFluss } from "../../../fluss/fluss";
@@ -47,9 +48,7 @@ export const NodeItem = ({ node }: { node: Maybe<NodeListItemFragment> }) => {
         <div className="font-light text-md mb-1">{node?.name}</div>
         <p className="text">{node?.description}</p>
       </div>
-      <div className="p-1 text-xs truncate">
-        {node?.package}/{node?.interface}
-      </div>
+      <div className="p-1 text-xs truncate">{node?.hash}</div>
     </SmartModel>
   );
 };
@@ -155,10 +154,17 @@ export const NodeFilterBox: React.FC<NodeFilterBoxProps> = ({
   );
 };
 
-interface EditSidebarProps {}
+interface EditSidebarProps {
+  flow: FlowFragment;
+}
 
 export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
-  const { data, loading, refetch } = withRekuest(useNodesQuery)();
+  if (!props.flow) return null;
+  const { data, loading, refetch } = withRekuest(useNodesQuery)({
+    variables: {
+      restrict: props.flow.restrict,
+    },
+  });
 
   const { data: reactiveNodes, refetch: refetchReactiveNodes } = withFluss(
     useReactiveTemplatesQuery
@@ -178,6 +184,9 @@ export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
           onFilterChanged={async (filter) => setFilter(filter)}
           className="w-full p-3 rounded-md shadow-lg dark:bg-slate-200 dark:text-black"
         />
+        {props.flow.restrict && (
+          <>Restricted to {props.flow.restrict.map((r: string) => r)}</>
+        )}
       </div>
       <div className="flex-grow flex flex-col gap-2 p-5 ">
         {data?.allnodes && <NodeList nodes={data?.allnodes} />}

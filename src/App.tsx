@@ -2,8 +2,8 @@ import React, { CSSProperties } from "react";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-import { FaktsGuard } from "fakts";
-import { FaktsProvider } from "fakts";
+import { FaktsGuard } from "@jhnnsrs/fakts";
+import { FaktsProvider } from "@jhnnsrs/fakts";
 import { HealthzGuard } from "./healthz/guard";
 import { HerreProvider } from "herre";
 import { Dashboard } from "./pages/Dashboard";
@@ -34,7 +34,6 @@ import { FileScreen } from "./pages/detail/FileScreen";
 import { RunScreen } from "./pages/detail/RunScreen";
 import { SnapshotScreen } from "./pages/detail/SnapshotScreen";
 import { TableScreen } from "./pages/detail/TableScreen";
-import { TemplateScreen } from "./pages/detail/TemplateScreen";
 import { NoRoute } from "./pages/fallbacks/NoRoute";
 import FlowHome from "./pages/flows/FlowHome";
 import { Home } from "./pages/Home";
@@ -43,8 +42,8 @@ import { Profile } from "./pages/Profile";
 import { Search } from "./pages/Search";
 import { SearchHome } from "./pages/search/SearchHome";
 import { Team } from "./pages/Team";
-import { Whales } from "./pages/Whales";
-import { WhalesHome } from "./pages/whales/WhalesHome";
+import { Port } from "./pages/Port";
+import { PortHome } from "./pages/port/PortHome";
 import "./popping.css";
 
 import "allotment/dist/style.css";
@@ -84,6 +83,9 @@ import { TauriHerreCallback } from "./bridges/TauriHerreCallback";
 import { TauriFaktsFallback } from "./bridges/TauriFaktsFallback";
 import { ConfirmerProvider } from "./components/confirmer/confirmer-provider";
 import { AlerterProvider } from "./components/alerter/alerter-provider";
+import { PortContainer } from "./pages/port/containers/PortContainer";
+import { PortContainers } from "./pages/port/containers/PortContainers";
+import { DialogProvider } from "./layout/dialog/DialogProvider";
 
 export const HTML5toTouch = {
   backends: [
@@ -292,13 +294,18 @@ export const MainApp: React.FC<Props> = (props) => {
                           </Route>
 
                           {/* kuay */}
-                          <Route path="whales" element={<Whales />}>
-                            <Route index element={<WhalesHome />} />
+                          <Route path="port" element={<Port />}>
+                            <Route index element={<PortHome />} />
+                            <Route
+                              path="containers/:container"
+                              element={<PortContainer />}
+                            />
+                            <Route
+                              path="containers"
+                              element={<PortContainers />}
+                            />
                           </Route>
-                          <Route
-                            path="template/:id"
-                            element={<TemplateScreen />}
-                          />
+
                           <Route
                             path="table/:table"
                             element={<TableScreen />}

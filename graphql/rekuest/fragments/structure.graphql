@@ -1,15 +1,9 @@
 fragment DetailStructure on Structure {
-	id
-	repository {
-		...DetailRepository
-	}
-	identifier
+  id
+  identifier
 }
 
 fragment ListStructure on Structure {
-	id
-	identifier
-	repository {
-		...ListRepository
-	}
+  id
+  identifier
 }

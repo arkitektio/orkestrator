@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router";
-import { DetailProvision } from "../../detail/ProvisionScreen";
+import { DetailProvision } from "../../../rekuest/components/ProvisionScreen";
 
 export interface DashboardProvisionProps {}
 

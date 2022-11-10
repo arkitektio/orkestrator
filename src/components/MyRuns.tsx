@@ -118,7 +118,7 @@ const MyRuns: React.FC<IMyGraphsProps> = ({}) => {
                 className="text-xl font-light cursor-pointer mb-1"
                 object={s?.id}
               >
-                {s?.flow?.diagram?.name || "No Flow"}
+                {s?.flow?.workspace?.name || "No Flow"}
               </Run.DetailLink>
             </div>
             <div className="pl-2 pb-2"></div>

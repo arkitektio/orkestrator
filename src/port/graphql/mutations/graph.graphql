@@ -1,27 +1,5 @@
-mutation CreateWhale($repo: ID!, $config: GenericScalar) {
-	createWhale(repo: $repo, config: $config) {
-		...ListWhale
-	}
-}
-
-mutation CreateGithubRepo(
-	$repo: String!
-	$user: String!
-	$branch: String!
-) {
-	createGithubRepo(repo: $repo, user: $user, branch: $branch) {
-		...ListGithubRepo
-	}
-}
-
 mutation DeleteWhale($id: ID!) {
-	deleteWhale(id: $id) {
-		id
-	}
-}
-
-mutation DeleteGithubRepo($id: ID!) {
-	deleteGithubRepo(id: $id) {
-		id
-	}
+  deleteWhale(id: $id) {
+    id
+  }
 }

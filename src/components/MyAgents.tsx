@@ -34,12 +34,9 @@ export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {
           >
             {agent?.registry?.app?.name}
           </Agent.DetailLink>
-          <div className="flex-grow"></div>
-          <div className="flex-initial">
-            <AgentPulse status={agent?.status} />
-          </div>
         </div>
         <p className="text-sm text-gray-500">{agent?.identifier}</p>
+        <div className="flex-initial">{agent.status}</div>
         <p className="text-gray-700 text-base">
           {agent?.registry?.app?.grantType ===
             LokAppGrantType.ClientCredentials &&

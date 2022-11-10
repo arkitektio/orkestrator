@@ -118,11 +118,13 @@ export const SmartModel = <T extends Accept>({
         : "list:" + props.identifier,
       item: !isSelecting ? [self] : selection,
       collect: (monitor) => ({
-        isDragging: !!monitor.isDragging(),
+        isDragging: monitor.isDragging(),
       }),
     }),
     [isSelecting, selection]
   );
+
+  console.log(isDragging);
 
   useEffect(() => {
     preview(getEmptyImage(), {

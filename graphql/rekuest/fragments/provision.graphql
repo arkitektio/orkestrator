@@ -27,8 +27,6 @@ fragment DetailProvision on Provision {
     node {
       id
       name
-      package
-      interface
       interfaces
       meta
     }
@@ -39,7 +37,6 @@ fragment DetailProvision on Provision {
       }
     }
     extensions
-    version
   }
   creator {
     email
@@ -92,8 +89,10 @@ fragment ListProvision on Provision {
   reference
   template {
     id
+    interface
     node {
       name
+      meta
     }
     registry {
       app {

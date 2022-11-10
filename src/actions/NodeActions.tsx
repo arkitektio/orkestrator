@@ -2,6 +2,8 @@ import React from "react";
 import { useNavigate } from "react-router";
 import { ActionButton } from "../layout/ActionButton";
 import { Reservation } from "../linker";
+import { withRekuest } from "../rekuest";
+import { useDeleteNodeMutation } from "../rekuest/api/graphql";
 import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 
 export interface NodeActionsProps {
@@ -13,6 +15,8 @@ export const NodeActions: React.FC<NodeActionsProps> = (props) => {
 
   const { reserve } = useReserver();
   const navigate = useNavigate();
+
+  const [deleteNode] = withRekuest(useDeleteNodeMutation)();
 
   const handlereserve = async () => {
     if (props.node?.id) {
@@ -27,6 +31,16 @@ export const NodeActions: React.FC<NodeActionsProps> = (props) => {
         label="Reserve"
         onAction={handlereserve}
         description="Reserve this Node"
+      />
+      <ActionButton
+        label="Delete"
+        onAction={async () => {
+          if (props.node?.id) {
+            await deleteNode({ variables: { id: props.node?.id } });
+            await navigate(-1);
+          }
+        }}
+        description="Delete this Node"
       />
     </>
   );

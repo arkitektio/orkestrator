@@ -5,19 +5,22 @@ import { useNavigate } from "react-router";
 import { useAlert } from "../../../components/alerter/alerter-context";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { useModal } from "../../../components/modals/modal-context";
+import { useCreateUserAppMutation } from "../../../man/api/graphql";
+import { withMan } from "../../../man/context";
 import {
   CreateWhaleMutationVariables,
   useCreateWhaleMutation,
   WhalesDocument,
 } from "../../api/graphql";
-import { withPort } from "../../port";
+import { withPort } from "../../PortContext";
 
-export type CreateWhaleModelProps = {
-  repo: string;
-};
+export type CreateWhaleModelProps = {};
 
 export const CreateWhaleModal: React.FC<CreateWhaleModelProps> = (props) => {
   const { close, show } = useModal();
+
+  const [createApp] = withMan(useCreateUserAppMutation)();
+
   const [createWhale, data] = withPort(useCreateWhaleMutation)({
     update(cache, result) {
       const existing: any = cache.readQuery({

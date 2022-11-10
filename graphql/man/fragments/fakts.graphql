@@ -1,0 +1,17 @@
+fragment PrivateFakt on PrivateFaktApplication {
+  id
+  clientId
+  clientSecret
+  scopes
+  version
+  identifier
+}
+
+fragment PublicFakt on PublicFaktApplication {
+  id
+  clientId
+  clientSecret
+  scopes
+  version
+  identifier
+}

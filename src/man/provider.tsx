@@ -1,6 +1,6 @@
 import { ApolloClient, gql, NormalizedCacheObject } from "@apollo/client";
 import React, { useEffect, useState } from "react";
-import { useFakts } from "fakts";
+import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "herre";
 import { createManClient } from "./client";
 import { ManContext } from "./context";

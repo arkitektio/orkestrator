@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { OptionsOrGroups } from "react-select";
 import AsyncSelect from "react-select/async";
 import AsyncCreatableSelect from "react-select/async-creatable";
+import { ProvisionPulse } from "../../../rekuest/components/generic/StatusPulse";
 import { SelectOption } from "./select_input";
 
 type LazySearchResult = Promise<{
@@ -21,6 +22,7 @@ export interface SearchProps {
   labelClassName?: string;
   descriptionClassName?: string;
   isMulti?: boolean;
+  disabled?: boolean;
   lazySearch?: (options: LazySearchOptions) => LazySearchResult;
 }
 
@@ -28,6 +30,7 @@ export type SearchOptions = [{ label: string; value: string }];
 
 interface SearchSelectProps extends FieldProps {
   isMulti?: boolean;
+  disabled?: boolean;
   searchFunction: (options: LazySearchOptions) => LazySearchResult;
 }
 
@@ -37,7 +40,9 @@ export const SearchSelectWidget: React.FC<SearchSelectProps> = ({
   field,
   form,
   isMulti,
+  meta,
   searchFunction,
+  disabled,
 }) => {
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +77,14 @@ export const SearchSelectWidget: React.FC<SearchSelectProps> = ({
 
   if (error) return <> {error}</>;
 
+  let initialValue = meta?.initialValue || field.value;
+
+  const defaultValue = isMulti
+    ? initialValue?.map((x: any) => ({ value: x, label: x }))
+    : { value: initialValue, label: initialValue };
+
+  console.log(defaultValue);
+
   return (
     <>
       <AsyncSelect
@@ -79,7 +92,9 @@ export const SearchSelectWidget: React.FC<SearchSelectProps> = ({
         cacheOptions
         loadOptions={loadOptions}
         defaultOptions
+        defaultValue={defaultValue}
         onChange={onChange}
+        isDisabled={form.isSubmitting || disabled}
       />
     </>
   );
@@ -159,6 +174,7 @@ export const SearchSelectInput = (props: SearchProps) => {
           component={SearchSelectWidget}
           className="mb-2"
           searchFunction={props.lazySearch}
+          disabled={props.disabled}
         />
       </div>
       {props.description && (

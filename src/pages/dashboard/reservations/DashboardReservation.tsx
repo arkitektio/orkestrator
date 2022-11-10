@@ -38,8 +38,10 @@ export const ReservationToolbar: React.FC<ReservationToolbarProps> = ({
               </Node.DetailLink>
             )}
           </div>
-          <div className="font-light mt-auto ml-4 flex-row dark:text-white flex">
-            {reservation?.node?.package}/{reservation?.node?.interface}
+          <div className="font-light mt-auto ml-4 flex-row dark:text-white flex truncate">
+            {reservation?.provisions
+              .map((prov) => prov.template?.interface)
+              .join(", ")}
           </div>
         </div>
       </div>

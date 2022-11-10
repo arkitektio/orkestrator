@@ -2,6 +2,7 @@ import React from "react";
 import { AiOutlineTeam } from "react-icons/ai";
 import { BiData } from "react-icons/bi";
 import { FiSettings } from "react-icons/fi";
+import { GrDocker } from "react-icons/gr";
 import { IconContext } from "react-icons/lib";
 import { TbLayoutDashboard } from "react-icons/tb";
 import { TiFlowSwitch } from "react-icons/ti";
@@ -27,7 +28,7 @@ const navigation: {
     icon: <TbLayoutDashboard />,
   },
   { name: "Flows", href: "fluss", sm: true, icon: <TiFlowSwitch /> },
-  // { name: "Whales", href: "kuay", sm: false, icon: <GiWhaleTail /> },
+  { name: "Port", href: "port", sm: false, icon: <GrDocker /> },
   // { name: "Search", href: "search", sm: true, icon: <AiOutlineSearch /> },
   { name: "Teams", href: "man", sm: false, icon: <AiOutlineTeam /> },
 ];

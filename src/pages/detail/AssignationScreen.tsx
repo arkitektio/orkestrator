@@ -35,9 +35,8 @@ const AssignationToolbar: React.FC<AssignationToolbarProps> = ({
           </div>
           <div className="font-light mt-auto ml-4 ">
             <SectionTitle>
-              {assignation?.reservation?.node?.package}/
-              {assignation?.reservation?.node?.interface}:
-              {assignation?.provision?.template?.version ||
+              {assignation?.reservation?.node?.name}:
+              {assignation?.provision?.template?.interface ||
                 "No Provision Yet Assigned"}{" "}
               run on{" "}
               {assignation?.provision?.agent?.name ||

@@ -1,0 +1,3 @@
+fragment DetailImage on Image {
+  tags
+}

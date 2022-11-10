@@ -1,5 +1,5 @@
-mutation Unprovide($provision: ID!) {
-  unprovide(provision: $provision) {
-    reference
+mutation Unprovide($id: ID!) {
+  unprovide(id: $id) {
+    id
   }
 }

@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api";
 import React from "react";
-import { useFakts } from "fakts";
+import { useFakts } from "@jhnnsrs/fakts";
 import { HerreProvider } from "herre";
 
 export type FaktsHerreProps = {

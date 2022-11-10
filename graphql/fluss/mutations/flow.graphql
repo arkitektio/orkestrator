@@ -1,6 +1,6 @@
 mutation UpdateFlow($id: ID!, $graph: GraphInput!, $screenshot: ImageFile) {
-  updatediagram(id: $id, graph: $graph, screenshot: $screenshot) {
-    ...Diagram
+  updateworkspace(id: $id, graph: $graph, screenshot: $screenshot) {
+    ...Workspace
   }
 }
 
@@ -10,8 +10,8 @@ mutation DeleteFlow($id: ID!) {
   }
 }
 
-mutation CreateVanillaDiagram($name: String) {
-  drawvanilla(name: $name) {
-    ...Diagram
+mutation CreateVanillaDiagram($name: String, $restrict: [String]) {
+  drawvanilla(name: $name, restrict: $restrict) {
+    ...Workspace
   }
 }

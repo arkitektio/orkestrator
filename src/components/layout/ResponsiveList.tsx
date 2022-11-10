@@ -16,6 +16,7 @@ const ResponsiveList: React.FC<IResponsiveGridProps> = ({
   return (
     <div
       className={className || "pt-2 pb-2 pr-2 flex flex-col gap-4"}
+      data-enableselect="true"
       ref={parent}
     >
       {children}

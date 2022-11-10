@@ -15,7 +15,6 @@ fragment AppRepository on AppRepository {
   nodes {
     id
     name
-    interface
   }
 }
 
@@ -26,6 +25,5 @@ fragment MirrorRepository on MirrorRepository {
   nodes {
     id
     name
-    interface
   }
 }

@@ -30,9 +30,7 @@ const MyTemplates: React.FC<IMyNodesProps> = ({}) => {
               object={temp?.id}
             >
               <div className="text-xl font-light mb-2">{temp?.node?.name}</div>
-              <p className="text-sm">
-                {temp?.node?.package} on {temp?.node?.interface}
-              </p>
+              <p className="text-sm">{temp?.node?.name}</p>
             </Template.DetailLink>
           </div>
         ))}

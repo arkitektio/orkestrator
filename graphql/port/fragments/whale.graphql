@@ -1,0 +1,20 @@
+fragment DetailWhale on Whale {
+  id
+  config
+  runtime
+  createdAt
+  clientId
+  clientSecret
+  scopes
+  image
+}
+
+fragment ListWhale on Whale {
+  id
+  config
+  runtime
+  createdAt
+  clientId
+  clientSecret
+  image
+}

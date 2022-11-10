@@ -7,6 +7,7 @@ interface Props {
   label: string;
   description?: string;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export const TextInputField: React.FC<Props> = (props) => {
@@ -23,13 +24,14 @@ export const TextInputField: React.FC<Props> = (props) => {
           field: any;
           meta: any;
         }) => (
-          <div className="w-full mt-2 mb-2 relative">
+          <div className="w-full mt-2 mb-2 relative text-black ">
             <input
               type="text"
               placeholder={props.placeholder}
-              className="w-full text-black border h-10 border-grey-light rounded px-3 relative focus:border-blue focus:shadow"
+              className="w-full border h-10 border-grey-light rounded px-3 relative focus:border-blue focus:shadow disabled:text-gray-400"
               value={field.value}
               {...field}
+              disabled={meta.submitting || props.disabled}
             />
             {meta.touched && meta.error && (
               <Alert prepend="Error" message={meta.error} />
