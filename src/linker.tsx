@@ -256,7 +256,10 @@ export const Assignation = buildSmart("@rekuest/assignation", "assignations", [
   "list:@rekuest/assignation",
   "item:@rekuest/assignation",
 ]);
-export const Template = buildSmart("@rekuest/template", "templates", []);
+export const Template = buildSmart("@rekuest/template", "templates", [
+  "list:@rekuest/template",
+  "item:@rekuest/template",
+]);
 
 export const Workspace = buildSmart("@fluss/workspace", "workspaces", [
   "list:@fluss/workspace",
@@ -275,9 +278,9 @@ export const Snapshot = buildSmart("@fluss/snapshot", "snapshots", [
   "item:@fluss/run",
 ]);
 
-export const User = buildSmart("@man/user", "users", [
-  "list:@man/user",
-  "item:@man/user",
+export const User = buildSmart("@lok/user", "users", [
+  "list:@lok/user",
+  "item:@lok/user",
   "list:@mikro/sample",
   "item:@mikro/sample",
   "list:@mikro/experiment",
@@ -286,25 +289,30 @@ export const User = buildSmart("@man/user", "users", [
   "list:@mikro/representation",
   "item:@mikro/representation",
 ]);
-export const Team = buildSmart("@man/team", "teams", [
-  "list:@man/user",
-  "item:@man/user",
-  "list:@man/team",
-  "item:@man/team",
+export const Team = buildSmart("@lok/team", "teams", [
+  "list:@lok/user",
+  "item:@lok/user",
+  "list:@lok/team",
+  "item:@lok/team",
 ]);
-export const Application = buildSmart("@man/application", "applications", [
-  "list:@man/user",
-  "item:@man/user",
-]);
-
-export const PrivateFakt = buildSmart("@man/privatefakt", "privatefakts", [
-  "list:@man/privatefakt",
-  "item:@man/privatefakt",
+export const Application = buildSmart("@lok/application", "applications", [
+  "list:@lok/user",
+  "item:@lok/user",
 ]);
 
-export const PublicFakt = buildSmart("@man/publicfakt", "publicfakts", [
-  "list:@man/publicfakt",
-  "item:@man/publicfakt",
+export const PrivateFakt = buildSmart("@lok/privatefakt", "privatefakts", [
+  "list:@lok/privatefakt",
+  "item:@lok/privatefakt",
+]);
+
+export const PublicFakt = buildSmart("@lok/publicfakt", "publicfakts", [
+  "list:@lok/publicfakt",
+  "item:@lok/publicfakt",
+]);
+
+export const App = buildSmart("@lok/app", "apps", [
+  "list:@lok/app",
+  "item:@lok/app",
 ]);
 
 export const Container = buildSmart("@port/container", "containers", [
@@ -331,6 +339,7 @@ export const RekuestLink = buildModuleLink("rekuest");
 export const FlussLink = buildModuleLink("fluss");
 export const MikroLink = buildModuleLink("mikro");
 export const PortLink = buildModuleLink("port");
+export const LokLink = buildModuleLink("lok");
 
 export const FakeSmartModel = {
   DetailLink: buildModelLink("fake/fake", "fake"),

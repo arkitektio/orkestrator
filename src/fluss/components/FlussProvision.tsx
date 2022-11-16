@@ -15,10 +15,15 @@ export interface FlussProvisionProps {
 export const FlussProvision: React.FC<FlussProvisionProps> = ({
   provision,
 }) => {
-  if (!provision.template?.node.meta.flow) return <></>;
+  if (!provision.template?.params.flow)
+    return (
+      <div className="text-red-300">
+        Faulty provision! Expected Node to have metadata
+      </div>
+    );
 
   let { data, refetch } = withFluss(useFlowQuery)({
-    variables: { id: provision.template?.node.meta.flow },
+    variables: { id: provision.template?.params.flow },
     nextFetchPolicy: "network-only",
   });
 

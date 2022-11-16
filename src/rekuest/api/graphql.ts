@@ -302,6 +302,7 @@ export enum AvailableModels {
   FacadeTemplate = 'FACADE_TEMPLATE',
   FacadeWaiter = 'FACADE_WAITER',
   LokLokapp = 'LOK_LOKAPP',
+  LokLokclient = 'LOK_LOKCLIENT',
   LokLokuser = 'LOK_LOKUSER'
 }
 
@@ -501,31 +502,16 @@ export type LokApp = {
   apprepositorySet: Array<AppRepository>;
   /** The app is this assignation */
   assignationSet: Array<Assignation>;
-  clientId: Scalars['String'];
-  grantType: LokAppGrantType;
   id: Scalars['ID'];
-  name: Scalars['String'];
+  identifier: Scalars['String'];
   /** This provision creator */
   provisionSet: Array<Provision>;
   /** The Associated App */
   registrySet: Array<Registry>;
   /** This Reservations app */
   reservationSet: Array<Reservation>;
+  version: Scalars['String'];
 };
-
-/** An enumeration. */
-export enum LokAppGrantType {
-  /** Authorization Code */
-  AuthorizationCode = 'AUTHORIZATION_CODE',
-  /** Backend (Client Credentials) */
-  ClientCredentials = 'CLIENT_CREDENTIALS',
-  /** Implicit Grant */
-  Implicit = 'IMPLICIT',
-  /** Password */
-  Password = 'PASSWORD',
-  /** Django Session */
-  Session = 'SESSION'
-}
 
 export type MirrorRepository = Repository & {
   __typename?: 'MirrorRepository';
@@ -878,8 +864,7 @@ export type Provision = {
   status: ProvisionStatus;
   /** Clear Text status of the Provision as for now */
   statusmessage: Scalars['String'];
-  /** The Template for this Provision */
-  template?: Maybe<Template>;
+  template: Template;
   /** A Short Hand Way to identify this reservation for you */
   title?: Maybe<Scalars['String']>;
   /** A Unique identifier for this Topic */
@@ -1307,8 +1292,6 @@ export type Registry = {
   name?: Maybe<Scalars['String']>;
   /** The associated registry for this Template */
   templates: Array<Template>;
-  /** A world-unique identifier */
-  unique: Scalars['String'];
   /** The Associated App */
   user?: Maybe<User>;
   /** The provide might be limited to a instance like ImageJ belonging to a specific person. Is nullable for backend users */
@@ -1833,8 +1816,11 @@ export type User = {
   isStaff: Scalars['Boolean'];
   /** Designates that this user has all permissions without explicitly assigning them. */
   isSuperuser: Scalars['Boolean'];
+  iss?: Maybe<Scalars['String']>;
   lastLogin?: Maybe<Scalars['DateTime']>;
   lastName: Scalars['String'];
+  /** The name of the user */
+  name?: Maybe<Scalars['String']>;
   password: Scalars['String'];
   /** This provision creator */
   provisionSet: Array<Provision>;
@@ -1842,7 +1828,7 @@ export type User = {
   registrySet: Array<Registry>;
   /** This Reservations creator */
   reservationSet: Array<Reservation>;
-  roles?: Maybe<Scalars['GenericScalar']>;
+  sub?: Maybe<Scalars['String']>;
   /** Who created this template on this instance */
   templateSet: Array<Template>;
   /** Specific permissions for this user. */
@@ -2036,15 +2022,15 @@ export enum __TypeKind {
   NonNull = 'NON_NULL'
 }
 
-export type ListAgentFragment = { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', clientId: string, name: string, grantType: LokAppGrantType } | null, user?: { __typename?: 'User', email: string } | null } | null };
+export type ListAgentFragment = { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null };
 
-export type DetailAgentFragment = { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, name: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', clientId: string, name: string, grantType: LokAppGrantType } | null, user?: { __typename?: 'User', email: string } | null, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }> } | null, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template?: { __typename?: 'Template', node: { __typename?: 'Node', name: string } } | null, reservations: Array<{ __typename?: 'Reservation', id: string, creator?: { __typename?: 'User', username: string } | null }>, creator?: { __typename?: 'User', username: string } | null }> };
+export type DetailAgentFragment = { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, name: string, registry?: { __typename?: 'Registry', name?: string | null, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }>, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template: { __typename?: 'Template', node: { __typename?: 'Node', name: string } }, reservations: Array<{ __typename?: 'Reservation', id: string, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } }>, creator?: { __typename?: 'User', username: string, sub?: string | null } | null }> };
 
-export type DetailAssignationFragment = { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null } } | null, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', name: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, app?: { __typename?: 'LokApp', name: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', name: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null };
+export type DetailAssignationFragment = { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null };
 
-export type ListAssignationFragment = { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null };
+export type ListAssignationFragment = { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null };
 
-export type DetailNodeFragment = { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null };
+export type DetailNodeFragment = { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null };
 
 export type NodeListItemFragment = { __typename?: 'Node', id: string, name: string, kind: NodeKind, hash: string, description: string, interfaces?: Array<string | null> | null, meta?: any | null };
 
@@ -2112,45 +2098,45 @@ export type ReturnPortFragment = { __typename: 'ReturnPort', label?: string | nu
 
 export type PortsFragment = { __typename?: 'Node', args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null };
 
-export type DetailProvisionFragment = { __typename?: 'Provision', statusmessage: string, status: ProvisionStatus, id: string, reference: string, mode: ProvisionMode, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, name?: string | null, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, template?: { __typename?: 'Template', id: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null }, registry: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null } } | null, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', name: string } | null, causedReservations: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } }>, assignations?: Array<{ __typename?: 'Assignation', id: string, reference: string, status: AssignationStatus, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', name: string } | null } | null> | null, reservations: Array<{ __typename?: 'Reservation', title?: string | null, id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', name: string }, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', user?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', name: string } | null } | null } }>, log?: Array<{ __typename?: 'ProvisionLog', message?: string | null, level: ProvisionLogLevel, createdAt: any } | null> | null };
+export type DetailProvisionFragment = { __typename?: 'Provision', statusmessage: string, status: ProvisionStatus, id: string, reference: string, mode: ProvisionMode, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, template: { __typename?: 'Template', id: string, extensions?: Array<string | null> | null, params?: any | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, causedReservations: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } }>, assignations?: Array<{ __typename?: 'Assignation', id: string, reference: string, status: AssignationStatus, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null } | null> | null, reservations: Array<{ __typename?: 'Reservation', title?: string | null, id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', name: string }, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } }>, log?: Array<{ __typename?: 'ProvisionLog', message?: string | null, level: ProvisionLogLevel, createdAt: any } | null> | null };
 
-export type ListProvisionFragment = { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> };
+export type ListProvisionFragment = { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> };
 
 export type ProvisionLogFragment = { __typename?: 'ProvisionLog', message?: string | null, level: ProvisionLogLevel, createdAt: any };
 
-export type RegistryFragment = { __typename?: 'Registry', unique: string, name?: string | null };
+export type RegistryFragment = { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null };
 
-type ListRepository_AppRepository_Fragment = { __typename: 'AppRepository', id: string, name?: string | null, app?: { __typename?: 'LokApp', name: string, grantType: LokAppGrantType } | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null };
+type ListRepository_AppRepository_Fragment = { __typename: 'AppRepository', id: string, name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null };
 
 type ListRepository_MirrorRepository_Fragment = { __typename: 'MirrorRepository', id: string, url?: string | null, name?: string | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null };
 
 export type ListRepositoryFragment = ListRepository_AppRepository_Fragment | ListRepository_MirrorRepository_Fragment;
 
-export type AppRepositoryFragment = { __typename?: 'AppRepository', id: string, name?: string | null, app?: { __typename?: 'LokApp', name: string, grantType: LokAppGrantType } | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null };
+export type AppRepositoryFragment = { __typename?: 'AppRepository', id: string, name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null };
 
 export type MirrorRepositoryFragment = { __typename?: 'MirrorRepository', id: string, url?: string | null, name?: string | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null };
 
-export type DetailAppRepositoryFragment = { __typename?: 'AppRepository', installedAt: any, app?: { __typename?: 'LokApp', name: string } | null };
+export type DetailAppRepositoryFragment = { __typename?: 'AppRepository', installedAt: any, app?: { __typename?: 'LokApp', version: string, identifier: string } | null };
 
 export type DetailMirrorRepositoryFragment = { __typename?: 'MirrorRepository', url?: string | null };
 
-type DetailRepository_AppRepository_Fragment = { __typename?: 'AppRepository', name?: string | null, installedAt: any, nodes?: Array<{ __typename?: 'Node', id: string, name: string, kind: NodeKind, hash: string, description: string, interfaces?: Array<string | null> | null, meta?: any | null } | null> | null, app?: { __typename?: 'LokApp', name: string } | null };
+type DetailRepository_AppRepository_Fragment = { __typename?: 'AppRepository', name?: string | null, installedAt: any, nodes?: Array<{ __typename?: 'Node', id: string, name: string, kind: NodeKind, hash: string, description: string, interfaces?: Array<string | null> | null, meta?: any | null } | null> | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null };
 
 type DetailRepository_MirrorRepository_Fragment = { __typename?: 'MirrorRepository', name?: string | null, url?: string | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string, kind: NodeKind, hash: string, description: string, interfaces?: Array<string | null> | null, meta?: any | null } | null> | null };
 
 export type DetailRepositoryFragment = DetailRepository_AppRepository_Fragment | DetailRepository_MirrorRepository_Fragment;
 
-export type DetailReservationFragment = { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, id: string, reference: string, statusmessage: string, allowAutoRequest: boolean, channel: string, params?: { __typename?: 'ReserveParams', autoProvide?: boolean | null, autoUnprovide?: boolean | null, minimalInstances?: number | null, desiredInstances?: number | null } | null, provision?: { __typename?: 'Provision', reference: string, id: string, access: ProvisionAccess, status: ProvisionStatus, creator?: { __typename?: 'User', id: string, username: string } | null, app?: { __typename?: 'LokApp', id: string, name: string } | null } | null, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null }, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, template?: { __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', id: string, name: string } | null } } | null, provisions: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> }>, log?: Array<{ __typename?: 'ReservationLog', message?: string | null, level: ReservationLogLevel } | null> | null, creator?: { __typename?: 'User', email: string } | null };
+export type DetailReservationFragment = { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, id: string, reference: string, statusmessage: string, allowAutoRequest: boolean, channel: string, params?: { __typename?: 'ReserveParams', autoProvide?: boolean | null, autoUnprovide?: boolean | null, minimalInstances?: number | null, desiredInstances?: number | null } | null, provision?: { __typename?: 'Provision', reference: string, id: string, access: ProvisionAccess, status: ProvisionStatus, creator?: { __typename?: 'User', id: string, username: string } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null } | null, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null }, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, template?: { __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null, provisions: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> }>, log?: Array<{ __typename?: 'ReservationLog', message?: string | null, level: ReservationLogLevel } | null> | null, creator?: { __typename?: 'User', email: string } | null };
 
-export type ListReservationFragment = { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } };
+export type ListReservationFragment = { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } };
 
 export type DetailStructureFragment = { __typename?: 'Structure', id: string, identifier: string };
 
 export type ListStructureFragment = { __typename?: 'Structure', id: string, identifier: string };
 
-export type MiniTemplateFragment = { __typename?: 'Template', id: string, interface: string, node: { __typename?: 'Node', name: string } };
+export type ListTemplateFragment = { __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } };
 
-export type DetailTemplateFragment = { __typename?: 'Template', id: string, extensions?: Array<string | null> | null, interface: string, creator?: { __typename?: 'User', email: string } | null, node: { __typename?: 'Node', id: string, name: string }, registry: { __typename?: 'Registry', id: string }, provisions?: Array<{ __typename?: 'Provision', title?: string | null, id: string, createdAt: any, reference: string, status: ProvisionStatus, app?: { __typename?: 'LokApp', name: string } | null, creator?: { __typename?: 'User', email: string } | null, agent?: { __typename?: 'Agent', identifier: string } | null, reservation?: { __typename?: 'Reservation', title?: string | null, node: { __typename?: 'Node', name: string }, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } } | null } | null> | null };
+export type DetailTemplateFragment = { __typename?: 'Template', id: string, extensions?: Array<string | null> | null, params?: any | null, interface: string, creator?: { __typename?: 'User', email: string } | null, node: { __typename?: 'Node', id: string, name: string }, registry: { __typename?: 'Registry', id: string }, provisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null> | null };
 
 export type ResetAgentsMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -2214,7 +2200,7 @@ export type AssignMutationVariables = Exact<{
 }>;
 
 
-export type AssignMutation = { __typename?: 'Mutation', assign?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null } } | null, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', name: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, app?: { __typename?: 'LokApp', name: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', name: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null } | null };
+export type AssignMutation = { __typename?: 'Mutation', assign?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null } | null };
 
 export type LinkMutationVariables = Exact<{
   reservation: Scalars['ID'];
@@ -2302,14 +2288,14 @@ export type AgentsQueryVariables = Exact<{
 }>;
 
 
-export type AgentsQuery = { __typename?: 'Query', agents?: Array<{ __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', clientId: string, name: string, grantType: LokAppGrantType } | null, user?: { __typename?: 'User', email: string } | null } | null } | null> | null };
+export type AgentsQuery = { __typename?: 'Query', agents?: Array<{ __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null> | null };
 
 export type DetailAgentQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailAgentQuery = { __typename?: 'Query', agent?: { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, name: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', clientId: string, name: string, grantType: LokAppGrantType } | null, user?: { __typename?: 'User', email: string } | null, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }> } | null, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template?: { __typename?: 'Template', node: { __typename?: 'Node', name: string } } | null, reservations: Array<{ __typename?: 'Reservation', id: string, creator?: { __typename?: 'User', username: string } | null }>, creator?: { __typename?: 'User', username: string } | null }> } | null };
+export type DetailAgentQuery = { __typename?: 'Query', agent?: { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, name: string, registry?: { __typename?: 'Registry', name?: string | null, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }>, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template: { __typename?: 'Template', node: { __typename?: 'Node', name: string } }, reservations: Array<{ __typename?: 'Reservation', id: string, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } }>, creator?: { __typename?: 'User', username: string, sub?: string | null } | null }> } | null };
 
 export type AgentOptionsQueryVariables = Exact<{
   registry?: InputMaybe<Scalars['ID']>;
@@ -2324,17 +2310,17 @@ export type DetailAssignationQueryVariables = Exact<{
 }>;
 
 
-export type DetailAssignationQuery = { __typename?: 'Query', assignation?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null } } | null, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', name: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, app?: { __typename?: 'LokApp', name: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', name: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null } | null };
+export type DetailAssignationQuery = { __typename?: 'Query', assignation?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null } | null };
 
 export type RequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type RequestsQuery = { __typename?: 'Query', requests?: Array<{ __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null> | null };
+export type RequestsQuery = { __typename?: 'Query', requests?: Array<{ __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null> | null };
 
 export type MyRequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyRequestsQuery = { __typename?: 'Query', myrequests?: Array<{ __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null> | null };
+export type MyRequestsQuery = { __typename?: 'Query', myrequests?: Array<{ __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null> | null };
 
 export type FilteredAssignationsQueryVariables = Exact<{
   exclude?: InputMaybe<Array<InputMaybe<AssignationStatusInput>>>;
@@ -2343,7 +2329,7 @@ export type FilteredAssignationsQueryVariables = Exact<{
 }>;
 
 
-export type FilteredAssignationsQuery = { __typename?: 'Query', myrequests?: Array<{ __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null> | null };
+export type FilteredAssignationsQuery = { __typename?: 'Query', myrequests?: Array<{ __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null> | null };
 
 export type ArgPortTypesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2371,7 +2357,7 @@ export type DetailNodeQueryVariables = Exact<{
 }>;
 
 
-export type DetailNodeQuery = { __typename?: 'Query', node?: { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null } | null };
+export type DetailNodeQuery = { __typename?: 'Query', node?: { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null } | null };
 
 export type MiniNodeByIdQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -2425,17 +2411,17 @@ export type DetailProvisionQueryVariables = Exact<{
 }>;
 
 
-export type DetailProvisionQuery = { __typename?: 'Query', provision?: { __typename?: 'Provision', statusmessage: string, status: ProvisionStatus, id: string, reference: string, mode: ProvisionMode, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, name?: string | null, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, template?: { __typename?: 'Template', id: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null }, registry: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null } } | null, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', name: string } | null, causedReservations: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } }>, assignations?: Array<{ __typename?: 'Assignation', id: string, reference: string, status: AssignationStatus, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', name: string } | null } | null> | null, reservations: Array<{ __typename?: 'Reservation', title?: string | null, id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', name: string }, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', user?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', name: string } | null } | null } }>, log?: Array<{ __typename?: 'ProvisionLog', message?: string | null, level: ProvisionLogLevel, createdAt: any } | null> | null } | null };
+export type DetailProvisionQuery = { __typename?: 'Query', provision?: { __typename?: 'Provision', statusmessage: string, status: ProvisionStatus, id: string, reference: string, mode: ProvisionMode, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, template: { __typename?: 'Template', id: string, extensions?: Array<string | null> | null, params?: any | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, causedReservations: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } }>, assignations?: Array<{ __typename?: 'Assignation', id: string, reference: string, status: AssignationStatus, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null } | null> | null, reservations: Array<{ __typename?: 'Reservation', title?: string | null, id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', name: string }, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } }>, log?: Array<{ __typename?: 'ProvisionLog', message?: string | null, level: ProvisionLogLevel, createdAt: any } | null> | null } | null };
 
 export type MyProvisionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyProvisionsQuery = { __typename?: 'Query', myprovisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> } | null> | null };
+export type MyProvisionsQuery = { __typename?: 'Query', myprovisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null> | null };
 
 export type ProvisionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProvisionsQuery = { __typename?: 'Query', provisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> } | null> | null };
+export type ProvisionsQuery = { __typename?: 'Query', provisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null> | null };
 
 export type FilteredProvisionsQueryVariables = Exact<{
   exclude?: InputMaybe<Array<InputMaybe<ProvisionStatusInput>>>;
@@ -2443,14 +2429,28 @@ export type FilteredProvisionsQueryVariables = Exact<{
 }>;
 
 
-export type FilteredProvisionsQuery = { __typename?: 'Query', myprovisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> } | null> | null };
+export type FilteredProvisionsQuery = { __typename?: 'Query', myprovisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null> | null };
 
 export type AgentProvisionsQueryVariables = Exact<{
   agent: Scalars['ID'];
 }>;
 
 
-export type AgentProvisionsQuery = { __typename?: 'Query', allprovisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> } | null> | null };
+export type AgentProvisionsQuery = { __typename?: 'Query', allprovisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null> | null };
+
+export type LinkableProvisionsQueryVariables = Exact<{
+  reservation: Scalars['ID'];
+}>;
+
+
+export type LinkableProvisionsQuery = { __typename?: 'Query', linkableprovisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null> | null };
+
+export type LinkableProvisionsOptionsQueryVariables = Exact<{
+  reservation: Scalars['ID'];
+}>;
+
+
+export type LinkableProvisionsOptionsQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Provision', value: string, label: string } | null> | null };
 
 export type RegistryOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -2462,31 +2462,31 @@ export type RegistryOptionsQuery = { __typename?: 'Query', options?: Array<{ __t
 export type RepositoriesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type RepositoriesQuery = { __typename?: 'Query', allrepositories?: Array<{ __typename: 'AppRepository', id: string, name?: string | null, app?: { __typename?: 'LokApp', name: string, grantType: LokAppGrantType } | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null } | { __typename: 'MirrorRepository', id: string, url?: string | null, name?: string | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null } | null> | null };
+export type RepositoriesQuery = { __typename?: 'Query', allrepositories?: Array<{ __typename: 'AppRepository', id: string, name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null } | { __typename: 'MirrorRepository', id: string, url?: string | null, name?: string | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string } | null> | null } | null> | null };
 
 export type DetailRepositoryQueryVariables = Exact<{
   id?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type DetailRepositoryQuery = { __typename?: 'Query', repository?: { __typename?: 'AppRepository', name?: string | null, installedAt: any, nodes?: Array<{ __typename?: 'Node', id: string, name: string, kind: NodeKind, hash: string, description: string, interfaces?: Array<string | null> | null, meta?: any | null } | null> | null, app?: { __typename?: 'LokApp', name: string } | null } | { __typename?: 'MirrorRepository', name?: string | null, url?: string | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string, kind: NodeKind, hash: string, description: string, interfaces?: Array<string | null> | null, meta?: any | null } | null> | null } | null };
+export type DetailRepositoryQuery = { __typename?: 'Query', repository?: { __typename?: 'AppRepository', name?: string | null, installedAt: any, nodes?: Array<{ __typename?: 'Node', id: string, name: string, kind: NodeKind, hash: string, description: string, interfaces?: Array<string | null> | null, meta?: any | null } | null> | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | { __typename?: 'MirrorRepository', name?: string | null, url?: string | null, nodes?: Array<{ __typename?: 'Node', id: string, name: string, kind: NodeKind, hash: string, description: string, interfaces?: Array<string | null> | null, meta?: any | null } | null> | null } | null };
 
 export type DetailReservationQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailReservationQuery = { __typename?: 'Query', reservation?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, id: string, reference: string, statusmessage: string, allowAutoRequest: boolean, channel: string, params?: { __typename?: 'ReserveParams', autoProvide?: boolean | null, autoUnprovide?: boolean | null, minimalInstances?: number | null, desiredInstances?: number | null } | null, provision?: { __typename?: 'Provision', reference: string, id: string, access: ProvisionAccess, status: ProvisionStatus, creator?: { __typename?: 'User', id: string, username: string } | null, app?: { __typename?: 'LokApp', id: string, name: string } | null } | null, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null }, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, template?: { __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', id: string, name: string } | null } } | null, provisions: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> }>, log?: Array<{ __typename?: 'ReservationLog', message?: string | null, level: ReservationLogLevel } | null> | null, creator?: { __typename?: 'User', email: string } | null } | null, linkableprovisions?: Array<{ __typename?: 'Provision', id: string, template?: { __typename?: 'Template', registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } } | null } | null> | null };
+export type DetailReservationQuery = { __typename?: 'Query', reservation?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, id: string, reference: string, statusmessage: string, allowAutoRequest: boolean, channel: string, params?: { __typename?: 'ReserveParams', autoProvide?: boolean | null, autoUnprovide?: boolean | null, minimalInstances?: number | null, desiredInstances?: number | null } | null, provision?: { __typename?: 'Provision', reference: string, id: string, access: ProvisionAccess, status: ProvisionStatus, creator?: { __typename?: 'User', id: string, username: string } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null } | null, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null }, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, template?: { __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null, provisions: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> }>, log?: Array<{ __typename?: 'ReservationLog', message?: string | null, level: ReservationLogLevel } | null> | null, creator?: { __typename?: 'User', email: string } | null } | null, linkableprovisions?: Array<{ __typename?: 'Provision', id: string, template: { __typename?: 'Template', registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', identifier: string, version: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } } } | null> | null };
 
 export type MyReservationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyReservationsQuery = { __typename?: 'Query', myreservations?: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } } | null> | null };
+export type MyReservationsQuery = { __typename?: 'Query', myreservations?: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } } | null> | null };
 
 export type ReservationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ReservationsQuery = { __typename?: 'Query', reservations?: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } } | null> | null };
+export type ReservationsQuery = { __typename?: 'Query', reservations?: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } } | null> | null };
 
 export type FilteredReservationsQueryVariables = Exact<{
   exclude?: InputMaybe<Array<InputMaybe<ReservationStatusInput>>>;
@@ -2494,14 +2494,7 @@ export type FilteredReservationsQueryVariables = Exact<{
 }>;
 
 
-export type FilteredReservationsQuery = { __typename?: 'Query', myreservations?: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } } | null> | null };
-
-export type LinkableProvisionsQueryVariables = Exact<{
-  reservation: Scalars['ID'];
-}>;
-
-
-export type LinkableProvisionsQuery = { __typename?: 'Query', linkableprovisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> } | null> | null };
+export type FilteredReservationsQuery = { __typename?: 'Query', myreservations?: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } } | null> | null };
 
 export type DetailStructureQueryVariables = Exact<{
   identifier?: InputMaybe<Scalars['String']>;
@@ -2530,21 +2523,14 @@ export type AssignableTemplatesQueryVariables = Exact<{
 }>;
 
 
-export type AssignableTemplatesQuery = { __typename?: 'Query', templates?: Array<{ __typename?: 'Template', id: string, name: string, node: { __typename?: 'Node', id: string, name: string }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', username: string } | null } } | null> | null };
+export type AssignableTemplatesQuery = { __typename?: 'Query', templates?: Array<{ __typename?: 'Template', id: string, name: string, node: { __typename?: 'Node', id: string, name: string }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, user?: { __typename?: 'User', username: string } | null } } | null> | null };
 
 export type DetailTemplateQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailTemplateQuery = { __typename?: 'Query', template?: { __typename?: 'Template', id: string, extensions?: Array<string | null> | null, interface: string, creator?: { __typename?: 'User', email: string } | null, node: { __typename?: 'Node', id: string, name: string }, registry: { __typename?: 'Registry', id: string }, provisions?: Array<{ __typename?: 'Provision', title?: string | null, id: string, createdAt: any, reference: string, status: ProvisionStatus, app?: { __typename?: 'LokApp', name: string } | null, creator?: { __typename?: 'User', email: string } | null, agent?: { __typename?: 'Agent', identifier: string } | null, reservation?: { __typename?: 'Reservation', title?: string | null, node: { __typename?: 'Node', name: string }, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } } | null } | null> | null } | null };
-
-export type MiniTemplateByIdQueryVariables = Exact<{
-  id: Scalars['ID'];
-}>;
-
-
-export type MiniTemplateByIdQuery = { __typename?: 'Query', template?: { __typename?: 'Template', id: string, interface: string, node: { __typename?: 'Node', name: string } } | null };
+export type DetailTemplateQuery = { __typename?: 'Query', template?: { __typename?: 'Template', id: string, extensions?: Array<string | null> | null, params?: any | null, interface: string, creator?: { __typename?: 'User', email: string } | null, node: { __typename?: 'Node', id: string, name: string }, registry: { __typename?: 'Registry', id: string }, provisions?: Array<{ __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null> | null } | null };
 
 export type TemplateOptionsQueryVariables = Exact<{
   node: Scalars['ID'];
@@ -2583,7 +2569,7 @@ export type UserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id
 export type AgentsEventSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AgentsEventSubscription = { __typename?: 'Subscription', agentsEvent?: { __typename?: 'AgentEvent', deleted?: string | null, created?: { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', clientId: string, name: string, grantType: LokAppGrantType } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, updated?: { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', clientId: string, name: string, grantType: LokAppGrantType } | null, user?: { __typename?: 'User', email: string } | null } | null } | null } | null };
+export type AgentsEventSubscription = { __typename?: 'Subscription', agentsEvent?: { __typename?: 'AgentEvent', deleted?: string | null, created?: { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, updated?: { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null } | null };
 
 export type WatchAssignationSubscriptionVariables = Exact<{
   id: Scalars['ID'];
@@ -2595,26 +2581,26 @@ export type WatchAssignationSubscription = { __typename?: 'Subscription', assign
 export type WatchMyRequestsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type WatchMyRequestsSubscription = { __typename?: 'Subscription', myrequests?: { __typename?: 'AssignationsEvent', delete?: string | null, create?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null, update?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null } | null };
+export type WatchMyRequestsSubscription = { __typename?: 'Subscription', myrequests?: { __typename?: 'AssignationsEvent', delete?: string | null, create?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null, update?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null } | null };
 
 export type WatchRequestsSubscriptionVariables = Exact<{
   identifier: Scalars['String'];
 }>;
 
 
-export type WatchRequestsSubscription = { __typename?: 'Subscription', requests?: { __typename?: 'AssignationsEvent', delete?: string | null, create?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null, update?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null } | null };
+export type WatchRequestsSubscription = { __typename?: 'Subscription', requests?: { __typename?: 'AssignationsEvent', delete?: string | null, create?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null, update?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null } | null };
 
 export type WatchMyTodosSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type WatchMyTodosSubscription = { __typename?: 'Subscription', mytodos?: { __typename?: 'TodoEvent', delete?: string | null, create?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null, update?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null } | null };
+export type WatchMyTodosSubscription = { __typename?: 'Subscription', mytodos?: { __typename?: 'TodoEvent', delete?: string | null, create?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null, update?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null } | null };
 
 export type WatchTodosSubscriptionVariables = Exact<{
   identifier: Scalars['String'];
 }>;
 
 
-export type WatchTodosSubscription = { __typename?: 'Subscription', todos?: { __typename?: 'TodoEvent', delete?: string | null, create?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null, update?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null } } | null } | null } | null } | null };
+export type WatchTodosSubscription = { __typename?: 'Subscription', todos?: { __typename?: 'TodoEvent', delete?: string | null, create?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null, update?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null } | null } | null };
 
 export type NodesEventSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -2633,7 +2619,7 @@ export type DetailNodeEventSubscriptionVariables = Exact<{
 }>;
 
 
-export type DetailNodeEventSubscription = { __typename?: 'Subscription', nodeEvent?: { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null } | null };
+export type DetailNodeEventSubscription = { __typename?: 'Subscription', nodeEvent?: { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null } | null };
 
 export type WatchInterfaceSubscriptionVariables = Exact<{
   interface?: InputMaybe<Scalars['String']>;
@@ -2654,12 +2640,12 @@ export type WatchProvisionsSubscriptionVariables = Exact<{
 }>;
 
 
-export type WatchProvisionsSubscription = { __typename?: 'Subscription', provisions?: { __typename?: 'ProvisionsEvent', delete?: string | null, create?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> } | null, update?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> } | null } | null };
+export type WatchProvisionsSubscription = { __typename?: 'Subscription', provisions?: { __typename?: 'ProvisionsEvent', delete?: string | null, create?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null, update?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null } | null };
 
 export type WatchMyProvisionsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type WatchMyProvisionsSubscription = { __typename?: 'Subscription', myprovisions?: { __typename?: 'ProvisionsEvent', delete?: string | null, create?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> } | null, update?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template?: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', name: string, meta?: any | null }, registry: { __typename?: 'Registry', app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', id: string, app?: { __typename?: 'LokApp', name: string } | null, user?: { __typename?: 'User', email: string } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', name: string } | null }> } | null } | null };
+export type WatchMyProvisionsSubscription = { __typename?: 'Subscription', myprovisions?: { __typename?: 'ProvisionsEvent', delete?: string | null, create?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null, update?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null }, agent?: { __typename?: 'Agent', id: string, name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, reservations: Array<{ __typename?: 'Reservation', id: string, reference: string, creator?: { __typename?: 'User', username: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null }> } | null } | null };
 
 export type WatchReservationSubscriptionVariables = Exact<{
   id: Scalars['ID'];
@@ -2673,12 +2659,12 @@ export type WatchReservationsSubscriptionVariables = Exact<{
 }>;
 
 
-export type WatchReservationsSubscription = { __typename?: 'Subscription', reservations?: { __typename?: 'ReservationsEvent', delete?: string | null, create?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } } | null, update?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } } | null } | null };
+export type WatchReservationsSubscription = { __typename?: 'Subscription', reservations?: { __typename?: 'ReservationsEvent', delete?: string | null, create?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } } | null, update?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } } | null } | null };
 
 export type WatchMyReservationsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type WatchMyReservationsSubscription = { __typename?: 'Subscription', myreservations?: { __typename?: 'ReservationsEvent', delete?: string | null, create?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } } | null, update?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } } | null } | null };
+export type WatchMyReservationsSubscription = { __typename?: 'Subscription', myreservations?: { __typename?: 'ReservationsEvent', delete?: string | null, create?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } } | null, update?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } } | null } | null };
 
 export type WatchReservationsOnProvisionSubscriptionVariables = Exact<{
   identifier: Scalars['String'];
@@ -2686,37 +2672,36 @@ export type WatchReservationsOnProvisionSubscriptionVariables = Exact<{
 }>;
 
 
-export type WatchReservationsOnProvisionSubscription = { __typename?: 'Subscription', reservations?: { __typename?: 'ReservationsEvent', delete?: string | null, create?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } } | null, update?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', app?: { __typename?: 'LokApp', id: string, name: string } | null, user?: { __typename?: 'User', id: string, email: string } | null } | null } } | null } | null };
+export type WatchReservationsOnProvisionSubscription = { __typename?: 'Subscription', reservations?: { __typename?: 'ReservationsEvent', delete?: string | null, create?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } } | null, update?: { __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } } | null } | null };
 
+export const RegistryFragmentDoc = gql`
+    fragment Registry on Registry {
+  name
+  app {
+    version
+    identifier
+  }
+  user {
+    sub
+    name
+  }
+}
+    `;
 export const ListAgentFragmentDoc = gql`
     fragment ListAgent on Agent {
   id
   registry {
-    app {
-      clientId
-      name
-      grantType
-    }
-    user {
-      email
-    }
+    ...Registry
   }
   identifier
   status
 }
-    `;
+    ${RegistryFragmentDoc}`;
 export const DetailAgentFragmentDoc = gql`
     fragment DetailAgent on Agent {
   id
   registry {
-    app {
-      clientId
-      name
-      grantType
-    }
-    user {
-      email
-    }
+    ...Registry
     templates {
       id
       node {
@@ -2738,19 +2723,22 @@ export const DetailAgentFragmentDoc = gql`
     }
     reservations {
       id
-      creator {
-        username
+      waiter {
+        registry {
+          ...Registry
+        }
       }
     }
     status
     creator {
       username
+      sub
     }
   }
   status
   name
 }
-    `;
+    ${RegistryFragmentDoc}`;
 export const IntWidgetFragmentDoc = gql`
     fragment IntWidget on IntWidget {
   kind
@@ -2933,10 +2921,7 @@ export const DetailAssignationFragmentDoc = gql`
         interfaces
       }
       registry {
-        id
-        app {
-          name
-        }
+        ...Registry
       }
       extensions
     }
@@ -2944,7 +2929,8 @@ export const DetailAssignationFragmentDoc = gql`
       email
     }
     app {
-      name
+      version
+      identifier
     }
   }
   reservation {
@@ -2959,14 +2945,17 @@ export const DetailAssignationFragmentDoc = gql`
       ...Ports
     }
     app {
-      name
+      version
+      identifier
     }
     creator {
       email
     }
   }
   app {
-    name
+    id
+    version
+    identifier
   }
   creator {
     email
@@ -2977,7 +2966,8 @@ export const DetailAssignationFragmentDoc = gql`
   }
   returns
 }
-    ${PortsFragmentDoc}`;
+    ${RegistryFragmentDoc}
+${PortsFragmentDoc}`;
 export const ListAssignationFragmentDoc = gql`
     fragment ListAssignation on Assignation {
   status
@@ -2998,16 +2988,23 @@ export const ListAssignationFragmentDoc = gql`
     template {
       interface
       registry {
-        app {
-          name
-        }
+        ...Registry
       }
     }
   }
   returns
   statusmessage
 }
-    `;
+    ${RegistryFragmentDoc}`;
+export const ListTemplateFragmentDoc = gql`
+    fragment ListTemplate on Template {
+  id
+  interface
+  registry {
+    ...Registry
+  }
+}
+    ${RegistryFragmentDoc}`;
 export const DetailNodeFragmentDoc = gql`
     fragment DetailNode on Node {
   name
@@ -3019,20 +3016,11 @@ export const DetailNodeFragmentDoc = gql`
   meta
   ...Ports
   templates {
-    id
-    registry {
-      app {
-        name
-      }
-      user {
-        email
-      }
-    }
-    interface
-    extensions
+    ...ListTemplate
   }
 }
-    ${PortsFragmentDoc}`;
+    ${PortsFragmentDoc}
+${ListTemplateFragmentDoc}`;
 export const MiniNodeFragmentDoc = gql`
     fragment MiniNode on Node {
   name
@@ -3120,18 +3108,12 @@ export const ListReservationFragmentDoc = gql`
   waiter {
     id
     registry {
-      app {
-        id
-        name
-      }
-      user {
-        id
-        email
-      }
+      ...Registry
     }
   }
 }
-    ${ChildPortFragmentDoc}`;
+    ${ChildPortFragmentDoc}
+${RegistryFragmentDoc}`;
 export const ProvisionLogFragmentDoc = gql`
     fragment ProvisionLog on ProvisionLog {
   message
@@ -3150,14 +3132,7 @@ export const DetailProvisionFragmentDoc = gql`
   }
   agent {
     registry {
-      id
-      name
-      app {
-        name
-      }
-      user {
-        email
-      }
+      ...Registry
     }
     name
     identifier
@@ -3173,18 +3148,18 @@ export const DetailProvisionFragmentDoc = gql`
       meta
     }
     registry {
-      id
-      app {
-        name
-      }
+      ...Registry
     }
     extensions
+    params
   }
   creator {
     email
   }
   app {
-    name
+    id
+    version
+    identifier
   }
   causedReservations {
     ...ListReservation
@@ -3197,7 +3172,9 @@ export const DetailProvisionFragmentDoc = gql`
       email
     }
     app {
-      name
+      id
+      version
+      identifier
     }
   }
   reservations {
@@ -3210,12 +3187,7 @@ export const DetailProvisionFragmentDoc = gql`
     status
     waiter {
       registry {
-        user {
-          email
-        }
-        app {
-          name
-        }
+        ...Registry
       }
     }
   }
@@ -3223,20 +3195,15 @@ export const DetailProvisionFragmentDoc = gql`
     ...ProvisionLog
   }
 }
-    ${ListReservationFragmentDoc}
+    ${RegistryFragmentDoc}
+${ListReservationFragmentDoc}
 ${ProvisionLogFragmentDoc}`;
-export const RegistryFragmentDoc = gql`
-    fragment Registry on Registry {
-  unique
-  name
-}
-    `;
 export const AppRepositoryFragmentDoc = gql`
     fragment AppRepository on AppRepository {
   id
   app {
-    name
-    grantType
+    version
+    identifier
   }
   name
   nodes {
@@ -3268,7 +3235,8 @@ export const DetailAppRepositoryFragmentDoc = gql`
     fragment DetailAppRepository on AppRepository {
   installedAt
   app {
-    name
+    version
+    identifier
   }
 }
     `;
@@ -3308,29 +3276,12 @@ export const ListProvisionFragmentDoc = gql`
   template {
     id
     interface
-    node {
-      name
-      meta
-    }
-    registry {
-      app {
-        name
-      }
-      user {
-        email
-      }
-    }
     extensions
   }
   agent {
+    id
     registry {
-      id
-      app {
-        name
-      }
-      user {
-        email
-      }
+      ...Registry
     }
     name
     identifier
@@ -3342,11 +3293,12 @@ export const ListProvisionFragmentDoc = gql`
       username
     }
     app {
-      name
+      version
+      identifier
     }
   }
 }
-    `;
+    ${RegistryFragmentDoc}`;
 export const DetailReservationFragmentDoc = gql`
     fragment DetailReservation on Reservation {
   title
@@ -3372,20 +3324,14 @@ export const DetailReservationFragmentDoc = gql`
     }
     app {
       id
-      name
+      version
+      identifier
     }
   }
   waiter {
     id
     registry {
-      app {
-        id
-        name
-      }
-      user {
-        id
-        email
-      }
+      ...Registry
     }
   }
   channel
@@ -3419,11 +3365,7 @@ export const DetailReservationFragmentDoc = gql`
     id
     interface
     registry {
-      id
-      app {
-        id
-        name
-      }
+      ...Registry
     }
   }
   provisions {
@@ -3437,7 +3379,8 @@ export const DetailReservationFragmentDoc = gql`
     email
   }
 }
-    ${ChildPortFragmentDoc}
+    ${RegistryFragmentDoc}
+${ChildPortFragmentDoc}
 ${ListProvisionFragmentDoc}`;
 export const DetailStructureFragmentDoc = gql`
     fragment DetailStructure on Structure {
@@ -3451,15 +3394,6 @@ export const ListStructureFragmentDoc = gql`
   identifier
 }
     `;
-export const MiniTemplateFragmentDoc = gql`
-    fragment MiniTemplate on Template {
-  id
-  interface
-  node {
-    name
-  }
-}
-    `;
 export const DetailTemplateFragmentDoc = gql`
     fragment DetailTemplate on Template {
   id
@@ -3467,6 +3401,7 @@ export const DetailTemplateFragmentDoc = gql`
   creator {
     email
   }
+  params
   interface
   node {
     id
@@ -3476,39 +3411,10 @@ export const DetailTemplateFragmentDoc = gql`
     id
   }
   provisions(status: [ACTIVE, PENDING, CRITICAL, PENDING, DISCONNECTED]) {
-    title
-    id
-    createdAt
-    app {
-      name
-    }
-    reference
-    status
-    creator {
-      email
-    }
-    agent {
-      identifier
-    }
-    reservation {
-      title
-      node {
-        name
-      }
-      waiter {
-        registry {
-          app {
-            name
-          }
-          user {
-            email
-          }
-        }
-      }
-    }
+    ...ListProvision
   }
 }
-    `;
+    ${ListProvisionFragmentDoc}`;
 export const ResetAgentsDocument = gql`
     mutation ResetAgents {
   resetAgents {
@@ -5033,11 +4939,82 @@ export function useAgentProvisionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOp
 export type AgentProvisionsQueryHookResult = ReturnType<typeof useAgentProvisionsQuery>;
 export type AgentProvisionsLazyQueryHookResult = ReturnType<typeof useAgentProvisionsLazyQuery>;
 export type AgentProvisionsQueryResult = Apollo.QueryResult<AgentProvisionsQuery, AgentProvisionsQueryVariables>;
+export const LinkableProvisionsDocument = gql`
+    query LinkableProvisions($reservation: ID!) {
+  linkableprovisions(id: $reservation) {
+    ...ListProvision
+  }
+}
+    ${ListProvisionFragmentDoc}`;
+
+/**
+ * __useLinkableProvisionsQuery__
+ *
+ * To run a query within a React component, call `useLinkableProvisionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useLinkableProvisionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useLinkableProvisionsQuery({
+ *   variables: {
+ *      reservation: // value for 'reservation'
+ *   },
+ * });
+ */
+export function useLinkableProvisionsQuery(baseOptions: Apollo.QueryHookOptions<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>(LinkableProvisionsDocument, options);
+      }
+export function useLinkableProvisionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>(LinkableProvisionsDocument, options);
+        }
+export type LinkableProvisionsQueryHookResult = ReturnType<typeof useLinkableProvisionsQuery>;
+export type LinkableProvisionsLazyQueryHookResult = ReturnType<typeof useLinkableProvisionsLazyQuery>;
+export type LinkableProvisionsQueryResult = Apollo.QueryResult<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>;
+export const LinkableProvisionsOptionsDocument = gql`
+    query LinkableProvisionsOptions($reservation: ID!) {
+  options: linkableprovisions(id: $reservation) {
+    value: id
+    label: id
+  }
+}
+    `;
+
+/**
+ * __useLinkableProvisionsOptionsQuery__
+ *
+ * To run a query within a React component, call `useLinkableProvisionsOptionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useLinkableProvisionsOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useLinkableProvisionsOptionsQuery({
+ *   variables: {
+ *      reservation: // value for 'reservation'
+ *   },
+ * });
+ */
+export function useLinkableProvisionsOptionsQuery(baseOptions: Apollo.QueryHookOptions<LinkableProvisionsOptionsQuery, LinkableProvisionsOptionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<LinkableProvisionsOptionsQuery, LinkableProvisionsOptionsQueryVariables>(LinkableProvisionsOptionsDocument, options);
+      }
+export function useLinkableProvisionsOptionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<LinkableProvisionsOptionsQuery, LinkableProvisionsOptionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<LinkableProvisionsOptionsQuery, LinkableProvisionsOptionsQueryVariables>(LinkableProvisionsOptionsDocument, options);
+        }
+export type LinkableProvisionsOptionsQueryHookResult = ReturnType<typeof useLinkableProvisionsOptionsQuery>;
+export type LinkableProvisionsOptionsLazyQueryHookResult = ReturnType<typeof useLinkableProvisionsOptionsLazyQuery>;
+export type LinkableProvisionsOptionsQueryResult = Apollo.QueryResult<LinkableProvisionsOptionsQuery, LinkableProvisionsOptionsQueryVariables>;
 export const RegistryOptionsDocument = gql`
     query RegistryOptions($search: String) {
   options: registries(unique: $search) {
-    label: unique
-    value: unique
+    label: id
+    value: id
   }
 }
     `;
@@ -5148,7 +5125,8 @@ export const DetailReservationDocument = gql`
     template {
       registry {
         app {
-          name
+          identifier
+          version
         }
         user {
           id
@@ -5291,41 +5269,6 @@ export function useFilteredReservationsLazyQuery(baseOptions?: Apollo.LazyQueryH
 export type FilteredReservationsQueryHookResult = ReturnType<typeof useFilteredReservationsQuery>;
 export type FilteredReservationsLazyQueryHookResult = ReturnType<typeof useFilteredReservationsLazyQuery>;
 export type FilteredReservationsQueryResult = Apollo.QueryResult<FilteredReservationsQuery, FilteredReservationsQueryVariables>;
-export const LinkableProvisionsDocument = gql`
-    query LinkableProvisions($reservation: ID!) {
-  linkableprovisions(id: $reservation) {
-    ...ListProvision
-  }
-}
-    ${ListProvisionFragmentDoc}`;
-
-/**
- * __useLinkableProvisionsQuery__
- *
- * To run a query within a React component, call `useLinkableProvisionsQuery` and pass it any options that fit your needs.
- * When your component renders, `useLinkableProvisionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useLinkableProvisionsQuery({
- *   variables: {
- *      reservation: // value for 'reservation'
- *   },
- * });
- */
-export function useLinkableProvisionsQuery(baseOptions: Apollo.QueryHookOptions<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>(LinkableProvisionsDocument, options);
-      }
-export function useLinkableProvisionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>(LinkableProvisionsDocument, options);
-        }
-export type LinkableProvisionsQueryHookResult = ReturnType<typeof useLinkableProvisionsQuery>;
-export type LinkableProvisionsLazyQueryHookResult = ReturnType<typeof useLinkableProvisionsLazyQuery>;
-export type LinkableProvisionsQueryResult = Apollo.QueryResult<LinkableProvisionsQuery, LinkableProvisionsQueryVariables>;
 export const DetailStructureDocument = gql`
     query DetailStructure($identifier: String) {
   structure(identifier: $identifier) {
@@ -5454,7 +5397,9 @@ export const AssignableTemplatesDocument = gql`
     }
     registry {
       app {
-        name
+        id
+        version
+        identifier
       }
       user {
         username
@@ -5526,41 +5471,6 @@ export function useDetailTemplateLazyQuery(baseOptions?: Apollo.LazyQueryHookOpt
 export type DetailTemplateQueryHookResult = ReturnType<typeof useDetailTemplateQuery>;
 export type DetailTemplateLazyQueryHookResult = ReturnType<typeof useDetailTemplateLazyQuery>;
 export type DetailTemplateQueryResult = Apollo.QueryResult<DetailTemplateQuery, DetailTemplateQueryVariables>;
-export const MiniTemplateByIdDocument = gql`
-    query MiniTemplateByID($id: ID!) {
-  template(id: $id) {
-    ...MiniTemplate
-  }
-}
-    ${MiniTemplateFragmentDoc}`;
-
-/**
- * __useMiniTemplateByIdQuery__
- *
- * To run a query within a React component, call `useMiniTemplateByIdQuery` and pass it any options that fit your needs.
- * When your component renders, `useMiniTemplateByIdQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useMiniTemplateByIdQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useMiniTemplateByIdQuery(baseOptions: Apollo.QueryHookOptions<MiniTemplateByIdQuery, MiniTemplateByIdQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<MiniTemplateByIdQuery, MiniTemplateByIdQueryVariables>(MiniTemplateByIdDocument, options);
-      }
-export function useMiniTemplateByIdLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MiniTemplateByIdQuery, MiniTemplateByIdQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<MiniTemplateByIdQuery, MiniTemplateByIdQueryVariables>(MiniTemplateByIdDocument, options);
-        }
-export type MiniTemplateByIdQueryHookResult = ReturnType<typeof useMiniTemplateByIdQuery>;
-export type MiniTemplateByIdLazyQueryHookResult = ReturnType<typeof useMiniTemplateByIdLazyQuery>;
-export type MiniTemplateByIdQueryResult = Apollo.QueryResult<MiniTemplateByIdQuery, MiniTemplateByIdQueryVariables>;
 export const TemplateOptionsDocument = gql`
     query TemplateOptions($node: ID!) {
   options: templates(node: $node) {

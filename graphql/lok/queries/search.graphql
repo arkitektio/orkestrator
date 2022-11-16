@@ -1,0 +1,13 @@
+query LokGlobalSearch($search: String) {
+  apps(search: $search) {
+    ...ListApp
+  }
+
+  users(search: $search) {
+    ...ListUser
+  }
+
+  groups(search: $search) {
+    ...ListGroup
+  }
+}

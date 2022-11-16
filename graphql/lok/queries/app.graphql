@@ -1,0 +1,16 @@
+query Apps {
+  apps {
+    ...ListApp
+  }
+}
+
+query App($identifier: String, $version: String, $id: ID, $clientId: String) {
+  app(
+    identifier: $identifier
+    version: $version
+    id: $id
+    clientId: $clientId
+  ) {
+    ...DetailApp
+  }
+}

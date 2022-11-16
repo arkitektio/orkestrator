@@ -18,11 +18,8 @@ import {
   Mate,
 } from "../../../rekuest/postman/mater/mater-context";
 import { getDefaultSmartModel, User } from "../../../linker";
-import {
-  useUserOptionsLazyQuery,
-  useUserQuery,
-} from "../../../man/api/graphql";
-import { withMan } from "../../../man/context";
+import { useUserQuery } from "../../../lok/api/graphql";
+import { withMan } from "../../../lok/context";
 import {
   CommentableModels,
   CommentsForDocument,
@@ -34,8 +31,13 @@ import {
   MentionFragment,
   useCommentsForQuery,
   useCreateCommentMutation,
+  useUserOptionsQuery,
+  useRepresentationsForUserQuery,
+  useUserOptionsLazyQuery,
+  useMikroUserQuery,
+  DescendendInput,
 } from "../../api/graphql";
-import { withMikro } from "../../MikroContext";
+import { useMikro, withMikro } from "../../MikroContext";
 import { ElementProps, MyEditor, RenderProps } from "./decs";
 
 interface ICommentEditProps {
@@ -79,7 +81,7 @@ const insertMention = (
 ) => {
   console.log(q);
   if (!q) return;
-  const mention: MentionFragment & DescendentFragment = {
+  const mention: DescendendInput = {
     typename: "MentionDescendent",
     user: q.value,
     children: [{ text: q.label, typename: "Leaf" }],
@@ -103,12 +105,15 @@ const Mention = ({
   attributes,
   children,
   element,
-}: ElementProps<MentionDescendent & DescendentFragment>) => {
+}: ElementProps<DescendendInput>) => {
   const selected = useSelected();
   const focused = useFocused();
-  const { data, error } = withMan(useUserQuery)({
-    variables: { email: element.user },
+
+  const { data, error } = withMikro(useMikroUserQuery)({
+    variables: { id: element.user },
   });
+  const { s3resolve } = useMikro();
+
   return (
     <>
       {data?.user ? (
@@ -133,21 +138,12 @@ const Mention = ({
             object={data?.user.id}
             className="cursor-pointer flex flex-row"
           >
-            <img
-              className="h-4 w-4 rounded-full hover:ring-pink-500 hover:ring-2 cursor-pointer my-auto"
-              src={
-                data?.user?.avatar
-                  ? data?.user.avatar
-                  : `https://eu.ui-avatars.com/api/?name=${data?.user?.username}&background=random`
-              }
-              alt=""
-            />
-            <b>{data?.user?.username}</b>
+            @<b>{data?.user?.firstName}</b>
           </User.DetailLink>
         </User.Smart>
       ) : (
         <span {...attributes} className="cursor-pointer flex flex-row">
-          Loading{" "}
+          {element.user}{" "}
         </span>
       )}
     </>
@@ -381,7 +377,7 @@ export const renderLeaf = (x: Maybe<LeafFragment>) => {
 
 export const MentionDisplay = (props: { element: MentionFragment }) => {
   const { data, error } = withMan(useUserQuery)({
-    variables: { email: props.element.user },
+    variables: { id: props.element.user.sub },
   });
 
   const navigate = useNavigate();
@@ -391,13 +387,13 @@ export const MentionDisplay = (props: { element: MentionFragment }) => {
       {data?.user ? (
         <User.Smart
           object={data?.user?.id}
-          className="bg-gray-200 px-1 border rounded-full inline "
+          className=" px-1 border rounded-full inline "
           dropClassName={() => "inline"}
           containerClassName="inline mr-2"
           additionalMates={(type, iself) => {
             return [
               {
-                label: "Email Item",
+                label: "Email",
                 action: async (partner) => {
                   let x = getDefaultSmartModel(partner.identifier);
 
@@ -416,7 +412,10 @@ export const MentionDisplay = (props: { element: MentionFragment }) => {
             ] as AdditionalMate[];
           }}
         >
-          <User.DetailLink object={data?.user.id}>
+          <User.DetailLink
+            object={data?.user.id}
+            className="bg-gray-700 p-1 rounded text-white"
+          >
             @{data?.user?.username}
           </User.DetailLink>
         </User.Smart>
@@ -456,7 +455,7 @@ export const renderDescendend = (x: Maybe<DescendentFragment>) => {
 };
 
 interface IUserAvatarProps {
-  email: string;
+  id: string;
   className?: string;
 }
 
@@ -464,11 +463,14 @@ export const UserAvatar: React.FunctionComponent<IUserAvatarProps> = (
   props
 ) => {
   const { data, error } = withMan(useUserQuery)({
-    variables: { email: props.email },
+    variables: { id: props.id },
   });
+
+  const { s3resolve } = useMikro();
+
   return (
-    <Link
-      to={`/teams/users/${data?.user?.email}`}
+    <User.DetailLink
+      object={props.id}
       className="cursor-pointer flex flex-col items-center justify-centerm mt-1"
     >
       <img
@@ -477,13 +479,13 @@ export const UserAvatar: React.FunctionComponent<IUserAvatarProps> = (
           "h-10 w-10 rounded-md hover:ring-pink-500 hover:ring-2 cursor-pointer my-auto"
         }
         src={
-          data?.user?.avatar
-            ? data?.user.avatar
+          data?.user?.profile?.avatar
+            ? s3resolve(data?.user.profile?.avatar)
             : `https://eu.ui-avatars.com/api/?name=${data?.user?.username}&background=random`
         }
         alt=""
       />
-    </Link>
+    </User.DetailLink>
   );
 };
 
@@ -497,7 +499,7 @@ export const Comment = (
     <>
       <div className="flex flex-row rounded rounded-md p-2 group">
         <div className="flex-initial">
-          {comment?.user?.email && <UserAvatar email={comment?.user?.email} />}
+          {comment?.user?.sub && <UserAvatar id={comment?.user?.sub} />}
         </div>
         <div className="flex-grow flex-col ml-3">
           <div className="text-sm bg-slate-300 p-3 border rounded text-black">
@@ -521,9 +523,9 @@ export const Comment = (
               return (
                 <div className="flex flex-row rounded rounded-md p-2 group">
                   <div className="flex-initial">
-                    {s?.user?.email && (
+                    {s?.user?.sub && (
                       <UserAvatar
-                        email={s?.user?.email}
+                        id={s?.user?.sub}
                         className="h-7 w-7 rounded-md hover:ring-pink-500 hover:ring-2 cursor-pointer my-auto"
                       />
                     )}

@@ -60,7 +60,7 @@ export const FlowDiagramFlow: React.FC<FlowDiagramHomeProps> = (props) => {
 
     let flow = await saveFlow({ variables: noTypename(variables) });
     navigate(
-      `/diagrams/${diagram}/flows/${flow.data?.updatediagram?.latestFlow?.id}`
+      `/diagrams/${diagram}/flows/${flow.data?.updateworkspace?.latestFlow?.id}`
     );
   };
 

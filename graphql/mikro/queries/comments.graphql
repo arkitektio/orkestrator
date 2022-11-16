@@ -9,3 +9,9 @@ query MyMentions {
     ...MentionComment
   }
 }
+
+query DetailComment($id: ID!) {
+  comment(id: $id) {
+    ...DetailComment
+  }
+}

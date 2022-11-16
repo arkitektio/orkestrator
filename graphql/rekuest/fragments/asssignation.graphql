@@ -25,10 +25,7 @@ fragment DetailAssignation on Assignation {
         interfaces
       }
       registry {
-        id
-        app {
-          name
-        }
+        ...Registry
       }
       extensions
     }
@@ -36,7 +33,8 @@ fragment DetailAssignation on Assignation {
       email
     }
     app {
-      name
+      version
+      identifier
     }
   }
   reservation {
@@ -51,14 +49,17 @@ fragment DetailAssignation on Assignation {
       ...Ports
     }
     app {
-      name
+      version
+      identifier
     }
     creator {
       email
     }
   }
   app {
-    name
+    id
+    version
+    identifier
   }
   creator {
     email
@@ -89,9 +90,7 @@ fragment ListAssignation on Assignation {
     template {
       interface
       registry {
-        app {
-          name
-        }
+        ...Registry
       }
     }
   }

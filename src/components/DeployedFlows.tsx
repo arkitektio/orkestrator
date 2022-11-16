@@ -76,7 +76,8 @@ const DeployedFlows: React.FC<IMyNodesProps> = ({}) => {
               )}
               {r?.waiter?.registry && (
                 <p className=" font-semibold text-xs">
-                  Reserved by {r?.waiter?.registry?.app?.name}
+                  Reserved by {r?.waiter?.registry?.app?.identifier}:
+                  {r?.waiter?.registry?.app?.version}
                 </p>
               )}
               {r?.status == ReservationStatus.Waiting && (

@@ -102,7 +102,7 @@ export const ReservationItem = ({
       )}
       {reservation?.waiter?.registry && (
         <p className=" font-semibold text-xs">
-          Reserved by {reservation?.waiter?.registry?.app?.name}
+          Reserved by {reservation?.waiter?.registry?.app?.identifier}
         </p>
       )}
       {reservation?.status == ReservationStatus.Waiting && (

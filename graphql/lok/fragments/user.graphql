@@ -1,0 +1,38 @@
+fragment ListUser on HerreUser {
+  username
+  firstName
+  lastName
+  email
+  profile {
+    avatar
+  }
+  id
+}
+
+fragment DetailUser on HerreUser {
+  id
+  username
+  email
+  roles
+  firstName
+  lastName
+  profile {
+    avatar
+  }
+  groups {
+    id
+    name
+  }
+}
+
+fragment MeUser on HerreUser {
+  id
+  username
+  roles
+  email
+  firstName
+  lastName
+  profile {
+    avatar
+  }
+}

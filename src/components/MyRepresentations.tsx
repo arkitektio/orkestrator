@@ -7,6 +7,7 @@ import {
 } from "react-icons/bs";
 import { ResponsiveGrid } from "../components/layout/ResponsiveGrid";
 import { notEmpty } from "../floating/utils";
+import { OptimizedImage } from "../layout/OptimizedImage";
 import { Representation } from "../linker";
 import {
   ListRepresentationFragment,
@@ -46,28 +47,11 @@ export const RepresentationCard: React.FC<{
       //   rep.latestThumbnail?.majorColor || "#00ff00"
       // }]`}
       dropClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `rounded group text-white bg-center bg-cover shadow-lg ${
+        `rounded group text-white bg-center bg-black shadow-lg h-20 ${
           isOver && !isDragging && "border-primary-200 border"
         } ${isDragging && "border-primary-200 border"} ${
           isSelected && "ring-2 ring-secondary-500 "
         }`
-      }
-      dropStyle={({ isDragging }) =>
-        rep?.latestThumbnail
-          ? {
-              backgroundImage: `url(${
-                s3resolve && s3resolve(rep?.latestThumbnail.image)
-              }), linear-gradient(rgba(0,0,0,0.3), rgba(1,1,1,0.5))`,
-              backgroundRepeat: "no-repeat",
-              backgroundBlendMode: "multiply",
-              boxShadow: `0px 10px  15px -3px ${
-                rep.latestThumbnail.majorColor || "#FFFF00"
-              }30`,
-            }
-          : {
-              background: "rgba(0,0,0,0.3)",
-              boxShadow: `0px 10px  15px -3px ${"#000000"}50`,
-            }
       }
       additionalMates={(accept, self) => {
         if (!self)
@@ -136,7 +120,15 @@ export const RepresentationCard: React.FC<{
         return [];
       }}
     >
-      <div className="mx-6 py-4 text-ellipsis truncate">
+      {rep.latestThumbnail && (
+        <OptimizedImage
+          src={s3resolve(rep?.latestThumbnail.image)}
+          style={{ filter: "brightness(0.7)" }}
+          className="object-cover h-20 w-full absolute top-0 left-0 rounded"
+          blurhash={rep?.latestThumbnail.blurhash}
+        />
+      )}
+      <div className="mx-6 py-4 text-ellipsis truncate relative">
         <div className="flex truncate">
           <span className="flex-grow cursor-pointer font-semibold text-xs truncate ">
             {rep?.sample?.name || "No Sample"}

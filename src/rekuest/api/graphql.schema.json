@@ -1574,6 +1574,12 @@
             "deprecationReason": null
           },
           {
+            "name": "LOK_LOKCLIENT",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "LOK_LOKUSER",
             "description": null,
             "isDeprecated": false,
@@ -2878,38 +2884,6 @@
             "deprecationReason": null
           },
           {
-            "name": "clientId",
-            "description": "",
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "grantType",
-            "description": "",
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "ENUM",
-                "name": "LokAppGrantType",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "id",
             "description": "",
             "args": [],
@@ -2926,7 +2900,7 @@
             "deprecationReason": null
           },
           {
-            "name": "name",
+            "name": "identifier",
             "description": "",
             "args": [],
             "type": {
@@ -3012,52 +2986,27 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "version",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "ENUM",
-        "name": "LokAppGrantType",
-        "description": "An enumeration.",
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "AUTHORIZATION_CODE",
-            "description": "Authorization Code",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "CLIENT_CREDENTIALS",
-            "description": "Backend (Client Credentials)",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "IMPLICIT",
-            "description": "Implicit Grant",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "PASSWORD",
-            "description": "Password",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "SESSION",
-            "description": "Django Session",
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
         "possibleTypes": null
       },
       {
@@ -5329,12 +5278,16 @@
           },
           {
             "name": "template",
-            "description": "The Template for this Provision",
+            "description": null,
             "args": [],
             "type": {
-              "kind": "OBJECT",
-              "name": "Template",
-              "ofType": null
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Template",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -7537,22 +7490,6 @@
                     "ofType": null
                   }
                 }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "unique",
-            "description": "A world-unique identifier",
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
               }
             },
             "isDeprecated": false,
@@ -10581,6 +10518,18 @@
             "deprecationReason": null
           },
           {
+            "name": "iss",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "lastLogin",
             "description": "",
             "args": [],
@@ -10604,6 +10553,18 @@
                 "name": "String",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": "The name of the user",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -10697,12 +10658,12 @@
             "deprecationReason": null
           },
           {
-            "name": "roles",
-            "description": null,
+            "name": "sub",
+            "description": "",
             "args": [],
             "type": {
               "kind": "SCALAR",
-              "name": "GenericScalar",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,

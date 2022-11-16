@@ -1,0 +1,13 @@
+fragment DetailApp on App {
+  id
+  identifier
+  version
+  logo
+}
+
+fragment ListApp on App {
+  id
+  identifier
+  version
+  logo
+}

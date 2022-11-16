@@ -1,14 +1,7 @@
 fragment ListAgent on Agent {
   id
   registry {
-    app {
-      clientId
-      name
-      grantType
-    }
-    user {
-      email
-    }
+    ...Registry
   }
   identifier
   status
@@ -17,14 +10,7 @@ fragment ListAgent on Agent {
 fragment DetailAgent on Agent {
   id
   registry {
-    app {
-      clientId
-      name
-      grantType
-    }
-    user {
-      email
-    }
+    ...Registry
     templates {
       id
       node {
@@ -46,13 +32,16 @@ fragment DetailAgent on Agent {
     }
     reservations {
       id
-      creator {
-        username
+      waiter {
+        registry {
+          ...Registry
+        }
       }
     }
     status
     creator {
       username
+      sub
     }
   }
   status

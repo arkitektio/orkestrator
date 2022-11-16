@@ -8,6 +8,11 @@ import { notEmpty } from "../../../floating/utils";
 import { PageLayout } from "../../../layout/PageLayout";
 import { Provision, Reservation } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
+import { AppImage } from "../../../lok/components/AppImage";
+import { UserEmblem } from "../../../lok/components/UserEmblem";
+import { UserTag } from "../../../lok/components/UserTag";
+import { AppTag } from "../../../lok/components/AppTag";
+import { RegistryTag } from "../../../rekuest/components/RegistryTag";
 
 export interface DashboardAgentProps {}
 
@@ -22,7 +27,10 @@ export const DashboardAgent: React.FC<DashboardAgentProps> = (props) => {
   return (
     <PageLayout>
       <div className="text-white">
-        {data?.agent?.name}
+        {data?.agent?.registry?.app?.identifier}:
+        {data?.agent?.registry?.app?.version} used by
+        {data?.agent?.registry?.user?.sub} on
+        {data?.agent?.identifier}
         <ResponsiveGrid>
           {data?.agent?.provisions?.filter(notEmpty).map((p) => (
             <Provision.Smart
@@ -53,14 +61,18 @@ export const DashboardAgent: React.FC<DashboardAgentProps> = (props) => {
                         isSelected,
                         isDragging,
                       }) =>
-                        `rounded border overflow-hidden shadow-md p-3 text-white ${
+                        `rounded border  shadow-md p-3 text-white ${
                           isOver && !isDragging && "border-primary-200 border"
                         } ${isDragging && "border-primary-200 border"} ${
                           isSelected && "ring-1 ring-primary-200 "
                         }`
                       }
                     >
-                      {p.id}
+                      <div className="flex flex-row">
+                        {r.waiter.registry && (
+                          <RegistryTag registry={r.waiter.registry} />
+                        )}
+                      </div>
                     </Reservation.Smart>
                   ))}
                 </div>

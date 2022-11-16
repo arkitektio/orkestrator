@@ -8,7 +8,8 @@ query DetailReservation($id: ID!) {
     template {
       registry {
         app {
-          name
+          identifier
+          version
         }
         user {
           id
@@ -37,11 +38,5 @@ query FilteredReservations(
 ) {
   myreservations(exclude: $exclude, filter: $filter) {
     ...ListReservation
-  }
-}
-
-query LinkableProvisions($reservation: ID!) {
-  linkableprovisions(id: $reservation) {
-    ...ListProvision
   }
 }

@@ -10,7 +10,7 @@ const RunScreen: React.FC<IRoiScreenProps> = () => {
 
   if (!runid) return <></>;
   return (
-    <ModuleLayout sidebar={<>Select Runs here</>}>
+    <ModuleLayout>
       <Run id={runid} />
     </ModuleLayout>
   );

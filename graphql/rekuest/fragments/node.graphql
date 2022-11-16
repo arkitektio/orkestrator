@@ -8,17 +8,7 @@ fragment DetailNode on Node {
   meta
   ...Ports
   templates {
-    id
-    registry {
-      app {
-        name
-      }
-      user {
-        email
-      }
-    }
-    interface
-    extensions
+    ...ListTemplate
   }
 }
 

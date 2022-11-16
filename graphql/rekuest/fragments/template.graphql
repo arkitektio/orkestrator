@@ -1,8 +1,8 @@
-fragment MiniTemplate on Template {
+fragment ListTemplate on Template {
   id
   interface
-  node {
-    name
+  registry {
+    ...Registry
   }
 }
 
@@ -12,6 +12,7 @@ fragment DetailTemplate on Template {
   creator {
     email
   }
+  params
   interface
   node {
     id
@@ -21,35 +22,6 @@ fragment DetailTemplate on Template {
     id
   }
   provisions(status: [ACTIVE, PENDING, CRITICAL, PENDING, DISCONNECTED]) {
-    title
-    id
-    createdAt
-    app {
-      name
-    }
-    reference
-    status
-    creator {
-      email
-    }
-    agent {
-      identifier
-    }
-    reservation {
-      title
-      node {
-        name
-      }
-      waiter {
-        registry {
-          app {
-            name
-          }
-          user {
-            email
-          }
-        }
-      }
-    }
+    ...ListProvision
   }
 }

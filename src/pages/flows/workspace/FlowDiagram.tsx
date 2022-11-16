@@ -15,7 +15,15 @@ export const FlowDiagram: React.FC<Props> = (props) => {
   if (!diagram) return <></>;
 
   return (
-    <ModuleLayout sidebar={<FlowDiagramSidebar diagram={diagram} />}>
+    <ModuleLayout
+      sidebars={[
+        {
+          key: "flows",
+          label: "flows",
+          content: <FlowDiagramSidebar diagram={diagram} />,
+        },
+      ]}
+    >
       <Outlet />
     </ModuleLayout>
   );

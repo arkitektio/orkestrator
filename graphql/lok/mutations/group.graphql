@@ -1,0 +1,5 @@
+mutation UpdateGroup($id: ID!, $avatar: Upload, $name: String) {
+  updateGroup(id: $id, avatar: $avatar, name: $name) {
+    ...DetailGroup
+  }
+}

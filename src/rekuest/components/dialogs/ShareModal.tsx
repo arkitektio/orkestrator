@@ -11,8 +11,9 @@ import {
   useDetailGroupQuery,
   useGroupOptionsLazyQuery,
   useUserQuery,
-} from "../../../man/api/graphql";
-import { withMan } from "../../../man/context";
+} from "../../../lok/api/graphql";
+import { withMan } from "../../../lok/context";
+import { useMikro } from "../../../mikro/MikroContext";
 import {
   AvailableModels,
   ChangePermissionsMutationVariables,
@@ -22,9 +23,9 @@ import {
 } from "../../api/graphql";
 import { withRekuest } from "../../RekuestContext";
 
-export const PermissionUserInfo = (props: { email: string }) => {
-  const { data } = withMan(useUserQuery)({ variables: { email: props.email } });
-
+export const PermissionUserInfo = (props: { sub: string }) => {
+  const { data } = withMan(useUserQuery)({ variables: { id: props.sub } });
+  const { s3resolve } = useMikro();
   return (
     <div className="flex-row flex ">
       <div className="mr-4">
@@ -32,8 +33,8 @@ export const PermissionUserInfo = (props: { email: string }) => {
           <img
             className="h-8 w-8 rounded-full cursor-pointer my-auto"
             src={
-              data?.user?.avatar
-                ? data?.user.avatar
+              data?.user?.profile?.avatar
+                ? s3resolve(data?.user.profile.avatar)
                 : `https://eu.ui-avatars.com/api/?name=${data?.user?.username}&background=random`
             }
             alt=""
@@ -56,6 +57,8 @@ export const PermisionGroupInfo = (props: { id: string }) => {
     variables: { id: props.id },
   });
 
+  const { s3resolve } = useMikro();
+
   return (
     <div className="flex-row flex ">
       <div className="mr-4">
@@ -63,8 +66,8 @@ export const PermisionGroupInfo = (props: { id: string }) => {
           <img
             className="h-8 w-8 rounded-full cursor-pointer my-auto"
             src={
-              data?.group?.avatar
-                ? data?.group.avatar
+              data?.group?.profile?.avatar
+                ? s3resolve(data?.group?.profile?.avatar)
                 : `https://eu.ui-avatars.com/api/?name=${data?.group?.name}&background=random`
             }
             alt="dddd"

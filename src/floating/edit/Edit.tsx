@@ -61,6 +61,7 @@ import dagre from "dagre";
 import { useDrop } from "react-dnd";
 import { PageLayout } from "../../layout/PageLayout";
 import { ColouredMiniMap } from "../base/ColouredMiniMap";
+import { DynamicSidebar } from "./DynamicSidebar";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektEditNodeWidget,
@@ -184,10 +185,7 @@ export const EditRiver: React.FC<Props> = ({
 }) => {
   const { client: arkitektapi } = useRekuest();
   const { client: flussapi } = useFluss();
-  const [sidebar, setSidebar] = useState<React.ReactNode>(
-    <EditSidebar flow={flow} />
-  );
-
+  const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
 
@@ -219,6 +217,10 @@ export const EditRiver: React.FC<Props> = ({
     },
     [nodes, edges]
   );
+
+  const onNodeClick = useCallback((event: React.MouseEvent, node: FlowNode) => {
+    setSelectedNode(node);
+  }, []);
 
   const onConnect = (params: Connection) => {
     const { source, target, sourceHandle, targetHandle } = params;
@@ -495,10 +497,10 @@ export const EditRiver: React.FC<Props> = ({
         setNodeError: (id: string) => (error: string) => {
           return;
         },
-        setSidebar: setSidebar,
         globals,
         nodes,
         edges,
+        selectedNode,
         args,
         setArgs,
         returns,
@@ -508,12 +510,8 @@ export const EditRiver: React.FC<Props> = ({
       }}
     >
       <PageLayout
-        sidebar={sidebar}
-        actions={
-          <>
-            <EditActions flow={flow} />
-          </>
-        }
+        sidebar={<DynamicSidebar />}
+        actions={<EditActions flow={flow} />}
       >
         <div
           ref={reactFlowWrapper}
@@ -522,7 +520,7 @@ export const EditRiver: React.FC<Props> = ({
         >
           <div ref={dropref} className="flex flex-grow h-full w-full">
             <Graph
-              onPaneClick={() => setSidebar(<EditSidebar flow={flow} />)}
+              onPaneClick={(e) => setSelectedNode(null)}
               onDragOver={onDragOver}
               nodes={nodes}
               edges={edges}
@@ -530,6 +528,7 @@ export const EditRiver: React.FC<Props> = ({
               onConnect={onConnect}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
+              onNodeClick={(e, n) => setSelectedNode(n)}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onInit={(e) => setReactFlowInstance(e)}

@@ -16,8 +16,8 @@ import { FlussProvider } from "./fluss/fluss-provider";
 import { FlussGuard } from "./fluss/guard";
 import { FlussWard } from "./fluss/ward";
 import "./index.css";
-import { ManGuard } from "./man/guard";
-import { ManProvider } from "./man/provider";
+import { ManGuard } from "./lok/guard";
+import { ManProvider } from "./lok/provider";
 import { MentionListener } from "./mikro/listeners/MentionListener";
 import { MikroGuard } from "./mikro/MikroGuard";
 import { MikroProvider } from "./mikro/MikroProvider";
@@ -42,6 +42,7 @@ import { PortAutoConfigure } from "./bridges/PortAutoConfigure";
 import { PortProvider } from "./port/PortProvider";
 import { PortGuard } from "./port/PortGuard";
 import { DialogProvider } from "./layout/dialog/DialogProvider";
+import { CreateRepoDialog } from "./port/components/dialogs/CreateRepoDialog";
 
 /* try {
   import("virtual:pwa-register")
@@ -136,7 +137,11 @@ export const ProtectedApp: React.FC<Props> = () => {
                                                 options={HTML5toTouch}
                                               >
                                                 <SelectionProvider>
-                                                  <DialogProvider>
+                                                  <DialogProvider
+                                                    registeredDialogs={{
+                                                      create: CreateRepoDialog,
+                                                    }}
+                                                  >
                                                     <ToastContainer
                                                       position="bottom-right"
                                                       theme="dark"

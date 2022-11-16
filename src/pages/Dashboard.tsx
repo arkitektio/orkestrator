@@ -8,7 +8,11 @@ interface Props {}
 
 export const Dashboard: React.FC<Props> = (props) => {
   return (
-    <ModuleLayout sidebar={<DashBoardSidebar />}>
+    <ModuleLayout
+      sidebars={[
+        { key: "search", label: "Search", content: <DashBoardSidebar /> },
+      ]}
+    >
       <Outlet />
     </ModuleLayout>
   );

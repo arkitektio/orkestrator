@@ -1,6 +1,14 @@
 query UserOptions($search: String) {
-  options: users(username: $search) {
+  options: users(search: $search) {
     value: id
-    label: username
+    label: name
+  }
+}
+
+query MikroUser($id: ID!) {
+  user(id: $id) {
+    sub
+    id
+    firstName
   }
 }

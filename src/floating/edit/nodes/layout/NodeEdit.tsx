@@ -1,14 +1,4 @@
-import {
-  NodeLayoutContext,
-  NodeLayoutProvider,
-  useNodeLayout,
-} from "../../../base/node/layout";
-import { useEditRiver } from "../../context";
-
-import { Resizable, ResizeCallbackData } from "react-resizable";
-import { useState } from "react";
 import "./styles.css";
-import { useViewport } from "react-flow-renderer";
 
 const additional = {
   pink: "border-pink-500 shadow-pink-500/5 dark:border-pink-200 dark:shadow-pink-200/10",
@@ -20,7 +10,6 @@ const additional = {
 
 type NodeProps = {
   children: React.ReactNode;
-  sidebar?: React.ReactNode;
   color?: keyof typeof additional;
   id: string;
 };
@@ -36,18 +25,14 @@ export const additionalForState: { [x: string]: string } = {
 export const NodeEditLayout: React.FC<NodeProps> = ({
   children,
   id,
-  sidebar,
   color = "pink",
 }) => {
-  const { setSidebar } = useEditRiver();
-
   return (
     <div
       className={
         `px-2 py-2 z-50 shadow-xl bg-white rounded-md dark:bg-gray-800 dark:text-white text-black border w-full h-full` +
         additional[color]
       }
-      onClick={() => setSidebar(sidebar || <></>)}
     >
       {children}
     </div>

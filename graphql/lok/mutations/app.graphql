@@ -1,0 +1,5 @@
+mutation UpdateApp($id: ID!, $logo: Upload) {
+  updateApp(id: $id, logo: $logo) {
+    ...DetailApp
+  }
+}

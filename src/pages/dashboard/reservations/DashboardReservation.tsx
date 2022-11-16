@@ -12,6 +12,9 @@ import { ActionButton } from "../../../layout/ActionButton";
 import { PageLayout } from "../../../layout/PageLayout";
 import { Assignation, Node } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
+import { ask } from "@tauri-apps/api/dialog";
+import { LinkProvisionDialog } from "../../../rekuest/components/dialogs/LinkProvisionDialog";
+import { useDialog } from "../../../layout/dialog/DialogProvider";
 
 export type ReservationToolbarProps = {
   reservation: Maybe<DetailReservationFragment>;
@@ -66,6 +69,8 @@ const DashboardReservation: React.FC<IReservationProps> = ({}) => {
     variables: { id: reservation },
   });
 
+  const { ask } = useDialog();
+
   const { assign } = useRequester();
   const navigate = useNavigate();
 
@@ -103,16 +108,29 @@ const DashboardReservation: React.FC<IReservationProps> = ({}) => {
   return (
     <PageLayout
       actions={
-        <ActionButton
-          onAction={async () => {
-            if (data?.reservation) {
-              let x = await assign({ reservation: data?.reservation });
-              x?.id && navigate(Assignation.linkBuilder(x.id));
-            }
-          }}
-          label="Assign"
-          description="Assign this reservation to a node"
-        />
+        <>
+          <ActionButton
+            onAction={async () => {
+              if (data?.reservation) {
+                let x = await assign({ reservation: data?.reservation });
+                x?.id && navigate(Assignation.linkBuilder(x.id));
+              }
+            }}
+            label="Assign"
+            description="Assign this reservation to a node"
+          />
+          <ActionButton
+            onAction={async () => {
+              if (data?.reservation) {
+                let x = await ask(LinkProvisionDialog, {
+                  reservation: data?.reservation,
+                });
+              }
+            }}
+            label="Link"
+            description="Link a new provision to this reservation"
+          />
+        </>
       }
     >
       <div className="flex flex-col h-full">

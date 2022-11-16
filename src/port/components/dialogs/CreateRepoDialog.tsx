@@ -1,24 +1,23 @@
-import { Dialog } from "@headlessui/react";
 import { Form, Formik } from "formik";
-import React from "react";
-import { useNavigate } from "react-router";
 import { useAlert } from "../../../components/alerter/alerter-context";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../../components/forms/fields/text_input";
-import { useModal } from "../../../components/modals/modal-context";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
-import { CreateApplicationMutationResult } from "../../../man/api/graphql";
 import {
   CreateGithubRepoMutation,
-  CreateGithubRepoMutationResult,
   CreateGithubRepoMutationVariables,
   GithubReposDocument,
   useCreateGithubRepoMutation,
 } from "../../api/graphql";
 import { withPort } from "../../PortContext";
+import github from "./github.png";
 
-export const CreateRepoDialog = (props: Submit<CreateGithubRepoMutation>) => {
+type Overrides = Partial<CreateGithubRepoMutationVariables>;
+
+export const CreateRepoDialog = (
+  props: Submit<CreateGithubRepoMutation> & Overrides
+) => {
   const [createRepo, data] = withPort(useCreateGithubRepoMutation)({
     update(cache, result) {
       const existing: any = cache.readQuery({
@@ -43,6 +42,7 @@ export const CreateRepoDialog = (props: Submit<CreateGithubRepoMutation>) => {
         user: "",
         repo: "",
         branch: "main",
+        ...props,
       }}
       onSubmit={async (values, { setSubmitting }) => {
         console.log(values);
@@ -67,7 +67,7 @@ export const CreateRepoDialog = (props: Submit<CreateGithubRepoMutation>) => {
       {(formikProps) => (
         <Form>
           <TwDialog
-            title="Create App"
+            title="Scan Github Repo"
             buttons={
               <>
                 <button
@@ -85,7 +85,12 @@ export const CreateRepoDialog = (props: Submit<CreateGithubRepoMutation>) => {
           >
             <div className="mt-2 align-left text-left">
               <div className="w-auto">
-                <img height="100" width="100" alt={"Github"} />
+                <img height="100" width="100%" alt={"Github"} src={github} />
+              </div>
+              <div className="mt-2 text-sm mb-3">
+                When you scan a Github repo, we will scan all the files in the
+                repo and check for arkitekt enabled software. This repo can then
+                be used to create arkitekt applications.
               </div>
               <TextInputField
                 name="user"

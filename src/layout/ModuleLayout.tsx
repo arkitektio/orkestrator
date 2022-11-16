@@ -1,13 +1,25 @@
 import { Transition } from "@headlessui/react";
 import React, { useEffect, useState } from "react";
+import { Allotment } from "allotment";
+import { RiArrowLeftSFill, RiArrowRightSFill } from "react-icons/ri";
+
+export type Sidebar = {
+  label: string;
+  key: string;
+  content: React.ReactNode;
+};
 
 export interface ModuleLayoutProps {
   children: React.ReactNode;
-  sidebar?: React.ReactNode;
+  sidebars?: Sidebar[];
 }
 
 export const ModuleLayout: React.FC<ModuleLayoutProps> = (props) => {
-  const [isOpen, setIsOpen] = useState(localStorage.leftsidebarOpen === "true");
+  const [isOpen, setIsOpen] = useState(
+    props.sidebars?.map(
+      (s) => localStorage[`${s.key}leftsidebar`] === "true"
+    ) || []
+  );
   const [reload, setReload] = useState(true);
 
   useEffect(() => {
@@ -15,46 +27,60 @@ export const ModuleLayout: React.FC<ModuleLayoutProps> = (props) => {
       console.log(reload);
     }
 
-    setIsOpen(localStorage.leftsidebarOpen === "true");
+    setIsOpen(
+      props.sidebars?.map(
+        (s) => localStorage[`${s.key}leftsidebar`] === "true"
+      ) || []
+    );
 
     return;
   }, [reload]);
 
-  const setOpen = (open: boolean) => {
-    localStorage.setItem("leftsidebarOpen", open ? "true" : "false");
+  const setOpen = (key: string, open: boolean) => {
+    localStorage.setItem(`${key}leftsidebar`, open ? "true" : "false");
     setReload(!reload);
   };
 
   return (
     <div className={"flex-grow flex flex-row"}>
-      {props.sidebar && (
-        <>
-          <Transition
-            show={isOpen}
-            enter="transition-[width] ease-out duration-100 flex flex-initial"
-            enterFrom="w-[0vw]"
-            enterTo="sm:w-[15vw] w-[80vw]"
-            leave="transition-[width] ease-in duration-100"
-            leaveFrom="sm:w-[15vw] w-[80vw]"
-            leaveTo="w-[0vw]"
+      <Allotment>
+        {props.sidebars?.map((sidebar, index) => (
+          <Allotment.Pane
+            preferredSize={isOpen[index] ? "20%" : "0%"}
+            visible={isOpen[index] && sidebar != undefined}
           >
             <div
-              className={`w-full dark:bg-slate-800 bg-gray-200 dark:border-r dark:border-gray-800 shadow-element z-0 h-full`}
+              className={`flex flex-col flex-grow dark:bg-slate-800 bg-gray-100 border-r-2 border-r-gray-700 shadow-element z-0 h-full @container`}
             >
-              {props.sidebar}
+              {sidebar.content}
             </div>
-          </Transition>
-          <button
-            className={
-              "flex-initial text-white h-full opacity-0 hover:opacity-100 transition-opacity sm:w-2 w-3 bg-gradient-to-r from-primary-200 to-transparent"
-            }
-            onClick={() => setOpen(!isOpen)}
-          ></button>
-        </>
-      )}
-      <div className={"flex-grow h-full flex"} style={{ zIndex: 0 }}>
-        {props.children}
-      </div>
+          </Allotment.Pane>
+        ))}
+        <Allotment.Pane
+          preferredSize={isOpen ? "80%" : "100%"}
+          className="flex flex-grow relative"
+        >
+          <div
+            className="flex-grow flex overflow-y-scroll w-full h-full"
+            data-enableselect="true"
+          >
+            {props.children}
+          </div>
+          <div className="absolute bottom-[1rem] left-0 flex flex-col gap-2">
+            {props.sidebars?.map((s, index) => (
+              <div
+                className={`cursor-pointer  text-white bg-primary-300 rounded-r-md py-1 cursor-pointer ${
+                  isOpen[index] ? "bg-primary-300" : "bg-back-800"
+                }`}
+                onClick={() => setOpen(s.key, !isOpen[index])}
+                style={{ writingMode: "vertical-lr" }}
+              >
+                <div className="text-xs">{!isOpen ? s.label : s.label}</div>
+              </div>
+            ))}
+          </div>
+        </Allotment.Pane>
+      </Allotment>
     </div>
   );
 };

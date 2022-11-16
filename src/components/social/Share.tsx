@@ -7,8 +7,8 @@ import {
   useGroupOptionsLazyQuery,
   useUserOptionsLazyQuery,
   useUserQuery,
-} from "../../man/api/graphql";
-import { withMan } from "../../man/context";
+} from "../../lok/api/graphql";
+import { withMan } from "../../lok/context";
 import {
   CommentableModels,
   ChangePermissionsMutationVariables,
@@ -16,13 +16,14 @@ import {
   usePermissionsOfQuery,
   SharableModels,
 } from "../../mikro/api/graphql";
-import { withMikro } from "../../mikro/MikroContext";
+import { useMikro, withMikro } from "../../mikro/MikroContext";
 import { SearchSelectInput } from "../forms/fields/search_select_input";
 import { SelectInputField } from "../forms/fields/select_input";
 import { SubmitButton } from "../forms/fields/SubmitButton";
 
-export const PermissionUserInfo = (props: { email: string }) => {
-  const { data } = withMan(useUserQuery)({ variables: { email: props.email } });
+export const PermissionUserInfo = (props: { id: string }) => {
+  const { data } = withMan(useUserQuery)({ variables: { id: props.id } });
+  const { s3resolve } = useMikro();
 
   return (
     <div className="flex-row flex ">
@@ -31,8 +32,8 @@ export const PermissionUserInfo = (props: { email: string }) => {
           <img
             className="h-8 w-8 rounded-full cursor-pointer my-auto"
             src={
-              data?.user?.avatar
-                ? data?.user.avatar
+              data?.user?.profile?.avatar
+                ? s3resolve(data?.user?.profile?.avatar)
                 : `https://eu.ui-avatars.com/api/?name=${data?.user?.username}&background=random`
             }
             alt=""
@@ -54,6 +55,7 @@ export const PermisionGroupInfo = (props: { id: string }) => {
   const { data } = withMan(useDetailGroupQuery)({
     variables: { id: props.id },
   });
+  const { s3resolve } = useMikro();
 
   return (
     <div className="flex-row flex ">
@@ -62,8 +64,8 @@ export const PermisionGroupInfo = (props: { id: string }) => {
           <img
             className="h-8 w-8 rounded-full cursor-pointer my-auto"
             src={
-              data?.group?.avatar
-                ? data?.group.avatar
+              data?.group?.profile?.avatar
+                ? s3resolve(data?.group?.profile?.avatar)
                 : `https://eu.ui-avatars.com/api/?name=${data?.group?.name}&background=random`
             }
             alt="dddd"
@@ -140,9 +142,7 @@ export const Share: React.FC<{
                           >
                             <div className="flex-1 my-auto">
                               {userAssignment?.user ? (
-                                <PermissionUserInfo
-                                  email={userAssignment?.user}
-                                />
+                                <PermissionUserInfo id={userAssignment?.user} />
                               ) : (
                                 <SearchSelectInput
                                   isMulti={false}

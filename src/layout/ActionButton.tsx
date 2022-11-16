@@ -34,15 +34,23 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     custom: async (action: BaseAction) => {
       console.log("CALLLED");
       setDoing((doing) => true);
-      let x = await onAction({ action });
-      setDoing((doing) => false);
+      try {
+        let x = await onAction({ action });
+        setDoing((doing) => false);
+      } catch (e) {
+        setDoing((doing) => false);
+      }
     },
   });
 
   const onclick = async (event: React.MouseEvent) => {
     setDoing((doing) => true);
-    await onAction({ event });
-    setDoing((doing) => false);
+    try {
+      await onAction({ event });
+      setDoing((doing) => false);
+    } catch (e) {
+      setDoing((doing) => false);
+    }
   };
 
   return (

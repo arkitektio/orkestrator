@@ -13,6 +13,7 @@ import {
 import { withFluss } from "../fluss/fluss";
 import { useFluss } from "../fluss/fluss-context";
 import { ModuleLayout } from "../layout/ModuleLayout";
+import FlowSidebar from "./flows/FlowSidebar";
 
 interface Props {}
 
@@ -58,7 +59,9 @@ export const Flow: React.FC<Props> = (props) => {
   };
 
   return (
-    <ModuleLayout sidebar={<> Versions</>}>
+    <ModuleLayout
+      sidebars={[{ key: "search", label: "Search", content: <FlowSidebar /> }]}
+    >
       <EditRiver flow={data?.workspace?.latestFlow} onFlowSave={saveDiagram} />
     </ModuleLayout>
   );

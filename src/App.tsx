@@ -37,8 +37,7 @@ import { TableScreen } from "./pages/detail/TableScreen";
 import { NoRoute } from "./pages/fallbacks/NoRoute";
 import FlowHome from "./pages/flows/FlowHome";
 import { Home } from "./pages/Home";
-import TeamHome from "./pages/man/TeamHome";
-import { Profile } from "./pages/Profile";
+import TeamHome from "./pages/lok/TeamHome";
 import { Search } from "./pages/Search";
 import { SearchHome } from "./pages/search/SearchHome";
 import { Team } from "./pages/Team";
@@ -65,10 +64,10 @@ import { FlowDiagram } from "./pages/flows/workspace/FlowDiagram";
 import { FlowDiagramFlow } from "./pages/flows/workspace/FlowDiagramFlow";
 import { FlowDiagramHome } from "./pages/flows/workspace/FlowDiagramHome";
 import { Fluss } from "./pages/Fluss";
-import { ManTeam } from "./pages/man/teams/ManTeam";
-import { ManTeams } from "./pages/man/teams/ManTeams";
-import { ManUser } from "./pages/man/users/ManUser";
-import { ManUsers } from "./pages/man/users/ManUsers";
+import { ManTeam } from "./pages/lok/teams/ManTeam";
+import { ManTeams } from "./pages/lok/teams/ManTeams";
+import { ManUser } from "./pages/lok/users/ManUser";
+import { ManUsers } from "./pages/lok/users/ManUsers";
 import { PublicFakts } from "./pages/public/PublicFakts";
 import { PublicHome } from "./pages/public/PublicHome";
 import { Settings } from "./pages/Settings";
@@ -83,9 +82,17 @@ import { TauriHerreCallback } from "./bridges/TauriHerreCallback";
 import { TauriFaktsFallback } from "./bridges/TauriFaktsFallback";
 import { ConfirmerProvider } from "./components/confirmer/confirmer-provider";
 import { AlerterProvider } from "./components/alerter/alerter-provider";
+import { PortWhale } from "./pages/port/whales/PortWhale";
+import { PortWhales } from "./pages/port/whales/PortWhales";
+import { DialogProvider } from "./layout/dialog/DialogProvider";
+import { LokApp } from "./pages/lok/apps/LokApp";
+import { LokApps } from "./pages/lok/apps/LokApps";
 import { PortContainer } from "./pages/port/containers/PortContainer";
 import { PortContainers } from "./pages/port/containers/PortContainers";
-import { DialogProvider } from "./layout/dialog/DialogProvider";
+import { PortGithubRepos } from "./pages/port/githubrepos/PortGithubRepos";
+import { PortGithubRepo } from "./pages/port/githubrepos/PortGithubRepo";
+import { PortRepoScans } from "./pages/port/reposcans/PortRepoScans";
+import { PortRepoScan } from "./pages/port/reposcans/PortRepoScan";
 
 export const HTML5toTouch = {
   backends: [
@@ -207,14 +214,25 @@ export const MainApp: React.FC<Props> = (props) => {
                             <Route index element={<DataHome />} />
                           </Route>
 
-                          {/* man */}
-                          <Route path="man" element={<Team />}>
+                          {/* lok */}
+                          <Route path="lok" element={<Team />}>
                             <Route index element={<TeamHome />} />
                             <Route path="teams/:team" element={<ManTeam />} />
                             <Route path="teams" element={<ManTeams />} />
                             <Route path="users/:user" element={<ManUser />} />
                             <Route path="users" element={<ManUsers />} />
-                            <Route path="me" element={<Profile />} />
+                            <Route
+                              path="publicfakts/:id"
+                              element={<ManUsers />}
+                            />
+                            <Route path="publicfakts" element={<ManUsers />} />
+                            <Route
+                              path="privatefakts/:id"
+                              element={<ManUsers />}
+                            />
+                            <Route path="privatefakts" element={<ManUsers />} />
+                            <Route path="apps/:id" element={<LokApp />} />
+                            <Route path="apps" element={<LokApps />} />
                           </Route>
 
                           {/* Fluss */}
@@ -293,7 +311,7 @@ export const MainApp: React.FC<Props> = (props) => {
                             />
                           </Route>
 
-                          {/* kuay */}
+                          {/* port */}
                           <Route path="port" element={<Port />}>
                             <Route index element={<PortHome />} />
                             <Route
@@ -303,6 +321,29 @@ export const MainApp: React.FC<Props> = (props) => {
                             <Route
                               path="containers"
                               element={<PortContainers />}
+                            />
+                            <Route
+                              path="whales/:whale"
+                              element={<PortWhale />}
+                            />
+
+                            <Route path="whales" element={<PortWhales />} />
+                            <Route
+                              path="githubrepos"
+                              element={<PortGithubRepos />}
+                            />
+                            <Route
+                              path="githubrepos/:repo"
+                              element={<PortGithubRepo />}
+                            />
+
+                            <Route
+                              path="reposcans"
+                              element={<PortRepoScans />}
+                            />
+                            <Route
+                              path="reposcans/:scan"
+                              element={<PortRepoScan />}
                             />
                           </Route>
 

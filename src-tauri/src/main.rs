@@ -44,23 +44,20 @@ fn main() {
     context.config_mut().build.dev_path = AppUrl::Url(window_url.clone());
 
     tauri::Builder::default()
-        // .register_uri_scheme_protocol("arkitekt", |app, _re| {
-        //     println!("Called on page load");
-        //     app.windows()
-        //         .get("main")
-        //         .unwrap()
-        //         .emit(
-        //             "receive-login",
-        //             serde_json::json!({
-        //                 "url": "hallo"
-        //             }),
-        //         )
-        //         .unwrap();
-        //     ResponseBuilder::new()
-        //         .status(202)
-        //         .mimetype("text/html")
-        //         .body("hello!".as_bytes().to_vec())
-        // })
+        //     .register_uri_scheme_protocol("arkitekt", |app, _re| {
+        //         println!("Called on page load");
+        //         app.windows()
+        //             .get("main")
+        //             .unwrap()
+        //             .emit(
+        //                 "receive-login",
+        //                 serde_json::json!({
+        //                     "url": "hallo"
+        //                 }),
+        //             )
+        //             .unwrap();
+        //         Ok(Response::new(200, "OK"))
+        //     })
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(move |app| {
             WindowBuilder::new(app, "orkestrator".to_string(), window_url)

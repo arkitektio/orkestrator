@@ -8,8 +8,8 @@ import {
   useCreatePrivateFaktMutation,
   useScopesOptionsLazyQuery,
   CreatePrivateFaktMutationVariables,
-} from "../../../man/api/graphql";
-import { withMan } from "../../../man/context";
+} from "../../../lok/api/graphql";
+import { withMan } from "../../../lok/context";
 import {
   DetailWhaleFragment,
   useCreateWhaleMutation,

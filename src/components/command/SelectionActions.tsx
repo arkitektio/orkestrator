@@ -11,8 +11,6 @@ export const SelectionActions: React.FC<NavigationActionsProps> = ({}) => {
   const { selection, isMultiSelecting } = useModelSelector();
 
   useEffect(() => {
-    console.log("Selection changed", selection);
-
     if (selection.length >= 1 && isMultiSelecting) {
       setModifiers((modifiers) => [
         ...modifiers.filter((x) => x.key !== "selection"),

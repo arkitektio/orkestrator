@@ -124,8 +124,6 @@ export const SmartModel = <T extends Accept>({
     [isSelecting, selection]
   );
 
-  console.log(isDragging);
-
   useEffect(() => {
     preview(getEmptyImage(), {
       captureDraggingState: true,

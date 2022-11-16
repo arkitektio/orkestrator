@@ -1,14 +1,36 @@
 import React, { useState, useEffect } from "react";
+import Timestamp from "react-timestamp";
 import { toast } from "react-toastify";
 import {
+  MentionCommentFragment,
+  useDetailCommentQuery,
   useMyMentionsQuery,
   WatchMentionsDocument,
   WatchMentionsSubscription,
   WatchMentionsSubscriptionVariables,
 } from "../api/graphql";
+import { Comment } from "../components/comments/CommentSection";
 import { withMikro } from "../MikroContext";
 
 export interface MentionListenerProps {}
+
+export const MentionToast = (props: { mention: MentionCommentFragment }) => {
+  return (
+    <>
+      <div className="flex flex-col">
+        <div className="font-light mb-1">New Mention</div>
+        {props.mention.contentType && props.mention.objectId && (
+          <Comment
+            comment={props.mention}
+            model={props.mention.contentType}
+            id={`${props.mention.objectId}`}
+          />
+        )}
+        yar
+      </div>
+    </>
+  );
+};
 
 export const MentionListener: React.FC<MentionListenerProps> = (props) => {
   const { data, subscribeToMore } = withMikro(useMyMentionsQuery)();
@@ -28,12 +50,12 @@ export const MentionListener: React.FC<MentionListenerProps> = (props) => {
         // Try to update
         if (action?.update) {
           let updated_ass = action.update;
-          toast(`${updated_ass.user.email} just mentioned you`);
+          toast(<MentionToast mention={updated_ass} />);
         }
 
         if (action?.create) {
           let updated_ass = action.create;
-          toast(`${updated_ass.user.email} just mentioned you`);
+          toast(<MentionToast mention={updated_ass} />);
         }
 
         if (!newelements) return prev;

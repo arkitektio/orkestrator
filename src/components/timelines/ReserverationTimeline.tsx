@@ -11,7 +11,7 @@ import { ProvisionPulse } from "../../rekuest/components/generic/StatusPulse";
 import { SmartModel } from "../../rekuest/selection/SmartModel";
 import { notEmpty } from "../../floating/utils";
 import { Provision } from "../../linker";
-import { UserEmblem } from "../../man/components/UserEmblem";
+import { UserEmblem } from "../../lok/components/UserEmblem";
 import { useAlert } from "../alerter/alerter-context";
 import { ReserveEvent } from "./types";
 import { withRekuest } from "../../rekuest";
@@ -40,9 +40,6 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
         <div className="flex-initial mt-3">
           {reservation.provision && (
             <div className="border bg-white border-gray-600 rounded p-4 shadow-xl cursor-pointer relative flex flex-row w-80">
-              {reservation.provision?.creator?.username && (
-                <UserEmblem email={reservation.provision?.creator?.username} />
-              )}
               Is managed by another provision
               <ProvisionPulse status={reservation.provision.status} />
               <NavLink
@@ -88,10 +85,8 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
                 object={provision.id}
                 className="border bg-white border-gray-600 rounded p-4 shadow-xl cursor-pointer relative"
               >
-                {provision?.template?.registry?.user?.email && (
-                  <UserEmblem
-                    email={provision?.template?.registry?.user?.email}
-                  />
+                {provision?.template?.registry?.user?.sub && (
+                  <UserEmblem sub={provision?.template?.registry?.user?.sub} />
                 )}
                 <div className="flex w-full flex-row">
                   <ProvisionPulse status={provision.status} />
@@ -99,7 +94,7 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
                     className="flex-initial font-light cursor-pointer ml-2"
                     object={provision?.id}
                   >
-                    {provision?.template?.registry?.app?.name}
+                    {provision?.template?.registry?.app?.identifier}
                   </Provision.DetailLink>{" "}
                   <div className="flex-grow"></div>
                 </div>
@@ -151,7 +146,8 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
                         className="flex-initial font-light cursor-pointer ml-2"
                         object={provision.id}
                       >
-                        {provision?.template?.registry?.app?.name}
+                        {provision?.template?.registry?.app?.identifier}:
+                        {provision?.template?.registry?.app?.version}
                       </Provision.DetailLink>{" "}
                       <div className="flex-grow"></div>
                     </div>

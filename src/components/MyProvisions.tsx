@@ -13,7 +13,7 @@ import { UnprovideButton } from "../rekuest/components/UnprovideButton";
 import { colorFromProvisionStatus } from "../rekuest/ui/utils";
 import { notEmpty } from "../floating/utils";
 import { Provision } from "../linker";
-import { UserEmblem } from "../man/components/UserEmblem";
+import { UserEmblem } from "../lok/components/UserEmblem";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 import { withRekuest } from "../rekuest";
 
@@ -55,9 +55,10 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
                     <BsExclamationTriangle />
                   </div>{" "}
                   <div className="font-light text-xs">
-                    Please Start {prov?.agent?.registry?.app?.name}
+                    Please Start {prov?.agent?.registry?.app?.identifier}:
+                    {prov?.agent?.registry?.app?.version}
                     {" as "}
-                    {prov?.agent?.registry?.user?.email}
+                    {prov?.agent?.registry?.user?.sub}
                   </div>
                 </div>
               )}
@@ -77,9 +78,11 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
                     <BsExclamationTriangle />
                   </div>{" "}
                   <div className="font-light text-xs">
-                    Pending... Please Start {prov?.agent?.registry?.app?.name}
+                    Pending... Please Start{" "}
+                    {prov?.agent?.registry?.app?.identifier}:
+                    {prov?.agent?.registry?.app?.version}
                     {"  as "}
-                    {prov?.agent?.registry?.user?.email}
+                    {prov?.agent?.registry?.user?.sub}
                   </div>
                 </div>
               )}
@@ -90,9 +93,9 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
                     <BsCheckCircle />
                   </div>{" "}
                   <div className="font-light text-xs">
-                    {prov?.agent?.registry?.app?.name}
-                    {" under "}
-                    {prov?.agent?.registry?.user?.email} is Active
+                    {prov?.agent?.registry?.app?.identifier}:
+                    {prov?.agent?.registry?.app?.version}
+                    {prov?.agent?.registry?.user?.sub} is Active
                   </div>
                 </div>
               )}
@@ -107,8 +110,8 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
                 </UnprovideButton>
               )}
             </div>
-            {prov?.agent?.registry?.user?.email && (
-              <UserEmblem email={prov?.agent?.registry?.user?.email} />
+            {prov?.agent?.registry?.user?.sub && (
+              <UserEmblem sub={prov?.agent?.registry?.user?.sub} />
             )}
           </Provision.Smart>
         ))}

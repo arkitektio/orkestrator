@@ -6,8 +6,8 @@ import { FiArrowDown } from "react-icons/fi";
 import { useSearchParams } from "react-router-dom";
 import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 import { SearchSelectInput } from "../../components/forms/fields/search_select_input";
-import { useUserOptionsLazyQuery } from "../../man/api/graphql";
-import { withMan } from "../../man/man";
+import { useUserOptionsLazyQuery } from "../../lok/api/graphql";
+import { withMan } from "../../lok/man";
 import {
   GlobalSearchQueryVariables,
   useGlobalSearchLazyQuery,

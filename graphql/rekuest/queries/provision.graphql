@@ -30,3 +30,16 @@ query AgentProvisions($agent: ID!) {
     ...ListProvision
   }
 }
+
+query LinkableProvisions($reservation: ID!) {
+  linkableprovisions(id: $reservation) {
+    ...ListProvision
+  }
+}
+
+query LinkableProvisionsOptions($reservation: ID!) {
+  options: linkableprovisions(id: $reservation) {
+    value: id
+    label: id
+  }
+}

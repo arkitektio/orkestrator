@@ -944,7 +944,7 @@
       {
         "kind": "OBJECT",
         "name": "Experiment",
-        "description": "\n    An experiment is a collection of samples and their representations.\n    It mimics the concept of an experiment in the lab and is the top level\n    object in the data model.\n\n    You can use the experiment to group samples and representations likewise\n    to how you would group files into folders in a file system.\n\n    \n    \n    \n    \n    ",
+        "description": "\n    An experiment is a collection of samples and their representations.\n    It mimics the concept of an experiment in the lab and is the top level\n    object in the data model.\n\n    You can use the experiment to group samples and representations likewise\n    to how you would group files into folders in a file system.\n\n\n\n\n\n    ",
         "fields": [
           {
             "name": "createdAt",
@@ -1403,7 +1403,7 @@
       {
         "kind": "OBJECT",
         "name": "Feature",
-        "description": " A Feature is a numerical key value pair that is attached to a Label.\n     \n    You can model it for example as a key value pair of a class instance of a segmentation mask.\n    Representation -> Label0 -> Feature0\n                             -> Feature1\n                   -> Label1 -> Feature0 \n\n    Features can be used to store any numerical value that is attached to a class instance.\n    THere can only ever be one key per label. If you want to store multiple values for a key, you can\n    store them as a list in the value field.\n\n    Feature are analogous to metrics on a representation, but for a specific class instance (Label)\n    \n    ",
+        "description": "A Feature is a numerical key value pair that is attached to a Label.\n\n    You can model it for example as a key value pair of a class instance of a segmentation mask.\n    Representation -> Label0 -> Feature0\n                             -> Feature1\n                   -> Label1 -> Feature0\n\n    Features can be used to store any numerical value that is attached to a class instance.\n    THere can only ever be one key per label. If you want to store multiple values for a key, you can\n    store them as a list in the value field.\n\n    Feature are analogous to metrics on a representation, but for a specific class instance (Label)\n\n    ",
         "fields": [
           {
             "name": "creator",
@@ -2101,7 +2101,7 @@
       {
         "kind": "OBJECT",
         "name": "Label",
-        "description": "A Label is a trough model for image and features.\n    \n    Its map an instance value of a representation\n    (e.g. a pixel value of a segmentation mask) to a set of corresponding features of the segmented\n    class instance.\n\n    There can only be one label per representation and class instance. You can then attach\n    features to the label.\n    \n    \n    ",
+        "description": "A Label is a trough model for image and features.\n\n    Its map an instance value of a representation\n    (e.g. a pixel value of a segmentation mask) to a set of corresponding features of the segmented\n    class instance.\n\n    There can only be one label per representation and class instance. You can then attach\n    features to the label.\n\n\n    ",
         "fields": [
           {
             "name": "createdAt",
@@ -2542,8 +2542,8 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
+                "kind": "OBJECT",
+                "name": "User",
                 "ofType": null
               }
             },
@@ -4777,6 +4777,18 @@
             "description": null,
             "args": [
               {
+                "name": "blurhash",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "file",
                 "description": null,
                 "type": {
@@ -5006,7 +5018,7 @@
       {
         "kind": "OBJECT",
         "name": "Omero",
-        "description": "Omero is a model that stores the omero meta data\n    \n    This model is used to store the omero meta data. It is used to store the meta data of the omero file.\n    Its implementation is based on the omero meta data model. Refer to the omero documentation for more information.\n\n\n    \n    ",
+        "description": "Omero is a model that stores the omero meta data\n\n    This model is used to store the omero meta data. It is used to store the meta data of the omero file.\n    Its implementation is based on the omero meta data model. Refer to the omero documentation for more information.\n\n\n\n    ",
         "fields": [
           {
             "name": "acquisitionDate",
@@ -6395,6 +6407,35 @@
                 "name": "Column",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "comment",
+            "description": null,
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Comment",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -9208,11 +9249,48 @@
             "deprecationReason": null
           },
           {
+            "name": "user",
+            "description": "Get a list of users",
+            "args": [
+              {
+                "name": "id",
+                "description": "Unique app name for user",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "users",
             "description": "Get a list of users",
             "args": [
               {
                 "name": "email",
+                "description": "Search for substring of name",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "search",
                 "description": "Search for substring of name",
                 "type": {
                   "kind": "SCALAR",
@@ -12006,6 +12084,18 @@
         "description": "A Thumbnail is a render of a representation that is used to display the representation in the UI.\n\n    Thumbnails can also store the major color of the representation. This is used to color the representation in the UI.\n    ",
         "fields": [
           {
+            "name": "blurhash",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": "",
             "args": [],
@@ -12187,6 +12277,34 @@
             "deprecationReason": null
           },
           {
+            "name": "name",
+            "description": "The name of the user",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "sub",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "username",
             "description": "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.",
             "args": [],
@@ -12283,7 +12401,7 @@
           },
           {
             "name": "user",
-            "description": "The user email",
+            "description": "The user id",
             "type": {
               "kind": "NON_NULL",
               "name": null,

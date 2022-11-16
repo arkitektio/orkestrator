@@ -7,6 +7,7 @@ fragment ListRepresentation on Representation {
   latestThumbnail {
     image
     majorColor
+    blurhash
   }
   sample {
     name
@@ -26,6 +27,7 @@ fragment ListSharedRepresentation on Representation {
   }
   latestThumbnail {
     image
+    blurhash
   }
   sample {
     name
@@ -50,6 +52,7 @@ fragment DetailRepresentation on Representation {
   latestThumbnail {
     image
     majorColor
+    blurhash
   }
   sample {
     id
@@ -69,6 +72,7 @@ fragment DetailRepresentation on Representation {
     tags
     latestThumbnail {
       image
+      blurhash
     }
   }
   derived {
@@ -77,6 +81,7 @@ fragment DetailRepresentation on Representation {
     tags
     latestThumbnail {
       image
+      blurhash
     }
   }
   rois {

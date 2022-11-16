@@ -7,17 +7,19 @@ import { MyRepoScans } from "../../port/components/MyScans";
 import { ActionButton } from "../../layout/ActionButton";
 import { useDialog } from "../../layout/dialog/DialogProvider";
 import { CreateRepoDialog } from "../../port/components/dialogs/CreateRepoDialog";
+import { useSearchParams } from "react-router-dom";
 
 export interface WhalesHomeProps {}
 
 export const PortHome: React.FC<WhalesHomeProps> = (props) => {
+  const [params, setParams] = useSearchParams();
   const { ask } = useDialog();
 
   return (
     <PageLayout
       actions={
         <ActionButton
-          label="Create Whale"
+          label="Add Repository"
           onAction={async () => {
             await ask(CreateRepoDialog, {});
           }}

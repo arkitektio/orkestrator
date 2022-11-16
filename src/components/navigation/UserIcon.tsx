@@ -7,8 +7,9 @@ import {
 } from "react-toastify/addons/use-notification-center";
 import { useAgent } from "../../rekuest/agent/AgentContext";
 import { useHerre } from "herre";
-import { useProfileQuery } from "../../man/api/graphql";
-import { withMan } from "../../man/context";
+import { useProfileQuery } from "../../lok/api/graphql";
+import { withMan } from "../../lok/context";
+import { useMikro } from "../../mikro/MikroContext";
 
 interface Props {}
 
@@ -63,6 +64,8 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
     placement: "right-end",
   });
 
+  const { s3resolve } = useMikro();
+
   return (
     <>
       {/* Profile dropdown */}
@@ -78,8 +81,8 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
               <img
                 className="h-10 w-10 rounded-md hover:ring-2 hover:ring-primary-300 cursor-pointer bg-primary-200"
                 src={
-                  data?.me?.avatar
-                    ? data?.me?.avatar
+                  data?.me?.profile?.avatar
+                    ? s3resolve(data?.me?.profile?.avatar)
                     : `https://eu.ui-avatars.com/api/?name=${data?.me?.username}`
                 }
                 alt=""

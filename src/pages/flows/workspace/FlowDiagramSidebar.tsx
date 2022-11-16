@@ -14,7 +14,7 @@ import { Flow } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
 
 interface IDataSidebarProps {
-  diagram: string;
+  workspace: string;
 }
 
 export const FlowCard = ({
@@ -58,21 +58,21 @@ export const FlowCard = ({
 };
 
 const FlowDiagramSidebar: React.FunctionComponent<IDataSidebarProps> = ({
-  diagram,
+  workspace,
 }) => {
   const { data, refetch } = withFluss(useSearchFlowsQuery)({
-    variables: { diagram: diagram },
+    variables: { workspace: workspace },
   });
 
   const { reservations } = usePostman();
   const { assign } = useRequester();
 
   const { data: deployable } = withRekuest(useNodesQuery)({
-    variables: { interfaces: [`diagram:${diagram}`] },
+    variables: { interfaces: [`workspace:${workspace}`] },
   });
 
   const deployed = reservations?.reservations?.filter((res) =>
-    res?.node?.interfaces?.includes(`diagram:${diagram}`)
+    res?.node?.interfaces?.includes(`workspace:${workspace}`)
   );
 
   const [filter, setFilter] = React.useState<{ search?: string }>({
@@ -80,7 +80,7 @@ const FlowDiagramSidebar: React.FunctionComponent<IDataSidebarProps> = ({
   });
 
   React.useEffect(() => {
-    refetch({ name: filter.search, diagram: diagram });
+    refetch({ name: filter.search, workspace: workspace });
   }, [filter, refetch]);
 
   return (
@@ -88,7 +88,7 @@ const FlowDiagramSidebar: React.FunctionComponent<IDataSidebarProps> = ({
       <div className="text-white">Versions</div>
       <div className="flex-grow flex flex-col gap-2 p-1 overflow-y-auto">
         {data?.flows?.filter(notEmpty).map((flow, index) => (
-          <FlowCard key={index} flow={flow} diagram={diagram} />
+          <FlowCard key={index} flow={flow} diagram={workspace} />
         ))}
       </div>
       <div className="flex-grow"></div>

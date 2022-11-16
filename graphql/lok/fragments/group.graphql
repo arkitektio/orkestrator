@@ -1,0 +1,20 @@
+fragment DetailGroup on Group {
+  id
+  name
+  userSet {
+    ...ListUser
+  }
+  profile {
+    avatar
+    name
+  }
+}
+
+fragment ListGroup on Group {
+  id
+  name
+  profile {
+    avatar
+    name
+  }
+}

@@ -22,20 +22,14 @@ fragment DetailReservation on Reservation {
     }
     app {
       id
-      name
+      version
+      identifier
     }
   }
   waiter {
     id
     registry {
-      app {
-        id
-        name
-      }
-      user {
-        id
-        email
-      }
+      ...Registry
     }
   }
   channel
@@ -69,11 +63,7 @@ fragment DetailReservation on Reservation {
     id
     interface
     registry {
-      id
-      app {
-        id
-        name
-      }
+      ...Registry
     }
   }
   provisions {
@@ -124,14 +114,7 @@ fragment ListReservation on Reservation {
   waiter {
     id
     registry {
-      app {
-        id
-        name
-      }
-      user {
-        id
-        email
-      }
+      ...Registry
     }
   }
 }

@@ -7,8 +7,8 @@ fragment ListRepository on Repository {
 fragment AppRepository on AppRepository {
   id
   app {
-    name
-    grantType
+    version
+    identifier
   }
   name
 

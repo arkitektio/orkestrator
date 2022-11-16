@@ -3,7 +3,6 @@ import { BiTrash } from "react-icons/bi";
 import { useNavigate } from "react-router";
 import {
   AppRepositoryFragment,
-  LokAppGrantType,
   MirrorRepositoryFragment,
   useDeleteRepoMutation,
   useRepositoriesQuery,
@@ -107,16 +106,11 @@ export const AppRepositoryItem = ({
             }
             object={repository?.id}
           >
-            {repository?.app?.name}
+            {repository?.app?.identifier}
           </AppRepository.DetailLink>
           <div className="flex-grow"></div>
         </div>
-        <p className="text-gray-700 text-base">
-          {repository?.app?.grantType === LokAppGrantType.ClientCredentials &&
-            "One User App "}
-          {repository?.app?.grantType === LokAppGrantType.AuthorizationCode &&
-            "Public App"}
-        </p>
+        <p className="text-gray-700 text-base"></p>
       </div>
     </AppRepository.Smart>
   );

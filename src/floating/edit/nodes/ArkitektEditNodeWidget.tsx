@@ -94,55 +94,6 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
       <NodeEditLayout
         id={id}
         color={node_data?.node?.kind === NodeKind.Function ? "pink" : "red"}
-        sidebar={
-          <div className="px-5 py-5 flex flex-col">
-            <div className="text-white text-xl"> {node_data?.node?.name}</div>
-            <div className="text-white mt-5">Instream</div>
-            {data.instream.map((s) => (
-              <div className="text-white mt-5">
-                {s?.map((s) => (
-                  <>
-                    <div>{s?.kind}</div>
-                    <div>{s?.identifier}</div>
-                    <div>{s?.child?.identifier}</div>
-                  </>
-                ))}
-              </div>
-            ))}
-            <div className="text-white mt-5">Outstream</div>
-            {data.outstream.map((s) => (
-              <div className="text-white mt-5">
-                {s?.map((s) => (
-                  <>
-                    <div>{s?.kind}</div>
-                    <div>{s?.identifier}</div>
-                    <div>{s?.child?.identifier}</div>
-                  </>
-                ))}
-              </div>
-            ))}
-            <div className="text-white text-cl mt-4">
-              {" "}
-              {node_data?.node?.description}
-            </div>
-            <div className="text-white mt-5">Constants</div>
-            {node_data?.node?.id && (
-              <ConstantsForm
-                node={node_data?.node.id}
-                omit={
-                  (data.instream[0] &&
-                    data.instream[0].map((s) => s?.key || "oisnosins")) ||
-                  []
-                }
-                autoSubmit={true}
-                onSubmit={async (values, values_as_dict) => {
-                  updateNodeExtras(id, { ...data, defaults: values_as_dict });
-                }}
-                initial={data.defaults}
-              />
-            )}
-          </div>
-        }
       >
         {data.instream.map((s, index) => (
           <Handle

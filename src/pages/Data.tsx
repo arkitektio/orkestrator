@@ -8,7 +8,9 @@ interface Props {}
 
 export const Data: React.FC<Props> = (props) => {
   return (
-    <ModuleLayout sidebar={<DataSidebar />}>
+    <ModuleLayout
+      sidebars={[{ key: "search", label: "Search", content: <DataSidebar /> }]}
+    >
       <Outlet />
     </ModuleLayout>
   );

@@ -16,7 +16,6 @@ export const ReactiveEditNodeWidget: React.FC<ReactiveNodeProps> = ({
   id,
 }) => {
   const updateNodeInternals = useUpdateNodeInternals();
-  const { setSidebar } = useEditRiver();
 
   useEffect(() => {
     console.log("Update node internals", id, implementation);
@@ -27,40 +26,7 @@ export const ReactiveEditNodeWidget: React.FC<ReactiveNodeProps> = ({
     <>
       {/* <AssignEventOverlay event={data.latestAssignEvent} />
 				<ProvideEventOverlay event={data.latestProvideEvent} /> */}
-      <div
-        style={{ width: 40 }}
-        className="custom-drag-handle"
-        onClick={() =>
-          setSidebar(
-            <div className="px-5 py-5 flex flex-col">
-              <div className="text-white mt-5">Instream</div>
-              {instream.map((s) => (
-                <div className="text-white mt-5">
-                  {s?.map((s) => (
-                    <>
-                      <div>{s?.kind}</div>
-                      <div>{s?.identifier}</div>
-                      <div>{s?.child?.identifier}</div>
-                    </>
-                  ))}
-                </div>
-              ))}
-              <div className="text-white mt-5">Outstream</div>
-              {outstream.map((s) => (
-                <div className="text-white mt-5">
-                  {s?.map((s) => (
-                    <>
-                      <div>{s?.kind}</div>
-                      <div>{s?.identifier}</div>
-                      <div>{s?.child?.identifier}</div>
-                    </>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )
-        }
-      >
+      <div style={{ width: 40 }} className="custom-drag-handle">
         {implementation &&
           [
             ReactiveImplementationModelInput.Combinelatest,

@@ -3,8 +3,8 @@ import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Team } from "../linker";
-import { useMyGroupsQuery } from "../man/api/graphql";
-import { withMan } from "../man/context";
+import { useMyGroupsQuery } from "../lok/api/graphql";
+import { withMan } from "../lok/context";
 import { useConfirm } from "./confirmer/confirmer-context";
 export type IMyRepresentationsProps = {};
 

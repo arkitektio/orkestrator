@@ -1,4 +1,7 @@
 import * as React from "react";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import { ResponsiveList } from "../../components/layout/ResponsiveList";
+import { OptimizedImage } from "../../layout/OptimizedImage";
 import { Experiment, Representation, Sample, Table } from "../../linker";
 import {
   GlobalSearchQueryVariables,
@@ -18,27 +21,22 @@ export const RepresentationItem = ({ re }: any) => {
       placement="bottom"
       object={re.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `rounded shadow-xl group text-white bg-center bg-cover ${
+        `rounded shadow-xl group text-white  h-[4rem] bg-center bg-cover ${
           isOver && !isDragging && "border-primary-200 border"
         } ${isDragging && "border-primary-200 border"} ${
           isSelected && "ring-1 ring-primary-200 "
         }`
       }
-      dragStyle={() =>
-        re?.latestThumbnail
-          ? {
-              backgroundImage: `url(${
-                s3resolve && s3resolve(re?.latestThumbnail.image)
-              }), linear-gradient(rgba(0,0,0,0.3), rgba(1,1,1,0.5))`,
-              backgroundRepeat: "no-repeat",
-              backgroundBlendMode: "multiply",
-            }
-          : {
-              background: "linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.95))",
-            }
-      }
     >
-      <div className="px-6 py-4 truncate">
+      {re.latestThumbnail && (
+        <OptimizedImage
+          src={s3resolve(re?.latestThumbnail.image)}
+          style={{ filter: "brightness(0.7)" }}
+          className="object-cover h-[4rem] w-full absolute top-0 left-0 rounded"
+          blurhash={re?.latestThumbnail.blurhash}
+        />
+      )}
+      <div className="px-6 py-4 truncate relative">
         <Representation.DetailLink
           className={({ isActive } /*  */) =>
             "font-bold text-md mb-2 cursor-pointer " +
@@ -164,46 +162,66 @@ const DataSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
 
   return (
     <>
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col" data-enableselect={true}>
         <div className="flex-none p-5 dark:text-slate-50">
           <DataSearch
             onFilterChanged={(v) => setFilter(v)}
             className="w-full p-3 rounded-md shadow-lg dark:bg-slate-200 dark:text-slate-800"
           />
         </div>
-        <div className="flex-grow flex flex-col gap-2 p-5  overflow-y-scroll direct">
+        <div
+          className="flex-grow flex flex-col gap-2 p-5 overflow-hidden direct"
+          data-enableselect={true}
+        >
           {data?.experiments && data?.experiments.length > 0 && (
             <div className="font-semibold text-center text-xs dark:text-slate-50 mt-2">
               Experiments
             </div>
           )}
-          {data?.experiments?.map((experiment, index) => (
-            <ExperimentItem key={index} experiment={experiment} />
-          ))}
+          <ResponsiveContainerGrid>
+            {data?.experiments?.map((experiment, index) => (
+              <ExperimentItem key={index} experiment={experiment} />
+            ))}
+          </ResponsiveContainerGrid>
           {data?.samples && data?.samples.length > 0 && (
-            <div className="font-semibold text-center text-xs dark:text-slate-50 mt-2">
+            <div
+              className="font-semibold text-center text-xs dark:text-slate-50 mt-2"
+              data-enableselect={true}
+            >
               Samples
             </div>
           )}
-          {data?.samples?.map((sa, index) => (
-            <SampleItem key={index} sa={sa} />
-          ))}
+          <ResponsiveContainerGrid>
+            {data?.samples?.map((sa, index) => (
+              <SampleItem key={index} sa={sa} />
+            ))}
+          </ResponsiveContainerGrid>
           {data?.tables && data?.tables.length > 0 && (
-            <div className="font-semibold text-center text-xs dark:text-slate-50 mt-2">
+            <div
+              className="font-semibold text-center text-xs dark:text-slate-50 mt-2"
+              data-enableselect={true}
+            >
               Tables
             </div>
           )}
-          {data?.tables?.map((ta, index) => (
-            <TableItem table={ta} key={index} />
-          ))}
+          <ResponsiveContainerGrid>
+            {data?.tables?.map((ta, index) => (
+              <TableItem table={ta} key={index} />
+            ))}
+          </ResponsiveContainerGrid>
           {data?.representations && data?.representations.length > 0 && (
-            <div className="font-semibold text-center text-xs dark:text-slate-50 mt-2">
+            <div
+              className="font-semibold text-center text-xs dark:text-slate-50 mt-2"
+              data-enableselect={true}
+            >
               Images
             </div>
           )}
-          {data?.representations?.map((re, index) => (
-            <RepresentationItem key={index} re={re} />
-          ))}
+          <ResponsiveContainerGrid>
+            {data?.representations?.map((re, index) => (
+              <RepresentationItem key={index} re={re} />
+            ))}
+          </ResponsiveContainerGrid>
         </div>
       </div>
     </>

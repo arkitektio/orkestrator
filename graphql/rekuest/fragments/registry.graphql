@@ -1,4 +1,11 @@
 fragment Registry on Registry {
-  unique
   name
+  app {
+    version
+    identifier
+  }
+  user {
+    sub
+    name
+  }
 }

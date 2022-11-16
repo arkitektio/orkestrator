@@ -14,10 +14,13 @@ import {
   useDetailNodeQuery,
 } from "../../../rekuest/api/graphql";
 import { notEmpty } from "../../../floating/utils";
-import { FlussNode } from "../../../fluss/components/FlussNode";
+import { FlussTemplate } from "../../../fluss/components/FlussTemplate";
 import { PageLayout } from "../../../layout/PageLayout";
 import { Template } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
+import { TemplateCard } from "../../../rekuest/components/cards/TemplateCard";
+import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
+import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 
 export type INodeScreenProps = {};
 
@@ -116,7 +119,6 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
           <div className="flex-initial">
             <div className="flex flex-row">
               <div className="font-light text-2xl">{data?.node?.name}</div>
-              <div className="font-light mt-auto ml-4 ">{data?.node?.hash}</div>
             </div>
           </div>
           <div className="flex-grow"></div>
@@ -158,29 +160,18 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
       </div>
       <div className="flex-grow">
         {data?.node?.interfaces?.includes("workflow") &&
-          data?.node?.meta?.flow && <FlussNode node={data?.node} />}
+          data?.node?.meta?.flow && <FlussTemplate node={data?.node} />}
       </div>
       <div className="flex-initial">
         <div className="font-light mt-3 mb-1 text-xl text-white">
           {" "}
           Implemented by{" "}
         </div>
-        <div className="grid gap-2">
-          {data?.node?.templates?.filter(notEmpty).map((template) => (
-            <Template.Smart
-              object={template.id}
-              className="bg-back-800 rounded shadow-md text-xl text-white p-1 mr-2 my-auto flex flex-col"
-            >
-              <Template.DetailLink object={template.id}>
-                {template?.interface}
-              </Template.DetailLink>
-              <div>
-                {template?.registry.app?.name} by{" "}
-                {template?.registry.user?.email}
-              </div>
-            </Template.Smart>
+        <ResponsiveGrid>
+          {data?.node?.templates?.filter(notEmpty).map((template, index) => (
+            <TemplateCard template={template} key={index} />
           ))}
-        </div>
+        </ResponsiveGrid>
       </div>
     </PageLayout>
   );

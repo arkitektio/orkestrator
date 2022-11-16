@@ -1,0 +1,9 @@
+query PortGlobalSearch($search: String) {
+  containers(search: $search) {
+    ...ListContainer
+  }
+
+  whales(search: $search) {
+    ...ListWhale
+  }
+}

@@ -1,13 +1,15 @@
 import React from "react";
 import { Outlet } from "react-router";
 import { ModuleLayout } from "../layout/ModuleLayout";
-import { TeamSidebar } from "./man/TeamSidebar";
+import { LokSidebar } from "./lok/LokSidebar";
 
 interface Props {}
 
 export const Team: React.FC<Props> = (props) => {
   return (
-    <ModuleLayout sidebar={<TeamSidebar />}>
+    <ModuleLayout
+      sidebars={[{ key: "search", label: "Search", content: <LokSidebar /> }]}
+    >
       <Outlet />
     </ModuleLayout>
   );

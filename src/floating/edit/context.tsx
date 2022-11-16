@@ -22,17 +22,17 @@ export type EditRiverContextType = {
   setReturns: (args: (ReturnPortFragment | null)[]) => void;
   setNodeError: (id: string, error: string) => void;
   addGlobal: (global: GlobalFragment) => void;
-  setSidebar: (sidebar: React.ReactNode) => void;
   updateGlobal: (key: string, global: GlobalFragment) => void;
   removeEdge: (id: string) => void;
   setLayout: (direction: string) => void;
   globals?: (GlobalFragment | null)[] | null;
-  flow?: FlowFragment | null;
+  flow: FlowFragment;
   nodes: FlowNode[];
   edges: FlowEdge[];
   args: (ArgPortFragment | null)[];
   returns: (ReturnPortFragment | null)[];
   saving: boolean;
+  selectedNode?: FlowNode | null;
 };
 
 export const EditRiverContext = React.createContext<EditRiverContextType>({
@@ -67,11 +67,17 @@ export const EditRiverContext = React.createContext<EditRiverContextType>({
     console.error("WE ARE LACKING AN ENGINE");
   },
   removeEdge: () => {},
-  setSidebar: () => {},
   setArgs: () => {},
   setReturns: () => {},
   setLayout: () => {},
   nodes: [],
+  flow: {
+    id: "",
+    name: "Fake Node",
+    createdAt: "",
+    __typename: "Flow",
+    graph: { nodes: [], edges: [], args: [], returns: [], globals: [] },
+  },
   edges: [],
   args: [],
   returns: [],

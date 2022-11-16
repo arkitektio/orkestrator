@@ -5,8 +5,8 @@ import { useNavigate } from "react-router";
 import { useAlert } from "../../../components/alerter/alerter-context";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { useModal } from "../../../components/modals/modal-context";
-import { useCreateUserAppMutation } from "../../../man/api/graphql";
-import { withMan } from "../../../man/context";
+import { useCreateUserAppMutation } from "../../../lok/api/graphql";
+import { withMan } from "../../../lok/context";
 import {
   CreateWhaleMutationVariables,
   useCreateWhaleMutation,

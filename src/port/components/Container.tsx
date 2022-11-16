@@ -1,3 +1,5 @@
+import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import {
@@ -18,12 +20,49 @@ export const Container = (props: ContainerProps) => {
     pollInterval: 1000,
   });
 
+  const { confirm } = useConfirm();
+
   const [restart] = withPort(useRestartContainerMutation)();
   const [stop] = withPort(useStopContainerMutation)();
   const [remove] = withPort(useRemoveContainerMutation)();
 
   return (
-    <PageLayout>
+    <PageLayout
+      actions={
+        <>
+          <ActionButton
+            label="Restart"
+            description="Restarts the container. All assigned tasks will be rescheduled"
+            onAction={async () => {
+              await confirm({
+                message: `Are you sure you want to restart container ${data?.container?.name}?`,
+              });
+              await restart({ variables: { id: props.id } });
+            }}
+          />
+          <ActionButton
+            label="Stop"
+            description="Stops the container. Until the container is restarted, no tasks will be scheduled"
+            onAction={async () => {
+              await confirm({
+                message: `Are you sure you want to stop this container ${data?.container?.name}?`,
+              });
+              await stop({ variables: { id: props.id } });
+            }}
+          />
+          <ActionButton
+            label="Remove"
+            description="Removes the container. All tasks will be removed"
+            onAction={async () => {
+              await confirm({
+                message: `Are you sure you want to remove this container ${data?.container?.name}?`,
+              });
+              await remove({ variables: { id: props.id } });
+            }}
+          />
+        </>
+      }
+    >
       <SectionTitle>Container {data?.container?.name}</SectionTitle>
       <div className="text-white">
         <div className="text-2xl">

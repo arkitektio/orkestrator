@@ -2,7 +2,11 @@ import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import React, { useContext } from "react";
 import { ConfirmModalState } from "./ConfirmModal";
 
-export type ConfirmFun = (message: ConfirmModalState) => Promise<boolean>
+export type ConfirmFun = (message: {
+  message: string;
+  subtitle?: string;
+  confirmLabel?: string;
+}) => Promise<boolean>;
 
 export type ConfirmContextType = {
   confirm: ConfirmFun;

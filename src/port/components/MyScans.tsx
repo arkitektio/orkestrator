@@ -1,47 +1,13 @@
 import React, { useState } from "react";
-import {
-  BsArrowDownCircleFill,
-  BsCaretLeft,
-  BsCaretRight,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { useNavigate } from "react-router";
-import { IconButton } from "../../components/buttons/IconButton";
+import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
-import { Modal } from "../../components/modals/Modal";
 import { notEmpty } from "../../floating/utils";
-import { GithubRepo, RepoScan } from "../../linker";
-import {
-  DetailWhaleFragment,
-  ListRepoScanFragment,
-  useCreateWhaleMutation,
-  useDetailRepoScanQuery,
-  useRepoScansQuery,
-} from "../api/graphql";
-import {
-  CreatePrivateFaktMutationVariables,
-  CreatePublicFaktMutationVariables,
-  useCreatePrivateFaktMutation,
-  useCreateUserAppMutation,
-  useScopesOptionsLazyQuery,
-} from "../../man/api/graphql";
+import { RepoScan } from "../../linker";
+import { useRepoScansQuery } from "../api/graphql";
 
+import { useDialog } from "../../layout/dialog/DialogProvider";
 import { withPort } from "../PortContext";
-import { modalfy, ModalProps } from "../../layout/Modal";
-import {
-  DialogProvider,
-  Submit,
-  useDialog,
-} from "../../layout/dialog/DialogProvider";
-import { TwDialog } from "../../layout/dialog/TwDialog";
-import { withMan } from "../../man/context";
-import { Form, Formik } from "formik";
-import { SelectInputField } from "../../components/forms/fields/select_input";
-import { SubmitButton } from "../../components/forms/fields/SubmitButton";
-import { SearchSelectInput } from "../../components/forms/fields/search_select_input";
-import { TextInputField } from "../../components/forms/fields/text_input";
 import { PrepareScanDialog } from "./dialogs/PrepareScanDialog";
 
 export type IMyWhalesProps = {};

@@ -44,7 +44,7 @@ const ResponsiveGrid: React.FC<IResponsiveGridProps> = ({ children }) => {
   return (
     <div
       className="pt-2 pb-2 pr-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 xl:grid-cols-6 gap-4"
-      data-enableselect="true"
+      data-enableselect={true}
       ref={parent}
       onMouseMove={(e) => {
         if (parent.current) {

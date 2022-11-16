@@ -494,6 +494,7 @@ export type QueryWorkspaceArgs = {
 /** The root Query */
 export type QueryWorkspacesArgs = {
   name?: InputMaybe<Scalars['String']>;
+  search?: InputMaybe<Scalars['String']>;
 };
 
 /** An enumeration. */
@@ -755,10 +756,11 @@ export type User = {
   isStaff: Scalars['Boolean'];
   /** Designates that this user has all permissions without explicitly assigning them. */
   isSuperuser: Scalars['Boolean'];
+  iss?: Maybe<Scalars['String']>;
   lastLogin?: Maybe<Scalars['DateTime']>;
   lastName: Scalars['String'];
   password: Scalars['String'];
-  roles?: Maybe<Scalars['GenericScalar']>;
+  sub?: Maybe<Scalars['String']>;
   /** Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
   username: Scalars['String'];
   workspaceSet: Array<Workspace>;
@@ -1024,6 +1026,13 @@ export type EventsBetweenQueryVariables = Exact<{
 
 
 export type EventsBetweenQuery = { __typename?: 'Query', eventsBetween?: Array<{ __typename?: 'RunEvent', id: string, source: string, handle: string, type: RunEventType, createdAt: any, value?: any | null, t: number } | null> | null };
+
+export type FlussGlobalSearchQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type FlussGlobalSearchQuery = { __typename?: 'Query', workspaces?: Array<{ __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename?: 'Flow', id: string, name: string, screenshot?: string | null, createdAt: any } | null } | null> | null };
 
 export type ReactiveTemplateQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -1959,6 +1968,41 @@ export function useEventsBetweenLazyQuery(baseOptions?: Apollo.LazyQueryHookOpti
 export type EventsBetweenQueryHookResult = ReturnType<typeof useEventsBetweenQuery>;
 export type EventsBetweenLazyQueryHookResult = ReturnType<typeof useEventsBetweenLazyQuery>;
 export type EventsBetweenQueryResult = Apollo.QueryResult<EventsBetweenQuery, EventsBetweenQueryVariables>;
+export const FlussGlobalSearchDocument = gql`
+    query FlussGlobalSearch($search: String) {
+  workspaces(search: $search) {
+    ...ListWorkspace
+  }
+}
+    ${ListWorkspaceFragmentDoc}`;
+
+/**
+ * __useFlussGlobalSearchQuery__
+ *
+ * To run a query within a React component, call `useFlussGlobalSearchQuery` and pass it any options that fit your needs.
+ * When your component renders, `useFlussGlobalSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useFlussGlobalSearchQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useFlussGlobalSearchQuery(baseOptions?: Apollo.QueryHookOptions<FlussGlobalSearchQuery, FlussGlobalSearchQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<FlussGlobalSearchQuery, FlussGlobalSearchQueryVariables>(FlussGlobalSearchDocument, options);
+      }
+export function useFlussGlobalSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<FlussGlobalSearchQuery, FlussGlobalSearchQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<FlussGlobalSearchQuery, FlussGlobalSearchQueryVariables>(FlussGlobalSearchDocument, options);
+        }
+export type FlussGlobalSearchQueryHookResult = ReturnType<typeof useFlussGlobalSearchQuery>;
+export type FlussGlobalSearchLazyQueryHookResult = ReturnType<typeof useFlussGlobalSearchLazyQuery>;
+export type FlussGlobalSearchQueryResult = Apollo.QueryResult<FlussGlobalSearchQuery, FlussGlobalSearchQueryVariables>;
 export const ReactiveTemplateDocument = gql`
     query ReactiveTemplate($id: ID!) {
   reactivetemplate(id: $id) {

@@ -1,3 +1,4 @@
+import { ParentSize } from "@visx/responsive";
 import { Form, Formik } from "formik";
 import React, { useEffect, useState } from "react";
 import { AiFillPushpin } from "react-icons/ai";
@@ -13,6 +14,7 @@ import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SelfActions } from "../../components/SelfActions";
 import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
+import { OptimizedImage } from "../../layout/OptimizedImage";
 import { PageLayout } from "../../layout/PageLayout";
 import {
   Label,
@@ -22,6 +24,7 @@ import {
   Roi,
   Sample,
 } from "../../linker";
+import { DataPlot } from "../../pages/data/plots/DataPlot";
 import {
   CommentableModels,
   DetailRepresentationFragment,
@@ -220,16 +223,17 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
             )}
           </div>
         </div>
-        <div className="flex sm:flex-row-reverse flex-col rounded-md gap-4 mt-2">
-          <div className="flex-initial flex">
+        <div className="flex lg:flex-row-reverse flex-col rounded-md gap-4 mt-2">
+          <div className="flex-1 max-w-100 mt-2">
             {data?.representation?.latestThumbnail?.image && (
-              <img
-                className="rounded-md mt-2 aspect-square"
+              <OptimizedImage
+                className="rounded-md border-1 border-gray-300"
+                blurhash={data?.representation?.latestThumbnail?.blurhash}
                 src={s3resolve(data?.representation?.latestThumbnail?.image)}
               />
             )}
           </div>
-          <div className="p-4 flex-grow bg-white border shadow mt-2 rounded">
+          <div className="p-4 flex-1 bg-white border shadow mt-2 rounded">
             {data?.representation?.sample && (
               <>
                 <div className="font-light">Sample</div>

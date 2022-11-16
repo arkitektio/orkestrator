@@ -1,11 +1,16 @@
 import React from "react";
 import { Outlet } from "react-router";
 import { ModuleLayout } from "../layout/ModuleLayout";
+import { SettingsSidebar } from "../settings/Sidebar";
 interface Props {}
 
 export const Settings: React.FC<Props> = (props) => {
   return (
-    <ModuleLayout>
+    <ModuleLayout
+      sidebars={[
+        { key: "search", label: "Search", content: <SettingsSidebar /> },
+      ]}
+    >
       <Outlet />
     </ModuleLayout>
   );

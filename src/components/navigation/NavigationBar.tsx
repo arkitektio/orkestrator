@@ -30,12 +30,12 @@ const navigation: {
   { name: "Flows", href: "fluss", sm: true, icon: <TiFlowSwitch /> },
   { name: "Port", href: "port", sm: false, icon: <GrDocker /> },
   // { name: "Search", href: "search", sm: true, icon: <AiOutlineSearch /> },
-  { name: "Teams", href: "man", sm: false, icon: <AiOutlineTeam /> },
+  { name: "Teams", href: "lok", sm: false, icon: <AiOutlineTeam /> },
 ];
 
 const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
   return (
-    <div className="dark:text-white flex sm:flex-col h-full flex-row bg-slate-900 sm:pt-0 shadow-element overflow-hidden  ">
+    <div className="dark:text-white flex sm:flex-col h-full flex-row bg-slate-900 sm:pt-0 shadow-element overflow-hidden border-r-2  border-r-gray-700 ">
       <div className="flex flex-grow sm:flex-col flex-row gap-8 mt-2 items-center">
         <div className="hidden flex-initial  font-light text-xl md:block text-slate-400 dark:text-slate-500 border-b-gray-600 ">
           <NavLink to={"/"} className="rounded-md text-xl font-light">

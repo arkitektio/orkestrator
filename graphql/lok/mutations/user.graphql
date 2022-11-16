@@ -1,0 +1,19 @@
+mutation UpdateUser(
+  $id: ID!
+  $avatar: Upload
+  $firstName: String
+  $lastName: String
+  $email: Email
+  $active: Boolean
+) {
+  updateUser(
+    id: $id
+    avatar: $avatar
+    firstName: $firstName
+    lastName: $lastName
+    email: $email
+    active: $active
+  ) {
+    ...DetailUser
+  }
+}

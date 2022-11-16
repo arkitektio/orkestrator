@@ -2,8 +2,8 @@ import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { User } from "../../../linker";
-import { useUserQuery } from "../../../man/api/graphql";
-import { withMan } from "../../../man/context";
+import { useUserQuery } from "../../../lok/api/graphql";
+import { withMan } from "../../../lok/context";
 import {
   DescendentFragment,
   LeafFragment,
@@ -26,7 +26,7 @@ export const renderLeaf = (x: Maybe<LeafFragment>) => {
 
 export const MentionDisplay = (props: { element: MentionFragment }) => {
   const { data, error } = withMan(useUserQuery)({
-    variables: { email: props.element.user },
+    variables: { id: props.element.user },
   });
 
   return (

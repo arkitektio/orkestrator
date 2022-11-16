@@ -8,7 +8,7 @@ import {
 import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
 import { Representation } from "../linker";
-import { UserEmblem } from "../man/components/UserEmblem";
+import { UserEmblem } from "../lok/components/UserEmblem";
 import {
   useDeleteRepresentationMutation,
   useSharedRepresentationsQuery,
@@ -119,7 +119,6 @@ const SharedRepresentations: React.FC<IMyRepresentationsProps> = () => {
                 {rep?.variety}
               </p>
             </div>
-            {rep?.creator?.email && <UserEmblem email={rep.creator.email} />}
           </div>
         ))}
       </ResponsiveGrid>

@@ -7,6 +7,7 @@ import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ParagraphInputField } from "../../components/forms/fields/paragraph_input";
 import { CreateableSearchSelect } from "../../components/forms/fields/search_select_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
+import { DropZone } from "../../components/layout/DropZone";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
@@ -98,6 +99,17 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
             </div>
           </div>
           <div className="flex flex-col bg-white p-3 rounded rounded-md mt-2 mb-2">
+            <DropZone
+              accepts={["item:@mikro/sample", "list:@mikro/sample"]}
+              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
+              onDrop={async (item) => {
+                console.log(item);
+              }}
+              canDropLabel={
+                "Drag samples here to associated with this Experiment"
+              }
+              overLabel={"Release to add"}
+            />
             <div className="font-light mt-2 ">Description</div>
             <div className="text-md mt-2 ">{data?.experiment?.description}</div>
             <div className="font-light mt-2 ">Created At</div>

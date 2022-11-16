@@ -18,6 +18,7 @@ import { notEmpty } from "../../floating/utils";
 import { Flow, Node } from "../../linker";
 import { DashboardSearchFilter } from "./DashboardSearch";
 import { withRekuest } from "../../rekuest";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 
 interface IDashBoardSidebarProps {}
 
@@ -148,14 +149,23 @@ const DashBoardSidebar: React.FunctionComponent<IDashBoardSidebarProps> = (
 
   return (
     <div className="flex h-full flex-col overflow-y-hidden">
-      <div className="flex-none p-5 dark:text-slate-50 overflow-hidden">
+      <div className="flex-none p-5 dark:text-slate-50">
         <DashboardSearchFilter onFilterChanged={setFilter} />
       </div>
-      <ResponsiveList className="flex-grow flex flex-col gap-2 p-5 overflow-y-scroll">
-        {data?.allnodes?.filter(notEmpty).map((node, index) => (
-          <NodeItem key={index} node={node} />
-        ))}
-      </ResponsiveList>
+      <div className="flex-grow overflow-y-scroll p-2 overflow-x-hidden">
+        {data?.allnodes && data?.allnodes.length > 0 && (
+          <>
+            <div className="font-semibold text-center text-xs dark:text-slate-50 mb-1">
+              Nodes
+            </div>
+            <ResponsiveContainerGrid>
+              {data?.allnodes?.filter(notEmpty).map((node, index) => (
+                <NodeItem key={index} node={node} />
+              ))}
+            </ResponsiveContainerGrid>
+          </>
+        )}
+      </div>
     </div>
   );
 };

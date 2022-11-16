@@ -116,7 +116,7 @@ const MyWorkspaces: React.FC<IMyGraphsProps> = ({}) => {
       <SectionTitle>My Workspaces</SectionTitle>
       <br />
       <ResponsiveGrid>
-        {data?.mydiagrams?.map((diagram, index) => (
+        {data?.myworkspaces?.map((diagram, index) => (
           <DiagramCard key={index} diagram={diagram} />
         ))}
       </ResponsiveGrid>

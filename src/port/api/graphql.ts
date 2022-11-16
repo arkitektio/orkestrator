@@ -261,6 +261,7 @@ export type QueryContainerForArgs = {
 
 /** The root Query */
 export type QueryContainersArgs = {
+  search?: InputMaybe<Scalars['String']>;
   status?: InputMaybe<Array<InputMaybe<ContainerStatus>>>;
 };
 
@@ -293,6 +294,12 @@ export type QueryReposcanArgs = {
 export type QueryWhaleArgs = {
   id?: InputMaybe<Scalars['ID']>;
   template?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryWhalesArgs = {
+  search?: InputMaybe<Scalars['String']>;
 };
 
 export type RepoScan = {
@@ -460,6 +467,13 @@ export type DetailRepoScanQueryVariables = Exact<{
 
 
 export type DetailRepoScanQuery = { __typename?: 'Query', reposcan?: { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string } | null };
+
+export type PortGlobalSearchQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type PortGlobalSearchQuery = { __typename?: 'Query', containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string } | null } | null> | null, whales?: Array<{ __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, image: string } | null> | null };
 
 export type DetailWhaleQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -1103,6 +1117,45 @@ export function useDetailRepoScanLazyQuery(baseOptions?: Apollo.LazyQueryHookOpt
 export type DetailRepoScanQueryHookResult = ReturnType<typeof useDetailRepoScanQuery>;
 export type DetailRepoScanLazyQueryHookResult = ReturnType<typeof useDetailRepoScanLazyQuery>;
 export type DetailRepoScanQueryResult = Apollo.QueryResult<DetailRepoScanQuery, DetailRepoScanQueryVariables>;
+export const PortGlobalSearchDocument = gql`
+    query PortGlobalSearch($search: String) {
+  containers(search: $search) {
+    ...ListContainer
+  }
+  whales(search: $search) {
+    ...ListWhale
+  }
+}
+    ${ListContainerFragmentDoc}
+${ListWhaleFragmentDoc}`;
+
+/**
+ * __usePortGlobalSearchQuery__
+ *
+ * To run a query within a React component, call `usePortGlobalSearchQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePortGlobalSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePortGlobalSearchQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function usePortGlobalSearchQuery(baseOptions?: Apollo.QueryHookOptions<PortGlobalSearchQuery, PortGlobalSearchQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<PortGlobalSearchQuery, PortGlobalSearchQueryVariables>(PortGlobalSearchDocument, options);
+      }
+export function usePortGlobalSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PortGlobalSearchQuery, PortGlobalSearchQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<PortGlobalSearchQuery, PortGlobalSearchQueryVariables>(PortGlobalSearchDocument, options);
+        }
+export type PortGlobalSearchQueryHookResult = ReturnType<typeof usePortGlobalSearchQuery>;
+export type PortGlobalSearchLazyQueryHookResult = ReturnType<typeof usePortGlobalSearchLazyQuery>;
+export type PortGlobalSearchQueryResult = Apollo.QueryResult<PortGlobalSearchQuery, PortGlobalSearchQueryVariables>;
 export const DetailWhaleDocument = gql`
     query DetailWhale($id: ID!) {
   whale(id: $id) {

@@ -208,8 +208,6 @@ export const MaterProvider: React.FC<MaterProviderProps> = ({ children }) => {
       return [];
     }
 
-    console.log(self);
-
     const [modifier, element] = over.split(":");
     const left = self.identifier;
 

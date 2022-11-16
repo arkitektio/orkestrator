@@ -38,7 +38,7 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
   };
 
   return (
-    <div className="flex-initial h-full w-full page-layout">
+    <div className="flex flex-grow h-full w-full page-layout">
       <Allotment onChange={(size) => {}}>
         <Allotment.Pane
           preferredSize={isOpen ? "70%" : "100%"}
@@ -51,14 +51,14 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
             <BreadCrumbs />
             {props.actions && <Actionbar>{props.actions}</Actionbar>}
             <div
-              className="flex-grow p-2 sm:p-4 overflow-y-scroll w-full"
+              className="flex-grow p-2 sm:p-4 overflow-y-scroll w-full @container"
               data-enableselect="true"
             >
               {props.children}
             </div>
             {props.sidebar && (
               <div
-                className="absolute top-[1rem] right-0 text-xl text-white bg-primary-300 rounded-l-md px-1 cursor-pointer"
+                className="absolute top-[1rem] right-0 text-xl text-white bg-primary-300 rounded-l-md px-1 cursor-pointer "
                 onClick={() => setOpen(!isOpen)}
               >
                 {!isOpen ? <RiArrowLeftSFill /> : <RiArrowRightSFill />}
@@ -71,7 +71,7 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
           visible={isOpen && props.sidebar != undefined}
         >
           <div
-            className={`flex flex-col flex-grow dark:bg-slate-800 bg-gray-100 border-r border-gray-800 shadow-element z-0 h-full overflow-x-hidden`}
+            className={`flex flex-col flex-grow dark:bg-slate-800 bg-gray-100 border-l-2 border-l-gray-700 shadow-element z-0 h-full`}
           >
             {props.sidebar}
           </div>

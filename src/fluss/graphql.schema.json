@@ -4027,6 +4027,18 @@
                 "defaultValue": null,
                 "isDeprecated": false,
                 "deprecationReason": null
+              },
+              {
+                "name": "search",
+                "description": "Search for substring of name",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
               }
             ],
             "type": {
@@ -6192,6 +6204,18 @@
             "deprecationReason": null
           },
           {
+            "name": "iss",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "lastLogin",
             "description": "",
             "args": [],
@@ -6236,12 +6260,12 @@
             "deprecationReason": null
           },
           {
-            "name": "roles",
-            "description": null,
+            "name": "sub",
+            "description": "",
             "args": [],
             "type": {
               "kind": "SCALAR",
-              "name": "GenericScalar",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,

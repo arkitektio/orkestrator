@@ -1,16 +1,8 @@
-import { templateDir } from "@tauri-apps/api/path";
 import { Form, Formik } from "formik";
 import { SearchSelectInput } from "../../../components/forms/fields/search_select_input";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
-import { TextInputField } from "../../../components/forms/fields/text_input";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
-import {
-  useCreatePrivateFaktMutation,
-  useScopesOptionsLazyQuery,
-  CreatePrivateFaktMutationVariables,
-} from "../../../man/api/graphql";
-import { withMan } from "../../../man/context";
 import {
   DetailTemplateFragment,
   ProvideMutation,
@@ -32,7 +24,7 @@ export const ProvideDialog = (
 
   return (
     <Formik<ProvideMutationVariables>
-      initialValues={{ template: props.template.id }}
+      initialValues={{ template: props.template.id, agent: "" }}
       onSubmit={async (values) => {
         console.log("submit", values);
         const res = await provide({
