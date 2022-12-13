@@ -51,7 +51,7 @@ const MyPublicFakts: React.FC<IAppProps> = ({ onAppClicked }) => {
             key={index}
             className="bg-white rounded shadow-md pl-3 pr-2 py-2 flex group"
             additionalMates={(drops, self) => {
-              if (drops == "item:@man/publicfakt") {
+              if (drops == "item:@lok/publicfakt") {
                 return [
                   {
                     action: async (self, drops) => {
@@ -76,7 +76,7 @@ const MyPublicFakts: React.FC<IAppProps> = ({ onAppClicked }) => {
               object={app.id}
               className="flex-none cursor-pointer"
             >
-              {app?.identifier}/{app?.version}
+              {app?.app?.identifier}/{app?.app?.version}
             </PublicFakt.DetailLink>
           </PublicFakt.Smart>
         ))}

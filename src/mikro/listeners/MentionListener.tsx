@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import Timestamp from "react-timestamp";
 import { toast } from "react-toastify";
 import {
+  getDefaultSmartModel,
+  getIdentifierForCommentableModel,
+} from "../../linker";
+import {
   MentionCommentFragment,
   useDetailCommentQuery,
   useMyMentionsQuery,
@@ -15,18 +19,31 @@ import { withMikro } from "../MikroContext";
 export interface MentionListenerProps {}
 
 export const MentionToast = (props: { mention: MentionCommentFragment }) => {
+  if (!props.mention.contentType) return <></>;
+  const identifier = getIdentifierForCommentableModel(
+    props.mention.contentType
+  );
+  if (!identifier)
+    return <>No identifier found for this {props.mention.contentType}</>;
+  const Model = getDefaultSmartModel(identifier);
+  if (!Model) return <>No model found for this {identifier}</>;
+
   return (
     <>
       <div className="flex flex-col">
-        <div className="font-light mb-1">New Mention</div>
-        {props.mention.contentType && props.mention.objectId && (
-          <Comment
-            comment={props.mention}
-            model={props.mention.contentType}
-            id={`${props.mention.objectId}`}
-          />
-        )}
-        yar
+        <Model.DetailLink
+          object={props.mention.objectId as string}
+          className="font-light mb-1"
+        >
+          New Mention
+          {props.mention.contentType && props.mention.objectId && (
+            <Comment
+              comment={props.mention}
+              model={props.mention.contentType}
+              id={`${props.mention.objectId}`}
+            />
+          )}
+        </Model.DetailLink>
       </div>
     </>
   );
@@ -50,12 +67,16 @@ export const MentionListener: React.FC<MentionListenerProps> = (props) => {
         // Try to update
         if (action?.update) {
           let updated_ass = action.update;
-          toast(<MentionToast mention={updated_ass} />);
+          toast(<MentionToast mention={updated_ass} />, {
+            closeOnClick: false,
+          });
         }
 
         if (action?.create) {
           let updated_ass = action.create;
-          toast(<MentionToast mention={updated_ass} />);
+          toast(<MentionToast mention={updated_ass} />, {
+            closeOnClick: false,
+          });
         }
 
         if (!newelements) return prev;

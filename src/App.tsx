@@ -93,6 +93,14 @@ import { PortGithubRepos } from "./pages/port/githubrepos/PortGithubRepos";
 import { PortGithubRepo } from "./pages/port/githubrepos/PortGithubRepo";
 import { PortRepoScans } from "./pages/port/reposcans/PortRepoScans";
 import { PortRepoScan } from "./pages/port/reposcans/PortRepoScan";
+import { DataStage } from "./pages/data/stages/DataStage";
+import { DataStages } from "./pages/data/stages/DataStages";
+import { DataPosition } from "./pages/data/positions/DataPosition";
+import { DataPositions } from "./pages/data/positions/DataPositions";
+import { DataInstrument } from "./pages/data/instruments/DataInstrument";
+import { DataInstruments } from "./pages/data/instruments/DataInstruments";
+import { DataObjective } from "./pages/data/objectives/DataObjective";
+import { DataObjectives } from "./pages/data/objectives/DataObjectives";
 
 export const HTML5toTouch = {
   backends: [
@@ -185,6 +193,35 @@ export const MainApp: React.FC<Props> = (props) => {
                             <Route
                               path="representations"
                               element={<DataRepresentations />}
+                            />
+                            <Route
+                              path="stages/:stage"
+                              element={<DataStage />}
+                            />
+                            <Route path="stages" element={<DataStages />} />
+                            <Route
+                              path="instruments/:instrument"
+                              element={<DataInstrument />}
+                            />
+                            <Route
+                              path="instruments"
+                              element={<DataInstruments />}
+                            />
+                            <Route
+                              path="objectives/:objective"
+                              element={<DataObjective />}
+                            />
+                            <Route
+                              path="objectives"
+                              element={<DataObjectives />}
+                            />
+                            <Route
+                              path="positions/:position"
+                              element={<DataPosition />}
+                            />
+                            <Route
+                              path="positions"
+                              element={<DataPositions />}
                             />
                             <Route
                               path="tables/:table"

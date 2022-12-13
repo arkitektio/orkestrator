@@ -1,0 +1,18 @@
+query DetailInstrument($id: ID!) {
+  instrument(id: $id) {
+    ...Instrument
+  }
+}
+
+query Instruments {
+  instruments {
+    ...ListInstrument
+  }
+}
+
+query InstrumentSearch($search: String) {
+  options: instruments(name: $search, limit: 30) {
+    value: id
+    label: name
+  }
+}

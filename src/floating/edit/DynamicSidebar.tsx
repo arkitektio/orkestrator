@@ -4,11 +4,12 @@ import { EditSidebar } from "./components/EditSidebar";
 import { ReactiveNodeSidebar } from "./sidebars/ReactiveNodeSidebar";
 import { ArgNodeSidebar } from "./sidebars/ArgNodeSidebar";
 import { ReturnNodeSidebar } from "./sidebars/ReturnNodeSidebar";
+import { CanvasSidebar } from "./sidebars/CanvasSidebar";
 
 export const DynamicSidebar = () => {
   const { selectedNode, flow } = useEditRiver();
 
-  if (!selectedNode) return <EditSidebar flow={flow} />;
+  if (!selectedNode) return <CanvasSidebar />;
 
   return (
     <>

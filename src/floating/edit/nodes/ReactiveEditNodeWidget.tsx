@@ -31,6 +31,7 @@ export const ReactiveEditNodeWidget: React.FC<ReactiveNodeProps> = ({
           [
             ReactiveImplementationModelInput.Combinelatest,
             ReactiveImplementationModelInput.Withlatest,
+            ReactiveImplementationModelInput.Zip,
           ].includes(implementation) && (
             <svg height="40" width="40">
               <polygon
@@ -105,6 +106,52 @@ export const ReactiveEditNodeWidget: React.FC<ReactiveNodeProps> = ({
                   strokeWidth: 1,
                   stroke: "white",
                   fill: "var(--color-primary-300)",
+                }}
+              />
+            </svg>
+          )}
+        {implementation &&
+          [ReactiveImplementationModelInput.If].includes(implementation) && (
+            <svg height="40" width="40">
+              <text>
+                <textPath
+                  style={{
+                    fill: "rgb(var(--color-primary-100))",
+                    fontSize: "13px",
+                  }}
+                >
+                  If
+                </textPath>
+              </text>
+              <polygon
+                points="0,0 40,0 40,40 0,40"
+                style={{
+                  strokeWidth: 1,
+                  stroke: "white",
+                  fill: "rgb(var(--color-primary-300))",
+                }}
+              />
+            </svg>
+          )}
+        {implementation &&
+          [ReactiveImplementationModelInput.And].includes(implementation) && (
+            <svg height="40" width="40">
+              <text>
+                <textPath
+                  style={{
+                    fill: "rgb(var(--color-primary-100))",
+                    fontSize: "13px",
+                  }}
+                >
+                  And
+                </textPath>
+              </text>
+              <polygon
+                points="0,0 40,0 40,40 0,40"
+                style={{
+                  strokeWidth: 1,
+                  stroke: "white",
+                  fill: "rgb(var(--color-primary-300))",
                 }}
               />
             </svg>

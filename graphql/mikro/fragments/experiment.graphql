@@ -17,6 +17,10 @@ fragment DetailExperiment on Experiment {
     id
     email
   }
+  omeroFiles {
+    id
+    name
+  }
 }
 
 fragment ListExperiment on Experiment {

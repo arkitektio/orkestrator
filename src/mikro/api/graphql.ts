@@ -13,7 +13,6 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-  DataFrame: any;
   DateTime: any;
   FeatureValue: any;
   File: any;
@@ -21,10 +20,18 @@ export type Scalars = {
   ImageFile: any;
   MetricValue: any;
   Parquet: any;
+  ParquetInput: any;
   Store: any;
   UUID: any;
-  XArray: any;
+  XArrayInput: any;
 };
+
+/** What do the multiple positions in this acquistion represent? */
+export enum AcquisitionKind {
+  PositionIsRoi = 'POSITION_IS_ROI',
+  PostionIsSample = 'POSTION_IS_SAMPLE',
+  Unknown = 'UNKNOWN'
+}
 
 export type ChangePermissionsResult = {
   __typename?: 'ChangePermissionsResult';
@@ -110,6 +117,8 @@ export type Comment = {
   mentions: Array<User>;
   objectId: Scalars['Int'];
   parent?: Maybe<Comment>;
+  resolved?: Maybe<Scalars['DateTime']>;
+  resolvedBy?: Maybe<User>;
   text: Scalars['String'];
   user: User;
 };
@@ -136,11 +145,14 @@ export enum CommentableModels {
   GrunnlagInstrument = 'GRUNNLAG_INSTRUMENT',
   GrunnlagLabel = 'GRUNNLAG_LABEL',
   GrunnlagMetric = 'GRUNNLAG_METRIC',
+  GrunnlagObjective = 'GRUNNLAG_OBJECTIVE',
   GrunnlagOmero = 'GRUNNLAG_OMERO',
   GrunnlagOmerofile = 'GRUNNLAG_OMEROFILE',
+  GrunnlagPosition = 'GRUNNLAG_POSITION',
   GrunnlagRepresentation = 'GRUNNLAG_REPRESENTATION',
   GrunnlagRoi = 'GRUNNLAG_ROI',
   GrunnlagSample = 'GRUNNLAG_SAMPLE',
+  GrunnlagStage = 'GRUNNLAG_STAGE',
   GrunnlagThumbnail = 'GRUNNLAG_THUMBNAIL',
   GrunnlagUsermeta = 'GRUNNLAG_USERMETA'
 }
@@ -167,6 +179,11 @@ export type DeletePlotResult = {
   id?: Maybe<Scalars['String']>;
 };
 
+export type DeletePositionResult = {
+  __typename?: 'DeletePositionResult';
+  id?: Maybe<Scalars['String']>;
+};
+
 export type DeleteRoiResult = {
   __typename?: 'DeleteROIResult';
   id?: Maybe<Scalars['String']>;
@@ -179,6 +196,11 @@ export type DeleteRepresentationResult = {
 
 export type DeleteSampleResult = {
   __typename?: 'DeleteSampleResult';
+  id?: Maybe<Scalars['String']>;
+};
+
+export type DeleteStageResult = {
+  __typename?: 'DeleteStageResult';
   id?: Maybe<Scalars['String']>;
 };
 
@@ -242,6 +264,8 @@ export type Experiment = {
   metrics: Array<Metric>;
   /** The name of the experiment */
   name: Scalars['String'];
+  /** The experiment this file belongs to */
+  omeroFiles: Array<OmeroFile>;
   pinned?: Maybe<Scalars['Boolean']>;
   /** The users that have pinned the experiment */
   pinnedBy: Array<User>;
@@ -410,8 +434,19 @@ export type Instrument = {
   manufacturer?: Maybe<Scalars['String']>;
   model?: Maybe<Scalars['String']>;
   name: Scalars['String'];
-  omeroSet: Array<Omero>;
+  objectives: Array<Objective>;
+  /** Associated images through Omero */
+  omeros?: Maybe<Array<Maybe<Omero>>>;
   serialNumber?: Maybe<Scalars['String']>;
+  stageSet: Array<Stage>;
+};
+
+
+/** Instrument(id, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number) */
+export type InstrumentOmerosArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
 };
 
 /**
@@ -555,6 +590,8 @@ export type Metric = {
 /** The root Mutation */
 export type Mutation = {
   __typename?: 'Mutation';
+  associateFiles?: Maybe<Experiment>;
+  associateSamples?: Maybe<Experiment>;
   /** Creates a Sample */
   changePermissions?: Maybe<ChangePermissionsResult>;
   /**
@@ -614,12 +651,42 @@ export type Mutation = {
    *
    */
   createMetric?: Maybe<Metric>;
+  /**
+   * Creates an Instrument
+   *
+   *     This mutation creates an Instrument and returns the created Instrument.
+   *     The serial number is required and the manufacturer is inferred from the serial number.
+   *
+   */
+  createObjective?: Maybe<Objective>;
   /** Create an experiment (only signed in users) */
   createPlot?: Maybe<Plot>;
+  /**
+   * Creates a Feature
+   *
+   *     This mutation creates a Feature and returns the created Feature.
+   *     We require a reference to the label that the feature belongs to.
+   *     As well as the key and value of the feature.
+   *
+   *     There can be multiple features with the same label, but only one feature per key
+   *     per label
+   */
+  createPosition?: Maybe<Position>;
   /** Creates a Sample */
   createROI?: Maybe<Roi>;
   /** Creates a Sample */
   createSample?: Maybe<Sample>;
+  /**
+   * Creates a Stage
+   *
+   *     This mutation creates a Feature and returns the created Feature.
+   *     We require a reference to the label that the feature belongs to.
+   *     As well as the key and value of the feature.
+   *
+   *     There can be multiple features with the same label, but only one feature per key
+   *     per label
+   */
+  createStage?: Maybe<Stage>;
   /** Creates a Representation */
   createTable?: Maybe<Table>;
   /**
@@ -643,12 +710,24 @@ export type Mutation = {
   deleteOmeroFile?: Maybe<DeleteOmeroFileResult>;
   /** Create an experiment (only signed in users) */
   deletePlot?: Maybe<DeletePlotResult>;
+  /**
+   * Delete Experiment
+   *
+   *     This mutation deletes an Experiment and returns the deleted Experiment.
+   */
+  deletePosition?: Maybe<DeletePositionResult>;
   /** Create an experiment (only signed in users) */
   deleteROI?: Maybe<DeleteRoiResult>;
   /** Create an experiment (only signed in users) */
   deleteRepresentation?: Maybe<DeleteRepresentationResult>;
   /** Create an experiment (only signed in users) */
   deleteSample?: Maybe<DeleteSampleResult>;
+  /**
+   * Delete Experiment
+   *
+   *     This mutation deletes an Experiment and returns the deleted Experiment.
+   */
+  deleteStage?: Maybe<DeleteStageResult>;
   /** Create an experiment (only signed in users) */
   deleteTable?: Maybe<DeleteTableResult>;
   /** Creates a Representation */
@@ -662,12 +741,35 @@ export type Mutation = {
    *     This mutation pins an Experiment and returns the pinned Experiment.
    */
   pinExperiment?: Maybe<Experiment>;
+  /**
+   * Pin Acquisition
+   *
+   *     This mutation pins an Experiment and returns the pinned Experiment.
+   */
+  pinPosition?: Maybe<Position>;
   /** Sets the pin */
   pinROI?: Maybe<Roi>;
   /** Sets the pin */
   pinRepresentation?: Maybe<Representation>;
   /** Sets the pin */
   pinSample?: Maybe<Sample>;
+  /**
+   * Pin Stage
+   *
+   *     This mutation pins an Experiment and returns the pinned Experiment.
+   */
+  pinStage?: Maybe<Stage>;
+  /**
+   * Create an Comment
+   *
+   *     This mutation resolves a comment. By resolving a comment, it will be marked as resolved,
+   *     and the user that resolved it will be set as the resolver.
+   *
+   *     (only signed in users)
+   */
+  resolveComment?: Maybe<Comment>;
+  unassociateFiles?: Maybe<Experiment>;
+  unassociateSamples?: Maybe<Experiment>;
   /**
    *  Update an Experiment
    *
@@ -682,6 +784,12 @@ export type Mutation = {
   updateRepresentation?: Maybe<Representation>;
   /** Creates a Sample */
   updateSample?: Maybe<Sample>;
+  /**
+   *  Update an Experiment
+   *
+   *     This mutation updates an Experiment and returns the updated Experiment.
+   */
+  updateStage?: Maybe<Stage>;
   /** Updates an Representation (also retriggers meta-data retrieval from data stored in) */
   updateTable?: Maybe<Table>;
   /**
@@ -692,6 +800,20 @@ export type Mutation = {
    */
   uploadOmeroFile?: Maybe<OmeroFile>;
   uploadThumbnail?: Maybe<Thumbnail>;
+};
+
+
+/** The root Mutation */
+export type MutationAssociateFilesArgs = {
+  experiment: Scalars['ID'];
+  files: Array<InputMaybe<Scalars['ID']>>;
+};
+
+
+/** The root Mutation */
+export type MutationAssociateSamplesArgs = {
+  experiment: Scalars['ID'];
+  samples: Array<InputMaybe<Scalars['ID']>>;
 };
 
 
@@ -731,6 +853,7 @@ export type MutationCreateInstrumentArgs = {
   manufacturer?: InputMaybe<Scalars['String']>;
   model?: InputMaybe<Scalars['String']>;
   name: Scalars['String'];
+  objectives?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   serialNumber?: InputMaybe<Scalars['String']>;
 };
 
@@ -756,8 +879,29 @@ export type MutationCreateMetricArgs = {
 
 
 /** The root Mutation */
+export type MutationCreateObjectiveArgs = {
+  magnification: Scalars['Float'];
+  manufacturer?: InputMaybe<Scalars['String']>;
+  name: Scalars['String'];
+  serialNumber: Scalars['String'];
+};
+
+
+/** The root Mutation */
 export type MutationCreatePlotArgs = {
   name: Scalars['String'];
+};
+
+
+/** The root Mutation */
+export type MutationCreatePositionArgs = {
+  creator?: InputMaybe<Scalars['ID']>;
+  name?: InputMaybe<Scalars['String']>;
+  stage: Scalars['ID'];
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  x: Scalars['Float'];
+  y: Scalars['Float'];
+  z: Scalars['Float'];
 };
 
 
@@ -779,6 +923,16 @@ export type MutationCreateSampleArgs = {
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   meta?: InputMaybe<Scalars['GenericScalar']>;
   name?: InputMaybe<Scalars['String']>;
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Mutation */
+export type MutationCreateStageArgs = {
+  creator?: InputMaybe<Scalars['ID']>;
+  instrument?: InputMaybe<Scalars['ID']>;
+  name?: InputMaybe<Scalars['String']>;
+  physicalSize: Array<InputMaybe<Scalars['Float']>>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
 
@@ -823,6 +977,12 @@ export type MutationDeletePlotArgs = {
 
 
 /** The root Mutation */
+export type MutationDeletePositionArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
 export type MutationDeleteRoiArgs = {
   id: Scalars['ID'];
 };
@@ -841,6 +1001,12 @@ export type MutationDeleteSampleArgs = {
 
 
 /** The root Mutation */
+export type MutationDeleteStageArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
 export type MutationDeleteTableArgs = {
   id: Scalars['ID'];
 };
@@ -849,7 +1015,7 @@ export type MutationDeleteTableArgs = {
 /** The root Mutation */
 export type MutationFromDfArgs = {
   creator?: InputMaybe<Scalars['String']>;
-  df: Scalars['DataFrame'];
+  df: Scalars['ParquetInput'];
   experiment?: InputMaybe<Scalars['ID']>;
   name?: InputMaybe<Scalars['String']>;
   representation?: InputMaybe<Scalars['ID']>;
@@ -870,7 +1036,7 @@ export type MutationFromXArrayArgs = {
   sample?: InputMaybe<Scalars['ID']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   variety?: InputMaybe<RepresentationVarietyInput>;
-  xarray: Scalars['XArray'];
+  xarray: Scalars['XArrayInput'];
 };
 
 
@@ -883,6 +1049,13 @@ export type MutationNegotiateArgs = {
 
 /** The root Mutation */
 export type MutationPinExperimentArgs = {
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+};
+
+
+/** The root Mutation */
+export type MutationPinPositionArgs = {
   id: Scalars['ID'];
   pin: Scalars['Boolean'];
 };
@@ -906,6 +1079,34 @@ export type MutationPinRepresentationArgs = {
 export type MutationPinSampleArgs = {
   id: Scalars['ID'];
   pin: Scalars['Boolean'];
+};
+
+
+/** The root Mutation */
+export type MutationPinStageArgs = {
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+};
+
+
+/** The root Mutation */
+export type MutationResolveCommentArgs = {
+  id: Scalars['ID'];
+  imitate?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Mutation */
+export type MutationUnassociateFilesArgs = {
+  experiment: Scalars['ID'];
+  files: Array<InputMaybe<Scalars['ID']>>;
+};
+
+
+/** The root Mutation */
+export type MutationUnassociateSamplesArgs = {
+  experiment: Scalars['ID'];
+  samples: Array<InputMaybe<Scalars['ID']>>;
 };
 
 
@@ -937,6 +1138,7 @@ export type MutationUpdatePlotArgs = {
 /** The root Mutation */
 export type MutationUpdateRepresentationArgs = {
   origins?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  position?: InputMaybe<Scalars['ID']>;
   rep: Scalars['ID'];
   sample?: InputMaybe<Scalars['ID']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
@@ -950,6 +1152,14 @@ export type MutationUpdateSampleArgs = {
   id: Scalars['ID'];
   meta?: InputMaybe<Scalars['GenericScalar']>;
   name?: InputMaybe<Scalars['String']>;
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Mutation */
+export type MutationUpdateStageArgs = {
+  id: Scalars['ID'];
+  name: Scalars['String'];
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
 
@@ -979,6 +1189,26 @@ export type MutationUploadThumbnailArgs = {
 export type Node = {
   children?: Maybe<Array<Maybe<Descendent>>>;
   untypedChildren?: Maybe<Scalars['GenericScalar']>;
+};
+
+/** Objective(id, serial_number, name, magnification) */
+export type Objective = {
+  __typename?: 'Objective';
+  id: Scalars['ID'];
+  instruments: Array<Instrument>;
+  magnification: Scalars['Float'];
+  name: Scalars['String'];
+  /** Associated images through Omero */
+  omeros?: Maybe<Array<Maybe<Omero>>>;
+  serialNumber: Scalars['String'];
+};
+
+
+/** Objective(id, serial_number, name, magnification) */
+export type ObjectiveOmerosArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
 };
 
 /**
@@ -1015,12 +1245,10 @@ export type ObjectiveSettingsInput = {
 };
 
 /**
- * Omero is a model that stores the omero meta data
+ * Omero is a through model that stores the real world context of an image
  *
- *     This model is used to store the omero meta data. It is used to store the meta data of the omero file.
- *     Its implementation is based on the omero meta data model. Refer to the omero documentation for more information.
- *
- *
+ *     This means that it stores the position (corresponding to the relative displacement to
+ *     a stage (Both are models)), objective and other meta data of the image.
  *
  *
  */
@@ -1031,9 +1259,11 @@ export type Omero = {
   id: Scalars['ID'];
   imagingEnvironment?: Maybe<ImagingEnvironment>;
   instrument?: Maybe<Instrument>;
+  objective?: Maybe<Objective>;
   objectiveSettings?: Maybe<ObjectiveSettings>;
   physicalSize?: Maybe<PhysicalSize>;
   planes?: Maybe<Array<Maybe<Plane>>>;
+  position?: Maybe<Position>;
   representation: Representation;
   scale?: Maybe<Array<Maybe<Scalars['Float']>>>;
 };
@@ -1045,6 +1275,8 @@ export type OmeroFile = {
   /** The user that created/uploaded the file */
   creator?: Maybe<User>;
   derivedRepresentations: Array<Representation>;
+  /** The experiment this file belongs to */
+  experiments: Array<Experiment>;
   /** The file */
   file?: Maybe<Scalars['File']>;
   id: Scalars['ID'];
@@ -1085,9 +1317,11 @@ export type OmeroRepresentationInput = {
   channels?: InputMaybe<Array<InputMaybe<ChannelInput>>>;
   imagingEnvironment?: InputMaybe<ImagingEnvironmentInput>;
   instrument?: InputMaybe<Scalars['ID']>;
+  objective?: InputMaybe<Scalars['ID']>;
   objectiveSettings?: InputMaybe<ObjectiveSettingsInput>;
   physicalSize?: InputMaybe<PhysicalSizeInput>;
   planes?: InputMaybe<Array<InputMaybe<PlaneInput>>>;
+  position?: InputMaybe<Scalars['ID']>;
   scale?: InputMaybe<Array<InputMaybe<Scalars['Float']>>>;
 };
 
@@ -1286,6 +1520,34 @@ export type Plot = {
   updatedAt: Scalars['DateTime'];
 };
 
+/** The relative position of a sample on a microscope stage */
+export type Position = {
+  __typename?: 'Position';
+  id: Scalars['ID'];
+  /** The name of the possition */
+  name: Scalars['String'];
+  /** Associated images through Omero */
+  omeros?: Maybe<Array<Maybe<Omero>>>;
+  /** Is the table pinned by the active user */
+  pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the position */
+  pinnedBy: Array<User>;
+  stage: Stage;
+  /** A comma-separated list of tags. */
+  tags?: Maybe<Array<Maybe<Scalars['String']>>>;
+  x?: Maybe<Scalars['Float']>;
+  y?: Maybe<Scalars['Float']>;
+  z?: Maybe<Scalars['Float']>;
+};
+
+
+/** The relative position of a sample on a microscope stage */
+export type PositionOmerosArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+};
+
 /** The root Query */
 export type Query = {
   __typename?: 'Query';
@@ -1434,8 +1696,31 @@ export type Query = {
    *     the user has access to.
    */
   mysamples?: Maybe<Array<Maybe<Sample>>>;
+  /**
+   * My Experiments runs a fast query on the database to return all
+   *     Experiments that the user has created. This query is faster than
+   *     the `experiments` query, but it does not return all Experiments that
+   *     the user has access to.
+   */
+  mystages?: Maybe<Array<Maybe<Stage>>>;
   /** My samples return all of the users samples attached to the current user */
   mytables?: Maybe<Array<Maybe<Table>>>;
+  /**
+   * Get a single instrumes by ID
+   *
+   *     Returns a single instrument by ID. If the user does not have access
+   *     to the instrument, an error will be raised.
+   */
+  objective?: Maybe<Objective>;
+  /**
+   * All Instruments
+   *
+   *     This query returns all Instruments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Instruments that the user has access to. If the user is an amdin
+   *     or superuser, all Instruments will be returned.
+   */
+  objectives?: Maybe<Array<Maybe<Objective>>>;
   /**
    * Get a single Omero File by ID
    *
@@ -1457,6 +1742,29 @@ export type Query = {
   permissionsFor?: Maybe<Array<Maybe<Permission>>>;
   permissionsOf?: Maybe<PermissionsOfReturn>;
   plot?: Maybe<Plot>;
+  /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
+  position?: Maybe<Position>;
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  positions?: Maybe<Array<Maybe<Position>>>;
   /**
    * Get a random Representation
    *
@@ -1526,6 +1834,29 @@ export type Query = {
    */
   samples?: Maybe<Array<Maybe<Sample>>>;
   sharedrepresentations?: Maybe<Array<Maybe<Representation>>>;
+  /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
+  stage?: Maybe<Stage>;
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  stages?: Maybe<Array<Maybe<Stage>>>;
   /** Get a single representation by ID */
   table?: Maybe<Table>;
   /** My samples return all of the users samples attached to the current user */
@@ -1721,6 +2052,7 @@ export type QueryMyrepresentationsArgs = {
   ordering?: InputMaybe<Scalars['String']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   samples?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  stages?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   variety?: InputMaybe<RepresentationVarietyInput>;
 };
@@ -1745,6 +2077,15 @@ export type QueryMysamplesArgs = {
 
 
 /** The root Query */
+export type QueryMystagesArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+};
+
+
+/** The root Query */
 export type QueryMytablesArgs = {
   createdAfter?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
@@ -1754,6 +2095,23 @@ export type QueryMytablesArgs = {
   offset?: InputMaybe<Scalars['Int']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Query */
+export type QueryObjectiveArgs = {
+  id?: InputMaybe<Scalars['ID']>;
+  name?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
+export type QueryObjectivesArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+  search?: InputMaybe<Scalars['String']>;
 };
 
 
@@ -1792,6 +2150,22 @@ export type QueryPlotArgs = {
 
 
 /** The root Query */
+export type QueryPositionArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryPositionsArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+  stage?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
 export type QueryRepresentationArgs = {
   id: Scalars['ID'];
 };
@@ -1815,6 +2189,7 @@ export type QueryRepresentationsArgs = {
   ordering?: InputMaybe<Scalars['String']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   samples?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  stages?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   variety?: InputMaybe<RepresentationVarietyInput>;
 };
@@ -1881,6 +2256,21 @@ export type QuerySamplesArgs = {
   pinned?: InputMaybe<Scalars['Boolean']>;
   representations?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Query */
+export type QueryStageArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryStagesArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
 };
 
 
@@ -2136,6 +2526,7 @@ export type RepresentationDerivedArgs = {
   ordering?: InputMaybe<Scalars['String']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   samples?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  stages?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   variety?: InputMaybe<RepresentationVarietyInput>;
 };
@@ -2383,6 +2774,7 @@ export type SampleRepresentationsArgs = {
   ordering?: InputMaybe<Scalars['String']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   samples?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  stages?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   variety?: InputMaybe<RepresentationVarietyInput>;
 };
@@ -2405,14 +2797,47 @@ export enum SharableModels {
   GrunnlagInstrument = 'GRUNNLAG_INSTRUMENT',
   GrunnlagLabel = 'GRUNNLAG_LABEL',
   GrunnlagMetric = 'GRUNNLAG_METRIC',
+  GrunnlagObjective = 'GRUNNLAG_OBJECTIVE',
   GrunnlagOmero = 'GRUNNLAG_OMERO',
   GrunnlagOmerofile = 'GRUNNLAG_OMEROFILE',
+  GrunnlagPosition = 'GRUNNLAG_POSITION',
   GrunnlagRepresentation = 'GRUNNLAG_REPRESENTATION',
   GrunnlagRoi = 'GRUNNLAG_ROI',
   GrunnlagSample = 'GRUNNLAG_SAMPLE',
+  GrunnlagStage = 'GRUNNLAG_STAGE',
   GrunnlagThumbnail = 'GRUNNLAG_THUMBNAIL',
   GrunnlagUsermeta = 'GRUNNLAG_USERMETA'
 }
+
+/**
+ * An Stage is a set of positions that share a common space on a microscope and can
+ *     be use to translate.
+ *
+ *
+ *
+ */
+export type Stage = {
+  __typename?: 'Stage';
+  /** The time the acquistion was created */
+  createdAt: Scalars['DateTime'];
+  /** The user that created the stage */
+  creator?: Maybe<User>;
+  id: Scalars['ID'];
+  instrument?: Maybe<Instrument>;
+  /** The kind of acquisition */
+  kind?: Maybe<AcquisitionKind>;
+  /** The name of the stage */
+  name: Scalars['String'];
+  /** The physical size of the stage */
+  physicalSize?: Maybe<Array<Maybe<Scalars['Float']>>>;
+  /** Is the table pinned by the active user */
+  pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the stage */
+  pinnedBy: Array<User>;
+  positions: Array<Position>;
+  /** A comma-separated list of tags. */
+  tags?: Maybe<Array<Maybe<Scalars['String']>>>;
+};
 
 /** The root Subscriptions */
 export type Subscription = {
@@ -2650,19 +3075,27 @@ export type DescendentFragment = Descendent_Leaf_Fragment | Descendent_MentionDe
 
 export type SubthreadCommentFragment = { __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null };
 
-export type ListCommentFragment = { __typename?: 'Comment', id: string, createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null };
+export type ListCommentFragment = { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null };
 
-export type MentionCommentFragment = { __typename?: 'Comment', id: string, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }> };
+export type MentionCommentFragment = { __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }>, resolvedBy?: { __typename?: 'User', sub?: string | null } | null };
 
-export type DetailCommentFragment = { __typename?: 'Comment', id: string, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }> };
+export type DetailCommentFragment = { __typename?: 'Comment', id: string, resolved?: any | null, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }> };
 
-export type DetailExperimentFragment = { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
+export type DetailExperimentFragment = { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> };
 
 export type ListExperimentFragment = { __typename?: 'Experiment', id: string, name: string, description?: string | null };
 
-export type OmeroFragment = { __typename?: 'Omero', id: string, acquisitionDate?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null };
+export type InstrumentFragment = { __typename?: 'Instrument', id: string, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null, name?: string | null } } | null> | null };
 
-export type DetailOmeroFileFragment = { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }> };
+export type ListInstrumentFragment = { __typename?: 'Instrument', id: string, name: string };
+
+export type ObjectiveFragment = { __typename?: 'Objective', id: string, name: string, magnification: number, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null };
+
+export type ListObjectiveFragment = { __typename?: 'Objective', id: string, name: string, magnification: number };
+
+export type OmeroFragment = { __typename?: 'Omero', id: string, acquisitionDate?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, stage: { __typename?: 'Stage', id: string, name: string, physicalSize?: Array<number | null> | null } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification: number } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null };
+
+export type DetailOmeroFileFragment = { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> };
 
 export type ListOmeroFileFragment = { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null };
 
@@ -2674,19 +3107,27 @@ export type PlotFragment = { __typename?: 'Plot', id: string, query: string, nam
 
 export type ListPlotFragment = { __typename?: 'Plot', id: string, name: string, creator: { __typename?: 'User', username: string } };
 
+export type PositionFragment = { __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, stage: { __typename?: 'Stage', id: string, physicalSize?: Array<number | null> | null, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', id: string } } | null> | null };
+
+export type ListPositionFragment = { __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null };
+
 export type ListRepresentationFragment = { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null };
 
 export type ListSharedRepresentationFragment = { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null };
 
-export type DetailRepresentationFragment = { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
+export type DetailRepresentationFragment = { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, stage: { __typename?: 'Stage', id: string, name: string, physicalSize?: Array<number | null> | null } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification: number } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
 
-export type RepRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null };
+export type RepRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null };
 
-export type DetailRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, creator?: { __typename?: 'User', id: string } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', id: string, name?: string | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
+export type DetailRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', id: string, name?: string | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
 
 export type DetailSampleFragment = { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
 
 export type ListSampleFragment = { __typename?: 'Sample', name: string, id: string, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', name: string }> };
+
+export type StageFragment = { __typename?: 'Stage', id: string, physicalSize?: Array<number | null> | null, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null };
+
+export type ListStageFragment = { __typename?: 'Stage', id: string, tags?: Array<string | null> | null, name: string, kind?: AcquisitionKind | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null };
 
 export type ColumnFragment = { __typename?: 'Column', name?: string | null, fieldName: string, pandasType?: PandasDType | null, numpyType?: string | null, metadata?: any | null };
 
@@ -2702,7 +3143,14 @@ export type CreateCommentMutationVariables = Exact<{
 }>;
 
 
-export type CreateCommentMutation = { __typename?: 'Mutation', createComment?: { __typename?: 'Comment', id: string, createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
+export type CreateCommentMutation = { __typename?: 'Mutation', createComment?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
+
+export type ResolveCommentMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type ResolveCommentMutation = { __typename?: 'Mutation', resolveComment?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
 
 export type CreateExperimentMutationVariables = Exact<{
   name: Scalars['String'];
@@ -2710,7 +3158,7 @@ export type CreateExperimentMutationVariables = Exact<{
 }>;
 
 
-export type CreateExperimentMutation = { __typename?: 'Mutation', createExperiment?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type CreateExperimentMutation = { __typename?: 'Mutation', createExperiment?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> } | null };
 
 export type DeleteExperimentMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -2727,7 +3175,7 @@ export type UpdateExperimentMutationVariables = Exact<{
 }>;
 
 
-export type UpdateExperimentMutation = { __typename?: 'Mutation', updateExperiment?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type UpdateExperimentMutation = { __typename?: 'Mutation', updateExperiment?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> } | null };
 
 export type PinExperimentMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -2737,12 +3185,44 @@ export type PinExperimentMutationVariables = Exact<{
 
 export type PinExperimentMutation = { __typename?: 'Mutation', pinExperiment?: { __typename?: 'Experiment', id: string, pinned?: boolean | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
+export type AssociateSamplesMutationVariables = Exact<{
+  experiment: Scalars['ID'];
+  samples: Array<Scalars['ID']>;
+}>;
+
+
+export type AssociateSamplesMutation = { __typename?: 'Mutation', associateSamples?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> } | null };
+
+export type AssociateFilesMutationVariables = Exact<{
+  experiment: Scalars['ID'];
+  files: Array<Scalars['ID']>;
+}>;
+
+
+export type AssociateFilesMutation = { __typename?: 'Mutation', associateFiles?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> } | null };
+
+export type UnassociateSamplesMutationVariables = Exact<{
+  experiment: Scalars['ID'];
+  samples: Array<Scalars['ID']>;
+}>;
+
+
+export type UnassociateSamplesMutation = { __typename?: 'Mutation', unassociateSamples?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> } | null };
+
+export type UnassociateFilesMutationVariables = Exact<{
+  experiment: Scalars['ID'];
+  files: Array<Scalars['ID']>;
+}>;
+
+
+export type UnassociateFilesMutation = { __typename?: 'Mutation', unassociateFiles?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> } | null };
+
 export type UploadOmeroFileMutationVariables = Exact<{
   file: Scalars['ImageFile'];
 }>;
 
 
-export type UploadOmeroFileMutation = { __typename?: 'Mutation', uploadOmeroFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }> } | null };
+export type UploadOmeroFileMutation = { __typename?: 'Mutation', uploadOmeroFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
 
 export type DeleteOmeroFileMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -2757,7 +3237,7 @@ export type UpdateOmeroFileMutationVariables = Exact<{
 }>;
 
 
-export type UpdateOmeroFileMutation = { __typename?: 'Mutation', updateOmeroFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }> } | null };
+export type UpdateOmeroFileMutation = { __typename?: 'Mutation', updateOmeroFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
 
 export type ChangePermissionsMutationVariables = Exact<{
   type: SharableModels;
@@ -2792,6 +3272,32 @@ export type DeletePlotMutationVariables = Exact<{
 
 export type DeletePlotMutation = { __typename?: 'Mutation', deletePlot?: { __typename?: 'DeletePlotResult', id?: string | null } | null };
 
+export type CreatePositionMutationVariables = Exact<{
+  stage: Scalars['ID'];
+  x: Scalars['Float'];
+  y: Scalars['Float'];
+  z: Scalars['Float'];
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+}>;
+
+
+export type CreatePositionMutation = { __typename?: 'Mutation', createPosition?: { __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, stage: { __typename?: 'Stage', id: string, physicalSize?: Array<number | null> | null, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', id: string } } | null> | null } | null };
+
+export type DeletePositionMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DeletePositionMutation = { __typename?: 'Mutation', deletePosition?: { __typename?: 'DeletePositionResult', id?: string | null } | null };
+
+export type PinPositionMutationVariables = Exact<{
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+}>;
+
+
+export type PinPositionMutation = { __typename?: 'Mutation', pinPosition?: { __typename?: 'Position', id: string, pinned?: boolean | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+
 export type DeleteRepresentationMutationVariables = Exact<{
   id: Scalars['ID'];
 }>;
@@ -2808,7 +3314,7 @@ export type UpdateRepresentationMutationVariables = Exact<{
 }>;
 
 
-export type UpdateRepresentationMutation = { __typename?: 'Mutation', updateRepresentation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type UpdateRepresentationMutation = { __typename?: 'Mutation', updateRepresentation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, stage: { __typename?: 'Stage', id: string, name: string, physicalSize?: Array<number | null> | null } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification: number } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type PinRepresentationMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -2859,6 +3365,30 @@ export type PinSampleMutationVariables = Exact<{
 
 export type PinSampleMutation = { __typename?: 'Mutation', pinSample?: { __typename?: 'Sample', id: string, pinned?: boolean | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
+export type DeleteStageMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DeleteStageMutation = { __typename?: 'Mutation', deleteStage?: { __typename?: 'DeleteStageResult', id?: string | null } | null };
+
+export type UpdateStageMutationVariables = Exact<{
+  id: Scalars['ID'];
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  name: Scalars['String'];
+}>;
+
+
+export type UpdateStageMutation = { __typename?: 'Mutation', updateStage?: { __typename?: 'Stage', id: string, physicalSize?: Array<number | null> | null, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
+
+export type PinStageMutationVariables = Exact<{
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+}>;
+
+
+export type PinStageMutation = { __typename?: 'Mutation', pinStage?: { __typename?: 'Stage', id: string, pinned?: boolean | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+
 export type DeleteTableMutationVariables = Exact<{
   id: Scalars['ID'];
 }>;
@@ -2872,19 +3402,19 @@ export type CommentsForQueryVariables = Exact<{
 }>;
 
 
-export type CommentsForQuery = { __typename?: 'Query', commentsfor?: Array<{ __typename?: 'Comment', id: string, createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null> | null };
+export type CommentsForQuery = { __typename?: 'Query', commentsfor?: Array<{ __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null> | null };
 
 export type MyMentionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyMentionsQuery = { __typename?: 'Query', mymentions?: Array<{ __typename?: 'Comment', id: string, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }> } | null> | null };
+export type MyMentionsQuery = { __typename?: 'Query', mymentions?: Array<{ __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }>, resolvedBy?: { __typename?: 'User', sub?: string | null } | null } | null> | null };
 
 export type DetailCommentQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailCommentQuery = { __typename?: 'Query', comment?: { __typename?: 'Comment', id: string, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }> } | null };
+export type DetailCommentQuery = { __typename?: 'Query', comment?: { __typename?: 'Comment', id: string, resolved?: any | null, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }> } | null };
 
 export type MyExperimentsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -2899,7 +3429,7 @@ export type DetailExperimentQueryVariables = Exact<{
 }>;
 
 
-export type DetailExperimentQuery = { __typename?: 'Query', experiment?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type DetailExperimentQuery = { __typename?: 'Query', experiment?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> } | null };
 
 export type SearchExperimentsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -2915,10 +3445,30 @@ export type GlobalSearchQueryVariables = Exact<{
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
+  stages?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', experiments?: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null } | null> | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } | null> | null };
+export type GlobalSearchQuery = { __typename?: 'Query', experiments?: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null } | null> | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } | null> | null, files?: Array<{ __typename?: 'OmeroFile', id: string, name: string } | null> | null };
+
+export type DetailInstrumentQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailInstrumentQuery = { __typename?: 'Query', instrument?: { __typename?: 'Instrument', id: string, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null, name?: string | null } } | null> | null } | null };
+
+export type InstrumentsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type InstrumentsQuery = { __typename?: 'Query', instruments?: Array<{ __typename?: 'Instrument', id: string, name: string } | null> | null };
+
+export type InstrumentSearchQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type InstrumentSearchQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Instrument', value: string, label: string } | null> | null };
 
 export type DetailMetricQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -2926,6 +3476,25 @@ export type DetailMetricQueryVariables = Exact<{
 
 
 export type DetailMetricQuery = { __typename?: 'Query', metric?: { __typename?: 'Metric', key: string, value?: any | null } | null };
+
+export type DetailObjectiveQueryVariables = Exact<{
+  id?: InputMaybe<Scalars['ID']>;
+}>;
+
+
+export type DetailObjectiveQuery = { __typename?: 'Query', objective?: { __typename?: 'Objective', id: string, name: string, magnification: number, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null } | null };
+
+export type ObjectivesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ObjectivesQuery = { __typename?: 'Query', objectives?: Array<{ __typename?: 'Objective', id: string, name: string, magnification: number } | null> | null };
+
+export type SearchObjectivesQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type SearchObjectivesQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Objective', value: string, label: string } | null> | null };
 
 export type MyOmeroFilesQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -2940,7 +3509,7 @@ export type DetailOmeroFileQueryVariables = Exact<{
 }>;
 
 
-export type DetailOmeroFileQuery = { __typename?: 'Query', omerofile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }> } | null };
+export type DetailOmeroFileQuery = { __typename?: 'Query', omerofile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
 
 export type PermissionOptionsQueryVariables = Exact<{
   model: SharableModels;
@@ -2970,12 +3539,27 @@ export type MyPlotsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type MyPlotsQuery = { __typename?: 'Query', myplots?: Array<{ __typename?: 'Plot', id: string, name: string, creator: { __typename?: 'User', username: string } } | null> | null };
 
+export type DetailPositionQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailPositionQuery = { __typename?: 'Query', position?: { __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, stage: { __typename?: 'Stage', id: string, physicalSize?: Array<number | null> | null, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', id: string } } | null> | null } | null };
+
+export type PositionSearchQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+  stage?: InputMaybe<Scalars['ID']>;
+}>;
+
+
+export type PositionSearchQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Position', value: string, label: string } | null> | null };
+
 export type DetailRepresentationQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailRepresentationQuery = { __typename?: 'Query', representation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type DetailRepresentationQuery = { __typename?: 'Query', representation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, stage: { __typename?: 'Stage', id: string, name: string, physicalSize?: Array<number | null> | null } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification: number } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type MyRepresentationsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -3039,14 +3623,14 @@ export type RoisForRepresentationQueryVariables = Exact<{
 }>;
 
 
-export type RoisForRepresentationQuery = { __typename?: 'Query', rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null };
+export type RoisForRepresentationQuery = { __typename?: 'Query', rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null };
 
 export type DetailRoiQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailRoiQuery = { __typename?: 'Query', roi?: { __typename?: 'ROI', id: string, type: RoiType, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, creator?: { __typename?: 'User', id: string } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', id: string, name?: string | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type DetailRoiQuery = { __typename?: 'Query', roi?: { __typename?: 'ROI', id: string, type: RoiType, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', id: string, name?: string | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type DetailSampleQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -3131,6 +3715,28 @@ export type HcsSampleMetricsQueryVariables = Exact<{
 
 export type HcsSampleMetricsQuery = { __typename?: 'Query', metrics?: Array<{ __typename?: 'Metric', key: string, value?: any | null, representation?: { __typename?: 'Representation', id: string, meta?: any | null } | null } | null> | null };
 
+export type DetailStageQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailStageQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', id: string, physicalSize?: Array<number | null> | null, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x?: number | null, y?: number | null, z?: number | null, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
+
+export type MyStagesQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+}>;
+
+
+export type MyStagesQuery = { __typename?: 'Query', mystages?: Array<{ __typename?: 'Stage', id: string, tags?: Array<string | null> | null, name: string, kind?: AcquisitionKind | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null } | null> | null };
+
+export type StageSearchQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type StageSearchQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Stage', value: string, label: string } | null> | null };
+
 export type DetailTableQueryVariables = Exact<{
   id: Scalars['ID'];
   only?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
@@ -3176,7 +3782,7 @@ export type MyExperimentsEventSubscription = { __typename?: 'Subscription', myEx
 export type WatchMentionsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type WatchMentionsSubscription = { __typename?: 'Subscription', mymentions?: { __typename?: 'MentionEvent', create?: { __typename?: 'Comment', id: string, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }> } | null, update?: { __typename?: 'Comment', id: string, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }> } | null } | null };
+export type WatchMentionsSubscription = { __typename?: 'Subscription', mymentions?: { __typename?: 'MentionEvent', create?: { __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }>, resolvedBy?: { __typename?: 'User', sub?: string | null } | null } | null, update?: { __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }>, resolvedBy?: { __typename?: 'User', sub?: string | null } | null } | null } | null };
 
 export type MyRepresentationsEventSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -3195,7 +3801,7 @@ export type WatchRoisSubscriptionVariables = Exact<{
 }>;
 
 
-export type WatchRoisSubscription = { __typename?: 'Subscription', rois?: { __typename?: 'RoiEvent', delete?: string | null, update?: { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null, create?: { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null } | null };
+export type WatchRoisSubscription = { __typename?: 'Subscription', rois?: { __typename?: 'RoiEvent', delete?: string | null, update?: { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null, create?: { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null } | null };
 
 export type MySamplesEventSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -3301,6 +3907,10 @@ export const ListCommentFragmentDoc = gql`
   descendents {
     ...Descendent
   }
+  resolved
+  resolvedBy {
+    sub
+  }
   id
   createdAt
   children {
@@ -3330,6 +3940,10 @@ export const MentionCommentFragmentDoc = gql`
     id
     sub
   }
+  resolved
+  resolvedBy {
+    sub
+  }
   objectId
   contentType
 }
@@ -3348,6 +3962,10 @@ export const DetailCommentFragmentDoc = gql`
     ...Descendent
   }
   id
+  resolved
+  resolvedBy {
+    sub
+  }
   createdAt
   children {
     ...SubthreadComment
@@ -3381,13 +3999,24 @@ export const DetailExperimentFragmentDoc = gql`
     id
     email
   }
+  omeroFiles {
+    id
+    name
+  }
 }
     `;
-export const ListExperimentFragmentDoc = gql`
-    fragment ListExperiment on Experiment {
+export const InstrumentFragmentDoc = gql`
+    fragment Instrument on Instrument {
   id
   name
-  description
+  omeros(order: "-acquired", limit: 10) {
+    acquisitionDate
+    representation {
+      id
+      shape
+      name
+    }
+  }
 }
     `;
 export const ListRepresentationFragmentDoc = gql`
@@ -3412,6 +4041,33 @@ export const ListRepresentationFragmentDoc = gql`
   pinned
 }
     `;
+export const ObjectiveFragmentDoc = gql`
+    fragment Objective on Objective {
+  id
+  name
+  magnification
+  omeros(order: "-acquired", limit: 10) {
+    acquisitionDate
+    representation {
+      ...ListRepresentation
+    }
+  }
+}
+    ${ListRepresentationFragmentDoc}`;
+export const ListObjectiveFragmentDoc = gql`
+    fragment ListObjective on Objective {
+  id
+  name
+  magnification
+}
+    `;
+export const ListExperimentFragmentDoc = gql`
+    fragment ListExperiment on Experiment {
+  id
+  name
+  description
+}
+    `;
 export const DetailOmeroFileFragmentDoc = gql`
     fragment DetailOmeroFile on OmeroFile {
   id
@@ -3423,8 +4079,12 @@ export const DetailOmeroFileFragmentDoc = gql`
   derivedRepresentations {
     ...ListRepresentation
   }
+  experiments {
+    ...ListExperiment
+  }
 }
-    ${ListRepresentationFragmentDoc}`;
+    ${ListRepresentationFragmentDoc}
+${ListExperimentFragmentDoc}`;
 export const ListOmeroFileFragmentDoc = gql`
     fragment ListOmeroFile on OmeroFile {
   id
@@ -3474,6 +4134,72 @@ export const ListPlotFragmentDoc = gql`
   }
 }
     `;
+export const ListPositionFragmentDoc = gql`
+    fragment ListPosition on Position {
+  id
+  x
+  y
+  z
+  name
+  omeros(limit: 1) {
+    acquisitionDate
+    physicalSize {
+      x
+      y
+      z
+    }
+    representation {
+      id
+      shape
+    }
+  }
+}
+    `;
+export const ListInstrumentFragmentDoc = gql`
+    fragment ListInstrument on Instrument {
+  id
+  name
+}
+    `;
+export const StageFragmentDoc = gql`
+    fragment Stage on Stage {
+  id
+  positions {
+    ...ListPosition
+  }
+  physicalSize
+  kind
+  name
+  createdAt
+  instrument {
+    ...ListInstrument
+  }
+  creator {
+    id
+    sub
+  }
+  pinned
+  tags
+}
+    ${ListPositionFragmentDoc}
+${ListInstrumentFragmentDoc}`;
+export const PositionFragmentDoc = gql`
+    fragment Position on Position {
+  id
+  stage {
+    ...Stage
+  }
+  x
+  y
+  z
+  omeros {
+    acquisitionDate
+    representation {
+      id
+    }
+  }
+}
+    ${StageFragmentDoc}`;
 export const ListSharedRepresentationFragmentDoc = gql`
     fragment ListSharedRepresentation on Representation {
   name
@@ -3524,10 +4250,26 @@ export const OmeroFragmentDoc = gql`
     correctionCollar
     medium
   }
+  position {
+    id
+    x
+    y
+    z
+    stage {
+      id
+      name
+      physicalSize
+    }
+  }
   instrument {
     id
     name
     model
+  }
+  objective {
+    id
+    name
+    magnification
   }
   imagingEnvironment {
     airPressure
@@ -3545,6 +4287,7 @@ export const RepRoiFragmentDoc = gql`
   createdAt
   creator {
     id
+    sub
   }
   vectors {
     x
@@ -3642,6 +4385,11 @@ export const DetailRoiFragmentDoc = gql`
       id
     }
     tags
+    latestThumbnail {
+      image
+      blurhash
+    }
+    shape
   }
   derivedRepresentations {
     id
@@ -3694,6 +4442,17 @@ export const ListSampleFragmentDoc = gql`
   pinned
 }
     `;
+export const ListStageFragmentDoc = gql`
+    fragment ListStage on Stage {
+  id
+  instrument {
+    ...ListInstrument
+  }
+  tags
+  name
+  kind
+}
+    ${ListInstrumentFragmentDoc}`;
 export const DetailTableFragmentDoc = gql`
     fragment DetailTable on Table {
   id
@@ -3777,6 +4536,39 @@ export function useCreateCommentMutation(baseOptions?: Apollo.MutationHookOption
 export type CreateCommentMutationHookResult = ReturnType<typeof useCreateCommentMutation>;
 export type CreateCommentMutationResult = Apollo.MutationResult<CreateCommentMutation>;
 export type CreateCommentMutationOptions = Apollo.BaseMutationOptions<CreateCommentMutation, CreateCommentMutationVariables>;
+export const ResolveCommentDocument = gql`
+    mutation ResolveComment($id: ID!) {
+  resolveComment(id: $id) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+export type ResolveCommentMutationFn = Apollo.MutationFunction<ResolveCommentMutation, ResolveCommentMutationVariables>;
+
+/**
+ * __useResolveCommentMutation__
+ *
+ * To run a mutation, you first call `useResolveCommentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useResolveCommentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [resolveCommentMutation, { data, loading, error }] = useResolveCommentMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useResolveCommentMutation(baseOptions?: Apollo.MutationHookOptions<ResolveCommentMutation, ResolveCommentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ResolveCommentMutation, ResolveCommentMutationVariables>(ResolveCommentDocument, options);
+      }
+export type ResolveCommentMutationHookResult = ReturnType<typeof useResolveCommentMutation>;
+export type ResolveCommentMutationResult = Apollo.MutationResult<ResolveCommentMutation>;
+export type ResolveCommentMutationOptions = Apollo.BaseMutationOptions<ResolveCommentMutation, ResolveCommentMutationVariables>;
 export const CreateExperimentDocument = gql`
     mutation CreateExperiment($name: String!, $description: String!) {
   createExperiment(name: $name, description: $description) {
@@ -3919,6 +4711,142 @@ export function usePinExperimentMutation(baseOptions?: Apollo.MutationHookOption
 export type PinExperimentMutationHookResult = ReturnType<typeof usePinExperimentMutation>;
 export type PinExperimentMutationResult = Apollo.MutationResult<PinExperimentMutation>;
 export type PinExperimentMutationOptions = Apollo.BaseMutationOptions<PinExperimentMutation, PinExperimentMutationVariables>;
+export const AssociateSamplesDocument = gql`
+    mutation AssociateSamples($experiment: ID!, $samples: [ID!]!) {
+  associateSamples(experiment: $experiment, samples: $samples) {
+    ...DetailExperiment
+  }
+}
+    ${DetailExperimentFragmentDoc}`;
+export type AssociateSamplesMutationFn = Apollo.MutationFunction<AssociateSamplesMutation, AssociateSamplesMutationVariables>;
+
+/**
+ * __useAssociateSamplesMutation__
+ *
+ * To run a mutation, you first call `useAssociateSamplesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssociateSamplesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [associateSamplesMutation, { data, loading, error }] = useAssociateSamplesMutation({
+ *   variables: {
+ *      experiment: // value for 'experiment'
+ *      samples: // value for 'samples'
+ *   },
+ * });
+ */
+export function useAssociateSamplesMutation(baseOptions?: Apollo.MutationHookOptions<AssociateSamplesMutation, AssociateSamplesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AssociateSamplesMutation, AssociateSamplesMutationVariables>(AssociateSamplesDocument, options);
+      }
+export type AssociateSamplesMutationHookResult = ReturnType<typeof useAssociateSamplesMutation>;
+export type AssociateSamplesMutationResult = Apollo.MutationResult<AssociateSamplesMutation>;
+export type AssociateSamplesMutationOptions = Apollo.BaseMutationOptions<AssociateSamplesMutation, AssociateSamplesMutationVariables>;
+export const AssociateFilesDocument = gql`
+    mutation AssociateFiles($experiment: ID!, $files: [ID!]!) {
+  associateFiles(experiment: $experiment, files: $files) {
+    ...DetailExperiment
+  }
+}
+    ${DetailExperimentFragmentDoc}`;
+export type AssociateFilesMutationFn = Apollo.MutationFunction<AssociateFilesMutation, AssociateFilesMutationVariables>;
+
+/**
+ * __useAssociateFilesMutation__
+ *
+ * To run a mutation, you first call `useAssociateFilesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssociateFilesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [associateFilesMutation, { data, loading, error }] = useAssociateFilesMutation({
+ *   variables: {
+ *      experiment: // value for 'experiment'
+ *      files: // value for 'files'
+ *   },
+ * });
+ */
+export function useAssociateFilesMutation(baseOptions?: Apollo.MutationHookOptions<AssociateFilesMutation, AssociateFilesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AssociateFilesMutation, AssociateFilesMutationVariables>(AssociateFilesDocument, options);
+      }
+export type AssociateFilesMutationHookResult = ReturnType<typeof useAssociateFilesMutation>;
+export type AssociateFilesMutationResult = Apollo.MutationResult<AssociateFilesMutation>;
+export type AssociateFilesMutationOptions = Apollo.BaseMutationOptions<AssociateFilesMutation, AssociateFilesMutationVariables>;
+export const UnassociateSamplesDocument = gql`
+    mutation UnassociateSamples($experiment: ID!, $samples: [ID!]!) {
+  unassociateSamples(experiment: $experiment, samples: $samples) {
+    ...DetailExperiment
+  }
+}
+    ${DetailExperimentFragmentDoc}`;
+export type UnassociateSamplesMutationFn = Apollo.MutationFunction<UnassociateSamplesMutation, UnassociateSamplesMutationVariables>;
+
+/**
+ * __useUnassociateSamplesMutation__
+ *
+ * To run a mutation, you first call `useUnassociateSamplesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnassociateSamplesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unassociateSamplesMutation, { data, loading, error }] = useUnassociateSamplesMutation({
+ *   variables: {
+ *      experiment: // value for 'experiment'
+ *      samples: // value for 'samples'
+ *   },
+ * });
+ */
+export function useUnassociateSamplesMutation(baseOptions?: Apollo.MutationHookOptions<UnassociateSamplesMutation, UnassociateSamplesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UnassociateSamplesMutation, UnassociateSamplesMutationVariables>(UnassociateSamplesDocument, options);
+      }
+export type UnassociateSamplesMutationHookResult = ReturnType<typeof useUnassociateSamplesMutation>;
+export type UnassociateSamplesMutationResult = Apollo.MutationResult<UnassociateSamplesMutation>;
+export type UnassociateSamplesMutationOptions = Apollo.BaseMutationOptions<UnassociateSamplesMutation, UnassociateSamplesMutationVariables>;
+export const UnassociateFilesDocument = gql`
+    mutation UnassociateFiles($experiment: ID!, $files: [ID!]!) {
+  unassociateFiles(experiment: $experiment, files: $files) {
+    ...DetailExperiment
+  }
+}
+    ${DetailExperimentFragmentDoc}`;
+export type UnassociateFilesMutationFn = Apollo.MutationFunction<UnassociateFilesMutation, UnassociateFilesMutationVariables>;
+
+/**
+ * __useUnassociateFilesMutation__
+ *
+ * To run a mutation, you first call `useUnassociateFilesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnassociateFilesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unassociateFilesMutation, { data, loading, error }] = useUnassociateFilesMutation({
+ *   variables: {
+ *      experiment: // value for 'experiment'
+ *      files: // value for 'files'
+ *   },
+ * });
+ */
+export function useUnassociateFilesMutation(baseOptions?: Apollo.MutationHookOptions<UnassociateFilesMutation, UnassociateFilesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UnassociateFilesMutation, UnassociateFilesMutationVariables>(UnassociateFilesDocument, options);
+      }
+export type UnassociateFilesMutationHookResult = ReturnType<typeof useUnassociateFilesMutation>;
+export type UnassociateFilesMutationResult = Apollo.MutationResult<UnassociateFilesMutation>;
+export type UnassociateFilesMutationOptions = Apollo.BaseMutationOptions<UnassociateFilesMutation, UnassociateFilesMutationVariables>;
 export const UploadOmeroFileDocument = gql`
     mutation UploadOmeroFile($file: ImageFile!) {
   uploadOmeroFile(file: $file) {
@@ -4161,6 +5089,115 @@ export function useDeletePlotMutation(baseOptions?: Apollo.MutationHookOptions<D
 export type DeletePlotMutationHookResult = ReturnType<typeof useDeletePlotMutation>;
 export type DeletePlotMutationResult = Apollo.MutationResult<DeletePlotMutation>;
 export type DeletePlotMutationOptions = Apollo.BaseMutationOptions<DeletePlotMutation, DeletePlotMutationVariables>;
+export const CreatePositionDocument = gql`
+    mutation createPosition($stage: ID!, $x: Float!, $y: Float!, $z: Float!, $tags: [String]) {
+  createPosition(stage: $stage, x: $x, y: $y, z: $z, tags: $tags) {
+    ...Position
+  }
+}
+    ${PositionFragmentDoc}`;
+export type CreatePositionMutationFn = Apollo.MutationFunction<CreatePositionMutation, CreatePositionMutationVariables>;
+
+/**
+ * __useCreatePositionMutation__
+ *
+ * To run a mutation, you first call `useCreatePositionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreatePositionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createPositionMutation, { data, loading, error }] = useCreatePositionMutation({
+ *   variables: {
+ *      stage: // value for 'stage'
+ *      x: // value for 'x'
+ *      y: // value for 'y'
+ *      z: // value for 'z'
+ *      tags: // value for 'tags'
+ *   },
+ * });
+ */
+export function useCreatePositionMutation(baseOptions?: Apollo.MutationHookOptions<CreatePositionMutation, CreatePositionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreatePositionMutation, CreatePositionMutationVariables>(CreatePositionDocument, options);
+      }
+export type CreatePositionMutationHookResult = ReturnType<typeof useCreatePositionMutation>;
+export type CreatePositionMutationResult = Apollo.MutationResult<CreatePositionMutation>;
+export type CreatePositionMutationOptions = Apollo.BaseMutationOptions<CreatePositionMutation, CreatePositionMutationVariables>;
+export const DeletePositionDocument = gql`
+    mutation DeletePosition($id: ID!) {
+  deletePosition(id: $id) {
+    id
+  }
+}
+    `;
+export type DeletePositionMutationFn = Apollo.MutationFunction<DeletePositionMutation, DeletePositionMutationVariables>;
+
+/**
+ * __useDeletePositionMutation__
+ *
+ * To run a mutation, you first call `useDeletePositionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeletePositionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deletePositionMutation, { data, loading, error }] = useDeletePositionMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeletePositionMutation(baseOptions?: Apollo.MutationHookOptions<DeletePositionMutation, DeletePositionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeletePositionMutation, DeletePositionMutationVariables>(DeletePositionDocument, options);
+      }
+export type DeletePositionMutationHookResult = ReturnType<typeof useDeletePositionMutation>;
+export type DeletePositionMutationResult = Apollo.MutationResult<DeletePositionMutation>;
+export type DeletePositionMutationOptions = Apollo.BaseMutationOptions<DeletePositionMutation, DeletePositionMutationVariables>;
+export const PinPositionDocument = gql`
+    mutation PinPosition($id: ID!, $pin: Boolean!) {
+  pinPosition(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}
+    `;
+export type PinPositionMutationFn = Apollo.MutationFunction<PinPositionMutation, PinPositionMutationVariables>;
+
+/**
+ * __usePinPositionMutation__
+ *
+ * To run a mutation, you first call `usePinPositionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinPositionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinPositionMutation, { data, loading, error }] = usePinPositionMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      pin: // value for 'pin'
+ *   },
+ * });
+ */
+export function usePinPositionMutation(baseOptions?: Apollo.MutationHookOptions<PinPositionMutation, PinPositionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PinPositionMutation, PinPositionMutationVariables>(PinPositionDocument, options);
+      }
+export type PinPositionMutationHookResult = ReturnType<typeof usePinPositionMutation>;
+export type PinPositionMutationResult = Apollo.MutationResult<PinPositionMutation>;
+export type PinPositionMutationOptions = Apollo.BaseMutationOptions<PinPositionMutation, PinPositionMutationVariables>;
 export const DeleteRepresentationDocument = gql`
     mutation DeleteRepresentation($id: ID!) {
   deleteRepresentation(id: $id) {
@@ -4457,6 +5494,113 @@ export function usePinSampleMutation(baseOptions?: Apollo.MutationHookOptions<Pi
 export type PinSampleMutationHookResult = ReturnType<typeof usePinSampleMutation>;
 export type PinSampleMutationResult = Apollo.MutationResult<PinSampleMutation>;
 export type PinSampleMutationOptions = Apollo.BaseMutationOptions<PinSampleMutation, PinSampleMutationVariables>;
+export const DeleteStageDocument = gql`
+    mutation DeleteStage($id: ID!) {
+  deleteStage(id: $id) {
+    id
+  }
+}
+    `;
+export type DeleteStageMutationFn = Apollo.MutationFunction<DeleteStageMutation, DeleteStageMutationVariables>;
+
+/**
+ * __useDeleteStageMutation__
+ *
+ * To run a mutation, you first call `useDeleteStageMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteStageMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteStageMutation, { data, loading, error }] = useDeleteStageMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteStageMutation(baseOptions?: Apollo.MutationHookOptions<DeleteStageMutation, DeleteStageMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteStageMutation, DeleteStageMutationVariables>(DeleteStageDocument, options);
+      }
+export type DeleteStageMutationHookResult = ReturnType<typeof useDeleteStageMutation>;
+export type DeleteStageMutationResult = Apollo.MutationResult<DeleteStageMutation>;
+export type DeleteStageMutationOptions = Apollo.BaseMutationOptions<DeleteStageMutation, DeleteStageMutationVariables>;
+export const UpdateStageDocument = gql`
+    mutation UpdateStage($id: ID!, $tags: [String], $name: String!) {
+  updateStage(id: $id, tags: $tags, name: $name) {
+    ...Stage
+  }
+}
+    ${StageFragmentDoc}`;
+export type UpdateStageMutationFn = Apollo.MutationFunction<UpdateStageMutation, UpdateStageMutationVariables>;
+
+/**
+ * __useUpdateStageMutation__
+ *
+ * To run a mutation, you first call `useUpdateStageMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateStageMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateStageMutation, { data, loading, error }] = useUpdateStageMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      tags: // value for 'tags'
+ *      name: // value for 'name'
+ *   },
+ * });
+ */
+export function useUpdateStageMutation(baseOptions?: Apollo.MutationHookOptions<UpdateStageMutation, UpdateStageMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateStageMutation, UpdateStageMutationVariables>(UpdateStageDocument, options);
+      }
+export type UpdateStageMutationHookResult = ReturnType<typeof useUpdateStageMutation>;
+export type UpdateStageMutationResult = Apollo.MutationResult<UpdateStageMutation>;
+export type UpdateStageMutationOptions = Apollo.BaseMutationOptions<UpdateStageMutation, UpdateStageMutationVariables>;
+export const PinStageDocument = gql`
+    mutation PinStage($id: ID!, $pin: Boolean!) {
+  pinStage(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}
+    `;
+export type PinStageMutationFn = Apollo.MutationFunction<PinStageMutation, PinStageMutationVariables>;
+
+/**
+ * __usePinStageMutation__
+ *
+ * To run a mutation, you first call `usePinStageMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinStageMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinStageMutation, { data, loading, error }] = usePinStageMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      pin: // value for 'pin'
+ *   },
+ * });
+ */
+export function usePinStageMutation(baseOptions?: Apollo.MutationHookOptions<PinStageMutation, PinStageMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PinStageMutation, PinStageMutationVariables>(PinStageDocument, options);
+      }
+export type PinStageMutationHookResult = ReturnType<typeof usePinStageMutation>;
+export type PinStageMutationResult = Apollo.MutationResult<PinStageMutation>;
+export type PinStageMutationOptions = Apollo.BaseMutationOptions<PinStageMutation, PinStageMutationVariables>;
 export const DeleteTableDocument = gql`
     mutation DeleteTable($id: ID!) {
   deleteTable(id: $id) {
@@ -4703,7 +5847,7 @@ export type SearchExperimentsQueryHookResult = ReturnType<typeof useSearchExperi
 export type SearchExperimentsLazyQueryHookResult = ReturnType<typeof useSearchExperimentsLazyQuery>;
 export type SearchExperimentsQueryResult = Apollo.QueryResult<SearchExperimentsQuery, SearchExperimentsQueryVariables>;
 export const GlobalSearchDocument = gql`
-    query GlobalSearch($search: String, $createdBefore: DateTime, $createdAfter: DateTime, $tags: [String], $creator: ID, $pinned: Boolean) {
+    query GlobalSearch($search: String, $createdBefore: DateTime, $createdAfter: DateTime, $tags: [String], $creator: ID, $pinned: Boolean, $stages: [ID]) {
   experiments: myexperiments(
     name: $search
     limit: 10
@@ -4749,12 +5893,17 @@ export const GlobalSearchDocument = gql`
     tags: $tags
     creator: $creator
     pinned: $pinned
+    stages: $stages
   ) {
     id
     name
     latestThumbnail {
       image
     }
+  }
+  files: myomerofiles(name: $search, limit: 10) {
+    id
+    name
   }
 }
     `;
@@ -4777,6 +5926,7 @@ export const GlobalSearchDocument = gql`
  *      tags: // value for 'tags'
  *      creator: // value for 'creator'
  *      pinned: // value for 'pinned'
+ *      stages: // value for 'stages'
  *   },
  * });
  */
@@ -4791,6 +5941,111 @@ export function useGlobalSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptio
 export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
 export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
 export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
+export const DetailInstrumentDocument = gql`
+    query DetailInstrument($id: ID!) {
+  instrument(id: $id) {
+    ...Instrument
+  }
+}
+    ${InstrumentFragmentDoc}`;
+
+/**
+ * __useDetailInstrumentQuery__
+ *
+ * To run a query within a React component, call `useDetailInstrumentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailInstrumentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailInstrumentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailInstrumentQuery(baseOptions: Apollo.QueryHookOptions<DetailInstrumentQuery, DetailInstrumentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailInstrumentQuery, DetailInstrumentQueryVariables>(DetailInstrumentDocument, options);
+      }
+export function useDetailInstrumentLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailInstrumentQuery, DetailInstrumentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailInstrumentQuery, DetailInstrumentQueryVariables>(DetailInstrumentDocument, options);
+        }
+export type DetailInstrumentQueryHookResult = ReturnType<typeof useDetailInstrumentQuery>;
+export type DetailInstrumentLazyQueryHookResult = ReturnType<typeof useDetailInstrumentLazyQuery>;
+export type DetailInstrumentQueryResult = Apollo.QueryResult<DetailInstrumentQuery, DetailInstrumentQueryVariables>;
+export const InstrumentsDocument = gql`
+    query Instruments {
+  instruments {
+    ...ListInstrument
+  }
+}
+    ${ListInstrumentFragmentDoc}`;
+
+/**
+ * __useInstrumentsQuery__
+ *
+ * To run a query within a React component, call `useInstrumentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useInstrumentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useInstrumentsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useInstrumentsQuery(baseOptions?: Apollo.QueryHookOptions<InstrumentsQuery, InstrumentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<InstrumentsQuery, InstrumentsQueryVariables>(InstrumentsDocument, options);
+      }
+export function useInstrumentsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<InstrumentsQuery, InstrumentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<InstrumentsQuery, InstrumentsQueryVariables>(InstrumentsDocument, options);
+        }
+export type InstrumentsQueryHookResult = ReturnType<typeof useInstrumentsQuery>;
+export type InstrumentsLazyQueryHookResult = ReturnType<typeof useInstrumentsLazyQuery>;
+export type InstrumentsQueryResult = Apollo.QueryResult<InstrumentsQuery, InstrumentsQueryVariables>;
+export const InstrumentSearchDocument = gql`
+    query InstrumentSearch($search: String) {
+  options: instruments(name: $search, limit: 30) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __useInstrumentSearchQuery__
+ *
+ * To run a query within a React component, call `useInstrumentSearchQuery` and pass it any options that fit your needs.
+ * When your component renders, `useInstrumentSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useInstrumentSearchQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useInstrumentSearchQuery(baseOptions?: Apollo.QueryHookOptions<InstrumentSearchQuery, InstrumentSearchQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<InstrumentSearchQuery, InstrumentSearchQueryVariables>(InstrumentSearchDocument, options);
+      }
+export function useInstrumentSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<InstrumentSearchQuery, InstrumentSearchQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<InstrumentSearchQuery, InstrumentSearchQueryVariables>(InstrumentSearchDocument, options);
+        }
+export type InstrumentSearchQueryHookResult = ReturnType<typeof useInstrumentSearchQuery>;
+export type InstrumentSearchLazyQueryHookResult = ReturnType<typeof useInstrumentSearchLazyQuery>;
+export type InstrumentSearchQueryResult = Apollo.QueryResult<InstrumentSearchQuery, InstrumentSearchQueryVariables>;
 export const DetailMetricDocument = gql`
     query DetailMetric($id: ID!) {
   metric(id: $id) {
@@ -4827,6 +6082,111 @@ export function useDetailMetricLazyQuery(baseOptions?: Apollo.LazyQueryHookOptio
 export type DetailMetricQueryHookResult = ReturnType<typeof useDetailMetricQuery>;
 export type DetailMetricLazyQueryHookResult = ReturnType<typeof useDetailMetricLazyQuery>;
 export type DetailMetricQueryResult = Apollo.QueryResult<DetailMetricQuery, DetailMetricQueryVariables>;
+export const DetailObjectiveDocument = gql`
+    query DetailObjective($id: ID) {
+  objective(id: $id) {
+    ...Objective
+  }
+}
+    ${ObjectiveFragmentDoc}`;
+
+/**
+ * __useDetailObjectiveQuery__
+ *
+ * To run a query within a React component, call `useDetailObjectiveQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailObjectiveQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailObjectiveQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailObjectiveQuery(baseOptions?: Apollo.QueryHookOptions<DetailObjectiveQuery, DetailObjectiveQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailObjectiveQuery, DetailObjectiveQueryVariables>(DetailObjectiveDocument, options);
+      }
+export function useDetailObjectiveLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailObjectiveQuery, DetailObjectiveQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailObjectiveQuery, DetailObjectiveQueryVariables>(DetailObjectiveDocument, options);
+        }
+export type DetailObjectiveQueryHookResult = ReturnType<typeof useDetailObjectiveQuery>;
+export type DetailObjectiveLazyQueryHookResult = ReturnType<typeof useDetailObjectiveLazyQuery>;
+export type DetailObjectiveQueryResult = Apollo.QueryResult<DetailObjectiveQuery, DetailObjectiveQueryVariables>;
+export const ObjectivesDocument = gql`
+    query Objectives {
+  objectives {
+    ...ListObjective
+  }
+}
+    ${ListObjectiveFragmentDoc}`;
+
+/**
+ * __useObjectivesQuery__
+ *
+ * To run a query within a React component, call `useObjectivesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useObjectivesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useObjectivesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useObjectivesQuery(baseOptions?: Apollo.QueryHookOptions<ObjectivesQuery, ObjectivesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ObjectivesQuery, ObjectivesQueryVariables>(ObjectivesDocument, options);
+      }
+export function useObjectivesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ObjectivesQuery, ObjectivesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ObjectivesQuery, ObjectivesQueryVariables>(ObjectivesDocument, options);
+        }
+export type ObjectivesQueryHookResult = ReturnType<typeof useObjectivesQuery>;
+export type ObjectivesLazyQueryHookResult = ReturnType<typeof useObjectivesLazyQuery>;
+export type ObjectivesQueryResult = Apollo.QueryResult<ObjectivesQuery, ObjectivesQueryVariables>;
+export const SearchObjectivesDocument = gql`
+    query SearchObjectives($search: String) {
+  options: objectives(search: $search) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __useSearchObjectivesQuery__
+ *
+ * To run a query within a React component, call `useSearchObjectivesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchObjectivesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchObjectivesQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useSearchObjectivesQuery(baseOptions?: Apollo.QueryHookOptions<SearchObjectivesQuery, SearchObjectivesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SearchObjectivesQuery, SearchObjectivesQueryVariables>(SearchObjectivesDocument, options);
+      }
+export function useSearchObjectivesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SearchObjectivesQuery, SearchObjectivesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SearchObjectivesQuery, SearchObjectivesQueryVariables>(SearchObjectivesDocument, options);
+        }
+export type SearchObjectivesQueryHookResult = ReturnType<typeof useSearchObjectivesQuery>;
+export type SearchObjectivesLazyQueryHookResult = ReturnType<typeof useSearchObjectivesLazyQuery>;
+export type SearchObjectivesQueryResult = Apollo.QueryResult<SearchObjectivesQuery, SearchObjectivesQueryVariables>;
 export const MyOmeroFilesDocument = gql`
     query MyOmeroFiles($limit: Int, $offset: Int) {
   myomerofiles(limit: $limit, offset: $offset) {
@@ -5053,6 +6413,78 @@ export function useMyPlotsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<My
 export type MyPlotsQueryHookResult = ReturnType<typeof useMyPlotsQuery>;
 export type MyPlotsLazyQueryHookResult = ReturnType<typeof useMyPlotsLazyQuery>;
 export type MyPlotsQueryResult = Apollo.QueryResult<MyPlotsQuery, MyPlotsQueryVariables>;
+export const DetailPositionDocument = gql`
+    query DetailPosition($id: ID!) {
+  position(id: $id) {
+    ...Position
+  }
+}
+    ${PositionFragmentDoc}`;
+
+/**
+ * __useDetailPositionQuery__
+ *
+ * To run a query within a React component, call `useDetailPositionQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailPositionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailPositionQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailPositionQuery(baseOptions: Apollo.QueryHookOptions<DetailPositionQuery, DetailPositionQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailPositionQuery, DetailPositionQueryVariables>(DetailPositionDocument, options);
+      }
+export function useDetailPositionLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailPositionQuery, DetailPositionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailPositionQuery, DetailPositionQueryVariables>(DetailPositionDocument, options);
+        }
+export type DetailPositionQueryHookResult = ReturnType<typeof useDetailPositionQuery>;
+export type DetailPositionLazyQueryHookResult = ReturnType<typeof useDetailPositionLazyQuery>;
+export type DetailPositionQueryResult = Apollo.QueryResult<DetailPositionQuery, DetailPositionQueryVariables>;
+export const PositionSearchDocument = gql`
+    query PositionSearch($search: String, $stage: ID) {
+  options: positions(name: $search, limit: 30, stage: $stage) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __usePositionSearchQuery__
+ *
+ * To run a query within a React component, call `usePositionSearchQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePositionSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePositionSearchQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      stage: // value for 'stage'
+ *   },
+ * });
+ */
+export function usePositionSearchQuery(baseOptions?: Apollo.QueryHookOptions<PositionSearchQuery, PositionSearchQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<PositionSearchQuery, PositionSearchQueryVariables>(PositionSearchDocument, options);
+      }
+export function usePositionSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PositionSearchQuery, PositionSearchQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<PositionSearchQuery, PositionSearchQueryVariables>(PositionSearchDocument, options);
+        }
+export type PositionSearchQueryHookResult = ReturnType<typeof usePositionSearchQuery>;
+export type PositionSearchLazyQueryHookResult = ReturnType<typeof usePositionSearchLazyQuery>;
+export type PositionSearchQueryResult = Apollo.QueryResult<PositionSearchQuery, PositionSearchQueryVariables>;
 export const DetailRepresentationDocument = gql`
     query DetailRepresentation($id: ID!) {
   representation(id: $id) {
@@ -5918,6 +7350,113 @@ export function useHcsSampleMetricsLazyQuery(baseOptions?: Apollo.LazyQueryHookO
 export type HcsSampleMetricsQueryHookResult = ReturnType<typeof useHcsSampleMetricsQuery>;
 export type HcsSampleMetricsLazyQueryHookResult = ReturnType<typeof useHcsSampleMetricsLazyQuery>;
 export type HcsSampleMetricsQueryResult = Apollo.QueryResult<HcsSampleMetricsQuery, HcsSampleMetricsQueryVariables>;
+export const DetailStageDocument = gql`
+    query DetailStage($id: ID!) {
+  stage(id: $id) {
+    ...Stage
+  }
+}
+    ${StageFragmentDoc}`;
+
+/**
+ * __useDetailStageQuery__
+ *
+ * To run a query within a React component, call `useDetailStageQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailStageQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailStageQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailStageQuery(baseOptions: Apollo.QueryHookOptions<DetailStageQuery, DetailStageQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailStageQuery, DetailStageQueryVariables>(DetailStageDocument, options);
+      }
+export function useDetailStageLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailStageQuery, DetailStageQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailStageQuery, DetailStageQueryVariables>(DetailStageDocument, options);
+        }
+export type DetailStageQueryHookResult = ReturnType<typeof useDetailStageQuery>;
+export type DetailStageLazyQueryHookResult = ReturnType<typeof useDetailStageLazyQuery>;
+export type DetailStageQueryResult = Apollo.QueryResult<DetailStageQuery, DetailStageQueryVariables>;
+export const MyStagesDocument = gql`
+    query MyStages($limit: Int, $offset: Int) {
+  mystages(limit: $limit, offset: $offset) {
+    ...ListStage
+  }
+}
+    ${ListStageFragmentDoc}`;
+
+/**
+ * __useMyStagesQuery__
+ *
+ * To run a query within a React component, call `useMyStagesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyStagesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyStagesQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *   },
+ * });
+ */
+export function useMyStagesQuery(baseOptions?: Apollo.QueryHookOptions<MyStagesQuery, MyStagesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyStagesQuery, MyStagesQueryVariables>(MyStagesDocument, options);
+      }
+export function useMyStagesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyStagesQuery, MyStagesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyStagesQuery, MyStagesQueryVariables>(MyStagesDocument, options);
+        }
+export type MyStagesQueryHookResult = ReturnType<typeof useMyStagesQuery>;
+export type MyStagesLazyQueryHookResult = ReturnType<typeof useMyStagesLazyQuery>;
+export type MyStagesQueryResult = Apollo.QueryResult<MyStagesQuery, MyStagesQueryVariables>;
+export const StageSearchDocument = gql`
+    query StageSearch($search: String) {
+  options: stages(name: $search, limit: 30) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __useStageSearchQuery__
+ *
+ * To run a query within a React component, call `useStageSearchQuery` and pass it any options that fit your needs.
+ * When your component renders, `useStageSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useStageSearchQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useStageSearchQuery(baseOptions?: Apollo.QueryHookOptions<StageSearchQuery, StageSearchQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<StageSearchQuery, StageSearchQueryVariables>(StageSearchDocument, options);
+      }
+export function useStageSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<StageSearchQuery, StageSearchQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<StageSearchQuery, StageSearchQueryVariables>(StageSearchDocument, options);
+        }
+export type StageSearchQueryHookResult = ReturnType<typeof useStageSearchQuery>;
+export type StageSearchLazyQueryHookResult = ReturnType<typeof useStageSearchLazyQuery>;
+export type StageSearchQueryResult = Apollo.QueryResult<StageSearchQuery, StageSearchQueryVariables>;
 export const DetailTableDocument = gql`
     query DetailTable($id: ID!, $only: [String], $limit: Int = 200, $offset: Int = 3, $query: String) {
   table(id: $id) {

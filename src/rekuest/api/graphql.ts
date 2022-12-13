@@ -67,6 +67,32 @@ export enum AgentStatusInput {
   Vanilla = 'VANILLA'
 }
 
+export type Annotation = {
+  /** The name of the annotation */
+  kind?: Maybe<Scalars['String']>;
+};
+
+export type AnnotationInput = {
+  /** The value of this annotation */
+  args?: InputMaybe<Scalars['String']>;
+  /** A hook for the app to call */
+  hook?: InputMaybe<Scalars['String']>;
+  /** The kind of annotation */
+  kind: AnnotationKind;
+  /** The max of this annotation (Value Range) */
+  max?: InputMaybe<Scalars['Float']>;
+  /** The min of this annotation (Value Range) */
+  min?: InputMaybe<Scalars['Float']>;
+  /** The name of this annotation */
+  name?: InputMaybe<Scalars['String']>;
+};
+
+/** The kind of annotation */
+export enum AnnotationKind {
+  CustomAnnotation = 'CustomAnnotation',
+  ValueRange = 'ValueRange'
+}
+
 export type AppRepository = Repository & {
   __typename?: 'AppRepository';
   /** The Associated App */
@@ -89,6 +115,8 @@ export type AppRepositoryNodesArgs = {
 
 export type ArgPort = Port & {
   __typename?: 'ArgPort';
+  /** The annotations of this port */
+  annotations?: Maybe<Array<Maybe<Annotation>>>;
   /** The child */
   child?: Maybe<ChildPort>;
   default?: Maybe<Scalars['Any']>;
@@ -106,6 +134,8 @@ export type ArgPort = Port & {
 };
 
 export type ArgPortInput = {
+  /** The annotations of this argument */
+  annotations?: InputMaybe<Array<InputMaybe<AnnotationInput>>>;
   /** The child of this argument */
   child?: InputMaybe<ChildPortInput>;
   /** The key of the arg */
@@ -374,6 +404,16 @@ export type CreateMirrorReturn = {
   repo?: Maybe<MirrorRepository>;
 };
 
+export type CustomAnnotation = Annotation & {
+  __typename?: 'CustomAnnotation';
+  /** The arguments for this annotation */
+  args?: Maybe<Array<Maybe<Scalars['String']>>>;
+  /** The hook for this annotation */
+  hook: Scalars['String'];
+  /** The name of the annotation */
+  kind?: Maybe<Scalars['String']>;
+};
+
 export type CustomReturnWidget = ReturnWidget & {
   __typename?: 'CustomReturnWidget';
   /** A hook for the app to call */
@@ -610,6 +650,7 @@ export type MutationCreateMirrorArgs = {
 export type MutationCreateTemplateArgs = {
   definition: DefinitionInput;
   extensions?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  imitate?: InputMaybe<Scalars['ID']>;
   params?: InputMaybe<Scalars['GenericScalar']>;
   policy?: InputMaybe<Scalars['GenericScalar']>;
 };
@@ -646,7 +687,7 @@ export type MutationProvideArgs = {
 export type MutationReserveArgs = {
   allowAutoRequest?: InputMaybe<Scalars['Boolean']>;
   appGroup?: InputMaybe<Scalars['ID']>;
-  imitate?: InputMaybe<Scalars['String']>;
+  imitate?: InputMaybe<Scalars['ID']>;
   node: Scalars['ID'];
   params?: InputMaybe<ReserveParamsInput>;
   persist?: InputMaybe<Scalars['Boolean']>;
@@ -798,6 +839,8 @@ export type PermissionsOfReturn = {
 
 /** A Port */
 export type Port = {
+  /** The annotations of this port */
+  annotations?: Maybe<Array<Maybe<Annotation>>>;
   /** The child */
   child?: Maybe<ChildPort>;
   /** A description for this Port */
@@ -1554,6 +1597,8 @@ export type ResetReservationsReturn = {
 
 export type ReturnPort = Port & {
   __typename?: 'ReturnPort';
+  /** The annotations of this port */
+  annotations?: Maybe<Array<Maybe<Annotation>>>;
   /** The child */
   child?: Maybe<ChildPort>;
   /** A description for this Port */
@@ -1570,6 +1615,8 @@ export type ReturnPort = Port & {
 };
 
 export type ReturnPortInput = {
+  /** The annotations of this argument */
+  annotations?: InputMaybe<Array<InputMaybe<AnnotationInput>>>;
   /** The child of this argument */
   child?: InputMaybe<ChildPortInput>;
   /** The description of this argument */
@@ -1598,12 +1645,18 @@ export type ReturnWidgetInput = {
   /** A hook for the app to call */
   hook?: InputMaybe<Scalars['String']>;
   /** type */
-  kind: Scalars['String'];
+  kind: ReturnWidgetKind;
   /** Do we have a possible */
   query?: InputMaybe<Scalars['String']>;
   /** A hook for the app to call */
   ward?: InputMaybe<Scalars['String']>;
 };
+
+/** The kind of return widget */
+export enum ReturnWidgetKind {
+  CustomReturnWidget = 'CustomReturnWidget',
+  ImageReturnWidget = 'ImageReturnWidget'
+}
 
 export type SearchWidget = Widget & {
   __typename?: 'SearchWidget';
@@ -1850,6 +1903,16 @@ export type UserAssignmentInput = {
   user: Scalars['String'];
 };
 
+export type ValueRange = Annotation & {
+  __typename?: 'ValueRange';
+  /** The name of the annotation */
+  kind?: Maybe<Scalars['String']>;
+  /** The maximum value */
+  max: Scalars['Float'];
+  /** The minimum value */
+  min: Scalars['Float'];
+};
+
 export type Waiter = {
   __typename?: 'Waiter';
   /** This Assignation app */
@@ -1902,7 +1965,7 @@ export type WidgetInput = {
   /** A hook for the app to call */
   hook?: InputMaybe<Scalars['String']>;
   /** type */
-  kind: Scalars['String'];
+  kind: WidgetKind;
   /** Max value for int widget */
   max?: InputMaybe<Scalars['Int']>;
   /** Max value for int widget */
@@ -1914,6 +1977,19 @@ export type WidgetInput = {
   /** A ward for the app to call */
   ward?: InputMaybe<Scalars['String']>;
 };
+
+/** The kind of widget */
+export enum WidgetKind {
+  BoolWidget = 'BoolWidget',
+  ChoiceWidget = 'ChoiceWidget',
+  CustomWidget = 'CustomWidget',
+  IntWidget = 'IntWidget',
+  LinkWidget = 'LinkWidget',
+  QueryWidget = 'QueryWidget',
+  SearchWidget = 'SearchWidget',
+  SliderWidget = 'SliderWidget',
+  StringWidget = 'StringWidget'
+}
 
 /** One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string. */
 export type __EnumValue = {
@@ -2026,17 +2102,17 @@ export type ListAgentFragment = { __typename?: 'Agent', id: string, identifier: 
 
 export type DetailAgentFragment = { __typename?: 'Agent', id: string, identifier: string, status: AgentStatus, name: string, registry?: { __typename?: 'Registry', name?: string | null, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }>, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template: { __typename?: 'Template', node: { __typename?: 'Node', name: string } }, reservations: Array<{ __typename?: 'Reservation', id: string, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } }>, creator?: { __typename?: 'User', username: string, sub?: string | null } | null }> };
 
-export type DetailAssignationFragment = { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null };
+export type DetailAssignationFragment = { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null };
 
 export type ListAssignationFragment = { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null } | null };
 
-export type DetailNodeFragment = { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null };
+export type DetailNodeFragment = { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null };
 
 export type NodeListItemFragment = { __typename?: 'Node', id: string, name: string, kind: NodeKind, hash: string, description: string, interfaces?: Array<string | null> | null, meta?: any | null };
 
 export type MiniNodeFragment = { __typename?: 'Node', name: string, description: string, kind: NodeKind, id: string, meta?: any | null, hash: string };
 
-export type CompleteNodeFragment = { __typename?: 'Node', name: string, hash: string, description: string, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null };
+export type CompleteNodeFragment = { __typename?: 'Node', name: string, hash: string, description: string, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null };
 
 export type UserAssignmentFragment = { __typename?: 'UserAssignment', permissions: Array<string | null>, user: { __typename?: 'User', id: string, username: string, email: string } };
 
@@ -2044,17 +2120,17 @@ export type GroupAssignmentFragment = { __typename?: 'GroupAssignment', permissi
 
 export type IntWidgetFragment = { __typename?: 'IntWidget', kind: string, dependencies?: Array<string | null> | null };
 
-export type StringWidgetFragment = { __typename?: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null };
+export type StringWidgetFragment = { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null };
 
 export type BoolWidgetFragment = { __typename?: 'BoolWidget', kind: string, dependencies?: Array<string | null> | null };
 
-export type SliderWidgetFragment = { __typename?: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null };
+export type SliderWidgetFragment = { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null };
 
-export type SearchWidgetFragment = { __typename?: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null };
+export type SearchWidgetFragment = { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null };
 
-export type CustomWidgetFragment = { __typename?: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null };
+export type CustomWidgetFragment = { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null };
 
-export type ChoiceWidgetFragment = { __typename?: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null };
+export type ChoiceWidgetFragment = { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null };
 
 export type LinkWidgetFragment = { __typename?: 'LinkWidget', kind: string, linkbuilder?: string | null };
 
@@ -2082,7 +2158,7 @@ type InputWidget_StringWidget_Fragment = { __typename: 'StringWidget', kind: str
 
 export type InputWidgetFragment = InputWidget_BoolWidget_Fragment | InputWidget_ChoiceWidget_Fragment | InputWidget_CustomWidget_Fragment | InputWidget_IntWidget_Fragment | InputWidget_LinkWidget_Fragment | InputWidget_QueryWidget_Fragment | InputWidget_SearchWidget_Fragment | InputWidget_SliderWidget_Fragment | InputWidget_StringWidget_Fragment;
 
-export type ArgPortFragment = { __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null };
+export type ArgPortFragment = { __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null };
 
 export type ImageReturnWidgetFragment = { __typename: 'ImageReturnWidget', query?: string | null, kind: string, ward?: string | null };
 
@@ -2094,9 +2170,9 @@ type ReturnWidget_ImageReturnWidget_Fragment = { __typename: 'ImageReturnWidget'
 
 export type ReturnWidgetFragment = ReturnWidget_CustomReturnWidget_Fragment | ReturnWidget_ImageReturnWidget_Fragment;
 
-export type ReturnPortFragment = { __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null };
+export type ReturnPortFragment = { __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null };
 
-export type PortsFragment = { __typename?: 'Node', args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null };
+export type PortsFragment = { __typename?: 'Node', args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null };
 
 export type DetailProvisionFragment = { __typename?: 'Provision', statusmessage: string, status: ProvisionStatus, id: string, reference: string, mode: ProvisionMode, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string, identifier: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } | null, template: { __typename?: 'Template', id: string, extensions?: Array<string | null> | null, params?: any | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, causedReservations: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } }>, assignations?: Array<{ __typename?: 'Assignation', id: string, reference: string, status: AssignationStatus, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null } | null> | null, reservations: Array<{ __typename?: 'Reservation', title?: string | null, id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', name: string }, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } | null } }>, log?: Array<{ __typename?: 'ProvisionLog', message?: string | null, level: ProvisionLogLevel, createdAt: any } | null> | null };
 
@@ -2200,7 +2276,7 @@ export type AssignMutationVariables = Exact<{
 }>;
 
 
-export type AssignMutation = { __typename?: 'Mutation', assign?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null } | null };
+export type AssignMutation = { __typename?: 'Mutation', assign?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null } | null };
 
 export type LinkMutationVariables = Exact<{
   reservation: Scalars['ID'];
@@ -2232,7 +2308,7 @@ export type ReserveMutationVariables = Exact<{
   template?: InputMaybe<Scalars['ID']>;
   params?: InputMaybe<ReserveParamsInput>;
   title?: InputMaybe<Scalars['String']>;
-  imitate?: InputMaybe<Scalars['String']>;
+  imitate?: InputMaybe<Scalars['ID']>;
   allowAutoRequest?: InputMaybe<Scalars['Boolean']>;
 }>;
 
@@ -2310,7 +2386,7 @@ export type DetailAssignationQueryVariables = Exact<{
 }>;
 
 
-export type DetailAssignationQuery = { __typename?: 'Query', assignation?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null } | null };
+export type DetailAssignationQuery = { __typename?: 'Query', assignation?: { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } }, creator?: { __typename?: 'User', email: string } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null } | null };
 
 export type RequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2357,7 +2433,7 @@ export type DetailNodeQueryVariables = Exact<{
 }>;
 
 
-export type DetailNodeQuery = { __typename?: 'Query', node?: { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null } | null };
+export type DetailNodeQuery = { __typename?: 'Query', node?: { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null } | null };
 
 export type MiniNodeByIdQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -2388,7 +2464,7 @@ export type AssignNodeQueryVariables = Exact<{
 }>;
 
 
-export type AssignNodeQuery = { __typename?: 'Query', node?: { __typename?: 'Node', name: string, hash: string, description: string, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null } | null };
+export type AssignNodeQuery = { __typename?: 'Query', node?: { __typename?: 'Node', name: string, hash: string, description: string, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null } | null };
 
 export type PermissionOptionsQueryVariables = Exact<{
   model: AvailableModels;
@@ -2612,14 +2688,14 @@ export type AssignNodeEventSubscriptionVariables = Exact<{
 }>;
 
 
-export type AssignNodeEventSubscription = { __typename?: 'Subscription', nodeEvent?: { __typename?: 'Node', name: string, hash: string, description: string, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null } | null };
+export type AssignNodeEventSubscription = { __typename?: 'Subscription', nodeEvent?: { __typename?: 'Node', name: string, hash: string, description: string, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null } | null };
 
 export type DetailNodeEventSubscriptionVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailNodeEventSubscription = { __typename?: 'Subscription', nodeEvent?: { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null } | null> | null } | null };
+export type DetailNodeEventSubscription = { __typename?: 'Subscription', nodeEvent?: { __typename?: 'Node', name: string, description: string, kind: NodeKind, hash: string, id: string, interfaces?: Array<string | null> | null, meta?: any | null, templates?: Array<{ __typename?: 'Template', id: string, interface: string, registry: { __typename?: 'Registry', name?: string | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, name?: string | null } | null } } | null> | null, args?: Array<{ __typename: 'ArgPort', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, widget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null, returns?: Array<{ __typename: 'ReturnPort', label?: string | null, key: string, nullable: boolean, description?: string | null, identifier?: Identifier | null, kind: PortKind, widget?: { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind?: PortKind | null, child?: { __typename?: 'ChildPort', kind?: PortKind | null } | null } | null } | null, annotations?: Array<{ __typename?: 'CustomAnnotation' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null } | null };
 
 export type WatchInterfaceSubscriptionVariables = Exact<{
   interface?: InputMaybe<Scalars['String']>;
@@ -2747,6 +2823,7 @@ export const IntWidgetFragmentDoc = gql`
     `;
 export const StringWidgetFragmentDoc = gql`
     fragment StringWidget on StringWidget {
+  __typename
   kind
   dependencies
   placeholder
@@ -2754,6 +2831,7 @@ export const StringWidgetFragmentDoc = gql`
     `;
 export const SearchWidgetFragmentDoc = gql`
     fragment SearchWidget on SearchWidget {
+  __typename
   kind
   query
   ward
@@ -2762,6 +2840,7 @@ export const SearchWidgetFragmentDoc = gql`
     `;
 export const SliderWidgetFragmentDoc = gql`
     fragment SliderWidget on SliderWidget {
+  __typename
   kind
   dependencies
   min
@@ -2770,6 +2849,7 @@ export const SliderWidgetFragmentDoc = gql`
     `;
 export const ChoiceWidgetFragmentDoc = gql`
     fragment ChoiceWidget on ChoiceWidget {
+  __typename
   kind
   choices {
     value
@@ -2779,6 +2859,7 @@ export const ChoiceWidgetFragmentDoc = gql`
     `;
 export const CustomWidgetFragmentDoc = gql`
     fragment CustomWidget on CustomWidget {
+  __typename
   kind
   hook
   dependencies
@@ -2836,6 +2917,12 @@ export const ArgPortFragmentDoc = gql`
   }
   default
   nullable
+  annotations {
+    ... on ValueRange {
+      min
+      max
+    }
+  }
 }
     ${InputWidgetFragmentDoc}
 ${ChildPortFragmentDoc}`;
@@ -2878,6 +2965,12 @@ export const ReturnPortFragmentDoc = gql`
   kind
   child {
     ...ChildPort
+  }
+  annotations {
+    ... on ValueRange {
+      min
+      max
+    }
   }
 }
     ${ReturnWidgetFragmentDoc}
@@ -3854,7 +3947,7 @@ export type ProvideMutationHookResult = ReturnType<typeof useProvideMutation>;
 export type ProvideMutationResult = Apollo.MutationResult<ProvideMutation>;
 export type ProvideMutationOptions = Apollo.BaseMutationOptions<ProvideMutation, ProvideMutationVariables>;
 export const ReserveDocument = gql`
-    mutation Reserve($node: ID!, $template: ID, $params: ReserveParamsInput, $title: String, $imitate: String, $allowAutoRequest: Boolean) {
+    mutation Reserve($node: ID!, $template: ID, $params: ReserveParamsInput, $title: String, $imitate: ID, $allowAutoRequest: Boolean) {
   reserve(
     node: $node
     template: $template

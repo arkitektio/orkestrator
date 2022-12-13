@@ -1,7 +1,11 @@
 import React, { useContext } from "react";
 import { AlertModalState } from "./AlertModal";
 
-export type AlertFunc = (message: AlertModalState) => Promise<boolean>
+export type AlertFunc = (message: {
+  message: string;
+  subtitle?: string;
+  confirmLabel?: string;
+}) => Promise<boolean>;
 
 export type AlertContextType = {
   alert: AlertFunc;

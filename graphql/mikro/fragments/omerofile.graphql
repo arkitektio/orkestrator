@@ -8,6 +8,9 @@ fragment DetailOmeroFile on OmeroFile {
   derivedRepresentations {
     ...ListRepresentation
   }
+  experiments {
+    ...ListExperiment
+  }
 }
 
 fragment ListOmeroFile on OmeroFile {

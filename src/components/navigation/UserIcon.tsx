@@ -10,6 +10,8 @@ import { useHerre } from "herre";
 import { useProfileQuery } from "../../lok/api/graphql";
 import { withMan } from "../../lok/context";
 import { useMikro } from "../../mikro/MikroContext";
+import { useFakts } from "@jhnnsrs/fakts";
+import { TbCloudDataConnection } from "react-icons/tb";
 
 interface Props {}
 
@@ -26,7 +28,7 @@ export const NotificationCenter = (props: {
   return (
     <div className="flex flex-col">
       <div className="font-light mb-1">Notifications</div>
-      <div className="flex flex-col bg-slate-600 p-1 rounded">
+      <div className="flex flex-col bg-slate-600 p-1 rounded text-black">
         {props.notifications.map((notification) => (
           <div
             key={notification.id}
@@ -43,6 +45,7 @@ export const NotificationCenter = (props: {
 export const UserIcon: React.FC<Props> = (props: Props) => {
   const { user, logout } = useHerre();
   const { provide, setProvide } = useAgent();
+  const { fakts } = useFakts();
 
   const {
     notifications,
@@ -99,28 +102,38 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
               ref={(ref: any) => setPopperElement(ref)}
               id="tooltip"
               role="tooltip"
-              className="bg-back-400 dark:bg-slate-50 p-2 rounded rounded-md border-gray-400"
+              className="bg-back-400 dark:bg-back-800 p-2 rounded rounded-md  mb-2 border-back-700 shadow shadow-lg shadow-black-800 border"
               style={styles.popper}
               {...attributes.popper}
             >
+              <div className="flex flex-col">
+                <div className="flex flex-row cursor-pointer">
+                  <div className="flex-grow flex-col "></div>
+                  <TbCloudDataConnection className="my-auto mr-1" />
+                  {fakts?.self?.name}
+                </div>
+              </div>
               <NotificationCenter notifications={notifications} />
               <div className="flex flex-row mt-2">
                 <div className="flex-grow"></div>
-                <div
-                  onClick={() => setProvide(!provide)}
-                  className={
-                    "px-2 text-sm text-gray-800 hover:bg-gray-700 hover:text-gray-200 cursor-pointer"
-                  }
-                >
-                  {provide ? "...Providing" : "Provide"}
-                </div>
-                <div
-                  onClick={() => logout()}
-                  className={
-                    "text-center px-2 text-sm  hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-red-400 rounded-md text-red-500"
-                  }
-                >
-                  Log Out
+                <div className="flex flex-row gap-2">
+                  <div className="flex grow"></div>
+                  <div
+                    onClick={() => setProvide(!provide)}
+                    className={
+                      "px-2 text-sm text-slate-50 hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-primary rounded-400"
+                    }
+                  >
+                    {provide ? "...Providing" : "Provide"}
+                  </div>
+                  <div
+                    onClick={() => logout()}
+                    className={
+                      "text-center px-2 text-sm  hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-red-400  text-red-500"
+                    }
+                  >
+                    Log Out
+                  </div>
                 </div>
               </div>
             </Popover.Panel>

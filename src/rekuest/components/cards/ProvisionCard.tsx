@@ -31,11 +31,11 @@ export const ProvisionCard = ({ provision }: ProvisionCardProps) => {
     >
       <div className="flex flex-col">
         {provision.agent && (
-          <Agent.DetailLink object={provision.agent?.id}>
+          <Provision.DetailLink object={provision.id}>
             <pre className="bg-back-900 text-white p-1">
-              {provision.agent?.identifier}
+              {provision.id} {provision.agent?.identifier}
             </pre>
-          </Agent.DetailLink>
+          </Provision.DetailLink>
         )}
         {appdata?.app?.id && (
           <App.DetailLink

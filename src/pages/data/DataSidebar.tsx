@@ -2,7 +2,13 @@ import * as React from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { ResponsiveList } from "../../components/layout/ResponsiveList";
 import { OptimizedImage } from "../../layout/OptimizedImage";
-import { Experiment, Representation, Sample, Table } from "../../linker";
+import {
+  Experiment,
+  MikroFile,
+  Representation,
+  Sample,
+  Table,
+} from "../../linker";
 import {
   GlobalSearchQueryVariables,
   useGlobalSearchLazyQuery,
@@ -150,6 +156,38 @@ export const TableItem = ({ table }: any) => {
   );
 };
 
+export const FileItem = ({ file }: any) => {
+  const { s3resolve } = useMikro();
+
+  return (
+    <MikroFile.Smart
+      showSelfMates={true}
+      placement="bottom"
+      object={file.id}
+      dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
+        `rounded shadow-xl group text-white bg-slate-700 ${
+          isOver && !isDragging && "border-primary-200 border"
+        } ${isDragging && "border-primary-200 border"} ${
+          isSelected && "ring-1 ring-primary-200 "
+        }`
+      }
+    >
+      <div className="px-6 py-4">
+        <MikroFile.DetailLink
+          className={({ isActive }) =>
+            "font-bold text-md mb-2 cursor-pointer " +
+            (isActive ? "text-primary-300" : "")
+          }
+          object={file.id}
+        >
+          <span className="truncate">{file?.name}</span>
+        </MikroFile.DetailLink>
+        <p className="text-white-700 text-base"></p>
+      </div>
+    </MikroFile.Smart>
+  );
+};
+
 const DataSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
   const [fetch, { data }] = withMikro(useGlobalSearchLazyQuery)();
   const [filter, setFilter] = React.useState<GlobalSearchQueryVariables>({
@@ -170,7 +208,7 @@ const DataSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
           />
         </div>
         <div
-          className="flex-grow flex flex-col gap-2 p-5 overflow-hidden direct"
+          className="flex-grow flex flex-col gap-2 p-5 overflow-y-scroll direct"
           data-enableselect={true}
         >
           {data?.experiments && data?.experiments.length > 0 && (
@@ -220,6 +258,19 @@ const DataSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
           <ResponsiveContainerGrid>
             {data?.representations?.map((re, index) => (
               <RepresentationItem key={index} re={re} />
+            ))}
+          </ResponsiveContainerGrid>
+          {data?.files && data?.files.length > 0 && (
+            <div
+              className="font-semibold text-center text-xs dark:text-slate-50 mt-2"
+              data-enableselect={true}
+            >
+              Files
+            </div>
+          )}
+          <ResponsiveContainerGrid>
+            {data?.files?.map((f, index) => (
+              <FileItem key={index} file={f} />
             ))}
           </ResponsiveContainerGrid>
         </div>

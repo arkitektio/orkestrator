@@ -5,6 +5,7 @@ query GlobalSearch(
   $tags: [String]
   $creator: ID
   $pinned: Boolean
+  $stages: [ID]
 ) {
   experiments: myexperiments(
     name: $search
@@ -54,11 +55,17 @@ query GlobalSearch(
     tags: $tags
     creator: $creator
     pinned: $pinned
+    stages: $stages
   ) {
     id
     name
     latestThumbnail {
       image
     }
+  }
+
+  files: myomerofiles(name: $search, limit: 10) {
+    id
+    name
   }
 }

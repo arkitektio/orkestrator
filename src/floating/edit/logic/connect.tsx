@@ -354,6 +354,70 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
   }
 
   if (
+    [ReactiveImplementationModelInput.If].includes(
+      targetNode.data.implementation
+    )
+  ) {
+    if (target_index == 0) {
+      new_instream = [
+        sourceStream,
+        targetNode.data.instream.at(1) || [
+          {
+            key: "true",
+            kind: StreamKind.Bool,
+            __typename: "StreamItem",
+            nullable: false,
+          },
+        ],
+      ];
+      new_outstream = [sourceStream, sourceStream];
+    } else {
+      new_instream = [targetNode.data.instream.at(0) || [], sourceStream];
+      new_outstream = targetNode.data.outstream || [];
+    }
+  }
+
+  if (
+    [ReactiveImplementationModelInput.And].includes(
+      targetNode.data.implementation
+    )
+  ) {
+    new_instream = [sourceStream];
+    new_outstream = [
+      sourceStream.map((x) => ({ ...x, nullable: false })),
+      sourceStream.map((x) => ({ ...x, nullable: true })),
+    ];
+  }
+
+  if (
+    [ReactiveImplementationModelInput.Chunk].includes(
+      targetNode.data.implementation
+    )
+  ) {
+    if (sourceStream.length > 1) {
+      return { errors: [{ message: "Chunk only takes one input" }] };
+    }
+    if (sourceStream.at(0)?.kind !== StreamKind.List) {
+      return { errors: [{ message: "Chunk only takes lists as input" }] };
+    }
+    if (!sourceStream.at(0)?.child?.kind) {
+      return {
+        errors: [{ message: "Chunk only takes lists as input with a child" }],
+      };
+    }
+    new_instream = [sourceStream];
+    new_outstream = [
+      sourceStream.map((x) => ({
+        key: "element",
+        ...x.child,
+        nullable: false,
+        __typename: "StreamItem",
+        kind: x.child?.kind || StreamKind.Structure,
+      })),
+    ];
+  }
+
+  if (
     [ReactiveImplementationModelInput.Split].includes(
       targetNode.data.implementation
     )
@@ -602,6 +666,46 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
   }
 
   if (
+    [ReactiveImplementationModelInput.Chunk].includes(
+      sourceNode.data.implementation
+    )
+  ) {
+    let new_reak_instreams = sourceNode.data.instream;
+    let new_reak_outstreams = [targetStream];
+    // check which edges are wrong now
+
+    let wrongEdges = calculateWrongEdges(
+      edges,
+      sourceNode,
+      new_reak_instreams,
+      new_reak_outstreams
+    );
+
+    return {
+      nodes: nodes.map((node) =>
+        node.id === sourceNode.id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                instream: new_reak_instreams,
+                oustream: new_reak_outstreams,
+              },
+            }
+          : node
+      ),
+      edges: addEdge(
+        {
+          ...params,
+          data: { stream: targetStream },
+          type: "LabeledEdge",
+        },
+        edges
+      ).filter((e) => !wrongEdges.includes(e.id)),
+    };
+  }
+
+  if (
     [ReactiveImplementationModelInput.ToList].includes(
       sourceNode.data.implementation
     )
@@ -660,6 +764,53 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
 
     let new_reak_instreams = [
       new_reak_outstreams.reduce((x, news) => x && x.concat(news), []),
+    ];
+    // check which edges are wrong now
+
+    let wrongEdges = calculateWrongEdges(
+      edges,
+      sourceNode,
+      new_reak_instreams,
+      new_reak_outstreams
+    );
+
+    return {
+      nodes: nodes.map((node) =>
+        node.id === sourceNode.id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                instream: new_reak_instreams,
+                oustream: new_reak_outstreams,
+              },
+            }
+          : node
+      ),
+      edges: addEdge(
+        {
+          ...params,
+          data: { stream: targetStream },
+          type: "LabeledEdge",
+        },
+        edges
+      ).filter((e) => !wrongEdges.includes(e.id)),
+    };
+  }
+
+  if (
+    [ReactiveImplementationModelInput.If].includes(
+      sourceNode.data.implementation
+    )
+  ) {
+    let new_reak_outstreams = [
+      targetNode.data.instream.at(0) || [],
+      targetNode.data.instream.at(0) || [],
+    ];
+
+    let new_reak_instreams = [
+      targetNode.data.instream.at(0) || [],
+      sourceNode.data.instream.at(1) || [],
     ];
     // check which edges are wrong now
 

@@ -7,6 +7,7 @@ import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 import { SearchSelectInput } from "../../components/forms/fields/search_select_input";
 import {
   GlobalSearchQueryVariables,
+  useStageSearchLazyQuery,
   useTagSearchLazyQuery,
   useUserOptionsLazyQuery,
 } from "../../mikro/api/graphql";
@@ -28,7 +29,8 @@ export const DataSearch: React.FC<NodeFilterBoxProps> = ({
   placeholder,
 }) => {
   const [searchUser] = withMikro(useUserOptionsLazyQuery)();
-  const [searchTags, _t] = withMikro(useTagSearchLazyQuery)();
+  const [searchTags] = withMikro(useTagSearchLazyQuery)();
+  const [searchStages] = withMikro(useStageSearchLazyQuery)();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -88,6 +90,12 @@ export const DataSearch: React.FC<NodeFilterBoxProps> = ({
                       isMulti={true}
                       label="Has tags"
                       lazySearch={searchTags}
+                    />
+                    <SearchSelectInput
+                      name="stages"
+                      isMulti={true}
+                      label="In stages"
+                      lazySearch={searchStages}
                     />
                     <DateInputField
                       name="createdBefore"

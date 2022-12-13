@@ -1,6 +1,21 @@
-query ReactiveTemplate($id: ID!) {
-  reactivetemplate(id: $id) {
+query ReactiveTemplate(
+  $id: ID
+  $implementation: ReactiveImplementationModelInput
+) {
+  reactivetemplate(id: $id, implementation: $implementation) {
     ...ReactiveTemplate
+  }
+}
+
+query DetailReactiveTemplate(
+  $id: ID
+  $implementation: ReactiveImplementationModelInput
+) {
+  reactivetemplate(id: $id, implementation: $implementation) {
+    ...ReactiveTemplate
+    constants {
+      ...Constant
+    }
   }
 }
 

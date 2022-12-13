@@ -8,11 +8,12 @@ import { ParagraphInputField } from "../../components/forms/fields/paragraph_inp
 import { CreateableSearchSelect } from "../../components/forms/fields/search_select_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { DropZone } from "../../components/layout/DropZone";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Sample } from "../../linker";
+import { MikroFile, Sample } from "../../linker";
 import {
   CommentableModels,
   DetailExperimentDocument,
@@ -22,6 +23,10 @@ import {
   usePinExperimentMutation,
   useTagSearchLazyQuery,
   useUpdateExperimentMutation,
+  useAssociateSamplesMutation,
+  useAssociateFilesMutation,
+  useUnassociateFilesMutation,
+  useUnassociateSamplesMutation,
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
 import CommentSection from "./comments/CommentSection";
@@ -34,6 +39,11 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
   const { data, error } = withMikro(useDetailExperimentQuery)({
     variables: { id: id },
   });
+
+  const [associateSamples] = withMikro(useAssociateSamplesMutation)();
+  const [associateFiles] = withMikro(useAssociateFilesMutation)();
+  const [unassociateFiles] = withMikro(useUnassociateFilesMutation)();
+  const [unassociateSamples] = withMikro(useUnassociateSamplesMutation)();
 
   const [searchTags, _t] = withMikro(useTagSearchLazyQuery)();
   const [show, setshow] = useState(false);
@@ -99,17 +109,6 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
             </div>
           </div>
           <div className="flex flex-col bg-white p-3 rounded rounded-md mt-2 mb-2">
-            <DropZone
-              accepts={["item:@mikro/sample", "list:@mikro/sample"]}
-              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
-              onDrop={async (item) => {
-                console.log(item);
-              }}
-              canDropLabel={
-                "Drag samples here to associated with this Experiment"
-              }
-              overLabel={"Release to add"}
-            />
             <div className="font-light mt-2 ">Description</div>
             <div className="text-md mt-2 ">{data?.experiment?.description}</div>
             <div className="font-light mt-2 ">Created At</div>
@@ -181,11 +180,33 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
             )}
           </div>
           <SectionTitle> Samples </SectionTitle>
-          <ResponsiveGrid>
+          <ResponsiveContainerGrid>
             {data?.experiment?.samples?.filter(notEmpty).map((sample) => (
               <Sample.Smart
                 object={sample.id}
                 className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
+                additionalMates={(partner, self) => {
+                  if (
+                    partner == "item:@mikro/sample" ||
+                    partner == "list:@mikro/sample"
+                  ) {
+                    return [
+                      {
+                        label: "Remove from Experiment",
+                        async action(self, drops) {
+                          unassociateSamples({
+                            variables: {
+                              experiment: id,
+                              samples: drops.map((d) => d.object),
+                            },
+                          });
+                        },
+                      },
+                    ];
+                  }
+
+                  return [];
+                }}
               >
                 <div className="flex">
                   <Sample.DetailLink
@@ -194,31 +215,83 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
                   >
                     {sample?.name}
                   </Sample.DetailLink>
-                  <span
-                    className="flex-none mt-1 text-white cursor-pointer group-hover:text-red-400"
-                    onClick={() => {
-                      if (sample?.id) {
-                        confirm({
-                          message: "Do you really want to delete this Sample?",
-                          subtitle:
-                            "This will also delete all images that are attached to it?! And it is irreversible!",
-                          confirmLabel: "Yes delete!",
-                        })
-                          .then(() => {
-                            deleteSample({
-                              variables: { id: sample?.id },
-                            });
-                          })
-                          .catch(console.log);
-                      }
-                    }}
-                  >
-                    <BsTrash />
-                  </span>
                 </div>
               </Sample.Smart>
             ))}
-          </ResponsiveGrid>
+            <DropZone
+              accepts={["item:@mikro/sample", "list:@mikro/sample"]}
+              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
+              onDrop={async (item) => {
+                await associateSamples({
+                  variables: {
+                    experiment: id,
+                    samples: item.map((i) => i.object),
+                  },
+                });
+              }}
+              canDropLabel={
+                "Drag samples here to associated with this Experiment"
+              }
+              overLabel={"Release to add"}
+            />
+          </ResponsiveContainerGrid>
+          <SectionTitle> Files </SectionTitle>
+          <ResponsiveContainerGrid>
+            {data?.experiment?.omeroFiles?.filter(notEmpty).map((omerofile) => (
+              <MikroFile.Smart
+                object={omerofile.id}
+                className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
+                additionalMates={(partner, self) => {
+                  if (
+                    partner == "item:@mikro/omerofile" ||
+                    partner == "list:@mikro/omerofile"
+                  ) {
+                    return [
+                      {
+                        label: "Remove from Experiment",
+                        async action(self, drops) {
+                          unassociateFiles({
+                            variables: {
+                              experiment: id,
+                              files: drops.map((d) => d.object),
+                            },
+                          });
+                        },
+                      },
+                    ];
+                  }
+
+                  return [];
+                }}
+              >
+                <div className="flex">
+                  <MikroFile.DetailLink
+                    className="flex-grow cursor-pointer font-semibold"
+                    object={omerofile.id}
+                  >
+                    {omerofile?.name}
+                  </MikroFile.DetailLink>
+                </div>
+              </MikroFile.Smart>
+            ))}
+
+            <DropZone
+              accepts={["item:@mikro/omerofile", "list:@mikro/omerofile"]}
+              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
+              onDrop={async (item) => {
+                await associateFiles({
+                  variables: {
+                    experiment: id,
+                    files: item.map((i) => i.object),
+                  },
+                });
+              }}
+              canDropLabel={
+                "Drag files here to associated with this Experiment"
+              }
+              overLabel={"Release to add"}
+            />
+          </ResponsiveContainerGrid>
         </div>
       )}
     </PageLayout>

@@ -64,6 +64,7 @@ const buildModelLink = (model: Identifier, to: string) => {
       <NavLink
         {...props}
         to={`/user/${getModelBase(model)}/${to}/${props.object}`}
+        title="Open"
       >
         {children}
       </NavLink>
@@ -156,6 +157,42 @@ export const Sample = buildSmart("@mikro/sample", "samples", [
 export const Roi = buildSmart("@mikro/roi", "rois", [
   "list:@mikro/roi",
   "item:@mikro/roi",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Stage = buildSmart("@mikro/stage", "stages", [
+  "list:@mikro/stage",
+  "item:@mikro/stage",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Position = buildSmart("@mikro/position", "positions", [
+  "list:@mikro/position",
+  "item:@mikro/position",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Objective = buildSmart("@mikro/objective", "objectives", [
+  "list:@mikro/objective",
+  "item:@mikro/objective",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Instrument = buildSmart("@mikro/instrument", "instruments", [
+  "list:@mikro/instrument",
+  "item:@mikro/instrument",
   "list:@mikro/experiment",
   "item:@mikro/experiment",
   "list:@mikro/representation",
@@ -366,10 +403,20 @@ export const getDefaultSmartModel = (ident: Identifier) => {
       return Sample;
     case "@mikro/representation":
       return Representation;
+    case "@mikro/experiment":
+      return Experiment;
     case "@mikro/feature":
       return Feature;
     case "@mikro/metric":
       return Metric;
+    case "@mikro/roi":
+      return Roi;
+    case "@mikro/position":
+      return Position;
+    case "@mikro/acquisition":
+      return Acquisition;
+    case "@mikro/omerofile":
+      return MikroFile;
     case "@mikro/label":
       return Label;
     case "@rekuest/assignation":
@@ -407,5 +454,11 @@ export const getIdentifierForCommentableModel = (model: CommentableModels) => {
       return "@mikro/representation";
     case CommentableModels.GrunnlagExperiment:
       return "@mikro/experiment";
+    case CommentableModels.GrunnlagMetric:
+      return "@mikro/metric";
+    case CommentableModels.GrunnlagRoi:
+      return "@mikro/roi";
+    case CommentableModels.GrunnlagOmerofile:
+      return "@mikro/omerofile";
   }
 };

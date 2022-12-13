@@ -1,0 +1,12 @@
+query DetailPosition($id: ID!) {
+  position(id: $id) {
+    ...Position
+  }
+}
+
+query PositionSearch($search: String, $stage: ID) {
+  options: positions(name: $search, limit: 30, stage: $stage) {
+    value: id
+    label: name
+  }
+}

@@ -17,12 +17,14 @@ mutation CreatePublicFakt(
   $version: String!
   $redirectUris: [String!]!
   $scopes: [String!]!
+  $kind: PublicFaktType!
 ) {
   createPublicFakt(
     identifier: $identifier
     version: $version
     redirectUris: $redirectUris
     scopes: $scopes
+    kind: $kind
   ) {
     id
     clientId

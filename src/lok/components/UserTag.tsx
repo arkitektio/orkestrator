@@ -4,14 +4,17 @@ import { useMikro, withMikro } from "../../mikro/MikroContext";
 import { useUserQuery } from "../api/graphql";
 import { withMan } from "../man";
 
-export const UserTag: React.FC<{ sub: string }> = ({ sub }) => {
+export const UserTag: React.FC<{ sub: string; className?: string }> = ({
+  sub,
+  className,
+}) => {
   const { data, error } = withMan(useUserQuery)({
     variables: { id: sub },
   });
 
   const { s3resolve } = useMikro();
   return (
-    <div className="flex flex-row">
+    <div className={className}>
       {data?.user?.id ? (
         <User.DetailLink
           object={data?.user?.id}

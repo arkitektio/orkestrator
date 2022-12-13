@@ -1,0 +1,29 @@
+fragment Stage on Stage {
+  id
+  positions {
+    ...ListPosition
+  }
+  physicalSize
+  kind
+  name
+  createdAt
+  instrument {
+    ...ListInstrument
+  }
+  creator {
+    id
+    sub
+  }
+  pinned
+  tags
+}
+
+fragment ListStage on Stage {
+  id
+  instrument {
+    ...ListInstrument
+  }
+  tags
+  name
+  kind
+}

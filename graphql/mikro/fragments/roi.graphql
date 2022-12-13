@@ -4,6 +4,7 @@ fragment RepRoi on ROI {
   createdAt
   creator {
     id
+    sub
   }
   vectors {
     x
@@ -31,6 +32,11 @@ fragment DetailRoi on ROI {
       id
     }
     tags
+    latestThumbnail {
+      image
+      blurhash
+    }
+    shape
   }
   derivedRepresentations {
     id

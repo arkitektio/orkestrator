@@ -79,6 +79,10 @@ fragment ListComment on Comment {
   descendents {
     ...Descendent
   }
+  resolved
+  resolvedBy {
+    sub
+  }
   id
   createdAt
   children {
@@ -106,6 +110,10 @@ fragment MentionComment on Comment {
     id
     sub
   }
+  resolved
+  resolvedBy {
+    sub
+  }
   objectId
   contentType
 }
@@ -122,6 +130,11 @@ fragment DetailComment on Comment {
     ...Descendent
   }
   id
+
+  resolved
+  resolvedBy {
+    sub
+  }
   createdAt
   children {
     ...SubthreadComment

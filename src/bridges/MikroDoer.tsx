@@ -2,7 +2,11 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Representation } from "../linker";
 import { AssignMessage, useAgent } from "../rekuest/agent/AgentContext";
-import { NodeKindInput, PortKindInput } from "../rekuest/api/graphql";
+import {
+  NodeKindInput,
+  PortKindInput,
+  WidgetKind,
+} from "../rekuest/api/graphql";
 
 export const MikroDoer: React.FC<{}> = () => {
   const { register, unregister } = useAgent();
@@ -48,7 +52,7 @@ export const MikroDoer: React.FC<{}> = () => {
             identifier: "@mikro/representation",
             description: "The representation to navigate to",
             widget: {
-              kind: "SearchWidget",
+              kind: WidgetKind.SearchWidget,
               query:
                 "query Search($search: String) { options: representations(name: $search) { value: id label: name } }",
             },

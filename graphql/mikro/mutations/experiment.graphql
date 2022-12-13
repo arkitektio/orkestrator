@@ -36,3 +36,27 @@ mutation PinExperiment($id: ID!, $pin: Boolean!) {
     pinned
   }
 }
+
+mutation AssociateSamples($experiment: ID!, $samples: [ID!]!) {
+  associateSamples(experiment: $experiment, samples: $samples) {
+    ...DetailExperiment
+  }
+}
+
+mutation AssociateFiles($experiment: ID!, $files: [ID!]!) {
+  associateFiles(experiment: $experiment, files: $files) {
+    ...DetailExperiment
+  }
+}
+
+mutation UnassociateSamples($experiment: ID!, $samples: [ID!]!) {
+  unassociateSamples(experiment: $experiment, samples: $samples) {
+    ...DetailExperiment
+  }
+}
+
+mutation UnassociateFiles($experiment: ID!, $files: [ID!]!) {
+  unassociateFiles(experiment: $experiment, files: $files) {
+    ...DetailExperiment
+  }
+}

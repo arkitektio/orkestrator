@@ -24,10 +24,26 @@ fragment Omero on Omero {
     correctionCollar
     medium
   }
+  position {
+    id
+    x
+    y
+    z
+    stage {
+      id
+      name
+      physicalSize
+    }
+  }
   instrument {
     id
     name
     model
+  }
+  objective {
+    id
+    name
+    magnification
   }
   imagingEnvironment {
     airPressure

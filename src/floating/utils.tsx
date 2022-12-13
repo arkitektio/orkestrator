@@ -161,6 +161,11 @@ export const flownodes_to_nodes = (nodes: FlowNode[]): NodeInput[] => {
             implementation: (rest as any).implementation,
             kind: (rest as any).kind,
             defaults: (rest as any).defaults,
+            mapStrategy: (rest as any).mapStrategy,
+            allowLocal: (rest as any).allowLocal,
+            reserveParams: (rest as any).reserveParams
+              ? noTypename((rest as any).reserveParams)
+              : undefined,
           };
           return node_;
         }

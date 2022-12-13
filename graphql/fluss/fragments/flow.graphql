@@ -19,12 +19,18 @@ fragment ArkitektNode on ArkitektNode {
   hash
   kind
   defaults
+  mapStrategy
+  allowLocal
+  reserveParams {
+    agents
+  }
 }
 
 fragment ReactiveNode on ReactiveNode {
   ...FlowNodeCommons
   __typename
   implementation
+  defaults
 }
 
 fragment Widget on Widget {
@@ -202,6 +208,9 @@ fragment Flow on Flow {
   name
   screenshot
   createdAt
+  workspace {
+    id
+  }
 }
 
 fragment ListFlow on Flow {
@@ -209,6 +218,9 @@ fragment ListFlow on Flow {
   name
   screenshot
   createdAt
+  workspace {
+    id
+  }
 }
 
 fragment ListWorkspace on Workspace {

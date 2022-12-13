@@ -86,6 +86,13 @@ interface Props<T extends SelectOption = { value: string; label: string }> {
   getOptionValue?: (option: T) => any;
 }
 
+export const enum_to_options = (enum_object: any) => {
+  return Object.keys(enum_object).map((key) => ({
+    value: enum_object[key],
+    label: key,
+  }));
+};
+
 export function SelectInputField<
   T extends SelectOption = { value: string; label: string }
 >(props: Props<T>): any {

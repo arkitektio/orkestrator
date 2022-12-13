@@ -27,6 +27,7 @@ import {
   FlowFragment,
   GlobalFragment,
   GraphInput,
+  MapStrategy,
   ReactiveNodeFragment,
   ReactiveTemplateDocument,
   ReactiveTemplateQuery,
@@ -62,6 +63,8 @@ import { useDrop } from "react-dnd";
 import { PageLayout } from "../../layout/PageLayout";
 import { ColouredMiniMap } from "../base/ColouredMiniMap";
 import { DynamicSidebar } from "./DynamicSidebar";
+import { ModuleLayout } from "../../layout/ModuleLayout";
+import FlowDiagramSidebar from "../../pages/flows/workspace/FlowDiagramSidebar";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektEditNodeWidget,
@@ -190,8 +193,6 @@ export const EditRiver: React.FC<Props> = ({
     useState<ReactFlowInstance | null>(null);
 
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
-
-  useAutoSelect([{ identifier: "@fluss/flow", object: flow.id }]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(
     nodes_to_flownodes(flow.graph?.nodes)
@@ -420,6 +421,9 @@ export const EditRiver: React.FC<Props> = ({
                             )
                             .map(port_to_stream) || [],
                         ],
+                        mapStrategy: MapStrategy.Map,
+                        allowLocal: false,
+                        reserveParams: {},
                         outstream: [
                           event?.data?.node?.returns?.map(port_to_stream) || [],
                         ],
@@ -509,37 +513,52 @@ export const EditRiver: React.FC<Props> = ({
         flow,
       }}
     >
-      <PageLayout
-        sidebar={<DynamicSidebar />}
-        actions={<EditActions flow={flow} />}
+      <ModuleLayout
+        sidebars={[
+          {
+            label: "Nodes",
+            key: "nodes",
+            content: <EditSidebar flow={flow} />,
+          },
+          {
+            label: "Versions",
+            key: "versions",
+            content: <FlowDiagramSidebar workspace={flow.workspace.id} />,
+          },
+        ]}
       >
-        <div
-          ref={reactFlowWrapper}
-          className="flex flex-grow h-full w-full"
-          data-disableselect
+        <PageLayout
+          sidebar={<DynamicSidebar />}
+          actions={<EditActions flow={flow} />}
         >
-          <div ref={dropref} className="flex flex-grow h-full w-full">
-            <Graph
-              onPaneClick={(e) => setSelectedNode(null)}
-              onDragOver={onDragOver}
-              nodes={nodes}
-              edges={edges}
-              elementsSelectable={true}
-              onConnect={onConnect}
-              nodeTypes={nodeTypes}
-              edgeTypes={edgeTypes}
-              onNodeClick={(e, n) => setSelectedNode(n)}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onInit={(e) => setReactFlowInstance(e)}
-              fitView
-              attributionPosition="top-right"
-            >
-              <ColouredMiniMap />
-            </Graph>
+          <div
+            ref={reactFlowWrapper}
+            className="flex flex-grow h-full w-full"
+            data-disableselect
+          >
+            <div ref={dropref} className="flex flex-grow h-full w-full">
+              <Graph
+                onPaneClick={(e) => setSelectedNode(null)}
+                onDragOver={onDragOver}
+                nodes={nodes}
+                edges={edges}
+                elementsSelectable={true}
+                onConnect={onConnect}
+                nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                onNodeClick={(e, n) => setSelectedNode(n)}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onInit={(e) => setReactFlowInstance(e)}
+                fitView
+                attributionPosition="top-right"
+              >
+                <ColouredMiniMap />
+              </Graph>
+            </div>
           </div>
-        </div>
-      </PageLayout>
+        </PageLayout>
+      </ModuleLayout>
     </EditRiverContext.Provider>
   );
 };

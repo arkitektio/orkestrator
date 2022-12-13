@@ -1,0 +1,22 @@
+mutation DeleteStage($id: ID!) {
+  deleteStage(id: $id) {
+    id
+  }
+}
+
+mutation UpdateStage($id: ID!, $tags: [String], $name: String!) {
+  updateStage(id: $id, tags: $tags, name: $name) {
+    ...Stage
+  }
+}
+
+mutation PinStage($id: ID!, $pin: Boolean!) {
+  pinStage(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}

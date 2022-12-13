@@ -13,3 +13,9 @@ mutation CreateComment(
     ...ListComment
   }
 }
+
+mutation ResolveComment($id: ID!) {
+  resolveComment(id: $id) {
+    ...ListComment
+  }
+}

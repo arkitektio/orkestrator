@@ -4,6 +4,7 @@ fragment IntWidget on IntWidget {
 }
 
 fragment StringWidget on StringWidget {
+  __typename
   kind
   dependencies
   placeholder
@@ -15,6 +16,7 @@ fragment BoolWidget on BoolWidget {
 }
 
 fragment SliderWidget on SliderWidget {
+  __typename
   kind
   dependencies
   min
@@ -22,6 +24,7 @@ fragment SliderWidget on SliderWidget {
 }
 
 fragment SearchWidget on SearchWidget {
+  __typename
   kind
   query
   ward
@@ -29,12 +32,14 @@ fragment SearchWidget on SearchWidget {
 }
 
 fragment CustomWidget on CustomWidget {
+  __typename
   kind
   hook
   dependencies
 }
 
 fragment ChoiceWidget on ChoiceWidget {
+  __typename
   kind
   choices {
     value
@@ -90,6 +95,12 @@ fragment ArgPort on ArgPort {
   }
   default
   nullable
+  annotations {
+    ... on ValueRange {
+      min
+      max
+    }
+  }
 }
 
 fragment ImageReturnWidget on ImageReturnWidget {
@@ -126,6 +137,12 @@ fragment ReturnPort on ReturnPort {
   kind
   child {
     ...ChildPort
+  }
+  annotations {
+    ... on ValueRange {
+      min
+      max
+    }
   }
 }
 

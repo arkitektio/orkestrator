@@ -39,7 +39,7 @@ const Provisions: React.FC<IMyProvisionsProps> = () => {
             <Provision.DetailLink object={prov.id} className="p-2">
               <div className="text-xl font-light mb-2 flex">
                 <div className="text-xl font-light flex-initial">
-                  {prov?.template?.node?.name}
+                  {prov?.template?.interface}
                 </div>
                 <div className="flex-grow"></div>
                 <div className="text-xs">{prov?.agent?.identifier}</div>

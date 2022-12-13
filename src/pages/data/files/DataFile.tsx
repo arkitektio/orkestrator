@@ -1,6 +1,7 @@
 import React from "react";
 import { useParams } from "react-router";
 import Timestamp from "react-timestamp";
+import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 import { RepresentationCard } from "../../../components/MyRepresentations";
 import { notEmpty } from "../../../floating/utils";
@@ -10,6 +11,7 @@ import {
   CommentableModels,
   useDetailOmeroFileQuery,
 } from "../../../mikro/api/graphql";
+import { ExperimentCard } from "../../../mikro/components/cards/ExperimentCard";
 import CommentSection from "../../../mikro/components/comments/CommentSection";
 import { useMikro, withMikro } from "../../../mikro/MikroContext";
 
@@ -56,13 +58,19 @@ export const OmeroFile: React.FC<{ id: string }> = ({ id }) => {
           <div className="font-light mt-2 ">Type</div>
           <div className="text-md ">{data?.omerofile?.type}</div>
           <div className="font-light mt-2 ">Created</div>
-          <ResponsiveGrid>
+          <ResponsiveContainerGrid>
             {data?.omerofile?.derivedRepresentations
               .filter(notEmpty)
               .map((rep, index) => (
                 <RepresentationCard rep={rep} key={rep?.id} />
               ))}
-          </ResponsiveGrid>
+          </ResponsiveContainerGrid>
+          <div className="font-light mt-2 ">In experiments</div>
+          <ResponsiveContainerGrid>
+            {data?.omerofile?.experiments.filter(notEmpty).map((ex, index) => (
+              <ExperimentCard experiment={ex} key={index} />
+            ))}
+          </ResponsiveContainerGrid>
         </div>
       </div>
     </PageLayout>

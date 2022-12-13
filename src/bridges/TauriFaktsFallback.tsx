@@ -1,12 +1,14 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useState } from "react";
-import { Fakts, useFakts } from "@jhnnsrs/fakts";
+import { buildFaktsRetrieveGrant, Fakts, useFakts } from "@jhnnsrs/fakts";
 import { PublicNavigationBar } from "../components/navigation/PublicNavigationBar";
 import { SubmitButton } from "../components/forms/fields/SubmitButton";
 import { TextInputField } from "../components/forms/fields/text_input";
 import { Form, Formik } from "formik";
 import { useAlert } from "../components/alerter/alerter-context";
 import CancelablePromise from "cancelable-promise";
+import { grantBuilder } from "../constants";
+import { Disclosure } from "@headlessui/react";
 
 export interface CallbackProps {}
 
@@ -72,11 +74,7 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                     className="rounded rounded-md border border-gray-300 p-3 flex flex-col hover:bg-primary-300 cursor-pointer"
                     onClick={() => {
                       setFuture(
-                        load({
-                          endpoint,
-                          identifier: "github.io.jhnnsrs.orkestrator",
-                          version: "latest",
-                        })
+                        load(grantBuilder(endpoint))
                           .then(() => {
                             setFuture(null);
                           })
@@ -96,74 +94,81 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                   </button>
                 ))}
               </div>
-
-              <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start text-white">
-                <Formik<ConfigValues>
-                  initialValues={{
-                    host: `${window.location.hostname}:8000`,
-                  }}
-                  onSubmit={({ host }, { setSubmitting }) => {
-                    setSubmitting(true);
-                    setFuture(
-                      load({
-                        endpoint: {
-                          name: "Localhost",
-                          base_url: `http://${host}/f/`,
-                        },
-
-                        identifier: "github.io.jhnnsrs.orkestrator",
-                        version: "v0.0.1",
-                      })
-                        .then(() => {
-                          setFuture(null);
-                          setSubmitting(false);
-                        })
-                        .catch((e) => {
-                          alert({ message: e.message, subtitle: e.stack });
-                        })
-                        .finally(() => {
-                          setFuture(null);
-                          setSubmitting(false);
-                        }, true)
-                    );
-                  }}
-                >
-                  {(formikProps) => (
-                    <Form>
-                      <div className="text-left overflow-hidden ">
-                        <div className="">
-                          <div className=" w-full">
-                            <div className="mt-1 test-center w-full">
-                              <div className="mt-2 align-left text-left ">
-                                <TextInputField
-                                  name="host"
-                                  label="Host"
-                                  description="The adress of your host"
-                                />
+              <Disclosure>
+                {({ open }) => (
+                  <>
+                    <Disclosure.Button className="py-2 sm:justify-center lg:justify-start cursor-pointer  text-gray-500">
+                      Advanced {open ? "▲" : "▼"}
+                    </Disclosure.Button>
+                    <Disclosure.Panel className=" sm:flex sm:justify-center lg:justify-start p-2 border-gray-200 rounded border rounded-md">
+                      <Formik<ConfigValues>
+                        initialValues={{
+                          host: `${window.location}`,
+                        }}
+                        onSubmit={({ host }, { setSubmitting }) => {
+                          setSubmitting(true);
+                          setFuture(
+                            load(
+                              grantBuilder({
+                                name: "Localhost",
+                                base_url: `http://${host}/f/`,
+                              })
+                            )
+                              .then(() => {
+                                setFuture(null);
+                                setSubmitting(false);
+                              })
+                              .catch((e) => {
+                                alert({
+                                  message: e.message,
+                                  subtitle: e.stack,
+                                });
+                              })
+                              .finally(() => {
+                                setFuture(null);
+                                setSubmitting(false);
+                              }, true)
+                          );
+                        }}
+                      >
+                        {(formikProps) => (
+                          <Form>
+                            <div className="text-gray-500">
+                              You can choose a different fakts endpoint here
+                            </div>
+                            <div className="text-left overflow-hidden text-gray-500 flex w-full flex-col">
+                              <div className="mt-1 test-center w-full">
+                                <div className="mt-2 align-left text-left  ">
+                                  <TextInputField
+                                    name="host"
+                                    label="Host"
+                                    description="The adress of your host"
+                                  />
+                                </div>
+                              </div>
+                              <div className="ml-3 pb-2 my-auto">
+                                {future ? (
+                                  <button
+                                    onClick={() => future.cancel()}
+                                    className="w-full shadow-lg shadow-red-700/90 flex items-center justify-center px-2 py-1 border border-transparent text-base font-medium rounded-md text-white bg-red-300 hover:bg-red-400 md:py-1 md:text-lg md:px-10"
+                                  >
+                                    {" "}
+                                    Cancel{" "}
+                                  </button>
+                                ) : (
+                                  <SubmitButton className="w-full shadow-lg shadow-primary-700/90 flex items-center justify-center px-2 py-1 border border-transparent text-base font-medium rounded-md text-white bg-primary-300 hover:bg-primary-400 md:py-1 md:text-lg md:px-10">
+                                    Use
+                                  </SubmitButton>
+                                )}
                               </div>
                             </div>
-                          </div>
-                        </div>
-                        <div className="pb-2">
-                          {future ? (
-                            <button
-                              onClick={() => future.cancel()}
-                              className="w-full shadow-lg shadow-red-700/90 flex items-center justify-center px-2 py-1 border border-transparent text-base font-medium rounded-md text-white bg-red-300 hover:bg-red-400 md:py-1 md:text-lg md:px-10"
-                            >
-                              {" "}
-                              Cancel{" "}
-                            </button>
-                          ) : (
-                            <SubmitButton className="w-full shadow-lg shadow-primary-700/90 flex items-center justify-center px-2 py-1 border border-transparent text-base font-medium rounded-md text-white bg-primary-300 hover:bg-primary-400 md:py-1 md:text-lg md:px-10">
-                              Use
-                            </SubmitButton>
-                          )}
-                        </div>
-                      </div>
-                    </Form>
-                  )}
-                </Formik>
-              </div>
+                          </Form>
+                        )}
+                      </Formik>
+                    </Disclosure.Panel>
+                  </>
+                )}
+              </Disclosure>
             </div>
           </main>
         </div>

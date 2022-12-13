@@ -7,10 +7,8 @@ interface Props {}
 
 export const Fluss: React.FC<Props> = (props) => {
   return (
-    <ModuleLayout
-      sidebars={[{ key: "search", label: "Search", content: <FlowSidebar /> }]}
-    >
+    <>
       <Outlet />
-    </ModuleLayout>
+    </>
   );
 };

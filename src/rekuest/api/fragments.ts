@@ -6,6 +6,10 @@
       }
       const result: PossibleTypesResultData = {
   "possibleTypes": {
+    "Annotation": [
+      "CustomAnnotation",
+      "ValueRange"
+    ],
     "Port": [
       "ArgPort",
       "ReturnPort"

@@ -22,7 +22,7 @@ export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {
       placement="bottom"
       object={agent.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `rounded border overflow-hidden shadow-md p-3 text-white ${
+        `rounded border overflow-hidden shadow-md  text-white ${
           isOver && !isDragging && "border-primary-200 border"
         } ${isDragging && "border-primary-200 border"} ${
           isSelected && "ring-1 ring-primary-200 "
@@ -33,7 +33,7 @@ export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {
         <div className="flex flex-row w-full">
           <Agent.DetailLink
             className={({ isActive }) =>
-              "flex-grow cursor-pointer p-2 " +
+              "flex-grow cursor-pointer p-4 " +
               (isActive ? "text-primary-300" : "")
             }
             object={agent?.id}
@@ -44,9 +44,9 @@ export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {
             </p>
           </Agent.DetailLink>
           <div className="flex-initial">
-            {agent.registry.app && (
+            {agent.registry?.app && (
               <AppImage
-                className="w-12 h-12 "
+                className="w-full h-full"
                 identifier={agent.registry?.app?.identifier}
                 version={agent.registry?.app?.version}
               />

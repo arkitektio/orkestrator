@@ -159,7 +159,7 @@ export const ShareModal: React.FC<{
                                     <div className="flex-1 my-auto">
                                       {userAssignment?.user ? (
                                         <PermissionUserInfo
-                                          email={userAssignment?.user}
+                                          sub={userAssignment?.user}
                                         />
                                       ) : (
                                         <SearchSelectInput

@@ -22,6 +22,7 @@ export type Scalars = {
 
 export type App = {
   __typename?: 'App';
+  faktApplications: Array<FaktApplication>;
   id: Scalars['ID'];
   identifier: Scalars['String'];
   logo?: Maybe<Scalars['String']>;
@@ -124,16 +125,28 @@ export type Element = {
 
 export type FaktApplication = {
   __typename?: 'FaktApplication';
+  app?: Maybe<App>;
   application: Application;
   clientId: Scalars['String'];
   clientSecret: Scalars['String'];
   creator: HerreUser;
   id: Scalars['ID'];
+  kind?: Maybe<FaktApplicationKind>;
   logo?: Maybe<Scalars['String']>;
-  privatefaktapplication?: Maybe<PrivateFaktApplication>;
-  publicfaktapplication?: Maybe<PublicFaktApplication>;
   scopes: Array<Maybe<Scalars['String']>>;
+  token: Scalars['String'];
+  user?: Maybe<HerreUser>;
 };
+
+/** An enumeration. */
+export enum FaktApplicationKind {
+  /** Dekstop */
+  Desktop = 'DESKTOP',
+  /** User */
+  User = 'USER',
+  /** Website */
+  Website = 'WEBSITE'
+}
 
 export enum GrantType {
   AuthorizationCode = 'AUTHORIZATION_CODE',
@@ -180,7 +193,6 @@ export type HerreUser = {
   /** Designates whether this user should be treated as active. Unselect this instead of deleting accounts. */
   isActive: Scalars['Boolean'];
   lastName: Scalars['String'];
-  privateApplications: Array<PrivateFaktApplication>;
   profile?: Maybe<Profile>;
   /** The associated rules of this  */
   roles?: Maybe<Array<Maybe<Scalars['String']>>>;
@@ -201,8 +213,8 @@ export type Mutation = {
   createApplication?: Maybe<Application>;
   createElement?: Maybe<Element>;
   createGraph?: Maybe<Graph>;
-  createPrivateFakt?: Maybe<PrivateFaktApplication>;
-  createPublicFakt?: Maybe<PublicFaktApplication>;
+  createPrivateFakt?: Maybe<FaktApplication>;
+  createPublicFakt?: Maybe<FaktApplication>;
   createUserApp?: Maybe<CreatedBackendApp>;
   createUserLoginApp?: Maybe<Application>;
   deleteApplication?: Maybe<DeleteApplicationResult>;
@@ -256,6 +268,7 @@ export type MutationCreatePrivateFaktArgs = {
 /** The root Mutation */
 export type MutationCreatePublicFaktArgs = {
   identifier: Scalars['String'];
+  kind: PublicFaktType;
   redirectUris: Array<InputMaybe<Scalars['String']>>;
   scopes: Array<InputMaybe<Scalars['String']>>;
   version: Scalars['String'];
@@ -320,21 +333,6 @@ export type MutationUpdateUserArgs = {
   lastName?: InputMaybe<Scalars['String']>;
 };
 
-export type PrivateFaktApplication = {
-  __typename?: 'PrivateFaktApplication';
-  application: Application;
-  clientId: Scalars['String'];
-  clientSecret: Scalars['String'];
-  creator: HerreUser;
-  faktapplicationPtr: FaktApplication;
-  id: Scalars['ID'];
-  identifier: Scalars['String'];
-  logo?: Maybe<Scalars['String']>;
-  scopes?: Maybe<Scalars['GenericScalar']>;
-  user: HerreUser;
-  version: Scalars['String'];
-};
-
 export type Profile = {
   __typename?: 'Profile';
   avatar?: Maybe<Scalars['String']>;
@@ -343,21 +341,10 @@ export type Profile = {
   user: HerreUser;
 };
 
-export type PublicFaktApplication = {
-  __typename?: 'PublicFaktApplication';
-  application: Application;
-  clientId: Scalars['String'];
-  clientSecret: Scalars['String'];
-  confidential: Scalars['Boolean'];
-  creator: HerreUser;
-  faktapplicationPtr: FaktApplication;
-  id: Scalars['ID'];
-  identifier: Scalars['String'];
-  logo?: Maybe<Scalars['String']>;
-  redirectUri: Scalars['String'];
-  scopes: Array<Maybe<Scalars['String']>>;
-  version: Scalars['String'];
-};
+export enum PublicFaktType {
+  Dekstop = 'DEKSTOP',
+  Website = 'WEBSITE'
+}
 
 /** The root Query */
 export type Query = {
@@ -378,10 +365,10 @@ export type Query = {
   myapplications?: Maybe<Array<Maybe<Application>>>;
   /** Get a list of users */
   mygroups?: Maybe<Array<Maybe<Group>>>;
-  privatefaktapp?: Maybe<PrivateFaktApplication>;
-  privatefaktapps?: Maybe<Array<Maybe<PrivateFaktApplication>>>;
-  publicfaktapp?: Maybe<PublicFaktApplication>;
-  publicfaktapps?: Maybe<Array<Maybe<PublicFaktApplication>>>;
+  privatefaktapp?: Maybe<FaktApplication>;
+  privatefaktapps?: Maybe<Array<Maybe<FaktApplication>>>;
+  publicfaktapp?: Maybe<FaktApplication>;
+  publicfaktapps?: Maybe<Array<Maybe<FaktApplication>>>;
   scope?: Maybe<Scope>;
   scopes?: Maybe<Array<Maybe<Scope>>>;
   user?: Maybe<HerreUser>;
@@ -502,9 +489,9 @@ export type DetailApplicationFragment = { __typename?: 'Application', id: string
 
 export type ListApplicationFragment = { __typename?: 'Application', id: string, clientId: string, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null };
 
-export type PrivateFaktFragment = { __typename?: 'PrivateFaktApplication', id: string, clientId: string, clientSecret: string, scopes?: any | null, version: string, identifier: string };
+export type PrivateFaktFragment = { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null };
 
-export type PublicFaktFragment = { __typename?: 'PublicFaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, version: string, identifier: string };
+export type PublicFaktFragment = { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null };
 
 export type DetailGroupFragment = { __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null };
 
@@ -564,17 +551,18 @@ export type CreatePrivateFaktMutationVariables = Exact<{
 }>;
 
 
-export type CreatePrivateFaktMutation = { __typename?: 'Mutation', createPrivateFakt?: { __typename?: 'PrivateFaktApplication', id: string, clientId: string, clientSecret: string, scopes?: any | null, version: string, identifier: string } | null };
+export type CreatePrivateFaktMutation = { __typename?: 'Mutation', createPrivateFakt?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
 
 export type CreatePublicFaktMutationVariables = Exact<{
   identifier: Scalars['String'];
   version: Scalars['String'];
   redirectUris: Array<Scalars['String']>;
   scopes: Array<Scalars['String']>;
+  kind: PublicFaktType;
 }>;
 
 
-export type CreatePublicFaktMutation = { __typename?: 'Mutation', createPublicFakt?: { __typename?: 'PublicFaktApplication', id: string, clientId: string, clientSecret: string } | null };
+export type CreatePublicFaktMutation = { __typename?: 'Mutation', createPublicFakt?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string } | null };
 
 export type DeletePublicFaktMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -658,26 +646,26 @@ export type DetailUserApplicationQuery = { __typename?: 'Query', userapp?: { __t
 export type PublicFaktsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PublicFaktsQuery = { __typename?: 'Query', publicfaktapps?: Array<{ __typename?: 'PublicFaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, version: string, identifier: string } | null> | null };
+export type PublicFaktsQuery = { __typename?: 'Query', publicfaktapps?: Array<{ __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null> | null };
 
 export type PublicFaktQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type PublicFaktQuery = { __typename?: 'Query', publicfaktapp?: { __typename?: 'PublicFaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, version: string, identifier: string } | null };
+export type PublicFaktQuery = { __typename?: 'Query', publicfaktapp?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
 
 export type PrivateFaktsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PrivateFaktsQuery = { __typename?: 'Query', privatefaktapps?: Array<{ __typename?: 'PrivateFaktApplication', id: string, clientId: string, clientSecret: string, scopes?: any | null, version: string, identifier: string } | null> | null };
+export type PrivateFaktsQuery = { __typename?: 'Query', privatefaktapps?: Array<{ __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null> | null };
 
 export type PrivateFaktQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type PrivateFaktQuery = { __typename?: 'Query', privatefaktapp?: { __typename?: 'PrivateFaktApplication', id: string, clientId: string, clientSecret: string, scopes?: any | null, version: string, identifier: string } | null };
+export type PrivateFaktQuery = { __typename?: 'Query', privatefaktapp?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
 
 export type GroupOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -791,23 +779,27 @@ export const ListApplicationFragmentDoc = gql`
 }
     `;
 export const PrivateFaktFragmentDoc = gql`
-    fragment PrivateFakt on PrivateFaktApplication {
+    fragment PrivateFakt on FaktApplication {
   id
   clientId
   clientSecret
   scopes
-  version
-  identifier
+  app {
+    version
+    identifier
+  }
 }
     `;
 export const PublicFaktFragmentDoc = gql`
-    fragment PublicFakt on PublicFaktApplication {
+    fragment PublicFakt on FaktApplication {
   id
   clientId
   clientSecret
   scopes
-  version
-  identifier
+  app {
+    version
+    identifier
+  }
 }
     `;
 export const ListUserFragmentDoc = gql`
@@ -1087,12 +1079,13 @@ export type CreatePrivateFaktMutationHookResult = ReturnType<typeof useCreatePri
 export type CreatePrivateFaktMutationResult = Apollo.MutationResult<CreatePrivateFaktMutation>;
 export type CreatePrivateFaktMutationOptions = Apollo.BaseMutationOptions<CreatePrivateFaktMutation, CreatePrivateFaktMutationVariables>;
 export const CreatePublicFaktDocument = gql`
-    mutation CreatePublicFakt($identifier: String!, $version: String!, $redirectUris: [String!]!, $scopes: [String!]!) {
+    mutation CreatePublicFakt($identifier: String!, $version: String!, $redirectUris: [String!]!, $scopes: [String!]!, $kind: PublicFaktType!) {
   createPublicFakt(
     identifier: $identifier
     version: $version
     redirectUris: $redirectUris
     scopes: $scopes
+    kind: $kind
   ) {
     id
     clientId
@@ -1119,6 +1112,7 @@ export type CreatePublicFaktMutationFn = Apollo.MutationFunction<CreatePublicFak
  *      version: // value for 'version'
  *      redirectUris: // value for 'redirectUris'
  *      scopes: // value for 'scopes'
+ *      kind: // value for 'kind'
  *   },
  * });
  */

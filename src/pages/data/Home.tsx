@@ -8,6 +8,7 @@ import { MySamples } from "../../components/MySamples";
 import { MyTables } from "../../components/MyTables";
 import { Producers } from "../../components/Producers";
 import { PageLayout } from "../../layout/PageLayout";
+import { MyStages } from "../../mikro/components/MyStages";
 
 interface IDataHomeProps {}
 
@@ -17,6 +18,7 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
       <Generators />
       <Producers />
       <MyExperiments />
+      <MyStages />
       <MySamples />
       <MyRepresentations />
       <MyFiles />

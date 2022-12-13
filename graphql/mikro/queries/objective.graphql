@@ -1,0 +1,18 @@
+query DetailObjective($id: ID) {
+  objective(id: $id) {
+    ...Objective
+  }
+}
+
+query Objectives {
+  objectives {
+    ...ListObjective
+  }
+}
+
+query SearchObjectives($search: String) {
+  options: objectives(search: $search) {
+    value: id
+    label: name
+  }
+}

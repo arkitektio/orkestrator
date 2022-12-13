@@ -1,0 +1,17 @@
+fragment Objective on Objective {
+  id
+  name
+  magnification
+  omeros(order: "-acquired", limit: 10) {
+    acquisitionDate
+    representation {
+      ...ListRepresentation
+    }
+  }
+}
+
+fragment ListObjective on Objective {
+  id
+  name
+  magnification
+}

@@ -1,0 +1,35 @@
+fragment Position on Position {
+  id
+  stage {
+    ...Stage
+  }
+  x
+  y
+  z
+  omeros {
+    acquisitionDate
+    representation {
+      id
+    }
+  }
+}
+
+fragment ListPosition on Position {
+  id
+  x
+  y
+  z
+  name
+  omeros(limit: 1) {
+    acquisitionDate
+    physicalSize {
+      x
+      y
+      z
+    }
+    representation {
+      id
+      shape
+    }
+  }
+}

@@ -1,0 +1,17 @@
+fragment Instrument on Instrument {
+  id
+  name
+  omeros(order: "-acquired", limit: 10) {
+    acquisitionDate
+    representation {
+      id
+      shape
+      name
+    }
+  }
+}
+
+fragment ListInstrument on Instrument {
+  id
+  name
+}

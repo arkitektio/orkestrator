@@ -10,8 +10,10 @@ import {
   CreateableSearchSelect,
   SearchSelectInput,
 } from "../../components/forms/fields/search_select_input";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SelfActions } from "../../components/SelfActions";
+import { ThumbnailCanvas } from "../../components/ThumbnailCanvas";
 import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
 import { OptimizedImage } from "../../layout/OptimizedImage";
@@ -22,7 +24,10 @@ import {
   MikroFile,
   Representation,
   Roi,
+  Position,
   Sample,
+  Objective,
+  Instrument,
 } from "../../linker";
 import { DataPlot } from "../../pages/data/plots/DataPlot";
 import {
@@ -202,7 +207,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
         </>
       }
     >
-      <div className="p-5">
+      <div className="p-3 @container">
         <div className="text-xl font-semibold text-white flex flex-row">
           {data?.representation?.name}
           <div className="flex-grow"></div>
@@ -223,14 +228,18 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
             )}
           </div>
         </div>
-        <div className="flex lg:flex-row-reverse flex-col rounded-md gap-4 mt-2">
-          <div className="flex-1 max-w-100 mt-2">
-            {data?.representation?.latestThumbnail?.image && (
-              <OptimizedImage
-                className="rounded-md border-1 border-gray-300"
-                blurhash={data?.representation?.latestThumbnail?.blurhash}
-                src={s3resolve(data?.representation?.latestThumbnail?.image)}
-              />
+        <div className="flex  @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">
+          <div className="flex-1 max-w-2xl mt-2 rounded rounded-lg overflow-hidden">
+            {data?.representation && (
+              <ParentSize>
+                {({ width, height }) => (
+                  <ThumbnailCanvas
+                    rep={data?.representation}
+                    height={height}
+                    width={width}
+                  />
+                )}
+              </ParentSize>
             )}
           </div>
           <div className="p-4 flex-1 bg-white border shadow mt-2 rounded">
@@ -307,9 +316,9 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
             )}
             {data?.representation?.omero && (
               <>
-                <div className="font-light text-xl mb-2">Meta</div>
+                <div className="font-light text-xs mb-2">Mikro Context</div>
                 {data?.representation?.omero?.acquisitionDate && (
-                  <div className="flex flex-col ">
+                  <div className="flex flex-col mb-2">
                     <div className="font-light mr-2">Acquired </div>
                     <div className="text-md text-black ">
                       <Timestamp
@@ -319,11 +328,62 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     </div>
                   </div>
                 )}
+                {data?.representation?.omero?.position && (
+                  <Position.DetailLink
+                    object={data.representation.omero.position.id}
+                    className="flex flex-col "
+                  >
+                    <div className="font-semibold mr-2">Position on Stage </div>
+                    <div className="text-md text-black ">
+                      {data.representation.omero.position.x *
+                        data?.representation.omero.position?.stage
+                          .physicalSize[0]}
+                      µm{" "}
+                      {data.representation.omero.position.x *
+                        data?.representation.omero.position?.stage
+                          .physicalSize[1]}
+                      µm{" "}
+                      {data.representation.omero.position.x *
+                        data?.representation.omero.position?.stage
+                          .physicalSize[2]}
+                      µm
+                    </div>
+                  </Position.DetailLink>
+                )}
+                {data?.representation?.omero?.objective && (
+                  <Objective.DetailLink
+                    object={data?.representation?.omero?.objective.id}
+                    className="flex flex-col "
+                  >
+                    <div className="font-semibold mr-2">Objective </div>
+                    <div className="text-md text-black ">
+                      <div className="flex flex-row">
+                        <div className="mr-2 bg-primary-400 p-1 rounded-md">
+                          {data?.representation.omero.objective.magnification}x
+                        </div>
+                        <div className="my-auto">
+                          {data?.representation?.omero?.objective?.name}
+                        </div>
+                      </div>
+                    </div>
+                  </Objective.DetailLink>
+                )}
+                {data?.representation?.omero?.instrument && (
+                  <Instrument.DetailLink
+                    object={data?.representation?.omero?.instrument.id}
+                    className="flex flex-col "
+                  >
+                    <div className="font-semibold mr-2">Instrument </div>
+                    <div className="text-md text-black ">
+                      {data?.representation?.omero?.instrument?.name}
+                    </div>
+                  </Instrument.DetailLink>
+                )}
                 <div className="text-light">
                   {data?.representation?.omero?.physicalSize && (
                     <>
-                      <div className="font-light text-xl mb-2">Meta</div>
-                      <div>
+                      <div className="font-light mr-2">Physical Size </div>
+                      <div className="flex flex-col @2xl:+flex-row">
                         {Object.entries(
                           data?.representation?.omero?.physicalSize
                         )
@@ -333,12 +393,12 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                           )
 
                           .map(([key, value]) => (
-                            <>
+                            <div className="flex flex-row">
                               <span className="font-light">{key}</span>
                               <span className="text-md font-semibold mr-1 ml-1 my-auto">
-                                {value}
+                                {value?.toPrecision(2)}
                               </span>
-                            </>
+                            </div>
                           ))}
                       </div>
                     </>
@@ -347,7 +407,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                 {data?.representation?.omero.scale && (
                   <>
                     <div className="font-light">Scale</div>
-                    <div className="text-light">
+                    <div className="text-light flex flex-col">
                       {data?.representation?.omero.scale?.map((val, index) => (
                         <>
                           <span className="font-semibold">{val}</span>{" "}
@@ -362,15 +422,20 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                   </>
                 )}
                 <div className="font-light my-1">Channels</div>
-                <div className="text-light flex gap-2">
-                  {data?.representation?.omero?.channels?.map((ch) => (
-                    <div
-                      className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer"
-                      style={{
-                        background: `${ch?.color ? ch.color : "rbg(0,0,0)"}`,
-                      }}
-                    >
-                      <div>{ch?.name || "Unnamed Channel"}</div>
+                <ResponsiveContainerGrid>
+                  {data?.representation?.omero?.channels?.map((ch, index) => (
+                    <div className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer">
+                      <div className="flex flex-row">
+                        <div>{ch?.name || "Channel " + index}</div>
+                        <div
+                          className="text-xs w-2 h-2 rounded-full ml-2 my-auto"
+                          style={{
+                            background: `${
+                              ch?.color ? ch.color : "rbg(0,0,0)"
+                            }`,
+                          }}
+                        ></div>
+                      </div>
                       {ch?.emmissionWavelength && (
                         <div className="text-sm">
                           {ch.emmissionWavelength.toPrecision(5)} nm
@@ -378,7 +443,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                       )}
                     </div>
                   ))}
-                </div>
+                </ResponsiveContainerGrid>
               </>
             )}
 
@@ -410,7 +475,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
               data?.representation?.fileOrigins.length > 0 && (
                 <>
                   <div className="font-light mb-2">Created from</div>
-                  <ResponsiveGrid>
+                  <ResponsiveContainerGrid>
                     {data?.representation?.fileOrigins
                       ?.filter(notEmpty)
                       .map((file) => (
@@ -425,7 +490,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                           </MikroFile.DetailLink>
                         </MikroFile.Smart>
                       ))}
-                  </ResponsiveGrid>
+                  </ResponsiveContainerGrid>
                 </>
               )}
 

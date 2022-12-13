@@ -79,7 +79,7 @@ const MyPrivateFakts: React.FC<IAppProps> = ({ onAppClicked }) => {
                 app?.clientId && onAppClicked && onAppClicked(app?.clientId)
               }
             >
-              {app?.identifier}/{app?.version}
+              {app?.app?.identifier}/{app?.app?.version}
             </PrivateFakt.DetailLink>
           </PrivateFakt.Smart>
         ))}

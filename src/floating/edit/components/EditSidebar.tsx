@@ -48,7 +48,6 @@ export const NodeItem = ({ node }: { node: Maybe<NodeListItemFragment> }) => {
         <div className="font-light text-md mb-1">{node?.name}</div>
         <p className="text">{node?.description}</p>
       </div>
-      <div className="p-1 text-xs truncate">{node?.hash}</div>
     </SmartModel>
   );
 };
@@ -188,7 +187,7 @@ export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
           <>Restricted to {props.flow.restrict.map((r: string) => r)}</>
         )}
       </div>
-      <div className="flex-grow flex flex-col gap-2 p-5 ">
+      <div className="flex-grow flex flex-col gap-2 p-5 overflow-y-scroll">
         {data?.allnodes && <NodeList nodes={data?.allnodes} />}
         {reactiveNodes?.reactivetemplates && (
           <ReactiveList nodes={reactiveNodes?.reactivetemplates} />

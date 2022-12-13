@@ -85,8 +85,8 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
                 object={provision.id}
                 className="border bg-white border-gray-600 rounded p-4 shadow-xl cursor-pointer relative"
               >
-                {provision?.template?.registry?.user?.sub && (
-                  <UserEmblem sub={provision?.template?.registry?.user?.sub} />
+                {provision?.agent?.registry?.user?.sub && (
+                  <UserEmblem sub={provision?.agent?.registry?.user?.sub} />
                 )}
                 <div className="flex w-full flex-row">
                   <ProvisionPulse status={provision.status} />
@@ -94,7 +94,7 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
                     className="flex-initial font-light cursor-pointer ml-2"
                     object={provision?.id}
                   >
-                    {provision?.template?.registry?.app?.identifier}
+                    {provision?.agent?.registry?.app?.identifier}
                   </Provision.DetailLink>{" "}
                   <div className="flex-grow"></div>
                 </div>
@@ -135,10 +135,8 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
                     object={provision.id}
                     className="border bg-white border-gray-600 rounded p-4 shadow-xl cursor-pointer relative"
                   >
-                    {provision?.template?.registry?.user?.email && (
-                      <UserEmblem
-                        email={provision?.template?.registry?.user?.email}
-                      />
+                    {provision?.agent?.registry?.user?.sub && (
+                      <UserEmblem sub={provision?.agent?.registry?.user?.sub} />
                     )}
                     <div className="flex w-full flex-row">
                       <ProvisionPulse status={provision?.status} />
@@ -146,8 +144,8 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
                         className="flex-initial font-light cursor-pointer ml-2"
                         object={provision.id}
                       >
-                        {provision?.template?.registry?.app?.identifier}:
-                        {provision?.template?.registry?.app?.version}
+                        {provision?.agent?.registry?.app?.identifier}:
+                        {provision?.agent?.registry?.app?.version}
                       </Provision.DetailLink>{" "}
                       <div className="flex-grow"></div>
                     </div>

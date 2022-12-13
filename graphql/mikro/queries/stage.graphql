@@ -1,0 +1,18 @@
+query DetailStage($id: ID!) {
+  stage(id: $id) {
+    ...Stage
+  }
+}
+
+query MyStages($limit: Int, $offset: Int) {
+  mystages(limit: $limit, offset: $offset) {
+    ...ListStage
+  }
+}
+
+query StageSearch($search: String) {
+  options: stages(name: $search, limit: 30) {
+    value: id
+    label: name
+  }
+}

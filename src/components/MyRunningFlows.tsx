@@ -29,7 +29,7 @@ const MyRunningFlows: React.FC<IGeneratorsProps> = ({}) => {
             <div className="p-2 ">
               <div className="text-xl font-light mb-2">{prov?.id}</div>
               <p className="text-gray-700 text-sm">
-                {prov?.template?.registry?.app?.identifier}
+                {prov?.agent?.registry?.app?.identifier}
               </p>
             </div>
             <div className="pl-2 pt-2 pb-2"></div>
