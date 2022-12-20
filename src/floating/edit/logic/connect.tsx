@@ -442,7 +442,7 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
       targetNode.data.implementation
     )
   ) {
-    if (sourceStream.length <= 1) {
+    if (sourceStream.length != 1) {
       return {
         errors: [
           {

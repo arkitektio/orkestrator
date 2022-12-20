@@ -111,7 +111,7 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                             load(
                               grantBuilder({
                                 name: "Localhost",
-                                base_url: `http://${host}/f/`,
+                                base_url: host,
                               })
                             )
                               .then(() => {
