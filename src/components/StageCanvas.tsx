@@ -39,17 +39,17 @@ export const StageCanvas = ({
 
   let calculateXSize = (pos: ListPositionFragment) => {
     return (
-      (pos?.omeros?.at(0)?.representation?.shape.at(4) || 0) *
-      (pos?.omeros?.at(0)?.physicalSize.x || 0)
+      (pos?.omeros?.at(0)?.representation?.shape?.at(4) || 0) *
+      (pos?.omeros?.at(0)?.physicalSize?.x || 0)
     );
   };
 
   const translateX = (x: number | null | undefined) => {
-    return (x || 0) * stage.physicalSize[1];
+    return (x || 0) * (stage?.physicalSize?.at(1) || 0);
   };
 
   const translateY = (y: number | null | undefined) => {
-    return (y || 0) * stage.physicalSize[0];
+    return (y || 0) * (stage?.physicalSize?.at(0) || 0);
   };
 
   console.log(width, height);

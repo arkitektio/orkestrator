@@ -24,6 +24,8 @@ import { NumberInputField } from "../../components/forms/fields/number_input";
 import { PageLayout } from "../../layout/PageLayout";
 import { DiscussionSidebar } from "./comments/DiscussionSidebar";
 import CommentSection from "./comments/CommentSection";
+import { Representation } from "../../linker";
+import { CSVLink, CSVDownload } from "react-csv";
 
 type TableData = { [key: string]: any };
 
@@ -54,6 +56,8 @@ const Table: React.FC<ISampleProps> = ({ id }) => {
     variables: { id: id },
   });
 
+  const [dataToDownload, setDataToDownload] = useState<any[]>([]);
+
   const table = useReactTable({
     data: tabledata?.table?.query || [],
     columns:
@@ -70,12 +74,27 @@ const Table: React.FC<ISampleProps> = ({ id }) => {
       }
     >
       <SectionTitle>{tabledata?.table?.name}</SectionTitle>
-      <div className="text-md mt-2">
-        {tabledata?.table?.representation && <> Belongs to Stack </>}
-        {tabledata?.table?.sample && <> Belongs to Sample </>}
-        {tabledata?.table?.experiment && <> Belongs to Experiment </>}
-      </div>
       <div className="flex-shrink mt-4 text-black font-light bg-white p-4 rounded border-gray-200 rounded-md">
+        {tabledata?.table?.repOrigins &&
+          tabledata?.table?.repOrigins.length > 0 && (
+            <>
+              <div className="font-light my-2">From Image</div>
+              <ResponsiveGrid>
+                {tabledata?.table?.repOrigins?.filter(notEmpty).map((rep) => (
+                  <Representation.Smart
+                    object={rep.id}
+                    dragClassName={(options) =>
+                      "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
+                    }
+                  >
+                    <Representation.DetailLink object={rep.id}>
+                      {rep.name}
+                    </Representation.DetailLink>
+                  </Representation.Smart>
+                ))}
+              </ResponsiveGrid>
+            </>
+          )}
         <div className="flex flex-col  text-xl">Filter</div>
         <Formik<DetailTableQueryVariables>
           initialValues={{
@@ -116,7 +135,18 @@ const Table: React.FC<ISampleProps> = ({ id }) => {
             </Form>
           )}
         </Formik>
+        {tabledata?.table?.query && (
+          <CSVLink
+            data={tabledata?.table?.query}
+            filename="data.csv"
+            className="p-3"
+            target="_blank"
+          >
+            Download CSV
+          </CSVLink>
+        )}
       </div>
+
       <table className="flex-grow table-auto mt-5 text-white">
         <thead className="text-xl mb-3 bg-slate-800 p-3 text-black rounded-md border border-black-200">
           {table.getHeaderGroups().map((headerGroup) => (

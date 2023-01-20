@@ -7,10 +7,10 @@ query DetailTable(
 ) {
   table(id: $id) {
     ...DetailTable
-    columns(only: $only) {
+    columns(filter: $only) {
       ...Column
     }
-    query(only: $only, limit: $limit, offset: $offset, query: $query)
+    query(columns: $only, limit: $limit, offset: $offset, query: $query)
   }
 }
 

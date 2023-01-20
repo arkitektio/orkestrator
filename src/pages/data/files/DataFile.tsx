@@ -4,6 +4,7 @@ import Timestamp from "react-timestamp";
 import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 import { RepresentationCard } from "../../../components/MyRepresentations";
+import { SelfActions } from "../../../components/SelfActions";
 import { notEmpty } from "../../../floating/utils";
 import { PageLayout } from "../../../layout/PageLayout";
 import { SectionTitle } from "../../../layout/SectionTitle";
@@ -36,6 +37,7 @@ export const OmeroFile: React.FC<{ id: string }> = ({ id }) => {
               Download
             </a>
           )}
+          <SelfActions type={"@mikro/omerofile"} object={id} />
         </>
       }
       sidebar={

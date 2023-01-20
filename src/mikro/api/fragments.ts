@@ -11,6 +11,17 @@
       "MentionDescendent",
       "ParagraphDescendent"
     ],
+    "GenericObject": [
+      "Experiment",
+      "Feature",
+      "Label",
+      "Model",
+      "Position",
+      "ROI",
+      "Representation",
+      "Sample",
+      "Stage"
+    ],
     "Node": [
       "MentionDescendent",
       "ParagraphDescendent"

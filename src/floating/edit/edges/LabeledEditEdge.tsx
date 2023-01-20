@@ -9,6 +9,7 @@ import {
   svgDrawStraightLinePath,
   pathfindingJumpPointNoDiagonal,
 } from "@tisoap/react-flow-smart-edge";
+import { AiOutlineClose } from "react-icons/ai";
 
 const foreignObjectSize = 200;
 
@@ -68,25 +69,30 @@ export const LabeledEditEdge: React.FC<LabeledEdgeProps> = (props) => {
           startOffset="50%"
           textAnchor="middle"
           className="group"
-        >
-          {data?.stream
-            .map(
-              (item) =>
-                (item?.kind == StreamKind.List
+        ></textPath>
+      </text>
+      <foreignObject x={edgeCenterX} y={edgeCenterY} width={150} height={150}>
+        <div className="flex group">
+          <div
+            className="relative m-auto hover:bg-gray-500 bg-gray-800 border-[#555] border rounded-lg shadow-lg p-1 cursor-pointer select-none text-gray-400  hover:text-gray-200 flex-col flex  transition-all duration-500 ease-in-out"
+            style={{ fontSize: "13px", fill: "white" }}
+          >
+            {data?.stream.map((item) => (
+              <span className="text-xs">
+                {(item?.kind == StreamKind.List
                   ? "[ " + item?.child?.identifier + " ]" || item?.kind
                   : item?.identifier || item?.kind) +
-                (item?.nullable ? "?" : "")
-            )
-            .join(" | ")}
-          <tspan
-            onClick={() => removeEdge(id)}
-            style={{ fontSize: "13px", fill: "red" }}
-            className="hidden group-hover:block cursor-pointer"
-          >
-            X
-          </tspan>
-        </textPath>
-      </text>
+                  (item?.nullable ? "?" : "")}
+              </span>
+            ))}
+            <div className="absolute group-hover:opacity-100 opacity-0 color-red-500 rounded-lg shadow-lg p-1 cursor-pointer select-none top-0 right-0 translate-y-[-50%] translate-x-[50%] transition-opacity duration-500 ease-in-out">
+              <span onClick={() => removeEdge(id)}>
+                <AiOutlineClose className="text-red-400" />
+              </span>
+            </div>
+          </div>
+        </div>
+      </foreignObject>
     </>
   );
 

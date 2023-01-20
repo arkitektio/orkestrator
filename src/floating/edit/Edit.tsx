@@ -299,6 +299,7 @@ export const EditRiver: React.FC<Props> = ({
     );
     setEdges((edg) => edg.filter((el) => el.target !== id));
     console.log("update node", id, instream);
+    setSelectedNode((selectedNode) => selectedNode);
   };
 
   const updateNodeExtras = (id: string, data: any) => {
@@ -424,6 +425,9 @@ export const EditRiver: React.FC<Props> = ({
                         mapStrategy: MapStrategy.Map,
                         allowLocal: false,
                         reserveParams: {},
+                        assignTimeout: 2000,
+                        yieldTimeout: 2000,
+                        reserveTimeout: 2000,
                         outstream: [
                           event?.data?.node?.returns?.map(port_to_stream) || [],
                         ],

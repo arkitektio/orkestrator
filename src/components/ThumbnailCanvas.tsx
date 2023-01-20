@@ -111,7 +111,13 @@ export const ThumbnailCanvas = ({
   }, [rep, blurhashref, width, height, s3resolve]);
 
   return (
-    <div className="relative" style={{ height: height, width: width }}>
+    <div
+      className="relative"
+      style={{ height: height, width: width }}
+      onDoubleClick={() => {
+        window.open(s3resolve(thumbnail), "_blank");
+      }}
+    >
       <canvas
         className="absolute top-0 left-0"
         width={width}

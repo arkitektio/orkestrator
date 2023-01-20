@@ -1,7 +1,9 @@
 import * as React from "react";
 import { Generators } from "../../components/Generators";
+import { MyContexts } from "../../components/MyContexts";
 import { MyExperiments } from "../../components/MyExperiments";
 import { MyFiles } from "../../components/MyFiles";
+import { MyModels } from "../../components/MyModels";
 import { MyPlots } from "../../components/MyPlots";
 import { MyRepresentations } from "../../components/MyRepresentations";
 import { MySamples } from "../../components/MySamples";
@@ -18,7 +20,8 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
       <Generators />
       <Producers />
       <MyExperiments />
-      <MyStages />
+      <MyContexts />
+      <MyModels />
       <MySamples />
       <MyRepresentations />
       <MyFiles />

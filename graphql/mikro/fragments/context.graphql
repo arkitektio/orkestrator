@@ -1,0 +1,22 @@
+fragment DetailContext on Context {
+  id
+  name
+  createdAt
+  links {
+    id
+    leftType
+    rightType
+    relation
+    xId
+    yId
+  }
+  models {
+    id
+    name
+  }
+}
+
+fragment ListContext on Context {
+  name
+  id
+}

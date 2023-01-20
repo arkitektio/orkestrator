@@ -1,5 +1,5 @@
-mutation UploadOmeroFile($file: ImageFile!) {
-  uploadOmeroFile(file: $file) {
+mutation UploadOmeroFile($file: ImageFile!, $experiments: [ID]) {
+  uploadOmeroFile(file: $file, experiments: $experiments) {
     ...DetailOmeroFile
   }
 }

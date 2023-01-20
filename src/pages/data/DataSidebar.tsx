@@ -27,7 +27,7 @@ export const RepresentationItem = ({ re }: any) => {
       placement="bottom"
       object={re.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `rounded shadow-xl group text-white  h-[4rem] bg-center bg-cover ${
+        `rounded shadow-xl group text-white  h-[4rem] bg-center bg-cover bg-black ${
           isOver && !isDragging && "border-primary-200 border"
         } ${isDragging && "border-primary-200 border"} ${
           isSelected && "ring-1 ring-primary-200 "

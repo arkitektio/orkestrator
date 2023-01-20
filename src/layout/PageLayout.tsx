@@ -51,7 +51,7 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
             <BreadCrumbs />
             {props.actions && <Actionbar>{props.actions}</Actionbar>}
             <div
-              className="flex-grow p-2 sm:p-4 overflow-y-scroll w-full @container"
+              className="flex-grow p-2 sm:p-4 overflow-y-auto w-full @container"
               data-enableselect="true"
             >
               {props.children}

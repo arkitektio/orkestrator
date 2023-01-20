@@ -24,6 +24,9 @@ fragment ArkitektNode on ArkitektNode {
   reserveParams {
     agents
   }
+  assignTimeout
+  yieldTimeout
+  reserveTimeout
 }
 
 fragment ReactiveNode on ReactiveNode {

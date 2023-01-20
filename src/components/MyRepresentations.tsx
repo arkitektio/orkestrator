@@ -7,18 +7,22 @@ import {
 } from "react-icons/bs";
 import { ResponsiveGrid } from "../components/layout/ResponsiveGrid";
 import { notEmpty } from "../floating/utils";
+import { useDialog } from "../layout/dialog/DialogProvider";
 import { OptimizedImage } from "../layout/OptimizedImage";
 import { Representation } from "../linker";
 import {
+  LinkableModels,
   ListRepresentationFragment,
   MyRepresentationsEventDocument,
   MyRepresentationsEventSubscriptionResult,
   MyRepresentationsQuery,
   useDeleteRepresentationMutation,
+  useLinkMutation,
   useMyRepresentationsQuery,
   usePinnedRepresentationsQuery,
   useUpdateRepresentationMutation,
 } from "../mikro/api/graphql";
+import { AskRelationModal } from "../mikro/components/dialogs/AskRelationModal";
 import { useMikro, withMikro } from "../mikro/MikroContext";
 import { useConfirm } from "./confirmer/confirmer-context";
 
@@ -32,9 +36,12 @@ export const RepresentationCard: React.FC<{
   const { s3resolve } = useMikro();
 
   const { confirm } = useConfirm();
+  const { ask } = useDialog();
 
   const [deleteRepresentation] = withMikro(useDeleteRepresentationMutation)();
   const [updateRepresentation] = withMikro(useUpdateRepresentationMutation)();
+
+  const [link] = withMikro(useLinkMutation)();
 
   if (!rep?.id) {
     return <>NO ID FAILURE</>;
@@ -67,6 +74,23 @@ export const RepresentationCard: React.FC<{
               },
               label: "Set as child",
               description: "Set as child",
+            },
+            {
+              action: async (self, drops) => {
+                let x = await ask(AskRelationModal, {});
+
+                await link({
+                  variables: {
+                    xType: LinkableModels.GrunnlagRepresentation,
+                    yType: LinkableModels.GrunnlagRepresentation,
+                    xId: self.object,
+                    yId: drops[0].object,
+                    ...x,
+                  },
+                });
+              },
+              label: "Set as GT",
+              description: "Set the dropped representation as GT",
             },
           ];
 

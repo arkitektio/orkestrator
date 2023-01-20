@@ -154,11 +154,39 @@ export const Sample = buildSmart("@mikro/sample", "samples", [
   "list:@mikro/representation",
   "item:@mikro/representation",
 ]);
+
 export const Roi = buildSmart("@mikro/roi", "rois", [
   "list:@mikro/roi",
   "item:@mikro/roi",
   "list:@mikro/experiment",
   "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Context = buildSmart("@mikro/context", "contexts", [
+  "list:@mikro/link",
+  "item:@mikro/link",
+  "list:@mikro/context",
+  "item:@mikro/context",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Link = buildSmart("@mikro/link", "contexts", [
+  "list:@mikro/link",
+  "item:@mikro/link",
+  "list:@mikro/context",
+  "item:@mikro/context",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Model = buildSmart("@mikro/model", "models", [
+  "list:@mikro/model",
+  "item:@mikro/model",
+  "list:@mikro/context",
+  "item:@mikro/context",
   "list:@mikro/representation",
   "item:@mikro/representation",
 ]);

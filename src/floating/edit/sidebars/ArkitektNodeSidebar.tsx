@@ -1,5 +1,6 @@
 import { Form, Formik } from "formik";
 import { useEffect } from "react";
+import { NumberInputField } from "../../../components/forms/fields/number_input";
 import {
   enum_to_options,
   SelectInputField,
@@ -56,7 +57,7 @@ export const ArkitektNodeSidebar = (
                 )) ||
               []
             }
-            autoSubmit={false}
+            autoSubmit={true}
             onSubmit={async (values, values_as_dict) => {
               updateNodeExtras(props.node.id, {
                 ...props.node.data,
@@ -72,6 +73,9 @@ export const ArkitektNodeSidebar = (
             reserveParams: ReserveParamsInput;
             allowLocal: boolean;
             mapStrategy: MapStrategy;
+            reserveTimeout: number;
+            assignTimeout: number;
+            yieldTimeout: number;
           }>
             onSubmit={async (values) => {
               updateNodeExtras(props.node.id, {
@@ -83,6 +87,9 @@ export const ArkitektNodeSidebar = (
               reserveParams: props.node.data.reserveParams,
               allowLocal: props.node.data.allowLocal,
               mapStrategy: props.node.data.mapStrategy,
+              reserveTimeout: props.node.data.reserveTimeout,
+              assignTimeout: props.node.data.assignTimeout,
+              yieldTimeout: props.node.data.yieldTimeout,
             }}
           >
             {(formikProps) => (
@@ -94,6 +101,12 @@ export const ArkitektNodeSidebar = (
                   options={enum_to_options(MapStrategy)}
                   name="mapStrategy"
                 />
+                <NumberInputField
+                  label="reserveTimeout"
+                  name="reserveTimeout"
+                />
+                <NumberInputField label="assignTimeout" name="assignTimeout" />
+                <NumberInputField label="yieldTimeout" name="yieldTimeout" />
                 <button type="submit">Submit</button>
               </Form>
             )}

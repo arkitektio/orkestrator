@@ -8,6 +8,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-family: 'Segoe UI', sans-serif;
   overflow-y: hidden;
+  scrollbar-gutter: stable;
 }
 
 .shadow-element {
@@ -150,12 +151,12 @@ code {
 ::-webkit-scrollbar-thumb {
   background-color: #7e7f80;
   border-radius: 20px;
-  border: 6px solid transparent;
+  border: 4px solid transparent;
   background-clip: content-box;
 }
 
 ::-webkit-scrollbar {
-  width: 20px;
+
   background-color: transparent;
 }
 

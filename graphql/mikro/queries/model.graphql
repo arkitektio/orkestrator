@@ -1,0 +1,18 @@
+query MyModels($limit: Int, $offset: Int) {
+  mymodels(limit: $limit, offset: $offset) {
+    ...ListModel
+  }
+}
+
+query DetailModel($id: ID!) {
+  model(id: $id) {
+    ...DetailModel
+  }
+}
+
+query SearchModels($search: String) {
+  options: models(name: $search, limit: 10) {
+    label: name
+    value: id
+  }
+}

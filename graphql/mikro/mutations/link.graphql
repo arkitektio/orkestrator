@@ -1,0 +1,19 @@
+mutation Link(
+  $relation: String!
+  $xType: LinkableModels!
+  $xId: ID!
+  $yType: LinkableModels!
+  $yId: ID!
+  $context: ID
+) {
+  link(
+    relation: $relation
+    xType: $xType
+    xId: $xId
+    yType: $yType
+    yId: $yId
+    context: $context
+  ) {
+    ...ListLink
+  }
+}

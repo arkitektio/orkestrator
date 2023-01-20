@@ -1,0 +1,18 @@
+query MyContexts($limit: Int, $offset: Int) {
+  mycontexts(limit: $limit, offset: $offset) {
+    ...ListContext
+  }
+}
+
+query DetailContext($id: ID!) {
+  context(id: $id) {
+    ...DetailContext
+  }
+}
+
+query SearchContexts($search: String) {
+  options: contexts(name: $search, limit: 10) {
+    label: name
+    value: id
+  }
+}

@@ -1,0 +1,19 @@
+fragment DetailModel on Model {
+  id
+  name
+  contexts {
+    id
+    name
+  }
+  kind
+}
+
+fragment ListModel on Model {
+  id
+  name
+  contexts {
+    id
+    name
+  }
+  kind
+}

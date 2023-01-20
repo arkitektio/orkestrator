@@ -7,7 +7,9 @@
       const result: PossibleTypesResultData = {
   "possibleTypes": {
     "Annotation": [
+      "AttributePredicate",
       "CustomAnnotation",
+      "IsPredicate",
       "ValueRange"
     ],
     "Port": [

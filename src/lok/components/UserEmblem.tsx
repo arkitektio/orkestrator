@@ -15,7 +15,7 @@ export const UserEmblem: React.FC<{ sub: string }> = ({ sub }) => {
       {data?.user?.id && (
         <User.DetailLink object={data?.user?.id}>
           <img
-            className="h-8 w-8 rounded-full hover:ring-pink-500 hover:ring-2 cursor-pointer"
+            className="h-8 w-8 rounded-full ring-pink-200 ring-2 hover:ring-pink-500 hover:ring-2 cursor-pointer"
             src={
               data?.user?.profile?.avatar
                 ? s3resolve(data?.user?.profile.avatar)

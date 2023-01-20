@@ -9,8 +9,9 @@ fragment Column on Column {
 fragment DetailTable on Table {
   id
   name
-  representation {
+  repOrigins {
     id
+    name
   }
   sample {
     id
@@ -26,7 +27,7 @@ fragment ListTable on Table {
   columns {
     ...Column
   }
-  representation {
+  repOrigins {
     id
   }
   sample {

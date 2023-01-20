@@ -27,9 +27,12 @@ import {
   useAssociateFilesMutation,
   useUnassociateFilesMutation,
   useUnassociateSamplesMutation,
+  useUploadOmeroFileMutation,
+  DetailExperimentQuery,
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
 import CommentSection from "./comments/CommentSection";
+import { UploadZone } from "./UploadZone";
 
 export type IExperimentProps = {
   id: string;
@@ -61,12 +64,35 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
       });
       cache.writeQuery({
         query: DetailExperimentDocument,
+        variables: { id: id },
         data: {
           experiment: {
             ...existing.experiment,
             samples: existing.experiment.samples.filter(
               (t: any) => t.id !== result.data?.deleteSample?.id
             ),
+          },
+        },
+      });
+    },
+  });
+
+  const [uploadFile] = withMikro(useUploadOmeroFileMutation)({
+    update(cache, result) {
+      const existing = cache.readQuery<DetailExperimentQuery>({
+        query: DetailExperimentDocument,
+        variables: { id: id },
+      });
+      cache.writeQuery({
+        query: DetailExperimentDocument,
+        variables: { id: id },
+        data: {
+          experiment: {
+            ...existing?.experiment,
+            omeroFiles: [
+              ...(existing?.experiment?.omeroFiles || []),
+              result.data?.uploadOmeroFile,
+            ],
           },
         },
       });
@@ -274,6 +300,11 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
                 </div>
               </MikroFile.Smart>
             ))}
+
+            <UploadZone
+              uploadFile={uploadFile}
+              additionalVariables={{ experiments: [id] }}
+            />
 
             <DropZone
               accepts={["item:@mikro/omerofile", "list:@mikro/omerofile"]}

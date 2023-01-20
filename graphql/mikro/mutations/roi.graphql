@@ -8,3 +8,9 @@ mutation PinRoi($id: ID!, $pin: Boolean!) {
     pinned
   }
 }
+
+mutation DeleteRoi($id: ID!) {
+  deleteROI(id: $id) {
+    id
+  }
+}

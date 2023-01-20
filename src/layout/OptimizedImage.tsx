@@ -52,6 +52,9 @@ export const OptimizedImage = ({
         backgroundImage: bgImage ? `url(${bgImage}) ` : undefined,
         backgroundSize: "cover",
       }}
+      onDoubleClick={() => {
+        window.open(src, "_blank");
+      }}
       className={className}
       threshold={100}
     />

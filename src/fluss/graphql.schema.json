@@ -569,6 +569,22 @@
             "deprecationReason": null
           },
           {
+            "name": "assignTimeout",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Float",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "constants",
             "description": null,
             "args": [],
@@ -797,6 +813,22 @@
             "deprecationReason": null
           },
           {
+            "name": "reserveTimeout",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Float",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "typename",
             "description": null,
             "args": [],
@@ -806,6 +838,22 @@
               "ofType": {
                 "kind": "SCALAR",
                 "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "yieldTimeout",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Float",
                 "ofType": null
               }
             },
@@ -3563,6 +3611,18 @@
             "deprecationReason": null
           },
           {
+            "name": "assignTimeout",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "defaultValue": "2000",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "constream",
             "description": null,
             "type": {
@@ -3799,6 +3859,18 @@
             "deprecationReason": null
           },
           {
+            "name": "reserveTimeout",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "defaultValue": "2000",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "typename",
             "description": null,
             "type": {
@@ -3811,6 +3883,18 @@
               }
             },
             "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "yieldTimeout",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "defaultValue": "2000",
             "isDeprecated": false,
             "deprecationReason": null
           }

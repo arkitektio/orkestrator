@@ -101,6 +101,8 @@ import { DataInstrument } from "./pages/data/instruments/DataInstrument";
 import { DataInstruments } from "./pages/data/instruments/DataInstruments";
 import { DataObjective } from "./pages/data/objectives/DataObjective";
 import { DataObjectives } from "./pages/data/objectives/DataObjectives";
+import { DataContext } from "./pages/data/contexts/DataContext";
+import { DataContexts } from "./pages/data/contexts/DataContexts";
 
 export const HTML5toTouch = {
   backends: [
@@ -180,6 +182,11 @@ export const MainApp: React.FC<Props> = (props) => {
                               path="experiments"
                               element={<DataExperiments />}
                             />
+                            <Route
+                              path="contexts/:context"
+                              element={<DataContext />}
+                            />
+                            <Route path="contexts" element={<DataContexts />} />
 
                             <Route
                               path="samples/:sample"

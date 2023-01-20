@@ -76,7 +76,7 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
             </p>
           </Reservation.DetailLink>
         ) : (
-          <>Could not find reservation! Critical Error.</>
+          <>Could not find reservation {id}! Critical Error.</>
         )}
       </NodeMonitorLayout>
     );

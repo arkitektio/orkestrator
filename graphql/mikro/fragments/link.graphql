@@ -1,0 +1,9 @@
+fragment DetailLink on DataLink {
+  id
+  relation
+}
+
+fragment ListLink on DataLink {
+  id
+  relation
+}

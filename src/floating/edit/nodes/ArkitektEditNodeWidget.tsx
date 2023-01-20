@@ -9,9 +9,9 @@ import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps } from "../../types";
-import { port_to_type as port_to_kind } from "../../utils";
+import { notEmpty, port_to_type as port_to_kind } from "../../utils";
 import { useEditRiver } from "../context";
-import { NodeEditLayout } from "./layout/NodeEdit";
+import { additional, NodeEditLayout } from "./layout/NodeEdit";
 
 export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id }) => {
@@ -99,12 +99,17 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           <Handle
             key={index}
             type="target"
+            className={
+              "cursor-pointer" +
+              "border-[10px] border-pink-500 shadow-pink-500/5 dark:border-pink-200 dark:shadow-pink-200/10"
+            }
             position={Position.Left}
             id={"arg_" + index}
             style={{
               top: "50%",
-              height: "2em",
-              zIndex: "900",
+              height: "50%",
+              zIndex: "-1",
+              borderRadius: "3px",
               cursor: "pointer",
               //boxShadow: "0px 0px 10px #ff1493",
             }}
@@ -120,13 +125,17 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           <Handle
             key={index}
             type="source"
+            className={
+              "cursor-pointer" +
+              "border-[10px] border-pink-500 shadow-pink-500/5 dark:border-pink-200 dark:shadow-pink-200/10"
+            }
             position={Position.Right}
             id={"return_" + index}
             style={{
               top: "50%",
-              height: "2em",
-              zIndex: "900",
-              cursor: "pointer",
+              height: "50%",
+              zIndex: "-1",
+              borderRadius: "3px",
               //boxShadow: "0px 0px 10px #ff1493",
             }}
             data-tip={
@@ -156,50 +165,77 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
                 <div className="w-full">
                   <span className="font-light text-sm ml-2"> Args </span>
                   <div className="grid grid-cols-1">
-                    {node_data?.node?.args?.map((arg, index) => (
-                      <div
-                        key={index}
-                        className="border m-1  py-0 px-1 rounded border-gray-200"
-                        data-tip={`${arg?.description}`}
-                        data-for={"tooltip_special" + id}
-                      >
-                        <span className="text-xs">{arg?.key}</span> {arg?.label}
-                        {arg?.key && (
-                          <button onClick={() => rotateArg(arg)}>
-                            {data.instream[0]?.find((s) => s?.key === arg?.key)
-                              ? "S"
-                              : "-"}
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                    {node_data?.node?.args
+                      ?.filter(notEmpty)
+                      .map((arg, index) => {
+                        let instream = data.instream[0]?.find(
+                          (s) => s?.key === arg?.key
+                        );
+
+                        let con = data?.defaults && data.defaults[arg?.key];
+
+                        return (
+                          <div
+                            key={index}
+                            className={`border m-1 py-0 px-1 rounded  ${
+                              instream
+                                ? "text-gray-800 bg-gray-200 border-gray-200"
+                                : "text-gray-200 bg-gray-800 border-gray-900"
+                            } `}
+                            data-tip={`${arg?.description}`}
+                            data-for={"tooltip_special" + id}
+                            onClick={() => rotateArg(arg)}
+                          >
+                            {" "}
+                            <div className="flex flex-inline">
+                              <span className="flex text-xs my-auto">
+                                {arg?.key}
+                              </span>{" "}
+                              <div className="flex-grow"></div>
+                              <div className="text-xs">
+                                {arg?.label}
+                                {con != undefined && (
+                                  <div>{JSON.stringify(con)}</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
                 <div className="w-full">
                   <span className="font-light text-sm"> Returns </span>
                   <div className="grid grid-cols-1">
-                    {node_data?.node?.returns?.map((re, index) => (
-                      <div
-                        key={index}
-                        className="border m-1 py-0 px-1 rounded border-gray-200"
-                        data-tip={`${re?.description}`}
-                        data-for={"tooltip_special" + id}
-                      >
-                        {re?.key &&
-                          (data.outstream[0]?.find(
-                            (s) => s?.key === re?.key
-                          ) ? (
-                            <button onClick={() => rotateReturn(re)}>
-                              Is inside
-                            </button>
-                          ) : (
-                            <button onClick={() => rotateReturn(re)}>
-                              Is outside
-                            </button>
-                          ))}
-                        <span className="text-xs">{re?.key}</span>
-                      </div>
-                    ))}
+                    {node_data?.node?.returns
+                      ?.filter(notEmpty)
+                      .map((re, index) => {
+                        let instream = data.outstream[0]?.find(
+                          (s) => s?.key === re?.key
+                        );
+
+                        return (
+                          <div
+                            key={index}
+                            className={`border m-1 py-0 px-1 rounded  ${
+                              instream
+                                ? "text-gray-800 bg-gray-200 border-gray-200"
+                                : "text-gray-200 bg-gray-800 border-gray-900"
+                            } `}
+                            data-tip={`${re?.description}`}
+                            data-for={"tooltip_special" + id}
+                            onClick={() => rotateReturn(re)}
+                          >
+                            <div className="flex flex-inline">
+                              <span className="flex text-xs my-auto">
+                                {re?.key}
+                              </span>{" "}
+                              <div className="flex-grow"></div>
+                              <div className="text-xs">{re?.label}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
               </div>

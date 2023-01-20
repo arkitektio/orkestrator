@@ -1,6 +1,6 @@
 import "./styles.css";
 
-const additional = {
+export const additional = {
   pink: "border-pink-500 shadow-pink-500/5 dark:border-pink-200 dark:shadow-pink-200/10",
   blue: "border-blue-500 shadow-blue-500/50 dark:border-blue-200 dark:shadow-blue-200/10",
   green:

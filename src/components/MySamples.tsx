@@ -39,7 +39,9 @@ export const SampleCard: React.FC<{
   return (
     <Sample.Smart
       object={sample?.id}
-      className={"bg-slate-700 text-white rounded shadow-md pl-3  group"}
+      className={
+        "bg-slate-700 text-white rounded shadow-md pl-3 truncate group"
+      }
       additionalMates={(accept, self) => {
         if (!self) return [];
 

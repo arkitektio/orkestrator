@@ -1,6 +1,9 @@
 import React, { useDebugValue } from "react";
 import { useNavigate } from "react-router";
-import { ListAgentFragment } from "../rekuest/api/graphql";
+import {
+  ListAgentFragment,
+  useDeleteAgentMutation,
+} from "../rekuest/api/graphql";
 import { AgentPulse } from "../rekuest/components/generic/StatusPulse";
 import { usePostman } from "../rekuest/postman/graphql/postman-context";
 import { notEmpty } from "../floating/utils";
@@ -12,10 +15,13 @@ import { app } from "@tauri-apps/api";
 import { UserEmblem } from "../lok/components/UserEmblem";
 import { RegistryEmblem } from "../rekuest/components/RegistryEmblem";
 import { AppImage } from "../lok/components/AppImage";
+import { withRekuest } from "../rekuest";
 
 export type IActiveClientsProps = {};
 
 export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {
+  const [deleteAgent] = withRekuest(useDeleteAgentMutation)();
+
   return (
     <Agent.Smart
       showSelfMates={true}
@@ -28,6 +34,29 @@ export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {
           isSelected && "ring-1 ring-primary-200 "
         }`
       }
+      additionalMates={(partner, self) => {
+        if (
+          partner == "item:@rekuest/agent" ||
+          partner == "list:@rekuest/agent"
+        ) {
+          return [
+            {
+              label: "Delete Agent",
+              action: async (self, drops) => {
+                for (const drop of drops) {
+                  await deleteAgent({
+                    variables: {
+                      id: drop.object,
+                    },
+                  });
+                }
+              },
+            },
+          ];
+        }
+
+        return [];
+      }}
     >
       <div className="">
         <div className="flex flex-row w-full">

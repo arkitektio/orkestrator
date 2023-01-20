@@ -62,6 +62,11 @@ fragment DetailRepresentation on Representation {
     id
     key
     value
+    comments {
+      user {
+        sub
+      }
+    }
   }
   omero {
     ...Omero
@@ -84,6 +89,11 @@ fragment DetailRepresentation on Representation {
       blurhash
     }
   }
+  tables {
+    id
+    name
+  }
+
   rois {
     ...RepRoi
   }

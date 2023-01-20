@@ -28,7 +28,9 @@ import {
   Sample,
   Objective,
   Instrument,
+  Table,
 } from "../../linker";
+import { UserEmblem } from "../../lok/components/UserEmblem";
 import { DataPlot } from "../../pages/data/plots/DataPlot";
 import {
   CommentableModels,
@@ -38,6 +40,7 @@ import {
   MyRepresentationsOriginSubscription,
   MyRepresentationsOriginSubscriptionVariables,
   UpdateRepresentationMutationVariables,
+  useDeleteRoiMutation,
   useDetailRepresentationQuery,
   usePinRepresentationMutation,
   useSearchSampleLazyQuery,
@@ -68,6 +71,8 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
   const [updateRepresentation, _] = withMikro(
     useUpdateRepresentationMutation
   )();
+
+  const [deleteRoi] = withMikro(useDeleteRoiMutation)();
 
   useEffect(() => {
     console.log("Subscribing to MyRois");
@@ -335,9 +340,10 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                   >
                     <div className="font-semibold mr-2">Position on Stage </div>
                     <div className="text-md text-black ">
-                      {data.representation.omero.position.x *
-                        data?.representation.omero.position?.stage
-                          .physicalSize[0]}
+                      {data?.representation?.omero?.position?.x ||
+                        0 *
+                          data?.representation.omero.position?.stage
+                            .physicalSize[0]}
                       µm{" "}
                       {data.representation.omero.position.x *
                         data?.representation.omero.position?.stage
@@ -457,15 +463,22 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                       .map((met) => (
                         <Metric.Smart
                           object={met.id}
-                          className="border rounded border-gray-800 p-3"
+                          className="border rounded border-gray-800 relative"
                         >
-                          <Metric.DetailLink
-                            object={met.id}
-                            className="font-light"
-                          >
-                            {met?.key}
-                          </Metric.DetailLink>
-                          <div className="font-xs">{met?.value}</div>
+                          <div className="relative p-3 ">
+                            <Metric.DetailLink
+                              object={met.id}
+                              className="font-light"
+                            >
+                              {met?.key}
+                            </Metric.DetailLink>
+                            <div className="font-xs">{met?.value}</div>
+                            {met.comments?.at(0)?.user?.sub && (
+                              <UserEmblem
+                                sub={met.comments?.at(0)?.user?.sub}
+                              />
+                            )}
+                          </div>
                         </Metric.Smart>
                       ))}
                   </div>
@@ -599,6 +612,29 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                 </>
               )}
 
+            {data?.representation?.tables &&
+              data?.representation?.tables.length > 0 && (
+                <>
+                  <div className="font-light my-2">Derived Tables</div>
+                  <ResponsiveGrid>
+                    {data?.representation?.tables
+                      ?.filter(notEmpty)
+                      .map((table) => (
+                        <Table.Smart
+                          object={table.id}
+                          dragClassName={(options) =>
+                            "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
+                          }
+                        >
+                          <Table.DetailLink object={table.id}>
+                            {table.name}
+                          </Table.DetailLink>
+                        </Table.Smart>
+                      ))}
+                  </ResponsiveGrid>
+                </>
+              )}
+
             <div className="flex flex-col mt-2">
               <button
                 className="border border-gray-600 rounded w-fit p-1"
@@ -610,30 +646,52 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
           </div>
         </div>
 
-        {data?.representation?.rois && data?.representation?.rois.length > 0 && (
-          <>
-            <div className="font-light my-2">Rois</div>
-            <ResponsiveGrid>
-              {data?.representation?.rois?.filter(notEmpty).map((roi) => (
-                <Roi.Smart
-                  object={roi.id}
-                  dragClassName={(options) =>
-                    "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
-                  }
-                  dragStyle={() => ({
-                    background:
-                      "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95))",
-                  })}
-                >
-                  <Roi.DetailLink object={roi.id}>{roi?.type}</Roi.DetailLink>
-                  <p className="text-xs">
-                    {roi?.tags?.map((t) => "#" + t).join(" ")}
-                  </p>
-                </Roi.Smart>
-              ))}
-            </ResponsiveGrid>
-          </>
-        )}
+        {data?.representation?.rois &&
+          data?.representation?.rois.length > 0 && (
+            <>
+              <div className="font-light my-2">Rois</div>
+              <ResponsiveGrid>
+                {data?.representation?.rois?.filter(notEmpty).map((roi) => (
+                  <Roi.Smart
+                    object={roi.id}
+                    dragClassName={(options) =>
+                      "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
+                    }
+                    dragStyle={() => ({
+                      background:
+                        "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95))",
+                    })}
+                    additionalMates={(partner, self) => {
+                      if (
+                        partner == "item:@mikro/roi" ||
+                        partner == "list:@mikro/roi"
+                      ) {
+                        return [
+                          {
+                            label: "Delete Roi",
+                            async action(self, drops) {
+                              deleteRoi({
+                                variables: {
+                                  id: self.object,
+                                },
+                              });
+                            },
+                          },
+                        ];
+                      }
+
+                      return [];
+                    }}
+                  >
+                    <Roi.DetailLink object={roi.id}>{roi?.type}</Roi.DetailLink>
+                    <p className="text-xs">
+                      {roi?.tags?.map((t) => "#" + t).join(" ")}
+                    </p>
+                  </Roi.Smart>
+                ))}
+              </ResponsiveGrid>
+            </>
+          )}
       </div>
     </PageLayout>
   );
