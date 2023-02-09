@@ -1,5 +1,6 @@
 fragment Position on Position {
   id
+  name
   stage {
     ...Stage
   }
@@ -9,7 +10,7 @@ fragment Position on Position {
   omeros {
     acquisitionDate
     representation {
-      id
+      ...ListRepresentation
     }
   }
 }

@@ -65,7 +65,7 @@ export const NodeFilterBox: React.FC<NodeFilterBoxProps> = ({
     >
       {(formik) => (
         <Form>
-          <ChangeSubmitHelper debounce={500} formik={formik} />
+          <ChangeSubmitHelper debounce={500} />
           <div className="flex flex-wrap items-stretch w-full mb-4 relative">
             <div className="flex -mr-px">
               <span className="flex items-center leading-normal bg-grey-lighter rounded-r-none border border-r-0 border-grey-light px-3 whitespace-no-wrap text-grey-dark text-sm">

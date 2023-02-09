@@ -1,0 +1,18 @@
+query Links($limit: Int, $offset: Int) {
+  links(limit: $limit, offset: $offset) {
+    ...ListLink
+  }
+}
+
+query DetailLink($id: ID!) {
+  link(id: $id) {
+    ...DetailLink
+  }
+}
+
+query SearchLinks($search: String) {
+  options: links(relation: $search, limit: 10) {
+    label: relation
+    value: id
+  }
+}

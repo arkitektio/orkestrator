@@ -8,9 +8,12 @@ import {
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
 import { ActionButton } from "../layout/ActionButton";
+import { useDialog } from "../layout/dialog/DialogProvider";
 import { Plot, Sample } from "../linker";
 import {
+  CreatePlotMutation,
   ListPlotFragment,
+  MyPlotsDocument,
   MyPlotsQuery,
   useDeletePlotMutation,
   useMyPlotsQuery,
@@ -18,7 +21,9 @@ import {
 import { CreatePlotModal } from "../mikro/components/dialogs/CreatePlotModal";
 import { CreateSampleModal } from "../mikro/components/dialogs/CreateSampleModal";
 import { withMikro } from "../mikro/MikroContext";
+import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMySamplesProps = {};
 
@@ -108,16 +113,22 @@ export const PlotCard: React.FC<{
   );
 };
 
-export const MyPlots: React.FC<IMySamplesProps> = () => {
+export const MyPlots: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
+  createdDay,
+  limit,
+}) => {
+  const variables = { limit: limit, offset: 0, createdDay: createdDay };
   const { data, loading, refetch, subscribeToMore } = withMikro(
     useMyPlotsQuery
   )({
-    //pollInterval: 1000,
+    variables,
   });
 
   const [show, setshow] = useState(false);
 
   const [offset, setOffset] = useState(0);
+
+  const { ask } = useDialog();
 
   useEffect(() => {
     refetch();
@@ -126,7 +137,7 @@ export const MyPlots: React.FC<IMySamplesProps> = () => {
   return (
     <div>
       <div className="font-light text-xl flex mr-2 dark:text-white">
-        <Sample.ListLink className="flex-0">My Plots</Sample.ListLink>
+        <Sample.ListLink className="flex-0">Plots</Sample.ListLink>
         <div className="flex-grow"></div>
         <div className="flex-0">
           {offset != 0 && (
@@ -149,22 +160,37 @@ export const MyPlots: React.FC<IMySamplesProps> = () => {
           )}
         </div>
       </div>
-      <ResponsiveGrid>
+      <ResponsiveContainerGrid>
         {data?.myplots?.map((plot, index) => (
           <PlotCard key={index} plot={plot} />
         ))}
-        <div className="flex flex-row">
-          <ActionButton
-            label="Create new Plot"
-            description="Create a new plot"
-            className="text-white "
-            onAction={async () => setshow(true)}
-          >
-            <BsPlusCircle />
-          </ActionButton>
-          <CreatePlotModal show={show} setShow={setshow} />
-        </div>
-      </ResponsiveGrid>
+      </ResponsiveContainerGrid>
+      <ActionButton
+        label="Create new Plot"
+        description="Create a new Plot"
+        className="text-white "
+        onAction={async () => {
+          console.log("create plot");
+
+          await ask(CreatePlotModal, {
+            update(cache, result) {
+              const existing = cache.readQuery<MyPlotsQuery>({
+                query: MyPlotsDocument,
+                variables,
+              });
+              cache.writeQuery({
+                query: MyPlotsDocument,
+                variables,
+                data: {
+                  myplots: existing?.myplots?.concat(result.data?.createPlot),
+                },
+              });
+            },
+          });
+        }}
+      >
+        <BsPlusCircle />
+      </ActionButton>
     </div>
   );
 };

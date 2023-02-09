@@ -7,6 +7,7 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
+import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
 import { useDialog } from "../layout/dialog/DialogProvider";
 import { Context, Experiment, Model } from "../linker";
@@ -19,20 +20,25 @@ import {
   MyExperimentsQuery,
   useDeleteContextMutation,
   useDeleteExperimentMutation,
+  useDeleteModelMutation,
   useMyContextsQuery,
   useMyExperimentsQuery,
   useMyModelsQuery,
 } from "../mikro/api/graphql";
 import { CreateContextModal } from "../mikro/components/dialogs/CreateContextModal";
 import { CreateExperimentModal } from "../mikro/components/dialogs/CreateExperimentModal";
+import { useDeleteModel } from "../mikro/hooks/useDeleteModel";
+import { withDelete } from "../mikro/hooks/withDelete";
 import { withMikro } from "../mikro/MikroContext";
+import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
 export type IMyExperimentsProps = {};
 
 const ModelCard: React.FC<{
-  model: Maybe<ListModelFragment>;
+  model: ListModelFragment;
 }> = ({ model }) => {
   const onDrop = (...args: any) => {
     console.log(args);
@@ -40,7 +46,7 @@ const ModelCard: React.FC<{
 
   const { confirm } = useConfirm();
 
-  const [deleteContext, res] = withMikro(useDeleteContextMutation)();
+  const [deleteModel] = withMikro(withDelete(useDeleteModelMutation, model))();
 
   if (!model?.id) return <></>;
 
@@ -61,9 +67,7 @@ const ModelCard: React.FC<{
                 confirmLabel: "Yes delete!",
               });
 
-              await deleteContext({
-                variables: { id: model.id },
-              });
+              await deleteModel({ variables: { id: model.id } });
             },
             label: <BsTrash />,
             description: "Delete",
@@ -85,10 +89,12 @@ const ModelCard: React.FC<{
 
 const limit = 20;
 
-const MyModels: React.FC<IMyExperimentsProps> = () => {
+const MyModels: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
+  createdDay,
+}) => {
   const { data, error, subscribeToMore, refetch } = withMikro(useMyModelsQuery)(
     {
-      //pollInterval: 1000,
+      variables: { limit: 20, offset: 0, createdDay: createdDay },
     }
   );
 
@@ -106,9 +112,7 @@ const MyModels: React.FC<IMyExperimentsProps> = () => {
   return (
     <div>
       <div className="font-light text-xl flex mr-2 dark:text-white">
-        <Experiment.ListLink className="flex-0">
-          Latest Models
-        </Experiment.ListLink>
+        <Model.ListLink className="flex-0">Models</Model.ListLink>
         <div className="flex-grow"></div>
         <div className="flex-0">
           {offset != 0 && (
@@ -131,21 +135,14 @@ const MyModels: React.FC<IMyExperimentsProps> = () => {
           )}
         </div>
       </div>
-      <ResponsiveGrid>
-        {data?.mymodels?.slice(0, limit).map((m, index) => (
-          <ModelCard key={index} model={m} />
-        ))}
-        <ActionButton
-          label="Create new Experiment"
-          description="Create a new experiment"
-          className="text-white "
-          onAction={async () => {
-            await ask(CreateContextModal, {});
-          }}
-        >
-          <BsPlusCircle />
-        </ActionButton>
-      </ResponsiveGrid>
+      <ResponsiveContainerGrid>
+        {data?.mymodels
+          ?.slice(0, limit)
+          .filter(notEmpty)
+          .map((m, index) => (
+            <ModelCard key={index} model={m} />
+          ))}
+      </ResponsiveContainerGrid>
     </div>
   );
 };

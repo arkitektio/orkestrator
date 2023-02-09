@@ -72,8 +72,8 @@ export const ThumbnailCanvas = ({
     y: number | null | undefined
   ) => {
     return [
-      ((x || 0) / (rep.shape?.at(3) || 1)) * width,
-      ((y || 0) / (rep.shape?.at(4) || 1)) * height,
+      ((y || 0) / (rep.shape?.at(3) || 1)) * height,
+      ((x || 0) / (rep.shape?.at(4) || 1)) * width,
     ];
   };
 

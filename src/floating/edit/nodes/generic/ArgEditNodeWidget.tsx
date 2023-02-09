@@ -40,19 +40,7 @@ export const ArgEditNodeWidget: React.FC<ArgNodeProps> = withLayout(
             >
               Inputs{" "}
             </div>
-            <p className="text-base">
-              {outstream && (
-                <>
-                  {outstream.map((s, index) => (
-                    <div className="cursor-pointer">
-                      {s && s.map((s) => s?.kind).join(" | ")}
-                    </div>
-                  ))}
-                  <br />
-                </>
-              )}
-              {!isSmall && <></>}
-            </p>
+            <p className="text-base">{!isSmall && <></>}</p>
           </div>
         </NodeEditLayout>
         {outstream.map((s, index) => (
@@ -60,7 +48,14 @@ export const ArgEditNodeWidget: React.FC<ArgNodeProps> = withLayout(
             type="source"
             position={Position.Right}
             id={"return_" + index}
-            style={{ background: "#555", top: 20 * index + 20 }}
+            style={{
+              top: "50%",
+              height: "50%",
+              zIndex: "-1",
+              borderRadius: "3px",
+              cursor: "pointer",
+              //boxShadow: "0px 0px 10px #ff1493",
+            }}
             data-tip={s && s.map((s) => s?.key).join(" | ")}
             data-for={"tooltip" + id}
           />

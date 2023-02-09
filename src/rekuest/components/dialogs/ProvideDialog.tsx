@@ -18,13 +18,10 @@ export const ProvideDialog = (
   props: Submit<ProvideMutation> & { template: DetailTemplateFragment }
 ) => {
   const [provide] = withRekuest(useProvideMutation)();
-  const [searchAgents] = withRekuest(useAgentOptionsLazyQuery)({
-    variables: { registry: props.template.registry.id },
-  });
 
   return (
     <Formik<ProvideMutationVariables>
-      initialValues={{ template: props.template.id, agent: "" }}
+      initialValues={{ template: props.template.id }}
       onSubmit={async (values) => {
         console.log("submit", values);
         const res = await provide({
@@ -60,13 +57,6 @@ export const ProvideDialog = (
             <div className="font-light text-sm mb-2">
               This repo would like to create an App on your behalf
             </div>
-
-            <SearchSelectInput
-              name="agent"
-              label="Instance"
-              lazySearch={searchAgents}
-              description="This template can be hosted on different instances of the app. Chose the one you want to use."
-            />
           </span>
         </TwDialog>
       </Form>

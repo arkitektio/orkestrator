@@ -7,6 +7,7 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
+import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
 import { useDialog } from "../layout/dialog/DialogProvider";
 import { Context, Experiment } from "../linker";
@@ -23,14 +24,18 @@ import {
 } from "../mikro/api/graphql";
 import { CreateContextModal } from "../mikro/components/dialogs/CreateContextModal";
 import { CreateExperimentModal } from "../mikro/components/dialogs/CreateExperimentModal";
+import useDeleteContext from "../mikro/hooks/useDeleteContext";
+import { withDelete } from "../mikro/hooks/withDelete";
 import { withMikro } from "../mikro/MikroContext";
+import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
 export type IMyExperimentsProps = {};
 
 const ContextCard: React.FC<{
-  context: Maybe<ListContextFragment>;
+  context: ListContextFragment;
 }> = ({ context }) => {
   const onDrop = (...args: any) => {
     console.log(args);
@@ -38,7 +43,9 @@ const ContextCard: React.FC<{
 
   const { confirm } = useConfirm();
 
-  const [deleteContext, res] = withMikro(useDeleteContextMutation)();
+  const [deleteContext] = withMikro(
+    withDelete(useDeleteContextMutation, context)
+  )();
 
   if (!context?.id) return <></>;
 
@@ -83,10 +90,15 @@ const ContextCard: React.FC<{
 
 const limit = 20;
 
-const MyContexts: React.FC<IMyExperimentsProps> = () => {
+const MyContexts: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
+  createdDay,
+}) => {
+  const variables = { limit: 20, offset: 0, createdDay: createdDay };
+
   const { data, error, subscribeToMore, refetch } = withMikro(
     useMyContextsQuery
   )({
+    variables,
     //pollInterval: 1000,
   });
 
@@ -104,9 +116,7 @@ const MyContexts: React.FC<IMyExperimentsProps> = () => {
   return (
     <div>
       <div className="font-light text-xl flex mr-2 dark:text-white">
-        <Experiment.ListLink className="flex-0">
-          Latest Contexts
-        </Experiment.ListLink>
+        <Experiment.ListLink className="flex-0">Contexts</Experiment.ListLink>
         <div className="flex-grow"></div>
         <div className="flex-0">
           {offset != 0 && (
@@ -129,10 +139,13 @@ const MyContexts: React.FC<IMyExperimentsProps> = () => {
           )}
         </div>
       </div>
-      <ResponsiveGrid>
-        {data?.mycontexts?.slice(0, limit).map((ex, index) => (
-          <ContextCard key={index} context={ex} />
-        ))}
+      <ResponsiveContainerGrid>
+        {data?.mycontexts
+          ?.slice(0, limit)
+          .filter(notEmpty)
+          .map((ex, index) => (
+            <ContextCard key={index} context={ex} />
+          ))}
         <ActionButton
           label="Create new Experiment"
           description="Create a new experiment"
@@ -143,7 +156,7 @@ const MyContexts: React.FC<IMyExperimentsProps> = () => {
         >
           <BsPlusCircle />
         </ActionButton>
-      </ResponsiveGrid>
+      </ResponsiveContainerGrid>
       <CreateExperimentModal show={show} setShow={setShow} />
     </div>
   );

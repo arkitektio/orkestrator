@@ -10,6 +10,7 @@ export type ArkitektProps = { children: React.ReactNode };
 
 export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
   const [selection, setSelection] = useState<SelectionItem[]>([]);
+  const [bselection, setBSelection] = useState<SelectionItem[]>([]);
   const [selectables, setSelectables] = useState<Selectable[]>([]);
   const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
   const [focus, setFocus] = useState<SelectionItem | undefined>();
@@ -87,6 +88,7 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
           console.log("Called");
           setIsMultiSelecting(false);
           setSelection([]);
+          setBSelection([]);
         }
       };
 
@@ -104,6 +106,8 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
       top: box.top + window.scrollY,
       left: box.left + window.scrollX,
     };
+
+    
 
     if (box.width > 56 && box.height > 65) {
       const indexesToSelect: number[] = [];
@@ -132,6 +136,8 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
        * that have a data-disableselect attribute on them or one of their parents
        */
 
+      
+
       if (target instanceof HTMLElement) {
         let el = target;
         return el.dataset.enableselect == "true";
@@ -157,6 +163,8 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
     <SelectionContext.Provider
       value={{
         selection: selection,
+        bselection: bselection,
+        setBSelection: setBSelection,
         setSelection: setSelection,
         autoSelect: autoSelect,
         setIsMultiSelecting,

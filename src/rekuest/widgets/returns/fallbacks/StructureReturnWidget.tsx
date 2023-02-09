@@ -1,5 +1,14 @@
 import React from "react";
+import { TwoD } from "../../../../experimental/render/TwoD";
+import { TwoDOffcanvas } from "../../../../experimental/render/TwoDOffcanvas";
 import { GlobalLink } from "../../../../linker";
+import { useDetailRepresentationQuery } from "../../../../mikro/api/graphql";
+import { withMikro } from "../../../../mikro/MikroContext";
+import { PositionWidget } from "../../../../widgets/PositionWidget";
+import { RepresentationWidget } from "../../../../widgets/RepresentationWidget";
+import { RoiWidget } from "../../../../widgets/RoiWidget";
+import { useDetailRepositoryQuery } from "../../../api/graphql";
+
 import { ReturnWidgetProps } from "../../types";
 
 const structure_to_path = (type: string | undefined | null, object: string) => {
@@ -26,26 +35,27 @@ const StructureReturnWidget: React.FC<ReturnWidgetProps> = ({
 }) => {
   if (!port.key) return <> Failure Key not specified </>;
 
-  let path = structure_to_path(port.identifier, value);
-
   return (
     <div>
-      <label className="font-light" htmlFor={port.key}>
-        {port.label || port.key}
-      </label>
-      {value}
+      <label className="font-light" htmlFor={port.key}></label>
       {port.description && (
         <div id={`${port.key}-help`} className="text-xs mb-4 font-light">
           {port.description}
         </div>
       )}
-      {port.identifier && path && (
+      {port.identifier && (
         <GlobalLink
           model={port.identifier}
           object={value}
           className="font-light hover:bg-white"
         >
-          {port.identifier}
+          {port.identifier === "@mikro/representation" && (
+            <RepresentationWidget value={value} />
+          )}
+          {port.identifier === "@mikro/position" && (
+            <PositionWidget value={value} />
+          )}
+          {port.identifier === "@mikro/roi" && <RoiWidget value={value} />}
         </GlobalLink>
       )}
     </div>

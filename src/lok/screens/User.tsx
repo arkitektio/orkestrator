@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  AvailableModels,
+  SharableModels,
   useUserQuery as useArkitektUserQuery,
 } from "../../rekuest/api/graphql";
 import { ShareModal } from "../../rekuest/components/dialogs/ShareModal";
@@ -57,7 +57,7 @@ export const ManageArkitekt = ({ email }: { email: string }) => {
       {data?.user?.id && (
         <Modal child={<button>OPEN SHARE</button>}>
           <ShareModal
-            type={AvailableModels.LokLokuser}
+            type={SharableModels.LokUser}
             object={data?.user?.id}
           />
         </Modal>

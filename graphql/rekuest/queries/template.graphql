@@ -27,16 +27,24 @@ query AssignableTemplates($node: ID) {
       id
       name
     }
-    registry {
-      app {
-        id
-        version
-        identifier
-      }
-      user {
-        username
+    agent {
+      registry {
+        app {
+          id
+          version
+          identifier
+        }
+        user {
+          username
+        }
       }
     }
+  }
+}
+
+query ReservableTemplates($node: ID!) {
+  reservableTemplates(node: $node) {
+    ...ReservableTemplate
   }
 }
 

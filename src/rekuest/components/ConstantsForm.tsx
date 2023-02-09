@@ -187,9 +187,7 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
     >
       {(formikProps) => (
         <Form>
-          {autoSubmit && (
-            <ChangeSubmitHelper debounce={500} formik={formikProps} />
-          )}
+          {autoSubmit && <ChangeSubmitHelper debounce={500} />}
           <div className="mt-2 align-left text-left">
             {unsetArgs && unsetArgs?.length > 0 && (
               <>

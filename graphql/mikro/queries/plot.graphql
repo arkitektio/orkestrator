@@ -4,8 +4,8 @@ query DetailPlot($id: ID!) {
   }
 }
 
-query MyPlots {
-  myplots {
+query MyPlots($limit: Int, $offset: Int, $createdDay: DateTime) {
+  myplots(limit: $limit, offset: $offset, createdDay: $createdDay) {
     ...ListPlot
   }
 }

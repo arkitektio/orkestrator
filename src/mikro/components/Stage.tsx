@@ -8,11 +8,11 @@ import { CreateableSearchSelect } from "../../components/forms/fields/search_sel
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { SelfActions } from "../../components/SelfActions";
-import { StageCanvas } from "../../components/StageCanvas";
+import { PositionCanvas } from "../../components/PositionCanvas";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Position } from "../../linker";
+import { Instrument, Position } from "../../linker";
 import {
   CommentableModels,
   DetailStageDocument,
@@ -25,6 +25,7 @@ import {
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
 import CommentSection from "./comments/CommentSection";
+import { PositionCard } from "./cards/PositionCard";
 
 export type IExperimentProps = {
   id: string;
@@ -97,16 +98,17 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
             </div>
           </div>
           <div className="flex  @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">
-            <div className="flex-1 max-w-2xl mt-2 rounded rounded-lg overflow-hidden">
+            <div className="flex-1 max-w-2xl mt-2 rounded rounded-lg overflow-hidden bg-gray-800 p-2">
               {data && (
                 <ParentSize>
                   {({ width, height }) => (
                     <>
-                      {data.stage && (
-                        <StageCanvas
-                          stage={data.stage}
-                          height={height}
-                          width={width}
+                      {data.stage?.positions && (
+                        <PositionCanvas
+                          positions={data.stage?.positions}
+                          highlight={[]}
+                          height={400}
+                          width={400}
                         />
                       )}
                     </>
@@ -118,6 +120,14 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
               <div className="font-light mt-2 ">Created At</div>
               <div className="text-md mt-2 ">
                 <Timestamp date={data?.stage?.createdAt} />
+              </div>
+              <div className="font-light mt-2 ">Stage in</div>
+              <div className="text-md mt-2 ">
+                {data?.stage?.instrument && (
+                  <Instrument.DetailLink object={data?.stage?.instrument?.id}>
+                    {data?.stage?.instrument?.name}
+                  </Instrument.DetailLink>
+                )}
               </div>
               <div className="font-light mt-2 ">Created by</div>
               <div className="text-md mt-2 ">{data?.stage?.creator?.sub}</div>
@@ -181,19 +191,7 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
           <SectionTitle> Positions </SectionTitle>
           <ResponsiveContainerGrid>
             {data?.stage?.positions?.filter(notEmpty).map((pos) => (
-              <Position.Smart
-                object={pos.id}
-                className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
-              >
-                <div className="flex">
-                  <Position.DetailLink
-                    className="flex-grow cursor-pointer font-semibold"
-                    object={pos.id}
-                  >
-                    {pos?.name}
-                  </Position.DetailLink>
-                </div>
-              </Position.Smart>
+              <PositionCard position={pos} />
             ))}
           </ResponsiveContainerGrid>
         </div>

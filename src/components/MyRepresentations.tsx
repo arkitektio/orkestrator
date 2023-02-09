@@ -9,6 +9,7 @@ import { ResponsiveGrid } from "../components/layout/ResponsiveGrid";
 import { notEmpty } from "../floating/utils";
 import { useDialog } from "../layout/dialog/DialogProvider";
 import { OptimizedImage } from "../layout/OptimizedImage";
+import { SectionTitle } from "../layout/SectionTitle";
 import { Representation } from "../linker";
 import {
   LinkableModels,
@@ -24,7 +25,9 @@ import {
 } from "../mikro/api/graphql";
 import { AskRelationModal } from "../mikro/components/dialogs/AskRelationModal";
 import { useMikro, withMikro } from "../mikro/MikroContext";
+import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 
 export type IMyRepresentationsProps = {};
 
@@ -172,7 +175,9 @@ export const RepresentationCard: React.FC<{
   );
 };
 
-const MyRepresentations: React.FC<IMyRepresentationsProps> = () => {
+const MyRepresentations: React.FC<
+  IMyRepresentationsProps & DataHomeFilterParams
+> = ({ createdDay, limit }) => {
   const [offset, setOffset] = useState(0);
 
   const {
@@ -181,7 +186,12 @@ const MyRepresentations: React.FC<IMyRepresentationsProps> = () => {
     subscribeToMore,
     refetch,
   } = withMikro(useMyRepresentationsQuery)({
-    variables: { limit: limit, offset: 0, order: ["-created_at"] },
+    variables: {
+      limit: limit,
+      offset: 0,
+      order: ["-created_at"],
+      createdDay: createdDay,
+    },
     //pollInterval: 1000,
   });
 
@@ -236,45 +246,49 @@ const MyRepresentations: React.FC<IMyRepresentationsProps> = () => {
   }, [offset, limit]);
 
   return (
-    <div>
+    <>
       {reps && reps.myrepresentations && reps.myrepresentations.length > 0 && (
         <>
-          <div className="font-light text-xl flex mr-2 dark:text-white">
-            <div className="flex-0">Latest Images</div>
-            <div className="flex-grow"></div>
-            <div className="flex-0">
-              {offset != 0 && (
-                <button
-                  className="p-1 text-gray-600 rounded"
-                  onClick={() => setOffset(offset - limit)}
-                >
-                  {" "}
-                  <BsCaretLeft />{" "}
-                </button>
-              )}
-              {reps?.myrepresentations &&
-                reps?.myrepresentations.length == limit && (
+          <SectionTitle>
+            <div className="flex flex-row">
+              <Representation.ListLink className="flex-0">
+                Latest Images
+              </Representation.ListLink>
+              <div className="flex-grow"></div>
+              <div className="flex-0">
+                {offset != 0 && (
                   <button
                     className="p-1 text-gray-600 rounded"
-                    onClick={() => setOffset(offset + limit)}
+                    onClick={() => setOffset(offset - limit)}
                   >
                     {" "}
-                    <BsCaretRight />{" "}
+                    <BsCaretLeft />{" "}
                   </button>
                 )}
+                {reps.myrepresentations &&
+                  reps.myrepresentations.length == limit && (
+                    <button
+                      className="p-1 text-gray-600 rounded"
+                      onClick={() => setOffset(offset + limit)}
+                    >
+                      {" "}
+                      <BsCaretRight />{" "}
+                    </button>
+                  )}
+              </div>
             </div>
-          </div>
-          <ResponsiveGrid>
+          </SectionTitle>
+          <ResponsiveContainerGrid>
             {reps?.myrepresentations
               ?.slice(0, limit)
               .filter(notEmpty)
               .map((rep, index) => (
                 <RepresentationCard rep={rep} key={rep?.id} />
               ))}
-          </ResponsiveGrid>
+          </ResponsiveContainerGrid>
         </>
       )}
-    </div>
+    </>
   );
 };
 

@@ -4,8 +4,8 @@ query DetailSample($id: ID!) {
   }
 }
 
-query MySamples($limit: Int, $offset: Int) {
-  mysamples(limit: $limit, offset: $offset) {
+query MySamples($limit: Int, $offset: Int, $createdDay: DateTime) {
+  mysamples(limit: $limit, offset: $offset, createdDay: $createdDay) {
     ...ListSample
   }
 }

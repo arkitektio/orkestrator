@@ -234,7 +234,7 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
                   return [];
                 }}
               >
-                <div className="flex">
+                <div className="flex truncate">
                   <Sample.DetailLink
                     className="flex-grow cursor-pointer font-semibold"
                     object={sample.id}
@@ -266,7 +266,7 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
             {data?.experiment?.omeroFiles?.filter(notEmpty).map((omerofile) => (
               <MikroFile.Smart
                 object={omerofile.id}
-                className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
+                className="border border-gray-800 cursor-pointer rounded  text-white bg-gray-900 hover:shadow-lg "
                 additionalMates={(partner, self) => {
                   if (
                     partner == "item:@mikro/omerofile" ||
@@ -290,7 +290,7 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
                   return [];
                 }}
               >
-                <div className="flex">
+                <div className="truncate p-5">
                   <MikroFile.DetailLink
                     className="flex-grow cursor-pointer font-semibold"
                     object={omerofile.id}

@@ -43,3 +43,9 @@ query LinkableProvisionsOptions($reservation: ID!) {
     label: id
   }
 }
+
+query ClientProvisions($clientId: String!) {
+  allprovisions(clientId: $clientId) {
+    ...ListProvision
+  }
+}

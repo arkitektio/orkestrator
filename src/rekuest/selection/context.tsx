@@ -14,9 +14,11 @@ export type Selectable = {
 
 export type SelectionContextType = {
   selection: SelectionItem[];
+  bselection: SelectionItem[];
   isMultiSelecting: boolean;
   focus?: SelectionItem;
   setSelection: (selection: SelectionItem[]) => void;
+  setBSelection: (selection: SelectionItem[]) => void;
   autoSelect: (identifier: SelectionItem[]) => void;
   unselect: (identifier: SelectionItem[]) => void;
   setIsMultiSelecting: (state: boolean) => void;
@@ -27,6 +29,10 @@ export type SelectionContextType = {
 export const SelectionContext = React.createContext<SelectionContextType>({
   selection: [],
   setSelection: () => {
+    console.error("Not implemented");
+  },
+  bselection: [],
+  setBSelection: () => {
     console.error("Not implemented");
   },
   autoSelect: () => {
@@ -77,6 +83,8 @@ export const useModelSelect = (
     focus,
     selection,
     setSelection,
+    bselection,
+    setBSelection,
   } = useModelSelector();
 
   const me = selection.find(
@@ -90,6 +98,18 @@ export const useModelSelect = (
     focus?.object === proposedSelection.object;
 
   const selectionIndex = me && selection.indexOf(me);
+
+  const bme = bselection.find(
+    (item) =>
+      item.identifier === proposedSelection.identifier &&
+      item.object === proposedSelection.object
+  );
+
+  const bmefocus =
+    focus?.identifier === proposedSelection.identifier &&
+    focus?.object === proposedSelection.object;
+
+  const bselectionIndex = bme && bselection.indexOf(bme);
 
   const onMouseDown = (event: any) => {
     event.stopPropagation();
@@ -112,6 +132,27 @@ export const useModelSelect = (
           return;
         } else {
           setSelection([...selection, proposedSelection]);
+          return;
+        }
+      }
+      if (event.nativeEvent.shiftKey) {
+        if (!isMultiSelecting) {
+          // We are not multi selecting, so we should select this item
+          setIsMultiSelecting(true);
+          setBSelection([proposedSelection]);
+          return;
+        }
+        if (me) {
+          let array = bselection.filter((item) => item !== bme);
+          if (array.length === 0) {
+            setIsMultiSelecting(false);
+            setBSelection([]);
+          }
+          // other elements exist, so we should unselect this item
+          setBSelection(array);
+          return;
+        } else {
+          setBSelection([...bselection, proposedSelection]);
           return;
         }
       }
@@ -145,5 +186,9 @@ export const useModelSelect = (
     isFocused: mefocus,
     selectionIndex,
     selection: selection,
+    bselection: bselection,
+    bisSelected: bme !== undefined,
+    bisFocused: bmefocus,
+    bselectionIndex,
   };
 };

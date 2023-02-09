@@ -1,0 +1,32 @@
+fragment DetailDataset on Dataset {
+  id
+  name
+  samples {
+    id
+    name
+  }
+  createdBy {
+    id
+    email
+  }
+  tags
+  createdAt
+  pinned
+  pinnedBy {
+    id
+    email
+  }
+  omerofiles {
+    id
+    name
+  }
+  representations {
+    id
+    name
+  }
+}
+
+fragment ListDataset on Dataset {
+  id
+  name
+}

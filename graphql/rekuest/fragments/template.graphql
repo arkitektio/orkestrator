@@ -1,8 +1,10 @@
 fragment ListTemplate on Template {
   id
   interface
-  registry {
-    ...Registry
+  agent {
+    registry {
+      ...Registry
+    }
   }
 }
 
@@ -18,10 +20,47 @@ fragment DetailTemplate on Template {
     id
     name
   }
-  registry {
+  agent {
     id
+    instanceId
+    registry {
+      id
+    }
   }
   provisions(status: [ACTIVE, PENDING, CRITICAL, PENDING, DISCONNECTED]) {
     ...ListProvision
+  }
+}
+
+fragment ReservableTemplate on Template {
+  id
+  name
+  node {
+    id
+    name
+  }
+  agent {
+    status
+    id
+    instanceId
+    registry {
+      id
+      client {
+        clientId
+      }
+      app {
+        id
+        version
+        identifier
+      }
+      user {
+        username
+        sub
+      }
+    }
+  }
+  provisions {
+    id
+    status
   }
 }

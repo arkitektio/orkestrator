@@ -14,7 +14,7 @@ import { SelfActions } from "../../components/SelfActions";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { MikroFile, Sample } from "../../linker";
+import { Link, MikroFile, Model, Sample } from "../../linker";
 import {
   CommentableModels,
   DetailExperimentDocument,
@@ -61,31 +61,44 @@ const Context: React.FC<IExperimentProps> = ({ id }) => {
     >
       {!error && data && (
         <div className="p-3 flex-grow flex flex-col">
-          <div className="flex">
+          <div className="flex mb-4">
             <SectionTitle>{data?.context?.name}</SectionTitle>
           </div>
-          <div className="flex-grow text-white flex flex-col">
+          <SectionTitle> Relates </SectionTitle>
+          <ResponsiveGrid>
             {data.context?.links.map((link) => (
-              <div className="flex flex-row">
-                <div className="flex-initial">{link.leftType}</div>
-                <div className="flex-initial text-sm">{link.xId}</div>
-                <div className="flex-grow  flex text-bold ">
-                  {" "}
-                  {">"}
-                  {link.relation} {">"}{" "}
+              <Link.Smart
+                object={link.id}
+                className="flex flex-row p-2 bg-gray-800 truncate text-gray-200 rounded"
+              >
+                <Link.DetailLink object={link.id} className="flex-initial">
+                  {link.relation}
+                </Link.DetailLink>
+                <div className="flex flex-row">
+                  <div className="flex-initial ">{link.xId}</div>
+                  <div className="flex-grow  flex text-bold ">
+                    {" "}
+                    {">"}
+                    {link.relation} {">"}{" "}
+                  </div>
+                  <div className="flex-initial">{link.yId}</div>
                 </div>
-                <div className="flex-initial text-sm">{link.yId}</div>
-                <div className="flex-initial">{link.rightType}</div>
-              </div>
+              </Link.Smart>
             ))}
-          </div>
-          <div className="">
+          </ResponsiveGrid>
+          <SectionTitle> Created Models </SectionTitle>
+          <ResponsiveGrid>
             {data.context?.models.map((m) => (
-              <div className="flex flex-col">
-                <div className="flex-initial">{m.name}</div>
-              </div>
+              <Model.Smart
+                object={m.id}
+                className="flex flex-row p-2 bg-gray-800 truncate text-gray-200 rounded"
+              >
+                <Model.DetailLink object={m.id} className="flex-initial">
+                  {m.name}
+                </Model.DetailLink>
+              </Model.Smart>
             ))}
-          </div>
+          </ResponsiveGrid>
         </div>
       )}
     </PageLayout>

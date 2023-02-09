@@ -9,12 +9,14 @@ query MyRepresentations(
   $offset: Int
   $order: [String]
   $noChildren: Boolean = true
+  $createdDay: DateTime
 ) {
   myrepresentations(
     limit: $limit
     offset: $offset
     order: $order
     noChildren: $noChildren
+    createdDay: $createdDay
   ) {
     ...ListRepresentation
   }

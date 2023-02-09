@@ -1,5 +1,5 @@
-query MyOmeroFiles($limit: Int, $offset: Int) {
-  myomerofiles(limit: $limit, offset: $offset) {
+query MyOmeroFiles($limit: Int, $offset: Int, $createdDay: DateTime) {
+  myomerofiles(limit: $limit, offset: $offset, createdDay: $createdDay) {
     ...ListOmeroFile
   }
 }

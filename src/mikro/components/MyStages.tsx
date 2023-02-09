@@ -11,18 +11,20 @@ import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveConta
 import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
 import { Stage } from "../../linker";
+import { DataHomeFilterParams } from "../../pages/data/Home";
 import { useMyStagesQuery } from "../api/graphql";
 import { withMikro } from "../MikroContext";
 import { StageCard } from "./cards/StageCard";
 
 export type MyAcquisitionsProps = {};
 
-const limit = 20;
-
-const MyStages: React.FC<MyAcquisitionsProps> = () => {
+const MyStages: React.FC<MyAcquisitionsProps & DataHomeFilterParams> = ({
+  createdDay,
+  limit,
+}) => {
   const { data, error, subscribeToMore, refetch } = withMikro(useMyStagesQuery)(
     {
-      //pollInterval: 1000,
+      variables: { limit: limit, offset: 0, createdDay: createdDay },
     }
   );
 
@@ -31,7 +33,7 @@ const MyStages: React.FC<MyAcquisitionsProps> = () => {
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
-    refetch({ limit: 20, offset: offset });
+    refetch({ limit: limit, offset: offset });
   }, [offset, limit]);
 
   if (error) return <div>{error.message}</div>;
@@ -39,7 +41,7 @@ const MyStages: React.FC<MyAcquisitionsProps> = () => {
   return (
     <div>
       <div className="font-light text-xl flex mr-2 dark:text-white">
-        <Stage.ListLink className="flex-0">Latest Stages</Stage.ListLink>
+        <Stage.ListLink className="flex-0">Stage</Stage.ListLink>
         <div className="flex-grow"></div>
         <div className="flex-0">
           {offset != 0 && (

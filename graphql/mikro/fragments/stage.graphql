@@ -3,7 +3,6 @@ fragment Stage on Stage {
   positions {
     ...ListPosition
   }
-  physicalSize
   kind
   name
   createdAt

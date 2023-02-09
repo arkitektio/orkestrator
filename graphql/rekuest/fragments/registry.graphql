@@ -1,5 +1,8 @@
 fragment Registry on Registry {
   name
+  client {
+    clientId
+  }
   app {
     version
     identifier

@@ -173,7 +173,7 @@ export const Context = buildSmart("@mikro/context", "contexts", [
   "item:@mikro/representation",
 ]);
 
-export const Link = buildSmart("@mikro/link", "contexts", [
+export const Link = buildSmart("@mikro/link", "links", [
   "list:@mikro/link",
   "item:@mikro/link",
   "list:@mikro/context",
@@ -280,6 +280,16 @@ export const Plot = buildSmart("@mikro/plot", "plots", [
 export const Experiment = buildSmart("@mikro/experiment", "experiments", [
   "list:@mikro/sample",
   "item:@mikro/sample",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Dataset = buildSmart("@mikro/dataset", "datasets", [
+  "list:@mikro/dataset",
+  "item:@mikro/dataset",
   "list:@mikro/experiment",
   "item:@mikro/experiment",
   "item:@mikro/experiment",

@@ -22,11 +22,14 @@ import {
   ProvisionRegistry,
   Replier,
 } from "./AgentContext";
-export type ArkitektProps = { children: React.ReactNode };
+export type ArkitektProps = { children: React.ReactNode; instanceId?: string };
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { withRekuest } from "../RekuestContext";
 
-export const AgentProvider: React.FC<ArkitektProps> = ({ children }) => {
+export const AgentProvider: React.FC<ArkitektProps> = ({
+  children,
+  instanceId = "main",
+}) => {
   const [provide, setProvide] = useState<boolean>(false);
 
   const { fakts } = useFakts();
@@ -184,7 +187,7 @@ export const AgentProvider: React.FC<ArkitektProps> = ({ children }) => {
 
   const register = async (definition: DefinitionInput, actor: ActorBuilder) => {
     const temp = await template({
-      variables: { definition: definition },
+      variables: { definition: definition, instanceId: instanceId },
     });
     if (!temp.data?.createTemplate?.id) {
       throw new Error("Templating failed");

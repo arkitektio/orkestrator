@@ -1,5 +1,5 @@
 mutation ChangePermissions(
-  $type: AvailableModels!
+  $type: SharableModels!
   $object: ID!
   $userAssignments: [UserAssignmentInput]
   $groupAssignments: [GroupAssignmentInput]

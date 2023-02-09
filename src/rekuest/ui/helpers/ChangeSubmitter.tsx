@@ -1,3 +1,4 @@
+import { useFormikContext } from "formik";
 import { isEqual } from "lodash";
 import React, { useEffect, useState } from "react";
 import { Subject, Subscription } from "rxjs";
@@ -6,46 +7,42 @@ import { debounceTime } from "rxjs/operators";
 const onSearch$ = new Subject();
 
 interface ChangeSubmitHelperProps {
-  formik: any;
-  onChange?: any;
   debounce?: number;
 }
 
 export const ChangeSubmitHelper: React.FC<ChangeSubmitHelperProps> = (
   props
 ) => {
-  const [lastValues, updateState] = useState(props.formik.values);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [lastValues, updateState] = useState<unknown | undefined>();
+  const { values, initialValues, submitForm, dirty } = useFormikContext();
 
   useEffect(() => {
-    if (!subscription) {
-      setSubscription(
-        onSearch$
-          .pipe(debounceTime(props.debounce || 0))
-          .subscribe((debounced) => props.formik.submitForm())
-      );
-    }
-  }, [subscription]);
+    let subscription = onSearch$
+      .pipe(debounceTime(props.debounce || 0))
+      .subscribe(async (debounced) => {
+        await submitForm();
+      });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
-    const valuesEqualLastValues = isEqual(lastValues, props.formik.values);
-    const valuesEqualInitialValues =
-      props.formik.values === props.formik.initialValues;
+    console.log(lastValues);
+    const valuesEqualLastValues = isEqual(lastValues, values);
+    const valuesEqualInitialValues = values === initialValues;
 
     if (!valuesEqualLastValues) {
-      updateState(props.formik.values);
+      console.log("Updating state");
+      updateState(values);
     }
 
-    if (!valuesEqualLastValues && !valuesEqualInitialValues) {
+    if (!valuesEqualLastValues && !valuesEqualInitialValues && dirty) {
+      console.log("Submitting");
       onSearch$.next(null);
     }
-  }, [
-    lastValues,
-    props.formik.values,
-    props.formik.initialValues,
-    props.onChange,
-    props.formik,
-  ]);
+  }, [lastValues, values, initialValues]);
 
-  return null;
+  return <></>;
 };

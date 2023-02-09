@@ -8,6 +8,7 @@ export type Settings = {
   darkMode: boolean;
   colorScheme: "red" | "green" | "blue";
   allowBatch: boolean;
+  experimental: boolean;
 };
 
 export type SettingsContextType = {
@@ -22,6 +23,7 @@ export const SettingsContext = React.createContext<SettingsContextType>({
     allowBatch: true,
     darkMode: true,
     colorScheme: "red",
+    experimental: false,
   },
   setSettings: () => {},
 });

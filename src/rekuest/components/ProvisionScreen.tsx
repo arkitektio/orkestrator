@@ -120,6 +120,7 @@ export const DetailProvision: React.FC<{ id: string }> = ({ id }) => {
       }
     >
       <div className="flex flex-col h-full">
+        {data?.provision?.status}
         <div className="flex-initial flex flex-row dark:text-white">
           <ProvisionPulse status={data?.provision?.status} />
           <span className="ml-3">

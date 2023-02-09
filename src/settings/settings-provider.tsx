@@ -14,6 +14,7 @@ const settingsValidator = yup.object().shape({
   allowBatch: yup.boolean().required(),
   darkMode: yup.boolean().required(),
   colorScheme: yup.string().required(),
+  experimental: yup.boolean().required(),
 });
 
 export const SettingsProvider: React.FC<SettingsProps> = ({
@@ -24,6 +25,7 @@ export const SettingsProvider: React.FC<SettingsProps> = ({
     allowBatch: true,
     darkMode: true,
     colorScheme: "red",
+    experimental: false,
   },
 }) => {
   const [settings, setSettings] = useState<Settings | undefined>(undefined);
@@ -31,6 +33,7 @@ export const SettingsProvider: React.FC<SettingsProps> = ({
 
   useEffect(() => {
     // save settings to local storage
+    console.log("Saving settings", settings);
     if (settings) {
       localStorage.setItem("wasser-settings", JSON.stringify(settings));
       console.log("Settings saved to local storage");

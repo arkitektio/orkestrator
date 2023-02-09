@@ -54,6 +54,10 @@ fragment DetailRepresentation on Representation {
     majorColor
     blurhash
   }
+  datasets {
+    id
+    name
+  }
   sample {
     id
     name

@@ -140,7 +140,7 @@ export const TableItem = ({ table }: any) => {
         }`
       }
     >
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 truncate">
         <Table.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +
@@ -172,7 +172,7 @@ export const FileItem = ({ file }: any) => {
         }`
       }
     >
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 truncate">
         <MikroFile.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +

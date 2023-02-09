@@ -4,8 +4,8 @@ query DetailStage($id: ID!) {
   }
 }
 
-query MyStages($limit: Int, $offset: Int) {
-  mystages(limit: $limit, offset: $offset) {
+query MyStages($limit: Int, $offset: Int, $createdDay: DateTime) {
+  mystages(limit: $limit, offset: $offset, createdDay: $createdDay) {
     ...ListStage
   }
 }

@@ -3,6 +3,7 @@ import { NavigateFunction, useNavigate } from "react-router";
 import {
   AcknowledgeMutationFn,
   AssignationStatus,
+  AssignDocument,
   ListAssignationFragment,
   UnassignMutationFn,
 } from "../rekuest/api/graphql";
@@ -112,6 +113,7 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
             (ass) =>
               ![
                 AssignationStatus.Returned,
+                AssignationStatus.Progress,
                 AssignationStatus.Cancelled,
                 AssignationStatus.Acknowledged,
                 AssignationStatus.Done,

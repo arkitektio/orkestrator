@@ -45,25 +45,9 @@ const ResponsiveContainerGrid: React.FC<IResponsiveGridProps> = ({
 
   return (
     <div
-      className="grid @lg:grid-cols-2 gap-4"
+      className="grid @lg:grid-cols-2  @2xl:grid-cols-4  @3xl:grid-cols-6   @5xl:grid-cols-8 gap-4"
       data-enableselect="true"
       ref={parent}
-      onMouseMove={(e) => {
-        if (parent.current) {
-          const selectables = Array.from<HTMLElement>(
-            parent.current.children as unknown as HTMLElement[]
-          );
-
-          for (const card of selectables) {
-            const rect = card.getBoundingClientRect(),
-              x = e.clientX - rect.left,
-              y = e.clientY - rect.top;
-
-            card.style.setProperty("--mouse-x", `${x}px`);
-            card.style.setProperty("--mouse-y", `${y}px`);
-          }
-        }
-      }}
     >
       {children}
     </div>

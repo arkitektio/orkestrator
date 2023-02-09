@@ -33,7 +33,7 @@ export const ProvisionCard = ({ provision }: ProvisionCardProps) => {
         {provision.agent && (
           <Provision.DetailLink object={provision.id}>
             <pre className="bg-back-900 text-white p-1">
-              {provision.id} {provision.agent?.identifier}
+              {provision.id} {provision.agent?.instanceId}
             </pre>
           </Provision.DetailLink>
         )}

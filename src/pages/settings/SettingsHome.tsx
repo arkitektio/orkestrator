@@ -6,6 +6,7 @@ import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import { PageLayout } from "../../layout/PageLayout";
 import { useSettings } from "../../settings/settings-context";
 import { DebugScreen } from "../admin/DebugScreen";
+import { useExperimental } from "../../providers/experimental/context";
 
 export interface SettingsHomeProps {}
 
@@ -29,7 +30,7 @@ export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
           >
             {(formikProps) => (
               <Form>
-                <ChangeSubmitHelper debounce={3} formik={formikProps} />
+                <ChangeSubmitHelper debounce={3} />
                 <SwitchInputField
                   name="autoResolve"
                   label="Auto Resolve"
@@ -39,6 +40,11 @@ export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
                   name="allowAutoRequest"
                   label="Default for Auto Request"
                   description="Set the default for autorequest to true or false"
+                />
+                <SwitchInputField
+                  name="experimental"
+                  label="Set Experimental"
+                  description="Allow experimental features"
                 />
                 <SwitchInputField
                   name="darkMode"
@@ -61,6 +67,8 @@ export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
           </Formik>
         </div>
       </div>
+
+      <br />
       <DebugScreen />
     </PageLayout>
   );

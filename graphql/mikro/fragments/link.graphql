@@ -1,6 +1,10 @@
 fragment DetailLink on DataLink {
   id
   relation
+  xId
+  yId
+  leftType
+  rightType
 }
 
 fragment ListLink on DataLink {

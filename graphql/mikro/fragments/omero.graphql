@@ -32,7 +32,6 @@ fragment Omero on Omero {
     stage {
       id
       name
-      physicalSize
     }
   }
   instrument {
@@ -45,6 +44,7 @@ fragment Omero on Omero {
     name
     magnification
   }
+  affineTransformation
   imagingEnvironment {
     airPressure
     co2Percent

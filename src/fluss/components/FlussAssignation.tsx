@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { TrackRiver } from "../../floating/track/TrackRiver";
 import { DetailAssignationFragment } from "../../rekuest/api/graphql";
 import { useDetailRunQuery } from "../api/graphql";
 import { withFluss } from "../fluss";
@@ -15,7 +16,7 @@ export const FlussAssignation: React.FC<FlussAssignationProps> = (props) => {
 
   return data?.run?.id ? (
     <>
-      <Run id={data.run.id} />
+      <TrackRiver id={data.run.id} />
     </>
   ) : (
     <>Loading</>

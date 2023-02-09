@@ -1,5 +1,6 @@
 import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useEffect, useState } from "react";
+import { Data } from "react-csv/components/CommonPropTypes";
 import {
   BsCaretLeft,
   BsCaretRight,
@@ -8,6 +9,7 @@ import {
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
 import { ActionButton } from "../layout/ActionButton";
+import { SectionTitle } from "../layout/SectionTitle";
 import { Sample } from "../linker";
 import {
   ListSampleFragment,
@@ -19,13 +21,15 @@ import {
 } from "../mikro/api/graphql";
 import { CreateSampleModal } from "../mikro/components/dialogs/CreateSampleModal";
 import { withMikro } from "../mikro/MikroContext";
+import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMySamplesProps = {};
 
 export const SampleType = "Sample";
 
-const limit = 20;
+const limit = 10;
 
 export const SampleCard: React.FC<{
   sample: Maybe<ListSampleFragment>;
@@ -109,14 +113,17 @@ export const SampleCard: React.FC<{
   );
 };
 
-const MySamples: React.FC<IMySamplesProps> = () => {
+const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
+  createdDay,
+  limit,
+}) => {
   const {
     data: samples,
     loading,
     refetch,
     subscribeToMore,
   } = withMikro(useMySamplesQuery)({
-    //pollInterval: 1000,
+    variables: { limit: limit, offset: 0, createdDay: createdDay },
   });
 
   const [show, setshow] = useState(false);
@@ -124,7 +131,7 @@ const MySamples: React.FC<IMySamplesProps> = () => {
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
-    refetch({ limit: 20, offset: offset });
+    refetch({ limit, offset: offset });
   }, [offset, limit]);
 
   useEffect(() => {
@@ -167,32 +174,34 @@ const MySamples: React.FC<IMySamplesProps> = () => {
   }, [subscribeToMore]);
 
   return (
-    <div>
-      <div className="font-light text-xl flex mr-2 dark:text-white">
-        <Sample.ListLink className="flex-0">Latest Samples</Sample.ListLink>
-        <div className="flex-grow"></div>
-        <div className="flex-0">
-          {offset != 0 && (
-            <button
-              className="p-1 text-gray-600 rounded"
-              onClick={() => setOffset(offset - limit)}
-            >
-              {" "}
-              <BsCaretLeft />{" "}
-            </button>
-          )}
-          {samples?.mysamples && samples?.mysamples.length == limit && (
-            <button
-              className="p-1 text-gray-600 rounded"
-              onClick={() => setOffset(offset + limit)}
-            >
-              {" "}
-              <BsCaretRight />{" "}
-            </button>
-          )}
+    <>
+      <SectionTitle>
+        <div className="flex flex-row">
+          <Sample.ListLink className="flex-0">Samples</Sample.ListLink>
+          <div className="flex-grow"></div>
+          <div className="flex-0">
+            {offset != 0 && (
+              <button
+                className="p-1 text-gray-600 rounded"
+                onClick={() => setOffset(offset - limit)}
+              >
+                {" "}
+                <BsCaretLeft />{" "}
+              </button>
+            )}
+            {samples?.mysamples && samples?.mysamples.length == limit && (
+              <button
+                className="p-1 text-gray-600 rounded"
+                onClick={() => setOffset(offset + limit)}
+              >
+                {" "}
+                <BsCaretRight />{" "}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-      <ResponsiveGrid>
+      </SectionTitle>
+      <ResponsiveContainerGrid>
         {samples?.mysamples?.map((sample, index) => (
           <SampleCard key={index} sample={sample} />
         ))}
@@ -207,8 +216,8 @@ const MySamples: React.FC<IMySamplesProps> = () => {
           </ActionButton>
           <CreateSampleModal show={show} setShow={setshow} />
         </div>
-      </ResponsiveGrid>
-    </div>
+      </ResponsiveContainerGrid>
+    </>
   );
 };
 

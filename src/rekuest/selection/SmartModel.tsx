@@ -107,7 +107,11 @@ export const SmartModel = <T extends Accept>({
     bind,
     isSelecting,
     isSelected,
+    bisSelected,
+    bisFocused,
+    bselection,
     selectionIndex,
+    bselectionIndex,
     selection,
   } = useModelSelect({ identifier: props.identifier, object: props.object });
 
@@ -285,10 +289,13 @@ export const SmartModel = <T extends Accept>({
           leaveTo="opacity-0"
         >
           <div
-            className="text-sm text-black absolute right-0 bottom-0 translate-x-2 translate-y-2 px-2 bg-primary-300 rounded-full"
+            className={`text-sm text-black absolute right-0 bottom-0 translate-x-2 translate-y-2 px-2 ${
+              bselectionIndex == undefined ? "bg-primary-300" : "bg-primary-100"
+            } rounded-full`}
             data-draggable
           >
             {selectionIndex}
+            {bselectionIndex}
           </div>
         </Transition>
       </div>

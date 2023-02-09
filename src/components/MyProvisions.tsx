@@ -45,7 +45,7 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
                   {prov?.template?.interface}
                 </div>
                 <div className="flex-grow"></div>
-                <div className="text-xs">{prov?.agent?.identifier}</div>
+                <div className="text-xs">{prov?.agent?.instanceId}</div>
               </div>
               {prov?.status}
               {prov?.status == ProvisionStatus.Lost && (
@@ -58,7 +58,8 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
                     Please Start {prov?.agent?.registry?.app?.identifier}:
                     {prov?.agent?.registry?.app?.version}
                     {" as "}
-                    {prov?.agent?.registry?.user?.sub}
+                    {prov?.agent?.registry?.user?.sub} under{" "}
+                    {prov?.agent?.instanceId}
                   </div>
                 </div>
               )}

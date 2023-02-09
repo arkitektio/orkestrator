@@ -153,47 +153,35 @@ export const arg_to_ark: Connector<ArgNodeData, ArkitektNodeData> = ({
 
   console.log(sourceNode, sourceTypes);
 
-  if (sourceTypes.length === 0) {
-    return {
-      nodes: nodes.map((node) =>
-        node.id === sourceNode.id
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                outstream: [targetStream, ...node.data.outstream],
-              },
-            }
-          : node
-      ),
-      edges: addEdge(
-        {
-          ...params,
-          data: { stream: targetStream },
-          type: "LabeledEdge",
-        },
-        edges
-      ),
-      args: targetNode.data.extras?.args
-        ?.filter((arg) =>
-          targetStream
-            .map((i) => i.key)
-            .includes(arg?.key || "doeinosienfosienfosienf")
-        )
-        .filter(notEmpty)
-        .map(argport_to_port),
-    };
-  }
-
-  if (sourceTypes.length !== targetTypes.length) {
-    return { errors: [{ message: "Types don't match" }] };
-  }
-
-  if (sourceTypes.join(",") !== targetTypes.join(",")) {
-    return { errors: [{ message: "Types don't match" }] };
-  }
-
-  return { errors: [{ message: "Types don't match" }] };
+  return {
+    nodes: nodes.map((node) =>
+      node.id === sourceNode.id
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              outstream: [targetStream],
+            },
+          }
+        : node
+    ),
+    edges: addEdge(
+      {
+        ...params,
+        data: { stream: targetStream },
+        type: "LabeledEdge",
+      },
+      edges
+    ),
+    args: targetNode.data.extras?.args
+      ?.filter((arg) =>
+        targetStream
+          .map((i) => i.key)
+          .includes(arg?.key || "doeinosienfosienfosienf")
+      )
+      .filter(notEmpty)
+      .map(argport_to_port),
+  };
 };
 
 export const ark_to_return: Connector<ArkitektNodeData, ReturnNodeData> = ({

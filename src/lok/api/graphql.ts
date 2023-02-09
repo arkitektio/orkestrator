@@ -489,7 +489,7 @@ export type DetailApplicationFragment = { __typename?: 'Application', id: string
 
 export type ListApplicationFragment = { __typename?: 'Application', id: string, clientId: string, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null };
 
-export type PrivateFaktFragment = { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null };
+export type PrivateFaktFragment = { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, token: string, app?: { __typename?: 'App', version: string, identifier: string } | null };
 
 export type PublicFaktFragment = { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null };
 
@@ -551,7 +551,7 @@ export type CreatePrivateFaktMutationVariables = Exact<{
 }>;
 
 
-export type CreatePrivateFaktMutation = { __typename?: 'Mutation', createPrivateFakt?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
+export type CreatePrivateFaktMutation = { __typename?: 'Mutation', createPrivateFakt?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, token: string, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
 
 export type CreatePublicFaktMutationVariables = Exact<{
   identifier: Scalars['String'];
@@ -658,14 +658,14 @@ export type PublicFaktQuery = { __typename?: 'Query', publicfaktapp?: { __typena
 export type PrivateFaktsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PrivateFaktsQuery = { __typename?: 'Query', privatefaktapps?: Array<{ __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null> | null };
+export type PrivateFaktsQuery = { __typename?: 'Query', privatefaktapps?: Array<{ __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, token: string, app?: { __typename?: 'App', version: string, identifier: string } | null } | null> | null };
 
 export type PrivateFaktQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type PrivateFaktQuery = { __typename?: 'Query', privatefaktapp?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
+export type PrivateFaktQuery = { __typename?: 'Query', privatefaktapp?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, token: string, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
 
 export type GroupOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -788,6 +788,7 @@ export const PrivateFaktFragmentDoc = gql`
     version
     identifier
   }
+  token
 }
     `;
 export const PublicFaktFragmentDoc = gql`
@@ -1952,7 +1953,7 @@ export type DetailUserQueryResult = Apollo.QueryResult<DetailUserQuery, DetailUs
 export const UserOptionsDocument = gql`
     query UserOptions($search: String) {
   options: users(username: $search) {
-    value: email
+    value: id
     label: username
   }
 }

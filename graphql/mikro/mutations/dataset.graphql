@@ -1,0 +1,64 @@
+mutation CreateDataset($name: String!) {
+  createDataset(name: $name) {
+    ...DetailDataset
+  }
+}
+
+mutation DeleteDataset($id: ID!) {
+  deleteDataset(id: $id) {
+    id
+  }
+}
+
+mutation UpdateDataset($id: ID!, $parent: ID, $tags: [String], $name: String!) {
+  updateDataset(id: $id, parent: $parent, tags: $tags, name: $name) {
+    ...DetailDataset
+  }
+}
+
+mutation PinDataset($id: ID!, $pin: Boolean!) {
+  pinDataset(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}
+
+mutation PutSamples($dataset: ID!, $samples: [ID!]!) {
+  putSamples(dataset: $dataset, samples: $samples) {
+    ...DetailDataset
+  }
+}
+
+mutation ReleaseFiles($dataset: ID!, $files: [ID!]!) {
+  releaseFiles(dataset: $dataset, files: $files) {
+    ...DetailDataset
+  }
+}
+
+mutation PutRepresentations($dataset: ID!, $representations: [ID!]!) {
+  putRepresentations(dataset: $dataset, representations: $representations) {
+    ...DetailDataset
+  }
+}
+
+mutation ReleaseRepresentations($dataset: ID!, $representations: [ID!]!) {
+  releaseRepresentations(dataset: $dataset, representations: $representations) {
+    ...DetailDataset
+  }
+}
+
+mutation ReleaseSamples($dataset: ID!, $samples: [ID!]!) {
+  releaseSamples(dataset: $dataset, samples: $samples) {
+    ...DetailDataset
+  }
+}
+
+mutation PutFiles($dataset: ID!, $files: [ID!]!) {
+  putFiles(dataset: $dataset, files: $files) {
+    ...DetailDataset
+  }
+}

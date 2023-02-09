@@ -77,7 +77,7 @@ export type GithubRepo = {
   id: Scalars['ID'];
   identifier: Scalars['String'];
   repo: Scalars['String'];
-  reposcanSet: Array<RepoScan>;
+  scans: Array<RepoScan>;
   scopes: Array<Maybe<Scalars['String']>>;
   user: Scalars['String'];
   version: Scalars['String'];
@@ -123,6 +123,7 @@ export type MutationCreateWhaleArgs = {
   image: Scalars['String'];
   runtime?: InputMaybe<DockerRuntime>;
   scopes: Array<InputMaybe<Scalars['String']>>;
+  token: Scalars['String'];
   version: Scalars['String'];
 };
 
@@ -310,6 +311,7 @@ export type RepoScan = {
   image: Scalars['String'];
   name: Scalars['String'];
   repo: GithubRepo;
+  runtime: Scalars['String'];
   scopes?: Maybe<Scalars['GenericScalar']>;
   version: Scalars['String'];
 };
@@ -325,6 +327,7 @@ export type Whale = {
   image: Scalars['String'];
   runtime?: Maybe<WhaleRuntime>;
   scopes?: Maybe<Scalars['GenericScalar']>;
+  token?: Maybe<Scalars['String']>;
   url: Scalars['String'];
   version: Scalars['String'];
 };
@@ -345,13 +348,13 @@ export type DetailImageFragment = { __typename?: 'Image', tags?: Array<string | 
 
 export type DetailNetworkFragment = { __typename?: 'Network', name?: string | null, id: string };
 
-export type DetailGithubRepoFragment = { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string };
+export type DetailGithubRepoFragment = { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string, scans: Array<{ __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string }> };
 
 export type ListGithubRepoFragment = { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string };
 
-export type DetailRepoScanFragment = { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string };
+export type DetailRepoScanFragment = { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string };
 
-export type ListRepoScanFragment = { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string };
+export type ListRepoScanFragment = { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string };
 
 export type DetailWhaleFragment = { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string };
 
@@ -422,6 +425,7 @@ export type CreateWhaleMutationVariables = Exact<{
   image: Scalars['String'];
   clientId: Scalars['String'];
   clientSecret: Scalars['String'];
+  token: Scalars['String'];
   scopes: Array<InputMaybe<Scalars['String']>> | InputMaybe<Scalars['String']>;
   faktEndpoint: Scalars['String'];
   runtime?: InputMaybe<DockerRuntime>;
@@ -454,19 +458,19 @@ export type DetailGithubRepoQueryVariables = Exact<{
 }>;
 
 
-export type DetailGithubRepoQuery = { __typename?: 'Query', githubRepo?: { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string } | null };
+export type DetailGithubRepoQuery = { __typename?: 'Query', githubRepo?: { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string, scans: Array<{ __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string }> } | null };
 
 export type RepoScansQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type RepoScansQuery = { __typename?: 'Query', reposcans?: Array<{ __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string } | null> | null };
+export type RepoScansQuery = { __typename?: 'Query', reposcans?: Array<{ __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string } | null> | null };
 
 export type DetailRepoScanQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailRepoScanQuery = { __typename?: 'Query', reposcan?: { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string } | null };
+export type DetailRepoScanQuery = { __typename?: 'Query', reposcan?: { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string } | null };
 
 export type PortGlobalSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -541,14 +545,27 @@ export const DetailNetworkFragmentDoc = gql`
   id
 }
     `;
+export const ListRepoScanFragmentDoc = gql`
+    fragment ListRepoScan on RepoScan {
+  id
+  identifier
+  version
+  scopes
+  image
+  runtime
+}
+    `;
 export const DetailGithubRepoFragmentDoc = gql`
     fragment DetailGithubRepo on GithubRepo {
   id
   user
   repo
   branch
+  scans {
+    ...ListRepoScan
+  }
 }
-    `;
+    ${ListRepoScanFragmentDoc}`;
 export const ListGithubRepoFragmentDoc = gql`
     fragment ListGithubRepo on GithubRepo {
   id
@@ -564,15 +581,7 @@ export const DetailRepoScanFragmentDoc = gql`
   version
   scopes
   image
-}
-    `;
-export const ListRepoScanFragmentDoc = gql`
-    fragment ListRepoScan on RepoScan {
-  id
-  identifier
-  version
-  scopes
-  image
+  runtime
 }
     `;
 export const ListWhaleFragmentDoc = gql`
@@ -861,7 +870,7 @@ export type DeleteWhaleMutationHookResult = ReturnType<typeof useDeleteWhaleMuta
 export type DeleteWhaleMutationResult = Apollo.MutationResult<DeleteWhaleMutation>;
 export type DeleteWhaleMutationOptions = Apollo.BaseMutationOptions<DeleteWhaleMutation, DeleteWhaleMutationVariables>;
 export const CreateWhaleDocument = gql`
-    mutation CreateWhale($identifier: String!, $version: String!, $image: String!, $clientId: String!, $clientSecret: String!, $scopes: [String]!, $faktEndpoint: String!, $runtime: DockerRuntime) {
+    mutation CreateWhale($identifier: String!, $version: String!, $image: String!, $clientId: String!, $clientSecret: String!, $token: String!, $scopes: [String]!, $faktEndpoint: String!, $runtime: DockerRuntime) {
   createWhale(
     version: $version
     identifier: $identifier
@@ -869,6 +878,7 @@ export const CreateWhaleDocument = gql`
     clientId: $clientId
     clientSecret: $clientSecret
     scopes: $scopes
+    token: $token
     faktEndpoint: $faktEndpoint
     runtime: $runtime
   ) {
@@ -896,6 +906,7 @@ export type CreateWhaleMutationFn = Apollo.MutationFunction<CreateWhaleMutation,
  *      image: // value for 'image'
  *      clientId: // value for 'clientId'
  *      clientSecret: // value for 'clientSecret'
+ *      token: // value for 'token'
  *      scopes: // value for 'scopes'
  *      faktEndpoint: // value for 'faktEndpoint'
  *      runtime: // value for 'runtime'

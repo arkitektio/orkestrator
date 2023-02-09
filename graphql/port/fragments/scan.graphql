@@ -4,6 +4,7 @@ fragment DetailRepoScan on RepoScan {
   version
   scopes
   image
+  runtime
 }
 
 fragment ListRepoScan on RepoScan {
@@ -12,4 +13,5 @@ fragment ListRepoScan on RepoScan {
   version
   scopes
   image
+  runtime
 }

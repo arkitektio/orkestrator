@@ -14,6 +14,8 @@ import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveConta
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SelfActions } from "../../components/SelfActions";
 import { ThumbnailCanvas } from "../../components/ThumbnailCanvas";
+import { TwoD } from "../../experimental/render/TwoD";
+import { TwoDOffcanvas } from "../../experimental/render/TwoDOffcanvas";
 import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
 import { OptimizedImage } from "../../layout/OptimizedImage";
@@ -29,9 +31,11 @@ import {
   Objective,
   Instrument,
   Table,
+  Dataset,
 } from "../../linker";
 import { UserEmblem } from "../../lok/components/UserEmblem";
 import { DataPlot } from "../../pages/data/plots/DataPlot";
+import { ExperimentalFeature } from "../../providers/experimental/Experimental";
 import {
   CommentableModels,
   DetailRepresentationFragment,
@@ -40,6 +44,7 @@ import {
   MyRepresentationsOriginSubscription,
   MyRepresentationsOriginSubscriptionVariables,
   UpdateRepresentationMutationVariables,
+  useDeleteRepresentationMutation,
   useDeleteRoiMutation,
   useDetailRepresentationQuery,
   usePinRepresentationMutation,
@@ -62,6 +67,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
 
   const { data, subscribeToMore } = withMikro(useDetailRepresentationQuery)({
     variables: { id: id },
+    fetchPolicy: "cache-and-network",
   });
 
   const [pinRepresentation, pindata] = withMikro(
@@ -72,7 +78,13 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
     useUpdateRepresentationMutation
   )();
 
+  const [deleteRepresentation] = withMikro(useDeleteRepresentationMutation)();
+
   const [deleteRoi] = withMikro(useDeleteRoiMutation)();
+
+  const aspectRatio =
+    data?.representation?.shape &&
+    data?.representation?.shape[3] / data?.representation?.shape[4];
 
   useEffect(() => {
     console.log("Subscribing to MyRois");
@@ -235,19 +247,27 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
         </div>
         <div className="flex  @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">
           <div className="flex-1 max-w-2xl mt-2 rounded rounded-lg overflow-hidden">
-            {data?.representation && (
-              <ParentSize>
-                {({ width, height }) => (
-                  <ThumbnailCanvas
-                    rep={data?.representation}
-                    height={height}
-                    width={width}
-                  />
-                )}
-              </ParentSize>
-            )}
+            <ParentSize debounceTime={800}>
+              {({ width, height }) => (
+                <>
+                  {data?.representation && (
+                    <ExperimentalFeature
+                      fallback={
+                        <ThumbnailCanvas
+                          rep={data?.representation}
+                          height={aspectRatio ? aspectRatio * width : height}
+                          width={width}
+                        />
+                      }
+                    >
+                      <TwoDOffcanvas representation={data?.representation} />
+                    </ExperimentalFeature>
+                  )}
+                </>
+              )}
+            </ParentSize>
           </div>
-          <div className="p-4 flex-1 bg-white border shadow mt-2 rounded">
+          <div className="@container p-4 flex-1 bg-white border shadow mt-2 rounded">
             {data?.representation?.sample && (
               <>
                 <div className="font-light">Sample</div>
@@ -257,6 +277,22 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                 >
                   {data?.representation?.sample?.name}
                 </Sample.DetailLink>
+              </>
+            )}
+
+            {data?.representation?.datasets && (
+              <>
+                <div className="font-light">In Datasets</div>
+                <div className="flex flex-row mb-2">
+                  {data?.representation?.datasets?.map((dataset) => (
+                    <Dataset.DetailLink
+                      className="text-xl cursor-pointer p-1 border rounded mr-2 border-gray-300"
+                      object={dataset.id}
+                    >
+                      {dataset.name}
+                    </Dataset.DetailLink>
+                  ))}
+                </div>
               </>
             )}
             <div className="font-light mt-2 ">Created At</div>
@@ -333,6 +369,10 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     </div>
                   </div>
                 )}
+                {JSON.stringify(
+                  data?.representation?.omero?.affineTransformation
+                )}
+
                 {data?.representation?.omero?.position && (
                   <Position.DetailLink
                     object={data.representation.omero.position.id}
@@ -340,19 +380,12 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                   >
                     <div className="font-semibold mr-2">Position on Stage </div>
                     <div className="text-md text-black ">
-                      {data?.representation?.omero?.position?.x ||
-                        0 *
-                          data?.representation.omero.position?.stage
-                            .physicalSize[0]}
-                      µm{" "}
-                      {data.representation.omero.position.x *
-                        data?.representation.omero.position?.stage
-                          .physicalSize[1]}
-                      µm{" "}
-                      {data.representation.omero.position.x *
-                        data?.representation.omero.position?.stage
-                          .physicalSize[2]}
-                      µm
+                      {data?.representation?.omero?.position?.x}
+                      <p className="text-sm inline">x [µm] </p>
+                      {data?.representation?.omero?.position?.y}
+                      <p className="text-sm inline">y [µm] </p>
+                      {data?.representation?.omero?.position?.z}
+                      <p className="text-sm inline">z [µm] </p>
                     </div>
                   </Position.DetailLink>
                 )}
@@ -450,6 +483,16 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     </div>
                   ))}
                 </ResponsiveContainerGrid>
+                <div className="font-light my-1">Planes</div>
+                <ResponsiveContainerGrid>
+                  {data?.representation?.omero?.planes?.map((pl, index) => (
+                    <div className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer">
+                      <div className="flex flex-row">
+                        <div>{pl?.z || "Plane " + index}</div>
+                      </div>
+                    </div>
+                  ))}
+                </ResponsiveContainerGrid>
               </>
             )}
 
@@ -511,22 +554,22 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
               data?.representation?.roiOrigins.length > 0 && (
                 <>
                   <div className="font-light mb-2">Created from these Rois</div>
-                  <ResponsiveGrid>
+                  <ResponsiveContainerGrid>
                     {data?.representation?.roiOrigins
                       ?.filter(notEmpty)
                       .map((roi) => (
                         <Roi.Smart
                           object={roi.id}
                           dragClassName={(options) =>
-                            "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
+                            "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow text-white"
                           }
                         >
                           <Roi.DetailLink object={roi.id}>
-                            {roi.label}
+                            {roi.label || roi.id}
                           </Roi.DetailLink>
                         </Roi.Smart>
                       ))}
-                  </ResponsiveGrid>
+                  </ResponsiveContainerGrid>
                 </>
               )}
 
@@ -534,14 +577,14 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
               data?.representation?.origins.length > 0 && (
                 <>
                   <div className="font-light mb-2">Derived from</div>
-                  <ResponsiveGrid>
+                  <ResponsiveContainerGrid>
                     {data?.representation?.origins
                       ?.filter(notEmpty)
                       .map((rep) => (
                         <Representation.Smart
                           object={rep.id}
                           dragClassName={(options) =>
-                            "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow "
+                            "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow truncate"
                           }
                           dragStyle={() =>
                             rep?.latestThumbnail
@@ -558,16 +601,32 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                                     "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95))",
                                 }
                           }
+                          additionalMates={() => {
+                            return [
+                              {
+                                label: "Delete Rep",
+                                action: async () => {
+                                  return deleteRepresentation({
+                                    variables: {
+                                      id: rep.id,
+                                    },
+                                  });
+                                },
+                              },
+                            ];
+                          }}
                         >
-                          <Representation.DetailLink object={rep.id}>
-                            {rep.name}
-                          </Representation.DetailLink>
-                          <p className="text-xs">
-                            {rep?.tags?.map((t) => "#" + t).join(" ")}
-                          </p>
+                          <div className="truncate">
+                            <Representation.DetailLink object={rep.id}>
+                              {rep.name}
+                            </Representation.DetailLink>
+                            <p className="text-xs">
+                              {rep?.tags?.map((t) => "#" + t).join(" ")}
+                            </p>
+                          </div>
                         </Representation.Smart>
                       ))}
-                  </ResponsiveGrid>
+                  </ResponsiveContainerGrid>
                 </>
               )}
 
@@ -575,7 +634,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
               data?.representation?.derived.length > 0 && (
                 <>
                   <div className="font-light my-2">Derived Images</div>
-                  <ResponsiveGrid>
+                  <ResponsiveContainerGrid>
                     {data?.representation?.derived
                       ?.filter(notEmpty)
                       .map((rep) => (
@@ -599,6 +658,20 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                                     "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95))",
                                 }
                           }
+                          additionalMates={() => {
+                            return [
+                              {
+                                label: "Delete Rep",
+                                action: async () => {
+                                  return deleteRepresentation({
+                                    variables: {
+                                      id: rep.id,
+                                    },
+                                  });
+                                },
+                              },
+                            ];
+                          }}
                         >
                           <Representation.DetailLink object={rep.id}>
                             {rep.name}
@@ -608,7 +681,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                           </p>
                         </Representation.Smart>
                       ))}
-                  </ResponsiveGrid>
+                  </ResponsiveContainerGrid>
                 </>
               )}
 
@@ -616,7 +689,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
               data?.representation?.tables.length > 0 && (
                 <>
                   <div className="font-light my-2">Derived Tables</div>
-                  <ResponsiveGrid>
+                  <ResponsiveContainerGrid>
                     {data?.representation?.tables
                       ?.filter(notEmpty)
                       .map((table) => (
@@ -631,7 +704,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                           </Table.DetailLink>
                         </Table.Smart>
                       ))}
-                  </ResponsiveGrid>
+                  </ResponsiveContainerGrid>
                 </>
               )}
 
@@ -650,12 +723,12 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
           data?.representation?.rois.length > 0 && (
             <>
               <div className="font-light my-2">Rois</div>
-              <ResponsiveGrid>
+              <ResponsiveContainerGrid>
                 {data?.representation?.rois?.filter(notEmpty).map((roi) => (
                   <Roi.Smart
                     object={roi.id}
                     dragClassName={(options) =>
-                      "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
+                      "truncate border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
                     }
                     dragStyle={() => ({
                       background:
@@ -683,13 +756,15 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                       return [];
                     }}
                   >
-                    <Roi.DetailLink object={roi.id}>{roi?.type}</Roi.DetailLink>
+                    <Roi.DetailLink object={roi.id}>
+                      {roi?.label || roi?.type}
+                    </Roi.DetailLink>
                     <p className="text-xs">
                       {roi?.tags?.map((t) => "#" + t).join(" ")}
                     </p>
                   </Roi.Smart>
                 ))}
-              </ResponsiveGrid>
+              </ResponsiveContainerGrid>
             </>
           )}
       </div>

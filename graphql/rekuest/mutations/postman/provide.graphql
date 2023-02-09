@@ -1,5 +1,5 @@
-mutation Provide($template: ID!, $agent: ID!) {
-  provide(template: $template, agent: $agent) {
+mutation Provide($template: ID!) {
+  provide(template: $template) {
     id
     status
   }

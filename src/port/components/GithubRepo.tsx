@@ -1,5 +1,8 @@
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
+import { RepoScan } from "../../linker";
 import {
   useDetailContainerQuery,
   useStopContainerMutation,
@@ -26,12 +29,30 @@ export const GithubRepo = (props: GithubRepoProps) => {
 
   return (
     <PageLayout>
-      <SectionTitle>Whale {data?.githubRepo?.branch}</SectionTitle>
+      <SectionTitle>Github Repo </SectionTitle>
       <div className="text-white">
         <div className="text-2xl">
-          Container hosting {data?.githubRepo?.repo}
+          {data?.githubRepo?.user}/{data?.githubRepo?.repo}:
+          {data?.githubRepo?.branch}
         </div>
+        <a
+          href={`https://github.com/${data?.githubRepo?.user}/${data?.githubRepo?.repo}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open{" "}
+        </a>
       </div>
+      <SectionTitle>Possible Deployments of this app</SectionTitle>
+      <ResponsiveContainerGrid>
+        {data?.githubRepo?.scans?.filter(notEmpty).map((scan) => (
+          <RepoScan.Smart object={scan.id} className="bg-gray-300 p-5 rounded">
+            <RepoScan.DetailLink object={scan.id}>
+              {scan.identifier}:{scan.version}
+            </RepoScan.DetailLink>
+          </RepoScan.Smart>
+        ))}
+      </ResponsiveContainerGrid>
     </PageLayout>
   );
 };

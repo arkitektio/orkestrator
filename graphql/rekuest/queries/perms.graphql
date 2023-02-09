@@ -1,11 +1,11 @@
-query PermissionOptions($model: AvailableModels!, $search: String) {
+query PermissionOptions($model: SharableModels!, $search: String) {
   options: permissionsFor(model: $model, name: $search) {
     label: name
     value: unique
   }
 }
 
-query PermissionsOf($model: AvailableModels!, $id: ID!) {
+query PermissionsOf($model: SharableModels!, $id: ID!) {
   permissionsOf(model: $model, id: $id) {
     available {
       name

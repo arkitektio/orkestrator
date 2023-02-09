@@ -44,16 +44,17 @@ export const RoiCanvas = ({
   );
   const { s3resolve } = useMikro();
 
-  let imgheight = roi.representation?.shape?.at(3) || 0;
-  let imgwidth = roi.representation?.shape?.at(4) || 0;
+  let imgheight = roi.representation?.shape?.at(4) || 0;
+  let imgwidth = roi.representation?.shape?.at(3) || 0;
 
   const translate = (
     x: number | null | undefined,
     y: number | null | undefined
   ) => {
+    // map from image coordinates to canvas coordinates ( x ,y are transposed)
     return [
-      ((x || 0) / (imgwidth || 1)) * width,
       ((y || 0) / (imgheight || 1)) * height,
+      ((x || 0) / (imgwidth || 1)) * width,
     ];
   };
 
@@ -93,21 +94,19 @@ export const RoiCanvas = ({
   return (
     <div className="relative" style={{ height: height, width: width }}>
       <canvas
-        className="absolute top-0 left-0"
+        className="absolute top-0 left-0 bg-gray-900"
         width={width}
         height={height}
         ref={blurhashref}
       />
       <canvas
-        className="absolute top-0 left-0"
+        className="absolute top-0 left-0 "
         width={width}
         height={height}
         ref={bgref}
       />
       <Stage width={width} height={height}>
         <Layer>
-          {highlight && <RoiLabel roi={highlight} translate={translate} />}
-
           {isRectangle && (
             <Line
               points={translatedVectors.flat()}

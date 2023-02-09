@@ -12,13 +12,12 @@ interface TemplateCardProps {
 export const TemplateCard = ({ template }: TemplateCardProps) => {
   const { data: appdata } = withMan(useAppQuery)({
     variables: {
-      identifier: template?.registry.app?.identifier,
-      version: template?.registry.app?.version,
+      clientId: template?.agent?.registry?.client?.clientId,
     },
     fetchPolicy: "cache-first",
   });
   const { data: userdata } = withMan(useUserQuery)({
-    variables: { id: template?.registry.user?.sub },
+    variables: { id: template?.agent?.registry?.user?.sub },
     fetchPolicy: "cache-first",
   });
 

@@ -37,7 +37,7 @@ export const ReturnNodeSidebar = (
             >
               {(formikProps) => (
                 <Form>
-                  <ChangeSubmitHelper debounce={300} formik={formikProps} />
+                  <ChangeSubmitHelper debounce={300} />
                   <div className="flex flex-col ">
                     <div className="flex flex-col">
                       <div className="flex flex-row">

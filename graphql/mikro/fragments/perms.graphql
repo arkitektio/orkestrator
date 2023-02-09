@@ -1,6 +1,6 @@
 fragment UserAssignment on UserAssignment {
   user {
-    id
+    sub
     username
     email
   }

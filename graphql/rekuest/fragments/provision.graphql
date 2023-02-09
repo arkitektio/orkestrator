@@ -11,7 +11,7 @@ fragment DetailProvision on Provision {
       ...Registry
     }
     name
-    identifier
+    instanceId
   }
   mode
   createdAt
@@ -23,8 +23,8 @@ fragment DetailProvision on Provision {
       interfaces
       meta
     }
-    registry {
-      ...Registry
+    agent {
+      ...ListAgent
     }
     extensions
     params
@@ -88,7 +88,7 @@ fragment ListProvision on Provision {
       ...Registry
     }
     name
-    identifier
+    instanceId
   }
   reservations {
     id

@@ -8,6 +8,7 @@ import {
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
 import { ActionButton } from "../layout/ActionButton";
+import { SectionTitle } from "../layout/SectionTitle";
 import { Experiment } from "../linker";
 import {
   ListExperimentFragment,
@@ -19,10 +20,14 @@ import {
 } from "../mikro/api/graphql";
 import { CreateExperimentModal } from "../mikro/components/dialogs/CreateExperimentModal";
 import { withMikro } from "../mikro/MikroContext";
+import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
-export type IMyExperimentsProps = {};
+export type IMyExperimentsProps = {
+  subscribe?: Maybe<boolean>;
+} & DataHomeFilterParams;
 
 const ExperimentCard: React.FC<{
   experiment: Maybe<ListExperimentFragment>;
@@ -78,16 +83,22 @@ const ExperimentCard: React.FC<{
   );
 };
 
-const limit = 20;
+const limit = 10;
 
-const MyExperiments: React.FC<IMyExperimentsProps> = () => {
+const MyExperiments: React.FC<IMyExperimentsProps> = ({
+  limit,
+  createdDay,
+  subscribe,
+}) => {
+  const variables = { limit: limit, offset: 0, createdDay: createdDay };
+
   const {
     data: experiments,
     error,
     subscribeToMore,
     refetch,
   } = withMikro(useMyExperimentsQuery)({
-    //pollInterval: 1000,
+    variables: variables,
   });
 
   const [show, setShow] = useState(false);
@@ -95,10 +106,12 @@ const MyExperiments: React.FC<IMyExperimentsProps> = () => {
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
-    refetch({ limit: 20, offset: offset });
+    refetch({ limit: limit, offset: offset });
   }, [offset, limit]);
 
   useEffect(() => {
+    if (!subscribe) return;
+
     console.log("Subscribing to My Experiments");
     const unsubscribe = subscribeToMore({
       document: MyExperimentsEventDocument,
@@ -138,40 +151,43 @@ const MyExperiments: React.FC<IMyExperimentsProps> = () => {
       },
     });
     return () => unsubscribe();
-  }, [subscribeToMore]);
+  }, [subscribeToMore, subscribe]);
 
   if (error) return <div>{error.message}</div>;
 
   return (
-    <div>
-      <div className="font-light text-xl flex mr-2 dark:text-white">
-        <Experiment.ListLink className="flex-0">
-          Latest Experiments
-        </Experiment.ListLink>
-        <div className="flex-grow"></div>
-        <div className="flex-0">
-          {offset != 0 && (
-            <button
-              className="p-1 text-gray-600 rounded"
-              onClick={() => setOffset(offset - limit)}
-            >
-              {" "}
-              <BsCaretLeft />{" "}
-            </button>
-          )}
-          {experiments?.myexperiments &&
-            experiments?.myexperiments.length == limit && (
+    <>
+      <SectionTitle>
+        <div className="flex flex-row">
+          <Experiment.ListLink className="flex-0">
+            Experiments
+          </Experiment.ListLink>
+          <div className="flex-grow"></div>
+          <div className="flex-0">
+            {offset != 0 && (
               <button
                 className="p-1 text-gray-600 rounded"
-                onClick={() => setOffset(offset + limit)}
+                onClick={() => setOffset(offset - limit)}
               >
                 {" "}
-                <BsCaretRight />{" "}
+                <BsCaretLeft />{" "}
               </button>
             )}
+            {experiments?.myexperiments &&
+              experiments?.myexperiments.length == limit && (
+                <button
+                  className="p-1 text-gray-600 rounded"
+                  onClick={() => setOffset(offset + limit)}
+                >
+                  {" "}
+                  <BsCaretRight />{" "}
+                </button>
+              )}
+          </div>
         </div>
-      </div>
-      <ResponsiveGrid>
+      </SectionTitle>
+
+      <ResponsiveContainerGrid>
         {experiments?.myexperiments?.slice(0, limit).map((ex, index) => (
           <ExperimentCard key={index} experiment={ex} />
         ))}
@@ -183,9 +199,9 @@ const MyExperiments: React.FC<IMyExperimentsProps> = () => {
         >
           <BsPlusCircle />
         </ActionButton>
-      </ResponsiveGrid>
+      </ResponsiveContainerGrid>
       <CreateExperimentModal show={show} setShow={setShow} />
-    </div>
+    </>
   );
 };
 

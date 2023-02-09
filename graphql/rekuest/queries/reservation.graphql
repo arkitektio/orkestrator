@@ -6,14 +6,16 @@ query DetailReservation($id: ID!) {
   linkableprovisions(id: $id) {
     id
     template {
-      registry {
-        app {
-          identifier
-          version
-        }
-        user {
-          id
-          email
+      agent {
+        registry {
+          app {
+            identifier
+            version
+          }
+          user {
+            id
+            email
+          }
         }
       }
     }

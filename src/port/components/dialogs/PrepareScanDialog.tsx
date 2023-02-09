@@ -41,14 +41,15 @@ export const PrepareScanDialog = (
           variables: values,
         });
 
-        if (app?.data?.createPrivateFakt && data?.reposcan?.image) {
+        if (app?.data?.createPrivateFakt?.app && data?.reposcan?.image) {
           const res = await createWhale({
             variables: {
-              version: app.data.createPrivateFakt.version,
-              identifier: app.data.createPrivateFakt.identifier,
+              version: app?.data?.createPrivateFakt?.app?.version,
+              identifier: app?.data?.createPrivateFakt?.app?.identifier,
               clientId: app?.data?.createPrivateFakt.clientId,
               clientSecret: app?.data?.createPrivateFakt.clientSecret,
               scopes: app?.data?.createPrivateFakt.scopes,
+              token: app?.data?.createPrivateFakt.token,
               faktEndpoint: "http://herre:8000/f/",
               image: data?.reposcan?.image,
             },

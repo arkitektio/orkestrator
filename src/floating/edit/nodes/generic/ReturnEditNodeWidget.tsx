@@ -22,10 +22,6 @@ export const ReturnEditNodeWidget: React.FC<ReturnNodeProps> = withLayout(
               Outputs
             </div>
             <p className="text-gray-700 text-base">
-              <>
-                {instream[0]?.map((o) => o?.kind).join(" | ")}
-                <br />
-              </>
               {!isSmall && (
                 <button
                   className="rounded px-2 py-1 text-xs font-semibold border-gray-300"
@@ -42,7 +38,14 @@ export const ReturnEditNodeWidget: React.FC<ReturnNodeProps> = withLayout(
             type="target"
             position={Position.Left}
             id={"arg_" + index}
-            style={{ background: "#555" }}
+            style={{
+              top: "50%",
+              height: "50%",
+              zIndex: "-1",
+              borderRadius: "3px",
+              cursor: "pointer",
+              //boxShadow: "0px 0px 10px #ff1493",
+            }}
             data-tip={s && s.map((s) => s?.kind).join(" | ")}
             data-for={"tooltip" + id}
           />

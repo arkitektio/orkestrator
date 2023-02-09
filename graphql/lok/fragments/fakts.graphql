@@ -7,6 +7,7 @@ fragment PrivateFakt on FaktApplication {
     version
     identifier
   }
+  token
 }
 
 fragment PublicFakt on FaktApplication {

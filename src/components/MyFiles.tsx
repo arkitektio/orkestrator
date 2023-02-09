@@ -25,6 +25,8 @@ import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 import { preventOverflow } from "@popperjs/core";
 import { Icons } from "react-toastify";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
+import { DataHomeFilterParams } from "../pages/data/Home";
 export type IMyRepresentationsProps = {};
 
 const limit = 20;
@@ -41,7 +43,10 @@ export type UploadFuture = {
   progress?: number;
 };
 
-const MyFiles: React.FC<IMyRepresentationsProps> = () => {
+const MyFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
+  createdDay,
+  limit,
+}) => {
   const [offset, setOffset] = useState(0);
   const [progress, setProgress] = useState(undefined);
 
@@ -50,12 +55,14 @@ const MyFiles: React.FC<IMyRepresentationsProps> = () => {
 
   const { s3resolve } = useMikro();
 
+  const variables = { limit: limit, offset: 0, createdDay: createdDay };
+
   const {
     data,
     loading: all_loading,
     refetch,
   } = withMikro(useMyOmeroFilesQuery)({
-    variables: { limit: limit, offset: 0 },
+    variables,
     //pollInterval: 1000,
   });
 
@@ -63,11 +70,11 @@ const MyFiles: React.FC<IMyRepresentationsProps> = () => {
     update(cache, result) {
       const existing: any = cache.readQuery({
         query: MyOmeroFilesDocument,
-        variables: { limit: 20, offset: 0 },
+        variables,
       });
       cache.writeQuery({
         query: MyOmeroFilesDocument,
-        variables: { limit: 20, offset: 0 },
+        variables,
         data: {
           myomerofiles: existing.myomerofiles.concat(
             result.data?.uploadOmeroFile
@@ -159,33 +166,33 @@ const MyFiles: React.FC<IMyRepresentationsProps> = () => {
 
   return (
     <div>
-      <div className="font-light text-xl flex mr-2">
-        <MikroFile.ListLink>
-          <SectionTitle>My Files</SectionTitle>
-        </MikroFile.ListLink>
-        <div className="flex-grow"></div>
-        <div className="flex-0">
-          {offset != 0 && (
-            <button
-              className="p-1 text-gray-600 rounded"
-              onClick={() => setOffset(offset - limit)}
-            >
-              {" "}
-              <BsCaretLeft />{" "}
-            </button>
-          )}
-          {data?.myomerofiles && data?.myomerofiles.length == limit && (
-            <button
-              className="p-1 text-gray-600 rounded"
-              onClick={() => setOffset(offset + limit)}
-            >
-              {" "}
-              <BsCaretRight />{" "}
-            </button>
-          )}
+      <SectionTitle>
+        <div className="flex flex-row">
+          <MikroFile.ListLink className="flex-0">Files</MikroFile.ListLink>
+          <div className="flex-grow"></div>
+          <div className="flex-0">
+            {offset != 0 && (
+              <button
+                className="p-1 text-gray-600 rounded"
+                onClick={() => setOffset(offset - limit)}
+              >
+                {" "}
+                <BsCaretLeft />{" "}
+              </button>
+            )}
+            {data?.myomerofiles && data?.myomerofiles.length == limit && (
+              <button
+                className="p-1 text-gray-600 rounded"
+                onClick={() => setOffset(offset + limit)}
+              >
+                {" "}
+                <BsCaretRight />{" "}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-      <ResponsiveGrid>
+      </SectionTitle>
+      <ResponsiveContainerGrid>
         {data?.myomerofiles?.map(
           (file, index) =>
             file?.id && (
@@ -323,7 +330,7 @@ const MyFiles: React.FC<IMyRepresentationsProps> = () => {
         >
           {isOver ? "Release to upload" : "Drag and drop a file here"}
         </div>
-      </ResponsiveGrid>
+      </ResponsiveContainerGrid>
     </div>
   );
 };

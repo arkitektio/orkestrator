@@ -3,26 +3,23 @@ fragment ListAgent on Agent {
   registry {
     ...Registry
   }
-  identifier
+  instanceId
   status
 }
 
 fragment DetailAgent on Agent {
   id
-  registry {
-    ...Registry
-    templates {
-      id
-      node {
-        name
-      }
-      policy
-      creator {
-        username
-      }
+  templates {
+    id
+    node {
+      name
+    }
+    policy
+    creator {
+      username
     }
   }
-  identifier
+  instanceId
   provisions {
     id
     template {

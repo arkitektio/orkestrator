@@ -15,11 +15,13 @@ fragment RepRoi on ROI {
   }
   tags
   pinned
+  label
 }
 
 fragment DetailRoi on ROI {
   id
   type
+  label
   creator {
     id
   }
@@ -39,8 +41,7 @@ fragment DetailRoi on ROI {
     shape
   }
   derivedRepresentations {
-    id
-    name
+    ...ListRepresentation
   }
   createdAt
   vectors {

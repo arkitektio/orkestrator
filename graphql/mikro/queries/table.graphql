@@ -14,8 +14,8 @@ query DetailTable(
   }
 }
 
-query MyTables {
-  mytables {
+query MyTables($createdDay: DateTime, $limit: Int = 200, $offset: Int = 3) {
+  mytables(createdDay: $createdDay, limit: $limit, offset: $offset) {
     ...ListTable
   }
 }

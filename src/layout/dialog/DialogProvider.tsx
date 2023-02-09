@@ -20,7 +20,7 @@ export type Submit<T extends {} | undefined = undefined> = {
 export type ConfirmContextType = {
   ask: <T extends {}, P>(
     component: ComponentType<Submit<T> & P>,
-    props: P
+    props: Partial<P>
   ) => CancelablePromise<T>;
 };
 

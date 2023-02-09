@@ -2,6 +2,7 @@ import React from "react";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { withRekuest } from "../../rekuest";
 import {
+  usePurgeNodesMutation,
   useResetAgentsMutation,
   useResetAssignationsMutation,
   useResetNodesMutation,
@@ -16,6 +17,7 @@ const DebugScreen: React.FC<IApplicationsProps> = ({}) => {
   const [resetP] = withRekuest(useResetProvisionsMutation)();
   const [resetR] = withRekuest(useResetReservationsMutation)();
   const [resetN] = withRekuest(useResetNodesMutation)();
+  const [purgeNodes] = withRekuest(usePurgeNodesMutation)();
 
   return (
     <>
@@ -50,6 +52,12 @@ const DebugScreen: React.FC<IApplicationsProps> = ({}) => {
           onClick={() => resetN()}
         >
           Reset Nodes{" "}
+        </button>
+        <button
+          className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => purgeNodes()}
+        >
+          Purges Nodes with no Template{" "}
         </button>
       </div>
     </>

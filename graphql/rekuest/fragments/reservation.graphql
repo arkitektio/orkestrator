@@ -62,8 +62,8 @@ fragment DetailReservation on Reservation {
   template {
     id
     interface
-    registry {
-      ...Registry
+    agent {
+      ...ListAgent
     }
   }
   provisions {

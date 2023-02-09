@@ -5,6 +5,7 @@ query GlobalSearch(
   $tags: [String]
   $creator: ID
   $pinned: Boolean
+  $createdDay: DateTime
   $stages: [ID]
 ) {
   experiments: myexperiments(
@@ -15,6 +16,7 @@ query GlobalSearch(
     tags: $tags
     creator: $creator
     pinned: $pinned
+    createdDay: $createdDay
   ) {
     id
     name
@@ -29,6 +31,7 @@ query GlobalSearch(
     tags: $tags
     creator: $creator
     pinned: $pinned
+    createdDay: $createdDay
   ) {
     id
     name
@@ -42,6 +45,7 @@ query GlobalSearch(
     tags: $tags
     creator: $creator
     pinned: $pinned
+    createdDay: $createdDay
   ) {
     id
     name
@@ -56,6 +60,7 @@ query GlobalSearch(
     creator: $creator
     pinned: $pinned
     stages: $stages
+    createdDay: $createdDay
   ) {
     id
     name
@@ -64,7 +69,7 @@ query GlobalSearch(
     }
   }
 
-  files: myomerofiles(name: $search, limit: 10) {
+  files: myomerofiles(name: $search, limit: 10, createdDay: $createdDay) {
     id
     name
   }

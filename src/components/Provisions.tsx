@@ -42,7 +42,7 @@ const Provisions: React.FC<IMyProvisionsProps> = () => {
                   {prov?.template?.interface}
                 </div>
                 <div className="flex-grow"></div>
-                <div className="text-xs">{prov?.agent?.identifier}</div>
+                <div className="text-xs">{prov?.agent?.instanceId}</div>
               </div>
               {prov?.status}
               {prov?.status == ProvisionStatus.Lost && (

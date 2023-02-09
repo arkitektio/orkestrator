@@ -3,3 +3,9 @@ mutation DeleteNode($id: ID!) {
     id
   }
 }
+
+mutation PurgeNodes {
+  purgeNodes {
+    ids
+  }
+}

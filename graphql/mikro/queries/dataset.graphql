@@ -1,0 +1,18 @@
+query MyDatasets($limit: Int, $offset: Int, $createdDay: DateTime) {
+  mydatasets(limit: $limit, offset: $offset, createdDay: $createdDay) {
+    ...ListDataset
+  }
+}
+
+query DetailDataset($id: ID!) {
+  dataset(id: $id) {
+    ...DetailDataset
+  }
+}
+
+query SearchDatasets($search: String) {
+  options: datasets(name: $search, limit: 10) {
+    label: name
+    value: id
+  }
+}

@@ -1,7 +1,12 @@
 import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
+import { Provision } from "../../linker";
+import { withRekuest } from "../../rekuest";
+import { useClientProvisionsQuery } from "../../rekuest/api/graphql";
 import {
   useDetailContainerQuery,
   useStopContainerMutation,
@@ -12,6 +17,28 @@ import { withPort } from "../PortContext";
 
 export type ContainerProps = {
   id: string;
+};
+
+export const ContainerProvisions = (props: { clientId: string }) => {
+  const { data } = withRekuest(useClientProvisionsQuery)({
+    variables: { clientId: props.clientId },
+    pollInterval: 1000,
+  });
+
+  return (
+    <>
+      <SectionTitle>Provisions on this container</SectionTitle>
+      <ResponsiveContainerGrid>
+        {data?.allprovisions?.filter(notEmpty).map((prov) => (
+          <Provision.Smart object={prov.id} className="bg-black rounded p-3">
+            <Provision.DetailLink object={prov.id}>
+              {prov.id}
+            </Provision.DetailLink>
+          </Provision.Smart>
+        ))}
+      </ResponsiveContainerGrid>
+    </>
+  );
 };
 
 export const Container = (props: ContainerProps) => {
@@ -67,6 +94,7 @@ export const Container = (props: ContainerProps) => {
       <div className="text-white">
         <div className="text-2xl">
           Container hosting {data?.container?.whale?.image}
+          Client {data?.container?.whale?.clientId}
         </div>
         <div className="text-sm flex flex-col">
           <div className="flex flex-row">
@@ -120,7 +148,10 @@ export const Container = (props: ContainerProps) => {
             Delete
           </button>
         </div>
-        <div className="bg-black rounded-lg p-3">
+        {data?.container?.whale?.clientId && (
+          <ContainerProvisions clientId={data?.container?.whale?.clientId} />
+        )}
+        <div className="mt-3 bg-black rounded-lg p-3">
           <pre>{data?.container?.logs}</pre>
         </div>
       </div>

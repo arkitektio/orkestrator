@@ -138,7 +138,7 @@ export const NodeFilterBox: React.FC<NodeFilterBoxProps> = ({
     >
       {(formik) => (
         <Form>
-          <ChangeSubmitHelper debounce={200} formik={formik} />
+          <ChangeSubmitHelper debounce={200} />
           <Field
             className={
               className ||

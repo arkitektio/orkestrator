@@ -16,13 +16,16 @@ import {
   useMyTablesQuery,
 } from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
+import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMyRepresentationsProps = {};
 
-const limit = 20;
-
-const MyTables: React.FC<IMyRepresentationsProps> = () => {
+const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
+  createdDay,
+  limit,
+}) => {
   const [offset, setOffset] = useState(0);
 
   const {
@@ -31,7 +34,7 @@ const MyTables: React.FC<IMyRepresentationsProps> = () => {
     refetch,
     subscribeToMore,
   } = withMikro(useMyTablesQuery)({
-    //pollInterval: 1000,
+    variables: { limit: limit, offset: 0, createdDay: createdDay },
   });
 
   const [deleteTable] = withMikro(useDeleteTableMutation)();
@@ -84,7 +87,7 @@ const MyTables: React.FC<IMyRepresentationsProps> = () => {
     <div>
       <div className="font-light text-xl flex mr-2">
         <Table.ListLink>
-          <SectionTitle>My Tables</SectionTitle>
+          <SectionTitle>Tables</SectionTitle>
         </Table.ListLink>
         <div className="flex-grow"></div>
         <div className="flex-0">
@@ -108,7 +111,7 @@ const MyTables: React.FC<IMyRepresentationsProps> = () => {
           )}
         </div>
       </div>
-      <ResponsiveGrid>
+      <ResponsiveContainerGrid>
         {data?.mytables?.map(
           (table, index) =>
             table?.id && (
@@ -183,14 +186,12 @@ const MyTables: React.FC<IMyRepresentationsProps> = () => {
                   >
                     {table?.name}
                   </Table.DetailLink>
-                  <p className="text-white-700 text-base">
-                    {table?.representation?.id}
-                  </p>
+                  <p className="text-white-700 text-base">{table?.id}</p>
                 </div>
               </Table.Smart>
             )
         )}
-      </ResponsiveGrid>
+      </ResponsiveContainerGrid>
     </div>
   );
 };

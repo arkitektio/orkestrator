@@ -1,5 +1,6 @@
 import { useParams } from "react-router";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
+import { RekuestShare } from "../../../components/social/RekuestShare";
 import { notEmpty } from "../../../floating/utils";
 import { FlussTemplate } from "../../../fluss/components/FlussTemplate";
 import { ActionButton } from "../../../layout/ActionButton";
@@ -8,6 +9,7 @@ import { PageLayout } from "../../../layout/PageLayout";
 import { Node, Provision } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
 import {
+  SharableModels,
   useDetailTemplateQuery,
   useProvideMutation,
 } from "../../../rekuest/api/graphql";
@@ -42,6 +44,16 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = (props) => {
             description="Provide this Template"
           />
         </>
+      }
+      sidebar={
+        <div className="p-2">
+          {data?.template?.id && (
+            <RekuestShare
+              type={SharableModels.FacadeTemplate}
+              object={data?.template?.id}
+            />
+          )}
+        </div>
       }
     >
       <div className="flex h-full flex-col">

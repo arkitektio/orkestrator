@@ -69,7 +69,7 @@ export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {
           >
             {agent.registry?.app?.identifier}
             <p className="text-sm text-gray-500 my-auto">
-              {agent?.registry?.app?.version} on {agent?.identifier}
+              {agent?.registry?.app?.version} on {agent?.instanceId}
             </p>
           </Agent.DetailLink>
           <div className="flex-initial">
@@ -84,7 +84,9 @@ export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {
         </div>
       </div>
 
-      {agent.registry?.user && <UserEmblem sub={agent.registry?.user?.sub} />}
+      {agent.registry?.user?.sub && (
+        <UserEmblem sub={agent.registry?.user?.sub} />
+      )}
     </Agent.Smart>
   );
 };

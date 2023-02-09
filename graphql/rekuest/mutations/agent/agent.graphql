@@ -1,5 +1,5 @@
-mutation template($definition: DefinitionInput!) {
-  createTemplate(definition: $definition) {
+mutation template($definition: DefinitionInput!, $instanceId: ID!) {
+  createTemplate(definition: $definition, instanceId: $instanceId) {
     id
   }
 }

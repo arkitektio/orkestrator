@@ -41,7 +41,7 @@ export type IExperimentProps = {
   id: string;
 };
 
-const Context: React.FC<IExperimentProps> = ({ id }) => {
+const Model: React.FC<IExperimentProps> = ({ id }) => {
   const { data, error } = withMikro(useDetailModelQuery)({
     variables: { id: id },
   });
@@ -71,4 +71,4 @@ const Context: React.FC<IExperimentProps> = ({ id }) => {
   );
 };
 
-export { Context };
+export { Model };
