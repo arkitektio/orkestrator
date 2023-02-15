@@ -4,6 +4,8 @@ import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "herre";
 import { createFlussClient } from "./fluss-client";
 import { FlussContext } from "./fluss-context";
+import { FlussConfig } from "./fluss-types";
+import { create } from "domain";
 
 export type FlussProps = {
   register?: boolean;
@@ -17,38 +19,23 @@ export const FlussProvider: React.FC<FlussProps> = ({
   const [client, setClient] = useState<
     ApolloClient<NormalizedCacheObject> | undefined
   >();
-  const { token } = useHerre();
-  const { fakts } = useFakts();
+  const [config, setConfig] = useState<FlussConfig>();
 
-  useEffect(() => {
-    if (fakts && token && fakts.fluss) {
-      var client = createFlussClient(fakts.fluss, token);
-      setClient(client);
-
-      const runFunc = (options: { query: string; variables: any }) => {
-        let document = gql(options.query);
-        return client
-          .query({
-            query: document,
-            variables: options.variables,
-          })
-          .then((result: any) => result.data);
-      };
+  const configure = (config?: FlussConfig) => {
+    setConfig(config);
+    if (!config) {
+      setClient(undefined);
+      return;
     }
-  }, [token, fakts, register]);
 
-  const s3resolve = (path?: string | null) => {
-    if (fakts.fluss && path) {
-      return `${fakts.fluss.datalayer?.endpoint_url}${path}`;
-    }
-    return "fallback";
+    setClient(createFlussClient(config));
   };
 
   return (
     <FlussContext.Provider
       value={{
         client: client,
-        s3resolve,
+        configure: configure,
       }}
     >
       {children}
