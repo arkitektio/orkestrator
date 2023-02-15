@@ -6,6 +6,7 @@ import { ReactiveImplementationModelInput } from "../../../fluss/api/graphql";
 import { withLayout } from "../../base/node/layout";
 import { ReactiveNodeProps } from "../../types";
 import { NodeTrackLayout } from "./layout/NodeTrack";
+import { ReactiveTrackLayout } from "./layout/ReactiveTrack";
 
 export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = withLayout(
   ({ data: { outstream, instream, constream, implementation }, id }) => {
@@ -13,7 +14,7 @@ export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = withLayout(
       <>
         {/* <AssignEventOverlay event={data.latestAssignEvent} />
 				<ProvideEventOverlay event={data.latestProvideEvent} /> */}
-        <NodeTrackLayout id={id}>
+        <ReactiveTrackLayout id={id}>
           <>
             {/* <AssignEventOverlay event={data.latestAssignEvent} />
 				<ProvideEventOverlay event={data.latestProvideEvent} /> */}
@@ -53,7 +54,7 @@ export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = withLayout(
               {implementation &&
                 [ReactiveImplementationModelInput.Chunk].includes(
                   implementation
-                ) && <h1>{implementation}</h1>}
+                ) && <>Iterate</>}
               {implementation &&
                 [ReactiveImplementationModelInput.ToList].includes(
                   implementation
@@ -160,7 +161,7 @@ export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = withLayout(
               ))}
             </div>
           </>
-        </NodeTrackLayout>
+        </ReactiveTrackLayout>
 
         {instream?.map((s, index, array) => (
           <Handle

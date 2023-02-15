@@ -17,3 +17,5 @@ export const Dashboard: React.FC<Props> = (props) => {
     </ModuleLayout>
   );
 };
+
+export default Dashboard;

@@ -9,7 +9,6 @@ import { HerreProvider } from "herre";
 import { QueryParamProvider } from "use-query-params";
 import { ReactRouter6Adapter } from "use-query-params/adapters/react-router-6";
 
-import { Dashboard } from "./pages/Dashboard";
 import { DashboardAssignation } from "./pages/dashboard/assignations/DashboardAssignation";
 import { DashboardAssignations } from "./pages/dashboard/assignations/DashboardAssignations";
 import DashBoardHome from "./pages/dashboard/DashboardHome";
@@ -21,12 +20,10 @@ import { DashboardReservation } from "./pages/dashboard/reservations/DashboardRe
 import { DashboardReservations } from "./pages/dashboard/reservations/DashboardReservations";
 import { DashboardTemplate } from "./pages/dashboard/templates/DashboardTemplate";
 import { DashboardTemplates } from "./pages/dashboard/templates/DashboardTemplates";
-import { Data } from "./pages/Data";
 import { DataDataset } from "./pages/data/datasets/DataDataset";
 import { DataDatasets } from "./pages/data/datasets/DataDatasets";
 import { DataFile } from "./pages/data/files/DataFile";
 import { DataFiles } from "./pages/data/files/DataFiles";
-import { DataHome } from "./pages/data/Home";
 import { DataRepresentation } from "./pages/data/representations/DataRepresentation";
 import { DataRepresentations } from "./pages/data/representations/DataRepresentations";
 import { DataSample } from "./pages/data/samples/DataSample";
@@ -47,11 +44,12 @@ import { Team } from "./pages/Team";
 import { Port } from "./pages/Port";
 import { PortHome } from "./pages/port/PortHome";
 import "./popping.css";
-
+import { ExperimentalProvider } from "./providers/experimental/provider";
 import "allotment/dist/style.css";
 import { MouseTransition, Preview } from "react-dnd-multi-backend";
 import { Callback } from "./pages/Callback";
 import "./index.css";
+
 import { DashboardAgent } from "./pages/dashboard/agents/DashboardAgent";
 import { DashboardAgents } from "./pages/dashboard/agents/DashboardAgents";
 import { DashboardRepositories } from "./pages/dashboard/repositories/DashboardRepositories";
@@ -104,15 +102,33 @@ import { DataInstrument } from "./pages/data/instruments/DataInstrument";
 import { DataInstruments } from "./pages/data/instruments/DataInstruments";
 import { DataObjective } from "./pages/data/objectives/DataObjective";
 import { DataObjectives } from "./pages/data/objectives/DataObjectives";
-import { DataContext } from "./pages/data/contexts/DataContext";
-import { DataContexts } from "./pages/data/contexts/DataContexts";
-import { DataModel } from "./pages/data/models/DataModel";
-import { DataModels } from "./pages/data/models/DataModels";
-import { DataLink } from "./pages/data/links/DataLink";
-import { DataLinks } from "./pages/data/links/DataModels";
-import { DataExperiment } from "./pages/data/experiments/DataExperiment";
-import { DataExperiments } from "./pages/data/experiments/DataExperiments";
-import { ExperimentalProvider } from "./providers/experimental/provider";
+
+export const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+export const Data = React.lazy(() => import("./pages/Data"));
+export const DataHome = React.lazy(() => import("./pages/data/Home"));
+export const DataExperiments = React.lazy(
+  () => import("./pages/data/experiments/DataExperiments")
+);
+export const DataExperiment = React.lazy(
+  () => import("./pages/data/experiments/DataExperiment")
+);
+export const DataModels = React.lazy(
+  () => import("./pages/data/models/DataModels")
+);
+export const DataModel = React.lazy(
+  () => import("./pages/data/models/DataModel")
+);
+export const DataContexts = React.lazy(
+  () => import("./pages/data/contexts/DataContexts")
+);
+export const DataContext = React.lazy(
+  () => import("./pages/data/contexts/DataContext")
+);
+
+export const DataLink = React.lazy(() => import("./pages/data/links/DataLink"));
+export const DataLinks = React.lazy(
+  () => import("./pages/data/links/DataLinks")
+);
 
 export const HTML5toTouch = {
   backends: [
@@ -177,310 +193,333 @@ export const MainApp: React.FC<Props> = (props) => {
                       <HealthzGuard fallback={<PublicHealthz />}>
                         <FaktsHerreProvider>
                           {window.__TAURI__ && <TauriHerreCallback />}
-                          <Routes>
-                            {/* Public */}
-                            <Route path="/" element={<PublicApp />}>
-                              <Route path="callback" element={<Callback />} />
-                              <Route index element={<PublicHome />} />
-                            </Route>
-                            {/* Private */}
-
-                            <Route path="/user" element={<ProtectedApp />}>
-                              <Route index element={<Home />} />
-
-                              {/* Mikro */}
-                              <Route path="mikro" element={<Data />}>
-                                <Route
-                                  path="experiments/:experiment"
-                                  element={<DataExperiment />}
-                                />
-                                <Route
-                                  path="experiments"
-                                  element={<DataExperiments />}
-                                />
-                                <Route
-                                  path="datasets/:dataset"
-                                  element={<DataDataset />}
-                                />
-                                <Route
-                                  path="datasets"
-                                  element={<DataDatasets />}
-                                />
-                                <Route
-                                  path="contexts/:context"
-                                  element={<DataContext />}
-                                />
-                                <Route
-                                  path="contexts"
-                                  element={<DataContexts />}
-                                />
-
-                                <Route
-                                  path="models/:model"
-                                  element={<DataModel />}
-                                />
-                                <Route path="models" element={<DataModels />} />
-
-                                <Route
-                                  path="links/:link"
-                                  element={<DataLink />}
-                                />
-                                <Route path="links" element={<DataLinks />} />
-
-                                <Route
-                                  path="samples/:sample"
-                                  element={<DataSample />}
-                                />
-                                <Route
-                                  path="samples"
-                                  element={<DataSamples />}
-                                />
-                                <Route
-                                  path="representations/:representation"
-                                  element={<DataRepresentation />}
-                                />
-                                <Route
-                                  path="representations"
-                                  element={<DataRepresentations />}
-                                />
-                                <Route
-                                  path="stages/:stage"
-                                  element={<DataStage />}
-                                />
-                                <Route path="stages" element={<DataStages />} />
-                                <Route
-                                  path="instruments/:instrument"
-                                  element={<DataInstrument />}
-                                />
-                                <Route
-                                  path="instruments"
-                                  element={<DataInstruments />}
-                                />
-                                <Route
-                                  path="objectives/:objective"
-                                  element={<DataObjective />}
-                                />
-                                <Route
-                                  path="objectives"
-                                  element={<DataObjectives />}
-                                />
-                                <Route
-                                  path="positions/:position"
-                                  element={<DataPosition />}
-                                />
-                                <Route
-                                  path="positions"
-                                  element={<DataPositions />}
-                                />
-                                <Route
-                                  path="tables/:table"
-                                  element={<DataTable />}
-                                />
-                                <Route path="tables" element={<DataTables />} />
-                                <Route
-                                  path="files/:file"
-                                  element={<DataFile />}
-                                />
-                                <Route
-                                  path="labels/:label"
-                                  element={<DataLabel />}
-                                />
-                                <Route path="labels" element={<DataLabels />} />
-                                <Route
-                                  path="metrics/:metric"
-                                  element={<DataMetric />}
-                                />
-                                <Route
-                                  path="metrics"
-                                  element={<DataMetrics />}
-                                />
-                                <Route path="files" element={<DataFiles />} />
-                                <Route path="rois/:roi" element={<DataRoi />} />
-                                <Route path="plots" element={<DataPlots />} />
-                                <Route
-                                  path="plots/:plot"
-                                  element={<DataPlot />}
-                                />
-                                <Route
-                                  path="omerofiles/:file"
-                                  element={<FileScreen />}
-                                />
-
-                                <Route index element={<DataHome />} />
+                          <React.Suspense fallback={<>Loading</>}>
+                            <Routes>
+                              {/* Public */}
+                              <Route path="/" element={<PublicApp />}>
+                                <Route path="callback" element={<Callback />} />
+                                <Route index element={<PublicHome />} />
                               </Route>
+                              {/* Private */}
 
-                              {/* lok */}
-                              <Route path="lok" element={<Team />}>
-                                <Route index element={<TeamHome />} />
-                                <Route
-                                  path="teams/:team"
-                                  element={<ManTeam />}
-                                />
-                                <Route path="teams" element={<ManTeams />} />
-                                <Route
-                                  path="users/:user"
-                                  element={<ManUser />}
-                                />
-                                <Route path="users" element={<ManUsers />} />
-                                <Route
-                                  path="publicfakts/:id"
-                                  element={<ManUsers />}
-                                />
-                                <Route
-                                  path="publicfakts"
-                                  element={<ManUsers />}
-                                />
-                                <Route
-                                  path="privatefakts/:id"
-                                  element={<ManUsers />}
-                                />
-                                <Route
-                                  path="privatefakts"
-                                  element={<ManUsers />}
-                                />
-                                <Route path="apps/:id" element={<LokApp />} />
-                                <Route path="apps" element={<LokApps />} />
-                              </Route>
+                              <Route path="/user" element={<ProtectedApp />}>
+                                <Route index element={<Home />} />
 
-                              {/* Fluss */}
+                                {/* Mikro */}
+                                <Route path="mikro" element={<Data />}>
+                                  <Route
+                                    path="experiments/:experiment"
+                                    element={<DataExperiment />}
+                                  />
+                                  <Route
+                                    path="experiments"
+                                    element={<DataExperiments />}
+                                  />
+                                  <Route
+                                    path="datasets/:dataset"
+                                    element={<DataDataset />}
+                                  />
+                                  <Route
+                                    path="datasets"
+                                    element={<DataDatasets />}
+                                  />
+                                  <Route
+                                    path="contexts/:context"
+                                    element={<DataContext />}
+                                  />
+                                  <Route
+                                    path="contexts"
+                                    element={<DataContexts />}
+                                  />
 
-                              <Route path="fluss" element={<Fluss />}>
-                                <Route index element={<FlowHome />} />
-                                <Route
-                                  path="workspaces/:diagram"
-                                  element={<FlowDiagram />}
-                                >
-                                  <Route index element={<FlowDiagramHome />} />
+                                  <Route
+                                    path="models/:model"
+                                    element={<DataModel />}
+                                  />
+                                  <Route
+                                    path="models"
+                                    element={<DataModels />}
+                                  />
+
+                                  <Route
+                                    path="links/:link"
+                                    element={<DataLink />}
+                                  />
+                                  <Route path="links" element={<DataLinks />} />
+
+                                  <Route
+                                    path="samples/:sample"
+                                    element={<DataSample />}
+                                  />
+                                  <Route
+                                    path="samples"
+                                    element={<DataSamples />}
+                                  />
+                                  <Route
+                                    path="representations/:representation"
+                                    element={<DataRepresentation />}
+                                  />
+                                  <Route
+                                    path="representations"
+                                    element={<DataRepresentations />}
+                                  />
+                                  <Route
+                                    path="stages/:stage"
+                                    element={<DataStage />}
+                                  />
+                                  <Route
+                                    path="stages"
+                                    element={<DataStages />}
+                                  />
+                                  <Route
+                                    path="instruments/:instrument"
+                                    element={<DataInstrument />}
+                                  />
+                                  <Route
+                                    path="instruments"
+                                    element={<DataInstruments />}
+                                  />
+                                  <Route
+                                    path="objectives/:objective"
+                                    element={<DataObjective />}
+                                  />
+                                  <Route
+                                    path="objectives"
+                                    element={<DataObjectives />}
+                                  />
+                                  <Route
+                                    path="positions/:position"
+                                    element={<DataPosition />}
+                                  />
+                                  <Route
+                                    path="positions"
+                                    element={<DataPositions />}
+                                  />
+                                  <Route
+                                    path="tables/:table"
+                                    element={<DataTable />}
+                                  />
+                                  <Route
+                                    path="tables"
+                                    element={<DataTables />}
+                                  />
+                                  <Route
+                                    path="files/:file"
+                                    element={<DataFile />}
+                                  />
+                                  <Route
+                                    path="labels/:label"
+                                    element={<DataLabel />}
+                                  />
+                                  <Route
+                                    path="labels"
+                                    element={<DataLabels />}
+                                  />
+                                  <Route
+                                    path="metrics/:metric"
+                                    element={<DataMetric />}
+                                  />
+                                  <Route
+                                    path="metrics"
+                                    element={<DataMetrics />}
+                                  />
+                                  <Route path="files" element={<DataFiles />} />
+                                  <Route
+                                    path="rois/:roi"
+                                    element={<DataRoi />}
+                                  />
+                                  <Route path="plots" element={<DataPlots />} />
+                                  <Route
+                                    path="plots/:plot"
+                                    element={<DataPlot />}
+                                  />
+                                  <Route
+                                    path="omerofiles/:file"
+                                    element={<FileScreen />}
+                                  />
+
+                                  <Route index element={<DataHome />} />
                                 </Route>
+
+                                {/* lok */}
+                                <Route path="lok" element={<Team />}>
+                                  <Route index element={<TeamHome />} />
+                                  <Route
+                                    path="teams/:team"
+                                    element={<ManTeam />}
+                                  />
+                                  <Route path="teams" element={<ManTeams />} />
+                                  <Route
+                                    path="users/:user"
+                                    element={<ManUser />}
+                                  />
+                                  <Route path="users" element={<ManUsers />} />
+                                  <Route
+                                    path="publicfakts/:id"
+                                    element={<ManUsers />}
+                                  />
+                                  <Route
+                                    path="publicfakts"
+                                    element={<ManUsers />}
+                                  />
+                                  <Route
+                                    path="privatefakts/:id"
+                                    element={<ManUsers />}
+                                  />
+                                  <Route
+                                    path="privatefakts"
+                                    element={<ManUsers />}
+                                  />
+                                  <Route path="apps/:id" element={<LokApp />} />
+                                  <Route path="apps" element={<LokApps />} />
+                                </Route>
+
+                                {/* Fluss */}
+
+                                <Route path="fluss" element={<Fluss />}>
+                                  <Route index element={<FlowHome />} />
+                                  <Route
+                                    path="workspaces/:diagram"
+                                    element={<FlowDiagram />}
+                                  >
+                                    <Route
+                                      index
+                                      element={<FlowDiagramHome />}
+                                    />
+                                  </Route>
+                                  <Route
+                                    path="flows/:flow"
+                                    element={<FlowDiagramFlow />}
+                                  />
+                                  <Route
+                                    path="runs/:runid"
+                                    element={<RunScreen />}
+                                  />
+                                </Route>
+
+                                {/* Rekuest */}
+                                <Route path="rekuest" element={<Dashboard />}>
+                                  <Route index element={<DashBoardHome />} />
+                                  <Route
+                                    path="reservations/:reservation"
+                                    element={<DashboardReservation />}
+                                  />
+
+                                  <Route
+                                    path="agents"
+                                    element={<DashboardAgents />}
+                                  />
+                                  <Route
+                                    path="agents/:id"
+                                    element={<DashboardAgent />}
+                                  />
+                                  <Route
+                                    path="reservations"
+                                    element={<DashboardReservations />}
+                                  />
+                                  <Route
+                                    path="assignations"
+                                    element={<DashboardAssignations />}
+                                  />
+                                  <Route
+                                    path="assignations/:id"
+                                    element={<DashboardAssignation />}
+                                  />
+                                  <Route
+                                    path="provisions/:provision"
+                                    element={<DashboardProvision />}
+                                  />
+                                  <Route
+                                    path="repositories/:id"
+                                    element={<DashboardRepository />}
+                                  />
+                                  <Route
+                                    path="repositories"
+                                    element={<DashboardRepositories />}
+                                  />
+                                  <Route
+                                    path="provisions"
+                                    element={<DashboardProvisions />}
+                                  />
+                                  <Route
+                                    path="nodes/:id"
+                                    element={<DashboardNode />}
+                                  />
+                                  <Route
+                                    path="nodes"
+                                    element={<DashboardNodes />}
+                                  />
+                                  <Route
+                                    path="templates/:id"
+                                    element={<DashboardTemplate />}
+                                  />
+                                  <Route
+                                    path="templates"
+                                    element={<DashboardTemplates />}
+                                  />
+                                </Route>
+
+                                {/* port */}
+                                <Route path="port" element={<Port />}>
+                                  <Route index element={<PortHome />} />
+                                  <Route
+                                    path="containers/:container"
+                                    element={<PortContainer />}
+                                  />
+                                  <Route
+                                    path="containers"
+                                    element={<PortContainers />}
+                                  />
+                                  <Route
+                                    path="whales/:whale"
+                                    element={<PortWhale />}
+                                  />
+
+                                  <Route
+                                    path="whales"
+                                    element={<PortWhales />}
+                                  />
+                                  <Route
+                                    path="githubrepos"
+                                    element={<PortGithubRepos />}
+                                  />
+                                  <Route
+                                    path="githubrepos/:repo"
+                                    element={<PortGithubRepo />}
+                                  />
+
+                                  <Route
+                                    path="reposcans"
+                                    element={<PortRepoScans />}
+                                  />
+                                  <Route
+                                    path="reposcans/:scan"
+                                    element={<PortRepoScan />}
+                                  />
+                                </Route>
+
                                 <Route
-                                  path="flows/:flow"
-                                  element={<FlowDiagramFlow />}
+                                  path="table/:table"
+                                  element={<TableScreen />}
                                 />
+
                                 <Route
-                                  path="runs/:runid"
-                                  element={<RunScreen />}
+                                  path="snapshot/:id"
+                                  element={<SnapshotScreen />}
                                 />
+                                <Route path="search" element={<Search />}>
+                                  <Route index element={<SearchHome />} />
+                                </Route>
+
+                                {/* Settings */}
+                                <Route path="settings" element={<Settings />}>
+                                  <Route index element={<SettingsHome />} />
+                                </Route>
+
+                                <Route element={<NoRoute />} />
                               </Route>
-
-                              {/* Rekuest */}
-                              <Route path="rekuest" element={<Dashboard />}>
-                                <Route index element={<DashBoardHome />} />
-                                <Route
-                                  path="reservations/:reservation"
-                                  element={<DashboardReservation />}
-                                />
-
-                                <Route
-                                  path="agents"
-                                  element={<DashboardAgents />}
-                                />
-                                <Route
-                                  path="agents/:id"
-                                  element={<DashboardAgent />}
-                                />
-                                <Route
-                                  path="reservations"
-                                  element={<DashboardReservations />}
-                                />
-                                <Route
-                                  path="assignations"
-                                  element={<DashboardAssignations />}
-                                />
-                                <Route
-                                  path="assignations/:id"
-                                  element={<DashboardAssignation />}
-                                />
-                                <Route
-                                  path="provisions/:provision"
-                                  element={<DashboardProvision />}
-                                />
-                                <Route
-                                  path="repositories/:id"
-                                  element={<DashboardRepository />}
-                                />
-                                <Route
-                                  path="repositories"
-                                  element={<DashboardRepositories />}
-                                />
-                                <Route
-                                  path="provisions"
-                                  element={<DashboardProvisions />}
-                                />
-                                <Route
-                                  path="nodes/:id"
-                                  element={<DashboardNode />}
-                                />
-                                <Route
-                                  path="nodes"
-                                  element={<DashboardNodes />}
-                                />
-                                <Route
-                                  path="templates/:id"
-                                  element={<DashboardTemplate />}
-                                />
-                                <Route
-                                  path="templates"
-                                  element={<DashboardTemplates />}
-                                />
-                              </Route>
-
-                              {/* port */}
-                              <Route path="port" element={<Port />}>
-                                <Route index element={<PortHome />} />
-                                <Route
-                                  path="containers/:container"
-                                  element={<PortContainer />}
-                                />
-                                <Route
-                                  path="containers"
-                                  element={<PortContainers />}
-                                />
-                                <Route
-                                  path="whales/:whale"
-                                  element={<PortWhale />}
-                                />
-
-                                <Route path="whales" element={<PortWhales />} />
-                                <Route
-                                  path="githubrepos"
-                                  element={<PortGithubRepos />}
-                                />
-                                <Route
-                                  path="githubrepos/:repo"
-                                  element={<PortGithubRepo />}
-                                />
-
-                                <Route
-                                  path="reposcans"
-                                  element={<PortRepoScans />}
-                                />
-                                <Route
-                                  path="reposcans/:scan"
-                                  element={<PortRepoScan />}
-                                />
-                              </Route>
-
-                              <Route
-                                path="table/:table"
-                                element={<TableScreen />}
-                              />
-
-                              <Route
-                                path="snapshot/:id"
-                                element={<SnapshotScreen />}
-                              />
-                              <Route path="search" element={<Search />}>
-                                <Route index element={<SearchHome />} />
-                              </Route>
-
-                              {/* Settings */}
-                              <Route path="settings" element={<Settings />}>
-                                <Route index element={<SettingsHome />} />
-                              </Route>
-
-                              <Route element={<NoRoute />} />
-                            </Route>
-                          </Routes>
+                            </Routes>
+                          </React.Suspense>
                         </FaktsHerreProvider>
                       </HealthzGuard>
                     </HealthzProvider>

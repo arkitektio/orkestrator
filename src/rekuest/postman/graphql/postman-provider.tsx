@@ -216,6 +216,9 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
             case AssignationStatus.Critical: {
               toast.error("Error: " + updated_ass.statusmessage);
             }
+            case AssignationStatus.Done: {
+              toast("Done");
+            }
           }
 
           newelements = prev.requests?.map((item: any) =>

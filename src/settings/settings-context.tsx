@@ -1,6 +1,7 @@
 import { ApolloClient, NormalizedCacheObject, useQuery } from "@apollo/client";
 import React, { useContext } from "react";
 import { boolean } from "yup";
+import { AvailableColormap } from "../experimental/provider/provider";
 
 export type Settings = {
   autoResolve: boolean;
@@ -9,6 +10,8 @@ export type Settings = {
   colorScheme: "red" | "green" | "blue";
   allowBatch: boolean;
   experimental: boolean;
+  defaultColormap: AvailableColormap;
+  defaultMaskColormap: AvailableColormap;
 };
 
 export type SettingsContextType = {
@@ -24,6 +27,8 @@ export const SettingsContext = React.createContext<SettingsContextType>({
     darkMode: true,
     colorScheme: "red",
     experimental: false,
+    defaultColormap: "viridis",
+    defaultMaskColormap: "viridis",
   },
   setSettings: () => {},
 });

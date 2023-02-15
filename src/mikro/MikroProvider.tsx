@@ -26,6 +26,9 @@ export const MikroProvider: React.FC<MikroProps> = ({ children }) => {
     return "fallback";
   };
 
+
+  
+
   return (
     <MikroContext.Provider
       value={{

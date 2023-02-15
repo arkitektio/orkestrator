@@ -12,9 +12,14 @@ export const RepresentationWidget: React.FC<{ value: string }> = ({
 
   return (
     <ExperimentalFeature>
-      {data?.representation && (
-        <TwoDOffcanvas representation={data?.representation} />
-      )}
+      <div className="w-full h-full">
+        {data?.representation && (
+          <TwoDOffcanvas
+            representation={data?.representation}
+            withRois={true}
+          />
+        )}
+      </div>
     </ExperimentalFeature>
   );
 };

@@ -9,3 +9,5 @@ export const DataExperiment: React.FC<DataExperimentProps> = (props) => {
   if (!experiment) return <></>;
   return <Experiment id={experiment} />;
 };
+
+export default DataExperiment;

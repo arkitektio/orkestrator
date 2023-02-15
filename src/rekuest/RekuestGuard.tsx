@@ -10,7 +10,7 @@ export const RekuestGuard: React.FC<{
 
   if (client) return <>{children}</>;
 
-  return <>{fallback || `Not yet with Mikro`}</>;
+  return <>{fallback || `Not yet with Rekuest`}</>;
 };
 
 export const rekuestGuarded = <T extends {}>(

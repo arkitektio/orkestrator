@@ -71,9 +71,10 @@ export const ThumbnailCanvas = ({
     x: number | null | undefined,
     y: number | null | undefined
   ) => {
+    // x and y are flipped in this space
     return [
-      ((y || 0) / (rep.shape?.at(3) || 1)) * height,
-      ((x || 0) / (rep.shape?.at(4) || 1)) * width,
+      ((x || 0) / (rep.shape?.at(3) || 1)) * width,
+      ((y || 0) / (rep.shape?.at(4) || 1)) * height,
     ];
   };
 
@@ -130,7 +131,7 @@ export const ThumbnailCanvas = ({
         height={height}
         ref={bgref}
       />
-      <Stage width={width} height={height}>
+      <Stage width={width} height={height} className="absolute top-0 left-0">
         <Layer>
           {highlight && <RoiLabel roi={highlight} translate={translate} />}
 

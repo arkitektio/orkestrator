@@ -21,8 +21,8 @@ export const ManProvider: React.FC<ManProviderProps> = ({
   const { fakts } = useFakts();
 
   useEffect(() => {
-    if (fakts && token && fakts.herre) {
-      var client = createManClient(fakts.herre, token);
+    if (fakts && token && fakts.lok) {
+      var client = createManClient(fakts.lok, token);
       setClient(client);
 
       const runFunc = (options: { query: string; variables: any }) => {

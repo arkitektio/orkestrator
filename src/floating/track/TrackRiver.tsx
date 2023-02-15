@@ -115,7 +115,7 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
     if (play) {
       const interval = setInterval(() => {
         setT((t) => (t > range.max ? 0 : t + 1));
-      }, 300);
+      }, 1000);
       return () => clearInterval(interval);
     }
   }, [play, range]);

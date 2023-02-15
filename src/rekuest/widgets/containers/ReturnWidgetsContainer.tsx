@@ -15,7 +15,7 @@ export const ReturnWidgetsContainer: React.FC<ReturnWidgetContainerProps> = (
   if (!registry) return <>No Widget Registry found</>;
 
   return (
-    <>
+    <div className="flex flex-grow flex-col">
       {props.returns.map((r: any, index) => {
         let port = (props.node?.returns || [])[index];
         if (!port) return <>No Port</>;
@@ -33,6 +33,6 @@ export const ReturnWidgetsContainer: React.FC<ReturnWidgetContainerProps> = (
           />
         );
       })}
-    </>
+    </div>
   );
 };

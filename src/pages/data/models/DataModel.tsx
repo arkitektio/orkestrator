@@ -11,3 +11,5 @@ export const DataModel: React.FC<DataExperimentProps> = (props) => {
   if (!model) return <></>;
   return <Model id={model} />;
 };
+
+export default DataModel;

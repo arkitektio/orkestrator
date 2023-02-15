@@ -21,6 +21,7 @@ import {
 } from "../provider/indexing";
 import { openDB, deleteDB, wrap, unwrap } from "idb";
 import DashBoardHome from "../../pages/dashboard/DashboardHome";
+import c from "colormap";
 
 function ensureByteArray(chunkData: ArrayBuffer): Uint8Array {
   if (typeof chunkData === "string") {
@@ -195,7 +196,14 @@ expose({
     return new (getTypedArrayCtr(dtype))(out.buffer);
   },
 
-  renderSelection: async (path: string, selection: ArraySelection) => {
+  renderSelection: async (
+    path: string,
+    selection: ArraySelection,
+    accessKeyId: string,
+    secretAccessKey: string,
+    sessionToken: string,
+    colormap: string
+  ) => {
     const db = await openDB("microstuff", 1, {
       upgrade(db, oldVersion, newVersion, transaction) {
         const store = db.createObjectStore("chunks");
@@ -203,8 +211,9 @@ expose({
     });
 
     let aws = new AwsClient({
-      accessKeyId: "kBcG6sCIlQvOWPOpzJhu",
-      secretAccessKey: "FjiprDl3qHwIMR7azM2M",
+      accessKeyId: accessKeyId,
+      secretAccessKey: secretAccessKey,
+      sessionToken: sessionToken,
       service: "s3",
     });
     let store = new S3Store(path, aws);
@@ -241,8 +250,9 @@ expose({
     let min = 0;
     let max = 0;
 
-    let imgwidth = data.shape[0];
-    let imgheight = data.shape[1];
+    let imgwidth = data.shape[1];
+    let imgheight = data.shape[0];
+    console.log(imgheight, imgwidth);
 
     for (var i = 0; i < imgwidth * imgheight; i++) {
       if (flattend[i] < min) {
@@ -253,14 +263,27 @@ expose({
       }
     }
 
+    let colors = c({
+      nshades: 256,
+      colormap: colormap,
+      format: "rgba",
+      alpha: 255,
+    });
+
     let iData = new Array(imgwidth * imgheight * 4);
 
     let z = 0;
-    for (let i = 0; i < imgwidth; i++) {
-      for (let j = 0; j < imgheight; j++) {
-        iData[z] = 0;
-        iData[z + 1] = ((data.get([i, j]) as number) * 255) / max;
-        iData[z + 2] = 0;
+    for (let j = 0; j < imgheight; j++) {
+      for (let i = 0; i < imgwidth; i++) {
+        let val = data.get([j, i]) as number;
+        let colorIndex = Math.round((val / max) * 255);
+        //console.log((val / max) * 255);
+
+        let color = colors[colorIndex] || [255, 0, 255, 255];
+
+        iData[z] = color[0];
+        iData[z + 1] = color[1];
+        iData[z + 2] = color[2];
         iData[z + 3] = 255;
         z += 4;
       }

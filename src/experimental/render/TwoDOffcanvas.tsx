@@ -2,35 +2,53 @@ import { Dialog } from "@headlessui/react";
 import { ParentSize } from "@visx/responsive";
 import Konva from "konva";
 import React, { useEffect, useRef, useState } from "react";
-import { Rect } from "react-konva";
-import { DetailRepresentationFragment } from "../../mikro/api/graphql";
+import { Layer, Line, Rect, Stage } from "react-konva";
+import { useNavigate } from "react-router";
+import { RoiLabel } from "../../components/ThumbnailCanvas";
+import { notEmpty } from "../../floating/utils";
+import { SaveParentSize } from "../../layout/SaveParentSize";
+import { Roi } from "../../linker";
+import {
+  DetailRepresentationFragment,
+  RepresentationVariety,
+  RoiType,
+} from "../../mikro/api/graphql";
 import { useMikro } from "../../mikro/MikroContext";
+import { useSettings } from "../../settings/settings-context";
 import { useXarray } from "../provider/context";
-import { XArrayProvider } from "../provider/provider";
+import { AvailableColormap, XArrayProvider } from "../provider/provider";
 
 export interface TwoDProps {
   representation: DetailRepresentationFragment;
+  colormap?: AvailableColormap;
+  withRois?: boolean;
 }
 
 let canvaswidth = 700;
 let canvasheight = 700;
 
-export const Canvas: React.FC<{ width: number; height: number; z: number }> = ({
-  width,
-  height,
-  z,
-}) => {
+export const Canvas: React.FC<{
+  width: number;
+  height: number;
+  path: string;
+  z: number;
+  colormap: AvailableColormap;
+}> = ({ width, height, z, colormap, path }) => {
   const layerRef = useRef<HTMLCanvasElement>(null);
   const [imageData, setImageData] = useState<ImageBitmap | null>(null);
+  const [loading, setLoading] = useState(false);
   const [currentZ, setCurrentZ] = useState(Math.floor(z / 2));
 
-  let x = useXarray();
+  const { getSelectionAsImageData } = useXarray();
 
   useEffect(() => {
-    x.getSelectionAsImageData([0, 0, currentZ, ":", ":"])
+    console.log(z, path);
+    console.log("Loading image slice...");
+    setLoading(true);
+    getSelectionAsImageData(path, [0, 0, z, ":", ":"], colormap)
       .then(createImageBitmap)
       .then(setImageData);
-  }, [currentZ]);
+  }, [z, path]);
 
   useEffect(() => {
     if (layerRef.current && imageData) {
@@ -46,18 +64,103 @@ export const Canvas: React.FC<{ width: number; height: number; z: number }> = ({
         imageData.height,
         0,
         0,
-        height,
-        width
+        width,
+        height
       );
+      setLoading(false);
     }
   }, [layerRef.current, imageData, height, width]);
 
-  const scroll = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    setCurrentZ((curr) => {
-      if (curr == z) {
-        return z;
-      }
-      if (curr == 0) {
+  return (
+    <>
+      <div
+        className={`absolute top-0 left-0 bg-gray-900 ${
+          loading ? "opacity-100" : "opacity-0"
+        } animate-opacity ease-in-out duration-300 z-10 flex items-center justify-center text-white `}
+        style={{ width: width, height: height }}
+      >
+        <div className="ring-2 ring-primary-300 ring-inset p-3 rounded rounded-lg">
+          Loading...
+        </div>
+      </div>
+      <canvas
+        id="c"
+        width={width}
+        height={height}
+        ref={layerRef}
+        className="absolute top-0 left-0"
+      ></canvas>
+    </>
+  );
+};
+
+export const RoiCanvas = ({
+  width,
+  height,
+  z,
+  representation,
+}: {
+  width: number;
+  height: number;
+  z: number;
+  representation: DetailRepresentationFragment;
+}) => {
+  let rectangles =
+    representation.rois?.filter((r) => r?.type === RoiType.Rectangle) ?? [];
+
+  const translate = (
+    x: number | null | undefined,
+    y: number | null | undefined
+  ) => {
+    // x and y are flipped in this space
+    return [
+      ((y || 0) / (representation.shape?.at(4) || 1)) * height,
+      ((x || 0) / (representation.shape?.at(3) || 1)) * width,
+    ];
+  };
+
+  const navigate = useNavigate();
+
+  return (
+    <Stage width={width} height={height} className="absolute top-0 left-0">
+      <Layer>
+        {rectangles.filter(notEmpty).map((r, index) => {
+          let vectors = r?.vectors?.map((v) => translate(v?.x, v?.y)) ?? [
+            [0, 0],
+          ];
+          return (
+            <Line
+              points={vectors.flat()}
+              closed={true}
+              key={index}
+              stroke="white"
+              onClick={(e) => {
+                navigate(Roi.linkBuilder(r.id));
+              }}
+              strokeWidth={2}
+            />
+          );
+        })}
+      </Layer>
+    </Stage>
+  );
+};
+
+export const TwoDOffcanvas = ({
+  representation,
+  colormap,
+  withRois,
+}: TwoDProps) => {
+  const { s3resolve } = useMikro();
+  const [z, setZ] = useState(
+    representation.shape ? Math.floor(representation.shape[2] / 2) : 0
+  );
+
+  const scroll = (e: React.WheelEvent<HTMLDivElement>) => {
+    setZ((curr) => {
+      if (representation.shape && curr == representation.shape[2]) {
+        return curr;
+      } else if (curr == 0) {
         return 0;
       } else if (e.deltaY > 0) {
         return curr - 1;
@@ -67,33 +170,41 @@ export const Canvas: React.FC<{ width: number; height: number; z: number }> = ({
     });
   };
 
-  return (
-    <>
-      <canvas id="c" width={width} height={height} ref={layerRef}></canvas>;
-    </>
-  );
-};
+  const { settings } = useSettings();
 
-export const TwoDOffcanvas = ({ representation }: TwoDProps) => {
-  const { s3resolve } = useMikro();
+  let colorm: AvailableColormap =
+    colormap || representation.variety == RepresentationVariety.Mask
+      ? settings.defaultMaskColormap
+      : settings.defaultColormap;
 
   const aspectRatio =
     representation?.shape &&
     representation?.shape[3] / representation?.shape[4];
 
   return (
-    <div className="w-full h-full">
-      <XArrayProvider path={s3resolve("/" + representation.store)}>
-        <ParentSize debounceTime={800}>
-          {({ width, height }) => (
-            <Canvas
-              z={representation.shape ? representation.shape[2] / 2 : 0}
+    <SaveParentSize debounceTime={800}>
+      {({ width, height }) => (
+        <div
+          className="relative"
+          style={{ height: width * (aspectRatio || width), width: width }}
+        >
+          <Canvas
+            z={z}
+            width={width}
+            height={width * (aspectRatio || width)}
+            colormap={colorm}
+            path={s3resolve("/" + representation.store)}
+          />
+          {withRois && (
+            <RoiCanvas
+              z={z}
               width={width}
               height={width * (aspectRatio || width)}
+              representation={representation}
             />
           )}
-        </ParentSize>
-      </XArrayProvider>
-    </div>
+        </div>
+      )}
+    </SaveParentSize>
   );
 };

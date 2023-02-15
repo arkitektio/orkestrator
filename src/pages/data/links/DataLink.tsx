@@ -12,3 +12,5 @@ export const DataLink: React.FC<DataExperimentProps> = (props) => {
   if (!link) return <></>;
   return <Link id={link} />;
 };
+
+export default DataLink;

@@ -20,7 +20,7 @@ export const FaktsHerreProvider: React.FC<FaktsHerreProps> = (props) => {
     }
   };
 
-  if (!fakts || !fakts.herre)
+  if (!fakts || !fakts.lok)
     return (
       <>
         Error! No sufficient fakts provided. Wrap this in FaktsGuard to avoid

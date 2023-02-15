@@ -3,9 +3,10 @@ import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "herre";
 import { useMikro } from "../mikro/MikroContext";
 import result from "../mikro/api/fragments";
+import { useRekuest } from "../rekuest";
 
 export const MikroAutoConfigure: React.FC<{}> = (props) => {
-  const { configure } = useMikro();
+  const { configure } = useRekuest();
   const { token } = useHerre();
   const { fakts } = useFakts();
 
@@ -20,7 +21,7 @@ export const MikroAutoConfigure: React.FC<{}> = (props) => {
         retrieveToken: () => token,
         s3resolve: (path?: string | null) => {
           if (path) {
-            return `${fakts.minio?.endpoint_url}${path}`;
+            return `${fakts.mikro.datalayer?.endpoint_url}${path}`;
           }
           return "fallback";
         },

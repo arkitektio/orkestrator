@@ -10,3 +10,5 @@ export const DataContext: React.FC<DataExperimentProps> = (props) => {
   if (!context) return <></>;
   return <Context id={context} />;
 };
+
+export default DataContext;

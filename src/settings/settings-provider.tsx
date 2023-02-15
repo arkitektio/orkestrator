@@ -15,6 +15,8 @@ const settingsValidator = yup.object().shape({
   darkMode: yup.boolean().required(),
   colorScheme: yup.string().required(),
   experimental: yup.boolean().required(),
+  defaultColormap: yup.string().required(),
+  defaultMaskColormap: yup.string().required(),
 });
 
 export const SettingsProvider: React.FC<SettingsProps> = ({
@@ -26,6 +28,8 @@ export const SettingsProvider: React.FC<SettingsProps> = ({
     darkMode: true,
     colorScheme: "red",
     experimental: false,
+    defaultColormap: "viridis",
+    defaultMaskColormap: "viridis",
   },
 }) => {
   const [settings, setSettings] = useState<Settings | undefined>(undefined);

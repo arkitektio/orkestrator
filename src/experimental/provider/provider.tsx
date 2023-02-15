@@ -7,131 +7,120 @@ import { BasicIndexer, isContiguousSelection, isTotalSlice } from "./indexing";
 import { joinUrlParts, S3Store } from "./store";
 import DownloadWorker from "../workers/download?worker";
 import { XArrayContext } from "./context";
+import { useRequestQuery } from "../../mikro/api/graphql";
+import { withMikro } from "../../mikro/MikroContext";
+
+export const available_color_maps = [
+  "jet",
+  "hot",
+  "cool",
+  "spring",
+  "summer",
+  "autumn",
+  "winter",
+  "bone",
+  "copper",
+  "greys",
+  "YIGnBu",
+  "greens",
+  "YIOrRd",
+  "bluered",
+  "RdBu",
+  "picnic",
+  "rainbow",
+  "portland",
+  "blackbody",
+  "earth",
+  "electric",
+  "viridis",
+  "inferno",
+  "magma",
+  "plasma",
+  "warm",
+  "rainbow-soft",
+  "bathymetry",
+  "cdom",
+  "chlorophyll",
+  "density",
+  "freesurface-blue",
+  "freesurface-red",
+  "oxygen",
+  "par",
+  "phase",
+  "salinity",
+  "temperature",
+  "turbidity",
+  "velocity-blue",
+  "velocity-green",
+  "cubehelix",
+] as const;
+
+export type AvailableColormap = typeof available_color_maps[number];
 
 export const XArrayProvider: React.FC<{
-  path: string;
   children: React.ReactNode;
 }> = (props) => {
-  const [state, setState] = useState<
-    { store: S3Store; data: ZarrArray } | undefined
-  >();
-  const [pool, setPool] = useState(() =>
-    Pool(() => spawn(new DownloadWorker()), 8 /* optional size */)
-  );
+  const { data, loading, error } = withMikro(useRequestQuery)({});
+  const [pool, setPool] = useState<Pool<any> | undefined>();
 
-  const getChunk = async (chunkCoords: number[]) => {
-    const url = joinUrlParts(
-      props.path,
-      state?.data.keyPrefix +
-        chunkCoords.join(state?.data.meta.dimension_separator ?? ".")
-    );
+  useEffect(() => {
+    let pool = Pool(() => spawn(new DownloadWorker()), 1 /* optional size */);
+    setPool(pool);
 
-    const x = await pool.queue(async ({ download }) => {
-      const multiplied = await download(
-        url,
-        state?.data.meta,
-        state?.data.dtype
+    return () => {
+      pool.terminate();
+    };
+  }, []);
+
+  const getSelectionAsImageData = async (
+    path: string,
+    selection: ArraySelection,
+    colormap: AvailableColormap
+  ) => {
+    if (!pool) {
+      throw Error("No pool");
+    }
+    if (!data?.request) {
+      throw Error("No credentials loaded");
+    }
+
+    const x = await pool.queue(async ({ renderSelection }) => {
+      if (!data?.request) {
+        throw Error("No credentials loaded");
+      }
+
+      let aws = new AwsClient({
+        accessKeyId: data.request.accessKey,
+        secretAccessKey: data.request.secretKey,
+        sessionToken: data.request.sessionToken,
+        service: "s3",
+      });
+
+      console.log(await aws.fetch(path + "/.zattrs"));
+
+      console.log(
+        "Rendering selection",
+        selection,
+        path,
+        selection,
+        data?.request
+      );
+      const multiplied = await renderSelection(
+        path,
+        selection,
+        data.request.accessKey,
+        data.request.secretKey,
+        data.request.sessionToken,
+        colormap
       );
       return multiplied;
     });
-
     return x;
   };
-
-  const getChunkItem = async (proj: ChunkProjection) => {
-    if (!state?.data) {
-      throw Error("No data loaded");
-    }
-
-    const rawChunk = await getChunk(proj.chunkCoords);
-    const decodedChunk = new NestedArray(
-      rawChunk,
-      state?.data.meta.chunks,
-      state?.data.dtype
-    );
-
-    if (
-      isContiguousSelection(proj.outSelection) &&
-      isTotalSlice(proj.chunkCoords, state.data.chunks) &&
-      !state.data.meta.filters
-    ) {
-      return { decodedChunk, proj };
-    }
-
-    return { decodedChunk: decodedChunk.get(proj.chunkSelection), proj };
-  };
-
-  const getSelection = async (selection: ArraySelection) => {
-    if (!state?.data) {
-      throw Error("No data loaded");
-    }
-    let indexer = new BasicIndexer(selection, state?.data);
-    const outShape = indexer.shape;
-    const outDtype = state.data.dtype;
-    const outSize = indexer.shape.reduce((x, y) => x * y, 1);
-    console.log(outShape, outSize);
-
-    const out = new NestedArray(null, outShape, outDtype);
-    if (outSize === 0) {
-      return out;
-    }
-
-    let promises = [];
-
-    for (const proj of indexer.iter()) {
-      promises.push(getChunkItem(proj));
-    }
-
-    let chunkPairs = await Promise.all(promises);
-
-    for (const { decodedChunk, proj } of chunkPairs) {
-      out.set(proj.outSelection, decodedChunk);
-    }
-
-    return out;
-  };
-
-  const getAsRGBA = async (selection: ArraySelection) => {
-    return new ArrayBuffer(56);
-  };
-
-  const getSelectionAsImageData = async (selection: ArraySelection) => {
-    const x = await pool.queue(async ({ renderSelection }) => {
-      const multiplied = await renderSelection(props.path, selection);
-      return multiplied;
-    });
-    return x;
-  };
-
-  useEffect(() => {
-    let aws = new AwsClient({
-      accessKeyId: "kBcG6sCIlQvOWPOpzJhu",
-      secretAccessKey: "FjiprDl3qHwIMR7azM2M",
-      service: "s3",
-    });
-    let store = new S3Store(props.path, aws);
-
-    openGroup(store, "", "r")
-      .then(async (grp) => {
-        console.log("Loading group again");
-        setState({ store, data: (await grp.getItem("data")) as ZarrArray });
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }, [props.path]);
-
-  if (!state) {
-    return <></>;
-  }
 
   return (
     <XArrayContext.Provider
       value={{
-        ...state,
-        getChunk,
-        getSelection,
-        getAsRGBA,
         getSelectionAsImageData,
       }}
     >

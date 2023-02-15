@@ -43,6 +43,7 @@ import { PortProvider } from "./port/PortProvider";
 import { PortGuard } from "./port/PortGuard";
 import { DialogProvider } from "./layout/dialog/DialogProvider";
 import { CreateRepoDialog } from "./port/components/dialogs/CreateRepoDialog";
+import { XArrayProvider } from "./experimental/provider/provider";
 
 /* try {
   import("virtual:pwa-register")
@@ -132,40 +133,49 @@ export const ProtectedApp: React.FC<Props> = () => {
                                         <RequesterProvider>
                                           <MaterProvider>
                                             <AgentProvider>
-                                              <MikroDoer />
-                                              <DndProvider
-                                                options={HTML5toTouch}
-                                              >
-                                                <SelectionProvider>
-                                                  <DialogProvider
-                                                    registeredDialogs={{
-                                                      create: CreateRepoDialog,
-                                                    }}
-                                                  >
-                                                    <ToastContainer
-                                                      position="bottom-right"
-                                                      theme="dark"
-                                                    />
-                                                    <ComponentPreview
-                                                      text={"sdfsdf"}
-                                                    />
-                                                    <GeneralMenu />
-                                                    <NavigationActions />
-                                                    <SearchActions />
-                                                    <NodesExtension />
-                                                    <SelectionActions />
-                                                    <MentionListener />
-                                                    <div className="flex flex-col h-screen sm:flex-row-reverse">
-                                                      <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
-                                                        <Outlet />
+                                              <XArrayProvider>
+                                                <MikroDoer />
+                                                <DndProvider
+                                                  options={HTML5toTouch}
+                                                >
+                                                  <SelectionProvider>
+                                                    <DialogProvider
+                                                      registeredDialogs={{
+                                                        create:
+                                                          CreateRepoDialog,
+                                                      }}
+                                                    >
+                                                      <ToastContainer
+                                                        position="bottom-right"
+                                                        theme="dark"
+                                                      />
+                                                      <ComponentPreview
+                                                        text={"sdfsdf"}
+                                                      />
+                                                      <GeneralMenu />
+                                                      <NavigationActions />
+                                                      <SearchActions />
+                                                      <NodesExtension />
+                                                      <SelectionActions />
+                                                      <MentionListener />
+                                                      <div className="flex flex-col h-screen sm:flex-row-reverse">
+                                                        <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
+                                                          <React.Suspense
+                                                            fallback={
+                                                              <>Loading</>
+                                                            }
+                                                          >
+                                                            <Outlet />
+                                                          </React.Suspense>{" "}
+                                                        </div>
+                                                        <div className="flex-initial sm:flex-initial sm:static sm:w-20">
+                                                          <NavigationBar />
+                                                        </div>
                                                       </div>
-                                                      <div className="flex-initial sm:flex-initial sm:static sm:w-20">
-                                                        <NavigationBar />
-                                                      </div>
-                                                    </div>
-                                                  </DialogProvider>
-                                                </SelectionProvider>
-                                              </DndProvider>
+                                                    </DialogProvider>
+                                                  </SelectionProvider>
+                                                </DndProvider>
+                                              </XArrayProvider>
                                             </AgentProvider>
                                           </MaterProvider>
                                         </RequesterProvider>

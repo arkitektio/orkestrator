@@ -242,7 +242,7 @@ export const ShareModal: React.FC<{
                                     >
                                       X
                                     </button>
-                                  </div>
+                                 </div>
                                 )
                               )}
                               <button

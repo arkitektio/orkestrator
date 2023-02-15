@@ -92,6 +92,7 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
                   <ReturnWidgetsContainer
                     node={node_data.node}
                     returns={latestEvent.value}
+                    className="flex-1"
                   />
                 )}
               {latestEvent && latestEvent.type === RunEventType.Complete && (

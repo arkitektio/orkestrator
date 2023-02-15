@@ -36,7 +36,7 @@ const StructureReturnWidget: React.FC<ReturnWidgetProps> = ({
   if (!port.key) return <> Failure Key not specified </>;
 
   return (
-    <div>
+    <div className="flex flex-1">
       <label className="font-light" htmlFor={port.key}></label>
       {port.description && (
         <div id={`${port.key}-help`} className="text-xs mb-4 font-light">
@@ -47,7 +47,7 @@ const StructureReturnWidget: React.FC<ReturnWidgetProps> = ({
         <GlobalLink
           model={port.identifier}
           object={value}
-          className="font-light hover:bg-white"
+          className="font-light hover:bg-white w-full h-full"
         >
           {port.identifier === "@mikro/representation" && (
             <RepresentationWidget value={value} />

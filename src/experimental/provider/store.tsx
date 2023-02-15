@@ -54,6 +54,7 @@ export class S3Store extends HTTPStore {
     try {
       value = await this.aws.fetch(url, { ...this.fetchOptions, ...opts });
     } catch (e) {
+      console.log(e);
       throw new HTTPError("present");
     }
     if (value.status === 404) {

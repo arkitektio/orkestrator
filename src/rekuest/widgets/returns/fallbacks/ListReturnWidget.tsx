@@ -11,8 +11,10 @@ const ListReturnWidget: React.FC<ReturnWidgetProps> = ({
 
   return (
     <div className={className}>
+      haallo
       <label className="font-light" htmlFor={port.key}>
-        {port.label || port.key}
+        {port.label || port.key} hallo
+        {JSON.stringify(value)}
       </label>
       {port.description && (
         <div id={`${port.key}-help`} className="text-xs mb-4 font-light">

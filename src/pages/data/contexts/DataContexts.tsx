@@ -19,7 +19,9 @@ export const DataContexts: React.FC<DataExperimentsProps> = (props) => {
         />
       }
     >
-      <MyContexts />
+      <MyContexts limit={20} />
     </PageLayout>
   );
 };
+
+export default DataContexts;

@@ -47,9 +47,6 @@ export const HealthzProvider: React.FC<HealthzProviderProps> = (props) => {
         Promise.all(checks).then((values) => {
           let errors = values.filter((value) => value.error);
           console.log(errors);
-          if (errors.length > 0) {
-            setErrors(values);
-          }
         });
       } catch (e) {
         console.log(e);

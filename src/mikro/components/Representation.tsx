@@ -20,6 +20,7 @@ import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
 import { OptimizedImage } from "../../layout/OptimizedImage";
 import { PageLayout } from "../../layout/PageLayout";
+import { SaveParentSize } from "../../layout/SaveParentSize";
 import {
   Label,
   Metric,
@@ -245,27 +246,28 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
             )}
           </div>
         </div>
-        <div className="flex  @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">
+        <div className="flex @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">
           <div className="flex-1 max-w-2xl mt-2 rounded rounded-lg overflow-hidden">
-            <ParentSize debounceTime={800}>
-              {({ width, height }) => (
-                <>
-                  {data?.representation && (
-                    <ExperimentalFeature
-                      fallback={
-                        <ThumbnailCanvas
-                          rep={data?.representation}
-                          height={aspectRatio ? aspectRatio * width : height}
-                          width={width}
-                        />
-                      }
-                    >
-                      <TwoDOffcanvas representation={data?.representation} />
-                    </ExperimentalFeature>
-                  )}
-                </>
-              )}
-            </ParentSize>
+            {data?.representation && (
+              <ExperimentalFeature
+                fallback={
+                  <SaveParentSize debounceTime={800}>
+                    {({ width, height }) => (
+                      <ThumbnailCanvas
+                        rep={data?.representation}
+                        height={aspectRatio ? aspectRatio * width : height}
+                        width={width}
+                      />
+                    )}
+                  </SaveParentSize>
+                }
+              >
+                <TwoDOffcanvas
+                  representation={data?.representation}
+                  withRois={true}
+                />
+              </ExperimentalFeature>
+            )}
           </div>
           <div className="@container p-4 flex-1 bg-white border shadow mt-2 rounded">
             {data?.representation?.sample && (

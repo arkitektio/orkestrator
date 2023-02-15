@@ -20,7 +20,9 @@ export const DataLinks: React.FC<DataExperimentsProps> = (props) => {
         />
       }
     >
-      <MyModels />
+      <MyModels limit={20} />
     </PageLayout>
   );
 };
+
+export default DataLinks;

@@ -49,6 +49,7 @@ fragment DetailRepresentation on Representation {
   tags
   store
   createdAt
+  variety
   latestThumbnail {
     image
     majorColor

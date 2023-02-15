@@ -7,11 +7,14 @@ import { PageLayout } from "../../layout/PageLayout";
 import { useSettings } from "../../settings/settings-context";
 import { DebugScreen } from "../admin/DebugScreen";
 import { useExperimental } from "../../providers/experimental/context";
+import { available_color_maps } from "../../experimental/provider/provider";
+import { useFakts } from "@jhnnsrs/fakts";
 
 export interface SettingsHomeProps {}
 
 export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
   const { settings, setSettings } = useSettings();
+  const { fakts } = useFakts();
 
   return (
     <PageLayout>
@@ -62,12 +65,32 @@ export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
                     { label: "Blue", value: "blue" },
                   ]}
                 />
+                <SelectInputField
+                  name="defaultColormap"
+                  className="text-black"
+                  label="Image Colormap"
+                  description="Set the default for colors to true or false"
+                  options={available_color_maps.map((c) => ({
+                    label: c,
+                    value: c,
+                  }))}
+                />
+                <SelectInputField
+                  name="defaultMaskColormap"
+                  className="text-black"
+                  label="Mask Colormap"
+                  description="Set the default for colors to true or false"
+                  options={available_color_maps.map((c) => ({
+                    label: c,
+                    value: c,
+                  }))}
+                />
               </Form>
             )}
           </Formik>
         </div>
       </div>
-
+      <pre className="text-white">{JSON.stringify(fakts, null, 2)}</pre>
       <br />
       <DebugScreen />
     </PageLayout>

@@ -15,3 +15,5 @@ export const Data: React.FC<Props> = (props) => {
     </ModuleLayout>
   );
 };
+
+export default Data;

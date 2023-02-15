@@ -53,7 +53,6 @@ export const SelectField: React.FC<CustomSelectProps> = ({
     ? []
     : ("" as any);
 
-  console.log(defaultValue, initialValue, field, meta);
   return (
     <>
       <Select

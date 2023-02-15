@@ -1,0 +1,8 @@
+query Request {
+  request {
+    accessKey
+    secretKey
+    status
+    sessionToken
+  }
+}

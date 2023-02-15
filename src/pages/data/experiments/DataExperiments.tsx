@@ -23,3 +23,5 @@ export const DataExperiments: React.FC<DataExperimentsProps> = (props) => {
     </PageLayout>
   );
 };
+
+export default DataExperiments;
