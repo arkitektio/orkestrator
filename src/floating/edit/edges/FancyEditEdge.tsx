@@ -1,5 +1,5 @@
 import React from "react";
-import { getBezierPath } from "react-flow-renderer";
+import { getBezierPath } from "reactflow";
 import { FancyEdgeProps } from "../../types";
 
 export const FancyEditEdge: React.FC<FancyEdgeProps> = ({

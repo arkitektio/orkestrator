@@ -1952,7 +1952,7 @@ export type DetailUserLazyQueryHookResult = ReturnType<typeof useDetailUserLazyQ
 export type DetailUserQueryResult = Apollo.QueryResult<DetailUserQuery, DetailUserQueryVariables>;
 export const UserOptionsDocument = gql`
     query UserOptions($search: String) {
-  options: users(username: $search) {
+  options: users(search: $search) {
     value: id
     label: username
   }

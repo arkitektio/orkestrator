@@ -6,7 +6,7 @@ export interface DataPlotsProps {}
 export const DataPlots: React.FC<DataPlotsProps> = (props) => {
   return (
     <>
-      <MyPlots />
+      <MyPlots limit={10} />
     </>
   );
 };

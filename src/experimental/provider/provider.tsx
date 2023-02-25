@@ -9,6 +9,7 @@ import DownloadWorker from "../workers/download?worker";
 import { XArrayContext } from "./context";
 import { useRequestQuery } from "../../mikro/api/graphql";
 import { withMikro } from "../../mikro/MikroContext";
+import { RekuestGuard } from "../../rekuest/RekuestGuard";
 
 export const available_color_maps = [
   "jet",
@@ -57,7 +58,7 @@ export const available_color_maps = [
 
 export type AvailableColormap = typeof available_color_maps[number];
 
-export const XArrayProvider: React.FC<{
+export const TrueXArrayProvider: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
   const { data, loading, error } = withMikro(useRequestQuery)({});
@@ -126,5 +127,33 @@ export const XArrayProvider: React.FC<{
     >
       {props.children}
     </XArrayContext.Provider>
+  );
+};
+
+export const NoXArrayProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const failureFunc = async (...args: any[]): Promise<any> => {
+    console.log("No Postman Provider", args);
+    throw Error("No Postman Provider");
+  };
+  return (
+    <XArrayContext.Provider
+      value={{
+        getSelectionAsImageData: failureFunc,
+      }}
+    >
+      {children}
+    </XArrayContext.Provider>
+  );
+};
+
+export const XArrayProvider = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <RekuestGuard fallback={<NoXArrayProvider>{children}</NoXArrayProvider>}>
+      <TrueXArrayProvider>{children}</TrueXArrayProvider>
+    </RekuestGuard>
   );
 };

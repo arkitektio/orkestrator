@@ -18,7 +18,7 @@ export const DataExperiments: React.FC<DataExperimentsProps> = (props) => {
         />
       }
     >
-      <MyExperiments />
+      <MyExperiments limit={10} />
       <CreateExperimentModal setShow={setShow} show={show} />
     </PageLayout>
   );

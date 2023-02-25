@@ -31,6 +31,8 @@ export const PositionCanvas = ({
   height,
   width,
 }: StageCanvasProps & { height: number; width: number }) => {
+  console.log("P", positions);
+  if (positions.length === 0) return null;
   const bgref = React.useRef<HTMLCanvasElement>(null);
   const blurhashref = React.useRef<HTMLCanvasElement>(null);
   const roiref = React.useRef<HTMLCanvasElement>(null);
@@ -144,7 +146,7 @@ export const PositionCanvas = ({
               x={Xinterpolate(pos.x)}
               y={Yinterpolate(pos.y)}
               closed={true}
-              stroke="red"
+              stroke={highlight && highlight.includes(pos.id) ? "red" : "white"}
               strokeWidth={2}
               onClick={() => {
                 navigate(linkbuilder(pos.id));

@@ -1,6 +1,6 @@
 import React from "react";
 import "react-contexify/dist/ReactContexify.css";
-import { EdgeTypes, useEdgesState, useNodesState } from "react-flow-renderer";
+import { EdgeTypes, useEdgesState, useNodesState } from "reactflow";
 import "react-toastify/dist/ReactToastify.css";
 import { FlowFragment } from "../../fluss/api/graphql";
 import { Graph } from "../base/Graph";

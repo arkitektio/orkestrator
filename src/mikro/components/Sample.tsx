@@ -12,6 +12,7 @@ import { TextInputField } from "../../components/forms/fields/text_input";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { RepresentationCard } from "../../components/MyRepresentations";
 import { notEmpty } from "../../floating/utils";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Experiment, Representation } from "../../linker";
@@ -26,7 +27,6 @@ import {
   useUpdateSampleMutation,
 } from "../api/graphql";
 import { useMikro, withMikro } from "../MikroContext";
-import CommentSection from "./comments/CommentSection";
 
 export type ISampleProps = {
   id: string;
@@ -122,7 +122,7 @@ const Sample: React.FC<ISampleProps> = ({ id }) => {
     <PageLayout
       sidebar={
         <div className="p-5">
-          <CommentSection id={id} model={CommentableModels.GrunnlagSample} />
+          <MikroKomments id={id} model={CommentableModels.GrunnlagSample} />
         </div>
       }
       actions={<></>}

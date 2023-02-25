@@ -12,11 +12,12 @@ export const RepresentationWidget: React.FC<{ value: string }> = ({
 
   return (
     <ExperimentalFeature>
-      <div className="w-full h-full">
+      <div className="flex-grow">
         {data?.representation && (
           <TwoDOffcanvas
             representation={data?.representation}
             withRois={true}
+            follow={"width"}
           />
         )}
       </div>

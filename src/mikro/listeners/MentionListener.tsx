@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Timestamp from "react-timestamp";
 import { toast } from "react-toastify";
+import { Comment } from "../../komment/display/Comment";
 import {
   getDefaultSmartModel,
   getIdentifierForCommentableModel,
@@ -13,7 +14,6 @@ import {
   WatchMentionsSubscription,
   WatchMentionsSubscriptionVariables,
 } from "../api/graphql";
-import { Comment } from "../components/comments/CommentSection";
 import { withMikro } from "../MikroContext";
 
 export interface MentionListenerProps {}
@@ -37,11 +37,7 @@ export const MentionToast = (props: { mention: MentionCommentFragment }) => {
         >
           New Mention
           {props.mention.contentType && props.mention.objectId && (
-            <Comment
-              comment={props.mention}
-              model={props.mention.contentType}
-              id={`${props.mention.objectId}`}
-            />
+            <Comment comment={props.mention} />
           )}
         </Model.DetailLink>
       </div>

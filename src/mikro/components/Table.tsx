@@ -3,9 +3,9 @@ import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SectionTitle } from "../../layout/SectionTitle";
 import {
   ColumnFragment,
-  useDetailTableQuery,
-  DetailTableQueryVariables,
   CommentableModels,
+  DetailTableQueryVariables,
+  useDetailTableQuery,
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
 
@@ -13,19 +13,15 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { isNonEmptyArray } from "@apollo/client/utilities";
 import { Form, Formik } from "formik";
-import { TextInputField } from "../../components/forms/fields/text_input";
-import { ParagraphInputField } from "../../components/forms/fields/paragraph_input";
+import { CSVLink } from "react-csv";
 import { NumberInputField } from "../../components/forms/fields/number_input";
+import { TextInputField } from "../../components/forms/fields/text_input";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
-import { DiscussionSidebar } from "./comments/DiscussionSidebar";
-import CommentSection from "./comments/CommentSection";
 import { Representation } from "../../linker";
-import { CSVLink, CSVDownload } from "react-csv";
 
 type TableData = { [key: string]: any };
 
@@ -69,7 +65,7 @@ const Table: React.FC<ISampleProps> = ({ id }) => {
     <PageLayout
       sidebar={
         <div className="p-5">
-          <CommentSection id={id} model={CommentableModels.BordTable} />
+          <MikroKomments id={id} model={CommentableModels.BordTable} />
         </div>
       }
     >

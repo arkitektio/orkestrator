@@ -1,30 +1,25 @@
-import React, { useEffect } from "react";
 import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "herre";
-import { useMikro } from "../mikro/MikroContext";
-import result from "../mikro/api/fragments";
+import React, { useEffect } from "react";
 import { useRekuest } from "../rekuest";
+import result from "../rekuest/api/fragments";
 
-export const MikroAutoConfigure: React.FC<{}> = (props) => {
+export const RekuestAutoConfigure: React.FC<{}> = (props) => {
   const { configure } = useRekuest();
   const { token } = useHerre();
   const { fakts } = useFakts();
 
   useEffect(() => {
-    if (token && fakts.mikro) {
+    if (token && fakts.rekuest) {
       configure({
-        secure: fakts.mikro.secure,
-        datalayer: fakts.mikro.datalayer,
-        wsEndpointUrl: fakts.mikro.ws_endpoint_url,
-        endpointUrl: fakts.mikro.endpoint_url,
+        secure: fakts.rekuest.secure,
+        wsEndpointUrl: fakts.rekuest.ws_endpoint_url,
+        agent: fakts.rekuest.agent,
+        postman: fakts.rekuest.postman,
+
+        endpointUrl: fakts.rekuest.endpoint_url,
         possibleTypes: result.possibleTypes,
         retrieveToken: () => token,
-        s3resolve: (path?: string | null) => {
-          if (path) {
-            return `${fakts.mikro.datalayer?.endpoint_url}${path}`;
-          }
-          return "fallback";
-        },
       });
     }
   }, [token, fakts]);

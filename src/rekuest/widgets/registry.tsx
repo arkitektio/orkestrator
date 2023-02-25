@@ -1,9 +1,10 @@
 import { Maybe } from "graphql/jsutils/Maybe";
 import React from "react";
-import { ArgPortFragment, PortKind, ReturnPortFragment } from "../api/graphql";
+import { PortFragment, PortKind } from "../api/graphql";
 import {
   InputWidgetProps,
   InputWidgetTypes,
+  Port,
   ReturnWidgetProps,
   ReturnWidgetTypes,
   RunQueryFunc,
@@ -14,7 +15,7 @@ export const UnknownInputWidget: React.FC<InputWidgetProps> = ({ port }) => {
   return (
     <div className="text-xl bg-red-200">
       Registry error! No assign Widget registered for: {port.kind} and{" "}
-      {port?.widget?.__typename || "unset widget"}
+      {port?.assignWidget?.__typename || "unset widget"}
     </div>
   );
 };
@@ -26,7 +27,7 @@ export const UnknownReturnWidget: React.FC<ReturnWidgetProps> = ({
   return (
     <div className="text-xl bg-red-200">
       Registry error! No assign Widget registered for: {port.kind} and{" "}
-      {port?.widget?.__typename || "unset widget"}
+      {port?.returnWidget?.__typename || "unset widget"}
       {JSON.stringify(port)}
     </div>
   );
@@ -90,10 +91,10 @@ export class WidgetRegistry {
   }
 
   public getInputWidgetForPort(
-    port?: Maybe<ArgPortFragment>,
+    port: Port,
     allowFallback: boolean = true
   ): React.FC<InputWidgetProps> {
-    if (!port?.widget?.__typename) {
+    if (!port?.assignWidget?.__typename) {
       return (
         (port?.kind &&
           allowFallback &&
@@ -103,7 +104,8 @@ export class WidgetRegistry {
     }
 
     return (
-      this.typeInputWidgetMap[port?.widget?.__typename] || UnknownInputWidget
+      this.typeInputWidgetMap[port?.assignWidget?.__typename] ||
+      UnknownInputWidget
     );
   }
 
@@ -122,10 +124,10 @@ export class WidgetRegistry {
   }
 
   public getReturnWidgetForPort(
-    port?: Maybe<ReturnPortFragment>,
+    port: Port,
     allowFallback: boolean = true
   ): React.FC<ReturnWidgetProps<any>> {
-    if (!port?.widget?.__typename) {
+    if (!port?.returnWidget?.__typename) {
       return (
         (port?.kind &&
           allowFallback &&
@@ -135,7 +137,8 @@ export class WidgetRegistry {
     }
 
     return (
-      this.typeReturnWidgetMap[port?.widget?.__typename] || UnknownReturnWidget
+      this.typeReturnWidgetMap[port?.returnWidget?.__typename] ||
+      UnknownReturnWidget
     );
   }
 }

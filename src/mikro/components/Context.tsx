@@ -1,40 +1,18 @@
-import { Form, Formik } from "formik";
-import React, { useState } from "react";
-import { BsPinAngle, BsPinFill, BsTrash } from "react-icons/bs";
-import { useNavigate } from "react-router";
-import Timestamp from "react-timestamp";
+import React from "react";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { ParagraphInputField } from "../../components/forms/fields/paragraph_input";
-import { CreateableSearchSelect } from "../../components/forms/fields/search_select_input";
-import { TextInputField } from "../../components/forms/fields/text_input";
-import { DropZone } from "../../components/layout/DropZone";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SelfActions } from "../../components/SelfActions";
-import { notEmpty } from "../../floating/utils";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Link, MikroFile, Model, Sample } from "../../linker";
+import { Link, Model } from "../../linker";
 import {
   CommentableModels,
-  DetailExperimentDocument,
-  UpdateExperimentMutationVariables,
-  useDeleteSampleMutation,
-  useDetailExperimentQuery,
-  usePinExperimentMutation,
-  useTagSearchLazyQuery,
-  useUpdateExperimentMutation,
-  useAssociateSamplesMutation,
-  useAssociateFilesMutation,
-  useUnassociateFilesMutation,
-  useUnassociateSamplesMutation,
-  useUploadOmeroFileMutation,
-  DetailExperimentQuery,
   useDetailContextQuery,
+  usePinExperimentMutation,
+  useUpdateExperimentMutation,
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
-import CommentSection from "./comments/CommentSection";
-import { UploadZone } from "./UploadZone";
 
 export type IExperimentProps = {
   id: string;
@@ -54,7 +32,7 @@ const Context: React.FC<IExperimentProps> = ({ id }) => {
     <PageLayout
       sidebar={
         <div className="p-5">
-          <CommentSection id={id} model={CommentableModels.GrunnlagContext} />
+          <MikroKomments id={id} model={CommentableModels.GrunnlagContext} />
         </div>
       }
       actions={<SelfActions type="@mikro/context" object={id} />}

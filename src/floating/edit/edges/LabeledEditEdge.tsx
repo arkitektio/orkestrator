@@ -1,5 +1,5 @@
 import React from "react";
-import { useNodes, BezierEdge } from "react-flow-renderer";
+import { useNodes, BezierEdge, getSmoothStepPath } from "reactflow";
 import { StreamKind } from "../../../fluss/api/graphql";
 import { LabeledEdgeProps } from "../../types";
 import { useEditRiver } from "../context";
@@ -32,25 +32,14 @@ export const LabeledEditEdge: React.FC<LabeledEdgeProps> = (props) => {
 
   const nodes = useNodes();
 
-  const getSmartEdgeResponse = getSmartEdge({
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourcePosition,
     targetPosition,
     sourceX,
     sourceY,
     targetX,
     targetY,
-    nodes,
-    options: {
-      drawEdge: svgDrawStraightLinePath,
-      generatePath: pathfindingJumpPointNoDiagonal,
-    },
   });
-
-  if (getSmartEdgeResponse === null) {
-    return <BezierEdge {...props} />;
-  }
-
-  const { edgeCenterX, edgeCenterY, svgPathString } = getSmartEdgeResponse;
 
   return (
     <>
@@ -58,9 +47,7 @@ export const LabeledEditEdge: React.FC<LabeledEdgeProps> = (props) => {
         id={id}
         style={style}
         className="react-flow__edge-path"
-        d={svgPathString}
-        markerEnd={markerEnd}
-        markerStart={markerStart}
+        d={edgePath}
       />
       <text>
         <textPath
@@ -71,14 +58,14 @@ export const LabeledEditEdge: React.FC<LabeledEdgeProps> = (props) => {
           className="group"
         ></textPath>
       </text>
-      <foreignObject x={edgeCenterX} y={edgeCenterY} width={150} height={150}>
+      <foreignObject x={labelX} y={labelY} width={150} height={150}>
         <div className="flex group">
           <div
-            className="relative m-auto hover:bg-gray-500 bg-gray-800 border-[#555] border rounded-lg shadow-lg p-1 cursor-pointer select-none text-gray-400  hover:text-gray-200 flex-col flex  transition-all duration-500 ease-in-out"
+            className="relative m-auto hover:bg-gray-500 bg-gray-800 border-[#555] border rounded-lg shadow-lg p-1 cursor-pointer select-none text-gray-400 left[-75px] hover:text-gray-200 flex-col flex  transition-all duration-500 ease-in-out"
             style={{ fontSize: "13px", fill: "white" }}
           >
-            {data?.stream.map((item) => (
-              <span className="text-xs">
+            {data?.stream.map((item, index) => (
+              <span className="text-xs" key={index}>
                 {(item?.kind == StreamKind.List
                   ? "[ " + item?.child?.identifier + " ]" || item?.kind
                   : item?.identifier || item?.kind) +

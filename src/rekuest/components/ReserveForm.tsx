@@ -24,6 +24,7 @@ import {
 import { withRekuest } from "../RekuestContext";
 import { useWidgetRegistry } from "../widgets/widget-context";
 import { StatusPulse } from "./generic/StatusPulse";
+import { ReserveParamsField } from "./ReserveParamsField";
 
 export type ReserveFormProps = {
   initial: ReserveMutationVariables;
@@ -86,39 +87,6 @@ const ReserveForm: React.FC<ReserveFormProps> = ({ initial, onSubmit }) => {
     fetchPolicy: "network-only",
   });
 
-  const [selectedTemplate, setSelectedTemplates] = useState<string[]>([]);
-  const [selectedClients, setSelectedClients] = useState<string[]>([]);
-  const [selectedProvisions, setSelectedProvisions] = useState<string[]>([]);
-
-  const restructuredData = data?.reservableTemplates?.filter(notEmpty).reduce<
-    {
-      clientId: string;
-      templates: ReservableTemplateFragment[];
-    }[]
-  >((prev, current) => {
-    if (current?.agent?.registry?.client) {
-      const app = current.agent?.registry?.client;
-
-      let prev_app = prev.find(
-        (predicate) => predicate.clientId === app.clientId
-      );
-      if (prev_app) {
-        return prev.map((p) =>
-          p.clientId === app.clientId
-            ? {
-                ...p,
-                templates: [...p.templates, current],
-              }
-            : p
-        );
-      } else {
-        return [...prev, { ...app, templates: [current] }];
-      }
-    }
-
-    return prev;
-  }, []);
-
   const {
     settings: { allowAutoRequest },
   } = useSettings();
@@ -139,65 +107,13 @@ const ReserveForm: React.FC<ReserveFormProps> = ({ initial, onSubmit }) => {
       {(formikProps) => (
         <Form>
           <div className="mt-2 align-left text-left @container">
-            <div className="text-bold">Apps you can use </div>
-            <div className=" p-2">
-              <ResponsiveContainerGrid>
-                {restructuredData?.map((app) => (
-                  <div
-                    key={app.clientId}
-                    className={`border border-1 rounded rounded-md p-2 flex flex-col bg-gray-300  @container ${
-                      selectedClients.includes(app.clientId)
-                        ? "ring-primary-400 ring-2"
-                        : "hover:ring-primary-200 hover:ring-2"
-                    }  cursor-pointer`}
-                    onClick={() =>
-                      setSelectedClients((list) =>
-                        list.includes(app.clientId)
-                          ? list.filter((t) => t != app.clientId)
-                          : [...list, app.clientId]
-                      )
-                    }
-                  >
-                    <App clientId={app.clientId} />
+            {data?.reservableTemplates && (
+              <ReserveParamsField
+                name="binds"
+                templates={data?.reservableTemplates.filter(notEmpty)}
+              />
+            )}
 
-                    <ResponsiveContainerGrid>
-                      {app.templates.map((template) => (
-                        <div
-                          key={template.id}
-                          className={`flex flex-row @container justify-between p-1 rounded rounded-md ${
-                            selectedTemplate.includes(template.id)
-                              ? "ring-primary-400 ring-2"
-                              : "hover:ring-primary-200 hover:ring-2"
-                          }  cursor-pointer`}
-                          onClick={(e) => {
-                            setSelectedTemplates((list) =>
-                              list.includes(template.id)
-                                ? list.filter((t) => t != template.id)
-                                : [...list, template.id]
-                            );
-                            e.stopPropagation();
-                          }}
-                        >
-                          {template?.agent?.registry?.user?.sub && (
-                            <UserImage
-                              sub={template?.agent?.registry?.user?.sub}
-                            />
-                          )}
-                          <label className="my-auto text-sm font-medium text-gray-700">
-                            {template.agent.instanceId}
-                          </label>
-                          <label className="my-auto text-sm font-medium text-gray-700">
-                            {template.agent.status && (
-                              <StatusPulse status={template.agent.status} />
-                            )}
-                          </label>
-                        </div>
-                      ))}
-                    </ResponsiveContainerGrid>
-                  </div>
-                ))}
-              </ResponsiveContainerGrid>
-            </div>
             <div className="mt-2">
               <TextInputField
                 name="title"

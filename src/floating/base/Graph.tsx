@@ -4,7 +4,7 @@ import ReactFlow, {
   EdgeTypes,
   ReactFlowProps,
   ReactFlowProvider,
-} from "react-flow-renderer";
+} from "reactflow";
 import "react-toastify/dist/ReactToastify.css";
 import { FlowEdge, FlowNode, NodeTypes } from "../types";
 import { ColouredMiniMap } from "./ColouredMiniMap";

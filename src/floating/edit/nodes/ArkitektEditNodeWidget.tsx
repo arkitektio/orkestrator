@@ -2,23 +2,30 @@ import { introspectionFromSchema } from "graphql";
 import React, { useEffect, useState } from "react";
 import { animation, Item, Menu, Separator } from "react-contexify";
 import "react-contexify/dist/ReactContexify.css";
-import { Handle, Position } from "react-flow-renderer";
+import { Handle, Position, ReactFlowState, useStore } from "reactflow";
 import ReactTooltip from "react-tooltip";
 import { withRekuest } from "../../../rekuest";
 import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
-import { ArkitektNodeProps } from "../../types";
+import { ArkitektNodeProps, ConnState, FlowNode } from "../../types";
 import { notEmpty, port_to_type as port_to_kind } from "../../utils";
 import { useEditRiver } from "../context";
 import { additional, NodeEditLayout } from "./layout/NodeEdit";
+import { handle_to_index } from "../logic/connect";
+import { boolean } from "yup";
+import { useArkitektConnState } from "../hooks/useArkitektConnState";
 
 export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
-  ({ data, id }) => {
-    const { updateNodeIn, updateNodeOut, updateNodeExtras } = useEditRiver();
+  ({ data, id, isConnectable }) => {
+    const { updateNodeIn, updateNodeOut, updateNodeExtras, nodes } =
+      useEditRiver();
+
     const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
       variables: { hash: data.hash },
     });
+
+    const conState = useArkitektConnState(id, nodes);
 
     useEffect(() => {
       if (node_data) {
@@ -94,6 +101,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
       <NodeEditLayout
         id={id}
         color={node_data?.node?.kind === NodeKind.Function ? "pink" : "red"}
+        connState={conState}
       >
         {data.instream.map((s, index) => (
           <Handle
@@ -119,6 +127,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
                 : "Event"
             }
             data-for={"tooltip"}
+            isConnectable={conState.isConnectable}
           ></Handle>
         ))}
         {data.outstream.map((s, index) => (
@@ -144,6 +153,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
                 : "Event"
             }
             data-for={"tooltip"}
+            isConnectable={conState.isConnectable}
           />
         ))}
         <div className="flex flex-row w-full truncate overflow-ellipsis">

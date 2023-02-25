@@ -25,8 +25,9 @@ import {
 export type ArkitektProps = { children: React.ReactNode; instanceId?: string };
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { withRekuest } from "../RekuestContext";
+import { RekuestGuard } from "../RekuestGuard";
 
-export const AgentProvider: React.FC<ArkitektProps> = ({
+export const TrueAgentProvider: React.FC<ArkitektProps> = ({
   children,
   instanceId = "main",
 }) => {
@@ -218,5 +219,33 @@ export const AgentProvider: React.FC<ArkitektProps> = ({
     >
       {children}
     </AgentContext.Provider>
+  );
+};
+
+const NoAgentProvider = ({ children }: { children: React.ReactNode }) => {
+  const failureFunc = async (...args: any[]): Promise<any> => {
+    console.log("No Postman Provider", args);
+    throw Error("No Postman Provider");
+  };
+
+  return (
+    <AgentContext.Provider
+      value={{
+        register: failureFunc,
+        unregister: failureFunc,
+        setProvide: failureFunc,
+        provide: false,
+      }}
+    >
+      {children}
+    </AgentContext.Provider>
+  );
+};
+
+export const AgentProvider = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <RekuestGuard fallback={<NoAgentProvider>{children}</NoAgentProvider>}>
+      <TrueAgentProvider>{children}</TrueAgentProvider>
+    </RekuestGuard>
   );
 };

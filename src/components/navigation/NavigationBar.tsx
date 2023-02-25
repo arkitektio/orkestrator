@@ -7,6 +7,11 @@ import { IconContext } from "react-icons/lib";
 import { TbLayoutDashboard } from "react-icons/tb";
 import { TiFlowSwitch } from "react-icons/ti";
 import { NavLink } from "react-router-dom";
+import { FlussGuard } from "../../fluss/guard";
+import { ManGuard } from "../../lok/guard";
+import { MikroGuard } from "../../mikro/MikroGuard";
+import { PortGuard } from "../../port/PortGuard";
+import { RekuestGuard } from "../../rekuest/RekuestGuard";
 import { Logo } from "./Logo";
 import "./styles.css";
 import { UserIcon } from "./UserIcon";
@@ -48,26 +53,73 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             />
           </NavLink>
         </div>
+
         <IconContext.Provider
           value={{
             size: "2.6em",
             style: { stroke: "1px" },
           }}
         >
-          {navigation.map((item) => (
+          <MikroGuard>
             <NavLink
-              key={item.name}
-              to={item.href}
+              key={"Data"}
+              to={"mikro"}
               className={({ isActive }) =>
-                ` dark:hover:text-back-500 px-2 py-2 ${
-                  !item.sm && "hidden md:block"
+                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
                 } ${isActive ? "dark:text-back-500" : "text-back-400"}`
               }
             >
-              {item.icon}
+              <BiData />
             </NavLink>
-          ))}
-
+          </MikroGuard>
+          <RekuestGuard>
+            <NavLink
+              key={"Dashboard"}
+              to={"rekuest"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-500" : "text-back-400"}`
+              }
+            >
+              <TbLayoutDashboard />
+            </NavLink>
+          </RekuestGuard>
+          <FlussGuard>
+            <NavLink
+              key={"Flows"}
+              to={"fluss"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
+                 ${isActive ? "dark:text-back-500" : "text-back-400"}`
+              }
+            >
+              <TiFlowSwitch />
+            </NavLink>
+          </FlussGuard>
+          <PortGuard>
+            <NavLink
+              key={"Port"}
+              to={"port"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
+                 ${isActive ? "dark:text-back-500" : "text-back-400"}`
+              }
+            >
+              <GrDocker />
+            </NavLink>
+          </PortGuard>
+          <ManGuard>
+            <NavLink
+              key={"Teams"}
+              to={"lok"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
+                 ${isActive ? "dark:text-back-500" : "text-back-400"}`
+              }
+            >
+              <AiOutlineTeam />
+            </NavLink>
+          </ManGuard>
           <NavLink
             to={"/user/settings"}
             className={({ isActive }) =>

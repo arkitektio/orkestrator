@@ -53,17 +53,17 @@ export const ArgNodeSidebar = (props: SidebarProps<FlowNode<ArgNodeData>>) => {
                         label="label"
                         description="Human readable label for the port"
                       />
-                      {arg?.widget?.kind && (
+                      {arg?.assignWidget?.kind && (
                         <SelectInputField
                           options={widget_options}
-                          name={`widget.kind`}
-                          label="label"
-                          description="Human readable label for the port"
+                          name={`assignWidget.kind`}
+                          label="Widget Type"
+                          description="Which Widget should we use for this?"
                         />
                       )}
-                      {arg?.widget?.kind == "SearchWidget" && (
+                      {arg?.assignWidget?.kind == "SearchWidget" && (
                         <ParagraphInputField
-                          name={`widget.query`}
+                          name={`assignWidget.query`}
                           label="Query"
                           description="Human readable query for the port"
                         />

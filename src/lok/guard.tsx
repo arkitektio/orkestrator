@@ -10,7 +10,7 @@ export const ManGuard: React.FC<{
 
   if (client) return <>{children}</>;
 
-  return <>{fallback || `Not yet with Lok`}</>;
+  return <>{fallback}</>;
 };
 
 export const manGuarded = (

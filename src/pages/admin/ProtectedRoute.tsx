@@ -2,9 +2,9 @@ import React from "react";
 import { Route, RouteProps } from "react-router";
 import { useHerre } from "herre";
 
-export interface IProtectedRouteProps extends RouteProps {
+export type IProtectedRouteProps = RouteProps & {
   roles: [string];
-}
+};
 
 const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
   roles,

@@ -1,9 +1,8 @@
 import { Maybe } from "graphql/jsutils/Maybe";
 import {
-  ArgPortFragment,
+  PortFragment,
   ChildPortFragment,
   PortKind,
-  ReturnPortFragment,
 } from "../rekuest/api/graphql";
 import {
   EdgeInput,
@@ -37,9 +36,7 @@ export const childport_to_stream = (
   identifier: port?.identifier,
 });
 
-export const port_to_stream = (
-  port: Maybe<ArgPortFragment> | Maybe<ReturnPortFragment>
-): StreamItem => {
+export const port_to_stream = (port: PortFragment): StreamItem => {
   return {
     key: port?.key || "unknown",
     kind: (port?.kind as unknown as StreamKind) || StreamKind.Unset,

@@ -1,18 +1,14 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { isVoidExpression } from "typescript";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { RoiCanvas } from "../../components/RoiCanvas";
 import { SelfActions } from "../../components/SelfActions";
 import { notEmpty } from "../../floating/utils";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { Representation } from "../../linker";
 import { CommentableModels, useDetailRoiQuery } from "../api/graphql";
 import { withMikro } from "../MikroContext";
 import { RepresentationCard } from "./cards/RepresentationCard";
-import CommentSection from "./comments/CommentSection";
-import { DiscussionSidebar } from "./comments/DiscussionSidebar";
 
 export type ISampleProps = {
   id: string;
@@ -28,7 +24,7 @@ const Roi: React.FC<ISampleProps> = ({ id }) => {
       actions={<SelfActions type={"@mikro/roi"} object={id} />}
       sidebar={
         <div className="p-5">
-          <CommentSection id={id} model={CommentableModels.GrunnlagRoi} />
+          <MikroKomments id={id} model={CommentableModels.GrunnlagRoi} />
         </div>
       }
     >

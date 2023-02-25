@@ -6,6 +6,15 @@
       }
       const result: PossibleTypesResultData = {
   "possibleTypes": {
+    "CommentNode": [
+      "MentionDescendent",
+      "ParagraphDescendent"
+    ],
+    "Descendent": [
+      "Leaf",
+      "MentionDescendent",
+      "ParagraphDescendent"
+    ],
     "FlowEdge": [
       "FancyEdge",
       "LabeledEdge"

@@ -1,13 +1,8 @@
 import React, { useEffect } from "react";
 import "react-contexify/dist/ReactContexify.css";
-import { Handle, Position, useReactFlow } from "react-flow-renderer";
-import ReactTooltip from "react-tooltip";
-import { withLayout } from "../../base/node/layout";
-import { ReactiveNodeProps } from "../../types";
-import { NodeEditLayout } from "./layout/NodeEdit";
-import { useUpdateNodeInternals } from "react-flow-renderer";
+import { Handle, Position, useUpdateNodeInternals } from "reactflow";
 import { ReactiveImplementationModelInput } from "../../../fluss/api/graphql";
-import { useEditRiver } from "../context";
+import { ReactiveNodeProps } from "../../types";
 
 const bigWidth = 300;
 

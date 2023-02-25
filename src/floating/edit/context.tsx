@@ -1,11 +1,10 @@
 import React, { useContext } from "react";
 import {
-  ArgPortFragment,
+  PortFragment,
   ArkitektNodeFragment,
   FlowFragment,
   GlobalFragment,
   ReactiveNodeFragment,
-  ReturnPortFragment,
 } from "../../fluss/api/graphql";
 
 import { RiverMode, FlowNode, FlowEdge } from "../types";
@@ -18,8 +17,8 @@ export type EditRiverContextType = {
   updateNodeExtras: (id: string, extras: any) => void;
   setDiagramError: (error: string) => void;
   saveDiagram: () => void;
-  setArgs: (args: (ArgPortFragment | null)[]) => void;
-  setReturns: (args: (ReturnPortFragment | null)[]) => void;
+  setArgs: (args: (PortFragment | null)[]) => void;
+  setReturns: (args: (PortFragment | null)[]) => void;
   setNodeError: (id: string, error: string) => void;
   addGlobal: (global: GlobalFragment) => void;
   updateGlobal: (key: string, global: GlobalFragment) => void;
@@ -29,10 +28,11 @@ export type EditRiverContextType = {
   flow: FlowFragment;
   nodes: FlowNode[];
   edges: FlowEdge[];
-  args: (ArgPortFragment | null)[];
-  returns: (ReturnPortFragment | null)[];
+  args: (PortFragment | null)[];
+  returns: (PortFragment | null)[];
+  internalSignal: boolean;
   saving: boolean;
-  selectedNode?: FlowNode | null;
+  selectedNode?: string;
 };
 
 export const EditRiverContext = React.createContext<EditRiverContextType>({

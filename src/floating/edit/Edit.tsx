@@ -6,35 +6,34 @@ import {
   EdgeTypes,
   Position,
   ReactFlowInstance,
+  ReactFlowProvider,
   updateEdge,
   useEdgesState,
   useNodesState,
-} from "react-flow-renderer";
+} from "reactflow";
 import "react-toastify/dist/ReactToastify.css";
 import { v4 as uuidv4 } from "uuid";
+import { useAlert } from "../../components/alerter/alerter-context";
+import {
+  ArkitektNodeFragment,
+  CommentableModels,
+  FlowFragment,
+  GlobalFragment,
+  GraphInput,
+  MapStrategy,
+  PortFragment,
+  PortInput,
+  ReactiveNodeFragment,
+  ReactiveTemplateDocument,
+  ReactiveTemplateQuery,
+} from "../../fluss/api/graphql";
+import { useFluss } from "../../fluss/fluss-context";
 import {
   DetailNodeDocument,
   DetailNodeQuery,
   NodeKind,
 } from "../../rekuest/api/graphql";
 import { useRekuest } from "../../rekuest/RekuestContext";
-import { useAutoSelect } from "../../rekuest/selection/context";
-import { useAlert } from "../../components/alerter/alerter-context";
-import {
-  ArgPortFragment,
-  ArgPortInput,
-  ArkitektNodeFragment,
-  FlowFragment,
-  GlobalFragment,
-  GraphInput,
-  MapStrategy,
-  ReactiveNodeFragment,
-  ReactiveTemplateDocument,
-  ReactiveTemplateQuery,
-  ReturnPortFragment,
-  ReturnPortInput,
-} from "../../fluss/api/graphql";
-import { useFluss } from "../../fluss/fluss-context";
 import { Graph } from "../base/Graph";
 import { ConnectionMap, FlowNode, NodeTypes } from "../types";
 import {
@@ -60,11 +59,12 @@ import { ReactiveEditNodeWidget } from "./nodes/ReactiveEditNodeWidget";
 
 import dagre from "dagre";
 import { useDrop } from "react-dnd";
+import { ModuleLayout } from "../../layout/ModuleLayout";
 import { PageLayout } from "../../layout/PageLayout";
+import FlowDiagramSidebar from "../../pages/flows/workspace/FlowDiagramSidebar";
 import { ColouredMiniMap } from "../base/ColouredMiniMap";
 import { DynamicSidebar } from "./DynamicSidebar";
-import { ModuleLayout } from "../../layout/ModuleLayout";
-import FlowDiagramSidebar from "../../pages/flows/workspace/FlowDiagramSidebar";
+import { FlussKomments } from "../../komment/FlussKomments";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektEditNodeWidget,
@@ -153,30 +153,15 @@ const getLayoutedElements = (
   return { nodes, edges };
 };
 
-export const argport_to_input = (port: ArgPortFragment): ReturnPortInput => {
+export const port_to_input = (port: PortFragment): PortInput => {
   return {
     key: port.key,
     name: port.name,
     kind: port.kind,
     label: port.label,
     identifier: port.identifier,
-    widget: port.widget
-      ? { query: port.widget.query, kind: port.widget.kind }
-      : null,
-    nullable: port.nullable,
-  };
-};
-
-export const returnport_to_input = (port: ReturnPortFragment): ArgPortInput => {
-  return {
-    key: port.key,
-    name: port.name,
-    kind: port.kind,
-    label: port.label,
-    identifier: port.identifier,
-    widget: port.widget
-      ? { query: port.widget.query, kind: port.widget.kind }
-      : null,
+    assignWidget: port.assignWidget,
+    returnWidget: port.returnWidget,
     nullable: port.nullable,
   };
 };
@@ -188,7 +173,8 @@ export const EditRiver: React.FC<Props> = ({
 }) => {
   const { client: arkitektapi } = useRekuest();
   const { client: flussapi } = useFluss();
-  const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null);
+  const [selectedNode, setSelectedNode] = useState<string>();
+  const [internalSignal, setInternalSignal] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
 
@@ -220,7 +206,7 @@ export const EditRiver: React.FC<Props> = ({
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: FlowNode) => {
-    setSelectedNode(node);
+    setSelectedNode(node.id);
   }, []);
 
   const onConnect = (params: Connection) => {
@@ -299,7 +285,7 @@ export const EditRiver: React.FC<Props> = ({
     );
     setEdges((edg) => edg.filter((el) => el.target !== id));
     console.log("update node", id, instream);
-    setSelectedNode((selectedNode) => selectedNode);
+    setInternalSignal(!internalSignal);
   };
 
   const updateNodeExtras = (id: string, data: any) => {
@@ -307,6 +293,7 @@ export const EditRiver: React.FC<Props> = ({
       els.map((el) => (el.id === id ? { ...el, data: { ...data } } : el))
     );
     console.log("Updating Node Extras for", id);
+    setInternalSignal(!internalSignal);
   };
 
   const updateNodeOut = (id: string, outstream: any) => {
@@ -319,6 +306,7 @@ export const EditRiver: React.FC<Props> = ({
     );
     setEdges((edg) => edg.filter((el) => el.source !== id));
     console.log("update node", id, outstream);
+    setInternalSignal(!internalSignal);
   };
 
   const removeEdge = (id: string) => {
@@ -419,7 +407,8 @@ export const EditRiver: React.FC<Props> = ({
                           event?.data?.node?.args
                             ?.filter(
                               (x) => !x?.nullable && x?.default == undefined
-                            )
+                            ) // by default, all nullable and default values are optional so not part of stream
+                            .filter(notEmpty)
                             .map(port_to_stream) || [],
                         ],
                         mapStrategy: MapStrategy.Map,
@@ -429,7 +418,9 @@ export const EditRiver: React.FC<Props> = ({
                         yieldTimeout: 2000,
                         reserveTimeout: 2000,
                         outstream: [
-                          event?.data?.node?.returns?.map(port_to_stream) || [],
+                          event?.data?.node?.returns
+                            ?.filter(notEmpty)
+                            .map(port_to_stream) || [],
                         ],
                         constream: [],
                         name: event.data?.node?.name || "no-name",
@@ -498,6 +489,7 @@ export const EditRiver: React.FC<Props> = ({
         setDiagramError: (error: any) => {
           return;
         },
+        internalSignal,
         setLayout: onLayout,
         addGlobal,
         updateGlobal,
@@ -527,12 +519,38 @@ export const EditRiver: React.FC<Props> = ({
           {
             label: "Versions",
             key: "versions",
-            content: <FlowDiagramSidebar workspace={flow.workspace.id} />,
+            content: (
+              <>
+                {flow?.workspace?.id && (
+                  <FlowDiagramSidebar workspace={flow.workspace.id} />
+                )}
+              </>
+            ),
           },
         ]}
       >
         <PageLayout
-          sidebar={<DynamicSidebar />}
+          sidebars={[
+            {
+              label: "Node",
+              key: "node",
+              content: <DynamicSidebar />,
+            },
+            {
+              label: "Social",
+              key: "social",
+              content: (
+                <div className="p-3">
+                  {flow.workspace?.id && (
+                    <FlussKomments
+                      model={CommentableModels.FlowWorkspace}
+                      id={flow.workspace?.id}
+                    />
+                  )}
+                </div>
+              ),
+            },
+          ]}
           actions={<EditActions flow={flow} />}
         >
           <div
@@ -550,15 +568,13 @@ export const EditRiver: React.FC<Props> = ({
                 onConnect={onConnect}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
-                onNodeClick={(e, n) => setSelectedNode(n)}
+                onNodeClick={(e, n) => setSelectedNode(n.id)}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onInit={(e) => setReactFlowInstance(e)}
                 fitView
                 attributionPosition="top-right"
-              >
-                <ColouredMiniMap />
-              </Graph>
+              ></Graph>
             </div>
           </div>
         </PageLayout>

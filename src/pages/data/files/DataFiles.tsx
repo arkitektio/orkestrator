@@ -7,7 +7,7 @@ export interface DataFilesProps {}
 export const DataFiles: React.FC<DataFilesProps> = (props) => {
   return (
     <PageLayout>
-      <MyFiles />
+      <MyFiles limit={20} />
     </PageLayout>
   );
 };

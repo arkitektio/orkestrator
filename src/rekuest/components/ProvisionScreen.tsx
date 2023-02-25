@@ -126,6 +126,7 @@ export const DetailProvision: React.FC<{ id: string }> = ({ id }) => {
           <span className="ml-3">
             Provision for {data?.provision?.template?.node?.name}
           </span>
+          {data?.provision?.statusmessage}
         </div>
         <div className="flex-initial max-w-md">
           <div className="flex flex-col bg-gray-700 text-white rounded p-5 mt-2">

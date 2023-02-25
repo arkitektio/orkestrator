@@ -1,6 +1,6 @@
 import React from "react";
 import "react-contexify/dist/ReactContexify.css";
-import { Handle, Position } from "react-flow-renderer";
+import { Handle, Position } from "reactflow";
 import ReactTooltip from "react-tooltip";
 import { withLayout } from "../../base/node/layout";
 import { ReactiveNodeProps } from "../../types";

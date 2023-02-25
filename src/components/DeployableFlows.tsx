@@ -6,10 +6,11 @@ import { SectionTitle } from "../layout/SectionTitle";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 import { NodeCard } from "./MyNodes";
 import { withRekuest } from "../rekuest";
+import { rekuestGuarded } from "../rekuest/RekuestGuard";
 
 export type IMyNodesProps = {};
 
-const DeployableFlows: React.FC<IMyNodesProps> = ({}) => {
+const DeployableFlows: React.FC<IMyNodesProps> = rekuestGuarded(({}) => {
   const { data, loading, subscribeToMore } = withRekuest(useNodesQuery)({
     pollInterval: 30000,
     variables: {
@@ -30,6 +31,6 @@ const DeployableFlows: React.FC<IMyNodesProps> = ({}) => {
       </ResponsiveGrid>
     </div>
   );
-};
+});
 
 export { DeployableFlows };

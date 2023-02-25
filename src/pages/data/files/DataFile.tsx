@@ -2,18 +2,16 @@ import React from "react";
 import { useParams } from "react-router";
 import Timestamp from "react-timestamp";
 import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 import { RepresentationCard } from "../../../components/MyRepresentations";
 import { SelfActions } from "../../../components/SelfActions";
 import { notEmpty } from "../../../floating/utils";
+import { MikroKomments } from "../../../komment/MikroKomments";
 import { PageLayout } from "../../../layout/PageLayout";
-import { SectionTitle } from "../../../layout/SectionTitle";
 import {
   CommentableModels,
   useDetailOmeroFileQuery,
 } from "../../../mikro/api/graphql";
 import { ExperimentCard } from "../../../mikro/components/cards/ExperimentCard";
-import CommentSection from "../../../mikro/components/comments/CommentSection";
 import { useMikro, withMikro } from "../../../mikro/MikroContext";
 
 export interface DataFileProps {}
@@ -42,7 +40,7 @@ export const OmeroFile: React.FC<{ id: string }> = ({ id }) => {
       }
       sidebar={
         <div className="p-5">
-          <CommentSection id={id} model={CommentableModels.GrunnlagOmerofile} />
+          <MikroKomments id={id} model={CommentableModels.GrunnlagOmerofile} />
         </div>
       }
     >

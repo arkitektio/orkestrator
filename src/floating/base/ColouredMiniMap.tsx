@@ -1,5 +1,5 @@
 import React from "react";
-import { MiniMap } from "react-flow-renderer";
+import { MiniMap } from "reactflow";
 
 export const ColouredMiniMap = (props: any) => (
   <div className="bg-gray-200 lg:block hidden">
@@ -8,6 +8,7 @@ export const ColouredMiniMap = (props: any) => (
         backgroundColor: "transparent",
         border: "2px solid #ffffff",
         top: "0",
+        height: "20%",
       }}
       nodeStrokeColor={(n) => {
         if (n.type === "ArgNode") return "#FF0095";

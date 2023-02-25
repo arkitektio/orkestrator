@@ -1,6 +1,6 @@
 import React from "react";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { withRekuest } from "../../rekuest";
+import { useRekuest, withRekuest } from "../../rekuest";
 import {
   usePurgeNodesMutation,
   useResetAgentsMutation,
@@ -18,6 +18,12 @@ const DebugScreen: React.FC<IApplicationsProps> = ({}) => {
   const [resetR] = withRekuest(useResetReservationsMutation)();
   const [resetN] = withRekuest(useResetNodesMutation)();
   const [purgeNodes] = withRekuest(usePurgeNodesMutation)();
+
+  const { configure } = useRekuest();
+
+  const disableRekuest = () => {
+    configure(undefined);
+  };
 
   return (
     <>
@@ -53,6 +59,10 @@ const DebugScreen: React.FC<IApplicationsProps> = ({}) => {
         >
           Reset Nodes{" "}
         </button>
+        <button
+          className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => disableRekuest()}
+        ></button>
         <button
           className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => purgeNodes()}

@@ -4,6 +4,7 @@ import { AwsClient } from "aws4fetch";
 import { ValidStoreType } from "zarr/types/storage/types";
 import {
   getCodec,
+  addCodec,
   NestedArray,
   openGroup,
   TypedArray,
@@ -22,6 +23,9 @@ import {
 import { openDB, deleteDB, wrap, unwrap } from "idb";
 import DashBoardHome from "../../pages/dashboard/DashboardHome";
 import c from "colormap";
+import { Zlib, GZip, Blosc } from "numcodecs";
+
+addCodec(Blosc.codecId, () => Blosc);
 
 function ensureByteArray(chunkData: ArrayBuffer): Uint8Array {
   if (typeof chunkData === "string") {
@@ -75,8 +79,6 @@ const DTYPE_TYPEDARRAY_MAPPING: {
   ">f8": Float64Array,
 };
 
-let indexedDB = typeof window == "object" ? window.indexedDB : null;
-
 export function getTypedArrayCtr(dtype: DtypeString) {
   const ctr = DTYPE_TYPEDARRAY_MAPPING[dtype];
   if (!ctr) {
@@ -93,16 +95,20 @@ const downloadChunk = async (
   array: ZarrArray
 ) => {
   //console.log(x);
-
+  console.time(`download ${url}`);
   let data = await client.fetch(url);
+  console.timeEnd(`download ${url}`);
   let out = ensureByteArray(await data.arrayBuffer());
   let meta = array.meta;
   let dtype = array.dtype;
 
+  console.time(`decode ${url}`);
   if (meta.compressor) {
     let x = await getCodec(meta.compressor);
+    console.log(x);
     out = await x.decode(out);
   }
+  console.timeEnd(`decode ${url}`);
 
   if (dtype.includes(">")) {
     // Need to flip bytes for Javascript TypedArrays
@@ -117,29 +123,12 @@ const getChunk = async (
   aws: AwsClient,
   chunkCoords: number[],
   array: ZarrArray,
-  path: string,
-  db: IDBDatabase
+  path: string
 ) => {
   const url = joinUrlParts(
     path,
     array.keyPrefix + chunkCoords.join(array.meta.dimension_separator ?? ".")
   );
-
-  if (db) {
-    const tx = db.transaction("chunks", "readwrite");
-    const store = tx.objectStore("chunks");
-    const chunk = (await store.get(url)) as unknown as TypedArray;
-    if (chunk) {
-      return chunk;
-    } else {
-      const chunk = await downloadChunk(aws, url, array);
-
-      const tx = db.transaction("chunks", "readwrite");
-      const store = tx.objectStore("chunks");
-      await store.put(chunk, url);
-      return chunk;
-    }
-  }
 
   return await downloadChunk(aws, url, array);
 };
@@ -148,10 +137,9 @@ const getChunkItem = async (
   aws: AwsClient,
   proj: ChunkProjection,
   array: ZarrArray,
-  path: string,
-  db: IDBDatabase
+  path: string
 ) => {
-  const rawChunk = await getChunk(aws, proj.chunkCoords, array, path, db);
+  const rawChunk = await getChunk(aws, proj.chunkCoords, array, path);
   const decodedChunk = new NestedArray(
     rawChunk,
     array.meta.chunks,
@@ -184,6 +172,7 @@ expose({
 
     if (meta.compressor) {
       let x = await getCodec(meta.compressor);
+      console.log(x);
       out = await x.decode(out);
     }
 
@@ -204,12 +193,6 @@ expose({
     sessionToken: string,
     colormap: string
   ) => {
-    const db = await openDB("microstuff", 1, {
-      upgrade(db, oldVersion, newVersion, transaction) {
-        const store = db.createObjectStore("chunks");
-      },
-    });
-
     let aws = new AwsClient({
       accessKeyId: accessKeyId,
       secretAccessKey: secretAccessKey,
@@ -234,10 +217,11 @@ expose({
     let promises = [];
 
     for (const proj of indexer.iter()) {
-      promises.push(getChunkItem(aws, proj, array, path, db));
+      promises.push(getChunkItem(aws, proj, array, path));
     }
 
     let chunkPairs = await Promise.all(promises);
+    console.log(chunkPairs.length);
 
     for (const { decodedChunk, proj } of chunkPairs) {
       out.set(proj.outSelection, decodedChunk);

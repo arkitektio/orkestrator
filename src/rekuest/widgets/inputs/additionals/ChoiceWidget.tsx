@@ -2,7 +2,7 @@ import { Field, FieldProps } from "formik";
 import React from "react";
 import Select from "react-select";
 import {
-  ArgPortFragment,
+  PortFragment,
   ChoiceWidgetFragment,
   PortKind,
   SliderWidgetFragment,
@@ -10,7 +10,7 @@ import {
 import { InputWidgetProps } from "../../types";
 
 export type ISliderProps = {
-  port: ArgPortFragment;
+  port: PortFragment;
   widget?: SliderWidgetFragment;
 };
 
@@ -66,28 +66,13 @@ const ChoiceWidget: React.FC<InputWidgetProps<ChoiceWidgetFragment>> = ({
   widget,
 }) => {
   return (
-    <div>
-      <label className="font-light" htmlFor={port.key || "name"}>
-        {port.label || port.key}
-      </label>
-      <div className="w-full mt-2 mb-2 relative">
-        <Field
-          isMulti={port.kind == PortKind.List}
-          name={port.key || "fake"}
-          component={EnumSelectWidget}
-          className="mb-2"
-          options={widget?.choices || []}
-        />
-      </div>
-      {port.description && (
-        <div
-          id={`${port.key}-help`}
-          className="font-light text-xs mb-4 mt-2 text-gray-600"
-        >
-          {port.description}
-        </div>
-      )}
-    </div>
+    <Field
+      isMulti={port.kind == PortKind.List}
+      name={port.key || "fake"}
+      component={EnumSelectWidget}
+      className="mb-2"
+      options={widget?.choices || []}
+    />
   );
 };
 

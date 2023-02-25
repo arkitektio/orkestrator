@@ -5,6 +5,7 @@ import AsyncSelect from "react-select/async";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import { ProvisionPulse } from "../../../rekuest/components/generic/StatusPulse";
 import { SelectOption } from "./select_input";
+import { wrapped } from "./Wrapper";
 
 type LazySearchResult = Promise<{
   data?: {
@@ -156,7 +157,7 @@ export const CreatableSearchSelectWidget: React.FC<SearchSelectProps> = ({
   );
 };
 
-export const SearchSelectInput = (props: SearchProps) => {
+export const SearchSelectInput = wrapped((props: SearchProps) => {
   return (
     <>
       {props.label && (
@@ -190,39 +191,18 @@ export const SearchSelectInput = (props: SearchProps) => {
       )}
     </>
   );
-};
+});
 
-export const CreateableSearchSelect = (props: SearchProps) => {
+export const CreateableSearchSelect = wrapped((props: SearchProps) => {
   return (
     <>
-      {props.label && (
-        <label
-          className={props.labelClassName || "font-light"}
-          htmlFor={props.name}
-        >
-          {props.label}
-        </label>
-      )}
-      <div className={props.className || "w-full mt-2 mb-2 relative"}>
-        <Field
-          isMulti={props.isMulti}
-          name={props.name}
-          component={CreatableSearchSelectWidget}
-          className="mb-2"
-          searchFunction={props.lazySearch}
-        />
-      </div>
-      {props.description && (
-        <div
-          id={`${props.name}-help`}
-          className={
-            props.descriptionClassName ||
-            "font-light text-xs mb-4 mt-2 text-gray-600"
-          }
-        >
-          {props.description}
-        </div>
-      )}
+      <Field
+        isMulti={props.isMulti}
+        name={props.name}
+        component={CreatableSearchSelectWidget}
+        className="mb-2"
+        searchFunction={props.lazySearch}
+      />
     </>
   );
-};
+});

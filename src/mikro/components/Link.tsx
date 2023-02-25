@@ -12,6 +12,7 @@ import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveConta
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SelfActions } from "../../components/SelfActions";
 import { notEmpty } from "../../floating/utils";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { MikroFile, Sample } from "../../linker";
@@ -35,7 +36,6 @@ import {
   useDetailLinkQuery,
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
-import CommentSection from "./comments/CommentSection";
 import { UploadZone } from "./UploadZone";
 
 export type IExperimentProps = {
@@ -46,13 +46,12 @@ const Link: React.FC<IExperimentProps> = ({ id }) => {
   const { data, error } = withMikro(useDetailLinkQuery)({
     variables: { id: id },
   });
-  
 
   return (
     <PageLayout
       sidebar={
         <div className="p-5">
-          <CommentSection id={id} model={CommentableModels.GrunnlagDatalink} />
+          <MikroKomments id={id} model={CommentableModels.GrunnlagDatalink} />
         </div>
       }
       actions={<SelfActions type="@mikro/context" object={id} />}

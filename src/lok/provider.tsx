@@ -4,6 +4,7 @@ import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "herre";
 import { createManClient } from "./client";
 import { ManContext } from "./context";
+import { ManConfig } from "./types";
 
 export type ManProviderProps = {
   register?: boolean;
@@ -17,30 +18,23 @@ export const ManProvider: React.FC<ManProviderProps> = ({
   const [client, setClient] = useState<
     ApolloClient<NormalizedCacheObject> | undefined
   >();
-  const { token } = useHerre();
-  const { fakts } = useFakts();
+  const [config, setConfig] = useState<ManConfig>();
 
-  useEffect(() => {
-    if (fakts && token && fakts.lok) {
-      var client = createManClient(fakts.lok, token);
-      setClient(client);
-
-      const runFunc = (options: { query: string; variables: any }) => {
-        let document = gql(options.query);
-        return client
-          .query({
-            query: document,
-            variables: options.variables,
-          })
-          .then((result: any) => result.data);
-      };
+  const configure = (config?: ManConfig) => {
+    setConfig(config);
+    if (!config) {
+      setClient(undefined);
+      return;
     }
-  }, [token, fakts, register]);
+
+    setClient(createManClient(config));
+  };
 
   return (
     <ManContext.Provider
       value={{
         client: client,
+        configure: configure,
       }}
     >
       {children}

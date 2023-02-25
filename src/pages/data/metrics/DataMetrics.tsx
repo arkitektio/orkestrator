@@ -7,7 +7,7 @@ export interface DataRepresentationsProps {}
 export const DataMetrics: React.FC<DataRepresentationsProps> = (props) => {
   return (
     <PageLayout>
-      <MyRepresentations />
+      <>Not imlement</>
     </PageLayout>
   );
 };

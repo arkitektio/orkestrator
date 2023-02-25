@@ -12,15 +12,21 @@
       "IsPredicate",
       "ValueRange"
     ],
-    "Port": [
-      "ArgPort",
-      "ReturnPort"
+    "CommentNode": [
+      "MentionDescendent",
+      "ParagraphDescendent"
+    ],
+    "Descendent": [
+      "Leaf",
+      "MentionDescendent",
+      "ParagraphDescendent"
     ],
     "Repository": [
       "AppRepository",
       "MirrorRepository"
     ],
     "ReturnWidget": [
+      "ChoiceReturnWidget",
       "CustomReturnWidget",
       "ImageReturnWidget"
     ],

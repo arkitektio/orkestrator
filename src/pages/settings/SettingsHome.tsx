@@ -9,6 +9,7 @@ import { DebugScreen } from "../admin/DebugScreen";
 import { useExperimental } from "../../providers/experimental/context";
 import { available_color_maps } from "../../experimental/provider/provider";
 import { useFakts } from "@jhnnsrs/fakts";
+import { RekuestGuard } from "../../rekuest/RekuestGuard";
 
 export interface SettingsHomeProps {}
 
@@ -92,7 +93,9 @@ export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
       </div>
       <pre className="text-white">{JSON.stringify(fakts, null, 2)}</pre>
       <br />
-      <DebugScreen />
+      <RekuestGuard>
+        <DebugScreen />
+      </RekuestGuard>
     </PageLayout>
   );
 };

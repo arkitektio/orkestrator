@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Handle, Position } from "react-flow-renderer";
+import { Handle, Position } from "reactflow";
 import ReactTooltip from "react-tooltip";
 import { withLayout } from "../../../base/node/layout";
 import { ReturnNodeProps } from "../../../types";

@@ -1,0 +1,141 @@
+fragment Leaf on Leaf {
+  typename: __typename
+  bold
+  italic
+  code
+  text
+}
+
+fragment Node on CommentNode {
+  typename: __typename
+  children {
+    typename: __typename
+    ...Leaf
+    ...LevelDownParagraph
+    ...LevelDownMention
+  }
+}
+
+fragment LevelDownParagraph on ParagraphDescendent {
+  size
+  untypedChildren
+}
+
+fragment LevelDownMention on MentionDescendent {
+  user {
+    sub
+  }
+}
+
+fragment LevelDownDescendent on Descendent {
+  typename: __typename
+  ...Leaf
+}
+
+fragment Mention on MentionDescendent {
+  user {
+    sub
+  }
+  ...Node
+}
+
+fragment Paragraph on ParagraphDescendent {
+  size
+  ...Node
+}
+
+fragment Descendent on Descendent {
+  typename: __typename
+
+  ...Mention
+  ...Paragraph
+  ...Leaf
+}
+
+fragment SubthreadComment on Comment {
+  user {
+    sub
+  }
+  parent {
+    id
+  }
+  createdAt
+  descendents {
+    ...Descendent
+  }
+}
+
+fragment ListComment on Comment {
+  user {
+    sub
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  resolved
+  resolvedBy {
+    sub
+  }
+  id
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+}
+
+fragment MentionComment on Comment {
+  user {
+    sub
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  id
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+  mentions {
+    id
+    sub
+  }
+  resolved
+  resolvedBy {
+    sub
+  }
+  objectId
+  contentType
+}
+
+fragment DetailComment on Comment {
+  user {
+    sub
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  id
+
+  resolved
+  resolvedBy {
+    sub
+  }
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+  mentions {
+    sub
+  }
+  objectId
+  contentType
+}

@@ -48,6 +48,12 @@ query ReservableTemplates($node: ID!) {
   }
 }
 
+query HashReservableTemplates($hash: String!) {
+  reservableTemplates(hash: $hash) {
+    ...ReservableTemplate
+  }
+}
+
 query DetailTemplate($id: ID!) {
   template(id: $id) {
     ...DetailTemplate

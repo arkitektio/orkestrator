@@ -6,6 +6,7 @@ import { Alert } from "../../../../components/forms/Alert";
 import { SelectOption } from "../../../../components/forms/fields/select_input";
 import { PortKind, SearchWidgetFragment } from "../../../api/graphql";
 import { InputWidgetProps } from "../../types";
+import { useWidgetRegistry } from "../../widget-context";
 
 export type SearchOptions = [{ label: string; value: string }];
 
@@ -80,13 +81,15 @@ const SearchSelectWidget: React.FC<SearchSelectProps> = ({
 const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
   port,
   widget,
-  ward_registry,
   options,
 }) => {
-  if (!widget?.ward) return <>This port is not usable with this widget</>;
-  const ward = ward_registry.getWard(widget.ward);
+  if (!widget?.ward)
+    return (
+      <>This port is not usable with this widget {JSON.stringify(widget)}</>
+    );
+  const ward = useWidgetRegistry().registry?.ward_registry.getWard(widget.ward);
 
-  if (!ward.search)
+  if (!ward?.search)
     return (
       <div>
         {" "}
@@ -124,29 +127,75 @@ const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
   };
 
   return (
-    <div>
-      <label className="font-light" htmlFor={port.key || "name"}>
-        {port.label || port.key}
-      </label>
-      <div className="w-full mt-2 mb-2 relative">
-        <Field
-          isMulti={port.kind == PortKind.List}
-          name={port.key || "fake"}
-          component={SearchSelectWidget}
-          className="mb-2"
-          searchFunction={searchFunction}
-          isDisabled={options?.disable}
-        />
+    <Field
+      isMulti={port.kind == PortKind.List}
+      name={port.key || "fake"}
+      component={SearchSelectWidget}
+      className="mb-2"
+      searchFunction={searchFunction}
+      isDisabled={options?.disable}
+    />
+  );
+};
+
+export const ListSearchWidget: React.FC<
+  InputWidgetProps<SearchWidgetFragment>
+> = ({ port, widget, options }) => {
+  if (!widget?.ward)
+    return (
+      <>This port is not usable with this widget {JSON.stringify(widget)}</>
+    );
+
+  const widgetRegistry = useWidgetRegistry();
+
+  const ward = widgetRegistry.registry?.ward_registry.getWard(widget.ward);
+
+  if (!ward?.search)
+    return (
+      <div>
+        {" "}
+        No ward specified for this {widget.ward}. Please register a Ward that
+        supports "search"
       </div>
-      {port.description && (
-        <div
-          id={`${port.key}-help`}
-          className="font-light text-xs mb-4 mt-2 text-gray-600"
-        >
-          {port.description}
-        </div>
-      )}
-    </div>
+    );
+
+  if (!widget?.query)
+    return (
+      <div>
+        {" "}
+        There is no widget query specified for this port. Please specify a
+        Widget and a query for this port.
+      </div>
+    );
+
+  const searchFunction = (
+    search: string,
+    additionals: { [key: string]: any }
+  ) => {
+    let query = widget.query;
+    if (ward.search)
+      try {
+        console.log("searching", search, additionals);
+        return ward
+          .search({
+            query: query as string,
+            variables: { ...additionals, search: search },
+          })
+          .then((result) => result.options);
+      } catch (e) {
+        return Promise.reject("Malformed Query" + e);
+      }
+  };
+
+  return (
+    <Field
+      isMulti={port.kind == PortKind.List}
+      name={port.key || "fake"}
+      component={SearchSelectWidget}
+      className="mb-2"
+      searchFunction={searchFunction}
+      isDisabled={options?.disable}
+    />
   );
 };
 

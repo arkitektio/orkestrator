@@ -1,14 +1,12 @@
 import React from "react";
 import "react-contexify/dist/ReactContexify.css";
-import { Handle, Position } from "react-flow-renderer";
-import { NavLink } from "react-router-dom";
-import ReactTooltip from "react-tooltip";
-import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
+import { Handle, Position } from "reactflow";
 import { Node } from "../../../linker";
+import { withRekuest } from "../../../rekuest";
+import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps } from "../../types";
 import { NodeShowLayout } from "./layout/NodeTrack";
-import { withRekuest } from "../../../rekuest";
 
 export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id }) => {

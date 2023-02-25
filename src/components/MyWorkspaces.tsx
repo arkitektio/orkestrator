@@ -17,8 +17,6 @@ export type IMyGraphsProps = {};
 const DiagramCard: React.FC<{
   diagram: Exclude<MyWorkspacesQuery["myworkspaces"], null | undefined>[number];
 }> = ({ diagram }) => {
-  const { s3resolve } = useFluss();
-
   const { confirm } = useConfirm();
 
   const [deleteGraph] = withFluss(useDeleteWorkspaceMutation)({
@@ -54,9 +52,7 @@ const DiagramCard: React.FC<{
       dragStyle={({ isDragging }) =>
         diagram?.latestFlow?.screenshot && !isDragging
           ? {
-              backgroundImage: `url(${
-                s3resolve && s3resolve(diagram.latestFlow?.screenshot)
-              }), linear-gradient(rgba(0,0,0,0.3), rgba(1,1,1,0.5))`,
+              backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(1,1,1,0.5))`,
               backgroundRepeat: "no-repeat",
               backgroundBlendMode: "multiply",
             }

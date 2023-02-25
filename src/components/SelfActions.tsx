@@ -45,7 +45,6 @@ export const SelfActions: React.FC<SelfActionsProps> = ({
         <ActionButton
           label={res.title || res.node?.name || "Unknown"}
           description={res.node.kind || "No description"}
-          className={buttonClassName(res)}
           onAction={async () => {
             let selfkey = res?.node?.args?.at(0)?.key;
             if (res.status == ReservationStatus.Active && selfkey) {

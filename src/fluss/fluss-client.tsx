@@ -3,13 +3,14 @@ import { setContext } from "@apollo/client/link/context";
 import { WebSocketLink } from "@apollo/client/link/ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { createUploadLink } from "apollo-upload-client";
-import { Token } from "herre";
 import result from "./api/fragments";
-import { Fluss } from "./fluss-types";
+import { FlussConfig } from "./fluss-types";
 
-export const createFlussClient = (config: Fluss, token: Token) => {
+export const createFlussClient = (config: FlussConfig) => {
+  let token = config.retrieveToken();
+
   const httpLink = createUploadLink({
-    uri: config.endpoint_url,
+    uri: config.endpointUrl,
     headers: {
       authorization: token ? `Bearer ${token}` : "",
     },
@@ -28,7 +29,7 @@ export const createFlussClient = (config: Fluss, token: Token) => {
   const queryLink = authLink.concat(httpLink);
 
   const wsLink = new WebSocketLink({
-    uri: `${config.ws_endpoint_url}?token=${token}`,
+    uri: `${config.wsEndpointUrl}?token=${token}`,
     options: {
       reconnect: true,
     },

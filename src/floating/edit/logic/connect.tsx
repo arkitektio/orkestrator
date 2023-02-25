@@ -1,12 +1,6 @@
-import { addEdge } from "react-flow-renderer";
-import {
-  ArgPortFragment as ArkitektArgPortFragment,
-  ReturnPortFragment as ArkitektReturnPortFragment,
-} from "../../../rekuest/api/graphql";
-import {
-  ArgPortFragment,
-  ReturnPortFragment,
-} from "../../../fluss/api/graphql";
+import { addEdge } from "reactflow";
+import { PortFragment as ArkitektPortFragment } from "../../../rekuest/api/graphql";
+import { PortFragment } from "../../../fluss/api/graphql";
 import {
   ArgNodeFragment,
   ArkitektNodeFragment,
@@ -54,7 +48,7 @@ export const handle_to_index: (handle: string | null | undefined) => number = (
   return parseInt(handle.split("_")[1]);
 };
 
-const argport_to_port = (argport: ArkitektArgPortFragment): ArgPortFragment => {
+const arkport_to_port = (argport: ArkitektPortFragment): PortFragment => {
   return {
     key: argport?.key,
     kind: argport?.kind as unknown as StreamKind,
@@ -62,32 +56,21 @@ const argport_to_port = (argport: ArkitektArgPortFragment): ArgPortFragment => {
     child: argport?.child && {
       identifier: argport.child.identifier,
       kind: argport.child.kind as unknown as StreamKind,
-      __typename: "ArgPortChild",
+      __typename: "PortChild",
       nullable: argport.child.nullable,
     },
-    identifier: argport?.identifier,
-    widget: argport?.widget && { ...argport?.widget, __typename: "Widget" },
-    nullable: argport?.nullable,
-  };
-};
-const returnport_to_port = (
-  argport: ArkitektReturnPortFragment
-): ReturnPortFragment => {
-  return {
-    key: argport?.key,
-    kind: argport?.kind as unknown as StreamKind,
-    identifier: argport?.identifier,
-    widget: argport?.widget && {
-      ...argport.widget,
+    assignWidget: argport?.assignWidget && {
+      ...argport?.assignWidget,
+      __typename: "Widget",
+      kind: argport.assignWidget?.__typename,
+    },
+    returnWidget: argport?.returnWidget && {
+      // can be null but not kind unset
+      ...argport?.returnWidget,
       __typename: "ReturnWidget",
+      kind: argport.returnWidget?.__typename,
     },
-    // TODO: List of list are not supported yet
-    child: argport?.child && {
-      identifier: argport.child.identifier,
-      kind: argport.child.kind as unknown as StreamKind,
-      __typename: "ReturnPortChild",
-      nullable: argport.child.nullable,
-    },
+    identifier: argport?.identifier,
     nullable: argport?.nullable,
   };
 };
@@ -180,7 +163,7 @@ export const arg_to_ark: Connector<ArgNodeData, ArkitektNodeData> = ({
           .includes(arg?.key || "doeinosienfosienfosienf")
       )
       .filter(notEmpty)
-      .map(argport_to_port),
+      .map(arkport_to_port),
   };
 };
 
@@ -231,7 +214,7 @@ export const ark_to_return: Connector<ArkitektNodeData, ReturnNodeData> = ({
             .includes(p?.key || "doeinosienfosienfosienf")
         )
         .filter(notEmpty)
-        .map(returnport_to_port),
+        .map(arkport_to_port),
     };
   }
 

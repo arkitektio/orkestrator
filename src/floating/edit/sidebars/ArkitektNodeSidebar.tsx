@@ -1,5 +1,5 @@
 import { Form, Formik } from "formik";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NumberInputField } from "../../../components/forms/fields/number_input";
 import {
   enum_to_options,
@@ -11,9 +11,18 @@ import {
   MapStrategy,
 } from "../../../fluss/api/graphql";
 import { withRekuest } from "../../../rekuest";
-import { useDetailNodeQuery } from "../../../rekuest/api/graphql";
+import {
+  ReserveBindsInput,
+  useDetailNodeQuery,
+  useHashReservableTemplatesQuery,
+  useReservableTemplatesQuery,
+} from "../../../rekuest/api/graphql";
 import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
+import { ReserveParamsField } from "../../../rekuest/components/ReserveParamsField";
+import { TemplatesDisplay } from "../../../rekuest/components/TemplatesDisplay";
+import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { ArkitektNodeData, FlowNode } from "../../types";
+import { notEmpty } from "../../utils";
 import { useEditRiver } from "../context";
 import { StreamDisplay } from "./StreamDisplay";
 import { SidebarProps } from "./types";
@@ -24,6 +33,12 @@ export const ArkitektNodeSidebar = (
   const { updateNodeIn, updateNodeOut, updateNodeExtras } = useEditRiver();
   const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
     variables: { hash: props.node.data.hash },
+  });
+  const [advanced, setAdvanced] = useState(false);
+
+  const { data } = withRekuest(useHashReservableTemplatesQuery)({
+    variables: { hash: props.node.data.hash },
+    fetchPolicy: "network-only",
   });
 
   useEffect(() => {
@@ -38,14 +53,13 @@ export const ArkitektNodeSidebar = (
   return (
     <>
       {" "}
-      <div className="px-5 py-5 flex flex-col">
+      <div className="px-5 py-5 flex flex-col h-full">
         <div className="text-white text-xl"> {node_data?.node?.name}</div>
 
         <div className="text-white text-cl mt-4">
           {" "}
           {node_data?.node?.description}
         </div>
-        <StreamDisplay node={props.node} />
         <div className="text-white mt-5">Constants</div>
         {node_data?.node?.id && (
           <ConstantsForm
@@ -67,9 +81,11 @@ export const ArkitektNodeSidebar = (
             initial={props.node.data.defaults}
           />
         )}
-        <div className="text-white mt-5">Advanced</div>
+        <div className="flex flex-grow" />
+
         {node_data?.node?.id && (
           <Formik<{
+            binds: ReserveBindsInput;
             reserveParams: ReserveParamsInput;
             allowLocal: boolean;
             mapStrategy: MapStrategy;
@@ -84,6 +100,7 @@ export const ArkitektNodeSidebar = (
               });
             }}
             initialValues={{
+              binds: props.node.data.binds || { templates: [], clients: [] },
               reserveParams: props.node.data.reserveParams,
               allowLocal: props.node.data.allowLocal,
               mapStrategy: props.node.data.mapStrategy,
@@ -94,20 +111,49 @@ export const ArkitektNodeSidebar = (
           >
             {(formikProps) => (
               <Form>
+                <ChangeSubmitHelper debounce={400} />
                 <div className="text-white mt-5">Reserve Params</div>
-
-                <SelectInputField
-                  label="Map Strategy"
-                  options={enum_to_options(MapStrategy)}
-                  name="mapStrategy"
-                />
-                <NumberInputField
-                  label="reserveTimeout"
-                  name="reserveTimeout"
-                />
-                <NumberInputField label="assignTimeout" name="assignTimeout" />
-                <NumberInputField label="yieldTimeout" name="yieldTimeout" />
-                <button type="submit">Submit</button>
+                {data?.reservableTemplates && (
+                  <ReserveParamsField
+                    templates={data?.reservableTemplates?.filter(notEmpty)}
+                    name="binds"
+                  />
+                )}
+                <button
+                  className="text-white mt-5"
+                  onClick={() => setAdvanced(!advanced)}
+                >
+                  Advanced
+                </button>
+                {advanced && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <SelectInputField
+                      label="Map Strategy"
+                      options={enum_to_options(MapStrategy)}
+                      name="mapStrategy"
+                      labelClassName="text-white"
+                      description="How long to wait for a reservation to succeed before giving up."
+                    />
+                    <NumberInputField
+                      label="reserveTimeout"
+                      name="Reserve Tiemout"
+                      labelClassName="text-white"
+                      description="How long to wait for a reservation to succeed before giving up."
+                    />
+                    <NumberInputField
+                      label="assignTimeout"
+                      name="assignTimeout"
+                      labelClassName="text-white"
+                      description="How long to wait for a Task to succeed before giving up."
+                    />
+                    <NumberInputField
+                      label="yieldTimeout"
+                      name="yieldTimeout"
+                      labelClassName="text-white"
+                      description="How long to wait for a Task to yield to succeed before giving up."
+                    />
+                  </div>
+                )}
               </Form>
             )}
           </Formik>

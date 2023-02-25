@@ -10,7 +10,7 @@ export const FlussGuard: React.FC<{
 
   if (client) return <>{children}</>;
 
-  return <>{fallback || `No fluss suported`}</>;
+  return <>{fallback}</>;
 };
 
 export const flussGuarded = (

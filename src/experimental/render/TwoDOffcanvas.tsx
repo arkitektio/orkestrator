@@ -22,6 +22,7 @@ export interface TwoDProps {
   representation: DetailRepresentationFragment;
   colormap?: AvailableColormap;
   withRois?: boolean;
+  follow?: "width" | "height";
 }
 
 let canvaswidth = 700;
@@ -150,6 +151,7 @@ export const TwoDOffcanvas = ({
   representation,
   colormap,
   withRois,
+  follow = "width",
 }: TwoDProps) => {
   const { s3resolve } = useMikro();
   const [z, setZ] = useState(
@@ -178,33 +180,36 @@ export const TwoDOffcanvas = ({
       : settings.defaultColormap;
 
   const aspectRatio =
-    representation?.shape &&
-    representation?.shape[3] / representation?.shape[4];
+    (representation?.shape &&
+      representation?.shape[3] / representation?.shape[4]) ||
+    1;
 
   return (
     <SaveParentSize debounceTime={800}>
-      {({ width, height }) => (
-        <div
-          className="relative"
-          style={{ height: width * (aspectRatio || width), width: width }}
-        >
-          <Canvas
-            z={z}
-            width={width}
-            height={width * (aspectRatio || width)}
-            colormap={colorm}
-            path={s3resolve("/" + representation.store)}
-          />
-          {withRois && (
-            <RoiCanvas
+      {({ width, height }) => {
+        let bwidth = follow == "width" ? width : height * aspectRatio;
+        let bheight = follow == "width" ? width / aspectRatio : height;
+
+        return (
+          <div className="relative" style={{ height: bheight, width: bwidth }}>
+            <Canvas
               z={z}
-              width={width}
-              height={width * (aspectRatio || width)}
-              representation={representation}
+              width={bwidth}
+              height={bheight}
+              colormap={colorm}
+              path={s3resolve("/" + representation.store)}
             />
-          )}
-        </div>
-      )}
+            {withRois && (
+              <RoiCanvas
+                z={z}
+                width={bwidth}
+                height={bheight}
+                representation={representation}
+              />
+            )}
+          </div>
+        );
+      }}
     </SaveParentSize>
   );
 };

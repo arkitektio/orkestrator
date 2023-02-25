@@ -10,7 +10,7 @@ export const PortGuard: React.FC<{
 
   if (client) return <>{children}</>;
 
-  return <>{fallback || `Not yet with Arkitekt`}</>;
+  return <>{fallback}</>;
 };
 
 export const portGuarded = (

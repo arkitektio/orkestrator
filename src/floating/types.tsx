@@ -1,18 +1,11 @@
-import {
-  Connection,
-  Edge,
-  EdgeProps,
-  Node,
-  NodeProps,
-} from "react-flow-renderer";
+import { Connection, Edge, EdgeProps, Node, NodeProps } from "reactflow";
 import {
   DetailNodeFragment,
   ListReservationFragment,
 } from "../rekuest/api/graphql";
 import {
   ArgNodeFragment,
-  ArgPort,
-  ArgPortFragment,
+  PortFragment,
   ArkitektNodeFragment,
   FancyEdgeFragment,
   FlowEdgeCommonsFragment,
@@ -22,7 +15,6 @@ import {
   LabeledEdgeFragment,
   ReactiveNodeFragment,
   ReturnNodeFragment,
-  ReturnPortFragment,
   RunEventFragment,
   StreamItem,
 } from "../fluss/api/graphql";
@@ -75,12 +67,18 @@ export type ConnectionUpdate = {
   nodes?: FlowNode[];
   edges?: FlowEdge[];
   errors?: ConnectionError[];
-  args?: (ArgPortFragment | null)[];
-  returns?: (ReturnPortFragment | null)[];
+  args?: (PortFragment | null)[];
+  returns?: (PortFragment | null)[];
 };
 
 export type ConnectionError = {
   message: string;
+};
+
+export type ConnState = {
+  isConnecting: boolean;
+  isConnectable: boolean;
+  error?: string | undefined;
 };
 
 export type CommonNode = FlowNodeCommonsFragment;
@@ -98,8 +96,8 @@ export type Connector<
   targetTypes: string[];
   nodes: FlowNode[];
   edges: FlowEdge[];
-  args: (ArgPortFragment | null)[];
-  returns: (ReturnPortFragment | null)[];
+  args: (PortFragment | null)[];
+  returns: (PortFragment | null)[];
 }) => ConnectionUpdate;
 
 export enum RiverMode {

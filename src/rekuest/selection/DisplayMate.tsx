@@ -1,16 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
-import { isTemplateExpression } from "typescript";
 import { useAlert } from "../../components/alerter/alerter-context";
-import { nodeEngines } from "../../constants/engines";
-import { ListReservationFragment } from "../api/graphql";
-import {
-  Accept,
-  Mate,
-  MateOptions,
-  Partner,
-} from "../postman/mater/mater-context";
+import { Mate, MateOptions, Partner } from "../postman/mater/mater-context";
 
 export interface MateProps {
   mate: Mate;

@@ -1,19 +1,7 @@
 import React, { useContext } from "react";
 import {
-  AcknowledgeMutationFn,
-  AgentsQuery,
-  AssignMutationFn,
-  AssignMutationVariables,
-  DetailReservationFragment,
-  ListReservationFragment,
-  MyReservationsQuery,
-  ProvideMutationFn,
-  ProvisionsQuery,
-  RequestsQuery,
   ReservationsQuery,
   ReserveMutation,
-  ReserveMutationOptions,
-  ReserveMutationResult,
   ReserveMutationVariables,
   UnreserveMutationVariables,
 } from "../../api/graphql";

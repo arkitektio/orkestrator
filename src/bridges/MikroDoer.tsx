@@ -51,7 +51,7 @@ export const MikroDoer: React.FC<{}> = () => {
             kind: PortKindInput.Structure,
             identifier: "@mikro/representation",
             description: "The representation to navigate to",
-            widget: {
+            assignWidget: {
               kind: WidgetKind.SearchWidget,
               query:
                 "query Search($search: String) { options: representations(name: $search) { value: id label: name } }",

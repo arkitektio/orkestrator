@@ -7,13 +7,13 @@ import {
 import { setContext } from "@apollo/client/link/context";
 import { WebSocketLink } from "@apollo/client/link/ws";
 import { getMainDefinition } from "@apollo/client/utilities";
-import { Token } from "herre";
-import result from "./api/fragments";
-import { Rekuest } from "./types";
+import { RekuestConfig } from "./types";
 
-export const createRekuestClient = (config: Rekuest, token: Token) => {
+export const createRekuestClient = (config: RekuestConfig) => {
+  let token = config.retrieveToken();
+
   const httpLink = createHttpLink({
-    uri: config.endpoint_url,
+    uri: config.endpointUrl,
   });
 
   const authLink = setContext((_, { headers }) => {
@@ -29,7 +29,7 @@ export const createRekuestClient = (config: Rekuest, token: Token) => {
   const queryLink = authLink.concat(httpLink);
 
   const wsLink = new WebSocketLink({
-    uri: `${config.ws_endpoint_url}?token=${token}`,
+    uri: `${config.wsEndpointUrl}?token=${token}`,
     options: {
       reconnect: true,
     },
@@ -49,6 +49,6 @@ export const createRekuestClient = (config: Rekuest, token: Token) => {
 
   return new ApolloClient({
     link: splitLink,
-    cache: new InMemoryCache({ possibleTypes: result.possibleTypes }),
+    cache: new InMemoryCache({ possibleTypes: config.possibleTypes }),
   });
 };

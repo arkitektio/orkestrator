@@ -45,9 +45,9 @@ export type AgentContextType = {
   unregister: (token: Token) => void;
   setProvide: (provide: boolean) => void;
   provide: boolean;
-  registry: ActorBuilderRegistry;
-  provisions: ProvisionRegistry;
-  assignations: AssignationsRegistry;
+  registry?: ActorBuilderRegistry;
+  provisions?: ProvisionRegistry;
+  assignations?: AssignationsRegistry;
 };
 
 export type CommonAgentMessage = {

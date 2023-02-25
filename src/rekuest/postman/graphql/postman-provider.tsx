@@ -29,9 +29,11 @@ import {
   WatchReservationsSubscription,
   WatchReservationsSubscriptionVariables,
 } from "../../api/graphql";
-import { ReturnWidgetsContainer } from "../../widgets/containers/ReturnWidgetsContainer";
+import { WidgetsContainer } from "../../widgets/containers/ReturnWidgetsContainer";
 import { PostmanContext } from "./postman-context";
 import { withRekuest } from "../../RekuestContext";
+import { RekuestGuard } from "../../RekuestGuard";
+import { notEmpty } from "../../../floating/utils";
 export type PostmanProviderProps = {
   allowBatch?: boolean;
   children: React.ReactNode;
@@ -41,8 +43,11 @@ const Internal = (props: any) => {
     variables: { id: props.ass.reservation.node.id as string },
   });
 
-  return data?.node && props.ass.returns ? (
-    <ReturnWidgetsContainer node={data.node} returns={props.ass.returns} />
+  return data?.node?.returns && props.ass.returns ? (
+    <WidgetsContainer
+      ports={data.node.returns.filter(notEmpty)}
+      values={props.ass.returns}
+    />
   ) : (
     <>Assignation finished</>
   );
@@ -58,7 +63,7 @@ const Msg =
     );
   };
 
-export const PostmanProvider: React.FC<PostmanProviderProps> = ({
+export const TruePostmanProvider: React.FC<PostmanProviderProps> = ({
   children,
   allowBatch = true,
 }) => {
@@ -83,8 +88,6 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
       status: [AgentStatusInput.Active],
     },
   });
-
-  const { fakts } = useFakts();
 
   const [reserve] = withRekuest(useReserveMutation)();
   const [ack] = withRekuest(useAcknowledgeMutation)();
@@ -301,3 +304,44 @@ export const PostmanProvider: React.FC<PostmanProviderProps> = ({
     </PostmanContext.Provider>
   );
 };
+
+const NoPostmanProvider = ({ children }: { children: React.ReactNode }) => {
+  const failureFunc = async (...args: any[]): Promise<any> => {
+    console.log("No Postman Provider", args);
+    throw Error("No Postman Provider");
+  };
+
+  return (
+    <PostmanContext.Provider
+      value={{
+        reservations: undefined,
+        requests: undefined,
+        provisions: undefined,
+        agents: undefined,
+        ack: failureFunc,
+        provide: failureFunc,
+        unprovide: failureFunc,
+        reserve: failureFunc,
+        unreserve: failureFunc,
+        assign: failureFunc,
+        unassign: failureFunc,
+      }}
+    >
+      {children}
+    </PostmanContext.Provider>
+  );
+};
+
+export const PostmanProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  return (
+    <RekuestGuard fallback={<NoPostmanProvider>{children}</NoPostmanProvider>}>
+      <TruePostmanProvider>{children}</TruePostmanProvider>
+    </RekuestGuard>
+  );
+};
+
+export default PostmanProvider;

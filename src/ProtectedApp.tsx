@@ -44,6 +44,10 @@ import { PortGuard } from "./port/PortGuard";
 import { DialogProvider } from "./layout/dialog/DialogProvider";
 import { CreateRepoDialog } from "./port/components/dialogs/CreateRepoDialog";
 import { XArrayProvider } from "./experimental/provider/provider";
+import { RekuestAutoConfigure } from "./bridges/RekuestAutoConfigure";
+import { FaktsGuard } from "@jhnnsrs/fakts";
+import { FlussAutoConfigure } from "./bridges/FlussAutoConfigure";
+import { LokAutoConfigure } from "./bridges/LokAutoConfigure";
 
 /* try {
   import("virtual:pwa-register")
@@ -112,89 +116,90 @@ export const ProtectedApp: React.FC<Props> = () => {
   return (
     <HerreGuard fallback={<PublicLogin />}>
       <RekuestProvider>
-        <RekuestGuard>
-          <WidgetRegistryProvider>
-            <ManProvider>
-              <ManGuard>
-                <FlussProvider>
-                  <FlussGuard>
-                    <FlussWard>
-                      <PortProvider>
-                        <PortAutoConfigure />
-                        <PortGuard>
-                          <MikroProvider>
-                            <MikroAutoConfigure />
-                            <SettingsProvider>
-                              <MikroGuard>
-                                <MikroWard>
-                                  <GeneralMenuProvider>
-                                    <PostmanProvider>
-                                      <ReserverProvider>
-                                        <RequesterProvider>
-                                          <MaterProvider>
-                                            <AgentProvider>
-                                              <XArrayProvider>
-                                                <MikroDoer />
-                                                <DndProvider
-                                                  options={HTML5toTouch}
-                                                >
-                                                  <SelectionProvider>
-                                                    <DialogProvider
-                                                      registeredDialogs={{
-                                                        create:
-                                                          CreateRepoDialog,
-                                                      }}
-                                                    >
-                                                      <ToastContainer
-                                                        position="bottom-right"
-                                                        theme="dark"
-                                                      />
-                                                      <ComponentPreview
-                                                        text={"sdfsdf"}
-                                                      />
-                                                      <GeneralMenu />
-                                                      <NavigationActions />
-                                                      <SearchActions />
-                                                      <NodesExtension />
-                                                      <SelectionActions />
-                                                      <MentionListener />
-                                                      <div className="flex flex-col h-screen sm:flex-row-reverse">
-                                                        <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
-                                                          <React.Suspense
-                                                            fallback={
-                                                              <>Loading</>
-                                                            }
-                                                          >
-                                                            <Outlet />
-                                                          </React.Suspense>{" "}
-                                                        </div>
-                                                        <div className="flex-initial sm:flex-initial sm:static sm:w-20">
-                                                          <NavigationBar />
-                                                        </div>
-                                                      </div>
-                                                    </DialogProvider>
-                                                  </SelectionProvider>
-                                                </DndProvider>
-                                              </XArrayProvider>
-                                            </AgentProvider>
-                                          </MaterProvider>
-                                        </RequesterProvider>
-                                      </ReserverProvider>
-                                    </PostmanProvider>
-                                  </GeneralMenuProvider>
-                                </MikroWard>
-                              </MikroGuard>
-                            </SettingsProvider>
-                          </MikroProvider>
-                        </PortGuard>
-                      </PortProvider>
-                    </FlussWard>
-                  </FlussGuard>
-                </FlussProvider>
-              </ManGuard>
-            </ManProvider>
-          </WidgetRegistryProvider>
-        </RekuestGuard>
+        <RekuestAutoConfigure />
+        <WidgetRegistryProvider>
+          <ManProvider>
+            <LokAutoConfigure />
+            <ManGuard>
+              <FlussProvider>
+                <FlussAutoConfigure />
+                <FlussWard>
+                  <PortProvider>
+                    <PortAutoConfigure />
+                    <MikroProvider>
+                      <MikroAutoConfigure />
+                      <SettingsProvider>
+                        <MikroWard>
+                          <GeneralMenuProvider>
+                            <PostmanProvider>
+                              <ReserverProvider>
+                                <RequesterProvider>
+                                  <MaterProvider>
+                                    <AgentProvider>
+                                      <XArrayProvider>
+                                        <RekuestGuard>
+                                          <MikroDoer />
+                                        </RekuestGuard>
+
+                                        <DndProvider options={HTML5toTouch}>
+                                          <SelectionProvider>
+                                            <DialogProvider
+                                              registeredDialogs={{
+                                                create: CreateRepoDialog,
+                                              }}
+                                            >
+                                              <ToastContainer
+                                                position="bottom-right"
+                                                theme="dark"
+                                              />
+                                              <ComponentPreview
+                                                text={"sdfsdf"}
+                                              />
+                                              <GeneralMenu />
+                                              <NavigationActions />
+                                              <MikroGuard>
+                                                <SearchActions />
+                                              </MikroGuard>
+
+                                              <RekuestGuard>
+                                                <NodesExtension />
+                                              </RekuestGuard>
+                                              <SelectionActions />
+                                              <MikroGuard>
+                                                <MentionListener />
+                                              </MikroGuard>
+
+                                              <div className="flex flex-col h-screen sm:flex-row-reverse">
+                                                <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
+                                                  <React.Suspense
+                                                    fallback={<>Loading</>}
+                                                  >
+                                                    <Outlet />
+                                                  </React.Suspense>{" "}
+                                                </div>
+                                                <div className="flex-initial sm:flex-initial sm:static sm:w-20">
+                                                  <NavigationBar />
+                                                </div>
+                                              </div>
+                                            </DialogProvider>
+                                          </SelectionProvider>
+                                        </DndProvider>
+                                      </XArrayProvider>
+                                    </AgentProvider>
+                                  </MaterProvider>
+                                </RequesterProvider>
+                              </ReserverProvider>
+                            </PostmanProvider>
+                          </GeneralMenuProvider>
+                        </MikroWard>
+                      </SettingsProvider>
+                    </MikroProvider>
+                  </PortProvider>
+                </FlussWard>
+              </FlussProvider>
+            </ManGuard>
+          </ManProvider>
+        </WidgetRegistryProvider>
       </RekuestProvider>
     </HerreGuard>
   );

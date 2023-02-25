@@ -1,7 +1,6 @@
 import {
-  ArgPortFragment,
+  PortFragment,
   InputWidgetFragment,
-  ReturnPortFragment,
   ReturnWidgetFragment,
 } from "../api/graphql";
 import { WardRegistry } from "./registry";
@@ -9,11 +8,15 @@ import { WardRegistry } from "./registry";
 export interface InputWidgetProps<
   W extends InputWidgetFragment = InputWidgetFragment
 > {
-  port: ArgPortFragment;
+  port: PortFragment;
   widget?: W | null;
-  ward_registry: WardRegistry;
   options?: PortOptions;
 }
+
+export type Port = Pick<
+  PortFragment,
+  "identifier" | "kind" | "nullable" | "child" | "returnWidget" | "assignWidget"
+>;
 
 export type InputWidgetTypes = InputWidgetFragment["__typename"];
 export type ReturnWidgetTypes = ReturnWidgetFragment["__typename"];
@@ -21,9 +24,8 @@ export type ReturnWidgetTypes = ReturnWidgetFragment["__typename"];
 export interface ReturnWidgetProps<
   W extends ReturnWidgetFragment = ReturnWidgetFragment
 > {
-  port: ReturnPortFragment;
+  port: Port;
   widget?: W | null;
-  ward_registry: WardRegistry;
   value?: any;
   className?: string;
 }

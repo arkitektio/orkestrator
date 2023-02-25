@@ -8498,6 +8498,55 @@
             "deprecationReason": null
           },
           {
+            "name": "replyTo",
+            "description": "Reply to an Comment \n    \n    This mutation creates a comment. It takes a commentable_id and a commentable_type.\n    If this is the first comment on the commentable, it will create a new comment thread.\n    If there is already a comment thread, it will add the comment to the thread (by setting\n    it's parent to the last parent comment in the thread).\n\n    CreateComment takes a list of Descendents, which are the comment tree. The Descendents\n    are a recursive structure, where each Descendent can have a list of Descendents as children.\n    The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a\n    reference to another user on the platform.\n\n    Please convert your comment tree to a list of Descendents before sending it to the server.\n    TODO: Add a converter from a comment tree to a list of Descendents.\n\n    \n    (only signed in users)",
+            "args": [
+              {
+                "name": "descendents",
+                "description": "The comment tree",
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "DescendendInput",
+                      "ofType": null
+                    }
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "parent",
+                "description": "The parent comment",
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Comment",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "resolveComment",
             "description": "Create an Comment \n    \n    This mutation resolves a comment. By resolving a comment, it will be marked as resolved,\n    and the user that resolved it will be set as the resolver.\n\n    (only signed in users)",
             "args": [
@@ -11663,6 +11712,18 @@
             "name": "commentsfor",
             "description": "Comments for a specific object\n    \n    This query returns all comments for a specific object. The object is\n    specified by the `model` and `id` arguments. The `model` argument is\n    a string that is the name of the model. The `id` argument is the id of\n    the object.\n\n    You can only query for comments for objects that you have access to.\n    \n    ",
             "args": [
+              {
+                "name": "deep",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "id",
                 "description": null,

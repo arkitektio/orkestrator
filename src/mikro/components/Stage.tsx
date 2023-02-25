@@ -7,24 +7,24 @@ import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { CreateableSearchSelect } from "../../components/forms/fields/search_select_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { SelfActions } from "../../components/SelfActions";
 import { PositionCanvas } from "../../components/PositionCanvas";
+import { SelfActions } from "../../components/SelfActions";
 import { notEmpty } from "../../floating/utils";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Instrument, Position } from "../../linker";
+import { Instrument } from "../../linker";
 import {
   CommentableModels,
   DetailStageDocument,
   UpdateStageMutationVariables,
   useDeletePositionMutation,
   useDetailStageQuery,
-  useUpdateStageMutation,
   usePinStageMutation,
   useTagSearchLazyQuery,
+  useUpdateStageMutation,
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
-import CommentSection from "./comments/CommentSection";
 import { PositionCard } from "./cards/PositionCard";
 
 export type IExperimentProps = {
@@ -68,7 +68,7 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
     <PageLayout
       sidebar={
         <div className="p-5">
-          <CommentSection id={id} model={CommentableModels.GrunnlagStage} />
+          <MikroKomments id={id} model={CommentableModels.GrunnlagStage} />
         </div>
       }
       actions={<SelfActions type={"@mikro/stage"} object={id} />}

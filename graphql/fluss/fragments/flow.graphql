@@ -50,7 +50,7 @@ fragment ReturnWidget on ReturnWidget {
   ward
 }
 
-fragment ArgPortChild on ArgPortChild {
+fragment PortChild on PortChild {
   identifier
   kind
   nullable
@@ -60,44 +60,21 @@ fragment ArgPortChild on ArgPortChild {
   }
 }
 
-fragment ReturnPortChild on ReturnPortChild {
-  identifier
-  kind
-  nullable
-  child {
-    identifier
-    kind
-  }
-}
-
-fragment ArgPort on ArgPort {
+fragment Port on Port {
   key
   label
   identifier
   kind
   name
   description
-  widget {
+  assignWidget {
     ...Widget
   }
-  child {
-    ...ArgPortChild
-  }
-  nullable
-}
-
-fragment ReturnPort on ReturnPort {
-  key
-  label
-  identifier
-  kind
-  name
-  description
-  widget {
+  returnWidget {
     ...ReturnWidget
   }
   child {
-    ...ReturnPortChild
+    ...PortChild
   }
   nullable
 }
@@ -201,10 +178,10 @@ fragment Flow on Flow {
       ...Global
     }
     args {
-      ...ArgPort
+      ...Port
     }
     returns {
-      ...ReturnPort
+      ...Port
     }
   }
   restrict

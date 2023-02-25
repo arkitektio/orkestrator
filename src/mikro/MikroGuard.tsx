@@ -10,7 +10,7 @@ export const MikroGuard: React.FC<{
 
   if (client) return <>{children}</>;
 
-  return <>{fallback || `Not yet with Mikro`}</>;
+  return <>{fallback}</>;
 };
 
 export const mikroGuarded = (

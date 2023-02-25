@@ -1,41 +1,33 @@
-import { ParentSize } from "@visx/responsive";
 import { Form, Formik } from "formik";
 import React, { useEffect, useState } from "react";
-import { AiFillPushpin } from "react-icons/ai";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
-import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import {
   CreateableSearchSelect,
   SearchSelectInput,
 } from "../../components/forms/fields/search_select_input";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SelfActions } from "../../components/SelfActions";
 import { ThumbnailCanvas } from "../../components/ThumbnailCanvas";
-import { TwoD } from "../../experimental/render/TwoD";
 import { TwoDOffcanvas } from "../../experimental/render/TwoDOffcanvas";
 import { notEmpty } from "../../floating/utils";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { ActionButton } from "../../layout/ActionButton";
-import { OptimizedImage } from "../../layout/OptimizedImage";
 import { PageLayout } from "../../layout/PageLayout";
 import { SaveParentSize } from "../../layout/SaveParentSize";
 import {
-  Label,
+  Dataset,
+  Instrument,
   Metric,
   MikroFile,
+  Objective,
+  Position,
   Representation,
   Roi,
-  Position,
   Sample,
-  Objective,
-  Instrument,
   Table,
-  Dataset,
 } from "../../linker";
 import { UserEmblem } from "../../lok/components/UserEmblem";
-import { DataPlot } from "../../pages/data/plots/DataPlot";
 import { ExperimentalFeature } from "../../providers/experimental/Experimental";
 import {
   CommentableModels,
@@ -56,7 +48,6 @@ import {
   WatchRoisSubscriptionResult,
 } from "../api/graphql";
 import { useMikro, withMikro } from "../MikroContext";
-import CommentSection from "./comments/CommentSection";
 
 export type ISampleProps = {
   id: string;
@@ -208,7 +199,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
     <PageLayout
       sidebar={
         <div className="p-5">
-          <CommentSection
+          <MikroKomments
             id={id}
             model={CommentableModels.GrunnlagRepresentation}
           />

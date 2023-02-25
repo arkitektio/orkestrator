@@ -1,14 +1,18 @@
 import { ApolloClient, NormalizedCacheObject, useQuery } from "@apollo/client";
 import React, { useContext } from "react";
-import { Man } from "./types";
+import { ManConfig } from "./types";
 
 export type ManContextType = {
   client?: ApolloClient<NormalizedCacheObject>;
-  config?: Man;
+  configure: (config?: ManConfig) => void;
+  config?: ManConfig;
 };
 
 export const ManContext = React.createContext<ManContextType>({
-  config: {} as Man,
+  config: {} as ManConfig,
+  configure: () => {
+    throw Error("No Provider in context not configured");
+  },
 });
 
 export const useMan = () => useContext(ManContext);

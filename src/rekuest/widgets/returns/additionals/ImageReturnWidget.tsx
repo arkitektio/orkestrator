@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { ImageReturnWidgetFragment } from "../../../api/graphql";
 import { ReturnWidgetProps } from "../../types";
+import { useWidgetRegistry } from "../../widget-context";
 
 const ImageReturnWidget: React.FC<
   ReturnWidgetProps<ImageReturnWidgetFragment>
-> = ({ port, widget, value, ward_registry }) => {
+> = ({ port, widget, value }) => {
   const [imageUrl, setImageUrl] = useState<string | undefined | null>();
+
+  const { registry } = useWidgetRegistry();
 
   useEffect(() => {
     if (port.identifier) {
-      const ward = ward_registry.getWard(port.identifier);
-      if (ward.resolveImage) {
+      const ward = registry?.ward_registry?.getWard(port.identifier);
+      if (ward?.resolveImage) {
         let query = widget?.query;
         ward
           .resolveImage({
@@ -38,19 +41,7 @@ const ImageReturnWidget: React.FC<
       </div>
     );
 
-  return (
-    <div>
-      {imageUrl && <img src={imageUrl} alt={port.key} width={"100%"} />}
-      {port.description && (
-        <div
-          id={`${port.key}-help`}
-          className="text-xs text-gray-600 mt-2 font-light"
-        >
-          {port.description}
-        </div>
-      )}
-    </div>
-  );
+  return <div>{imageUrl && <img src={imageUrl} width={"100%"} />}</div>;
 };
 
 export { ImageReturnWidget };

@@ -57,6 +57,12 @@ fragment ChildPortNested on ChildPort {
   child {
     kind
   }
+  assignWidget {
+    ...InputWidget
+  }
+  returnWidget {
+    ...ReturnWidget
+  }
 }
 
 fragment ChildPort on ChildPort {
@@ -64,6 +70,12 @@ fragment ChildPort on ChildPort {
   identifier
   child {
     ...ChildPortNested
+  }
+  assignWidget {
+    ...InputWidget
+  }
+  returnWidget {
+    ...ReturnWidget
   }
   nullable
 }
@@ -79,14 +91,17 @@ fragment InputWidget on Widget {
   ...CustomWidget
 }
 
-fragment ArgPort on ArgPort {
+fragment Port on Port {
   __typename
   key
   label
   nullable
   description
-  widget {
+  assignWidget {
     ...InputWidget
+  }
+  returnWidget {
+    ...ReturnWidget
   }
   kind
   identifier
@@ -117,40 +132,27 @@ fragment CustomReturnWidget on CustomReturnWidget {
   ward
 }
 
+fragment ChoiceReturnWidget on ChoiceReturnWidget {
+  __typename
+  choices {
+    label
+    value
+  }
+}
+
 fragment ReturnWidget on ReturnWidget {
   __typename
   kind
   ...ImageReturnWidget
   ...CustomReturnWidget
-}
-
-fragment ReturnPort on ReturnPort {
-  __typename
-  label
-  key
-  nullable
-  description
-  identifier
-  widget {
-    ...ReturnWidget
-  }
-  kind
-  child {
-    ...ChildPort
-  }
-  annotations {
-    ... on ValueRange {
-      min
-      max
-    }
-  }
+  ...ChoiceReturnWidget
 }
 
 fragment Ports on Node {
   args {
-    ...ArgPort
+    ...Port
   }
   returns {
-    ...ReturnPort
+    ...Port
   }
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { getBezierPath } from "react-flow-renderer";
+import { getBezierPath } from "reactflow";
 import { RunEventType } from "../../../fluss/api/graphql";
 import { LabeledEdgeProps } from "../../types";
 import { useMonitorRiver } from "../context";

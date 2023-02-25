@@ -6,6 +6,7 @@ import {
   useDetailPositionQuery,
   useDetailRepresentationQuery,
   useDetailRoiQuery,
+  useDetailTableQuery,
 } from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
 

@@ -3,11 +3,11 @@ import { Maybe } from "graphql/jsutils/Maybe";
 import { useEffect } from "react";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import {
-  ArgPortFragment,
   AssignNodeEventDocument,
   AssignNodeEventSubscription,
   AssignNodeEventSubscriptionVariables,
   ChildPortFragment,
+  PortFragment,
   PortKind,
   PortsFragment,
   useAssignNodeQuery,
@@ -18,6 +18,7 @@ import { useWidgetRegistry } from "../widgets/widget-context";
 import * as Yup from "yup";
 import { PortOptions } from "../widgets/types";
 import { withRekuest } from "../RekuestContext";
+import { notEmpty } from "../../floating/utils";
 
 export type ConstantsFormProps = {
   node: string;
@@ -35,7 +36,7 @@ export type ConstantsFormProps = {
 };
 
 export const portToWidget = (
-  port: Maybe<ArgPortFragment>,
+  port: Maybe<PortFragment>,
   widgetRegistry?: WidgetRegistry,
   portOptions: PortOptions = { disable: false }
 ): React.ReactNode => {
@@ -51,16 +52,14 @@ export const portToWidget = (
   return (
     <Widget
       port={port}
-      widget={port?.widget}
+      widget={port?.assignWidget}
       ward_registry={widgetRegistry.ward_registry}
       options={portOptions}
     />
   );
 };
 
-export const port_to_validation = (
-  port: Maybe<ArgPortFragment>
-): Yup.AnySchema => {
+export const port_to_validation = (port: PortFragment): Yup.AnySchema => {
   let baseType;
   switch (port?.kind) {
     case PortKind.String:
@@ -92,7 +91,7 @@ export const port_to_validation = (
     case PortKind.List:
       baseType = port.child
         ? Yup.array()
-            .of(port_to_validation(port?.child as unknown as ArgPortFragment))
+            .of(port_to_validation(port?.child as unknown as PortFragment))
             .typeError("Please provide a valid list")
         : Yup.string();
       break;
@@ -109,7 +108,7 @@ export const port_to_validation = (
 };
 
 export const validationSchemaBuilder = (
-  args: (ArgPortFragment | undefined | null)[]
+  args: (PortFragment | undefined | null)[]
 ) => {
   const schema: { [key: string]: any } = {};
   console.log(args);
@@ -196,14 +195,28 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
                     (arg) =>
                       !hide || !hide.includes(arg?.key || "fosinosinoiens")
                   )
+                  .filter(notEmpty)
                   .map((arg, index) => (
                     <div key={index}>
-                      {portToWidget(arg, registry, {
-                        disable:
-                          disable && disable.includes(arg?.key || "fakekey")
-                            ? true
-                            : false,
-                      })}
+                      <label className="font-light">
+                        {arg.label || arg.key}
+                      </label>
+                      <div className="w-full mt-2 mb-2 relative">
+                        {portToWidget(arg, registry, {
+                          disable:
+                            disable && disable.includes(arg?.key || "fakekey")
+                              ? true
+                              : false,
+                        })}
+                      </div>
+                      {arg.description && (
+                        <div
+                          id={`${arg.key}-help`}
+                          className="text-xs text-gray-600 mb-4 font-light"
+                        >
+                          {arg.description}
+                        </div>
+                      )}
                     </div>
                   ))}
               </>

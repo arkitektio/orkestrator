@@ -33,52 +33,6 @@ export type ArgNode = FlowNode & FlowNodeCommons & {
   typename: Scalars['String'];
 };
 
-export type ArgPort = {
-  __typename?: 'ArgPort';
-  child?: Maybe<ArgPortChild>;
-  default?: Maybe<Scalars['Any']>;
-  description?: Maybe<Scalars['String']>;
-  identifier?: Maybe<Scalars['String']>;
-  key: Scalars['String'];
-  kind: StreamKind;
-  label?: Maybe<Scalars['String']>;
-  name?: Maybe<Scalars['String']>;
-  /** The key of the arg */
-  nullable: Scalars['Boolean'];
-  widget?: Maybe<Widget>;
-};
-
-export type ArgPortChild = {
-  __typename?: 'ArgPortChild';
-  child?: Maybe<ArgPortChild>;
-  identifier?: Maybe<Scalars['String']>;
-  kind: StreamKind;
-  nullable?: Maybe<Scalars['Boolean']>;
-};
-
-export type ArgPortInput = {
-  /** The child of this argument */
-  child?: InputMaybe<ChildPortInput>;
-  /** The key of the arg */
-  default?: InputMaybe<Scalars['Any']>;
-  /** The description of this argument */
-  description?: InputMaybe<Scalars['String']>;
-  /** The identifier */
-  identifier?: InputMaybe<Scalars['String']>;
-  /** The key of the arg */
-  key: Scalars['String'];
-  /** The type of this argument */
-  kind: StreamKind;
-  /** The name of this argument */
-  label?: InputMaybe<Scalars['String']>;
-  /** The name of this argument */
-  name?: InputMaybe<Scalars['String']>;
-  /** Is this argument nullable */
-  nullable: Scalars['Boolean'];
-  /** The child of this argument */
-  widget?: InputMaybe<WidgetInput>;
-};
-
 export type ArkitektNode = FlowNode & FlowNodeCommons & {
   __typename?: 'ArkitektNode';
   allowLocal: Scalars['Boolean'];
@@ -102,6 +56,12 @@ export type ArkitektNode = FlowNode & FlowNodeCommons & {
   yieldTimeout: Scalars['Float'];
 };
 
+export type ChangePermissionsResult = {
+  __typename?: 'ChangePermissionsResult';
+  message?: Maybe<Scalars['String']>;
+  success?: Maybe<Scalars['Boolean']>;
+};
+
 export type ChildPortInput = {
   child?: InputMaybe<ChildPortInput>;
   /** The identifier */
@@ -121,6 +81,59 @@ export type ChoiceInput = {
   label: Scalars['String'];
   value: Scalars['Any'];
 };
+
+/**
+ * A comment
+ *
+ * A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+ * Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+ */
+export type Comment = {
+  __typename?: 'Comment';
+  /** Comments that are replies to this comment */
+  children?: Maybe<Array<Maybe<Comment>>>;
+  /** The content type of the commentable object */
+  contentType?: Maybe<CommentableModels>;
+  createdAt: Scalars['DateTime'];
+  /** The descendents of the comment (this referes to the Comment Tree) */
+  descendents?: Maybe<Array<Maybe<Descendent>>>;
+  id: Scalars['ID'];
+  mentions: Array<User>;
+  objectId: Scalars['Int'];
+  parent?: Maybe<Comment>;
+  resolved?: Maybe<Scalars['DateTime']>;
+  resolvedBy?: Maybe<User>;
+  text: Scalars['String'];
+  user: User;
+};
+
+
+/**
+ * A comment
+ *
+ * A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+ * Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+ */
+export type CommentChildrenArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+};
+
+/** A node in the comment tree */
+export type CommentNode = {
+  children?: Maybe<Array<Maybe<Descendent>>>;
+  untypedChildren?: Maybe<Scalars['GenericScalar']>;
+};
+
+export enum CommentableModels {
+  FlowFlow = 'FLOW_FLOW',
+  FlowReactivetemplate = 'FLOW_REACTIVETEMPLATE',
+  FlowRun = 'FLOW_RUN',
+  FlowRunevent = 'FLOW_RUNEVENT',
+  FlowRunlog = 'FLOW_RUNLOG',
+  FlowSnapshot = 'FLOW_SNAPSHOT',
+  FlowWorkspace = 'FLOW_WORKSPACE'
+}
 
 export type Constant = {
   __typename?: 'Constant';
@@ -158,6 +171,27 @@ export type DeleteSnapshotReturn = {
 export type DeleteWorkspaceReturn = {
   __typename?: 'DeleteWorkspaceReturn';
   id?: Maybe<Scalars['ID']>;
+};
+
+export type DescendendInput = {
+  /** Is this a bold leaf? */
+  bold?: InputMaybe<Scalars['Boolean']>;
+  children?: InputMaybe<Array<InputMaybe<DescendendInput>>>;
+  /** Is this a code leaf? */
+  code?: InputMaybe<Scalars['Boolean']>;
+  /** Is this a italic leaf? */
+  italic?: InputMaybe<Scalars['Boolean']>;
+  /** The text of the leaf */
+  text?: InputMaybe<Scalars['String']>;
+  /** The type of the descendent */
+  typename?: InputMaybe<Scalars['String']>;
+  /** The user that is mentioned */
+  user?: InputMaybe<Scalars['String']>;
+};
+
+/** A descendent of a node in the comment tree */
+export type Descendent = {
+  typename?: Maybe<Scalars['String']>;
 };
 
 export type EdgeInput = {
@@ -237,12 +271,12 @@ export type FlowEdgeCommons = {
 
 export type FlowGraph = {
   __typename?: 'FlowGraph';
-  args: Array<Maybe<ArgPort>>;
+  args: Array<Maybe<Port>>;
   edges: Array<Maybe<FlowEdge>>;
   globals: Array<Maybe<Global>>;
   nodes: Array<Maybe<FlowNode>>;
   position?: Maybe<Array<Maybe<Scalars['Int']>>>;
-  returns: Array<Maybe<ReturnPort>>;
+  returns: Array<Maybe<Port>>;
   zoom?: Maybe<Scalars['Float']>;
 };
 
@@ -278,12 +312,33 @@ export type GlobalInput = {
 };
 
 export type GraphInput = {
-  args: Array<InputMaybe<ArgPortInput>>;
+  args: Array<InputMaybe<PortInput>>;
   edges: Array<InputMaybe<EdgeInput>>;
   globals: Array<InputMaybe<GlobalInput>>;
   nodes: Array<InputMaybe<NodeInput>>;
-  returns: Array<InputMaybe<ReturnPortInput>>;
+  returns: Array<InputMaybe<PortInput>>;
   zoom?: InputMaybe<Scalars['Float']>;
+};
+
+export type Group = {
+  __typename?: 'Group';
+  id: Scalars['ID'];
+  name: Scalars['String'];
+  permissions: Array<Permission>;
+  /** The groups this user belongs to. A user will get all permissions granted to each of their groups. */
+  userSet: Array<User>;
+};
+
+export type GroupAssignment = {
+  __typename?: 'GroupAssignment';
+  /** A query that returns an image path */
+  group: Group;
+  permissions: Array<Maybe<Scalars['String']>>;
+};
+
+export type GroupAssignmentInput = {
+  group: Scalars['ID'];
+  permissions: Array<InputMaybe<Scalars['String']>>;
 };
 
 export type KwargNode = FlowNode & FlowNodeCommons & {
@@ -310,6 +365,20 @@ export type LabeledEdge = FlowEdge & FlowEdgeCommons & {
   typename: Scalars['String'];
 };
 
+/** A leaf in the comment tree. Representations some sort of text */
+export type Leaf = Descendent & {
+  __typename?: 'Leaf';
+  /** Is this a bold leaf? */
+  bold?: Maybe<Scalars['Boolean']>;
+  /** Is this a code leaf? */
+  code?: Maybe<Scalars['Boolean']>;
+  /** Is this a italic leaf? */
+  italic?: Maybe<Scalars['Boolean']>;
+  /** The text of the leaf */
+  text?: Maybe<Scalars['String']>;
+  typename?: Maybe<Scalars['String']>;
+};
+
 /** Variety expresses the Type of Representation we are dealing with */
 export enum MapStrategy {
   Concatmap = 'CONCATMAP',
@@ -318,15 +387,83 @@ export enum MapStrategy {
   Switchmap = 'SWITCHMAP'
 }
 
+/** A mention in the comment tree. This  is a reference to another user on the platform */
+export type MentionDescendent = CommentNode & Descendent & {
+  __typename?: 'MentionDescendent';
+  children?: Maybe<Array<Maybe<Descendent>>>;
+  typename?: Maybe<Scalars['String']>;
+  untypedChildren?: Maybe<Scalars['GenericScalar']>;
+  /** The user that is mentioned */
+  user: User;
+};
+
+export type MentionEvent = {
+  __typename?: 'MentionEvent';
+  create?: Maybe<Comment>;
+  deleted?: Maybe<Scalars['ID']>;
+  update?: Maybe<Comment>;
+};
+
 /** The root Mutation */
 export type Mutation = {
   __typename?: 'Mutation';
   alog?: Maybe<RunLog>;
+  /** Creates a Sample */
+  changePermissions?: Maybe<ChangePermissionsResult>;
+  /**
+   * Create an Comment
+   *
+   *     This mutation creates a comment. It takes a commentable_id and a commentable_type.
+   *     If this is the first comment on the commentable, it will create a new comment thread.
+   *     If there is already a comment thread, it will add the comment to the thread (by setting
+   *     it's parent to the last parent comment in the thread).
+   *
+   *     CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+   *     are a recursive structure, where each Descendent can have a list of Descendents as children.
+   *     The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+   *     reference to another user on the platform.
+   *
+   *     Please convert your comment tree to a list of Descendents before sending it to the server.
+   *     TODO: Add a converter from a comment tree to a list of Descendents.
+   *
+   *
+   *     (only signed in users)
+   */
+  createComment?: Maybe<Comment>;
   deleteFlow?: Maybe<DeleteFlowReturn>;
   deleteRun?: Maybe<DeleteRunReturn>;
   deleteSnapshot?: Maybe<DeleteSnapshotReturn>;
   deleteWorkspace?: Maybe<DeleteWorkspaceReturn>;
   drawvanilla?: Maybe<Workspace>;
+  /**
+   * Reply to an Comment
+   *
+   *     This mutation creates a comment. It takes a commentable_id and a commentable_type.
+   *     If this is the first comment on the commentable, it will create a new comment thread.
+   *     If there is already a comment thread, it will add the comment to the thread (by setting
+   *     it's parent to the last parent comment in the thread).
+   *
+   *     CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+   *     are a recursive structure, where each Descendent can have a list of Descendents as children.
+   *     The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+   *     reference to another user on the platform.
+   *
+   *     Please convert your comment tree to a list of Descendents before sending it to the server.
+   *     TODO: Add a converter from a comment tree to a list of Descendents.
+   *
+   *
+   *     (only signed in users)
+   */
+  replyTo?: Maybe<Comment>;
+  /**
+   * Create an Comment
+   *
+   *     This mutation resolves a comment. By resolving a comment, it will be marked as resolved,
+   *     and the user that resolved it will be set as the resolver.
+   *
+   *     (only signed in users)
+   */
+  resolveComment?: Maybe<Comment>;
   snapshot?: Maybe<Snapshot>;
   start?: Maybe<Run>;
   track?: Maybe<RunEvent>;
@@ -338,6 +475,24 @@ export type Mutation = {
 export type MutationAlogArgs = {
   message: Scalars['String'];
   run: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationChangePermissionsArgs = {
+  groupAssignments?: InputMaybe<Array<InputMaybe<GroupAssignmentInput>>>;
+  object: Scalars['ID'];
+  type: SharableModels;
+  userAssignments?: InputMaybe<Array<InputMaybe<UserAssignmentInput>>>;
+};
+
+
+/** The root Mutation */
+export type MutationCreateCommentArgs = {
+  descendents: Array<InputMaybe<DescendendInput>>;
+  object: Scalars['ID'];
+  parent?: InputMaybe<Scalars['ID']>;
+  type: CommentableModels;
 };
 
 
@@ -370,6 +525,20 @@ export type MutationDrawvanillaArgs = {
   brittle?: InputMaybe<Scalars['Boolean']>;
   name?: InputMaybe<Scalars['String']>;
   restrict?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Mutation */
+export type MutationReplyToArgs = {
+  descendents: Array<InputMaybe<DescendendInput>>;
+  parent: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationResolveCommentArgs = {
+  id: Scalars['ID'];
+  imitate?: InputMaybe<Scalars['ID']>;
 };
 
 
@@ -431,6 +600,93 @@ export type NodeInput = {
   yieldTimeout?: InputMaybe<Scalars['Float']>;
 };
 
+/** A paragraph in the comment tree. This paragraph contains other nodes (list nodes) */
+export type ParagraphDescendent = CommentNode & Descendent & {
+  __typename?: 'ParagraphDescendent';
+  children?: Maybe<Array<Maybe<Descendent>>>;
+  /** The size of the paragraph */
+  size?: Maybe<Scalars['String']>;
+  typename?: Maybe<Scalars['String']>;
+  untypedChildren?: Maybe<Scalars['GenericScalar']>;
+};
+
+/**
+ * A Permission object
+ *
+ * This object represents a permission in the system. Permissions are
+ * used to control access to different parts of the system. Permissions
+ * are assigned to groups and users. A user has access to a part of the
+ * system if the user is a member of a group that has the permission
+ * assigned to it.
+ */
+export type Permission = {
+  __typename?: 'Permission';
+  codename: Scalars['String'];
+  groupSet: Array<Group>;
+  id: Scalars['ID'];
+  name: Scalars['String'];
+  /** Unique ID for this permission */
+  unique: Scalars['String'];
+  /** Specific permissions for this user. */
+  userSet: Array<User>;
+};
+
+export type PermissionsOfReturn = {
+  __typename?: 'PermissionsOfReturn';
+  available?: Maybe<Array<Maybe<Permission>>>;
+  groupAssignments?: Maybe<Array<Maybe<GroupAssignment>>>;
+  userAssignments?: Maybe<Array<Maybe<UserAssignment>>>;
+};
+
+export type Port = {
+  __typename?: 'Port';
+  assignWidget?: Maybe<Widget>;
+  child?: Maybe<PortChild>;
+  default?: Maybe<Scalars['Any']>;
+  description?: Maybe<Scalars['String']>;
+  identifier?: Maybe<Scalars['String']>;
+  key: Scalars['String'];
+  kind: StreamKind;
+  label?: Maybe<Scalars['String']>;
+  name?: Maybe<Scalars['String']>;
+  /** The key of the arg */
+  nullable: Scalars['Boolean'];
+  returnWidget?: Maybe<ReturnWidget>;
+};
+
+export type PortChild = {
+  __typename?: 'PortChild';
+  child?: Maybe<PortChild>;
+  identifier?: Maybe<Scalars['String']>;
+  kind: StreamKind;
+  nullable?: Maybe<Scalars['Boolean']>;
+};
+
+export type PortInput = {
+  /** The child of this argument */
+  assignWidget?: InputMaybe<WidgetInput>;
+  /** The child of this argument */
+  child?: InputMaybe<ChildPortInput>;
+  /** The key of the arg */
+  default?: InputMaybe<Scalars['Any']>;
+  /** The description of this argument */
+  description?: InputMaybe<Scalars['String']>;
+  /** The identifier */
+  identifier?: InputMaybe<Scalars['String']>;
+  /** The key of the arg */
+  key: Scalars['String'];
+  /** The type of this argument */
+  kind: StreamKind;
+  /** The name of this argument */
+  label?: InputMaybe<Scalars['String']>;
+  /** The name of this argument */
+  name?: InputMaybe<Scalars['String']>;
+  /** Is this argument nullable */
+  nullable: Scalars['Boolean'];
+  /** The child of this argument */
+  returnWidget?: InputMaybe<ReturnWidgetInput>;
+};
+
 export type Position = {
   __typename?: 'Position';
   x: Scalars['Int'];
@@ -445,11 +701,29 @@ export type PositionInput = {
 /** The root Query */
 export type Query = {
   __typename?: 'Query';
+  comment?: Maybe<Comment>;
+  /**
+   * Comments for a specific object
+   *
+   *     This query returns all comments for a specific object. The object is
+   *     specified by the `model` and `id` arguments. The `model` argument is
+   *     a string that is the name of the model. The `id` argument is the id of
+   *     the object.
+   *
+   *     You can only query for comments for objects that you have access to.
+   *
+   *
+   */
+  commentsfor?: Maybe<Array<Maybe<Comment>>>;
   eventsBetween?: Maybe<Array<Maybe<RunEvent>>>;
   flow?: Maybe<Flow>;
   flows?: Maybe<Array<Maybe<Flow>>>;
   hello?: Maybe<Scalars['String']>;
+  me?: Maybe<User>;
+  mymentions?: Maybe<Array<Maybe<Comment>>>;
   myworkspaces?: Maybe<Array<Maybe<Workspace>>>;
+  permissionsFor?: Maybe<Array<Maybe<Permission>>>;
+  permissionsOf?: Maybe<PermissionsOfReturn>;
   reactivetemplate?: Maybe<ReactiveTemplate>;
   reactivetemplates?: Maybe<Array<Maybe<ReactiveTemplate>>>;
   run?: Maybe<Run>;
@@ -457,9 +731,26 @@ export type Query = {
   runs?: Maybe<Array<Maybe<Run>>>;
   snapshot?: Maybe<Snapshot>;
   snapshots?: Maybe<Array<Maybe<Snapshot>>>;
+  user?: Maybe<User>;
+  /** Get a list of users */
+  users?: Maybe<Array<Maybe<User>>>;
   void?: Maybe<Scalars['String']>;
   workspace?: Maybe<Workspace>;
   workspaces?: Maybe<Array<Maybe<Workspace>>>;
+};
+
+
+/** The root Query */
+export type QueryCommentArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryCommentsforArgs = {
+  deep?: InputMaybe<Scalars['Boolean']>;
+  id?: InputMaybe<Scalars['ID']>;
+  model: CommentableModels;
 };
 
 
@@ -481,6 +772,20 @@ export type QueryFlowArgs = {
 export type QueryFlowsArgs = {
   name?: InputMaybe<Scalars['String']>;
   workspace?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryPermissionsForArgs = {
+  model: SharableModels;
+  name?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
+export type QueryPermissionsOfArgs = {
+  id: Scalars['ID'];
+  model: SharableModels;
 };
 
 
@@ -525,6 +830,21 @@ export type QuerySnapshotArgs = {
 /** The root Query */
 export type QuerySnapshotsArgs = {
   run?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryUserArgs = {
+  email?: InputMaybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryUsersArgs = {
+  email?: InputMaybe<Scalars['String']>;
+  search?: InputMaybe<Scalars['String']>;
+  username?: InputMaybe<Scalars['String']>;
 };
 
 
@@ -617,49 +937,6 @@ export type ReturnNode = FlowNode & FlowNodeCommons & {
   typename: Scalars['String'];
 };
 
-export type ReturnPort = {
-  __typename?: 'ReturnPort';
-  child?: Maybe<ReturnPortChild>;
-  description?: Maybe<Scalars['String']>;
-  identifier?: Maybe<Scalars['String']>;
-  key: Scalars['String'];
-  kind: StreamKind;
-  label?: Maybe<Scalars['String']>;
-  name?: Maybe<Scalars['String']>;
-  /** The key of the arg */
-  nullable: Scalars['Boolean'];
-  widget?: Maybe<ReturnWidget>;
-};
-
-export type ReturnPortChild = {
-  __typename?: 'ReturnPortChild';
-  child?: Maybe<ArgPortChild>;
-  identifier?: Maybe<Scalars['String']>;
-  kind: StreamKind;
-  nullable?: Maybe<Scalars['Boolean']>;
-};
-
-export type ReturnPortInput = {
-  /** The child of this argument */
-  child?: InputMaybe<ChildPortInput>;
-  /** The description of this argument */
-  description?: InputMaybe<Scalars['String']>;
-  /** The identifier */
-  identifier?: InputMaybe<Scalars['String']>;
-  /** The key of the arg */
-  key: Scalars['String'];
-  /** The type of this argument */
-  kind: StreamKind;
-  /** The name of this argument */
-  label?: InputMaybe<Scalars['String']>;
-  /** The name of this argument */
-  name?: InputMaybe<Scalars['String']>;
-  /** Is this argument nullable */
-  nullable: Scalars['Boolean'];
-  /** The child of this argument */
-  widget?: InputMaybe<ReturnWidgetInput>;
-};
-
 export type ReturnWidget = {
   __typename?: 'ReturnWidget';
   /** Is this a paragraph */
@@ -741,6 +1018,17 @@ export type RunLog = {
   run?: Maybe<Run>;
 };
 
+/** Sharable Models are models that can be shared amongst users and groups. They representent the models of the DB */
+export enum SharableModels {
+  FlowFlow = 'FLOW_FLOW',
+  FlowReactivetemplate = 'FLOW_REACTIVETEMPLATE',
+  FlowRun = 'FLOW_RUN',
+  FlowRunevent = 'FLOW_RUNEVENT',
+  FlowRunlog = 'FLOW_RUNLOG',
+  FlowSnapshot = 'FLOW_SNAPSHOT',
+  FlowWorkspace = 'FLOW_WORKSPACE'
+}
+
 export type Snapshot = {
   __typename?: 'Snapshot';
   createdAt: Scalars['DateTime'];
@@ -796,6 +1084,14 @@ export enum StreamKind {
 export type Subscription = {
   __typename?: 'Subscription';
   events?: Maybe<Event>;
+  /**
+   * My Mentions
+   *
+   *     Returns an event of a new mention for the user if the user
+   *     was mentioned in a comment.
+   *
+   */
+  mymentions?: Maybe<MentionEvent>;
 };
 
 
@@ -804,12 +1100,18 @@ export type SubscriptionEventsArgs = {
   id: Scalars['ID'];
 };
 
+/** A reflection on the real User */
 export type User = {
   __typename?: 'User';
+  /** The associated color for this user */
+  color?: Maybe<Scalars['String']>;
+  comments: Array<Comment>;
   dateJoined: Scalars['DateTime'];
   email: Scalars['String'];
   firstName: Scalars['String'];
   flowSet: Array<Flow>;
+  /** The groups this user belongs to. A user will get all permissions granted to each of their groups. */
+  groups: Array<Group>;
   id: Scalars['ID'];
   /** Designates whether this user should be treated as active. Unselect this instead of deleting accounts. */
   isActive: Scalars['Boolean'];
@@ -820,11 +1122,31 @@ export type User = {
   iss?: Maybe<Scalars['String']>;
   lastLogin?: Maybe<Scalars['DateTime']>;
   lastName: Scalars['String'];
+  mentionedIn: Array<Comment>;
+  /** The name of the user */
+  name?: Maybe<Scalars['String']>;
   password: Scalars['String'];
+  resolvedComments: Array<Comment>;
+  /** The sub of the user */
   sub?: Maybe<Scalars['String']>;
+  /** Specific permissions for this user. */
+  userPermissions: Array<Permission>;
   /** Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
   username: Scalars['String'];
   workspaceSet: Array<Workspace>;
+};
+
+export type UserAssignment = {
+  __typename?: 'UserAssignment';
+  permissions: Array<Maybe<Scalars['String']>>;
+  /** A query that returns an image path */
+  user: User;
+};
+
+export type UserAssignmentInput = {
+  permissions: Array<InputMaybe<Scalars['String']>>;
+  /** The user id */
+  user: Scalars['String'];
 };
 
 export type Widget = {
@@ -885,6 +1207,46 @@ export type Workspace = {
   restrict: Array<Maybe<Scalars['String']>>;
 };
 
+export type LeafFragment = { __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' };
+
+type Node_MentionDescendent_Fragment = { __typename?: 'MentionDescendent', typename: 'MentionDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+type Node_ParagraphDescendent_Fragment = { __typename?: 'ParagraphDescendent', typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+export type NodeFragment = Node_MentionDescendent_Fragment | Node_ParagraphDescendent_Fragment;
+
+export type LevelDownParagraphFragment = { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null };
+
+export type LevelDownMentionFragment = { __typename?: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } };
+
+type LevelDownDescendent_Leaf_Fragment = { __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' };
+
+type LevelDownDescendent_MentionDescendent_Fragment = { __typename?: 'MentionDescendent', typename: 'MentionDescendent' };
+
+type LevelDownDescendent_ParagraphDescendent_Fragment = { __typename?: 'ParagraphDescendent', typename: 'ParagraphDescendent' };
+
+export type LevelDownDescendentFragment = LevelDownDescendent_Leaf_Fragment | LevelDownDescendent_MentionDescendent_Fragment | LevelDownDescendent_ParagraphDescendent_Fragment;
+
+export type MentionFragment = { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+export type ParagraphFragment = { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+type Descendent_Leaf_Fragment = { __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' };
+
+type Descendent_MentionDescendent_Fragment = { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+type Descendent_ParagraphDescendent_Fragment = { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+export type DescendentFragment = Descendent_Leaf_Fragment | Descendent_MentionDescendent_Fragment | Descendent_ParagraphDescendent_Fragment;
+
+export type SubthreadCommentFragment = { __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null };
+
+export type ListCommentFragment = { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null };
+
+export type MentionCommentFragment = { __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }>, resolvedBy?: { __typename?: 'User', sub?: string | null } | null };
+
+export type DetailCommentFragment = { __typename?: 'Comment', id: string, resolved?: any | null, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', sub?: string | null }> };
+
 export type ConstantFragment = { __typename?: 'Constant', key: string, kind: ConstantKind, nullable: boolean, default?: any | null, label?: string | null, description?: string | null };
 
 type FlowNodeCommons_ArgNode_Fragment = { __typename?: 'ArgNode', constants?: any | null, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> };
@@ -907,13 +1269,9 @@ export type WidgetFragment = { __typename?: 'Widget', kind: string, query?: stri
 
 export type ReturnWidgetFragment = { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null };
 
-export type ArgPortChildFragment = { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null };
+export type PortChildFragment = { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null };
 
-export type ReturnPortChildFragment = { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null };
-
-export type ArgPortFragment = { __typename?: 'ArgPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null };
-
-export type ReturnPortFragment = { __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null };
+export type PortFragment = { __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null };
 
 export type ArgNodeFragment = { __typename: 'ArgNode', constants?: any | null, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> };
 
@@ -955,13 +1313,13 @@ export type StreamItemChildFragment = { __typename?: 'StreamItemChild', kind: St
 
 export type StreamItemFragment = { __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null };
 
-export type FlowFragment = { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null };
+export type FlowFragment = { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null };
 
 export type ListFlowFragment = { __typename?: 'Flow', id: string, name: string, screenshot?: string | null, createdAt: any, workspace?: { __typename?: 'Workspace', id: string } | null };
 
 export type ListWorkspaceFragment = { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename?: 'Flow', id: string, name: string, screenshot?: string | null, createdAt: any, workspace?: { __typename?: 'Workspace', id: string } | null } | null };
 
-export type WorkspaceFragment = { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null };
+export type WorkspaceFragment = { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null };
 
 export type RunLogFragment = { __typename?: 'RunLog', id: string, node: string, log?: string | null };
 
@@ -973,9 +1331,34 @@ export type SnapshotFragment = { __typename?: 'Snapshot', id: string, status?: s
 
 export type ListSnapshotFragment = { __typename?: 'Snapshot', id: string, t: number, run?: { __typename?: 'Run', id: string, assignation?: string | null } | null };
 
-export type RunFragment = { __typename?: 'Run', id: string, status?: string | null, createdAt: any, snapshots: Array<{ __typename?: 'Snapshot', id: string, status?: string | null, t: number }>, latestSnapshot?: { __typename?: 'Snapshot', createdAt: any, t: number, events: Array<{ __typename?: 'RunEvent', id: string, source: string, handle: string, type: RunEventType, createdAt: any, value?: any | null, t: number }> } | null, flow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null };
+export type RunFragment = { __typename?: 'Run', id: string, status?: string | null, createdAt: any, snapshots: Array<{ __typename?: 'Snapshot', id: string, status?: string | null, t: number }>, latestSnapshot?: { __typename?: 'Snapshot', createdAt: any, t: number, events: Array<{ __typename?: 'RunEvent', id: string, source: string, handle: string, type: RunEventType, createdAt: any, value?: any | null, t: number }> } | null, flow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null };
 
 export type ListRunFragment = { __typename?: 'Run', id: string, status?: string | null, assignation?: string | null, createdAt: any, flow?: { __typename?: 'Flow', id: string, name: string, workspace?: { __typename?: 'Workspace', name?: string | null } | null } | null };
+
+export type CreateCommentMutationVariables = Exact<{
+  id: Scalars['ID'];
+  model: CommentableModels;
+  descendents: Array<InputMaybe<DescendendInput>> | InputMaybe<DescendendInput>;
+  parent?: InputMaybe<Scalars['ID']>;
+}>;
+
+
+export type CreateCommentMutation = { __typename?: 'Mutation', createComment?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
+
+export type ReplyToMutationVariables = Exact<{
+  descendents: Array<InputMaybe<DescendendInput>> | InputMaybe<DescendendInput>;
+  parent: Scalars['ID'];
+}>;
+
+
+export type ReplyToMutation = { __typename?: 'Mutation', replyTo?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
+
+export type ResolveCommentMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type ResolveCommentMutation = { __typename?: 'Mutation', resolveComment?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
 
 export type UpdateFlowMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -984,7 +1367,7 @@ export type UpdateFlowMutationVariables = Exact<{
 }>;
 
 
-export type UpdateFlowMutation = { __typename?: 'Mutation', updateworkspace?: { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
+export type UpdateFlowMutation = { __typename?: 'Mutation', updateworkspace?: { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
 
 export type DeleteFlowMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -999,7 +1382,7 @@ export type CreateVanillaDiagramMutationVariables = Exact<{
 }>;
 
 
-export type CreateVanillaDiagramMutation = { __typename?: 'Mutation', drawvanilla?: { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
+export type CreateVanillaDiagramMutation = { __typename?: 'Mutation', drawvanilla?: { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
 
 export type DeleteSnapshotMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -1022,19 +1405,39 @@ export type DeleteWorkspaceMutationVariables = Exact<{
 
 export type DeleteWorkspaceMutation = { __typename?: 'Mutation', deleteWorkspace?: { __typename?: 'DeleteWorkspaceReturn', id?: string | null } | null };
 
+export type CommentsForQueryVariables = Exact<{
+  id: Scalars['ID'];
+  model: CommentableModels;
+}>;
+
+
+export type CommentsForQuery = { __typename?: 'Query', commentsfor?: Array<{ __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null> | null };
+
+export type MyMentionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyMentionsQuery = { __typename?: 'Query', mymentions?: Array<{ __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }>, resolvedBy?: { __typename?: 'User', sub?: string | null } | null } | null> | null };
+
+export type DetailCommentQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailCommentQuery = { __typename?: 'Query', comment?: { __typename?: 'Comment', id: string, resolved?: any | null, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', sub?: string | null }> } | null };
+
 export type FlowQueryVariables = Exact<{
   id?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type FlowQuery = { __typename?: 'Query', flow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null };
+export type FlowQuery = { __typename?: 'Query', flow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null };
 
 export type WorkspaceQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type WorkspaceQuery = { __typename?: 'Query', workspace?: { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
+export type WorkspaceQuery = { __typename?: 'Query', workspace?: { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
 
 export type MyWorkspacesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1079,7 +1482,7 @@ export type DetailRunQueryVariables = Exact<{
 }>;
 
 
-export type DetailRunQuery = { __typename?: 'Query', run?: { __typename?: 'Run', id: string, status?: string | null, createdAt: any, snapshots: Array<{ __typename?: 'Snapshot', id: string, status?: string | null, t: number }>, latestSnapshot?: { __typename?: 'Snapshot', createdAt: any, t: number, events: Array<{ __typename?: 'RunEvent', id: string, source: string, handle: string, type: RunEventType, createdAt: any, value?: any | null, t: number }> } | null, flow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'ReturnPortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'ArgPortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
+export type DetailRunQuery = { __typename?: 'Query', run?: { __typename?: 'Run', id: string, status?: string | null, createdAt: any, snapshots: Array<{ __typename?: 'Snapshot', id: string, status?: string | null, t: number }>, latestSnapshot?: { __typename?: 'Snapshot', createdAt: any, t: number, events: Array<{ __typename?: 'RunEvent', id: string, source: string, handle: string, type: RunEventType, createdAt: any, value?: any | null, t: number }> } | null, flow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, reserveParams: { __typename?: 'ReserveParams', agents?: Array<string | null> | null }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', locked?: boolean | null, key: string, value?: any | null, mapped?: Array<string | null> | null, identifier?: string | null, typename: string, widget?: any | null } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, kind: StreamKind, name?: string | null, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, nullable?: boolean | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
 
 export type EventsBetweenQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -1127,6 +1530,165 @@ export type EventsSubscriptionVariables = Exact<{
 
 export type EventsSubscription = { __typename?: 'Subscription', events?: { __typename?: 'Event', deleted?: string | null, create?: { __typename?: 'RunEvent', id: string, source: string, handle: string, type: RunEventType, createdAt: any, value?: any | null, t: number } | null, update?: { __typename?: 'RunEvent', id: string, source: string, handle: string, type: RunEventType, createdAt: any, value?: any | null, t: number } | null } | null };
 
+export const LeafFragmentDoc = gql`
+    fragment Leaf on Leaf {
+  typename: __typename
+  bold
+  italic
+  code
+  text
+}
+    `;
+export const LevelDownDescendentFragmentDoc = gql`
+    fragment LevelDownDescendent on Descendent {
+  typename: __typename
+  ...Leaf
+}
+    ${LeafFragmentDoc}`;
+export const LevelDownParagraphFragmentDoc = gql`
+    fragment LevelDownParagraph on ParagraphDescendent {
+  size
+  untypedChildren
+}
+    `;
+export const LevelDownMentionFragmentDoc = gql`
+    fragment LevelDownMention on MentionDescendent {
+  user {
+    sub
+  }
+}
+    `;
+export const NodeFragmentDoc = gql`
+    fragment Node on CommentNode {
+  typename: __typename
+  children {
+    typename: __typename
+    ...Leaf
+    ...LevelDownParagraph
+    ...LevelDownMention
+  }
+}
+    ${LeafFragmentDoc}
+${LevelDownParagraphFragmentDoc}
+${LevelDownMentionFragmentDoc}`;
+export const MentionFragmentDoc = gql`
+    fragment Mention on MentionDescendent {
+  user {
+    sub
+  }
+  ...Node
+}
+    ${NodeFragmentDoc}`;
+export const ParagraphFragmentDoc = gql`
+    fragment Paragraph on ParagraphDescendent {
+  size
+  ...Node
+}
+    ${NodeFragmentDoc}`;
+export const DescendentFragmentDoc = gql`
+    fragment Descendent on Descendent {
+  typename: __typename
+  ...Mention
+  ...Paragraph
+  ...Leaf
+}
+    ${MentionFragmentDoc}
+${ParagraphFragmentDoc}
+${LeafFragmentDoc}`;
+export const SubthreadCommentFragmentDoc = gql`
+    fragment SubthreadComment on Comment {
+  user {
+    sub
+  }
+  parent {
+    id
+  }
+  createdAt
+  descendents {
+    ...Descendent
+  }
+}
+    ${DescendentFragmentDoc}`;
+export const ListCommentFragmentDoc = gql`
+    fragment ListComment on Comment {
+  user {
+    sub
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  resolved
+  resolvedBy {
+    sub
+  }
+  id
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+}
+    ${DescendentFragmentDoc}
+${SubthreadCommentFragmentDoc}`;
+export const MentionCommentFragmentDoc = gql`
+    fragment MentionComment on Comment {
+  user {
+    sub
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  id
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+  mentions {
+    id
+    sub
+  }
+  resolved
+  resolvedBy {
+    sub
+  }
+  objectId
+  contentType
+}
+    ${DescendentFragmentDoc}
+${SubthreadCommentFragmentDoc}`;
+export const DetailCommentFragmentDoc = gql`
+    fragment DetailComment on Comment {
+  user {
+    sub
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  id
+  resolved
+  resolvedBy {
+    sub
+  }
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+  mentions {
+    sub
+  }
+  objectId
+  contentType
+}
+    ${DescendentFragmentDoc}
+${SubthreadCommentFragmentDoc}`;
 export const ConstantFragmentDoc = gql`
     fragment Constant on Constant {
   key
@@ -1307,35 +1869,6 @@ export const WidgetFragmentDoc = gql`
   ward
 }
     `;
-export const ArgPortChildFragmentDoc = gql`
-    fragment ArgPortChild on ArgPortChild {
-  identifier
-  kind
-  nullable
-  child {
-    identifier
-    kind
-  }
-}
-    `;
-export const ArgPortFragmentDoc = gql`
-    fragment ArgPort on ArgPort {
-  key
-  label
-  identifier
-  kind
-  name
-  description
-  widget {
-    ...Widget
-  }
-  child {
-    ...ArgPortChild
-  }
-  nullable
-}
-    ${WidgetFragmentDoc}
-${ArgPortChildFragmentDoc}`;
 export const ReturnWidgetFragmentDoc = gql`
     fragment ReturnWidget on ReturnWidget {
   kind
@@ -1344,8 +1877,8 @@ export const ReturnWidgetFragmentDoc = gql`
   ward
 }
     `;
-export const ReturnPortChildFragmentDoc = gql`
-    fragment ReturnPortChild on ReturnPortChild {
+export const PortChildFragmentDoc = gql`
+    fragment PortChild on PortChild {
   identifier
   kind
   nullable
@@ -1355,24 +1888,28 @@ export const ReturnPortChildFragmentDoc = gql`
   }
 }
     `;
-export const ReturnPortFragmentDoc = gql`
-    fragment ReturnPort on ReturnPort {
+export const PortFragmentDoc = gql`
+    fragment Port on Port {
   key
   label
   identifier
   kind
   name
   description
-  widget {
+  assignWidget {
+    ...Widget
+  }
+  returnWidget {
     ...ReturnWidget
   }
   child {
-    ...ReturnPortChild
+    ...PortChild
   }
   nullable
 }
-    ${ReturnWidgetFragmentDoc}
-${ReturnPortChildFragmentDoc}`;
+    ${WidgetFragmentDoc}
+${ReturnWidgetFragmentDoc}
+${PortChildFragmentDoc}`;
 export const FlowFragmentDoc = gql`
     fragment Flow on Flow {
   __typename
@@ -1388,10 +1925,10 @@ export const FlowFragmentDoc = gql`
       ...Global
     }
     args {
-      ...ArgPort
+      ...Port
     }
     returns {
-      ...ReturnPort
+      ...Port
     }
   }
   restrict
@@ -1405,8 +1942,7 @@ export const FlowFragmentDoc = gql`
     ${FlowNodeFragmentDoc}
 ${FlowEdgeFragmentDoc}
 ${GlobalFragmentDoc}
-${ArgPortFragmentDoc}
-${ReturnPortFragmentDoc}`;
+${PortFragmentDoc}`;
 export const WorkspaceFragmentDoc = gql`
     fragment Workspace on Workspace {
   id
@@ -1513,6 +2049,114 @@ export const ListRunFragmentDoc = gql`
   }
 }
     `;
+export const CreateCommentDocument = gql`
+    mutation CreateComment($id: ID!, $model: CommentableModels!, $descendents: [DescendendInput]!, $parent: ID) {
+  createComment(
+    object: $id
+    type: $model
+    descendents: $descendents
+    parent: $parent
+  ) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+export type CreateCommentMutationFn = Apollo.MutationFunction<CreateCommentMutation, CreateCommentMutationVariables>;
+
+/**
+ * __useCreateCommentMutation__
+ *
+ * To run a mutation, you first call `useCreateCommentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateCommentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createCommentMutation, { data, loading, error }] = useCreateCommentMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      model: // value for 'model'
+ *      descendents: // value for 'descendents'
+ *      parent: // value for 'parent'
+ *   },
+ * });
+ */
+export function useCreateCommentMutation(baseOptions?: Apollo.MutationHookOptions<CreateCommentMutation, CreateCommentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateCommentMutation, CreateCommentMutationVariables>(CreateCommentDocument, options);
+      }
+export type CreateCommentMutationHookResult = ReturnType<typeof useCreateCommentMutation>;
+export type CreateCommentMutationResult = Apollo.MutationResult<CreateCommentMutation>;
+export type CreateCommentMutationOptions = Apollo.BaseMutationOptions<CreateCommentMutation, CreateCommentMutationVariables>;
+export const ReplyToDocument = gql`
+    mutation ReplyTo($descendents: [DescendendInput]!, $parent: ID!) {
+  replyTo(descendents: $descendents, parent: $parent) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+export type ReplyToMutationFn = Apollo.MutationFunction<ReplyToMutation, ReplyToMutationVariables>;
+
+/**
+ * __useReplyToMutation__
+ *
+ * To run a mutation, you first call `useReplyToMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useReplyToMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [replyToMutation, { data, loading, error }] = useReplyToMutation({
+ *   variables: {
+ *      descendents: // value for 'descendents'
+ *      parent: // value for 'parent'
+ *   },
+ * });
+ */
+export function useReplyToMutation(baseOptions?: Apollo.MutationHookOptions<ReplyToMutation, ReplyToMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ReplyToMutation, ReplyToMutationVariables>(ReplyToDocument, options);
+      }
+export type ReplyToMutationHookResult = ReturnType<typeof useReplyToMutation>;
+export type ReplyToMutationResult = Apollo.MutationResult<ReplyToMutation>;
+export type ReplyToMutationOptions = Apollo.BaseMutationOptions<ReplyToMutation, ReplyToMutationVariables>;
+export const ResolveCommentDocument = gql`
+    mutation ResolveComment($id: ID!) {
+  resolveComment(id: $id) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+export type ResolveCommentMutationFn = Apollo.MutationFunction<ResolveCommentMutation, ResolveCommentMutationVariables>;
+
+/**
+ * __useResolveCommentMutation__
+ *
+ * To run a mutation, you first call `useResolveCommentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useResolveCommentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [resolveCommentMutation, { data, loading, error }] = useResolveCommentMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useResolveCommentMutation(baseOptions?: Apollo.MutationHookOptions<ResolveCommentMutation, ResolveCommentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ResolveCommentMutation, ResolveCommentMutationVariables>(ResolveCommentDocument, options);
+      }
+export type ResolveCommentMutationHookResult = ReturnType<typeof useResolveCommentMutation>;
+export type ResolveCommentMutationResult = Apollo.MutationResult<ResolveCommentMutation>;
+export type ResolveCommentMutationOptions = Apollo.BaseMutationOptions<ResolveCommentMutation, ResolveCommentMutationVariables>;
 export const UpdateFlowDocument = gql`
     mutation UpdateFlow($id: ID!, $graph: GraphInput!, $screenshot: ImageFile) {
   updateworkspace(id: $id, graph: $graph, screenshot: $screenshot) {
@@ -1714,6 +2358,111 @@ export function useDeleteWorkspaceMutation(baseOptions?: Apollo.MutationHookOpti
 export type DeleteWorkspaceMutationHookResult = ReturnType<typeof useDeleteWorkspaceMutation>;
 export type DeleteWorkspaceMutationResult = Apollo.MutationResult<DeleteWorkspaceMutation>;
 export type DeleteWorkspaceMutationOptions = Apollo.BaseMutationOptions<DeleteWorkspaceMutation, DeleteWorkspaceMutationVariables>;
+export const CommentsForDocument = gql`
+    query CommentsFor($id: ID!, $model: CommentableModels!) {
+  commentsfor(model: $model, id: $id) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+
+/**
+ * __useCommentsForQuery__
+ *
+ * To run a query within a React component, call `useCommentsForQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCommentsForQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCommentsForQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *      model: // value for 'model'
+ *   },
+ * });
+ */
+export function useCommentsForQuery(baseOptions: Apollo.QueryHookOptions<CommentsForQuery, CommentsForQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<CommentsForQuery, CommentsForQueryVariables>(CommentsForDocument, options);
+      }
+export function useCommentsForLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<CommentsForQuery, CommentsForQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<CommentsForQuery, CommentsForQueryVariables>(CommentsForDocument, options);
+        }
+export type CommentsForQueryHookResult = ReturnType<typeof useCommentsForQuery>;
+export type CommentsForLazyQueryHookResult = ReturnType<typeof useCommentsForLazyQuery>;
+export type CommentsForQueryResult = Apollo.QueryResult<CommentsForQuery, CommentsForQueryVariables>;
+export const MyMentionsDocument = gql`
+    query MyMentions {
+  mymentions {
+    ...MentionComment
+  }
+}
+    ${MentionCommentFragmentDoc}`;
+
+/**
+ * __useMyMentionsQuery__
+ *
+ * To run a query within a React component, call `useMyMentionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyMentionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyMentionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMyMentionsQuery(baseOptions?: Apollo.QueryHookOptions<MyMentionsQuery, MyMentionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyMentionsQuery, MyMentionsQueryVariables>(MyMentionsDocument, options);
+      }
+export function useMyMentionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyMentionsQuery, MyMentionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyMentionsQuery, MyMentionsQueryVariables>(MyMentionsDocument, options);
+        }
+export type MyMentionsQueryHookResult = ReturnType<typeof useMyMentionsQuery>;
+export type MyMentionsLazyQueryHookResult = ReturnType<typeof useMyMentionsLazyQuery>;
+export type MyMentionsQueryResult = Apollo.QueryResult<MyMentionsQuery, MyMentionsQueryVariables>;
+export const DetailCommentDocument = gql`
+    query DetailComment($id: ID!) {
+  comment(id: $id) {
+    ...DetailComment
+  }
+}
+    ${DetailCommentFragmentDoc}`;
+
+/**
+ * __useDetailCommentQuery__
+ *
+ * To run a query within a React component, call `useDetailCommentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailCommentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailCommentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailCommentQuery(baseOptions: Apollo.QueryHookOptions<DetailCommentQuery, DetailCommentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailCommentQuery, DetailCommentQueryVariables>(DetailCommentDocument, options);
+      }
+export function useDetailCommentLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailCommentQuery, DetailCommentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailCommentQuery, DetailCommentQueryVariables>(DetailCommentDocument, options);
+        }
+export type DetailCommentQueryHookResult = ReturnType<typeof useDetailCommentQuery>;
+export type DetailCommentLazyQueryHookResult = ReturnType<typeof useDetailCommentLazyQuery>;
+export type DetailCommentQueryResult = Apollo.QueryResult<DetailCommentQuery, DetailCommentQueryVariables>;
 export const FlowDocument = gql`
     query Flow($id: ID) {
   flow(id: $id) {

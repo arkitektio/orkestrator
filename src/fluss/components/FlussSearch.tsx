@@ -28,7 +28,7 @@ export const FlussSearch = ({ onSearch, placeholder }: FlussSearchProps) => {
     >
       {(formik) => (
         <Form className="w-full p-3 rounded-md shadow-md bg-slate-100 text-slate-900 dark:border-none border-gray-300 border flex flex-col">
-          <ChangeSubmitHelper debounce={200} formik={formik} />
+          <ChangeSubmitHelper debounce={200} />
           <div className="flex flex-row">
             <div className="flex-grow transition-all">
               <Field

@@ -1,21 +1,12 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { isVoidExpression } from "typescript";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
-import { RoiCanvas } from "../../components/RoiCanvas";
 import { SelfActions } from "../../components/SelfActions";
 import { notEmpty } from "../../floating/utils";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
-import { Stage, Representation } from "../../linker";
-import {
-  CommentableModels,
-  useDetailInstrumentQuery,
-  useDetailPositionQuery,
-  useDetailRoiQuery,
-} from "../api/graphql";
+import { Representation } from "../../linker";
+import { CommentableModels, useDetailInstrumentQuery } from "../api/graphql";
 import { withMikro } from "../MikroContext";
-import CommentSection from "./comments/CommentSection";
-import { DiscussionSidebar } from "./comments/DiscussionSidebar";
 
 export type InstrumentProps = {
   id: string;
@@ -31,10 +22,7 @@ const Instrument: React.FC<InstrumentProps> = ({ id }) => {
       actions={<SelfActions type={"@mikro/instrument"} object={id} />}
       sidebar={
         <div className="p-5">
-          <CommentSection
-            id={id}
-            model={CommentableModels.GrunnlagInstrument}
-          />
+          <MikroKomments id={id} model={CommentableModels.GrunnlagInstrument} />
         </div>
       }
     >

@@ -1,22 +1,13 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { isVoidExpression } from "typescript";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
-import { RoiCanvas } from "../../components/RoiCanvas";
 import { SelfActions } from "../../components/SelfActions";
 import { notEmpty } from "../../floating/utils";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { OptimizedImage } from "../../layout/OptimizedImage";
 import { PageLayout } from "../../layout/PageLayout";
-import { Stage, Representation } from "../../linker";
-import {
-  CommentableModels,
-  useDetailObjectiveQuery,
-  useDetailPositionQuery,
-  useDetailRoiQuery,
-} from "../api/graphql";
+import { Representation } from "../../linker";
+import { CommentableModels, useDetailObjectiveQuery } from "../api/graphql";
 import { useMikro, withMikro } from "../MikroContext";
-import CommentSection from "./comments/CommentSection";
-import { DiscussionSidebar } from "./comments/DiscussionSidebar";
 
 export type ObjectiveProps = {
   id: string;
@@ -34,7 +25,7 @@ const Objective: React.FC<ObjectiveProps> = ({ id }) => {
       actions={<SelfActions type={"@mikro/objective"} object={id} />}
       sidebar={
         <div className="p-5">
-          <CommentSection id={id} model={CommentableModels.GrunnlagObjective} />
+          <MikroKomments id={id} model={CommentableModels.GrunnlagObjective} />
         </div>
       }
     >

@@ -3,6 +3,7 @@ import { Maybe } from "graphql/jsutils/Maybe";
 import React from "react";
 import Select, { Options } from "react-select";
 import { Alert } from "../Alert";
+import { wrapped } from "./Wrapper";
 
 export interface SelectOption {
   [key: string]: any | null;
@@ -92,22 +93,10 @@ export const enum_to_options = (enum_object: any) => {
   }));
 };
 
-export function SelectInputField<
-  T extends SelectOption = { value: string; label: string }
->(props: Props<T>): any {
-  return (
-    <>
-      {props.label && (
-        <label
-          className={props.labelClassName || "font-light"}
-          htmlFor={props.name}
-        >
-          {props.label}
-        </label>
-      )}
-      <div
-        className={props.className || "w-full mt-2 mb-2 relative text-black"}
-      >
+export const SelectInputField = wrapped(
+  (props: Props<{ value: string; label: string }>) => {
+    return (
+      <>
         <Field
           isMulti={props.isMulti ? true : false}
           id={props.name}
@@ -118,18 +107,7 @@ export function SelectInputField<
           getOptionLabel={props.getOptionLabel}
           getOptionValue={props.getOptionValue}
         />
-      </div>
-      {props.description && (
-        <div
-          id={`${props.name}-help`}
-          className={
-            props.descriptionClassName ||
-            "font-light text-xs mb-4 mt-2 text-gray-600"
-          }
-        >
-          {props.description}
-        </div>
-      )}
-    </>
-  );
-}
+      </>
+    );
+  }
+);

@@ -3,7 +3,6 @@ import {
   SharableModels,
   useUserQuery as useArkitektUserQuery,
 } from "../../rekuest/api/graphql";
-import { ShareModal } from "../../rekuest/components/dialogs/ShareModal";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { Modal } from "../../components/modals/Modal";
 import { ActionButton } from "../../layout/ActionButton";
@@ -42,26 +41,6 @@ export const ManageMikro = ({ email }: { email: string }) => {
           </div>
         ))}
       </ResponsiveGrid>
-    </>
-  );
-};
-
-export const ManageArkitekt = ({ email }: { email: string }) => {
-  const { data } = withRekuest(useArkitektUserQuery)({
-    variables: { email: email },
-  });
-
-  return (
-    <>
-      <div className="h3">Arkitekt</div>
-      {data?.user?.id && (
-        <Modal child={<button>OPEN SHARE</button>}>
-          <ShareModal
-            type={SharableModels.LokUser}
-            object={data?.user?.id}
-          />
-        </Modal>
-      )}
     </>
   );
 };
@@ -135,7 +114,6 @@ const User: React.FC<UserProps> = ({ id }) => {
           </div>
           {data?.user?.email && (
             <>
-              <ManageArkitekt email={data?.user?.email} />
               <ManageMikro email={data?.user?.email} />
             </>
           )}

@@ -21,7 +21,6 @@ import {
   useMyMentionsQuery,
   useResolveCommentMutation,
 } from "../../mikro/api/graphql";
-import { CommentView } from "../../mikro/components/comments/CommentView";
 import { withMikro } from "../../mikro/MikroContext";
 
 interface IFlowHomeProps {}
@@ -99,12 +98,7 @@ export const MentionedComment = ({
               </div>
             </div>
           </div>
-          <div className="flex-initial my-auto w-full">
-            <CommentView
-              descendents={comment.descendents}
-              className="mt-2  text-sm bg-slate-300 p-3 border rounded text-black"
-            />
-          </div>
+          <div className="flex-initial my-auto w-full"></div>
         </div>
       )}
     </div>

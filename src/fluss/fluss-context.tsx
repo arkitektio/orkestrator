@@ -1,13 +1,17 @@
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import React, { useContext } from "react";
+import { FlussConfig } from "./fluss-types";
 
 export type FlussContextType = {
   client?: ApolloClient<NormalizedCacheObject>;
-  s3resolve: (path?: string | null) => string;
+  configure: (config?: FlussConfig) => void;
+  config?: FlussConfig;
 };
 
 export const FlussContext = React.createContext<FlussContextType>({
-  s3resolve: () => "fallback",
+  configure: () => {
+    throw Error("No Provider in context not configured");
+  },
 });
 
 export const useFluss = () => useContext(FlussContext);

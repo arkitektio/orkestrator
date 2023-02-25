@@ -1,12 +1,12 @@
 import { ApolloClient, InMemoryCache } from "@apollo/client";
 import { createUploadLink } from "apollo-upload-client";
-import { Token } from "herre";
-import result from "./api/fragments";
-import { Man } from "./types";
+import { ManConfig } from "./types";
 
-export const createManClient = (config: Man, token: Token) => {
+export const createManClient = (config: ManConfig) => {
+  let token = config.retrieveToken();
+
   const httpLink = createUploadLink({
-    uri: config.endpoint_url,
+    uri: config.endpointUrl,
     headers: {
       authorization: token ? `Bearer ${token}` : "",
     },
@@ -14,6 +14,6 @@ export const createManClient = (config: Man, token: Token) => {
 
   return new ApolloClient({
     link: httpLink,
-    cache: new InMemoryCache({ possibleTypes: result.possibleTypes }),
+    cache: new InMemoryCache({ possibleTypes: config.possibleTypes }),
   });
 };

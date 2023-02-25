@@ -42,7 +42,7 @@ export const Search: React.FC<PaneProps> = (props) => {
     >
       {(formik) => (
         <Form className="w-full p-3 rounded-md shadow-lg dark:bg-slate-200 dark:text-slate-800 flex flex-col">
-          <ChangeSubmitHelper debounce={200} formik={formik} />
+          <ChangeSubmitHelper debounce={200} />
           <div className="flex flex-row">
             <div className="flex-grow transition-all">
               <Field

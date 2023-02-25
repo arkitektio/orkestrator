@@ -1,5 +1,9 @@
-import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
-import { ArgPortFragment, ReturnPortFragment } from "./api/graphql";
+import {
+  ApolloClient,
+  NormalizedCacheObject,
+  PossibleTypesMap,
+} from "@apollo/client";
+import { PortFragment } from "./api/graphql";
 
 export type TransportSettings = {
   type: string;
@@ -28,18 +32,28 @@ export type Rekuest = {
   instance_id: string;
 };
 
+export type RekuestConfig = {
+  endpointUrl: string;
+  wsEndpointUrl: string;
+  secure: boolean;
+  postman: PostmanSettings;
+  agent: AgentSettings;
+  retrieveToken: () => string;
+  possibleTypes?: PossibleTypesMap;
+};
+
 export type RekuestClient = ApolloClient<NormalizedCacheObject>;
 
 export type Args = any[] | [];
 export type Returns = any[] | [];
 export type Kwargs = { [key: string]: string } | {};
 
-export type ArgPortTypes = ArgPortFragment["__typename"];
-export type ReturnPortTypes = ReturnPortFragment["__typename"];
+export type ArgPortTypes = PortFragment["__typename"];
+export type ReturnPortTypes = PortFragment["__typename"];
 
 export type PortTypes = ArgPortTypes | ReturnPortTypes;
 
 export type ConnectionPortTypes = ArgPortTypes | ReturnPortTypes;
-export type ConnectionPort = ArgPortFragment | ReturnPortFragment;
+export type ConnectionPort = PortFragment | PortFragment;
 
-export type AllPort = ArgPortFragment | ReturnPortFragment;
+export type AllPort = PortFragment | PortFragment;

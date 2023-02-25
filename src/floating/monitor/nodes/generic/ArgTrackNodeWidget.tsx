@@ -1,6 +1,6 @@
 import { Form, Formik } from "formik";
 import React, { memo, useState } from "react";
-import { Handle, Position } from "react-flow-renderer";
+import { Handle, Position } from "reactflow";
 import ReactTooltip from "react-tooltip";
 import { withLayout } from "../../../base/node/layout";
 import { ArgNodeProps } from "../../../types";

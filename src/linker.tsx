@@ -1,8 +1,7 @@
 import { buildSchema } from "graphql";
 import { NavLink, NavLinkProps } from "react-router-dom";
 import { object } from "yup";
-import { Identifier } from "./rekuest/api/scalars";
-import { Accept } from "./rekuest/postman/mater/mater-context";
+import { Accept, Identifier } from "./rekuest/postman/mater/mater-context";
 import { isIdentifier } from "typescript";
 import React, { useState, useEffect } from "react";
 import {

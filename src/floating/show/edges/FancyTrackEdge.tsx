@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Edge,
-  EdgeProps,
-  getBezierPath,
-  getMarkerEnd,
-} from "react-flow-renderer";
+import { Edge, EdgeProps, getBezierPath, getMarkerEnd } from "reactflow";
 import { FancyEdgeProps } from "../../types";
 
 export const FancyTrackEdge: React.FC<FancyEdgeProps> = ({

@@ -1,0 +1,17 @@
+query CommentsFor($id: ID!, $model: CommentableModels!) {
+  commentsfor(model: $model, id: $id) {
+    ...ListComment
+  }
+}
+
+query MyMentions {
+  mymentions {
+    ...MentionComment
+  }
+}
+
+query DetailComment($id: ID!) {
+  comment(id: $id) {
+    ...DetailComment
+  }
+}

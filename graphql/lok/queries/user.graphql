@@ -17,7 +17,7 @@ query DetailUser($id: ID) {
 }
 
 query UserOptions($search: String) {
-  options: users(username: $search) {
+  options: users(search: $search) {
     value: id
     label: username
   }

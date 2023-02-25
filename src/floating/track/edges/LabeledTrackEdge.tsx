@@ -4,7 +4,7 @@ import {
   svgDrawStraightLinePath,
 } from "@tisoap/react-flow-smart-edge";
 import React from "react";
-import { BezierEdge, getBezierPath, useNodes } from "react-flow-renderer";
+import { BezierEdge, getBezierPath, useNodes } from "reactflow";
 import { RunEventType } from "../../../fluss/api/graphql";
 import { LabeledEdgeProps } from "../../types";
 import { useTrackRiver } from "../context";

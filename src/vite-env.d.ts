@@ -10,3 +10,4 @@ declare interface Window {
 declare module "use-react-screenshot";
 declare module "rdndmb-html5-to-touch";
 declare module "js-colormaps";
+declare module "react-scroll-percentage";

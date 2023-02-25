@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "react-contexify/dist/ReactContexify.css";
-import { EdgeTypes, useEdgesState, useNodesState } from "react-flow-renderer";
+import { EdgeTypes, useEdgesState, useNodesState } from "reactflow";
 import { AiOutlineReload } from "react-icons/ai";
 import { FiPlay } from "react-icons/fi";
 import { RiStopLine } from "react-icons/ri";

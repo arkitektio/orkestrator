@@ -2,7 +2,7 @@
 // This component provides the layoutstate of the node, e.g if the node is expanded or not
 
 import React, { useContext, useState } from "react";
-import { NodeProps } from "react-flow-renderer";
+import { NodeProps } from "reactflow";
 import { Resizable, ResizeCallbackData } from "react-resizable";
 
 export interface NodeLayoutState {

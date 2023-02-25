@@ -4,6 +4,7 @@ import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "herre";
 import { createRekuestClient } from "./client";
 import { RekuestContext } from "./RekuestContext";
+import { RekuestConfig } from "./types";
 
 export type RekuestProviderProps = {
   children?: React.ReactNode;
@@ -12,23 +13,25 @@ export type RekuestProviderProps = {
 export const RekuestProvider: React.FC<RekuestProviderProps> = ({
   children,
 }) => {
-  const { fakts } = useFakts();
-
   const [client, setClient] = useState<
     ApolloClient<NormalizedCacheObject> | undefined
   >();
-  const { token } = useHerre();
+  const [config, setConfig] = useState<RekuestConfig>();
 
-  useEffect(() => {
-    if (token) {
-      var client = createRekuestClient(fakts.rekuest, token);
-      setClient(client);
+  const configure = (config?: RekuestConfig) => {
+    setConfig(config);
+    if (!config) {
+      setClient(undefined);
+      return;
     }
-  }, [token, fakts]);
+
+    setClient(createRekuestClient(config));
+  };
 
   return (
     <RekuestContext.Provider
       value={{
+        configure: configure,
         client: client,
       }}
     >

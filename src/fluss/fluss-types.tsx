@@ -1,5 +1,9 @@
-export type Fluss = {
-  endpoint_url: string;
-  ws_endpoint_url: string;
-  healthz: string;
+import { PossibleTypesMap } from "@apollo/client";
+
+export type FlussConfig = {
+  endpointUrl: string;
+  wsEndpointUrl: string;
+  secure: boolean;
+  retrieveToken: () => string;
+  possibleTypes?: PossibleTypesMap;
 };

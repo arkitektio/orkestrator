@@ -55,10 +55,10 @@ export const ReturnNodeSidebar = (
                         label="label"
                         description="Human readable label for the port"
                       />
-                      {re?.widget?.kind && (
+                      {re?.returnWidget?.kind && (
                         <SelectInputField
                           options={widget_options}
-                          name={`widget.kind`}
+                          name={`returnWidget.kind`}
                           label="label"
                           description="Human readable label for the port"
                         />

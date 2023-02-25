@@ -1090,6 +1090,26 @@ export type Mutation = {
   releaseRepresentations?: Maybe<Dataset>;
   releaseSamples?: Maybe<Dataset>;
   /**
+   * Reply to an Comment
+   *
+   *     This mutation creates a comment. It takes a commentable_id and a commentable_type.
+   *     If this is the first comment on the commentable, it will create a new comment thread.
+   *     If there is already a comment thread, it will add the comment to the thread (by setting
+   *     it's parent to the last parent comment in the thread).
+   *
+   *     CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+   *     are a recursive structure, where each Descendent can have a list of Descendents as children.
+   *     The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+   *     reference to another user on the platform.
+   *
+   *     Please convert your comment tree to a list of Descendents before sending it to the server.
+   *     TODO: Add a converter from a comment tree to a list of Descendents.
+   *
+   *
+   *     (only signed in users)
+   */
+  replyTo?: Maybe<Comment>;
+  /**
    * Create an Comment
    *
    *     This mutation resolves a comment. By resolving a comment, it will be marked as resolved,
@@ -1542,6 +1562,13 @@ export type MutationReleaseRepresentationsArgs = {
 export type MutationReleaseSamplesArgs = {
   dataset: Scalars['ID'];
   samples: Array<InputMaybe<Scalars['ID']>>;
+};
+
+
+/** The root Mutation */
+export type MutationReplyToArgs = {
+  descendents: Array<InputMaybe<DescendendInput>>;
+  parent: Scalars['ID'];
 };
 
 
@@ -2515,6 +2542,7 @@ export type QueryCommentArgs = {
 
 /** The root Query */
 export type QueryCommentsforArgs = {
+  deep?: InputMaybe<Scalars['Boolean']>;
   id?: InputMaybe<Scalars['ID']>;
   model: CommentableModels;
 };
@@ -4015,6 +4043,14 @@ export type CreateCommentMutationVariables = Exact<{
 
 
 export type CreateCommentMutation = { __typename?: 'Mutation', createComment?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
+
+export type ReplyToMutationVariables = Exact<{
+  descendents: Array<InputMaybe<DescendendInput>>;
+  parent: Scalars['ID'];
+}>;
+
+
+export type ReplyToMutation = { __typename?: 'Mutation', replyTo?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
 
 export type ResolveCommentMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -5754,6 +5790,40 @@ export function useCreateCommentMutation(baseOptions?: Apollo.MutationHookOption
 export type CreateCommentMutationHookResult = ReturnType<typeof useCreateCommentMutation>;
 export type CreateCommentMutationResult = Apollo.MutationResult<CreateCommentMutation>;
 export type CreateCommentMutationOptions = Apollo.BaseMutationOptions<CreateCommentMutation, CreateCommentMutationVariables>;
+export const ReplyToDocument = gql`
+    mutation ReplyTo($descendents: [DescendendInput]!, $parent: ID!) {
+  replyTo(descendents: $descendents, parent: $parent) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+export type ReplyToMutationFn = Apollo.MutationFunction<ReplyToMutation, ReplyToMutationVariables>;
+
+/**
+ * __useReplyToMutation__
+ *
+ * To run a mutation, you first call `useReplyToMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useReplyToMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [replyToMutation, { data, loading, error }] = useReplyToMutation({
+ *   variables: {
+ *      descendents: // value for 'descendents'
+ *      parent: // value for 'parent'
+ *   },
+ * });
+ */
+export function useReplyToMutation(baseOptions?: Apollo.MutationHookOptions<ReplyToMutation, ReplyToMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ReplyToMutation, ReplyToMutationVariables>(ReplyToDocument, options);
+      }
+export type ReplyToMutationHookResult = ReturnType<typeof useReplyToMutation>;
+export type ReplyToMutationResult = Apollo.MutationResult<ReplyToMutation>;
+export type ReplyToMutationOptions = Apollo.BaseMutationOptions<ReplyToMutation, ReplyToMutationVariables>;
 export const ResolveCommentDocument = gql`
     mutation ResolveComment($id: ID!) {
   resolveComment(id: $id) {

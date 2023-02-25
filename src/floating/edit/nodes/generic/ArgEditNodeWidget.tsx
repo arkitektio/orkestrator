@@ -1,6 +1,6 @@
 import { FieldArray, Form, Formik } from "formik";
 import React, { memo, useEffect, useState } from "react";
-import { Handle, Position, useUpdateNodeInternals } from "react-flow-renderer";
+import { Handle, Position, useUpdateNodeInternals } from "reactflow";
 import ReactTooltip from "react-tooltip";
 import {
   ArgNode,
@@ -19,10 +19,12 @@ import { SubmitButton } from "../../../../components/forms/fields/SubmitButton";
 import { SelectInputField } from "../../../../components/forms/fields/select_input";
 import { ParagraphInputField } from "../../../../components/forms/fields/paragraph_input";
 import { ChangeSubmitHelper } from "../../../../rekuest/ui/helpers/ChangeSubmitter";
+import { useTrackRiver } from "../../../track/context";
 
 export const ArgEditNodeWidget: React.FC<ArgNodeProps> = withLayout(
   ({ data: { outstream, instream, constream }, id }) => {
     const updateNodeInternals = useUpdateNodeInternals();
+    const { nodes } = useEditRiver();
     const [isSmall, setIsSmall] = useState(true);
 
     useEffect(() => {

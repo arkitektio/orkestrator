@@ -8,8 +8,6 @@ interface WorkspaceCardProps {
 }
 
 export const WorkspaceCard = ({ workspace }: WorkspaceCardProps) => {
-  const { s3resolve } = useFluss();
-
   return (
     <Workspace.Smart
       showSelfMates={true}

@@ -30,7 +30,6 @@ import { DataSample } from "./pages/data/samples/DataSample";
 import { DataSamples } from "./pages/data/samples/DataSamples";
 import { DataTable } from "./pages/data/tables/DataTable";
 import { DataTables } from "./pages/data/tables/DataTables";
-import { FileScreen } from "./pages/detail/FileScreen";
 import { RunScreen } from "./pages/detail/RunScreen";
 import { SnapshotScreen } from "./pages/detail/SnapshotScreen";
 import { TableScreen } from "./pages/detail/TableScreen";
@@ -332,10 +331,6 @@ export const MainApp: React.FC<Props> = (props) => {
                                   <Route
                                     path="plots/:plot"
                                     element={<DataPlot />}
-                                  />
-                                  <Route
-                                    path="omerofiles/:file"
-                                    element={<FileScreen />}
                                   />
 
                                   <Route index element={<DataHome />} />
