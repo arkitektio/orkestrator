@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api";
 import React from "react";
 import { useFakts } from "@jhnnsrs/fakts";
 import { HerreProvider } from "herre";
+import { AdaptiveFaktsFallback } from "./AdaptiveFallback";
 
 export type FaktsHerreProps = {
   children?: React.ReactNode;
@@ -25,6 +26,7 @@ export const FaktsHerreProvider: React.FC<FaktsHerreProps> = (props) => {
       <>
         Error! No sufficient fakts provided. Wrap this in FaktsGuard to avoid
         this
+        <AdaptiveFaktsFallback/>
       </>
     );
 
