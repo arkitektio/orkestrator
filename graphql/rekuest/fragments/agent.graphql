@@ -19,6 +19,9 @@ fragment DetailAgent on Agent {
       username
     }
   }
+  registry {
+    ...Registry
+  }
   instanceId
   provisions {
     id

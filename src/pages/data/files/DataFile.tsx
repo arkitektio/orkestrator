@@ -2,7 +2,6 @@ import React from "react";
 import { useParams } from "react-router";
 import Timestamp from "react-timestamp";
 import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
-import { RepresentationCard } from "../../../components/MyRepresentations";
 import { SelfActions } from "../../../components/SelfActions";
 import { notEmpty } from "../../../floating/utils";
 import { MikroKomments } from "../../../komment/MikroKomments";
@@ -12,6 +11,7 @@ import {
   useDetailOmeroFileQuery,
 } from "../../../mikro/api/graphql";
 import { ExperimentCard } from "../../../mikro/components/cards/ExperimentCard";
+import { RepresentationCard } from "../../../mikro/components/cards/RepresentationCard";
 import { useMikro, withMikro } from "../../../mikro/MikroContext";
 
 export interface DataFileProps {}
@@ -38,11 +38,18 @@ export const OmeroFile: React.FC<{ id: string }> = ({ id }) => {
           <SelfActions type={"@mikro/omerofile"} object={id} />
         </>
       }
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagOmerofile} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments
+              id={id}
+              model={CommentableModels.GrunnlagOmerofile}
+            />
+          ),
+          key: "comments",
+        },
+      ]}
     >
       <div className="p-2">
         <div className="text-xl font-semibold text-white flex flex-col">

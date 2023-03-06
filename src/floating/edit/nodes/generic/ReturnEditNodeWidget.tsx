@@ -24,6 +24,7 @@ export const ReturnEditNodeWidget: React.FC<ReturnNodeProps> = withLayout(
             <p className="text-gray-700 text-base">
               {!isSmall && (
                 <button
+                  type="button"
                   className="rounded px-2 py-1 text-xs font-semibold border-gray-300"
                   onClick={() => setShow(true)}
                 >

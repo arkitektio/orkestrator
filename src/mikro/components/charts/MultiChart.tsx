@@ -229,7 +229,7 @@ export const InnerMultiChart: React.FC<
                 : scaleBandInvert(chartState?.xScale)(real_x);
 
               let datum_index = group?.data
-                ?.map((d, index) => [d[`${displayState.xAxis}_value`], index])
+                ?.map((d, index) => [d[`${displayState?.xAxis}_value`], index])
                 .map((value) => [Math.abs(value[0] - x), value[1]])
                 .sort((a, b) => a[0] - b[0])
                 .at(0)

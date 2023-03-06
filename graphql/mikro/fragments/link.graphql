@@ -1,6 +1,12 @@
 fragment DetailLink on DataLink {
   id
-  relation
+  context {
+    ...ListContext
+  }
+  relation {
+    id
+    name
+  }
   xId
   yId
   leftType
@@ -9,5 +15,12 @@ fragment DetailLink on DataLink {
 
 fragment ListLink on DataLink {
   id
-  relation
+  relation {
+    id
+    name
+  }
+  xId
+  yId
+  leftType
+  rightType
 }

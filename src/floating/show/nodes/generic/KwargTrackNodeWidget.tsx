@@ -26,7 +26,10 @@ export const KwargTrackNodeWidget: React.FC<KwargNodeProps> = withLayout(
                       data-for={"tooltip_special" + id}
                     >
                       <div className="flex justify-between">
-                        <button onClick={() => alert("implement")}>
+                        <button
+                          type="button"
+                          onClick={() => alert("implement")}
+                        >
                           <BsTrash />
                         </button>
                       </div>

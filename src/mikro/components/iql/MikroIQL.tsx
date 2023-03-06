@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { createGraphiQLFetcher, Fetcher } from "@graphiql/toolkit";
-import { useMikro } from "../../types";
 import { useHerre } from "herre";
 import { GraphiQLProvider } from "graphiql";
 import { IQL } from "./IQL";
 import { DocumentNode } from "@apollo/client";
+import { useMikro } from "../../MikroContext";
 
 export interface MikroIQLProps {
   query: string;
@@ -18,7 +18,7 @@ export const MikroIQL: React.FC<MikroIQLProps> = ({ query, onEditQuery }) => {
   const [sfetcher, setFetcher] = useState<Fetcher | undefined>();
 
   const fetcher = createGraphiQLFetcher({
-    url: config?.endpoint_url || "",
+    url: config?.endpointUrl || "",
     headers: {
       Authorization: `Bearer ${token}`,
     },

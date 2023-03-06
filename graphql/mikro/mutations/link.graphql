@@ -1,5 +1,5 @@
 mutation Link(
-  $relation: String!
+  $relation: ID!
   $xType: LinkableModels!
   $xId: ID!
   $yType: LinkableModels!
@@ -15,5 +15,11 @@ mutation Link(
     context: $context
   ) {
     ...ListLink
+  }
+}
+
+mutation DeleteLink($id: ID!) {
+  deleteLink(id: $id) {
+    id
   }
 }

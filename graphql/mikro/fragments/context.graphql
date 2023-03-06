@@ -3,12 +3,7 @@ fragment DetailContext on Context {
   name
   createdAt
   links {
-    id
-    leftType
-    rightType
-    relation
-    xId
-    yId
+    ...ListLink
   }
   models {
     id

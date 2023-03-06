@@ -27,6 +27,7 @@ export const ReturnTrackNodeWidget: React.FC<ReturnNodeProps> = withLayout(
               </>
               {!isSmall && (
                 <button
+                  type="button"
                   className="rounded px-2 py-1 text-xs font-semibold border-gray-300"
                   onClick={() => setShow(true)}
                 >

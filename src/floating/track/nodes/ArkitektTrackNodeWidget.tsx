@@ -86,6 +86,7 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           <div className="w-full flex flex-row justify-between">
             {node_data?.node?.name}{" "}
             <button
+              type="button"
               className="text-md font-light"
               onClick={() =>
                 setFrozenEvent(

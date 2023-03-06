@@ -16,6 +16,7 @@ import { notEmpty } from "../floating/utils";
 import { Provision } from "../linker";
 import { UserEmblem } from "../lok/components/UserEmblem";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 
 export type IMyProvisionsProps = {};
 
@@ -26,9 +27,9 @@ const Provisions: React.FC<IMyProvisionsProps> = () => {
   return (
     <>
       <Provision.ListLink className="font-light text-xl dark:text-white">
-        Provisions of this App
+        This app is being used by
       </Provision.ListLink>
-      <ResponsiveGrid>
+      <ResponsiveContainerGrid>
         {provisions?.provisions?.filter(notEmpty).map((prov, index) => (
           <div
             key={index}
@@ -110,7 +111,7 @@ const Provisions: React.FC<IMyProvisionsProps> = () => {
             )}
           </div>
         ))}
-      </ResponsiveGrid>
+      </ResponsiveContainerGrid>
     </>
   );
 };

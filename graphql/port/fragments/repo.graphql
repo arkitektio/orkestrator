@@ -6,6 +6,7 @@ fragment DetailGithubRepo on GithubRepo {
   scans {
     ...ListRepoScan
   }
+  readme
 }
 
 fragment ListGithubRepo on GithubRepo {

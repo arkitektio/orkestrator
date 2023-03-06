@@ -103,6 +103,7 @@ export const ReserveParamsField = ({
       <div className="mb-2">
         {!field.value ? (
           <button
+            type="button"
             className="border border-1 rounded round-md p-1 bg-gray-300 text-center ring-primary-400 ring-2 cursor-pointer"
             onClick={() => helpers.setValue(undefined)}
           >
@@ -111,6 +112,7 @@ export const ReserveParamsField = ({
         ) : field.value.clients.length === 0 &&
           field.value.templates.length === 0 ? (
           <button
+            type="button"
             className="border border-1 rounded round-md p-1 bg-gray-300 text-center ring-primary-400 ring-2 mb-1 cursor-pointer"
             onClick={() => helpers.setValue(undefined)}
           >
@@ -118,6 +120,7 @@ export const ReserveParamsField = ({
           </button>
         ) : (
           <button
+            type="button"
             className="border border-1 rounded round-md p-1 bg-gray-300 text-center mb-1 cursor-pointer"
             onClick={() => helpers.setValue(undefined)}
           >

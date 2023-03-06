@@ -1,0 +1,11 @@
+fragment DetailRelation on Relation {
+  name
+  description
+  id
+}
+
+fragment ListRelation on Relation {
+  name
+  description
+  id
+}

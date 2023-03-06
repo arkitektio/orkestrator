@@ -45,6 +45,7 @@ const HomeSidebar: React.FunctionComponent<{
                       />
                       {field.value && (
                         <button
+                          type="button"
                           className="text-gray-500 mt-1"
                           onClick={() => form.setFieldValue(field.name, null)}
                         >

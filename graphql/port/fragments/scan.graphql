@@ -14,4 +14,7 @@ fragment ListRepoScan on RepoScan {
   scopes
   image
   runtime
+  whales {
+    id
+  }
 }

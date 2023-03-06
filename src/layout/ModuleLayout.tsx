@@ -61,7 +61,7 @@ export const ModuleLayout: React.FC<ModuleLayoutProps> = (props) => {
           className="flex flex-grow relative"
         >
           <div
-            className="flex-grow flex overflow-y-scroll w-full h-full"
+            className="flex-grow flex  w-full h-full"
             data-enableselect="true"
           >
             {props.children}

@@ -59,7 +59,7 @@ export const CreateDatasetModal = (props: Submit<CreatePlotMutation>) => {
       {(formikProps) => (
         <Form>
           <TwDialog
-            title="Create Plot"
+            title="Create Dataset"
             buttons={
               <>
                 <button
@@ -77,13 +77,14 @@ export const CreateDatasetModal = (props: Submit<CreatePlotMutation>) => {
           >
             <div className="mt-2 align-left text-left">
               <div className="mt-2 text-sm mb-3">
-                A plot is a set of graphs that are related to each other,
-                usually by a common variable (e.g an experiment)
+                A dataset is a collection of data within mikro, imagine it as a
+                folder on your computer. You can have multiple datasets, and
+                each dataset can have multiple datasets within
               </div>
               <TextInputField
                 name="name"
                 label="Name"
-                description="The name of the plot you want to create"
+                description="The name of the dataset you want to create"
               />
             </div>
           </TwDialog>

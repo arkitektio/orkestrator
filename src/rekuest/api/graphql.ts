@@ -121,6 +121,7 @@ export type AppRepository = Repository & {
 
 
 export type AppRepositoryNodesArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   package?: InputMaybe<Scalars['String']>;
 };
 
@@ -161,6 +162,7 @@ export type Assignation = {
 
 export type AssignationLogArgs = {
   createdAt?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   level?: InputMaybe<LogLevelInput>;
   o?: InputMaybe<Scalars['String']>;
 };
@@ -714,6 +716,7 @@ export type MirrorRepository = Repository & {
 
 
 export type MirrorRepositoryNodesArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   package?: InputMaybe<Scalars['String']>;
 };
 
@@ -1209,12 +1212,14 @@ export type Provision = {
 
 
 export type ProvisionAssignationsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   status?: InputMaybe<Array<InputMaybe<AssignationStatusInput>>>;
 };
 
 
 export type ProvisionLogArgs = {
   createdAt?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   level?: InputMaybe<LogLevelInput>;
   o?: InputMaybe<Scalars['String']>;
 };
@@ -1423,13 +1428,17 @@ export type Query = {
 
 /** The root Query */
 export type QueryAgentArgs = {
+  client?: InputMaybe<Scalars['ID']>;
   id?: InputMaybe<Scalars['ID']>;
+  instance?: InputMaybe<Scalars['ID']>;
+  sub?: InputMaybe<Scalars['ID']>;
 };
 
 
 /** The root Query */
 export type QueryAgentsArgs = {
   app?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   registry?: InputMaybe<Scalars['ID']>;
   search?: InputMaybe<Scalars['String']>;
   status?: InputMaybe<Array<InputMaybe<AgentStatusInput>>>;
@@ -1439,6 +1448,7 @@ export type QueryAgentsArgs = {
 /** The root Query */
 export type QueryAllnodesArgs = {
   argTypes?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   interfaces?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   name?: InputMaybe<Scalars['String']>;
   repository?: InputMaybe<Scalars['ID']>;
@@ -1454,6 +1464,7 @@ export type QueryAllprovisionsArgs = {
   agent?: InputMaybe<Scalars['ID']>;
   client?: InputMaybe<Scalars['ID']>;
   clientId?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   status?: InputMaybe<Array<InputMaybe<ProvisionStatusInput>>>;
 };
 
@@ -1487,6 +1498,7 @@ export type QueryLinkableprovisionsArgs = {
 /** The root Query */
 export type QueryMyAgentsArgs = {
   app?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   registry?: InputMaybe<Scalars['ID']>;
   search?: InputMaybe<Scalars['String']>;
   status?: InputMaybe<Array<InputMaybe<AgentStatusInput>>>;
@@ -1562,6 +1574,7 @@ export type QueryProvisionsArgs = {
 
 /** The root Query */
 export type QueryRegistriesArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   unique?: InputMaybe<Scalars['String']>;
 };
 
@@ -1648,6 +1661,7 @@ export type QueryUserArgs = {
 /** The root Query */
 export type QueryUsersArgs = {
   email?: InputMaybe<Scalars['String']>;
+  search?: InputMaybe<Scalars['String']>;
   username?: InputMaybe<Scalars['String']>;
 };
 
@@ -1670,7 +1684,7 @@ export type Registry = {
   id: Scalars['ID'];
   /** @deprecated Will be replaced in the future */
   name?: Maybe<Scalars['String']>;
-  /** The Associated App */
+  /** The Associatsed App */
   user?: Maybe<User>;
   /** The provide might be limited to a instance like ImageJ belonging to a specific person. Is nullable for backend users */
   waiters: Array<Waiter>;
@@ -1686,6 +1700,7 @@ export type Repository = {
 
 
 export type RepositoryNodesArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   package?: InputMaybe<Scalars['String']>;
 };
 
@@ -1705,6 +1720,7 @@ export type Reservation = {
   app?: Maybe<LokApp>;
   /** Which reservation are we assigning to */
   assignations: Array<Assignation>;
+  binds?: Maybe<Scalars['GenericScalar']>;
   /** Callback */
   callback?: Maybe<Scalars['String']>;
   /** The channel of this Reservation */
@@ -1749,6 +1765,7 @@ export type Reservation = {
 
 export type ReservationLogArgs = {
   createdAt?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   level?: InputMaybe<LogLevelInput>;
   o?: InputMaybe<Scalars['String']>;
 };
@@ -2168,6 +2185,7 @@ export type TemplateProvisionsArgs = {
   agent?: InputMaybe<Scalars['ID']>;
   client?: InputMaybe<Scalars['ID']>;
   clientId?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   status?: InputMaybe<Array<InputMaybe<ProvisionStatusInput>>>;
 };
 
@@ -2217,7 +2235,7 @@ export type User = {
   password: Scalars['String'];
   /** This provision creator */
   provisionSet: Array<Provision>;
-  /** The Associated App */
+  /** The Associatsed App */
   registrySet: Array<Registry>;
   /** This Reservations creator */
   reservationSet: Array<Reservation>;
@@ -2442,7 +2460,7 @@ export enum __TypeKind {
 
 export type ListAgentFragment = { __typename?: 'Agent', id: string, instanceId: string, status: AgentStatus, registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null };
 
-export type DetailAgentFragment = { __typename?: 'Agent', id: string, instanceId: string, status: AgentStatus, name: string, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }>, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template: { __typename?: 'Template', node: { __typename?: 'Node', name: string } }, reservations: Array<{ __typename?: 'Reservation', id: string, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null } }>, creator?: { __typename?: 'User', username: string, sub?: string | null } | null }> };
+export type DetailAgentFragment = { __typename?: 'Agent', id: string, instanceId: string, status: AgentStatus, name: string, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }>, registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template: { __typename?: 'Template', node: { __typename?: 'Node', name: string } }, reservations: Array<{ __typename?: 'Reservation', id: string, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null } }>, creator?: { __typename?: 'User', username: string, sub?: string | null } | null }> };
 
 export type DetailAssignationFragment = { __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, progress?: number | null, statusmessage: string, returns?: Array<any | null> | null, provision?: { __typename?: 'Provision', status: ProvisionStatus, id: string, reference: string, createdAt: any, params?: { __typename?: 'ProvisionParams', autoUnprovide?: boolean | null } | null, agent?: { __typename?: 'Agent', name: string } | null, template: { __typename?: 'Template', id: string, interface: string, extensions?: Array<string | null> | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, agent: { __typename?: 'Agent', id: string, instanceId: string, status: AgentStatus, registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null } }, creator?: { __typename?: 'User', email: string, sub?: string | null } | null, app?: { __typename?: 'LokApp', version: string, identifier: string } | null } | null, reservation?: { __typename?: 'Reservation', id: string, reference: string, status: ReservationStatus, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null, meta?: any | null, args?: Array<{ __typename: 'Port', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind: PortKind, child?: { __typename?: 'ChildPort', kind: PortKind } | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null } | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null } | null, annotations?: Array<{ __typename?: 'AttributePredicate' } | { __typename?: 'CustomAnnotation' } | { __typename?: 'IsPredicate' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null, returns?: Array<{ __typename: 'Port', key: string, label?: string | null, nullable: boolean, description?: string | null, kind: PortKind, identifier?: Identifier | null, default?: any | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null, child?: { __typename?: 'ChildPort', kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind: PortKind, child?: { __typename?: 'ChildPort', kind: PortKind } | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null } | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null } | null, annotations?: Array<{ __typename?: 'AttributePredicate' } | { __typename?: 'CustomAnnotation' } | { __typename?: 'IsPredicate' } | { __typename?: 'ValueRange', min: number, max: number } | null> | null } | null> | null }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string } | null } | null, app?: { __typename?: 'LokApp', id: string, version: string, identifier: string } | null, creator?: { __typename?: 'User', email: string, sub?: string | null } | null, log?: Array<{ __typename?: 'AssignationLog', message?: string | null, level: AssignationLogLevel } | null> | null };
 
@@ -2795,7 +2813,15 @@ export type DetailAgentQueryVariables = Exact<{
 }>;
 
 
-export type DetailAgentQuery = { __typename?: 'Query', agent?: { __typename?: 'Agent', id: string, instanceId: string, status: AgentStatus, name: string, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }>, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template: { __typename?: 'Template', node: { __typename?: 'Node', name: string } }, reservations: Array<{ __typename?: 'Reservation', id: string, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null } }>, creator?: { __typename?: 'User', username: string, sub?: string | null } | null }> } | null };
+export type DetailAgentQuery = { __typename?: 'Query', agent?: { __typename?: 'Agent', id: string, instanceId: string, status: AgentStatus, name: string, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }>, registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template: { __typename?: 'Template', node: { __typename?: 'Node', name: string } }, reservations: Array<{ __typename?: 'Reservation', id: string, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null } }>, creator?: { __typename?: 'User', username: string, sub?: string | null } | null }> } | null };
+
+export type PortAgentQueryVariables = Exact<{
+  clientId: Scalars['ID'];
+  instanceId: Scalars['ID'];
+}>;
+
+
+export type PortAgentQuery = { __typename?: 'Query', agent?: { __typename?: 'Agent', id: string, instanceId: string, status: AgentStatus, name: string, templates: Array<{ __typename?: 'Template', id: string, policy?: any | null, node: { __typename?: 'Node', name: string }, creator?: { __typename?: 'User', username: string } | null }>, registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null, provisions: Array<{ __typename?: 'Provision', id: string, status: ProvisionStatus, template: { __typename?: 'Template', node: { __typename?: 'Node', name: string } }, reservations: Array<{ __typename?: 'Reservation', id: string, waiter: { __typename?: 'Waiter', registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null } }>, creator?: { __typename?: 'User', username: string, sub?: string | null } | null }> } | null };
 
 export type AgentOptionsQueryVariables = Exact<{
   registry?: InputMaybe<Scalars['ID']>;
@@ -3243,6 +3269,9 @@ export const DetailAgentFragmentDoc = gql`
     creator {
       username
     }
+  }
+  registry {
+    ...Registry
   }
   instanceId
   provisions {
@@ -5115,6 +5144,42 @@ export function useDetailAgentLazyQuery(baseOptions?: Apollo.LazyQueryHookOption
 export type DetailAgentQueryHookResult = ReturnType<typeof useDetailAgentQuery>;
 export type DetailAgentLazyQueryHookResult = ReturnType<typeof useDetailAgentLazyQuery>;
 export type DetailAgentQueryResult = Apollo.QueryResult<DetailAgentQuery, DetailAgentQueryVariables>;
+export const PortAgentDocument = gql`
+    query PortAgent($clientId: ID!, $instanceId: ID!) {
+  agent(client: $clientId, instance: $instanceId) {
+    ...DetailAgent
+  }
+}
+    ${DetailAgentFragmentDoc}`;
+
+/**
+ * __usePortAgentQuery__
+ *
+ * To run a query within a React component, call `usePortAgentQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePortAgentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePortAgentQuery({
+ *   variables: {
+ *      clientId: // value for 'clientId'
+ *      instanceId: // value for 'instanceId'
+ *   },
+ * });
+ */
+export function usePortAgentQuery(baseOptions: Apollo.QueryHookOptions<PortAgentQuery, PortAgentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<PortAgentQuery, PortAgentQueryVariables>(PortAgentDocument, options);
+      }
+export function usePortAgentLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PortAgentQuery, PortAgentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<PortAgentQuery, PortAgentQueryVariables>(PortAgentDocument, options);
+        }
+export type PortAgentQueryHookResult = ReturnType<typeof usePortAgentQuery>;
+export type PortAgentLazyQueryHookResult = ReturnType<typeof usePortAgentLazyQuery>;
+export type PortAgentQueryResult = Apollo.QueryResult<PortAgentQuery, PortAgentQueryVariables>;
 export const AgentOptionsDocument = gql`
     query AgentOptions($registry: ID, $search: String) {
   options: agents(registry: $registry, search: $search) {

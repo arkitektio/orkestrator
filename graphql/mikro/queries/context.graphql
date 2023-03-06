@@ -10,8 +10,8 @@ query DetailContext($id: ID!) {
   }
 }
 
-query SearchContexts($search: String) {
-  options: contexts(name: $search, limit: 10) {
+query SearchContexts($search: String, $values: [ID]) {
+  options: contexts(name: $search, limit: 10, ids: $values) {
     label: name
     value: id
   }

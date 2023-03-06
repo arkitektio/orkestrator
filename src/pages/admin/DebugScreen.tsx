@@ -30,40 +30,47 @@ const DebugScreen: React.FC<IApplicationsProps> = ({}) => {
       <SectionTitle>Debug Options</SectionTitle>
       <div className={"flex flex-row gap-1 mt-1"}>
         <button
+          type="button"
           className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetAg()}
         >
           Reset Agents{" "}
         </button>
         <button
+          type="button"
           className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetP()}
         >
           Reset Provisions{" "}
         </button>
         <button
+          type="button"
           className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetA()}
         >
           Reset Assigantions{" "}
         </button>
         <button
+          type="button"
           className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetR()}
         >
           Reset Reservation{" "}
         </button>
         <button
+          type="button"
           className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => resetN()}
         >
           Reset Nodes{" "}
         </button>
         <button
+          type="button"
           className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => disableRekuest()}
         ></button>
         <button
+          type="button"
           className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => purgeNodes()}
         >

@@ -5,12 +5,17 @@ import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import {
-  CreateableSearchSelect,
+  CreateableListSearchInput,
+  CreateableSearchInput,
+  ListSearchInput,
+  SearchInput,
+} from "../../components/forms/fields/SearchInput";
+import {
+  CreateableSearchSelectInput,
   SearchSelectInput,
 } from "../../components/forms/fields/search_select_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
-import { RepresentationCard } from "../../components/MyRepresentations";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
@@ -27,6 +32,7 @@ import {
   useUpdateSampleMutation,
 } from "../api/graphql";
 import { useMikro, withMikro } from "../MikroContext";
+import { RepresentationCard } from "./cards/RepresentationCard";
 
 export type ISampleProps = {
   id: string;
@@ -120,11 +126,15 @@ const Sample: React.FC<ISampleProps> = ({ id }) => {
 
   return (
     <PageLayout
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagSample} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagSample} />
+          ),
+          key: "comments",
+        },
+      ]}
       actions={<></>}
     >
       <div className="p-3 flex-grow">
@@ -163,6 +173,7 @@ const Sample: React.FC<ISampleProps> = ({ id }) => {
           )}
           <div className="flex flex-col mt-2">
             <button
+              type="button"
               className="border border-gray-600 rounded w-fit p-1"
               onClick={() => setshow(!show)}
             >
@@ -186,20 +197,16 @@ const Sample: React.FC<ISampleProps> = ({ id }) => {
               {() => (
                 <Form>
                   <TextInputField name="name" label="Name" />
+                  <div className="flex-grow"></div>
                   <div className="flex-grow">
-                    <CreateableSearchSelect
-                      name="tags"
-                      isMulti={true}
-                      label="Tags"
-                      lazySearch={searchTags}
-                    />
-                  </div>
-                  <div className="flex-grow">
-                    <SearchSelectInput
+                    <ListSearchInput
                       name="experiments"
-                      isMulti={true}
                       label="Experiments"
-                      lazySearch={searchExperiments}
+                      searchFunction={(query, initialValue) =>
+                        searchExperiments({
+                          variables: { search: query, values: initialValue },
+                        }).then((res) => res.data?.options || [])
+                      }
                     />
                   </div>
 

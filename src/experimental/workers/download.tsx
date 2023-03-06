@@ -260,7 +260,13 @@ expose({
     for (let j = 0; j < imgheight; j++) {
       for (let i = 0; i < imgwidth; i++) {
         let val = data.get([j, i]) as number;
-        let colorIndex = Math.round((val / max) * 255);
+        let colorIndex = Math.floor(((val - min) / max) * 255);
+        if (colorIndex > 255) {
+          colorIndex = 255;
+        }
+        if (colorIndex < 0) {
+          colorIndex = 0;
+        }
         //console.log((val / max) * 255);
 
         let color = colors[colorIndex] || [255, 0, 255, 255];

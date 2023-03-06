@@ -5,8 +5,13 @@ import { RiArrowDownFill, RiPlayFill, RiStopFill } from "react-icons/ri";
 import { useAlert } from "../../components/alerter/alerter-context";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../components/forms/fields/text_input";
+import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
-import { useDetailPlotQuery, useUpdatePlotMutation } from "../api/graphql";
+import {
+  CommentableModels,
+  useDetailPlotQuery,
+  useUpdatePlotMutation,
+} from "../api/graphql";
 import { useMikro, withMikro } from "../MikroContext";
 import { MikroIQLField } from "./iql/MikroIQLField";
 import { parseQueryData } from "./plot/parser";
@@ -80,6 +85,7 @@ export const Renderer = (props: {
         <div className="flex-grow"></div>
         <div className="flex-initial">
           <button
+            type="button"
             onClick={() => generate()}
             className={`transition-colors ease-in-out  ${
               generating ? "text-orange-300" : "text-gray-300"
@@ -87,7 +93,7 @@ export const Renderer = (props: {
           >
             <RiArrowDownFill />
           </button>
-          <button onClick={() => setAutoGenerate(!autoGenerate)}>
+          <button type="button" onClick={() => setAutoGenerate(!autoGenerate)}>
             {autoGenerate ? (
               <RiPlayFill className="text-green-400" />
             ) : (
@@ -132,53 +138,67 @@ export const Plot: React.FC<PlotProps> = (props) => {
   return (
     <PageLayout
       width="w-[400px]"
-      sidebar={
-        <div className="p-4 flex flex-col h-full">
-          <div className="flex-grow">
-            {data?.plot?.query && (
-              <Formik
-                initialValues={{
-                  query: data.plot?.query,
-                  name: data.plot?.name,
-                }}
-                onSubmit={(values, helpers) => {
-                  helpers.setSubmitting(true);
-                  setCurrentQuery(values.query);
-                  helpers.setSubmitting(false);
-                }}
-              >
-                <Form>
-                  <div className="w-full text-white">
-                    <TextInputField
-                      name="name"
-                      label="Name"
-                      description="How should this plot be called?"
-                    />
-                    <div className="h-[50vh] w-full">
-                      <MikroIQLField
-                        name="query"
-                        initialQuery={data.plot.query}
-                      />
-                    </div>
-                  </div>
-                  <SubmitButton className="w-full mt-2 bg-primary-300 py-1 rounded-lg hover:bg-primary-500 disabled:bg-gray-300 ">
-                    {" "}
-                    Generate{" "}
-                  </SubmitButton>
-                </Form>
-              </Formik>
-            )}
-          </div>
-          <div className="flex-initial">
-            <button
-              className="w-full mt-2 bg-primary-300 py-1 rounded-lg hover:bg-primary-500 "
-              onClick={onSave}
-            >
-              Save{" "}
-            </button>
-          </div>
-        </div>
-      }
+      sidebars={[
+        {
+          key: "sidebar",
+          label: "Sidebar",
+          content: (
+            <div className="p-4 flex flex-col h-full">
+              <div className="flex-grow">
+                {data?.plot?.query && (
+                  <Formik
+                    initialValues={{
+                      query: data.plot?.query,
+                      name: data.plot?.name,
+                    }}
+                    onSubmit={(values, helpers) => {
+                      helpers.setSubmitting(true);
+                      setCurrentQuery(values.query);
+                      helpers.setSubmitting(false);
+                    }}
+                  >
+                    <Form>
+                      <div className="w-full text-white">
+                        <TextInputField
+                          name="name"
+                          label="Name"
+                          description="How should this plot be called?"
+                        />
+                        <div className="h-[50vh] w-full">
+                          <MikroIQLField
+                            name="query"
+                            initialQuery={data.plot.query}
+                          />
+                        </div>
+                      </div>
+                      <SubmitButton className="w-full mt-2 bg-primary-300 py-1 rounded-lg hover:bg-primary-500 disabled:bg-gray-300 ">
+                        {" "}
+                        Generate{" "}
+                      </SubmitButton>
+                    </Form>
+                  </Formik>
+                )}
+              </div>
+              <div className="flex-initial">
+                <button
+                  type="button"
+                  className="w-full mt-2 bg-primary-300 py-1 rounded-lg hover:bg-primary-500 "
+                  onClick={onSave}
+                >
+                  Save{" "}
+                </button>
+              </div>
+            </div>
+          ),
+        },
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagContext} />
+          ),
+          key: "comments",
+        },
+      ]}
     >
       <Renderer query={currentQuery} name={data?.plot?.name} />
     </PageLayout>

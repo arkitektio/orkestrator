@@ -68,6 +68,7 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
           <div className="flex-0">
             {offset != 0 && (
               <button
+                type="button"
                 className="p-1 text-gray-600 rounded"
                 onClick={() => setOffset(offset - limit)}
               >
@@ -77,6 +78,7 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
             )}
             {data?.mydatasets && data?.mydatasets.length == limit && (
               <button
+                type="button"
                 className="p-1 text-gray-600 rounded"
                 onClick={() => setOffset(offset + limit)}
               >

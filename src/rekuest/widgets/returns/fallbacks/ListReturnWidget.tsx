@@ -1,5 +1,4 @@
 import React from "react";
-import { ReturnWidgetsContainer } from "../../containers/ReturnWidgetsContainer";
 import { ReturnWidgetProps } from "../../types";
 import { useWidgetRegistry } from "../../widget-context";
 

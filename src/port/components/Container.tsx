@@ -5,8 +5,14 @@ import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Provision } from "../../linker";
+import { useDetailApplicationQuery } from "../../lok/api/graphql";
+import { withMan } from "../../lok/context";
 import { withRekuest } from "../../rekuest";
-import { useClientProvisionsQuery } from "../../rekuest/api/graphql";
+import {
+  useClientProvisionsQuery,
+  useDetailAgentQuery,
+  usePortAgentQuery,
+} from "../../rekuest/api/graphql";
 import {
   useDetailContainerQuery,
   useStopContainerMutation,
@@ -37,6 +43,35 @@ export const ContainerProvisions = (props: { clientId: string }) => {
           </Provision.Smart>
         ))}
       </ResponsiveContainerGrid>
+    </>
+  );
+};
+
+export const AgentInformation = (props: {
+  clientId: string;
+  instanceId: string;
+}) => {
+  const { data, error } = withRekuest(usePortAgentQuery)({
+    variables: { clientId: props.clientId, instanceId: props.instanceId },
+  });
+
+  return (
+    <>
+      {data?.agent?.status}
+      {JSON.stringify(error)}
+    </>
+  );
+};
+
+export const AppInformation = (props: { clientId: string }) => {
+  const { data, error } = withMan(useDetailApplicationQuery)({
+    variables: { clientId: props.clientId },
+  });
+
+  return (
+    <>
+      {data?.application?.name}
+      {JSON.stringify(error)}
     </>
   );
 };
@@ -94,8 +129,17 @@ export const Container = (props: ContainerProps) => {
       <div className="text-white">
         <div className="text-2xl">
           Container hosting {data?.container?.whale?.image}
-          Client {data?.container?.whale?.clientId}
         </div>
+        {data?.container?.whale?.clientId && (
+          <AgentInformation
+            clientId={data?.container?.whale?.clientId}
+            instanceId={"main"}
+          />
+        )}
+        {data?.container?.whale?.clientId && (
+          <AppInformation clientId={data?.container?.whale?.clientId} />
+        )}
+
         <div className="text-sm flex flex-col">
           <div className="flex flex-row">
             <div className="w-1/2">Name</div>
@@ -109,44 +153,10 @@ export const Container = (props: ContainerProps) => {
             <div className="w-1/2">Image</div>
             <div className="w-1/2">{data?.container?.image?.tags}</div>
           </div>
-        </div>
-        <div className="flex flex-row">
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            onClick={() => {
-              restart({
-                variables: {
-                  id: props.id,
-                },
-              });
-            }}
-          >
-            Restart
-          </button>
-          <button
-            className="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded"
-            onClick={() => {
-              stop({
-                variables: {
-                  id: props.id,
-                },
-              });
-            }}
-          >
-            Stop
-          </button>
-          <button
-            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-            onClick={() => {
-              remove({
-                variables: {
-                  id: props.id,
-                },
-              });
-            }}
-          >
-            Delete
-          </button>
+          <div className="flex flex-row">
+            <div className="w-1/2">Runtime</div>
+            <div className="w-1/2">{data?.container?.whale?.runtime}</div>
+          </div>
         </div>
         {data?.container?.whale?.clientId && (
           <ContainerProvisions clientId={data?.container?.whale?.clientId} />

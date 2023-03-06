@@ -5,6 +5,7 @@ import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { DropZone } from "../../components/layout/DropZone";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { SelfActions } from "../../components/SelfActions";
+import { useDatalayer } from "../../datalayer/context";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
@@ -12,6 +13,8 @@ import { SectionTitle } from "../../layout/SectionTitle";
 import { MikroFile, Representation, Sample } from "../../linker";
 import {
   CommentableModels,
+  DetailDatasetDocument,
+  DetailDatasetQuery,
   DetailExperimentDocument,
   DetailExperimentQuery,
   useDetailDatasetQuery,
@@ -24,9 +27,11 @@ import {
   useReleaseSamplesMutation,
   useTagSearchLazyQuery,
   useUpdateDatasetMutation,
+  useUploadBigFileMutation,
   useUploadOmeroFileMutation,
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
+import { RepresentationCard } from "./cards/RepresentationCard";
 import { UploadZone } from "./UploadZone";
 
 export type IExperimentProps = {
@@ -53,23 +58,25 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
 
   const [updateDataset] = withMikro(useUpdateDatasetMutation)();
   const [pinDataset] = withMikro(usePinDatasetMutation)();
+  const { upload } = useDatalayer();
 
   const { confirm } = useConfirm();
-  const [uploadFile] = withMikro(useUploadOmeroFileMutation)({
+
+  const [uploadFile] = withMikro(useUploadBigFileMutation)({
     update(cache, result) {
-      const existing = cache.readQuery<DetailExperimentQuery>({
-        query: DetailExperimentDocument,
+      const existing = cache.readQuery<DetailDatasetQuery>({
+        query: DetailDatasetDocument,
         variables: { id: id },
       });
       cache.writeQuery({
-        query: DetailExperimentDocument,
+        query: DetailDatasetDocument,
         variables: { id: id },
         data: {
-          experiment: {
-            ...existing?.experiment,
-            omeroFiles: [
-              ...(existing?.experiment?.omeroFiles || []),
-              result.data?.uploadOmeroFile,
+          dataset: {
+            ...existing?.dataset,
+            omerofiles: [
+              ...(existing?.dataset?.omerofiles || []),
+              result.data?.uploadBigFile,
             ],
           },
         },
@@ -79,11 +86,15 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
 
   return (
     <PageLayout
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagDataset} />
-        </div>
-      }
+      sidebars={[
+        {
+          key: "comments",
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagDataset} />
+          ),
+        },
+      ]}
       actions={<SelfActions type="@mikro/dataset" object={id} />}
     >
       {!error && data && (
@@ -96,6 +107,7 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
             <div className="flex text-white">
               {data?.dataset?.id && (
                 <button
+                  type="button"
                   onClick={() =>
                     pinDataset({
                       variables: {
@@ -130,6 +142,7 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
             </div>
             <div className="flex flex-col mt-2">
               <button
+                type="button"
                 className="border border-gray-600 rounded w-fit p-1"
                 onClick={() => setshow(!show)}
               >
@@ -178,7 +191,7 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
             ))}
             <DropZone
               accepts={["item:@mikro/sample", "list:@mikro/sample"]}
-              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
+              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg truncate"
               onDrop={async (item) => {
                 await putSamples({
                   variables: {
@@ -196,48 +209,14 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
           <SectionTitle> Images </SectionTitle>
           <ResponsiveContainerGrid>
             {data?.dataset?.representations?.filter(notEmpty).map((sample) => (
-              <Representation.Smart
-                object={sample.id}
-                className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
-                additionalMates={(partner, self) => {
-                  if (
-                    partner == "item:@mikro/sample" ||
-                    partner == "list:@mikro/sample"
-                  ) {
-                    return [
-                      {
-                        label: "Remove from Dataset",
-                        async action(self, drops) {
-                          releaseRepresentations({
-                            variables: {
-                              dataset: id,
-                              representations: drops.map((d) => d.object),
-                            },
-                          });
-                        },
-                      },
-                    ];
-                  }
-
-                  return [];
-                }}
-              >
-                <div className="flex truncate">
-                  <Representation.DetailLink
-                    className="flex-grow cursor-pointer font-semibold"
-                    object={sample.id}
-                  >
-                    {sample?.name}
-                  </Representation.DetailLink>
-                </div>
-              </Representation.Smart>
+              <RepresentationCard rep={sample} />
             ))}
             <DropZone
               accepts={[
                 "item:@mikro/representation",
                 "list:@mikro/representation",
               ]}
-              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
+              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg truncate"
               onDrop={async (item) => {
                 await putRepresentations({
                   variables: {
@@ -293,13 +272,15 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
             ))}
 
             <UploadZone
-              uploadFile={uploadFile}
-              additionalVariables={{ datasets: [id] }}
+              uploadFile={upload}
+              createFile={(file, key) =>
+                uploadFile({ variables: { file: key, datasets: [id] } })
+              }
             />
 
             <DropZone
               accepts={["item:@mikro/omerofile", "list:@mikro/omerofile"]}
-              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
+              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg truncate"
               onDrop={async (item) => {
                 await putFiles({
                   variables: {

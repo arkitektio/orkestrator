@@ -1,0 +1,13 @@
+mutation Presign($file: String!) {
+  presign(file: $file) {
+    bucket
+    fields {
+      xAmzDate
+      xAmzAlgorithm
+      xAmzSignature
+      xAmzCredential
+      key
+      policy
+    }
+  }
+}

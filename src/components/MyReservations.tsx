@@ -124,7 +124,7 @@ const MyReservations: React.FC<IMyReservationsProps> = () => {
     <>
       <Reservation.ListLink>
         <span className="font-light text-xl dark:text-white">
-          My Reservations
+          This app uses
         </span>
       </Reservation.ListLink>
       <ResponsiveGrid>

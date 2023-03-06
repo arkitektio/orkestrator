@@ -93,6 +93,7 @@ const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
         <div className="flex-0">
           {offset != 0 && (
             <button
+              type="button"
               className="p-1 text-gray-600 rounded"
               onClick={() => setOffset(offset - limit)}
             >
@@ -102,6 +103,7 @@ const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
           )}
           {data?.mytables && data?.mytables.length == limit && (
             <button
+              type="button"
               className="p-1 text-gray-600 rounded"
               onClick={() => setOffset(offset + limit)}
             >

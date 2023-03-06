@@ -173,6 +173,7 @@ const MyFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
           <div className="flex-0">
             {offset != 0 && (
               <button
+                type="button"
                 className="p-1 text-gray-600 rounded"
                 onClick={() => setOffset(offset - limit)}
               >
@@ -182,6 +183,7 @@ const MyFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
             )}
             {data?.myomerofiles && data?.myomerofiles.length == limit && (
               <button
+                type="button"
                 className="p-1 text-gray-600 rounded"
                 onClick={() => setOffset(offset + limit)}
               >
@@ -315,6 +317,7 @@ const MyFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
               </p>
             </div>
             <button
+              type="button"
               className="hidden group-hover:block text-white-500 bg-red-500 rounded-md text px-2 absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 b"
               onClick={() => future.controller.abort()}
             >

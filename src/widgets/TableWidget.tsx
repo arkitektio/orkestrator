@@ -19,6 +19,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { off } from "process";
 import useScrollPercentage from "react-scroll-percentage-hook";
+import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 
 type TableData = { [key: string]: any };
 
@@ -37,7 +38,7 @@ function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
 }
 
 export const limit = 10;
-export const TableWidget: React.FC<{ value: string }> = ({ value }) => {
+export const TableWidget: React.FC<StructureDisplayProps> = ({ value }) => {
   const { data, fetchMore, loading } = withMikro(useDetailTableQuery)({
     variables: { id: value, limit: limit, offset: 0 },
   });

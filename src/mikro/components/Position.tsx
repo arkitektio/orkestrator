@@ -23,11 +23,15 @@ const Position: React.FC<PositionProps> = ({ id }) => {
   return (
     <PageLayout
       actions={<SelfActions type={"@mikro/position"} object={id} />}
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagPosition} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagPosition} />
+          ),
+          key: "comments",
+        },
+      ]}
     >
       <div className="p-5 w-full">
         <div className="text-xl font-light text-white">

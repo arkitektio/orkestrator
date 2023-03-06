@@ -99,11 +99,18 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
 
   return (
     <PageLayout
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagExperiment} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments
+              id={id}
+              model={CommentableModels.GrunnlagExperiment}
+            />
+          ),
+          key: "comments",
+        },
+      ]}
     >
       {!error && data && (
         <div className="p-3 flex-grow flex flex-col">
@@ -115,6 +122,7 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
             <div className="flex text-white">
               {data?.experiment?.id && (
                 <button
+                  type="button"
                   onClick={() =>
                     pinExperiment({
                       variables: {
@@ -151,6 +159,7 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
             </div>
             <div className="flex flex-col mt-2">
               <button
+                type="button"
                 className="border border-gray-600 rounded w-fit p-1"
                 onClick={() => setshow(!show)}
               >

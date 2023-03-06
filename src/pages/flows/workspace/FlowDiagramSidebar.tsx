@@ -24,8 +24,6 @@ export const FlowCard = ({
   diagram: string;
   flow: ListFlowFragment;
 }) => {
-  const { s3resolve } = useFluss();
-
   return (
     <Flow.Smart
       showSelfMates={true}
@@ -102,6 +100,7 @@ const FlowDiagramSidebar: React.FunctionComponent<IDataSidebarProps> = ({
         <>
           {d?.id && (
             <button
+              type="button"
               onClick={() => {
                 assign({ reservation: d });
               }}

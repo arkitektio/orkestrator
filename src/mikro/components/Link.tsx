@@ -15,7 +15,8 @@ import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { MikroFile, Sample } from "../../linker";
+import { linkableModelToIdentifier, MikroFile, Sample } from "../../linker";
+import { structure_to_widget } from "../../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 import {
   CommentableModels,
   DetailExperimentDocument,
@@ -36,6 +37,7 @@ import {
   useDetailLinkQuery,
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
+import { ContextCard } from "./cards/ContextCard";
 import { UploadZone } from "./UploadZone";
 
 export type IExperimentProps = {
@@ -47,29 +49,61 @@ const Link: React.FC<IExperimentProps> = ({ id }) => {
     variables: { id: id },
   });
 
+  let leftIdentifier =
+    data?.link?.leftType && linkableModelToIdentifier(data?.link?.leftType);
+  let rightIdentifier =
+    data?.link?.rightType && linkableModelToIdentifier(data?.link?.rightType);
+
   return (
     <PageLayout
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagDatalink} />
-        </div>
-      }
-      actions={<SelfActions type="@mikro/context" object={id} />}
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagDatalink} />
+          ),
+          key: "comments",
+        },
+      ]}
+      actions={<SelfActions type="@mikro/link" object={id} />}
     >
       {!error && data && (
         <div className="p-3 flex-grow flex flex-col">
           <div className="flex">
-            <SectionTitle>{data?.link?.relation}</SectionTitle>
+            <SectionTitle>{data?.link?.relation.name}</SectionTitle>
           </div>
-          <div className="flex-grow text-white flex flex-col"></div>
+          <SectionTitle>Applies to context</SectionTitle>
+          <div className="flex">
+            {data?.link?.context && (
+              <ContextCard context={data?.link?.context} />
+            )}
+          </div>
           <div className="flex flex-row">
-            <div className="flex-initial ">{data?.link?.xId}</div>
-            <div className="flex-grow  flex text-bold ">
-              {" "}
+            {leftIdentifier && (
+              <div className="flex-1 text-slate-200">
+                <div className="font-semibold ">Left</div>
+                {structure_to_widget(leftIdentifier, {
+                  value: data?.link?.xId,
+                  minimal: false,
+                  label: true,
+                  link: true,
+                })}
+              </div>
+            )}
+            <div className="flex-initial ml-1 font-light my-auto font-semibold text-slate-200 mx-2">
               {">"}
-              {data?.link?.relation} {">"}{" "}
             </div>
-            <div className="flex-initial">{data?.link?.yId}</div>
+            {rightIdentifier && (
+              <div className="flex-1 text-slate-200">
+                <div className="font-semibold ">Right</div>
+                {structure_to_widget(rightIdentifier, {
+                  value: data?.link?.yId,
+                  minimal: false,
+                  label: true,
+                  link: true,
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}

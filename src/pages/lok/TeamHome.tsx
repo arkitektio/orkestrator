@@ -74,6 +74,7 @@ export const MentionedComment = ({
                 </div>
               ) : (
                 <button
+                  type="button"
                   className="mr-2"
                   onClick={() => {
                     resolveComment({

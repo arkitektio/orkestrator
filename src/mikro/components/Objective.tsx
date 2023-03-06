@@ -23,11 +23,18 @@ const Objective: React.FC<ObjectiveProps> = ({ id }) => {
   return (
     <PageLayout
       actions={<SelfActions type={"@mikro/objective"} object={id} />}
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagObjective} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments
+              id={id}
+              model={CommentableModels.GrunnlagObjective}
+            />
+          ),
+          key: "comments",
+        },
+      ]}
     >
       <div className="p-5 w-full">
         <div className="text-xl font-light text-white">

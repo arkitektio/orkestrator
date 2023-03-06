@@ -7,6 +7,18 @@ fragment DetailWhale on Whale {
   clientSecret
   scopes
   image
+  pulled
+  latestPull
+  containers {
+    id
+    name
+    image {
+      ...DetailImage
+    }
+    logs
+    labels
+    status
+  }
 }
 
 fragment ListWhale on Whale {
@@ -17,4 +29,6 @@ fragment ListWhale on Whale {
   clientId
   clientSecret
   image
+  pulled
+  latestPull
 }

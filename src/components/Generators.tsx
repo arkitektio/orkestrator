@@ -28,6 +28,7 @@ const Generators: React.FC<IGeneratorsProps> = ({}) => {
           <div key={index}>
             {res?.reference && res?.node?.id && (
               <button
+                type="button"
                 className="bg-primary-300 p-2 border rounded-md text-white hover:bg-primary-400 transition-colors"
                 onClick={() => assign({ reservation: res })}
               >

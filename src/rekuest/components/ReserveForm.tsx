@@ -116,7 +116,7 @@ const ReserveForm: React.FC<ReserveFormProps> = ({ initial, onSubmit }) => {
 
             <div className="mt-2">
               <TextInputField
-                name="title"
+                name="reference"
                 label="Shorthand"
                 description="Your common name for this reservation (will appear as button text)"
               />

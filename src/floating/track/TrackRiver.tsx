@@ -179,7 +179,9 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
         setRunState: setState,
       }}
     >
-      <PageLayout sidebar={<DynamicSidebar />}>
+      <PageLayout
+        sidebars={[{ key: "flow", label: "Flow", content: <DynamicSidebar /> }]}
+      >
         <div className="flex flex-col flex-grow h-full overflow-x-hidden">
           <div className="flex-grow">
             <Graph

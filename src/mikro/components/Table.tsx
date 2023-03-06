@@ -63,11 +63,15 @@ const Table: React.FC<ISampleProps> = ({ id }) => {
 
   return (
     <PageLayout
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.BordTable} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.BordTable} />
+          ),
+          key: "comments",
+        },
+      ]}
     >
       <SectionTitle>{tabledata?.table?.name}</SectionTitle>
       <div className="flex-shrink mt-4 text-black font-light bg-white p-4 rounded border-gray-200 rounded-md">

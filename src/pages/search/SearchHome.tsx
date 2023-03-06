@@ -67,6 +67,7 @@ export const SearchHome: React.FC<SearchHomeProps> = (props) => {
       <div className="flex flex-col h-full">
         <div className="flex-row justify-between mr-2">
           <button
+            type="button"
             className="text-primary-300 mr-3"
             onClick={() =>
               setPanes([
@@ -77,7 +78,11 @@ export const SearchHome: React.FC<SearchHomeProps> = (props) => {
           >
             Add Pane
           </button>
-          <button className="text-primary-300" onClick={() => bakeLink()}>
+          <button
+            type="button"
+            className="text-primary-300"
+            onClick={() => bakeLink()}
+          >
             Bake Link
           </button>
         </div>
@@ -86,6 +91,7 @@ export const SearchHome: React.FC<SearchHomeProps> = (props) => {
             <div key={index} className="p-3 flex flex-col">
               {panes.length > 1 && (
                 <button
+                  type="button"
                   className="text-white flex-initial"
                   onClick={() =>
                     setPanes((panes) =>

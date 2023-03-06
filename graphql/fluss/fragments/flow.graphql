@@ -46,8 +46,6 @@ fragment Widget on Widget {
 fragment ReturnWidget on ReturnWidget {
   kind
   query
-  hook
-  ward
 }
 
 fragment PortChild on PortChild {

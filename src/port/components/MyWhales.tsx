@@ -1,6 +1,8 @@
 import React from "react";
 import { BsTrash } from "react-icons/bs";
+import Timestamp from "react-timestamp";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
 import { SectionTitle } from "../../layout/SectionTitle";
@@ -12,6 +14,7 @@ import {
   useDeleteWhaleMutation,
   WhalesDocument,
   WhalesQuery,
+  usePullWhaleMutation,
 } from "../api/graphql";
 import { withPort } from "../PortContext";
 export type IMyGraphsProps = {};
@@ -20,6 +23,8 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
   const { data, error, loading } = withPort(useWhalesQuery)({});
 
   const [deploy] = withPort(useRunWhaleMutation)();
+
+  const [pull] = withPort(usePullWhaleMutation)();
 
   const [deleteWhale] = withPort(useDeleteWhaleMutation)({
     update(cache, result) {
@@ -45,7 +50,7 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
         <SectionTitle>My Whales</SectionTitle>
       </Whale.ListLink>
       <br />
-      <ResponsiveGrid>
+      <ResponsiveContainerGrid>
         {data?.whales?.filter(notEmpty).map((whale, index) => (
           <Whale.Smart
             key={index}
@@ -83,6 +88,18 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
                     },
                     label: "Deploy",
                     description: "Deploy Whale",
+                  },
+                  {
+                    action: async (self, drops) => {
+                      await confirm({
+                        message: "Do you really want to update this whale?",
+                        confirmLabel: "Yes deploy!",
+                      });
+
+                      await pull({ variables: { id: self.object } });
+                    },
+                    label: "Pull",
+                    description: "Pull Update",
                   },
                 ];
               }
@@ -128,10 +145,15 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
                 {whale?.image}
               </Whale.DetailLink>
             </div>
-            <div className="pl-2 pb-2"></div>
+            <div className="pl-2 pb-2">
+              Updated{" "}
+              {whale.latestPull && (
+                <Timestamp date={whale.latestPull} relative={true} />
+              )}
+            </div>
           </Whale.Smart>
         ))}
-      </ResponsiveGrid>
+      </ResponsiveContainerGrid>
     </div>
   );
 };

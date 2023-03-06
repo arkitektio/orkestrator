@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
 import {
-  CreateableSearchSelect,
+  CreateableSearchSelectInput,
   SearchSelectInput,
 } from "../../components/forms/fields/search_select_input";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
@@ -65,6 +65,8 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
   const [pinRepresentation, pindata] = withMikro(
     usePinRepresentationMutation
   )();
+
+  const [showRois, setShowRois] = useState(false);
 
   const [updateRepresentation, _] = withMikro(
     useUpdateRepresentationMutation
@@ -197,14 +199,18 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
 
   return (
     <PageLayout
-      sidebar={
-        <div className="p-5">
-          <MikroKomments
-            id={id}
-            model={CommentableModels.GrunnlagRepresentation}
-          />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments
+              id={id}
+              model={CommentableModels.GrunnlagRepresentation}
+            />
+          ),
+          key: "comments",
+        },
+      ]}
       actions={
         <>
           <SelfActions type="@mikro/representation" object={id} />
@@ -223,6 +229,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
           <div className="flex">
             {data?.representation?.id && (
               <button
+                type="button"
                 onClick={() =>
                   pinRepresentation({
                     variables: {
@@ -238,7 +245,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
           </div>
         </div>
         <div className="flex @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">
-          <div className="flex-1 max-w-2xl mt-2 rounded rounded-lg overflow-hidden">
+          <div className="flex-1 max-w-2xl mt-2 rounded rounded-lg overflow-hidden relative">
             {data?.representation && (
               <ExperimentalFeature
                 fallback={
@@ -248,6 +255,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                         rep={data?.representation}
                         height={aspectRatio ? aspectRatio * width : height}
                         width={width}
+                        wi
                       />
                     )}
                   </SaveParentSize>
@@ -255,7 +263,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
               >
                 <TwoDOffcanvas
                   representation={data?.representation}
-                  withRois={true}
+                  withRois={showRois}
                 />
               </ExperimentalFeature>
             )}
@@ -703,6 +711,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
 
             <div className="flex flex-col mt-2">
               <button
+                type="button"
                 className="border border-gray-600 rounded w-fit p-1"
                 onClick={() => setshow(!show)}
               >

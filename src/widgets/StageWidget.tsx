@@ -1,14 +1,10 @@
 import { PositionCanvas } from "../components/PositionCanvas";
-import { TwoDOffcanvas } from "../experimental/render/TwoDOffcanvas";
 import { SaveParentSize } from "../layout/SaveParentSize";
-import {
-  useDetailPositionQuery,
-  useDetailRepresentationQuery,
-  useDetailStageQuery,
-} from "../mikro/api/graphql";
+import { useDetailStageQuery } from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
+import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 
-export const StageWidget: React.FC<{ value: string }> = ({ value }) => {
+export const StageWidget: React.FC<StructureDisplayProps> = ({ value }) => {
   const { data } = withMikro(useDetailStageQuery)({
     variables: { id: value },
   });

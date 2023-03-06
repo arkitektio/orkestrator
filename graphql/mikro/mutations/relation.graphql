@@ -1,0 +1,5 @@
+mutation CreateRelation($name: String!, $description: String) {
+  createRelation(name: $name, description: $description) {
+    ...DetailRelation
+  }
+}

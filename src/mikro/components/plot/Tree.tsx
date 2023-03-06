@@ -65,7 +65,7 @@ export const Tree: React.FC<TreeProps> = ({ group, depth = 0, index = 0 }) => {
                 >
                   {(formik) => (
                     <Form>
-                      <ChangeSubmitHelper formik={formik} />
+                      <ChangeSubmitHelper />
                       <div className="bg-slate-600 p-3 rounded">
                         <div className="w-full text-white bg-slate-600">
                           <SelectInputField

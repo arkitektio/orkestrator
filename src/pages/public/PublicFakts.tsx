@@ -57,6 +57,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 <>
                   {advertisedHosts.map((e) => (
                     <button
+                      type="button"
                       onClick={() =>
                         load(
                           grantBuilder({

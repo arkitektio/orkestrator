@@ -33,6 +33,8 @@ const ResolveOnce = ({ request }: { request: AssignRequest }) => {
     setSubmitting(false);
   };
 
+  console.log("This is the request", request.variables.defaults);
+
   return (
     <>
       <div className="text-xl">{request?.variables.reservation.node.name}</div>

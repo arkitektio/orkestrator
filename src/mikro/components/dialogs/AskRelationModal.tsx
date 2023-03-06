@@ -1,27 +1,78 @@
 import { Form, Formik } from "formik";
 import { useAlert } from "../../../components/alerter/alerter-context";
-import { SearchSelectInput } from "../../../components/forms/fields/search_select_input";
-import { SelectInputField } from "../../../components/forms/fields/select_input";
+import { CreateableSearchInput } from "../../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
-import { TextInputField } from "../../../components/forms/fields/text_input";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { structure_to_widget } from "../../../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 import {
-  CreateContextMutation,
-  CreateContextMutationVariables,
-  MyContextsDocument,
-  MyContextsQuery,
   useCreateContextMutation,
+  useCreateRelationMutation,
   useSearchContextsLazyQuery,
+  useSearchRelationsLazyQuery,
 } from "../../api/graphql";
 import { withMikro } from "../../MikroContext";
 
 type Variables = { context: string; relation: string };
 
-export const AskRelationModal = (props: Submit<Variables>) => {
+export const AskRelationModal = (
+  props: Submit<Variables> & {
+    leftIdentifier?: string;
+    leftObject?: string;
+    rightIdentifier?: string;
+    rightObject?: string;
+  }
+) => {
   const { alert } = useAlert();
 
   const [searchContexts] = withMikro(useSearchContextsLazyQuery)();
+  const [searchRelations] = withMikro(useSearchRelationsLazyQuery)();
+
+  const [createContext] = withMikro(useCreateContextMutation)();
+
+  const [createRelation] = withMikro(useCreateRelationMutation)();
+
+  const relateCreate = async (value: string) => {
+    const rel = await createRelation({
+      variables: { name: value },
+    });
+
+    if (!rel.data?.createRelation) throw new Error("Could not create relation");
+    return {
+      label: rel.data.createRelation.name,
+      value: rel.data.createRelation.id,
+    };
+  };
+
+  const contextCreate = async (value: string) => {
+    const rel = await createContext({
+      variables: { name: value },
+    });
+
+    if (!rel.data?.createContext) throw new Error("Could not create relation");
+    return {
+      label: rel.data.createContext.name,
+      value: rel.data.createContext.id,
+    };
+  };
+
+  const relateSearch = async (value?: string, initialValue?: string[]) => {
+    console.log("qzery", value, initialValue);
+    const res = await searchRelations({
+      variables: { search: value, values: initialValue },
+    });
+    console.log(res.data?.options);
+    return res.data?.options || [];
+  };
+
+  const contextSearch = async (value?: string, initialValue?: string[]) => {
+    console.log("qzery", value, initialValue);
+    const res = await searchContexts({
+      variables: { search: value, values: initialValue },
+    });
+    console.log(res.data?.options);
+    return res.data?.options || [];
+  };
 
   return (
     <Formik<Variables>
@@ -49,7 +100,7 @@ export const AskRelationModal = (props: Submit<Variables>) => {
       {(formikProps) => (
         <Form>
           <TwDialog
-            title="Scan Github Repo"
+            title="Relate"
             buttons={
               <>
                 <button
@@ -65,21 +116,42 @@ export const AskRelationModal = (props: Submit<Variables>) => {
               </>
             }
           >
-            <div className="mt-2 align-left text-left">
-              <div className="mt-2 text-sm mb-3">
-                When you create a relationship between two contexts, you can
+            <div className="mt-2 align-left text-left w-full">
+              <div className="mt-2 text-sm mb-3 w-full">
+                Relate these to items together
               </div>
-              <TextInputField
-                name="relation"
-                label="Name"
-                description="The name of the context you want to create"
-              />
-              <SearchSelectInput
-                name="context"
-                label="Context"
-                lazySearch={searchContexts}
-                description="The context you want to create a relation for"
-              />
+              <div className="mt-2 grid-cols-3 w-full">
+                {props.leftIdentifier && props.leftObject && (
+                  <div className=" p-2   p-2 border-gray-800 rounded border">
+                    {structure_to_widget(props.leftIdentifier, {
+                      value: props.leftObject,
+                    })}
+                  </div>
+                )}
+                <div className="p-2 border-gray-800 rounded border">
+                  <CreateableSearchInput
+                    name="relation"
+                    searchFunction={relateSearch}
+                    createFunction={relateCreate}
+                    label="Relation"
+                    description="The relationship between these two items"
+                  />
+                  <CreateableSearchInput
+                    name="context"
+                    label="Context"
+                    searchFunction={contextSearch}
+                    createFunction={contextCreate}
+                    description="The context in which this relationship exists"
+                  />
+                </div>
+                {props.rightIdentifier && props.rightObject && (
+                  <div className="p-2 p-2 border-gray-800 rounded border">
+                    {structure_to_widget(props.rightIdentifier, {
+                      value: props.rightObject,
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </TwDialog>
         </Form>

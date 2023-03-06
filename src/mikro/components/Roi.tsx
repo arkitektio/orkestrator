@@ -22,11 +22,15 @@ const Roi: React.FC<ISampleProps> = ({ id }) => {
   return (
     <PageLayout
       actions={<SelfActions type={"@mikro/roi"} object={id} />}
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagRoi} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagRoi} />
+          ),
+          key: "comments",
+        },
+      ]}
     >
       <div className="p-5 w-full">
         <div className="text-xl font-light text-white">

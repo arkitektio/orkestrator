@@ -1,16 +1,10 @@
 import ParentSize from "@visx/responsive/lib/components/ParentSizeModern";
-import { PositionCanvas } from "../components/PositionCanvas";
 import { RoiCanvas } from "../components/RoiCanvas";
-import { TwoDOffcanvas } from "../experimental/render/TwoDOffcanvas";
-import {
-  useDetailPositionQuery,
-  useDetailRepresentationQuery,
-  useDetailRoiQuery,
-  useDetailTableQuery,
-} from "../mikro/api/graphql";
+import { useDetailRoiQuery } from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
+import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 
-export const RoiWidget: React.FC<{ value: string }> = ({ value }) => {
+export const RoiWidget: React.FC<StructureDisplayProps> = ({ value }) => {
   const { data } = withMikro(useDetailRoiQuery)({
     variables: { id: value },
   });

@@ -68,6 +68,7 @@ export const Comment = ({
             />
           )}
           <button
+            type="button"
             className="ml-2 text-xs border-gray-400 px-2 border rounded-sm hidden group-hover:inline"
             onClick={() => setShowReply(!showReply)}
           >
@@ -98,7 +99,9 @@ export const Comment = ({
           </div>
           {showReply && replyTo != undefined && (
             <div className="text-black mt-2 flex flex-row">
-              <button onClick={() => setShowReply(false)}>hide </button>
+              <button type="button" onClick={() => setShowReply(false)}>
+                hide{" "}
+              </button>
               <div className="flex-grow">
                 <ReplyTo parent={comment?.id} replyTo={replyTo} />
               </div>

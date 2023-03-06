@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { CreateableSearchSelect } from "../../components/forms/fields/search_select_input";
+import { CreateableSearchSelectInput } from "../../components/forms/fields/search_select_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { PositionCanvas } from "../../components/PositionCanvas";
@@ -66,11 +66,15 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
 
   return (
     <PageLayout
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagStage} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagStage} />
+          ),
+          key: "comments",
+        },
+      ]}
       actions={<SelfActions type={"@mikro/stage"} object={id} />}
     >
       {!error && data && (
@@ -83,6 +87,7 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
             <div className="flex text-white">
               {data?.stage?.id && (
                 <button
+                  type="button"
                   onClick={() =>
                     pinStage({
                       variables: {
@@ -142,6 +147,7 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
               </div>
               <div className="flex flex-col mt-2">
                 <button
+                  type="button"
                   className="border border-gray-600 rounded w-fit p-1"
                   onClick={() => setshow(!show)}
                 >

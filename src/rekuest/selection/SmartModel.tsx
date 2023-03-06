@@ -47,6 +47,7 @@ export interface SmartModelProps<T extends Accept> {
   dropClassName?: (props: ClassNameOptions) => string;
   dragStyle?: (props: ClassNameOptions) => React.CSSProperties;
   dropStyle?: (props: ClassNameOptions) => React.CSSProperties;
+  hover?: boolean;
   showSelfMates?: boolean;
   className?: string;
   additionalMates?:
@@ -60,6 +61,7 @@ export const SmartModel = <T extends Accept>({
   showSelectingIndex = true,
   additionalMates,
   options,
+  hover = false,
   ...props
 }: SmartModelProps<T>) => {
   const self = {
@@ -140,7 +142,10 @@ export const SmartModel = <T extends Accept>({
   const dropClassNameFunc =
     props.dropClassName ||
     (({ isOver, canDrop }) =>
-      `${props.className} ${isOver && "border-primary-200 border"}`);
+      `${props.className} ${
+        hover &&
+        "hover:scale-110 transition-all ease-in-out duration-200 group hover:shadow-xl hover:shadow"
+      } ${isOver && "border-primary-200 border "}`);
 
   return (
     <div
@@ -196,7 +201,7 @@ export const SmartModel = <T extends Accept>({
               >
                 <div
                   className={
-                    "bg-slate-800 w-100 mt-[-1em] flex flex-col rounded-md shadow p-3"
+                    "bg-slate-800 w-100 mt-[-1em] flex flex-col rounded-md shadow p-3 @container"
                   }
                   style={{ zIndex: 10 }}
                 >

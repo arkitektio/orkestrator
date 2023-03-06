@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
@@ -12,9 +13,34 @@ import {
   useDetailGithubRepoQuery,
 } from "../api/graphql";
 import { withPort } from "../PortContext";
+import { RepoScanCard } from "./cards/RepoScanCard";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export type GithubRepoProps = {
   id: string;
+};
+
+export const DisplayMarkdown = (props: { link: string }) => {
+  const [markdown, setMarkdown] = useState("");
+
+  useEffect(() => {
+    console.log(props.link);
+    fetch(props.link)
+      .then((response) => response.text())
+      .then((text) => {
+        setMarkdown(text);
+      });
+  }, [props.link]);
+
+  return (
+    <>
+      {" "}
+      {markdown && (
+        <ReactMarkdown children={markdown} remarkPlugins={[remarkGfm]} />
+      )}
+    </>
+  );
 };
 
 export const GithubRepo = (props: GithubRepoProps) => {
@@ -42,15 +68,14 @@ export const GithubRepo = (props: GithubRepoProps) => {
         >
           Open{" "}
         </a>
+        {data?.githubRepo?.readme && (
+          <DisplayMarkdown link={data?.githubRepo?.readme} />
+        )}
       </div>
       <SectionTitle>Possible Deployments of this app</SectionTitle>
       <ResponsiveContainerGrid>
-        {data?.githubRepo?.scans?.filter(notEmpty).map((scan) => (
-          <RepoScan.Smart object={scan.id} className="bg-gray-300 p-5 rounded">
-            <RepoScan.DetailLink object={scan.id}>
-              {scan.identifier}:{scan.version}
-            </RepoScan.DetailLink>
-          </RepoScan.Smart>
+        {data?.githubRepo?.scans?.filter(notEmpty).map((scan, index) => (
+          <RepoScanCard scan={scan} key={index} />
         ))}
       </ResponsiveContainerGrid>
     </PageLayout>

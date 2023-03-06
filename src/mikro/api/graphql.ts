@@ -14,6 +14,7 @@ export type Scalars = {
   Int: number;
   Float: number;
   AffineMatrix: any;
+  BigFile: any;
   DateTime: any;
   FeatureValue: any;
   File: any;
@@ -156,6 +157,7 @@ export enum CommentableModels {
   GrunnlagOmero = 'GRUNNLAG_OMERO',
   GrunnlagOmerofile = 'GRUNNLAG_OMEROFILE',
   GrunnlagPosition = 'GRUNNLAG_POSITION',
+  GrunnlagRelation = 'GRUNNLAG_RELATION',
   GrunnlagRepresentation = 'GRUNNLAG_REPRESENTATION',
   GrunnlagRoi = 'GRUNNLAG_ROI',
   GrunnlagSample = 'GRUNNLAG_SAMPLE',
@@ -189,10 +191,10 @@ export type Context = {
 
 export type Credentials = {
   __typename?: 'Credentials';
-  accessKey?: Maybe<Scalars['String']>;
-  secretKey?: Maybe<Scalars['String']>;
-  sessionToken?: Maybe<Scalars['String']>;
-  status?: Maybe<Scalars['String']>;
+  accessKey: Scalars['String'];
+  secretKey: Scalars['String'];
+  sessionToken: Scalars['String'];
+  status: Scalars['String'];
 };
 
 /** DataLink(id, x_content_type, x_id, y_content_type, y_id, relation, left_type, right_type, context, created_at, creator) */
@@ -204,18 +206,40 @@ export type DataLink = {
   /** The user that created the sample */
   creator?: Maybe<User>;
   id: Scalars['ID'];
+  /** X */
+  left?: Maybe<GenericObject>;
+  /** X */
+  leftId: Scalars['ID'];
   /** Left Type */
   leftType?: Maybe<LinkableModels>;
-  /** Relation */
-  relation?: Maybe<Scalars['String']>;
+  /** The relation between the two objects */
+  relation: Relation;
+  /** Y */
+  right?: Maybe<GenericObject>;
+  /** Y */
+  rightId: Scalars['ID'];
   /** Left Type */
   rightType?: Maybe<LinkableModels>;
-  /** X */
+  /**
+   * X
+   * @deprecated Use left
+   */
   x?: Maybe<GenericObject>;
-  xId: Scalars['Int'];
-  /** Y */
+  /**
+   * X
+   * @deprecated Use leftId
+   */
+  xId: Scalars['ID'];
+  /**
+   * Y
+   * @deprecated Use right
+   */
   y?: Maybe<GenericObject>;
-  yId: Scalars['Int'];
+  /**
+   * Y
+   * @deprecated Use rightId
+   */
+  yId: Scalars['ID'];
 };
 
 /**
@@ -265,6 +289,11 @@ export type DeleteDatasetResult = {
 
 export type DeleteExperimentResult = {
   __typename?: 'DeleteExperimentResult';
+  id?: Maybe<Scalars['String']>;
+};
+
+export type DeleteLinkResult = {
+  __typename?: 'DeleteLinkResult';
   id?: Maybe<Scalars['String']>;
 };
 
@@ -562,6 +591,7 @@ export type InstrumentOmerosArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
@@ -645,6 +675,7 @@ export type LabelFeaturesArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   keys?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   label?: InputMaybe<Scalars['ID']>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -690,6 +721,7 @@ export enum LinkableModels {
   GrunnlagOmero = 'GRUNNLAG_OMERO',
   GrunnlagOmerofile = 'GRUNNLAG_OMEROFILE',
   GrunnlagPosition = 'GRUNNLAG_POSITION',
+  GrunnlagRelation = 'GRUNNLAG_RELATION',
   GrunnlagRepresentation = 'GRUNNLAG_REPRESENTATION',
   GrunnlagRoi = 'GRUNNLAG_ROI',
   GrunnlagSample = 'GRUNNLAG_SAMPLE',
@@ -954,6 +986,17 @@ export type Mutation = {
   createROI?: Maybe<Roi>;
   /** Creates a Sample */
   createROIS?: Maybe<Representation>;
+  /**
+   * Creates a new Relation
+   *
+   *     This mutation creates a Feature and returns the created Feature.
+   *     We require a reference to the label that the feature belongs to.
+   *     As well as the key and value of the feature.
+   *
+   *     There can be multiple features with the same label, but only one feature per key
+   *     per label
+   */
+  createRelation?: Maybe<Relation>;
   /** Creates a Sample */
   createSample?: Maybe<Sample>;
   /**
@@ -998,6 +1041,12 @@ export type Mutation = {
    *     This mutation deletes an Experiment and returns the deleted Experiment.
    */
   deleteExperiment?: Maybe<DeleteExperimentResult>;
+  /**
+   * Delete Experiment
+   *
+   *     This mutation deletes an Experiment and returns the deleted Experiment.
+   */
+  deleteLink?: Maybe<DeleteLinkResult>;
   /**
    * Delete Experiment
    *
@@ -1083,6 +1132,8 @@ export type Mutation = {
    *     This mutation pins an Experiment and returns the pinned Experiment.
    */
   pinStage?: Maybe<Stage>;
+  /** Presign a file for upload */
+  presign?: Maybe<Presigned>;
   putFiles?: Maybe<Dataset>;
   putRepresentations?: Maybe<Dataset>;
   putSamples?: Maybe<Dataset>;
@@ -1148,6 +1199,13 @@ export type Mutation = {
   updateStage?: Maybe<Stage>;
   /** Updates an Representation (also retriggers meta-data retrieval from data stored in) */
   updateTable?: Maybe<Table>;
+  /**
+   * Upload a file to Mikro
+   *
+   *     This mutation uploads a file to Omero and returns the created OmeroFile.
+   *
+   */
+  uploadBigFile?: Maybe<OmeroFile>;
   /**
    * Upload a file to Mikro
    *
@@ -1315,6 +1373,13 @@ export type MutationCreateRoisArgs = {
 
 
 /** The root Mutation */
+export type MutationCreateRelationArgs = {
+  description?: InputMaybe<Scalars['String']>;
+  name: Scalars['String'];
+};
+
+
+/** The root Mutation */
 export type MutationCreateSampleArgs = {
   creator?: InputMaybe<Scalars['String']>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -1368,6 +1433,12 @@ export type MutationDeleteDatasetArgs = {
 
 /** The root Mutation */
 export type MutationDeleteExperimentArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationDeleteLinkArgs = {
   id: Scalars['ID'];
 };
 
@@ -1459,7 +1530,7 @@ export type MutationFromXArrayArgs = {
 /** The root Mutation */
 export type MutationLinkArgs = {
   context?: InputMaybe<Scalars['ID']>;
-  relation: Scalars['String'];
+  relation: Scalars['ID'];
   xId: Scalars['ID'];
   xType: LinkableModels;
   yId: Scalars['ID'];
@@ -1520,6 +1591,12 @@ export type MutationPinSampleArgs = {
 export type MutationPinStageArgs = {
   id: Scalars['ID'];
   pin: Scalars['Boolean'];
+};
+
+
+/** The root Mutation */
+export type MutationPresignArgs = {
+  file: Scalars['String'];
 };
 
 
@@ -1663,6 +1740,13 @@ export type MutationUpdateTableArgs = {
 
 
 /** The root Mutation */
+export type MutationUploadBigFileArgs = {
+  datasets?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  file: Scalars['BigFile'];
+};
+
+
+/** The root Mutation */
 export type MutationUploadOmeroFileArgs = {
   datasets?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -1709,6 +1793,7 @@ export type ObjectiveOmerosArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
@@ -2064,9 +2149,26 @@ export type PositionOmerosArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
+};
+
+export type Presigned = {
+  __typename?: 'Presigned';
+  bucket: Scalars['String'];
+  fields: PresignedFields;
+};
+
+export type PresignedFields = {
+  __typename?: 'PresignedFields';
+  key: Scalars['String'];
+  policy: Scalars['String'];
+  xAmzAlgorithm: Scalars['String'];
+  xAmzCredential: Scalars['String'];
+  xAmzDate: Scalars['String'];
+  xAmzSignature: Scalars['String'];
 };
 
 /** The root Query */
@@ -2267,9 +2369,9 @@ export type Query = {
    * All Labels
    *
    *     This query returns all Labels that are stored on the platform
-   *     depending on the user's permissions. Generally, this query will return
+   *     depending on the user's permissions.s Generally, this query will return
    *     all Labels that the user has access to. If the user is an amdin
-   *     or superuser, all Labels will be returned.
+   *     or superuser, all Labels wsill be returned.
    *
    */
   models?: Maybe<Array<Maybe<Model>>>;
@@ -2402,6 +2504,29 @@ export type Query = {
    *
    */
   randomRepresentation?: Maybe<Representation>;
+  /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
+  relation?: Maybe<Relation>;
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  relations?: Maybe<Array<Maybe<Relation>>>;
   /**
    * Get a single Representation by ID
    *
@@ -2562,6 +2687,7 @@ export type QueryContextsArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2584,6 +2710,7 @@ export type QueryDatasetsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2605,6 +2732,7 @@ export type QueryExperimentsArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2628,6 +2756,7 @@ export type QueryFeaturesArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   keys?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   label?: InputMaybe<Scalars['ID']>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -2650,6 +2779,7 @@ export type QueryInstrumentsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2677,6 +2807,7 @@ export type QueryLabelsArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2698,6 +2829,7 @@ export type QueryLinksArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
@@ -2722,6 +2854,7 @@ export type QueryMetricsArgs = {
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
   experiment?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   keys?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2746,6 +2879,7 @@ export type QueryModelsArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2760,6 +2894,7 @@ export type QueryMycontextsArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2776,6 +2911,7 @@ export type QueryMydatasetsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2791,6 +2927,7 @@ export type QueryMyexperimentsArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2809,6 +2946,7 @@ export type QueryMymodelsArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2821,6 +2959,7 @@ export type QueryMyomerofilesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2850,7 +2989,7 @@ export type QueryMyrepresentationsArgs = {
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   forceThumbnail?: InputMaybe<Scalars['Boolean']>;
   hasMetric?: InputMaybe<Scalars['String']>;
-  ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   noChildren?: InputMaybe<Scalars['Boolean']>;
@@ -2893,6 +3032,7 @@ export type QueryMystagesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2906,6 +3046,7 @@ export type QueryMytablesArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2924,6 +3065,7 @@ export type QueryObjectiveArgs = {
 /** The root Query */
 export type QueryObjectivesArgs = {
   app?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2944,6 +3086,7 @@ export type QueryOmerofilesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2983,11 +3126,27 @@ export type QueryPositionsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   stage?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryRelationArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryRelationsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
 };
 
 
@@ -3009,7 +3168,7 @@ export type QueryRepresentationsArgs = {
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   forceThumbnail?: InputMaybe<Scalars['Boolean']>;
   hasMetric?: InputMaybe<Scalars['String']>;
-  ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   noChildren?: InputMaybe<Scalars['Boolean']>;
@@ -3056,6 +3215,7 @@ export type QueryRoisArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   ordering?: InputMaybe<Scalars['String']>;
@@ -3107,6 +3267,7 @@ export type QueryStagesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -3126,6 +3287,7 @@ export type QueryTablesArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -3136,6 +3298,7 @@ export type QueryTablesArgs = {
 
 /** The root Query */
 export type QueryTagsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -3156,6 +3319,7 @@ export type QueryThumbnailsArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -3240,10 +3404,22 @@ export enum RoiType {
   Unknown = 'UNKNOWN'
 }
 
+/** Relation(id, name, description) */
+export type Relation = {
+  __typename?: 'Relation';
+  /** The relation between the two objects */
+  datalinkSet: Array<DataLink>;
+  /** The description of the relation */
+  description?: Maybe<Scalars['String']>;
+  id: Scalars['ID'];
+  /** The name of the relation */
+  name: Scalars['String'];
+};
+
 /**
  * A Representation is 5-dimensional representation of an image
  *
- *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     Mikro stores each image as sa 5-dimensional representation. The dimensions are:
  *     - t: time
  *     - c: channel
  *     - z: z-stack
@@ -3333,7 +3509,7 @@ export type Representation = {
 /**
  * A Representation is 5-dimensional representation of an image
  *
- *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     Mikro stores each image as sa 5-dimensional representation. The dimensions are:
  *     - t: time
  *     - c: channel
  *     - z: z-stack
@@ -3374,7 +3550,7 @@ export type RepresentationDerivedArgs = {
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   forceThumbnail?: InputMaybe<Scalars['Boolean']>;
   hasMetric?: InputMaybe<Scalars['String']>;
-  ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   noChildren?: InputMaybe<Scalars['Boolean']>;
@@ -3392,7 +3568,7 @@ export type RepresentationDerivedArgs = {
 /**
  * A Representation is 5-dimensional representation of an image
  *
- *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     Mikro stores each image as sa 5-dimensional representation. The dimensions are:
  *     - t: time
  *     - c: channel
  *     - z: z-stack
@@ -3430,6 +3606,7 @@ export type RepresentationMetricsArgs = {
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
   experiment?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   keys?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -3442,7 +3619,7 @@ export type RepresentationMetricsArgs = {
 /**
  * A Representation is 5-dimensional representation of an image
  *
- *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     Mikro stores each image as sa 5-dimensional representation. The dimensions are:
  *     - t: time
  *     - c: channel
  *     - z: z-stack
@@ -3479,6 +3656,7 @@ export type RepresentationRoisArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   ordering?: InputMaybe<Scalars['String']>;
@@ -3493,7 +3671,7 @@ export type RepresentationRoisArgs = {
 /**
  * A Representation is 5-dimensional representation of an image
  *
- *     Mikro stores each image as a 5-dimensional representation. The dimensions are:
+ *     Mikro stores each image as sa 5-dimensional representation. The dimensions are:
  *     - t: time
  *     - c: channel
  *     - z: z-stack
@@ -3528,6 +3706,7 @@ export type RepresentationTablesArgs = {
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -3638,7 +3817,7 @@ export type SampleRepresentationsArgs = {
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   forceThumbnail?: InputMaybe<Scalars['Boolean']>;
   hasMetric?: InputMaybe<Scalars['String']>;
-  ids?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   noChildren?: InputMaybe<Scalars['Boolean']>;
@@ -3678,6 +3857,7 @@ export enum SharableModels {
   GrunnlagOmero = 'GRUNNLAG_OMERO',
   GrunnlagOmerofile = 'GRUNNLAG_OMEROFILE',
   GrunnlagPosition = 'GRUNNLAG_POSITION',
+  GrunnlagRelation = 'GRUNNLAG_RELATION',
   GrunnlagRepresentation = 'GRUNNLAG_REPRESENTATION',
   GrunnlagRoi = 'GRUNNLAG_ROI',
   GrunnlagSample = 'GRUNNLAG_SAMPLE',
@@ -3964,7 +4144,7 @@ export type MentionCommentFragment = { __typename?: 'Comment', id: string, creat
 
 export type DetailCommentFragment = { __typename?: 'Comment', id: string, resolved?: any | null, createdAt: any, objectId: number, contentType?: CommentableModels | null, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, sub?: string | null }> };
 
-export type DetailContextFragment = { __typename?: 'Context', id: string, name: string, createdAt: any, links: Array<{ __typename?: 'DataLink', id: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation?: string | null, xId: number, yId: number }>, models: Array<{ __typename?: 'Model', id: string, name: string }> };
+export type DetailContextFragment = { __typename?: 'Context', id: string, name: string, createdAt: any, links: Array<{ __typename?: 'DataLink', id: string, xId: string, yId: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation: { __typename?: 'Relation', id: string, name: string } }>, models: Array<{ __typename?: 'Model', id: string, name: string }> };
 
 export type ListContextFragment = { __typename?: 'Context', name: string, id: string };
 
@@ -3980,9 +4160,9 @@ export type InstrumentFragment = { __typename?: 'Instrument', id: string, name: 
 
 export type ListInstrumentFragment = { __typename?: 'Instrument', id: string, name: string };
 
-export type DetailLinkFragment = { __typename?: 'DataLink', id: string, relation?: string | null, xId: number, yId: number, leftType?: LinkableModels | null, rightType?: LinkableModels | null };
+export type DetailLinkFragment = { __typename?: 'DataLink', id: string, xId: string, yId: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, context?: { __typename?: 'Context', name: string, id: string } | null, relation: { __typename?: 'Relation', id: string, name: string } };
 
-export type ListLinkFragment = { __typename?: 'DataLink', id: string, relation?: string | null };
+export type ListLinkFragment = { __typename?: 'DataLink', id: string, xId: string, yId: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation: { __typename?: 'Relation', id: string, name: string } };
 
 export type DetailModelFragment = { __typename?: 'Model', id: string, name: string, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> };
 
@@ -4009,6 +4189,10 @@ export type ListPlotFragment = { __typename?: 'Plot', id: string, name: string, 
 export type PositionFragment = { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null };
 
 export type ListPositionFragment = { __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null };
+
+export type DetailRelationFragment = { __typename?: 'Relation', name: string, description?: string | null, id: string };
+
+export type ListRelationFragment = { __typename?: 'Relation', name: string, description?: string | null, id: string };
 
 export type ListRepresentationFragment = { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null };
 
@@ -4064,7 +4248,7 @@ export type CreateContextMutationVariables = Exact<{
 }>;
 
 
-export type CreateContextMutation = { __typename?: 'Mutation', createContext?: { __typename?: 'Context', id: string, name: string, createdAt: any, links: Array<{ __typename?: 'DataLink', id: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation?: string | null, xId: number, yId: number }>, models: Array<{ __typename?: 'Model', id: string, name: string }> } | null };
+export type CreateContextMutation = { __typename?: 'Mutation', createContext?: { __typename?: 'Context', id: string, name: string, createdAt: any, links: Array<{ __typename?: 'DataLink', id: string, xId: string, yId: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation: { __typename?: 'Relation', id: string, name: string } }>, models: Array<{ __typename?: 'Model', id: string, name: string }> } | null };
 
 export type DeleteContextMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4219,7 +4403,7 @@ export type UnassociateFilesMutationVariables = Exact<{
 export type UnassociateFilesMutation = { __typename?: 'Mutation', unassociateFiles?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> } | null };
 
 export type LinkMutationVariables = Exact<{
-  relation: Scalars['String'];
+  relation: Scalars['ID'];
   xType: LinkableModels;
   xId: Scalars['ID'];
   yType: LinkableModels;
@@ -4228,7 +4412,14 @@ export type LinkMutationVariables = Exact<{
 }>;
 
 
-export type LinkMutation = { __typename?: 'Mutation', link?: { __typename?: 'DataLink', id: string, relation?: string | null } | null };
+export type LinkMutation = { __typename?: 'Mutation', link?: { __typename?: 'DataLink', id: string, xId: string, yId: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation: { __typename?: 'Relation', id: string, name: string } } | null };
+
+export type DeleteLinkMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DeleteLinkMutation = { __typename?: 'Mutation', deleteLink?: { __typename?: 'DeleteLinkResult', id?: string | null } | null };
 
 export type DeleteModelMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4245,6 +4436,14 @@ export type UploadOmeroFileMutationVariables = Exact<{
 
 
 export type UploadOmeroFileMutation = { __typename?: 'Mutation', uploadOmeroFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
+
+export type UploadBigFileMutationVariables = Exact<{
+  file: Scalars['BigFile'];
+  datasets?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+}>;
+
+
+export type UploadBigFileMutation = { __typename?: 'Mutation', uploadBigFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
 
 export type DeleteOmeroFileMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4319,6 +4518,21 @@ export type PinPositionMutationVariables = Exact<{
 
 
 export type PinPositionMutation = { __typename?: 'Mutation', pinPosition?: { __typename?: 'Position', id: string, pinned?: boolean | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+
+export type PresignMutationVariables = Exact<{
+  file: Scalars['String'];
+}>;
+
+
+export type PresignMutation = { __typename?: 'Mutation', presign?: { __typename?: 'Presigned', bucket: string, fields: { __typename?: 'PresignedFields', xAmzDate: string, xAmzAlgorithm: string, xAmzSignature: string, xAmzCredential: string, key: string, policy: string } } | null };
+
+export type CreateRelationMutationVariables = Exact<{
+  name: Scalars['String'];
+  description?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type CreateRelationMutation = { __typename?: 'Mutation', createRelation?: { __typename?: 'Relation', name: string, description?: string | null, id: string } | null };
 
 export type DeleteRepresentationMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4459,10 +4673,11 @@ export type DetailContextQueryVariables = Exact<{
 }>;
 
 
-export type DetailContextQuery = { __typename?: 'Query', context?: { __typename?: 'Context', id: string, name: string, createdAt: any, links: Array<{ __typename?: 'DataLink', id: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation?: string | null, xId: number, yId: number }>, models: Array<{ __typename?: 'Model', id: string, name: string }> } | null };
+export type DetailContextQuery = { __typename?: 'Query', context?: { __typename?: 'Context', id: string, name: string, createdAt: any, links: Array<{ __typename?: 'DataLink', id: string, xId: string, yId: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation: { __typename?: 'Relation', id: string, name: string } }>, models: Array<{ __typename?: 'Model', id: string, name: string }> } | null };
 
 export type SearchContextsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
+  values?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 }>;
 
 
@@ -4509,6 +4724,7 @@ export type DetailExperimentQuery = { __typename?: 'Query', experiment?: { __typ
 
 export type SearchExperimentsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
+  values?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 }>;
 
 
@@ -4553,21 +4769,21 @@ export type LinksQueryVariables = Exact<{
 }>;
 
 
-export type LinksQuery = { __typename?: 'Query', links?: Array<{ __typename?: 'DataLink', id: string, relation?: string | null } | null> | null };
+export type LinksQuery = { __typename?: 'Query', links?: Array<{ __typename?: 'DataLink', id: string, xId: string, yId: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation: { __typename?: 'Relation', id: string, name: string } } | null> | null };
 
 export type DetailLinkQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailLinkQuery = { __typename?: 'Query', link?: { __typename?: 'DataLink', id: string, relation?: string | null, xId: number, yId: number, leftType?: LinkableModels | null, rightType?: LinkableModels | null } | null };
+export type DetailLinkQuery = { __typename?: 'Query', link?: { __typename?: 'DataLink', id: string, xId: string, yId: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, context?: { __typename?: 'Context', name: string, id: string } | null, relation: { __typename?: 'Relation', id: string, name: string } } | null };
 
 export type SearchLinksQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
 }>;
 
 
-export type SearchLinksQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'DataLink', label?: string | null, value: string } | null> | null };
+export type SearchLinksQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'DataLink', label: string, value: string } | null> | null };
 
 export type DetailMetricQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -4681,6 +4897,29 @@ export type PositionSearchQueryVariables = Exact<{
 
 export type PositionSearchQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Position', value: string, label: string } | null> | null };
 
+export type MyRelationsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+}>;
+
+
+export type MyRelationsQuery = { __typename?: 'Query', relations?: Array<{ __typename?: 'Relation', name: string, description?: string | null, id: string } | null> | null };
+
+export type DetailRelationQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailRelationQuery = { __typename?: 'Query', relation?: { __typename?: 'Relation', name: string, description?: string | null, id: string } | null };
+
+export type SearchRelationsQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+  values?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+}>;
+
+
+export type SearchRelationsQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Relation', label: string, value: string } | null> | null };
+
 export type DetailRepresentationQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
@@ -4748,7 +4987,7 @@ export type PinnedRepresentationsQuery = { __typename?: 'Query', representations
 export type RequestQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type RequestQuery = { __typename?: 'Query', request?: { __typename?: 'Credentials', accessKey?: string | null, secretKey?: string | null, status?: string | null, sessionToken?: string | null } | null };
+export type RequestQuery = { __typename?: 'Query', request?: { __typename?: 'Credentials', accessKey: string, secretKey: string, status: string, sessionToken: string } | null };
 
 export type RoisForRepresentationQueryVariables = Exact<{
   representation: Scalars['ID'];
@@ -5118,31 +5357,33 @@ export const DetailCommentFragmentDoc = gql`
 }
     ${DescendentFragmentDoc}
 ${SubthreadCommentFragmentDoc}`;
+export const ListLinkFragmentDoc = gql`
+    fragment ListLink on DataLink {
+  id
+  relation {
+    id
+    name
+  }
+  xId
+  yId
+  leftType
+  rightType
+}
+    `;
 export const DetailContextFragmentDoc = gql`
     fragment DetailContext on Context {
   id
   name
   createdAt
   links {
-    id
-    leftType
-    rightType
-    relation
-    xId
-    yId
+    ...ListLink
   }
   models {
     id
     name
   }
 }
-    `;
-export const ListContextFragmentDoc = gql`
-    fragment ListContext on Context {
-  name
-  id
-}
-    `;
+    ${ListLinkFragmentDoc}`;
 export const DetailDatasetFragmentDoc = gql`
     fragment DetailDataset on Dataset {
   id
@@ -5218,22 +5459,28 @@ export const InstrumentFragmentDoc = gql`
   }
 }
     `;
+export const ListContextFragmentDoc = gql`
+    fragment ListContext on Context {
+  name
+  id
+}
+    `;
 export const DetailLinkFragmentDoc = gql`
     fragment DetailLink on DataLink {
   id
-  relation
+  context {
+    ...ListContext
+  }
+  relation {
+    id
+    name
+  }
   xId
   yId
   leftType
   rightType
 }
-    `;
-export const ListLinkFragmentDoc = gql`
-    fragment ListLink on DataLink {
-  id
-  relation
-}
-    `;
+    ${ListContextFragmentDoc}`;
 export const DetailModelFragmentDoc = gql`
     fragment DetailModel on Model {
   id
@@ -5438,6 +5685,20 @@ export const PositionFragmentDoc = gql`
 }
     ${StageFragmentDoc}
 ${ListRepresentationFragmentDoc}`;
+export const DetailRelationFragmentDoc = gql`
+    fragment DetailRelation on Relation {
+  name
+  description
+  id
+}
+    `;
+export const ListRelationFragmentDoc = gql`
+    fragment ListRelation on Relation {
+  name
+  description
+  id
+}
+    `;
 export const ListSharedRepresentationFragmentDoc = gql`
     fragment ListSharedRepresentation on Representation {
   name
@@ -6547,7 +6808,7 @@ export type UnassociateFilesMutationHookResult = ReturnType<typeof useUnassociat
 export type UnassociateFilesMutationResult = Apollo.MutationResult<UnassociateFilesMutation>;
 export type UnassociateFilesMutationOptions = Apollo.BaseMutationOptions<UnassociateFilesMutation, UnassociateFilesMutationVariables>;
 export const LinkDocument = gql`
-    mutation Link($relation: String!, $xType: LinkableModels!, $xId: ID!, $yType: LinkableModels!, $yId: ID!, $context: ID) {
+    mutation Link($relation: ID!, $xType: LinkableModels!, $xId: ID!, $yType: LinkableModels!, $yId: ID!, $context: ID) {
   link(
     relation: $relation
     xType: $xType
@@ -6591,6 +6852,39 @@ export function useLinkMutation(baseOptions?: Apollo.MutationHookOptions<LinkMut
 export type LinkMutationHookResult = ReturnType<typeof useLinkMutation>;
 export type LinkMutationResult = Apollo.MutationResult<LinkMutation>;
 export type LinkMutationOptions = Apollo.BaseMutationOptions<LinkMutation, LinkMutationVariables>;
+export const DeleteLinkDocument = gql`
+    mutation DeleteLink($id: ID!) {
+  deleteLink(id: $id) {
+    id
+  }
+}
+    `;
+export type DeleteLinkMutationFn = Apollo.MutationFunction<DeleteLinkMutation, DeleteLinkMutationVariables>;
+
+/**
+ * __useDeleteLinkMutation__
+ *
+ * To run a mutation, you first call `useDeleteLinkMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteLinkMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteLinkMutation, { data, loading, error }] = useDeleteLinkMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteLinkMutation(baseOptions?: Apollo.MutationHookOptions<DeleteLinkMutation, DeleteLinkMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteLinkMutation, DeleteLinkMutationVariables>(DeleteLinkDocument, options);
+      }
+export type DeleteLinkMutationHookResult = ReturnType<typeof useDeleteLinkMutation>;
+export type DeleteLinkMutationResult = Apollo.MutationResult<DeleteLinkMutation>;
+export type DeleteLinkMutationOptions = Apollo.BaseMutationOptions<DeleteLinkMutation, DeleteLinkMutationVariables>;
 export const DeleteModelDocument = gql`
     mutation DeleteModel($id: ID!) {
   deleteModel(id: $id) {
@@ -6659,6 +6953,40 @@ export function useUploadOmeroFileMutation(baseOptions?: Apollo.MutationHookOpti
 export type UploadOmeroFileMutationHookResult = ReturnType<typeof useUploadOmeroFileMutation>;
 export type UploadOmeroFileMutationResult = Apollo.MutationResult<UploadOmeroFileMutation>;
 export type UploadOmeroFileMutationOptions = Apollo.BaseMutationOptions<UploadOmeroFileMutation, UploadOmeroFileMutationVariables>;
+export const UploadBigFileDocument = gql`
+    mutation UploadBigFile($file: BigFile!, $datasets: [ID]) {
+  uploadBigFile(file: $file, datasets: $datasets) {
+    ...DetailOmeroFile
+  }
+}
+    ${DetailOmeroFileFragmentDoc}`;
+export type UploadBigFileMutationFn = Apollo.MutationFunction<UploadBigFileMutation, UploadBigFileMutationVariables>;
+
+/**
+ * __useUploadBigFileMutation__
+ *
+ * To run a mutation, you first call `useUploadBigFileMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUploadBigFileMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [uploadBigFileMutation, { data, loading, error }] = useUploadBigFileMutation({
+ *   variables: {
+ *      file: // value for 'file'
+ *      datasets: // value for 'datasets'
+ *   },
+ * });
+ */
+export function useUploadBigFileMutation(baseOptions?: Apollo.MutationHookOptions<UploadBigFileMutation, UploadBigFileMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UploadBigFileMutation, UploadBigFileMutationVariables>(UploadBigFileDocument, options);
+      }
+export type UploadBigFileMutationHookResult = ReturnType<typeof useUploadBigFileMutation>;
+export type UploadBigFileMutationResult = Apollo.MutationResult<UploadBigFileMutation>;
+export type UploadBigFileMutationOptions = Apollo.BaseMutationOptions<UploadBigFileMutation, UploadBigFileMutationVariables>;
 export const DeleteOmeroFileDocument = gql`
     mutation DeleteOmeroFile($id: ID!) {
   deleteOmeroFile(id: $id) {
@@ -6977,6 +7305,81 @@ export function usePinPositionMutation(baseOptions?: Apollo.MutationHookOptions<
 export type PinPositionMutationHookResult = ReturnType<typeof usePinPositionMutation>;
 export type PinPositionMutationResult = Apollo.MutationResult<PinPositionMutation>;
 export type PinPositionMutationOptions = Apollo.BaseMutationOptions<PinPositionMutation, PinPositionMutationVariables>;
+export const PresignDocument = gql`
+    mutation Presign($file: String!) {
+  presign(file: $file) {
+    bucket
+    fields {
+      xAmzDate
+      xAmzAlgorithm
+      xAmzSignature
+      xAmzCredential
+      key
+      policy
+    }
+  }
+}
+    `;
+export type PresignMutationFn = Apollo.MutationFunction<PresignMutation, PresignMutationVariables>;
+
+/**
+ * __usePresignMutation__
+ *
+ * To run a mutation, you first call `usePresignMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePresignMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [presignMutation, { data, loading, error }] = usePresignMutation({
+ *   variables: {
+ *      file: // value for 'file'
+ *   },
+ * });
+ */
+export function usePresignMutation(baseOptions?: Apollo.MutationHookOptions<PresignMutation, PresignMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PresignMutation, PresignMutationVariables>(PresignDocument, options);
+      }
+export type PresignMutationHookResult = ReturnType<typeof usePresignMutation>;
+export type PresignMutationResult = Apollo.MutationResult<PresignMutation>;
+export type PresignMutationOptions = Apollo.BaseMutationOptions<PresignMutation, PresignMutationVariables>;
+export const CreateRelationDocument = gql`
+    mutation CreateRelation($name: String!, $description: String) {
+  createRelation(name: $name, description: $description) {
+    ...DetailRelation
+  }
+}
+    ${DetailRelationFragmentDoc}`;
+export type CreateRelationMutationFn = Apollo.MutationFunction<CreateRelationMutation, CreateRelationMutationVariables>;
+
+/**
+ * __useCreateRelationMutation__
+ *
+ * To run a mutation, you first call `useCreateRelationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateRelationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createRelationMutation, { data, loading, error }] = useCreateRelationMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *      description: // value for 'description'
+ *   },
+ * });
+ */
+export function useCreateRelationMutation(baseOptions?: Apollo.MutationHookOptions<CreateRelationMutation, CreateRelationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateRelationMutation, CreateRelationMutationVariables>(CreateRelationDocument, options);
+      }
+export type CreateRelationMutationHookResult = ReturnType<typeof useCreateRelationMutation>;
+export type CreateRelationMutationResult = Apollo.MutationResult<CreateRelationMutation>;
+export type CreateRelationMutationOptions = Apollo.BaseMutationOptions<CreateRelationMutation, CreateRelationMutationVariables>;
 export const DeleteRepresentationDocument = gql`
     mutation DeleteRepresentation($id: ID!) {
   deleteRepresentation(id: $id) {
@@ -7624,8 +8027,8 @@ export type DetailContextQueryHookResult = ReturnType<typeof useDetailContextQue
 export type DetailContextLazyQueryHookResult = ReturnType<typeof useDetailContextLazyQuery>;
 export type DetailContextQueryResult = Apollo.QueryResult<DetailContextQuery, DetailContextQueryVariables>;
 export const SearchContextsDocument = gql`
-    query SearchContexts($search: String) {
-  options: contexts(name: $search, limit: 10) {
+    query SearchContexts($search: String, $values: [ID]) {
+  options: contexts(name: $search, limit: 10, ids: $values) {
     label: name
     value: id
   }
@@ -7645,6 +8048,7 @@ export const SearchContextsDocument = gql`
  * const { data, loading, error } = useSearchContextsQuery({
  *   variables: {
  *      search: // value for 'search'
+ *      values: // value for 'values'
  *   },
  * });
  */
@@ -7840,8 +8244,8 @@ export type DetailExperimentQueryHookResult = ReturnType<typeof useDetailExperim
 export type DetailExperimentLazyQueryHookResult = ReturnType<typeof useDetailExperimentLazyQuery>;
 export type DetailExperimentQueryResult = Apollo.QueryResult<DetailExperimentQuery, DetailExperimentQueryVariables>;
 export const SearchExperimentsDocument = gql`
-    query SearchExperiments($search: String) {
-  options: experiments(name: $search, limit: 10) {
+    query SearchExperiments($search: String, $values: [ID]) {
+  options: experiments(name: $search, limit: 10, ids: $values) {
     label: name
     value: id
   }
@@ -7861,6 +8265,7 @@ export const SearchExperimentsDocument = gql`
  * const { data, loading, error } = useSearchExperimentsQuery({
  *   variables: {
  *      search: // value for 'search'
+ *      values: // value for 'values'
  *   },
  * });
  */
@@ -8154,7 +8559,7 @@ export type DetailLinkQueryResult = Apollo.QueryResult<DetailLinkQuery, DetailLi
 export const SearchLinksDocument = gql`
     query SearchLinks($search: String) {
   options: links(relation: $search, limit: 10) {
-    label: relation
+    label: id
     value: id
   }
 }
@@ -8738,6 +9143,114 @@ export function usePositionSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOpt
 export type PositionSearchQueryHookResult = ReturnType<typeof usePositionSearchQuery>;
 export type PositionSearchLazyQueryHookResult = ReturnType<typeof usePositionSearchLazyQuery>;
 export type PositionSearchQueryResult = Apollo.QueryResult<PositionSearchQuery, PositionSearchQueryVariables>;
+export const MyRelationsDocument = gql`
+    query MyRelations($limit: Int, $offset: Int) {
+  relations(limit: $limit, offset: $offset) {
+    ...ListRelation
+  }
+}
+    ${ListRelationFragmentDoc}`;
+
+/**
+ * __useMyRelationsQuery__
+ *
+ * To run a query within a React component, call `useMyRelationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyRelationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyRelationsQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *   },
+ * });
+ */
+export function useMyRelationsQuery(baseOptions?: Apollo.QueryHookOptions<MyRelationsQuery, MyRelationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyRelationsQuery, MyRelationsQueryVariables>(MyRelationsDocument, options);
+      }
+export function useMyRelationsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyRelationsQuery, MyRelationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyRelationsQuery, MyRelationsQueryVariables>(MyRelationsDocument, options);
+        }
+export type MyRelationsQueryHookResult = ReturnType<typeof useMyRelationsQuery>;
+export type MyRelationsLazyQueryHookResult = ReturnType<typeof useMyRelationsLazyQuery>;
+export type MyRelationsQueryResult = Apollo.QueryResult<MyRelationsQuery, MyRelationsQueryVariables>;
+export const DetailRelationDocument = gql`
+    query DetailRelation($id: ID!) {
+  relation(id: $id) {
+    ...DetailRelation
+  }
+}
+    ${DetailRelationFragmentDoc}`;
+
+/**
+ * __useDetailRelationQuery__
+ *
+ * To run a query within a React component, call `useDetailRelationQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailRelationQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailRelationQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailRelationQuery(baseOptions: Apollo.QueryHookOptions<DetailRelationQuery, DetailRelationQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailRelationQuery, DetailRelationQueryVariables>(DetailRelationDocument, options);
+      }
+export function useDetailRelationLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailRelationQuery, DetailRelationQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailRelationQuery, DetailRelationQueryVariables>(DetailRelationDocument, options);
+        }
+export type DetailRelationQueryHookResult = ReturnType<typeof useDetailRelationQuery>;
+export type DetailRelationLazyQueryHookResult = ReturnType<typeof useDetailRelationLazyQuery>;
+export type DetailRelationQueryResult = Apollo.QueryResult<DetailRelationQuery, DetailRelationQueryVariables>;
+export const SearchRelationsDocument = gql`
+    query SearchRelations($search: String, $values: [ID]) {
+  options: relations(name: $search, limit: 10, ids: $values) {
+    label: name
+    value: id
+  }
+}
+    `;
+
+/**
+ * __useSearchRelationsQuery__
+ *
+ * To run a query within a React component, call `useSearchRelationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchRelationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchRelationsQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      values: // value for 'values'
+ *   },
+ * });
+ */
+export function useSearchRelationsQuery(baseOptions?: Apollo.QueryHookOptions<SearchRelationsQuery, SearchRelationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SearchRelationsQuery, SearchRelationsQueryVariables>(SearchRelationsDocument, options);
+      }
+export function useSearchRelationsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SearchRelationsQuery, SearchRelationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SearchRelationsQuery, SearchRelationsQueryVariables>(SearchRelationsDocument, options);
+        }
+export type SearchRelationsQueryHookResult = ReturnType<typeof useSearchRelationsQuery>;
+export type SearchRelationsLazyQueryHookResult = ReturnType<typeof useSearchRelationsLazyQuery>;
+export type SearchRelationsQueryResult = Apollo.QueryResult<SearchRelationsQuery, SearchRelationsQueryVariables>;
 export const DetailRepresentationDocument = gql`
     query DetailRepresentation($id: ID!) {
   representation(id: $id) {

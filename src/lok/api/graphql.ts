@@ -408,6 +408,7 @@ export type QueryGroupArgs = {
 
 /** The root Query */
 export type QueryGroupsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   name?: InputMaybe<Scalars['String']>;
   search?: InputMaybe<Scalars['String']>;
 };
@@ -450,6 +451,7 @@ export type QueryScopeArgs = {
 /** The root Query */
 export type QueryScopesArgs = {
   search?: InputMaybe<Scalars['String']>;
+  values?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 
@@ -470,6 +472,7 @@ export type QueryUserappArgs = {
 /** The root Query */
 export type QueryUsersArgs = {
   email?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   search?: InputMaybe<Scalars['String']>;
   username?: InputMaybe<Scalars['String']>;
 };
@@ -485,7 +488,7 @@ export type DetailAppFragment = { __typename?: 'App', id: string, identifier: st
 
 export type ListAppFragment = { __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null };
 
-export type DetailApplicationFragment = { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, image?: string | null, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null };
+export type DetailApplicationFragment = { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null };
 
 export type ListApplicationFragment = { __typename?: 'Application', id: string, clientId: string, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null };
 
@@ -518,7 +521,7 @@ export type CreateApplicationMutationVariables = Exact<{
 }>;
 
 
-export type CreateApplicationMutation = { __typename?: 'Mutation', createApplication?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, image?: string | null, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
+export type CreateApplicationMutation = { __typename?: 'Mutation', createApplication?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
 
 export type CreateUserLoginAppMutationVariables = Exact<{
   name: Scalars['String'];
@@ -526,7 +529,7 @@ export type CreateUserLoginAppMutationVariables = Exact<{
 }>;
 
 
-export type CreateUserLoginAppMutation = { __typename?: 'Mutation', createUserLoginApp?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, image?: string | null, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
+export type CreateUserLoginAppMutation = { __typename?: 'Mutation', createUserLoginApp?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
 
 export type CreateUserAppMutationVariables = Exact<{
   name: Scalars['String'];
@@ -626,14 +629,14 @@ export type AppQuery = { __typename?: 'Query', app?: { __typename?: 'App', id: s
 export type ApplicationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ApplicationsQuery = { __typename?: 'Query', applications?: Array<{ __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, image?: string | null, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null> | null };
+export type ApplicationsQuery = { __typename?: 'Query', applications?: Array<{ __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null> | null };
 
 export type DetailApplicationQueryVariables = Exact<{
   clientId: Scalars['ID'];
 }>;
 
 
-export type DetailApplicationQuery = { __typename?: 'Query', application?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, image?: string | null, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
+export type DetailApplicationQuery = { __typename?: 'Query', application?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
 
 export type DetailUserApplicationQueryVariables = Exact<{
   clientId?: InputMaybe<Scalars['ID']>;
@@ -641,7 +644,7 @@ export type DetailUserApplicationQueryVariables = Exact<{
 }>;
 
 
-export type DetailUserApplicationQuery = { __typename?: 'Query', userapp?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, image?: string | null, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
+export type DetailUserApplicationQuery = { __typename?: 'Query', userapp?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
 
 export type PublicFaktsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -758,7 +761,6 @@ export const DetailApplicationFragmentDoc = gql`
   clientId
   authorizationGrantType
   name
-  image
   user {
     username
   }

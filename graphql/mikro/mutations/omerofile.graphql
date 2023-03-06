@@ -8,6 +8,12 @@ mutation UploadOmeroFile(
   }
 }
 
+mutation UploadBigFile($file: BigFile!, $datasets: [ID]) {
+  uploadBigFile(file: $file, datasets: $datasets) {
+    ...DetailOmeroFile
+  }
+}
+
 mutation DeleteOmeroFile($id: ID!) {
   deleteOmeroFile(id: $id) {
     id

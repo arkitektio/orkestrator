@@ -168,6 +168,8 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
     ...initial,
   };
 
+  console.log(initialValues);
+
   let unsetArgs =
     data?.node?.args?.filter(
       (arg) => !omit || !omit.includes(arg?.key || "fosinosinoiens")

@@ -77,7 +77,6 @@ export const Search: React.FC<PaneProps> = (props) => {
                 <div className="grid grid-cols-1 mt-2 dark:border-t-slate-800">
                   <div className="flex flex-row">
                     <div className="font-light my-auto mr-2">User</div>
-                    <SearchSelectInput name="creator" lazySearch={searchUser} />
                   </div>
                 </div>
               </>

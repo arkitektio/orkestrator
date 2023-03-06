@@ -17,11 +17,15 @@ const Metric: React.FC<MetricProps> = ({ id }) => {
   return (
     <PageLayout
       actions={<SelfActions type={"@mikro/metric"} object={id} />}
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagMetric} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagMetric} />
+          ),
+          key: "comments",
+        },
+      ]}
     >
       <div className="p-5 w-full">
         <div className="text-xl font-light text-white">{data?.metric?.key}</div>

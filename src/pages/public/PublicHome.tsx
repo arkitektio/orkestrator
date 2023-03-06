@@ -52,6 +52,7 @@ export const PublicHome: React.FC<PublicHomeProps> = (props) => {
               </div>
             ) : (
               <button
+                type="button"
                 onClick={() =>
                   login(
                     {
@@ -78,6 +79,7 @@ export const PublicHome: React.FC<PublicHomeProps> = (props) => {
           </div>
           <div className="mt-3 sm:mt-0 sm:ml-3">
             <button
+              type="button"
               onClick={() => {
                 logout();
                 setFakts(null);

@@ -6839,18 +6839,6 @@
         "description": null,
         "fields": [
           {
-            "name": "asParagraph",
-            "description": "Is this a paragraph",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "Boolean",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "choices",
             "description": "The dependencies of this port",
             "args": [],
@@ -6883,18 +6871,6 @@
             "deprecationReason": null
           },
           {
-            "name": "hook",
-            "description": "A hook for the app to call",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "kind",
             "description": "type",
             "args": [],
@@ -6911,56 +6887,8 @@
             "deprecationReason": null
           },
           {
-            "name": "max",
-            "description": "Max value for int widget",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "min",
-            "description": "Max value for int widget",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "placeholder",
-            "description": "Placeholder for any widget",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "query",
             "description": "Do we have a possible",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ward",
-            "description": "A hook for the app to call",
             "args": [],
             "type": {
               "kind": "SCALAR",

@@ -36,7 +36,10 @@ export const KwargEditNodeWidget: React.FC<KwargNodeProps> = withLayout(
                             <div>{global?.locked}</div>
                           </div>
                         ))}
-                        <button onClick={() => alert("implement")}>
+                        <button
+                          type="button"
+                          onClick={() => alert("implement")}
+                        >
                           <BsTrash />
                         </button>
                       </div>

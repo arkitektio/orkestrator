@@ -17,6 +17,7 @@ import {
   SharableModels,
 } from "../../mikro/api/graphql";
 import { useMikro, withMikro } from "../../mikro/MikroContext";
+import { GraphQLSearchInput, SearchInput } from "../forms/fields/SearchInput";
 import { SearchSelectInput } from "../forms/fields/search_select_input";
 import { SelectInputField } from "../forms/fields/select_input";
 import { SubmitButton } from "../forms/fields/SubmitButton";
@@ -144,9 +145,8 @@ export const Share: React.FC<{
                               {userAssignment?.user ? (
                                 <PermissionUserInfo id={userAssignment?.user} />
                               ) : (
-                                <SearchSelectInput
-                                  isMulti={false}
-                                  lazySearch={searchUsers}
+                                <GraphQLSearchInput
+                                  searchFunction={searchUsers}
                                   className="text-black "
                                   name={`userAssignments.${index}.user`}
                                 />
@@ -155,6 +155,7 @@ export const Share: React.FC<{
                             <SelectInputField
                               name={`userAssignments.${index}.permissions`}
                               isMulti={true}
+                              label="Permissions"
                               className="flex-1 text-black outline-none  block"
                               options={data?.permissionsOf?.options || []}
                             />

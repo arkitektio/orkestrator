@@ -2,6 +2,7 @@ import React from "react";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SelfActions } from "../../components/SelfActions";
+import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
@@ -13,6 +14,7 @@ import {
   useUpdateExperimentMutation,
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
+import { LinkCard } from "./cards/LinkCard";
 
 export type IExperimentProps = {
   id: string;
@@ -30,10 +32,22 @@ const Context: React.FC<IExperimentProps> = ({ id }) => {
 
   return (
     <PageLayout
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagContext} />
-        </div>
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagContext} />
+          ),
+          key: "comments",
+        },
+      ]}
+      help={
+        <>
+          Contexts relate arbitary data items together in a one to one
+          relationship (left to right). This can be a helpful way to model
+          relationships in data that have no natural relationship in the data
+          itself, e.g if one dataset is the ground truth for another.
+        </>
       }
       actions={<SelfActions type="@mikro/context" object={id} />}
     >
@@ -42,28 +56,13 @@ const Context: React.FC<IExperimentProps> = ({ id }) => {
           <div className="flex mb-4">
             <SectionTitle>{data?.context?.name}</SectionTitle>
           </div>
+          <div className="flex-initial text-slate-200"></div>
           <SectionTitle> Relates </SectionTitle>
-          <ResponsiveGrid>
-            {data.context?.links.map((link) => (
-              <Link.Smart
-                object={link.id}
-                className="flex flex-row p-2 bg-gray-800 truncate text-gray-200 rounded"
-              >
-                <Link.DetailLink object={link.id} className="flex-initial">
-                  {link.relation}
-                </Link.DetailLink>
-                <div className="flex flex-row">
-                  <div className="flex-initial ">{link.xId}</div>
-                  <div className="flex-grow  flex text-bold ">
-                    {" "}
-                    {">"}
-                    {link.relation} {">"}{" "}
-                  </div>
-                  <div className="flex-initial">{link.yId}</div>
-                </div>
-              </Link.Smart>
+          <div className="grid grid-cols-1">
+            {data.context?.links.filter(notEmpty).map((link) => (
+              <LinkCard key={link.id} link={link} minimal />
             ))}
-          </ResponsiveGrid>
+          </div>
           <SectionTitle> Created Models </SectionTitle>
           <ResponsiveGrid>
             {data.context?.models.map((m) => (

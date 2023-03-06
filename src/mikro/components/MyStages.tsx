@@ -46,6 +46,7 @@ const MyStages: React.FC<MyAcquisitionsProps & DataHomeFilterParams> = ({
         <div className="flex-0">
           {offset != 0 && (
             <button
+              type="button"
               className="p-1 text-gray-600 rounded"
               onClick={() => setOffset(offset - limit)}
             >
@@ -55,6 +56,7 @@ const MyStages: React.FC<MyAcquisitionsProps & DataHomeFilterParams> = ({
           )}
           {data?.mystages && data?.mystages.length == limit && (
             <button
+              type="button"
               className="p-1 text-gray-600 rounded"
               onClick={() => setOffset(offset + limit)}
             >

@@ -142,6 +142,7 @@ export const MyPlots: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
         <div className="flex-0">
           {offset != 0 && (
             <button
+              type="button"
               className="p-1 text-gray-600 rounded"
               onClick={() => setOffset(offset - limit)}
             >
@@ -151,6 +152,7 @@ export const MyPlots: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
           )}
           {data?.myplots && data?.myplots.length == limit && (
             <button
+              type="button"
               className="p-1 text-gray-600 rounded"
               onClick={() => setOffset(offset + limit)}
             >
@@ -178,6 +180,7 @@ export const MyPlots: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
                 query: MyPlotsDocument,
                 variables,
               });
+              if (result.data?.createPlot == null) return;
               cache.writeQuery({
                 query: MyPlotsDocument,
                 variables,

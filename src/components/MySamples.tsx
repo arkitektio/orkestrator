@@ -182,6 +182,7 @@ const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
           <div className="flex-0">
             {offset != 0 && (
               <button
+                type="button"
                 className="p-1 text-gray-600 rounded"
                 onClick={() => setOffset(offset - limit)}
               >
@@ -191,6 +192,7 @@ const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
             )}
             {samples?.mysamples && samples?.mysamples.length == limit && (
               <button
+                type="button"
                 className="p-1 text-gray-600 rounded"
                 onClick={() => setOffset(offset + limit)}
               >

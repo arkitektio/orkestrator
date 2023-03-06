@@ -20,11 +20,18 @@ const Instrument: React.FC<InstrumentProps> = ({ id }) => {
   return (
     <PageLayout
       actions={<SelfActions type={"@mikro/instrument"} object={id} />}
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagInstrument} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments
+              id={id}
+              model={CommentableModels.GrunnlagInstrument}
+            />
+          ),
+          key: "comments",
+        },
+      ]}
     >
       <div className="p-5 w-full">
         <div className="text-xl font-light text-white">

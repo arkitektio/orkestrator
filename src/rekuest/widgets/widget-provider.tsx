@@ -15,6 +15,7 @@ import { ChoiceReturnWidget } from "./returns/additionals/ChoiceReturnWidget";
 import { CustomReturnWidget } from "./returns/additionals/CustomReturnWidget";
 import { ImageReturnWidget } from "./returns/additionals/ImageReturnWidget";
 import { BoolReturnWidget } from "./returns/fallbacks/BoolReturnWidget";
+import { FloatReturnWidget } from "./returns/fallbacks/FloatReturnWidget";
 import { IntReturnWidget } from "./returns/fallbacks/IntReturnWidget";
 import { ListReturnWidget } from "./returns/fallbacks/ListReturnWidget";
 import { StringReturnWidget } from "./returns/fallbacks/StringReturnWidget";
@@ -50,6 +51,7 @@ export const WidgetRegistryProvider: React.FC<WidgetRegistryProviderProps> = ({
     x.registerReturnWidgetFallback(PortKind.Bool, BoolReturnWidget);
     x.registerReturnWidgetFallback(PortKind.Structure, StructureReturnWidget);
     x.registerReturnWidgetFallback(PortKind.List, ListReturnWidget);
+    x.registerReturnWidgetFallback(PortKind.Float, FloatReturnWidget);
 
     x.registerReturnWidget("ImageReturnWidget", ImageReturnWidget);
     x.registerReturnWidget("CustomReturnWidget", CustomReturnWidget);

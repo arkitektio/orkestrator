@@ -17,11 +17,15 @@ const Model: React.FC<IExperimentProps> = ({ id }) => {
 
   return (
     <PageLayout
-      sidebar={
-        <div className="p-5">
-          <MikroKomments id={id} model={CommentableModels.GrunnlagModel} />
-        </div>
-      }
+      sidebars={[
+        {
+          label: "Comments",
+          content: (
+            <MikroKomments id={id} model={CommentableModels.GrunnlagModel} />
+          ),
+          key: "comments",
+        },
+      ]}
       actions={<SelfActions type="@mikro/context" object={id} />}
     >
       {!error && data && (

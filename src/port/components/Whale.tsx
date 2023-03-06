@@ -1,6 +1,7 @@
+import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { App } from "../../linker";
+import { App, Container } from "../../linker";
 import { useAppQuery } from "../../lok/api/graphql";
 import { withMan } from "../../lok/man";
 import { useMikro } from "../../mikro/MikroContext";
@@ -54,18 +55,32 @@ export const Whale = (props: WhaleProps) => {
     pollInterval: 1000,
   });
 
-  const [restart] = withPort(useRestartContainerMutation)();
-  const [stop] = withPort(useStopContainerMutation)();
-  const [remove] = withPort(useRemoveContainerMutation)();
-
   return (
     <PageLayout>
       <SectionTitle>Whale {data?.whale?.image}</SectionTitle>
       <div className="text-white">
         <div className="text-2xl">
-          Container hosting {data?.whale?.clientId}
+          Container hosting
+          {data?.whale?.clientId && (
+            <AppInfo clientId={data?.whale?.clientId} />
+          )}
         </div>
-        {data?.whale?.clientId && <AppInfo clientId={data?.whale?.clientId} />}
+
+        {data?.whale?.containers?.filter(notEmpty).map((container) => (
+          <Container.Smart
+            key={container.id}
+            object={container.id}
+            className="bg-gray-800 rounded "
+          >
+            <div className="p-2">
+              <Container.DetailLink object={container.id}>
+                <div className="text-2xl">
+                  {container.image?.tags} {container.status}
+                </div>
+              </Container.DetailLink>
+            </div>
+          </Container.Smart>
+        ))}
       </div>
     </PageLayout>
   );

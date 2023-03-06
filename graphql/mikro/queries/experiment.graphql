@@ -10,8 +10,8 @@ query DetailExperiment($id: ID!) {
   }
 }
 
-query SearchExperiments($search: String) {
-  options: experiments(name: $search, limit: 10) {
+query SearchExperiments($search: String, $values: [ID]) {
+  options: experiments(name: $search, limit: 10, ids: $values) {
     label: name
     value: id
   }

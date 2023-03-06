@@ -1,14 +1,10 @@
-import ParentSize from "@visx/responsive/lib/components/ParentSizeModern";
 import { PositionCanvas } from "../components/PositionCanvas";
-import { TwoDOffcanvas } from "../experimental/render/TwoDOffcanvas";
 import { SaveParentSize } from "../layout/SaveParentSize";
-import {
-  useDetailPositionQuery,
-  useDetailRepresentationQuery,
-} from "../mikro/api/graphql";
+import { useDetailPositionQuery } from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
+import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 
-export const PositionWidget: React.FC<{ value: string }> = ({ value }) => {
+export const PositionWidget: React.FC<StructureDisplayProps> = ({ value }) => {
   const { data } = withMikro(useDetailPositionQuery)({
     variables: { id: value },
   });

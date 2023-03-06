@@ -101,6 +101,7 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
                 <div className="mt-3 flex ">
                   <div className="flex-initial">
                     <button
+                      type="button"
                       className="ml-2 px-1 border border-gray-400 rounded-md"
                       onClick={() =>
                         unlink({
@@ -153,6 +154,7 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
                       <div className="flex-initial">
                         {provision?.id && (
                           <button
+                            type="button"
                             className="ml-2 px-1 border border-gray-400 rounded-md"
                             onClick={() =>
                               link({

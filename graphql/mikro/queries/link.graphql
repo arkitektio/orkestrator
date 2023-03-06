@@ -12,7 +12,7 @@ query DetailLink($id: ID!) {
 
 query SearchLinks($search: String) {
   options: links(relation: $search, limit: 10) {
-    label: relation
+    label: id
     value: id
   }
 }

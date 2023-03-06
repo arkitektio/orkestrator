@@ -1,84 +1,23 @@
-import { Field, FieldProps } from "formik";
-import React, { useState } from "react";
-import AsyncSelect from "react-select/async";
-import { Identifier } from "typescript";
-import { Alert } from "../../../../components/forms/Alert";
-import { SelectOption } from "../../../../components/forms/fields/select_input";
-import { PortKind, SearchWidgetFragment } from "../../../api/graphql";
+import React from "react";
+import {
+  ListSearchField,
+  SearchField,
+} from "../../../../components/forms/fields/SearchInput";
+import { SearchWidgetFragment } from "../../../api/graphql";
 import { InputWidgetProps } from "../../types";
 import { useWidgetRegistry } from "../../widget-context";
 
-export type SearchOptions = [{ label: string; value: string }];
+const people = [
+  { id: 1, name: "Durward Reynolds" },
+  { id: 2, name: "Kenton Towne" },
+  { id: 3, name: "Therese Wunsch" },
+  { id: 4, name: "Benedict Kessler" },
+  { id: 5, name: "Katelyn Rohan" },
+];
 
-interface SearchSelectProps extends FieldProps {
-  isMulti?: boolean;
-  isDisabled?: boolean;
-  identifier?: Identifier;
-  searchFunction: (
-    value: string,
-    additionalVars: { [key: string]: any }
-  ) => Promise<SelectOption[]>;
-}
+export type Person = typeof people[number];
 
-type IsMulti = boolean;
-
-const SearchSelectWidget: React.FC<SearchSelectProps> = ({
-  field,
-  form,
-  isMulti,
-  isDisabled,
-  searchFunction,
-}) => {
-  const [error, setError] = useState<string | null>(null);
-
-  const meta = form.getFieldMeta(field.name);
-
-  function onChange(option: any) {
-    form.setFieldValue(
-      field.name,
-      option
-        ? isMulti
-          ? (option as SelectOption[]).map((item: SelectOption) => item.value)
-          : (option as SelectOption).value
-        : isMulti
-        ? []
-        : null
-    );
-  }
-
-  const loadOptions = (inputValue: string, callback: any) => {
-    searchFunction(inputValue, form.values)
-      .then((x) => {
-        console.log(x);
-        callback(x);
-      })
-      .catch((e) => setError(JSON.stringify(e)));
-  };
-
-  const valueString = isMulti ? JSON.stringify(field.value) : field.value;
-
-  return (
-    <div className="flex-col">
-      <AsyncSelect
-        cacheOptions
-        loadOptions={loadOptions}
-        defaultOptions
-        isMulti={isMulti}
-        isClearable={true}
-        onChange={onChange}
-        placeholder={isDisabled ? "Disabled" : "Search..."}
-        isDisabled={isDisabled}
-      />
-      {meta?.error && (
-        <>
-          <Alert prepend="Error" message={meta.error} />
-        </>
-      )}
-    </div>
-  );
-};
-
-const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
+export const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
   port,
   widget,
   options,
@@ -107,33 +46,28 @@ const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
       </div>
     );
 
-  const searchFunction = (
-    search: string,
-    additionals: { [key: string]: any }
-  ) => {
+  const searchFunction = (search?: string, initialValue?: string[]) => {
     let query = widget.query;
     if (ward.search)
       try {
-        console.log("searching", search, additionals);
+        console.log("searching", search, initialValue);
         return ward
           .search({
             query: query as string,
-            variables: { ...additionals, search: search },
+            variables: { search: search, values: initialValue },
           })
-          .then((result) => result.options);
+          .then((result) => result.options || []);
       } catch (e) {
         return Promise.reject("Malformed Query" + e);
       }
+    return Promise.reject("No search function availabl");
   };
 
   return (
-    <Field
-      isMulti={port.kind == PortKind.List}
+    <SearchField
       name={port.key || "fake"}
-      component={SearchSelectWidget}
-      className="mb-2"
+      disabled={options?.disable}
       searchFunction={searchFunction}
-      isDisabled={options?.disable}
     />
   );
 };
@@ -168,35 +102,28 @@ export const ListSearchWidget: React.FC<
       </div>
     );
 
-  const searchFunction = (
-    search: string,
-    additionals: { [key: string]: any }
-  ) => {
+  const searchFunction = (search?: string, initialValue?: string[]) => {
     let query = widget.query;
     if (ward.search)
       try {
-        console.log("searching", search, additionals);
+        console.log("searching", search, initialValue);
         return ward
           .search({
             query: query as string,
-            variables: { ...additionals, search: search },
+            variables: { search: search, values: initialValue },
           })
-          .then((result) => result.options);
+          .then((result) => result.options || []);
       } catch (e) {
         return Promise.reject("Malformed Query" + e);
       }
+    return Promise.reject("No search function availabl");
   };
 
   return (
-    <Field
-      isMulti={port.kind == PortKind.List}
+    <ListSearchField
       name={port.key || "fake"}
-      component={SearchSelectWidget}
-      className="mb-2"
+      disabled={options?.disable}
       searchFunction={searchFunction}
-      isDisabled={options?.disable}
     />
   );
 };
-
-export { SearchWidget };

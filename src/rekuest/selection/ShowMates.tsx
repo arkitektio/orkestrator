@@ -51,7 +51,7 @@ export const ShowMates = <T extends Accept>({
   return (
     <>
       {selfMates && selfMates.length > 0 && (
-        <div className="flex flew-rox gap-2">
+        <div className="grid gap-2 grid-cols-1 @md:grid-cols-2 mt-2">
           {selfMates?.map((mate: any, index: any) =>
             mate ? (
               <DisplayMate
@@ -67,7 +67,7 @@ export const ShowMates = <T extends Accept>({
         </div>
       )}
       {moreMates && moreMates.length > 0 && (
-        <div className="flex flew-rox gap-2 mt-2">
+        <div className="grid gap-2 grid-cols-1 @lg:grid-cols-2 mt-2">
           {moreMates?.map((mate: any, index: any) =>
             mate ? (
               <DisplayMate

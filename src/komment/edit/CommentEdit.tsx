@@ -192,6 +192,7 @@ export const CommentEdit = <T extends any>({
 
           <b className="text-black">
             <button
+              type="button"
               onClick={() => saveComment()}
               className="bg-primary-400 p-3 text-white ml-2 rounded-md"
             >

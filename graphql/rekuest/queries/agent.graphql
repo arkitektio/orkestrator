@@ -10,6 +10,12 @@ query DetailAgent($id: ID!) {
   }
 }
 
+query PortAgent($clientId: ID!, $instanceId: ID!) {
+  agent(client: $clientId, instance: $instanceId) {
+    ...DetailAgent
+  }
+}
+
 query AgentOptions($registry: ID, $search: String) {
   options: agents(registry: $registry, search: $search) {
     value: id

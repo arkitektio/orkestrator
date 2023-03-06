@@ -70,6 +70,7 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
               <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start text-white gap-2">
                 {endpoints.map((endpoint) => (
                   <button
+                    type="button"
                     key={endpoint.name}
                     className="rounded rounded-md border border-gray-300 p-3 flex flex-col hover:bg-primary-300 cursor-pointer"
                     onClick={() => {
@@ -149,6 +150,7 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                               <div className="ml-3 pb-2 my-auto">
                                 {future ? (
                                   <button
+                                    type="button"
                                     onClick={() => future.cancel()}
                                     className="w-full shadow-lg shadow-red-700/90 flex items-center justify-center px-2 py-1 border border-transparent text-base font-medium rounded-md text-white bg-red-300 hover:bg-red-400 md:py-1 md:text-lg md:px-10"
                                   >

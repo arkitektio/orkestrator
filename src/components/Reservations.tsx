@@ -10,6 +10,7 @@ import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 import { notEmpty } from "../floating/utils";
 import { Reservation } from "../linker";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 
 export type IMyReservationsProps = {};
 
@@ -124,13 +125,15 @@ const Reservations: React.FC<IMyReservationsProps> = () => {
   return (
     <>
       <Reservation.ListLink className="font-light text-xl dark:text-white">
-        Reservations of this App
+        This app uses
       </Reservation.ListLink>
-      <ResponsiveGrid>
-        {reservations?.reservations?.filter(notEmpty).map((res, index) => (
-          <ReservationItem key={index} reservation={res} />
-        ))}
-      </ResponsiveGrid>
+      <div className="mt-2 mb-4">
+        <ResponsiveContainerGrid>
+          {reservations?.reservations?.filter(notEmpty).map((res, index) => (
+            <ReservationItem key={index} reservation={res} />
+          ))}
+        </ResponsiveContainerGrid>
+      </div>
     </>
   );
 };

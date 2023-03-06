@@ -9,7 +9,7 @@ import {
   SmartModel,
   SmartModelProps,
 } from "./rekuest/selection/SmartModel";
-import { CommentableModels } from "./mikro/api/graphql";
+import { CommentableModels, LinkableModels } from "./mikro/api/graphql";
 
 export interface CreatedSmartSmartProps<T extends Accept>
   extends Omit<SmartModelProps<T>, "accepts" | "identifier"> {
@@ -37,6 +37,15 @@ export const buildSmartModel = <T extends Accept>(
       </SmartModel>
     );
   };
+};
+
+export const linkableModelToIdentifier = (model: LinkableModels) => {
+  switch (model) {
+    case LinkableModels.GrunnlagRepresentation:
+      return "@mikro/representation";
+    default:
+      return undefined;
+  }
 };
 
 export const getModelBase = (accept: Identifier) => {

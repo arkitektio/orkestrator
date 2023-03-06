@@ -12,6 +12,7 @@ import {
 } from "use-query-params";
 import { number } from "yup/lib/locale";
 import { Generators } from "../../components/Generators";
+import { MyBigFiles } from "../../components/MyBigFiles";
 import { MyContexts } from "../../components/MyContexts";
 import { MyDatasets } from "../../components/MyDatasets";
 import { MyExperiments } from "../../components/MyExperiments";
@@ -57,7 +58,15 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
 
   return (
     <PageLayout
-      sidebar={<HomeSidebar setFilterParams={setFilterParams}></HomeSidebar>}
+      sidebars={[
+        {
+          key: "home",
+          label: "home",
+          content: (
+            <HomeSidebar setFilterParams={setFilterParams}></HomeSidebar>
+          ),
+        },
+      ]}
     >
       <h1 className="text-white text-3xl mb-2">
         {filterParams.createdDay?.toLocaleString("en-US", {
@@ -76,7 +85,7 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
       <MySamples {...filterParams} />
       <MyStages {...filterParams} />
       <MyRepresentations {...filterParams} />
-      <MyFiles {...filterParams} />
+      <MyBigFiles {...filterParams} />
       <MyTables {...filterParams} />
       <MyPlots {...filterParams} />
     </PageLayout>

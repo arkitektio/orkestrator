@@ -8,6 +8,7 @@ import ReactFlow, {
 import "react-toastify/dist/ReactToastify.css";
 import { FlowEdge, FlowNode, NodeTypes } from "../types";
 import { ColouredMiniMap } from "./ColouredMiniMap";
+import "reactflow/dist/style.css";
 import "./styles.css";
 
 type Props = {

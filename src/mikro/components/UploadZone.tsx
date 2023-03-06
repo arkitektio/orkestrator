@@ -16,6 +16,7 @@ import {
   useUploadOmeroFileMutation,
 } from "../api/graphql";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { CreateFunc, UploadFunc, useDatalayer } from "../../datalayer/context";
 export type IMyRepresentationsProps = {};
 
 const limit = 20;
@@ -33,9 +34,9 @@ export type UploadFuture = {
 };
 
 const UploadZone: React.FC<{
-  uploadFile: ReturnType<typeof useUploadOmeroFileMutation>[0];
-  additionalVariables?: Omit<UploadOmeroFileMutationVariables, "file">;
-}> = ({ uploadFile, additionalVariables }) => {
+  uploadFile: UploadFunc;
+  createFile: CreateFunc;
+}> = ({ uploadFile, createFile }) => {
   const [offset, setOffset] = useState(0);
   const [progress, setProgress] = useState(undefined);
 
@@ -59,28 +60,28 @@ const UploadZone: React.FC<{
             hash: hash,
             file: file,
             controller: abortController,
-            future: uploadFile({
-              variables: { file, ...additionalVariables },
-              context: {
-                fetchOptions: {
-                  signal: abortController.signal,
-                  onProgress: (ev: ProgressEvent) => {
-                    setUploadFutures((prev) =>
-                      prev.map((f) =>
-                        f.hash === hash
-                          ? { ...f, progress: ev.loaded / ev.total }
-                          : f
-                      )
-                    );
-                  },
-                },
+            future: uploadFile(file, {
+              signal: abortController.signal,
+              onProgress: (ev: ProgressEvent) => {
+                setUploadFutures((prev) =>
+                  prev.map((f) =>
+                    f.hash === hash
+                      ? { ...f, progress: ev.loaded / ev.total }
+                      : f
+                  )
+                );
               },
             })
-              .then((x) =>
+              .then((key) => {
+                console.log("Upload done");
+                return createFile(file, key);
+              })
+              .then((x) => {
+                console.log("Create done");
                 setUploadFutures((futures) =>
                   futures.filter((f) => f.hash !== hashFile(file))
-                )
-              )
+                );
+              })
               .catch((e) => {
                 console.log("error", e);
                 setUploadFutures((futures) =>
@@ -107,7 +108,7 @@ const UploadZone: React.FC<{
       {uploadFutures.map((future, index) => (
         <div
           key={index}
-          className="rounded shadow-xl group text-white bg-center bg-cover relative group"
+          className="border border-gray-800 cursor-pointer rounded  text-white bg-gray-900 hover:shadow-lg group"
           // style={{
           //   background: `center bottom linear-gradient(to right, rgba(255,0,0,0.75), rgba(255,0,0,0.95)) ${
           //     future.progress && future.progress * 100
@@ -123,15 +124,13 @@ const UploadZone: React.FC<{
             }% ${future.progress && Math.floor((1 - future.progress) * 100)}%)`,
           }}
         >
-          <div className="px-6 py-4">
-            <div className="font-bold text-xl mb-2 cursor-pointer">
+          <div className="truncate p-5">
+            <div className="flex-grow cursor-pointer font-semibold">
               {future.file.name}
             </div>
-            <p className="text-white-700 text-base">
-              {future.progress && Math.floor(future.progress * 100)}%
-            </p>
           </div>
           <button
+            type="button"
             className="hidden group-hover:block text-white-500 bg-red-500 rounded-md text px-2 absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 b"
             onClick={() => future.controller.abort()}
           >
@@ -142,10 +141,12 @@ const UploadZone: React.FC<{
       <div
         className={`${
           !canDrop && "hidden"
-        } bg-slate-300 p-4 rounded shadow-xl group bg-center bg-cover animate-all`}
+        } bg-slate-300 border border-gray-800 cursor-pointer rounded text-white  hover:shadow-lg`}
         ref={drop}
       >
-        {isOver ? "Release to upload" : "Drag and drop a file here"}
+        <div className="truncate p-5">
+          {isOver ? "Release to upload" : "Drag and drop a file here"}
+        </div>
       </div>
     </>
   );

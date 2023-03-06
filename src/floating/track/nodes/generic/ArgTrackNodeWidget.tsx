@@ -32,6 +32,7 @@ export const ArgTrackNodeWidget: React.FC<ArgNodeProps> = withLayout(
             >
               Inputs {latestEvent?.id}
               <button
+                type="button"
                 className="text-md font-light"
                 onClick={() =>
                   setFrozenEvent(
