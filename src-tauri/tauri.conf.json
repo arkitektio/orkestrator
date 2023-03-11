@@ -12,11 +12,21 @@
   "tauri": {
     "allowlist": {
       "all": true,
+      "window": {
+        "all": true
+      },
+      "notification": {
+        "all": true 
+      },
       "http": {
         "all": true,
         "request": true,
         "scope": ["https://**", "http://**"]
       }
+    },
+    "systemTray": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
     },
     "bundle": {
       "active": true,

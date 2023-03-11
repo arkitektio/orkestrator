@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { v4 } from "uuid";
 import { Assign } from "yup/lib/object";
 import { useFakts } from "@jhnnsrs/fakts";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 import {
   AssignationStatus,
   DefinitionInput,

@@ -9,10 +9,10 @@ const CustomReturnWidget: React.FC<
   const [Node, setNode] = useState<React.ReactNode>();
   const { registry } = useWidgetRegistry();
 
-  if (!widget?.ward) return <>Widget was not configured properly</>;
+  if (!widget?.hook) return <>Widget was not configured properly</>;
 
   useEffect(() => {
-    if (port.identifier && widget.ward) {
+    if (port.identifier && widget.hook) {
       const ward = registry?.ward_registry?.getWard(widget?.ward);
       if (!ward) return;
       const FC = ward.hook(widget?.hook);

@@ -5,7 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { FaktsGuard } from "@jhnnsrs/fakts";
 import { FaktsProvider } from "@jhnnsrs/fakts";
 import { HealthzGuard } from "./healthz/guard";
-import { HerreProvider } from "herre";
+import { HerreProvider } from "@jhnnsrs/herre";
 import { QueryParamProvider } from "use-query-params";
 import { ReactRouter6Adapter } from "use-query-params/adapters/react-router-6";
 
@@ -77,7 +77,6 @@ import { PublicApp } from "./PublicApp";
 import { TauriProvider } from "./tauri/provider";
 import { PublicHealthz } from "./pages/public/PublicHealthz";
 import { HealthzProvider } from "./healthz/provider";
-import { FaktsHerreProvider } from "./bridges/FaktsHerreProvider";
 import { TauriHerreCallback } from "./bridges/TauriHerreCallback";
 import { TauriFaktsFallback } from "./bridges/TauriFaktsFallback";
 import { ConfirmerProvider } from "./components/confirmer/confirmer-provider";
@@ -101,6 +100,8 @@ import { DataInstrument } from "./pages/data/instruments/DataInstrument";
 import { DataInstruments } from "./pages/data/instruments/DataInstruments";
 import { DataObjective } from "./pages/data/objectives/DataObjective";
 import { DataObjectives } from "./pages/data/objectives/DataObjectives";
+import { PublicLogin } from "./pages/public/PublicLogin";
+import { AdaptiveHerreProvider } from "./bridges/AdaptiveHerreProvider";
 
 export const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 export const Data = React.lazy(() => import("./pages/Data"));
@@ -190,14 +191,14 @@ export const MainApp: React.FC<Props> = (props) => {
                   >
                     <HealthzProvider>
                       <HealthzGuard fallback={<PublicHealthz />}>
-                        <FaktsHerreProvider>
+                        <AdaptiveHerreProvider>
                           {window.__TAURI__ && <TauriHerreCallback />}
                           <React.Suspense fallback={<>Loading</>}>
                             <Routes>
                               {/* Public */}
                               <Route path="/" element={<PublicApp />}>
                                 <Route path="callback" element={<Callback />} />
-                                <Route index element={<PublicHome />} />
+                                <Route index element={<PublicLogin />} />
                               </Route>
                               {/* Private */}
 
@@ -515,7 +516,7 @@ export const MainApp: React.FC<Props> = (props) => {
                               </Route>
                             </Routes>
                           </React.Suspense>
-                        </FaktsHerreProvider>
+                        </AdaptiveHerreProvider>
                       </HealthzGuard>
                     </HealthzProvider>
                   </FaktsGuard>

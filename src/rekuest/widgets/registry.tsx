@@ -49,6 +49,26 @@ export class WardRegistry {
   }
 }
 
+export type HookWidget = (props: { value: string }) => React.ReactNode;
+
+export class HookRegistry {
+  hook_registry: {
+    [ward_key: string]: HookWidget;
+  };
+
+  constructor() {
+    this.hook_registry = {};
+  }
+
+  public registerHook(hook_key: string, widget: HookWidget): void {
+    this.hook_registry[hook_key] = widget;
+  }
+
+  public getHook(hook_key: string): HookWidget {
+    return this.hook_registry[hook_key] || {};
+  }
+}
+
 export class WidgetRegistry {
   portTypeInputFallbackMap: {
     [ward_key: string]: React.FC<InputWidgetProps>;
@@ -63,6 +83,7 @@ export class WidgetRegistry {
     [widget_type: string]: React.FC<ReturnWidgetProps<any>>;
   };
   ward_registry: WardRegistry;
+  hook_registry: HookRegistry;
 
   constructor() {
     this.portTypeInputFallbackMap = {};
@@ -70,6 +91,7 @@ export class WidgetRegistry {
     this.portTypeReturnFallbackMap = {};
     this.typeReturnWidgetMap = {};
     this.ward_registry = new WardRegistry();
+    this.hook_registry = new HookRegistry();
   }
 
   public registerInputWidgetFallback(

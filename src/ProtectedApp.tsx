@@ -1,4 +1,4 @@
-import { HerreGuard } from "herre";
+import { HerreGuard } from "@jhnnsrs/herre";
 import React, { CSSProperties } from "react";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Outlet } from "react-router-dom";

@@ -79,7 +79,7 @@ export const AppInformation = (props: { clientId: string }) => {
 export const Container = (props: ContainerProps) => {
   const { data } = withPort(useDetailContainerQuery)({
     variables: { id: props.id },
-    pollInterval: 1000,
+    pollInterval: 2000,
   });
 
   const { confirm } = useConfirm();

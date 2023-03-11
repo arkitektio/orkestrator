@@ -102,6 +102,7 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
         </div>
         <p className="flex-initial text-xs font-extralight truncate">
           {node_data?.node?.description}
+          {latestEvent?.value}
         </p>
         {isExpanded && (
           <>

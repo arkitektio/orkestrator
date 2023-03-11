@@ -9,6 +9,7 @@ import { useAlert } from "../components/alerter/alerter-context";
 import CancelablePromise from "cancelable-promise";
 import { grantBuilder } from "../constants";
 import { Disclosure } from "@headlessui/react";
+import { FaktsEndpoint } from "@jhnnsrs/fakts/dist/FaktsContext";
 
 export interface CallbackProps {}
 
@@ -17,13 +18,47 @@ export interface ConfigValues {
 }
 
 export interface Beacon {
-  name: string;
-  base_url: string;
+  url: string;
 }
+
+const introspectBeacon = async (beacon: Beacon): Promise<FaktsEndpoint> => {
+  let url = beacon.url;
+  if (!url.endsWith("/")) {
+    url = url + "/";
+  }
+  let try_urls = [];
+
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    try_urls.push("https://" + url);
+    try_urls.push("http://" + url);
+  } else {
+    try_urls.push(url);
+  }
+
+  let endpoints = Promise.all(
+    try_urls.map(async (url) => {
+      try {
+        let res = await fetch(url + ".well-known/fakts");
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (e) {
+        console.log("Failed to fetch", url, e);
+      }
+    })
+  );
+
+  let endpoint = (await endpoints).find((e) => e !== undefined);
+  if (endpoint) {
+    return endpoint;
+  }
+  throw new Error(`No endpoint found on beacon ${url}`);
+};
 
 export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
   const { load } = useFakts();
-  const [endpoints, setEndpoints] = useState<Beacon[]>([]);
+  const [beacons, setBeacons] = useState<Beacon[]>([]);
+  const [endpoints, setEndpoints] = useState<FaktsEndpoint[]>([]);
   const { alert } = useAlert();
   const [future, setFuture] = useState<CancelablePromise<Fakts> | null>(null);
 
@@ -31,18 +66,35 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
     const unlisten = listen("fakts", async (event) => {
       let beacon = event.payload as Beacon;
 
-      setEndpoints((endpoints) => {
+      setBeacons((beacons) => {
         // Check if we already have this endpoint
-        if (endpoints.find((e) => e.base_url === beacon.base_url)) {
-          return endpoints;
+        if (beacons.find((e) => e.url === beacon.url)) {
+          return beacons;
         }
-        return [...endpoints, beacon];
+        return [...beacons, beacon];
       });
     });
     return () => {
       unlisten.then((f) => f());
     };
   }, []);
+
+  useEffect(() => {
+    console.log("Found Becacons", beacons);
+    for (let beacon of beacons) {
+      let fakts = introspectUrl(beacon.url);
+      fakts
+        .then((f) => {
+          console.log("Found endpoint", f);
+          setEndpoints((endpoints) => {
+            return [...endpoints, f];
+          });
+        })
+        .catch((e) => {
+          console.log("Failed to find endpoint", e);
+        });
+    }
+  }, [beacons]);
 
   return (
     <>
@@ -71,7 +123,7 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                 {endpoints.map((endpoint) => (
                   <button
                     type="button"
-                    key={endpoint.name}
+                    key={endpoint.base_url}
                     className="rounded rounded-md border border-gray-300 p-3 flex flex-col hover:bg-primary-300 cursor-pointer"
                     onClick={() => {
                       setFuture(

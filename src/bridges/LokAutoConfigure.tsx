@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useFakts } from "@jhnnsrs/fakts";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 import { useMan } from "../lok/context";
 import result from "../lok/api/fragments";
 

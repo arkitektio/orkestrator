@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useFakts } from "@jhnnsrs/fakts";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 import TextTransition, { presets } from "react-text-transition";
 import { RekuestLink } from "../../linker";
 import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
+import { AdaptiveLogin } from "../../bridges/AdaptiveLogin";
 
 export interface PublicHomeProps {}
 
@@ -14,9 +15,28 @@ const TEXTS = [
   "is beautiful",
 ];
 
-export const PublicLogin: React.FC<PublicHomeProps> = (props) => {
-  const { login, logout, token } = useHerre();
+export const FaktualReconfigure: React.FC<PublicHomeProps> = (props) => {
+  const { logout } = useHerre();
   const { fakts, setFakts } = useFakts();
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          logout();
+          setFakts(null);
+        }}
+        className="w-full flex items-center justify-center  border-gray-500  border-dotted shadow-lg shadow-white/30 px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-600 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10"
+      >
+        Logoutss
+      </button>
+    </>
+  );
+};
+
+export const PublicLogin: React.FC<PublicHomeProps> = (props) => {
+  const { token } = useHerre();
 
   const [index, setIndex] = React.useState(0);
 
@@ -54,43 +74,11 @@ export const PublicLogin: React.FC<PublicHomeProps> = (props) => {
                     </RekuestLink>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      login(
-                        {
-                          clientId: fakts.lok.client_id,
-                          clientSecret: fakts.lok.client_secret,
-                          scopes: fakts.lok.scopes,
-                          redirectUri: window.__TAURI__
-                            ? window.location.origin + "/callback" //"http://localhost:6790"
-                            : window.location.origin + "/callback",
-                        },
-                        {
-                          base_url: fakts.lok.base_url,
-                          tokenUrl: fakts.lok.base_url + "/token/",
-                          userInfoEndpoint: fakts.lok.base_url + "/userinfo/",
-                          authUrl: fakts.lok.base_url + "/authorize/",
-                        }
-                      )
-                    }
-                    className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10"
-                  >
-                    Login with {fakts.lok.base_url}
-                  </button>
+                  <AdaptiveLogin />
                 )}
               </div>
               <div className="mt-3 sm:mt-0 sm:ml-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    logout();
-                    setFakts(null);
-                  }}
-                  className="w-full flex items-center justify-center  border-gray-500  border-dotted shadow-lg shadow-white/30 px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-600 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10"
-                >
-                  Logout
-                </button>
+                <FaktualReconfigure />
               </div>
             </div>
           </div>

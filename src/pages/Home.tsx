@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 import { MikroLink, RekuestLink } from "../linker";
 
 interface Props {}

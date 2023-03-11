@@ -1196,6 +1196,14 @@
   dependencies:
     cancelable-promise "^4.3.0"
 
+"@jhnnsrs/herre@0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@jhnnsrs/herre/-/herre-0.0.4.tgz#3b58575013aba9b2200a873d648cbada01cea067"
+  integrity sha512-BkcnJqzJ4Jm1ygd2OWg00Q2vB6Yeac4MekQ2pLR38f6LKYS5Fsjq0MNUejttvIOBOV79bhgr2hcBNzXgUL/1kQ==
+  dependencies:
+    cancelable-promise "^4.3.1"
+    pkce-challenge "^3.0.0"
+
 "@jridgewell/gen-mapping@^0.1.0":
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/@jridgewell/gen-mapping/-/gen-mapping-0.1.1.tgz#e5d2e450306a9491e3bd77e323e38d7aff315996"
@@ -3057,7 +3065,7 @@ camelize@^1.0.0:
   resolved "https://registry.yarnpkg.com/camelize/-/camelize-1.0.1.tgz#89b7e16884056331a35d6b5ad064332c91daa6c3"
   integrity sha512-dU+Tx2fsypxTgtLoE36npi3UqcjSSMNYfkqgmoEhtZrraP5VWq0K7FkWVTYa8eMPtnU/G2txVsfdCJTn9uzpuQ==
 
-cancelable-promise@^4.3.0:
+cancelable-promise@^4.3.0, cancelable-promise@^4.3.1:
   version "4.3.1"
   resolved "https://registry.yarnpkg.com/cancelable-promise/-/cancelable-promise-4.3.1.tgz#957b62382435e74dfb2a038517f53205e0c631c6"
   integrity sha512-A/8PwLk/T7IJDfUdQ68NR24QHa8rIlnN/stiJEBo6dmVUkD4K14LswG0w3VwdeK/o7qOwRUR1k2MhK5Rpy2m7A==
@@ -4456,13 +4464,6 @@ heap@0.2.5:
   version "0.2.5"
   resolved "https://registry.yarnpkg.com/heap/-/heap-0.2.5.tgz#713b65590ebcc40fcbeeaf55e851694092b39af1"
   integrity sha512-G7HLD+WKcrOyJP5VQwYZNC3Z6FcQ7YYjEFiFoIj8PfEr73mu421o8B1N5DKUcc8K37EsJ2XXWA8DtrDz/2dReg==
-
-herre@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/herre/-/herre-0.0.3.tgz#ab2d0d43a53bead3039e209ce49d9cd83f7b8e80"
-  integrity sha512-mZZnFy4GJ+AAywUgocWZknUiszGdjRzt3ici1lWVljYHaUshsp5zSq7I3RSClzglEbLBwtg1Z6MPOy2oaIojoA==
-  dependencies:
-    pkce-challenge "^3.0.0"
 
 hoist-non-react-statics@^3.0.0, hoist-non-react-statics@^3.3.0, hoist-non-react-statics@^3.3.1, hoist-non-react-statics@^3.3.2:
   version "3.3.2"

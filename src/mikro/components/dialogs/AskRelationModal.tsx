@@ -120,7 +120,7 @@ export const AskRelationModal = (
               <div className="mt-2 text-sm mb-3 w-full">
                 Relate these to items together
               </div>
-              <div className="mt-2 grid-cols-3 w-full">
+              <div className="mt-2 grid gap-1 grid-cols-3 w-full">
                 {props.leftIdentifier && props.leftObject && (
                   <div className=" p-2   p-2 border-gray-800 rounded border">
                     {structure_to_widget(props.leftIdentifier, {

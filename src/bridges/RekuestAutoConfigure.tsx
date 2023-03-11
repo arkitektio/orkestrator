@@ -1,5 +1,5 @@
 import { useFakts } from "@jhnnsrs/fakts";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 import React, { useEffect } from "react";
 import { useRekuest } from "../rekuest";
 import result from "../rekuest/api/fragments";

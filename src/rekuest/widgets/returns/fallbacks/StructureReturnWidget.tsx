@@ -1,5 +1,6 @@
 import React from "react";
 import { GlobalLink } from "../../../../linker";
+import { MetricWidget } from "../../../../widgets/MetricWidget";
 import { PositionWidget } from "../../../../widgets/PositionWidget";
 import { RepresentationWidget } from "../../../../widgets/RepresentationWidget";
 import { RoiWidget } from "../../../../widgets/RoiWidget";
@@ -31,6 +32,8 @@ export const structure_to_widget = (
       return <StageWidget {...props} />;
     case "@mikro/position":
       return <PositionWidget {...props} />;
+    case "@mikro/metric":
+      return <MetricWidget {...props} />;
     default:
       return <>{type}</>;
   }

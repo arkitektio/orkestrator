@@ -3,7 +3,7 @@ import { Fetcher } from "@graphiql/toolkit";
 import { FieldHookConfig, useField } from "formik";
 import { GraphiQLProvider } from "graphiql";
 import React from "react";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 import { IQL } from "./IQL";
 import { useMikro } from "../../MikroContext";
 

@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect } from "react";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 
 export interface CallbackProps {}
 
@@ -8,11 +8,20 @@ export const TauriHerreCallback: React.FC<CallbackProps> = (props) => {
   const { setCode } = useHerre();
 
   useEffect(() => {
-    const unlisten = listen("code", async (event) => {
-      setCode(event.payload as string);
+    console.log("Listening for code");
+    const unlisten = listen("oauth://url", async (event) => {
+      let url = event.payload as string;
+      let code = url.split("code=")[1];
+
+      setCode(code);
+    });
+
+    const unlistend = listen("oauth://invalid-url", async (event) => {
+      console.log("Got code", event);
     });
     return () => {
       unlisten.then((f) => f());
+      unlistend.then((f) => f());
     };
   }, []);
 

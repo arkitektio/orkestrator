@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useFakts } from "@jhnnsrs/fakts";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 import { usePort } from "../port/PortContext";
 import result from "../port/api/fragments";
 
