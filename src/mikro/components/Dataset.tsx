@@ -5,7 +5,7 @@ import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { DropZone } from "../../components/layout/DropZone";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { SelfActions } from "../../components/SelfActions";
-import { useDatalayer } from "../../datalayer/context";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
@@ -33,6 +33,12 @@ import {
 import { withMikro } from "../MikroContext";
 import { RepresentationCard } from "./cards/RepresentationCard";
 import { UploadZone } from "./UploadZone";
+import { FileCard } from "./cards/FileCard";
+import { useReleaseFileMate } from "../../mates/file/useReleaseFileMate";
+import { useDeleteFileMate } from "../../mates/file/useDeleteFileMate";
+import { useReleaseSampleMate } from "../../mates/sample/useReleaseSampleMate";
+import { useReleaseRepresentationMate } from "../../mates/representation/useReleaseRepresentationMate";
+import { SampleCard } from "./cards/SampleCard";
 
 export type IExperimentProps = {
   id: string;
@@ -47,7 +53,13 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
   const [putFiles] = withMikro(usePutFilesMutation)();
 
   const [putRepresentations] = withMikro(usePutRepresentationsMutation)();
-  const [releaseFiles] = withMikro(useReleaseFilesMutation)();
+
+  const relaseFileMate = useReleaseFileMate(id);
+  const deleteFileMate = useDeleteFileMate();
+
+  const releaseSampleMate = useReleaseSampleMate(id);
+  const releaseRepresentationMate = useReleaseRepresentationMate(id);
+
   const [releaseSamples] = withMikro(useReleaseSamplesMutation)();
   const [releaseRepresentations] = withMikro(
     useReleaseRepresentationsMutation
@@ -153,41 +165,7 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
           <SectionTitle> Samples </SectionTitle>
           <ResponsiveContainerGrid>
             {data?.dataset?.samples?.filter(notEmpty).map((sample) => (
-              <Sample.Smart
-                object={sample.id}
-                className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
-                additionalMates={(partner, self) => {
-                  if (
-                    partner == "item:@mikro/sample" ||
-                    partner == "list:@mikro/sample"
-                  ) {
-                    return [
-                      {
-                        label: "Remove from Experiment",
-                        async action(self, drops) {
-                          releaseSamples({
-                            variables: {
-                              dataset: id,
-                              samples: drops.map((d) => d.object),
-                            },
-                          });
-                        },
-                      },
-                    ];
-                  }
-
-                  return [];
-                }}
-              >
-                <div className="flex truncate">
-                  <Sample.DetailLink
-                    className="flex-grow cursor-pointer font-semibold"
-                    object={sample.id}
-                  >
-                    {sample?.name}
-                  </Sample.DetailLink>
-                </div>
-              </Sample.Smart>
+              <SampleCard sample={sample} mates={[releaseSampleMate]} />
             ))}
             <DropZone
               accepts={["item:@mikro/sample", "list:@mikro/sample"]}
@@ -208,8 +186,11 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
           </ResponsiveContainerGrid>
           <SectionTitle> Images </SectionTitle>
           <ResponsiveContainerGrid>
-            {data?.dataset?.representations?.filter(notEmpty).map((sample) => (
-              <RepresentationCard rep={sample} />
+            {data?.dataset?.representations?.filter(notEmpty).map((rep) => (
+              <RepresentationCard
+                rep={rep}
+                mates={[releaseRepresentationMate]}
+              />
             ))}
             <DropZone
               accepts={[
@@ -234,41 +215,10 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
           <SectionTitle> Files </SectionTitle>
           <ResponsiveContainerGrid>
             {data?.dataset?.omerofiles?.filter(notEmpty).map((omerofile) => (
-              <MikroFile.Smart
-                object={omerofile.id}
-                className="border border-gray-800 cursor-pointer rounded  text-white bg-gray-900 hover:shadow-lg "
-                additionalMates={(partner, self) => {
-                  if (
-                    partner == "item:@mikro/omerofile" ||
-                    partner == "list:@mikro/omerofile"
-                  ) {
-                    return [
-                      {
-                        label: "Remove from Experiment",
-                        async action(self, drops) {
-                          releaseFiles({
-                            variables: {
-                              dataset: id,
-                              files: drops.map((d) => d.object),
-                            },
-                          });
-                        },
-                      },
-                    ];
-                  }
-
-                  return [];
-                }}
-              >
-                <div className="truncate p-5">
-                  <MikroFile.DetailLink
-                    className="flex-grow cursor-pointer font-semibold"
-                    object={omerofile.id}
-                  >
-                    {omerofile?.name}
-                  </MikroFile.DetailLink>
-                </div>
-              </MikroFile.Smart>
+              <FileCard
+                file={omerofile}
+                mates={[relaseFileMate, deleteFileMate(omerofile)]}
+              />
             ))}
 
             <UploadZone

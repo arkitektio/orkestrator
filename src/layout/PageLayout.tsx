@@ -141,7 +141,7 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
             visible={isOpen[index] && sidebar != undefined}
           >
             <div
-              className={`flex flex-col flex-grow dark:bg-slate-800 bg-gray-100 border-l-2 border-l-gray-700 shadow-[35px_60px_-15px_rgba(0,0,0,0.3)] z-0 h-full @container p-3`}
+              className={`flex flex-col flex-grow bg-back-850 border-l-2 border-l-gray-700 shadow-[35px_60px_-15px_rgba(0,0,0,0.3)] z-0 h-full @container p-3`}
             >
               {isOpen[index] && sidebar.content}
             </div>

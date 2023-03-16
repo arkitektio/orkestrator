@@ -11,11 +11,16 @@ import { withPort } from "../PortContext";
 import { PrepareScanDialog } from "./dialogs/PrepareScanDialog";
 import { RepoScanCard } from "./cards/RepoScanCard";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import { useDeployScanMate } from "../../mates/scan/useDeployScanMate";
+import { useDeleteScan } from "../../mates/scan/useDeleteScanMate";
 
 export type IMyWhalesProps = {};
 
 const MyRepoScans: React.FC<IMyWhalesProps> = ({}) => {
   const { data } = withPort(useRepoScansQuery)();
+
+  const deployScan = useDeployScanMate();
+  const deleteRepoScan = useDeleteScan();
 
   return (
     <div>
@@ -23,7 +28,11 @@ const MyRepoScans: React.FC<IMyWhalesProps> = ({}) => {
       <br />
       <ResponsiveContainerGrid>
         {data?.reposcans?.filter(notEmpty).map((s, index) => (
-          <RepoScanCard scan={s} key={index} />
+          <RepoScanCard
+            scan={s}
+            key={index}
+            mates={[deployScan, deleteRepoScan(s)]}
+          />
         ))}
       </ResponsiveContainerGrid>
     </div>

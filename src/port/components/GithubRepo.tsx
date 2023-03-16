@@ -16,6 +16,7 @@ import { withPort } from "../PortContext";
 import { RepoScanCard } from "./cards/RepoScanCard";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useDeployScanMate } from "../../mates/scan/useDeployScanMate";
 
 export type GithubRepoProps = {
   id: string;
@@ -53,6 +54,8 @@ export const GithubRepo = (props: GithubRepoProps) => {
   const [stop] = withPort(useStopContainerMutation)();
   const [remove] = withPort(useRemoveContainerMutation)();
 
+  const deployScanMate = useDeployScanMate();
+
   return (
     <PageLayout>
       <SectionTitle>Github Repo </SectionTitle>
@@ -75,7 +78,7 @@ export const GithubRepo = (props: GithubRepoProps) => {
       <SectionTitle>Possible Deployments of this app</SectionTitle>
       <ResponsiveContainerGrid>
         {data?.githubRepo?.scans?.filter(notEmpty).map((scan, index) => (
-          <RepoScanCard scan={scan} key={index} />
+          <RepoScanCard scan={scan} key={index} mates={[deployScanMate]} />
         ))}
       </ResponsiveContainerGrid>
     </PageLayout>

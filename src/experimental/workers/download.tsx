@@ -1,17 +1,14 @@
 // workers/auth.js - will be run in worker thread
 import { expose } from "threads/worker";
 import { AwsClient } from "aws4fetch";
-import { ValidStoreType } from "zarr/types/storage/types";
 import {
   getCodec,
   addCodec,
-  NestedArray,
   openGroup,
   TypedArray,
   TypedArrayConstructor,
   ZarrArray,
 } from "zarr";
-import { GiConsoleController } from "react-icons/gi";
 import { DtypeString, ZarrArrayMetadata } from "zarr/types/types";
 import { joinUrlParts, S3Store } from "../provider/store";
 import { ArraySelection, ChunkProjection } from "zarr/types/core/types";
@@ -20,10 +17,9 @@ import {
   isContiguousSelection,
   isTotalSlice,
 } from "../provider/indexing";
-import { openDB, deleteDB, wrap, unwrap } from "idb";
-import DashBoardHome from "../../pages/dashboard/DashboardHome";
 import c from "colormap";
 import { Zlib, GZip, Blosc } from "numcodecs";
+import { NestedArray } from "../zarro/nested";
 
 addCodec(Blosc.codecId, () => Blosc);
 
@@ -57,6 +53,7 @@ const DTYPE_TYPEDARRAY_MAPPING: {
   "|B": Uint8Array,
   "|u1": Uint8Array,
   "|i1": Int8Array,
+  "<i8": BigInt64Array,
   "<b": Int8Array,
   "<B": Uint8Array,
   "<u1": Uint8Array,
@@ -206,6 +203,17 @@ expose({
 
     let indexer = new BasicIndexer(selection, array);
     const outShape = indexer.shape;
+    if (outShape.length !== 2) {
+      throw Error(
+        `Only 2D selections are supported, got ${outShape.length}D selection.`
+      );
+    }
+    if (outShape[0] * outShape[1] > 4194304) {
+      throw Error(
+        `Selection is too large, got ${outShape[0]}x${outShape[1]} pixels.`
+      );
+    }
+
     const outDtype = array.dtype;
     const outSize = indexer.shape.reduce((x, y) => x * y, 1);
 
@@ -238,12 +246,15 @@ expose({
     let imgheight = data.shape[0];
     console.log(imgheight, imgwidth);
 
+    let converted = new Array(imgwidth * imgheight);
+
     for (var i = 0; i < imgwidth * imgheight; i++) {
+      converted[i] = Number(flattend[i]);
       if (flattend[i] < min) {
-        min = flattend[i];
+        min = Number(flattend[i]);
       }
       if (flattend[i] > max) {
-        max = flattend[i];
+        max = Number(flattend[i]);
       }
     }
 
@@ -259,7 +270,7 @@ expose({
     let z = 0;
     for (let j = 0; j < imgheight; j++) {
       for (let i = 0; i < imgwidth; i++) {
-        let val = data.get([j, i]) as number;
+        let val = Number(data.get([j, i]));
         let colorIndex = Math.floor(((val - min) / max) * 255);
         if (colorIndex > 255) {
           colorIndex = 255;

@@ -17,7 +17,7 @@ export const MetricWidget: React.FC<StructureDisplayProps> = ({ value }) => {
   return (
     <div className="w-full h-full items-center p-2">
       <div className="flex flex-col items-center">
-        <div className="text-center">{data?.metric?.name}</div>
+        <div className="text-center">{data?.metric?.key}</div>
         <div className="text-center">{data?.metric?.value}</div>
       </div>
     </div>

@@ -15,8 +15,8 @@ import {
 } from "../../../man/api/graphql";
 import { withMan } from "../../../man/context";
 import {
-  SharableModels,
   ChangePermissionsMutationVariables,
+  SharableModels,
   useChangePermissionsMutation,
   usePermissionsOfQuery,
 } from "../../api/graphql";

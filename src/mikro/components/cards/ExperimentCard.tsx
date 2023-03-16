@@ -1,12 +1,14 @@
 import React from "react";
 import { Experiment } from "../../../linker";
+import { MateFinder } from "../../../mates/types";
 import { ListExperimentFragment } from "../../api/graphql";
 
 interface ExperimentCardProps {
   experiment: ListExperimentFragment;
+  mates: MateFinder[];
 }
 
-export const ExperimentCard = ({ experiment }: ExperimentCardProps) => {
+export const ExperimentCard = ({ experiment, mates }: ExperimentCardProps) => {
   return (
     <Experiment.Smart
       object={experiment.id}

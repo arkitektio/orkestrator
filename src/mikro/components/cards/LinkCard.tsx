@@ -8,6 +8,7 @@ import {
   Link,
   linkableModelToIdentifier,
 } from "../../../linker";
+import { MateFinder } from "../../../mates/types";
 import { Data } from "../../../pages/Data";
 import { structure_to_widget } from "../../../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 import {
@@ -21,12 +22,11 @@ import { withMikro } from "../../MikroContext";
 interface LinkCardProps {
   link: ListLinkFragment;
   minimal?: boolean;
+  mates: MateFinder[];
 }
 
-export const LinkCard = ({ link, minimal }: LinkCardProps) => {
+export const LinkCard = ({ link, minimal, mates }: LinkCardProps) => {
   const { confirm } = useConfirm();
-
-  const [deleteDataset, res] = withMikro(useDeleteLinkMutation)();
 
   if (!link?.id) return <></>;
 
@@ -39,28 +39,7 @@ export const LinkCard = ({ link, minimal }: LinkCardProps) => {
     <Link.Smart
       object={link?.id}
       className={`bg-slate-700 text-white rounded shadow-md pl-3  group`}
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        return [
-          {
-            accepts: [accept],
-            action: async (self, drops) => {
-              await confirm({
-                message: "Do you really want to delete?",
-                subtitle: "Deletion is irreversible!",
-                confirmLabel: "Yes delete!",
-              });
-
-              await deleteDataset({
-                variables: { id: link.id },
-              });
-            },
-            label: <BsTrash />,
-            description: "Delete",
-          },
-        ];
-      }}
+      mates={mates}
     >
       <div className="px-1 py-2">
         <Link.DetailLink

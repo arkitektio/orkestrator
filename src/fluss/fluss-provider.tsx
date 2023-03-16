@@ -1,11 +1,8 @@
-import { ApolloClient, gql, NormalizedCacheObject } from "@apollo/client";
-import React, { useEffect, useState } from "react";
-import { useFakts } from "@jhnnsrs/fakts";
-import { useHerre } from "herre";
+import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
+import React, { useState } from "react";
 import { createFlussClient } from "./fluss-client";
 import { FlussContext } from "./fluss-context";
 import { FlussConfig } from "./fluss-types";
-import { create } from "domain";
 
 export type FlussProps = {
   register?: boolean;

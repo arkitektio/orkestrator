@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router";
-import { Whale } from "../../port/components/screens/Whale";
+import { Whale } from "../../port/components/Whale";
 
 export type ISampleScreenProps = {};
 

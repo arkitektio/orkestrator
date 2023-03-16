@@ -1,0 +1,11 @@
+import {
+  useDeleteRepresentationMutation,
+  useDeleteRoiMutation,
+  useDeleteSampleMutation,
+} from "../../mikro/api/graphql";
+import { withMikro } from "../../mikro/MikroContext";
+import { buildDeleteMate } from "../generics/buildDeleteMate";
+
+export const useDeleteRoiMate = buildDeleteMate(
+  withMikro(useDeleteRoiMutation)
+);

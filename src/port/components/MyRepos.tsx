@@ -14,6 +14,8 @@ import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { Modal } from "../../components/modals/Modal";
 import { notEmpty } from "../../floating/utils";
 import { GithubRepo } from "../../linker";
+import { useDeleteGithubRepoMate } from "../../mates/repo/useDeleteGithubRepoMate";
+import { useGithubRepoLifecycleMate } from "../../mates/repo/useGithubRepoLifecycleMate";
 import {
   useScanRepoMutation,
   GithubReposDocument,
@@ -28,13 +30,20 @@ export type IMyWhalesProps = {};
 const MyRepos: React.FC<IMyWhalesProps> = ({}) => {
   const { data } = withPort(useGithubReposQuery)();
 
+  const deleteRepoMate = useDeleteGithubRepoMate();
+  const repoLF = useGithubRepoLifecycleMate();
+
   return (
     <div>
       <span className="font-light text-xl text-white">My Repos</span>
       <br />
       <ResponsiveContainerGrid>
         {data?.githubRepos?.filter(notEmpty).map((repo, index) => (
-          <RepoCard repo={repo} key={index} />
+          <RepoCard
+            repo={repo}
+            key={index}
+            mates={[repoLF, deleteRepoMate(repo)]}
+          />
         ))}
       </ResponsiveContainerGrid>
     </div>

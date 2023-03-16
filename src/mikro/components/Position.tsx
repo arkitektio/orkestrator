@@ -7,6 +7,7 @@ import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SaveParentSize } from "../../layout/SaveParentSize";
 import { Stage } from "../../linker";
+import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import { CommentableModels, useDetailPositionQuery } from "../api/graphql";
 import { withMikro } from "../MikroContext";
 import { RepresentationCard } from "./cards/RepresentationCard";
@@ -19,6 +20,8 @@ const Position: React.FC<PositionProps> = ({ id }) => {
   const { data } = withMikro(useDetailPositionQuery)({
     variables: { id: id },
   });
+
+  const deleteRepresentationMate = useDeleteRepresentationMate();
 
   return (
     <PageLayout
@@ -83,7 +86,10 @@ const Position: React.FC<PositionProps> = ({ id }) => {
             <div className="font-bold">Atached images </div>
             <ResponsiveContainerGrid>
               {data?.position?.omeros?.filter(notEmpty).map((omero, index) => (
-                <RepresentationCard rep={omero.representation} />
+                <RepresentationCard
+                  rep={omero.representation}
+                  mates={[deleteRepresentationMate(omero.representation)]}
+                />
               ))}
             </ResponsiveContainerGrid>
           </div>

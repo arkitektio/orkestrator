@@ -1,6 +1,12 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useState } from "react";
-import { buildFaktsRetrieveGrant, Fakts, useFakts } from "@jhnnsrs/fakts";
+import {
+  buildFaktsRetrieveGrant,
+  Fakts,
+  useFakts,
+  introspectBeacon,
+  Beacon,
+} from "@jhnnsrs/fakts";
 import { PublicNavigationBar } from "../components/navigation/PublicNavigationBar";
 import { SubmitButton } from "../components/forms/fields/SubmitButton";
 import { TextInputField } from "../components/forms/fields/text_input";
@@ -16,44 +22,6 @@ export interface CallbackProps {}
 export interface ConfigValues {
   host: string;
 }
-
-export interface Beacon {
-  url: string;
-}
-
-const introspectBeacon = async (beacon: Beacon): Promise<FaktsEndpoint> => {
-  let url = beacon.url;
-  if (!url.endsWith("/")) {
-    url = url + "/";
-  }
-  let try_urls = [];
-
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    try_urls.push("https://" + url);
-    try_urls.push("http://" + url);
-  } else {
-    try_urls.push(url);
-  }
-
-  let endpoints = Promise.all(
-    try_urls.map(async (url) => {
-      try {
-        let res = await fetch(url + ".well-known/fakts");
-        if (res.ok) {
-          return await res.json();
-        }
-      } catch (e) {
-        console.log("Failed to fetch", url, e);
-      }
-    })
-  );
-
-  let endpoint = (await endpoints).find((e) => e !== undefined);
-  if (endpoint) {
-    return endpoint;
-  }
-  throw new Error(`No endpoint found on beacon ${url}`);
-};
 
 export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
   const { load } = useFakts();
@@ -82,7 +50,7 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
   useEffect(() => {
     console.log("Found Becacons", beacons);
     for (let beacon of beacons) {
-      let fakts = introspectUrl(beacon.url);
+      let fakts = introspectBeacon(beacon);
       fakts
         .then((f) => {
           console.log("Found endpoint", f);
@@ -112,7 +80,8 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                 We don't know yet where all of your services are being hosted,
                 in order to use this website with your data you need to point us
                 to your configuration. We are trying to autodiscover all
-                instances in your network.
+                instances in your network. They are listed below. If you don't
+                see your instance, please enter the URL below.
               </p>
               {endpoints.length > 0 && (
                 <div className="mt-3 text-white text-xl">

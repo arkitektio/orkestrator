@@ -1,18 +1,17 @@
+import { decode } from "blurhash";
 import React from "react";
+import { Layer, Line, Stage, Text } from "react-konva";
+import { useNavigate } from "react-router";
+import { notEmpty } from "../floating/utils";
+import { Roi } from "../linker";
+import { useUserQuery } from "../lok/api/graphql";
+import { withMan } from "../lok/man";
 import {
   DetailRepresentationFragment,
   RepRoiFragment,
   RoiType,
 } from "../mikro/api/graphql";
 import { useMikro } from "../mikro/MikroContext";
-import { decode } from "blurhash";
-import { Stage, Layer, RegularPolygon, Circle, Line, Text } from "react-konva";
-import { notEmpty } from "../floating/utils";
-import { useMan } from "../lok/context";
-import { useUserQuery } from "../lok/api/graphql";
-import { withMan } from "../lok/man";
-import { useNavigate } from "react-router";
-import { Roi } from "../linker";
 
 interface ThumbnailCanvasProps {
   rep: DetailRepresentationFragment;

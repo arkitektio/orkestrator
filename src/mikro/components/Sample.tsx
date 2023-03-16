@@ -21,6 +21,7 @@ import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Experiment, Representation } from "../../linker";
+import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import {
   CommentableModels,
   DetailSampleDocument,
@@ -103,6 +104,8 @@ const Sample: React.FC<ISampleProps> = ({ id }) => {
   const { confirm } = useConfirm();
   const navigate = useNavigate();
   const { s3resolve } = useMikro();
+
+  const deleteRepresentationMate = useDeleteRepresentationMate();
 
   const [deleteRepresentation] = withMikro(useDeleteRepresentationMutation)({
     update(cache, result) {
@@ -220,7 +223,11 @@ const Sample: React.FC<ISampleProps> = ({ id }) => {
         <SectionTitle>Attached Images</SectionTitle>
         <ResponsiveGrid>
           {data?.sample?.representations?.filter(notEmpty).map((rep) => (
-            <RepresentationCard rep={rep} key={rep.id} />
+            <RepresentationCard
+              rep={rep}
+              key={rep.id}
+              mates={[deleteRepresentationMate(rep)]}
+            />
           ))}
         </ResponsiveGrid>
       </div>

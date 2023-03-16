@@ -7,7 +7,7 @@ export interface DataTablesProps {}
 export const DataTables: React.FC<DataTablesProps> = (props) => {
   return (
     <PageLayout>
-      <MyTables />
+      <MyTables limit={20} />
     </PageLayout>
   );
 };

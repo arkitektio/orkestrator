@@ -12,6 +12,7 @@ import { ActionButton } from "../layout/ActionButton";
 import { useDialog } from "../layout/dialog/DialogProvider";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Dataset, Experiment } from "../linker";
+import { useDeleteDatesetMate } from "../mates/dataset/useDeleteDatasetMate";
 import {
   ListExperimentFragment,
   MyExperimentsEventDocument,
@@ -52,6 +53,8 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
   const [offset, setOffset] = useState(0);
 
   const { ask } = useDialog();
+
+  const deleteDatasetMate = useDeleteDatesetMate();
 
   useEffect(() => {
     refetch({ limit: limit, offset: offset });
@@ -95,7 +98,11 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
           ?.slice(0, limit)
           .filter(notEmpty)
           .map((ex, index) => (
-            <DatasetCard key={index} dataset={ex} />
+            <DatasetCard
+              key={index}
+              dataset={ex}
+              mates={[deleteDatasetMate(ex)]}
+            />
           ))}
         <ActionButton
           label="Create new Dataset"

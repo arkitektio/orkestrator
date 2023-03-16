@@ -1189,10 +1189,17 @@
   resolved "https://registry.yarnpkg.com/@iarna/toml/-/toml-2.2.5.tgz#b32366c89b43c6f8cefbdefac778b9c828e3ba8c"
   integrity sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg==
 
-"@jhnnsrs/fakts@0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@jhnnsrs/fakts/-/fakts-0.1.0.tgz#2b08139398e01ece35070fac337d30d18e368fde"
-  integrity sha512-c49MFQi7WeiE/k4ZslbMChNV4hXPfroLwW5/DPpaVVS7Mx08XA3z71bqjCzrnpMmbpo3K2PMuC08rnG/OfolYA==
+"@jhnnsrs/datalayer@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@jhnnsrs/datalayer/-/datalayer-0.0.4.tgz#0774fa3b2191282a815e284b461a9e4c045947c9"
+  integrity sha512-Xna3+tH2IGVaOkbOqSedeRPkyKacfbKO9MDZmVWxTOnOeC///CuSZl/sR7sJeh/yC5Vef+TuuaJybHJnWUGl4w==
+  dependencies:
+    cancelable-promise "^4.3.0"
+
+"@jhnnsrs/fakts@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@jhnnsrs/fakts/-/fakts-0.1.1.tgz#4d8abafe41e8b2f4158d5e8b6c73d944a10ac2df"
+  integrity sha512-ToKIfyvqCeJoBUISwEFYOAzgPPjxM0VAczve4B8VTb/+1MCCn7EPviJhckzpnmTz7O5UX5zziaN5xxvXgXrLlg==
   dependencies:
     cancelable-promise "^4.3.0"
 

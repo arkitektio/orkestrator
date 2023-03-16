@@ -48,7 +48,7 @@ import { RekuestAutoConfigure } from "./bridges/RekuestAutoConfigure";
 import { FaktsGuard } from "@jhnnsrs/fakts";
 import { FlussAutoConfigure } from "./bridges/FlussAutoConfigure";
 import { LokAutoConfigure } from "./bridges/LokAutoConfigure";
-import { DatalayerProvider } from "./datalayer/provider";
+import { DatalayerProvider } from "@jhnnsrs/datalayer";
 import { DatalayerAutoConfigure } from "./bridges/DatalayerAutoConfigure";
 
 /* try {
@@ -175,7 +175,7 @@ export const ProtectedApp: React.FC<Props> = () => {
                                                 </MikroGuard>
 
                                                 <div className="flex flex-col h-screen sm:flex-row-reverse">
-                                                  <div className="flex-grow flex bg-gray-300 dark:bg-slate-900 overflow-y-auto">
+                                                  <div className="flex-grow flex bg-gradient-to-b from-back-900 via-back-900 via-back-850 via-back-850 to-back-800 overflow-y-auto">
                                                     <React.Suspense
                                                       fallback={<>Loading</>}
                                                     >

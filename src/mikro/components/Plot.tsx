@@ -194,7 +194,10 @@ export const Plot: React.FC<PlotProps> = (props) => {
         {
           label: "Comments",
           content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagContext} />
+            <MikroKomments
+              id={props.id}
+              model={CommentableModels.GrunnlagContext}
+            />
           ),
           key: "comments",
         },

@@ -1,30 +1,23 @@
 import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { RekuestShare } from "../../components/social/RekuestShare";
+import { notEmpty } from "../../floating/utils";
+import { FlussAssignation } from "../../fluss/components/FlussAssignation";
+import { RekuestKomments } from "../../komment/RekuestKomments";
+import { PageLayout } from "../../layout/PageLayout";
+import { SectionTitle } from "../../layout/SectionTitle";
+import { withRekuest } from "../../rekuest";
 import {
   AssignationLogLevel,
-  AssignationStatus,
   CommentableModels,
   DetailAssignationFragment,
   SharableModels,
   useDetailAssignationQuery,
 } from "../../rekuest/api/graphql";
-import {
-  AssignWidgetsContainer,
-  ReturnWidgetsContainer,
-  WidgetsContainer,
-} from "../../rekuest/widgets/containers/ReturnWidgetsContainer";
-import { TrackRiver } from "../../floating/track/TrackRiver";
-import { FlussAssignation } from "../../fluss/components/FlussAssignation";
-import { PageLayout } from "../../layout/PageLayout";
-import { SectionTitle } from "../../layout/SectionTitle";
-import { withRekuest } from "../../rekuest";
-import { notEmpty } from "../../floating/utils";
 import { AssignationPuls } from "../../rekuest/components/generic/StatusPulse";
-import { UserEmblem } from "../../lok/components/UserEmblem";
 import { UserImage } from "../../rekuest/components/ReserveForm";
-import { RekuestShare } from "../../components/social/RekuestShare";
-import { RekuestKomments } from "../../komment/RekuestKomments";
+import { WidgetsContainer } from "../../rekuest/widgets/containers/ReturnWidgetsContainer";
 
 export type AssignationToolbarProps = {
   assignation: Maybe<DetailAssignationFragment>;
@@ -69,26 +62,32 @@ export const AssignationDetail: React.FC<IAssignationProps> = ({
 
   return (
     <PageLayout
-      sidebar={
-        <div className="p-2 flex h-full">
-          {data?.assignation?.id && (
-            <div className="flex flex-grow flex-col">
-              <div className="flex-1">
-                <RekuestKomments
-                  model={CommentableModels.FacadeAssignation}
-                  id={data?.assignation?.id}
-                />
-              </div>
-              <div className="flex-1">
-                <RekuestShare
-                  type={SharableModels.FacadeAssignation}
-                  object={data?.assignation?.id}
-                />
-              </div>
+      sidebars={[
+        {
+          label: "Assignation",
+          key: "assignation",
+          content: (
+            <div className="p-2 flex h-full">
+              {data?.assignation?.id && (
+                <div className="flex flex-grow flex-col">
+                  <div className="flex-1">
+                    <RekuestKomments
+                      model={CommentableModels.FacadeAssignation}
+                      id={data?.assignation?.id}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <RekuestShare
+                      type={SharableModels.FacadeAssignation}
+                      object={data?.assignation?.id}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      }
+          ),
+        },
+      ]}
     >
       <div className="flex-initial">
         <AssignationToolbar assignation={data?.assignation} />

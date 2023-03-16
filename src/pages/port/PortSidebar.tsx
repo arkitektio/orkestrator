@@ -40,7 +40,7 @@ const PortSidebar: React.FC<IWhalesSidebarProps> = ({}) => {
             </div>
             <ResponsiveContainerGrid>
               {data?.containers?.filter(notEmpty).map((container, index) => (
-                <ContainerCard key={index} container={container} />
+                <ContainerCard key={index} container={container} mates={[]} />
               ))}
             </ResponsiveContainerGrid>
           </>
@@ -56,7 +56,7 @@ const PortSidebar: React.FC<IWhalesSidebarProps> = ({}) => {
             </div>
             <ResponsiveContainerGrid>
               {data?.whales?.filter(notEmpty).map((whale, index) => (
-                <WhaleCard key={index} whale={whale} />
+                <WhaleCard key={index} whale={whale} mates={[]} />
               ))}
             </ResponsiveContainerGrid>
           </>

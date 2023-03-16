@@ -87,7 +87,6 @@ export const ConfirmModal: React.FC<ConfirmModalModalProps> = ({
                     {state?.confirmLabel ? state?.confirmLabel : "Confirm"}
                   </button>
                   <button
-                    type="button"
                     ref={cancelButtonRef}
                     type="button"
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 focus:outline-none hover:bg-red-200 hover:text-white sm:ml-3 sm:w-auto sm:text-sm"

@@ -7,9 +7,11 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
+import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
 import { useDialog } from "../layout/dialog/DialogProvider";
 import { Plot, Sample } from "../linker";
+import { useDeletePlotMate } from "../mates/plot/useDeletePlotMate";
 import {
   CreatePlotMutation,
   ListPlotFragment,
@@ -18,6 +20,7 @@ import {
   useDeletePlotMutation,
   useMyPlotsQuery,
 } from "../mikro/api/graphql";
+import { PlotCard } from "../mikro/components/cards/PlotCard";
 import { CreatePlotModal } from "../mikro/components/dialogs/CreatePlotModal";
 import { CreateSampleModal } from "../mikro/components/dialogs/CreateSampleModal";
 import { withMikro } from "../mikro/MikroContext";
@@ -31,88 +34,6 @@ export const SampleType = "Sample";
 
 const limit = 20;
 
-export const PlotCard: React.FC<{
-  plot: Maybe<ListPlotFragment>;
-}> = ({ plot }) => {
-  const { confirm } = useConfirm();
-
-  const [deletePlot, res] = withMikro(useDeletePlotMutation)();
-
-  if (!plot?.id) return <></>;
-
-  return (
-    <Plot.Smart
-      object={plot?.id}
-      dragClassName={({ isOver, canDrop }) =>
-        `bg-slate-700 text-white rounded overflow-hidden shadow-md pl-3 pr-2 py-2 flex group ${
-          isOver && "border-primary-200 border"
-        }`
-      }
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        if (accept == "item:@mikro/plot") {
-          return [
-            {
-              accepts: [accept],
-              action: async (self, drops) => {
-                await confirm({
-                  message: "Do you really want to delete?",
-                  subtitle: "Deletion is irreversible!",
-                  confirmLabel: "Yes delete!",
-                });
-
-                await deletePlot({
-                  variables: { id: plot.id },
-                });
-              },
-              label: <BsTrash />,
-              description: "Delete Sample",
-            },
-          ];
-        }
-
-        if (accept == "list:@mikro/plot") {
-          return [
-            {
-              accepts: ["list:@mikro/sample"],
-              action: async (self, drops) => {
-                await confirm({
-                  message: "Do you really want all this plots delete?",
-                  subtitle: "Deletion is irreversible!",
-                  confirmLabel: "Yes delete!",
-                });
-
-                for (const drop of drops) {
-                  await deletePlot({
-                    variables: { id: drop.object },
-                  });
-                }
-              },
-              label: (
-                <div className="flex flex-row">
-                  <BsTrash className="my-auto" />{" "}
-                  <span className="my-auto">Delete all</span>
-                </div>
-              ),
-              description: "Delete All Samples",
-            },
-          ];
-        }
-
-        return [];
-      }}
-    >
-      <Plot.DetailLink
-        className="cursor-pointer font-semibold"
-        object={plot.id}
-      >
-        {plot?.name}
-      </Plot.DetailLink>
-    </Plot.Smart>
-  );
-};
-
 export const MyPlots: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
   createdDay,
   limit,
@@ -124,6 +45,7 @@ export const MyPlots: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
     variables,
   });
 
+  const deletePlotMate = useDeletePlotMate();
   const [show, setshow] = useState(false);
 
   const [offset, setOffset] = useState(0);
@@ -163,8 +85,8 @@ export const MyPlots: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
         </div>
       </div>
       <ResponsiveContainerGrid>
-        {data?.myplots?.map((plot, index) => (
-          <PlotCard key={index} plot={plot} />
+        {data?.myplots?.filter(notEmpty).map((plot, index) => (
+          <PlotCard key={index} plot={plot} mates={[deletePlotMate(plot)]} />
         ))}
       </ResponsiveContainerGrid>
       <ActionButton

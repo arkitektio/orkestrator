@@ -6,8 +6,10 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
+import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Table } from "../linker";
+import { useDeleteTableMate } from "../mates/table/useDeleteTableMate";
 import {
   MyTablesEventDocument,
   MyTablesEventSubscriptionResult,
@@ -15,6 +17,7 @@ import {
   useDeleteTableMutation,
   useMyTablesQuery,
 } from "../mikro/api/graphql";
+import { TableCard } from "../mikro/components/cards/TableCard";
 import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
@@ -37,7 +40,7 @@ const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
     variables: { limit: limit, offset: 0, createdDay: createdDay },
   });
 
-  const [deleteTable] = withMikro(useDeleteTableMutation)();
+  const deleteTableMate = useDeleteTableMate();
 
   useEffect(() => {
     console.log("Subscribing to My Representations");
@@ -114,85 +117,13 @@ const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
         </div>
       </div>
       <ResponsiveContainerGrid>
-        {data?.mytables?.map(
-          (table, index) =>
-            table?.id && (
-              <Table.Smart
-                key={index}
-                object={table?.id}
-                className={`rounded shadow-xl group text-white bg-gray-800`}
-                additionalMates={(accept, self) => {
-                  if (!self) return [];
-
-                  if (accept == "item:@mikro/table") {
-                    return [
-                      {
-                        accepts: [accept],
-                        action: async (self, drops) => {
-                          await confirm({
-                            message: "Do you really want to delete?",
-                            subtitle: "Deletion is irreversible!",
-                            confirmLabel: "Yes delete!",
-                          });
-
-                          await deleteTable({
-                            variables: { id: table.id },
-                          });
-                        },
-                        label: <BsTrash />,
-                        description: "Delete Sample",
-                      },
-                    ];
-                  }
-
-                  if (accept == "list:@mikro/table") {
-                    return [
-                      {
-                        accepts: [accept],
-                        action: async (self, drops) => {
-                          await confirm({
-                            message:
-                              "Do you really want all this samples delete?",
-                            subtitle: "Deletion is irreversible!",
-                            confirmLabel: "Yes delete!",
-                          });
-
-                          for (const drop of drops) {
-                            await deleteTable({
-                              variables: { id: drop.object },
-                            });
-                          }
-                        },
-                        label: (
-                          <div className="flex flex-row">
-                            <BsTrash className="my-auto" />{" "}
-                            <span className="my-auto">Delete all</span>
-                          </div>
-                        ),
-                        description: "Delete All Samples",
-                      },
-                    ];
-                  }
-
-                  return [];
-                }}
-              >
-                <div
-                  key={index}
-                  className="px-2 py-2 group text-white bg-center bg-cover truncate"
-                >
-                  <div className="flex"></div>
-                  <Table.DetailLink
-                    className="font-bold text-xl mb-2 cursor-pointer truncate"
-                    object={table?.id}
-                  >
-                    {table?.name}
-                  </Table.DetailLink>
-                  <p className="text-white-700 text-base">{table?.id}</p>
-                </div>
-              </Table.Smart>
-            )
-        )}
+        {data?.mytables?.filter(notEmpty).map((table) => (
+          <TableCard
+            table={table}
+            key={table.id}
+            mates={[deleteTableMate(table)]}
+          />
+        ))}
       </ResponsiveContainerGrid>
     </div>
   );

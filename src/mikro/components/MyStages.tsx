@@ -71,7 +71,7 @@ const MyStages: React.FC<MyAcquisitionsProps & DataHomeFilterParams> = ({
           ?.slice(0, limit)
           .filter(notEmpty)
           .map((s, index) => (
-            <StageCard key={index} stage={s} />
+            <StageCard key={index} stage={s} mates={[]} />
           ))}
       </ResponsiveContainerGrid>
     </div>

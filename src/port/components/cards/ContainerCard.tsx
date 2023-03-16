@@ -1,19 +1,11 @@
-import React from "react";
-import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../../components/confirmer/confirmer-context";
 import { Container } from "../../../linker";
-import { useMikro } from "../../../mikro/MikroContext";
-import {
-  ContainerStatus,
-  ListContainerFragment,
-  useRemoveContainerMutation,
-  useRestartContainerMutation,
-  useStopContainerMutation,
-} from "../../api/graphql";
-import { withPort } from "../../PortContext";
+import { MateFinder } from "../../../mates/types";
+import { ContainerStatus, ListContainerFragment } from "../../api/graphql";
 
 interface UserCardProps {
   container: ListContainerFragment;
+  mates: MateFinder[];
 }
 
 export const containerStateToStyle = (
@@ -39,12 +31,8 @@ export const containerStateToStyle = (
   }
 };
 
-export const ContainerCard = ({ container }: UserCardProps) => {
+export const ContainerCard = ({ container, mates }: UserCardProps) => {
   const { confirm } = useConfirm();
-
-  const [restart] = withPort(useRestartContainerMutation)();
-  const [stop] = withPort(useStopContainerMutation)();
-  const [remove] = withPort(useRemoveContainerMutation)();
 
   return (
     <Container.Smart
@@ -52,80 +40,7 @@ export const ContainerCard = ({ container }: UserCardProps) => {
       className={`max-w-sm rounded bg-slate-800 shadow-md border border-1 text-white group ${containerStateToStyle(
         container.status
       )}`}
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        if (accept == "item:@port/container") {
-          return [
-            {
-              action: async (self, drops) => {
-                await confirm({
-                  message: "Do you really want to delete?",
-                  subtitle: "Deletion is irreversible!",
-                  confirmLabel: "Yes delete!",
-                });
-
-                await remove({ variables: { id: self.object } });
-              },
-              label: <BsTrash />,
-              description: "Delete Run",
-            },
-            {
-              action: async (self, drops) => {
-                await confirm({
-                  message: "Do you really want to restart?",
-                  subtitle: "Restarting will take some seconds!",
-                  confirmLabel: "Yes restart!",
-                });
-
-                await restart({ variables: { id: self.object } });
-              },
-              label: "Restart",
-              description: "Delete Run",
-            },
-            {
-              action: async (self, drops) => {
-                await confirm({
-                  message: "Do you really want to stop?",
-                  subtitle: "Deletion is irreversible!",
-                  confirmLabel: "Yes delete!",
-                });
-
-                await stop({ variables: { id: self.object } });
-              },
-              label: "Stop",
-              description: "Delete Run",
-            },
-          ];
-        }
-
-        if (accept == "list:@port/container") {
-          return [
-            {
-              accepts: [accept],
-              action: async (self, drops) => {
-                await confirm({
-                  message: "Do you really want all this samples delete?",
-                  subtitle: "Deletion is irreversible!",
-                  confirmLabel: "Yes delete!",
-                });
-
-                for (const drop of drops) {
-                }
-              },
-              label: (
-                <div className="flex flex-row">
-                  <BsTrash className="my-auto" />{" "}
-                  <span className="my-auto">Delete all</span>
-                </div>
-              ),
-              description: "Delete All Runs",
-            },
-          ];
-        }
-
-        return [];
-      }}
+      mates={mates}
     >
       <div className="p-2 ">
         <div className="flex">

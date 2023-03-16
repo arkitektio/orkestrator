@@ -24,7 +24,7 @@ const FlowHomeSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
       <div className="flex-initial p-5 dark:text-slate-50"></div>
       <div className="flex-grow flex flex-col gap-2 p-5 overflow-y-auto">
         {data?.workspaces?.filter(notEmpty).map((w, index) => (
-          <WorkspaceCard key={index} workspace={w} />
+          <WorkspaceCard key={index} workspace={w} mates={[]} />
         ))}
       </div>
     </>

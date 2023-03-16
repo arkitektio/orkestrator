@@ -37,7 +37,7 @@ const FlowSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
             </div>
             <ResponsiveContainerGrid>
               {data?.workspaces?.filter(notEmpty).map((workspace, index) => (
-                <WorkspaceCard key={index} workspace={workspace} />
+                <WorkspaceCard key={index} workspace={workspace} mates={[]} />
               ))}
             </ResponsiveContainerGrid>
           </>

@@ -19,6 +19,7 @@ const Roi: React.FC<ISampleProps> = ({ id }) => {
     variables: { id: id },
   });
 
+  const deleteRepresentationMate = useDeleteRepresentationMate();
   return (
     <PageLayout
       actions={<SelfActions type={"@mikro/roi"} object={id} />}
@@ -53,7 +54,11 @@ const Roi: React.FC<ISampleProps> = ({ id }) => {
               {data?.roi?.derivedRepresentations
                 ?.filter(notEmpty)
                 .map((rep, index) => (
-                  <RepresentationCard key={index} rep={rep} />
+                  <RepresentationCard
+                    key={index}
+                    rep={rep}
+                    mates={[deleteRepresentationMate(rep)]}
+                  />
                 ))}
             </ResponsiveContainerGrid>
           </div>

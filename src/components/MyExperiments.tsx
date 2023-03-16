@@ -1,89 +1,28 @@
 import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useEffect, useState } from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { useNavigate } from "react-router";
+import { BsCaretLeft, BsCaretRight, BsPlusCircle } from "react-icons/bs";
+import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Experiment } from "../linker";
+import { useDeleteExperimentMate } from "../mates/experiment/useDeleteExperimentMate";
 import {
   ListExperimentFragment,
   MyExperimentsEventDocument,
   MyExperimentsEventSubscriptionResult,
   MyExperimentsQuery,
-  useDeleteExperimentMutation,
   useMyExperimentsQuery,
 } from "../mikro/api/graphql";
+import { ExperimentCard } from "../mikro/components/cards/ExperimentCard";
 import { CreateExperimentModal } from "../mikro/components/dialogs/CreateExperimentModal";
 import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
 export type IMyExperimentsProps = {
   subscribe?: Maybe<boolean>;
 } & DataHomeFilterParams;
-
-const ExperimentCard: React.FC<{
-  experiment: Maybe<ListExperimentFragment>;
-}> = ({ experiment }) => {
-  const onDrop = (...args: any) => {
-    console.log(args);
-  };
-
-  const { confirm } = useConfirm();
-
-  let h = withMikro(useDeleteExperimentMutation);
-
-  const [deleteExperiment, res] = h();
-
-  if (!experiment?.id) return <></>;
-
-  return (
-    <Experiment.Smart
-      object={experiment?.id}
-      className={`bg-slate-700 text-white rounded shadow-md pl-3  group`}
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        return [
-          {
-            accepts: [accept],
-            action: async (self, drops) => {
-              await confirm({
-                message: "Do you really want to delete?",
-                subtitle: "Deletion is irreversible!",
-                confirmLabel: "Yes delete!",
-              });
-
-              await deleteExperiment({
-                variables: { id: experiment.id },
-              });
-            },
-            label: <BsTrash />,
-            description: "Delete",
-          },
-        ];
-      }}
-    >
-      <div className="px-1 py-2 truncate">
-        <Experiment.DetailLink
-          className="flex-grow cursor-pointer font-semibold"
-          object={experiment.id}
-        >
-          {experiment?.name}
-        </Experiment.DetailLink>
-      </div>
-    </Experiment.Smart>
-  );
-};
-
-const limit = 10;
 
 const MyExperiments: React.FC<IMyExperimentsProps> = ({
   limit,
@@ -100,6 +39,8 @@ const MyExperiments: React.FC<IMyExperimentsProps> = ({
   } = withMikro(useMyExperimentsQuery)({
     variables: variables,
   });
+
+  const deleteExperimentMate = useDeleteExperimentMate();
 
   const [show, setShow] = useState(false);
 
@@ -190,9 +131,16 @@ const MyExperiments: React.FC<IMyExperimentsProps> = ({
       </SectionTitle>
 
       <ResponsiveContainerGrid>
-        {experiments?.myexperiments?.slice(0, limit).map((ex, index) => (
-          <ExperimentCard key={index} experiment={ex} />
-        ))}
+        {experiments?.myexperiments
+          ?.slice(0, limit)
+          .filter(notEmpty)
+          .map((ex, index) => (
+            <ExperimentCard
+              key={index}
+              experiment={ex}
+              mates={[deleteExperimentMate(ex)]}
+            />
+          ))}
         <ActionButton
           label="Create new Experiment"
           description="Create a new experiment"

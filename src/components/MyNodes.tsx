@@ -1,83 +1,21 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router";
+import { notEmpty } from "../floating/utils";
+import { SectionTitle } from "../layout/SectionTitle";
+import { Node } from "../linker";
+import { useDeleteNodeMate } from "../mates/nodes/useDeleteDatasetMate";
+import { useNodeActionMate } from "../mates/nodes/useNodeActionMate";
+import { withRekuest } from "../rekuest";
 import {
-  NodeListItemFragment,
   NodesEventDocument,
   NodesEventSubscriptionResult,
   NodesQuery,
-  useDeleteNodeMutation,
   useNodesQuery,
 } from "../rekuest/api/graphql";
-import { AdditionalMate, Mate } from "../rekuest/postman/mater/mater-context";
-import { useReserver } from "../rekuest/postman/reserver/reserver-context";
-import { notEmpty } from "../floating/utils";
-import { SectionTitle } from "../layout/SectionTitle";
-import { Flow, Node } from "../linker";
-import { useConfirm } from "./confirmer/confirmer-context";
+import { NodeCard } from "../rekuest/components/cards/NodeCard";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { withRekuest } from "../rekuest";
 
 export type IMyNodesProps = {};
-
-export const NodeCard = ({ node }: { node: NodeListItemFragment }) => {
-  const { reserve } = useReserver();
-  const navigate = useNavigate();
-  const { confirm } = useConfirm();
-
-  const [deleteNode] = withRekuest(useDeleteNodeMutation)();
-
-  return (
-    <Node.Smart
-      object={node?.id}
-      dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `rounded shadow-xl group text-white bg-slate-700 p-3 ${
-          isOver && !isDragging && "border-primary-200 border"
-        } ${isDragging && "border-primary-200 border"} ${
-          isSelected && "ring-1 ring-primary-200 "
-        }`
-      }
-      additionalMates={(accept, isself) => {
-        let mates: AdditionalMate[] = [];
-        if (!isself) {
-          return mates;
-        }
-
-        mates.push({
-          action: async () => {
-            await reserve({ node: node.id });
-          },
-          label: "Reserve",
-        });
-
-        if (node.interfaces?.includes("workflow") && node.meta?.flow) {
-          mates.push({
-            action: async () => {
-              await navigate(Flow.linkBuilder(node.meta.flow));
-            },
-            label: "Show Flow",
-          });
-        }
-
-        mates.push({
-          action: async () => {
-            await confirm({
-              message: "Are you sure you want to delete this node?",
-            });
-            await deleteNode({ variables: { id: node.id } });
-          },
-          label: "Delete",
-        });
-
-        return mates;
-      }}
-    >
-      <Node.DetailLink className="cursor-pointer" object={node?.id}>
-        <div className="text-xl font-light mb-2">{node?.name}</div>
-        <p className="text-sm">{node?.interfaces?.join(", ")}</p>
-      </Node.DetailLink>
-    </Node.Smart>
-  );
-};
 
 const MyNodes: React.FC<IMyNodesProps> = ({}) => {
   const { data, loading, subscribeToMore } = withRekuest(useNodesQuery)({
@@ -85,6 +23,9 @@ const MyNodes: React.FC<IMyNodesProps> = ({}) => {
   });
 
   const navigate = useNavigate();
+
+  const nodeActionMate = useNodeActionMate();
+  const deleteNodeMate = useDeleteNodeMate();
 
   useEffect(() => {
     console.log("Subscribing to My Representations");
@@ -136,7 +77,11 @@ const MyNodes: React.FC<IMyNodesProps> = ({}) => {
       <br />
       <ResponsiveGrid>
         {data?.allnodes?.filter(notEmpty).map((node, index) => (
-          <NodeCard key={index} node={node} />
+          <NodeCard
+            key={index}
+            node={node}
+            mates={[nodeActionMate(node), deleteNodeMate(node)]}
+          />
         ))}
       </ResponsiveGrid>
     </div>

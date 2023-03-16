@@ -2,6 +2,7 @@ import React from "react";
 import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../../components/confirmer/confirmer-context";
 import { Context, Dataset, Experiment } from "../../../linker";
+import { MateFinder } from "../../../mates/types";
 import { Data } from "../../../pages/Data";
 import {
   ListContextFragment,
@@ -12,9 +13,10 @@ import { withMikro } from "../../MikroContext";
 
 interface ContextCardProps {
   context: ListContextFragment;
+  mates: MateFinder[];
 }
 
-export const ContextCard = ({ context }: ContextCardProps) => {
+export const ContextCard = ({ context, mates }: ContextCardProps) => {
   const onDrop = (...args: any) => {
     console.log(args);
   };
@@ -29,11 +31,7 @@ export const ContextCard = ({ context }: ContextCardProps) => {
     <Context.Smart
       object={context?.id}
       className={`bg-slate-700 text-white rounded shadow-md px-3  group`}
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        return [];
-      }}
+      mates={mates}
     >
       <div className="px-1 py-2 truncate">
         <Context.DetailLink

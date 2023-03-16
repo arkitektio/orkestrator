@@ -1,23 +1,12 @@
 import React from "react";
-import { NavigateFunction, useNavigate } from "react-router";
-import {
-  AcknowledgeMutationFn,
-  AssignationStatus,
-  AssignDocument,
-  ListAssignationFragment,
-  UnassignMutationFn,
-} from "../rekuest/api/graphql";
-import { usePostman } from "../rekuest/postman/graphql/postman-context";
-import {
-  Accept,
-  AdditionalMate,
-  Mate,
-} from "../rekuest/postman/mater/mater-context";
+import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
-import { Assignation, Node } from "../linker";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 import { SectionTitle } from "../layout/SectionTitle";
+import { Assignation } from "../linker";
+import { useAssignationMate } from "../mates/assignation/useAssignationMates";
+import { AssignationStatus } from "../rekuest/api/graphql";
+import { usePostman } from "../rekuest/postman/graphql/postman-context";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 export type IMyReservationsProps = {};
 
 const colorFromStatus = (status: AssignationStatus | undefined) => {
@@ -43,60 +32,11 @@ const colorFromStatus = (status: AssignationStatus | undefined) => {
   }
 };
 
-export const calculateAdditionalAssignationMates = (
-  ass: ListAssignationFragment,
-  accept: Accept,
-  isself: boolean,
-  navigate: NavigateFunction,
-  ack: AcknowledgeMutationFn,
-  unassign: UnassignMutationFn
-): AdditionalMate[] => {
-  let mates: Mate[] = [];
-
-  if (!isself) {
-    return mates;
-  }
-
-  mates.push({
-    accepts: ["item:@rekuest/assignation"],
-    action: async () => {
-      ass?.reservation?.node?.id &&
-        navigate(Node.linkBuilder(ass?.reservation?.node?.id));
-    },
-    label: "Open Node",
-  });
-
-  mates.push({
-    accepts: ["item:@rekuest/assignation"],
-    action: async () => {
-      await unassign({ variables: { assignation: ass?.id } });
-    },
-    label: "Cancel",
-  });
-
-  mates.push({
-    accepts: ["item:@rekuest/assignation"],
-    action: async () => {
-      await ack({ variables: { assignation: ass?.id } });
-    },
-    label: "Ack",
-  });
-
-  return mates.concat([
-    {
-      accepts: ["item:@rekuest/assignation"],
-      action: async () => {
-        ass?.id && navigate(Assignation.linkBuilder(ass?.id));
-      },
-      label: "Open",
-    },
-  ]);
-};
-
 const MyAssignations: React.FC<IMyReservationsProps> = () => {
   const { requests, unassign, ack } = usePostman();
 
   const navigate = useNavigate();
+  const assignationMate = useAssignationMate();
 
   return (
     <>
@@ -132,16 +72,7 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
                   )}`
                 }
                 key={index}
-                additionalMates={(type, isself) =>
-                  calculateAdditionalAssignationMates(
-                    ass,
-                    type,
-                    isself,
-                    navigate,
-                    ack,
-                    unassign
-                  )
-                }
+                mates={[assignationMate(ass)]}
                 // dropStyle={() => ({
                 //   background: `center bottom linear-gradient(to right, var(--color-primary-300) ${
                 //     ass.progress ? Math.floor(ass.progress) : 0
@@ -199,16 +130,7 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
                     ass?.status
                   )}`
                 }
-                additionalMates={(type, isself) =>
-                  calculateAdditionalAssignationMates(
-                    ass,
-                    type,
-                    isself,
-                    navigate,
-                    ack,
-                    unassign
-                  )
-                }
+                mates={[assignationMate(ass)]}
               >
                 <div className="p-2 z-100">
                   <Assignation.DetailLink

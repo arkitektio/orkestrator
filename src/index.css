@@ -6,7 +6,7 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: Inter, Arial, Helvetica, sans-serif;
   overflow-y: hidden;
   scrollbar-gutter: stable;
 }
@@ -53,21 +53,24 @@ body {
   --color-primary-200: 187 247 208;
   --color-primary-300: 134 239 172;
   --color-primary-400: 74 222 128;
-  --color-primary-500: 34 197 94
+  --color-primary-500: 34 197 94;
   --color-primary-600: 22 163 74;
   --color-primary-700: 21 128 61;
   --color-primary-800: 22 101 52;
   --color-primary-900: 20 83 45;
-  --color-back-50: #fafafa;
-  --color-back-100: #f4f4f5;
-  --color-back-200: #e4e4e7;
-  --color-back-300: #d4d4d8;
-  --color-back-400: #a1a1aa;
-  --color-back-500: #71717a;
-  --color-back-600: #52525b;
-  --color-back-700: #3f3f46;
-  --color-back-800: #27272a;
-  --color-back-900: #18181b;
+  --color-back-50: 248 250 252;
+  --color-back-100: 241 245 249;
+  --color-back-200: 226 232 240;
+  --color-back-300: 203 213 225;
+  --color-back-400: 241 245 249;
+  --color-back-500: 100 116 139;
+  --color-back-600: 71 85 105;
+  --color-back-700: 71 85 105;
+  --color-back-800: 30 41 59;
+  --color-back-850: 20 34 50;
+  --color-back-900: 15 23 42;
+  --color-back-950: 10 20 35;
+  --color-back-999: 5 3 0;
 }
 
 .theme-green {
@@ -76,7 +79,7 @@ body {
   --color-primary-200: 187 247 208;
   --color-primary-300: 134 239 172;
   --color-primary-400: 74 222 128;
-  --color-primary-500: 34 197 94
+  --color-primary-500: 34 197 94;
   --color-primary-600: 22 163 74;
   --color-primary-700: 21 128 61;
   --color-primary-800: 22 101 52;
@@ -107,32 +110,13 @@ body {
   --color-primary-700: 185 28 28;
   --color-primary-800: 153 27 27;
   --color-primary-900: 127 29 29;
+  --color-muted-50: 48 50 52;
 }
 
 .theme-back-zink {
-  --color-back-50: #fafafa;
-  --color-back-100: #f4f4f5;
-  --color-back-200: #e4e4e7;
-  --color-back-300: #d4d4d8;
-  --color-back-400: #a1a1aa;
-  --color-back-500: #71717a;
-  --color-back-600: #52525b;
-  --color-back-700: #3f3f46;
-  --color-back-800: #27272a;
-  --color-back-900: #18181b;
 }
 
 .theme-back-bright {
-  --color-back-50: #18181b;
-  --color-back-100: #27272a;
-  --color-back-200: #3f3f46;
-  --color-back-300: #52525b;
-  --color-back-400: #71717a;
-  --color-back-500: #a1a1aa;
-  --color-back-600: #d4d4d8;
-  --color-back-700: #e4e4e7;
-  --color-back-800: #f4f4f5;
-  --color-back-900: #fafafa;
 }
 
 .page-layout {

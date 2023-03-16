@@ -2,14 +2,16 @@ import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../../components/confirmer/confirmer-context";
 import { useDialog } from "../../../layout/dialog/DialogProvider";
 import { RepoScan } from "../../../linker";
+import { MateFinder } from "../../../mates/types";
 import { ListRepoScanFragment } from "../../api/graphql";
 import { PrepareScanDialog } from "../dialogs/PrepareScanDialog";
 
 interface UserCardProps {
   scan: ListRepoScanFragment;
+  mates: MateFinder[];
 }
 
-export const RepoScanCard = ({ scan }: UserCardProps) => {
+export const RepoScanCard = ({ scan, mates }: UserCardProps) => {
   const { ask } = useDialog();
 
   const { confirm } = useConfirm();
@@ -18,35 +20,7 @@ export const RepoScanCard = ({ scan }: UserCardProps) => {
     <RepoScan.Smart
       object={scan.id}
       className="max-w-sm rounded shadow-md bg-gray-700 text-white group"
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        if (accept == "item:@port/reposcan") {
-          return [
-            {
-              accepts: [accept],
-              action: async (self, drops) => {
-                await confirm({
-                  message: "Do you really want to delete?",
-                  subtitle: "Deletion is irreversible!",
-                  confirmLabel: "Yes delete!",
-                });
-              },
-              label: <BsTrash />,
-              description: "Delete Run",
-            },
-            {
-              action: async (self, drops) => {
-                let d = await ask(PrepareScanDialog, { scan: scan.id });
-              },
-              label: "Appify",
-              description: "Apiffy this scan",
-            },
-          ];
-        }
-
-        return [];
-      }}
+      mates={mates}
     >
       <div className="p-2 ">
         <div className="flex">

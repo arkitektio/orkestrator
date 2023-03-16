@@ -1,13 +1,15 @@
 import React from "react";
 import { Workspace } from "../../../linker";
+import { MateFinder } from "../../../mates/types";
 import { ListWorkspaceFragment } from "../../api/graphql";
 import { useFluss } from "../../fluss-context";
 
 interface WorkspaceCardProps {
   workspace: ListWorkspaceFragment;
+  mates: MateFinder[];
 }
 
-export const WorkspaceCard = ({ workspace }: WorkspaceCardProps) => {
+export const WorkspaceCard = ({ workspace, mates }: WorkspaceCardProps) => {
   return (
     <Workspace.Smart
       showSelfMates={true}
@@ -20,6 +22,7 @@ export const WorkspaceCard = ({ workspace }: WorkspaceCardProps) => {
           isSelected && "ring-1 ring-primary-200 "
         }`
       }
+      mates={mates}
     >
       <div className="px-6 py-4">
         <Workspace.DetailLink

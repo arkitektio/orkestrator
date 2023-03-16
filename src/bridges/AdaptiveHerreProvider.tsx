@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/tauri";
+import { open } from "@tauri-apps/api/shell";
 import React from "react";
 import { useFakts } from "@jhnnsrs/fakts";
 import { HerreProvider } from "@jhnnsrs/herre";
@@ -12,11 +13,7 @@ export const AdaptiveHerreProvider: React.FC<FaktsHerreProps> = (props) => {
   const doRedirect = (url: string) => {
     console.log("Redirecting to", url);
     if (window.__TAURI__) {
-      invoke("login", { url: url })
-        .then((res) => {
-          console.log("Login result", res);
-        })
-        .catch((err) => console.error("Login error", err));
+      open(url);
     } else {
       window.open(url, "_blank", "noreferrer, popup");
     }

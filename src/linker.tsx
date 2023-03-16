@@ -48,6 +48,17 @@ export const linkableModelToIdentifier = (model: LinkableModels) => {
   }
 };
 
+export const identifierToLinkableModel = (identifier: Identifier) => {
+  switch (identifier) {
+    case "@mikro/representation":
+      return LinkableModels.GrunnlagRepresentation;
+    case "@mikro/omerofile":
+      return LinkableModels.GrunnlagOmerofile;
+    default:
+      return undefined;
+  }
+};
+
 export const getModelBase = (accept: Identifier) => {
   return accept.split("/")[0].split("@")[1];
 };

@@ -1,91 +1,16 @@
-import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useEffect, useState } from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { useNavigate } from "react-router";
+import { BsCaretLeft, BsCaretRight } from "react-icons/bs";
 import { notEmpty } from "../floating/utils";
-import { ActionButton } from "../layout/ActionButton";
 import { useDialog } from "../layout/dialog/DialogProvider";
-import { Context, Experiment, Model } from "../linker";
-import {
-  ListContextFragment,
-  ListExperimentFragment,
-  ListModelFragment,
-  MyExperimentsEventDocument,
-  MyExperimentsEventSubscriptionResult,
-  MyExperimentsQuery,
-  useDeleteContextMutation,
-  useDeleteExperimentMutation,
-  useDeleteModelMutation,
-  useMyContextsQuery,
-  useMyExperimentsQuery,
-  useMyModelsQuery,
-} from "../mikro/api/graphql";
-import { CreateContextModal } from "../mikro/components/dialogs/CreateContextModal";
-import { CreateExperimentModal } from "../mikro/components/dialogs/CreateExperimentModal";
-import { useDeleteModel } from "../mikro/hooks/useDeleteModel";
-import { withDelete } from "../mikro/hooks/withDelete";
+import { Model } from "../linker";
+import { useDeleteModelMate } from "../mates/model/useDeleteModelMate";
+import { useMyModelsQuery } from "../mikro/api/graphql";
+import { ModelCard } from "../mikro/components/cards/ModelCard";
 import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
-import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
 export type IMyExperimentsProps = {};
-
-const ModelCard: React.FC<{
-  model: ListModelFragment;
-}> = ({ model }) => {
-  const onDrop = (...args: any) => {
-    console.log(args);
-  };
-
-  const { confirm } = useConfirm();
-
-  const [deleteModel] = withMikro(withDelete(useDeleteModelMutation, model))();
-
-  if (!model?.id) return <></>;
-
-  return (
-    <Model.Smart
-      object={model?.id}
-      className={`bg-slate-700 text-white rounded shadow-md pl-3  group`}
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        return [
-          {
-            accepts: [accept],
-            action: async (self, drops) => {
-              await confirm({
-                message: "Do you really want to delete?",
-                subtitle: "Deletion is irreversible!",
-                confirmLabel: "Yes delete!",
-              });
-
-              await deleteModel({ variables: { id: model.id } });
-            },
-            label: <BsTrash />,
-            description: "Delete",
-          },
-        ];
-      }}
-    >
-      <div className="px-1 py-2 truncate">
-        <Model.DetailLink
-          className="flex-grow cursor-pointer font-semibold"
-          object={model.id}
-        >
-          {model?.name}
-        </Model.DetailLink>
-      </div>
-    </Model.Smart>
-  );
-};
 
 const limit = 20;
 
@@ -102,6 +27,8 @@ const MyModels: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
   const [show, setShow] = useState(false);
 
   const [offset, setOffset] = useState(0);
+
+  const deleteModelMate = useDeleteModelMate();
 
   useEffect(() => {
     refetch({ limit: 20, offset: offset });
@@ -142,7 +69,7 @@ const MyModels: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
           ?.slice(0, limit)
           .filter(notEmpty)
           .map((m, index) => (
-            <ModelCard key={index} model={m} />
+            <ModelCard key={index} model={m} mates={[deleteModelMate(m)]} />
           ))}
       </ResponsiveContainerGrid>
     </div>

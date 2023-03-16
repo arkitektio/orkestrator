@@ -11,9 +11,6 @@ export const TauriProvider: React.FC<TauriProviderProps> = (props) => {
   useEffect(() => {
     if (window.__TAURI__) {
       console.log("Running within tauri");
-      invoke("hello").then((user) => {
-        console.log(user);
-      });
 
       let dmini = document
         ?.getElementById("titlebar-minimize")

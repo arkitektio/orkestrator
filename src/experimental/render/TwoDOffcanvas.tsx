@@ -1,4 +1,5 @@
 import { Dialog } from "@headlessui/react";
+import { x } from "@tauri-apps/api/path-e12e0e34";
 import { ParentSize } from "@visx/responsive";
 import Konva from "konva";
 import React, { useEffect, useRef, useState } from "react";
@@ -38,17 +39,32 @@ export const Canvas: React.FC<{
   const layerRef = useRef<HTMLCanvasElement>(null);
   const [imageData, setImageData] = useState<ImageBitmap | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | undefined>(undefined);
   const [currentZ, setCurrentZ] = useState(Math.floor(z / 2));
 
   const { getSelectionAsImageData } = useXarray();
 
+  const renderImage = async (z: number, path: string) => {
+    setLoading(true);
+    try {
+      let image = await getSelectionAsImageData(
+        path,
+        [0, 0, z, ":", ":"],
+        colormap
+      );
+
+      let bitmap = await createImageBitmap(image);
+      setImageData((image) => bitmap);
+      setLoading(false);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
   useEffect(() => {
     console.log(z, path);
     console.log("Loading image slice...");
-    setLoading(true);
-    getSelectionAsImageData(path, [0, 0, z, ":", ":"], colormap)
-      .then(createImageBitmap)
-      .then(setImageData);
+    renderImage(z, path);
   }, [z, path]);
 
   useEffect(() => {
@@ -69,6 +85,7 @@ export const Canvas: React.FC<{
         height
       );
       setLoading(false);
+      setError(undefined);
     }
   }, [layerRef.current, imageData, height, width]);
 
@@ -76,13 +93,19 @@ export const Canvas: React.FC<{
     <>
       <div
         className={`absolute top-0 left-0 bg-gray-900 ${
-          loading ? "opacity-100" : "opacity-0"
+          loading || error ? "opacity-100" : "opacity-0"
         } animate-opacity ease-in-out duration-300 z-10 flex items-center justify-center text-white `}
         style={{ width: width, height: height }}
       >
-        <div className="ring-2 ring-primary-300 ring-inset p-3 rounded rounded-lg">
-          Loading...
-        </div>
+        {error ? (
+          <div className="ring-2 ring-primary-300 ring-inset p-3 rounded rounded-lg">
+            {error}
+          </div>
+        ) : (
+          <div className="ring-2 ring-primary-300 ring-inset p-3 rounded rounded-lg">
+            Loading
+          </div>
+        )}
       </div>
       <canvas
         id="c"

@@ -14,30 +14,19 @@ import {
   useDeleteRunMutation,
   useRunsQuery,
 } from "../fluss/api/graphql";
+import { RunCard } from "../fluss/components/cards/RunCard";
 import { withFluss } from "../fluss/fluss";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Run } from "../linker";
+import { useDeleteRunMate } from "../mates/run/useDeleteRunMate";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMyGraphsProps = {};
 
 const MyRuns: React.FC<IMyGraphsProps> = ({}) => {
   const { data } = withFluss(useRunsQuery)();
-  const [deleteRun] = withFluss(useDeleteRunMutation)({
-    update(cache, result) {
-      const existing = cache.readQuery<RunsQuery>({
-        query: RunsDocument,
-      });
-      cache.writeQuery<RunsQuery>({
-        query: RunsDocument,
-        data: {
-          runs: existing?.runs?.filter(
-            (t: any) => t.id !== result.data?.deleteRun?.id
-          ),
-        },
-      });
-    },
-  });
+
+  const deleteRunMate = useDeleteRunMate();
 
   const { confirm } = useConfirm();
 
@@ -49,80 +38,7 @@ const MyRuns: React.FC<IMyGraphsProps> = ({}) => {
       <br />
       <ResponsiveGrid>
         {data?.runs?.filter(notEmpty).map((s, index) => (
-          <Run.Smart
-            key={index}
-            object={s.id}
-            className="max-w-sm rounded  shadow-md bg-slate-800 text-white group"
-            additionalMates={(accept, self) => {
-              if (!self) return [];
-
-              if (accept == "item:@fluss/run") {
-                return [
-                  {
-                    accepts: [accept],
-                    action: async (self, drops) => {
-                      await confirm({
-                        message: "Do you really want to delete?",
-                        subtitle: "Deletion is irreversible!",
-                        confirmLabel: "Yes delete!",
-                      });
-
-                      await deleteRun({
-                        variables: { id: self.object },
-                      });
-                    },
-                    label: <BsTrash />,
-                    description: "Delete Run",
-                  },
-                ];
-              }
-
-              if (accept == "list:@fluss/run") {
-                return [
-                  {
-                    accepts: [accept],
-                    action: async (self, drops) => {
-                      await confirm({
-                        message: "Do you really want all this samples delete?",
-                        subtitle: "Deletion is irreversible!",
-                        confirmLabel: "Yes delete!",
-                      });
-
-                      for (const drop of drops) {
-                        await deleteRun({
-                          variables: { id: drop.object },
-                        });
-                      }
-                    },
-                    label: (
-                      <div className="flex flex-row">
-                        <BsTrash className="my-auto" />{" "}
-                        <span className="my-auto">Delete all</span>
-                      </div>
-                    ),
-                    description: "Delete All Runs",
-                  },
-                ];
-              }
-
-              return [];
-            }}
-          >
-            <div className="p-2 ">
-              <div className="flex">
-                <span className="flex-grow font-semibold text-xs">
-                  <Timestamp date={s.createdAt} relative />
-                </span>
-              </div>
-              <Run.DetailLink
-                className="text-xl font-light cursor-pointer mb-1"
-                object={s?.id}
-              >
-                {s?.flow?.workspace?.name || "No Flow"}
-              </Run.DetailLink>
-            </div>
-            <div className="pl-2 pb-2"></div>
-          </Run.Smart>
+          <RunCard run={s} key={index} mates={[deleteRunMate(s)]} />
         ))}
       </ResponsiveGrid>
     </div>

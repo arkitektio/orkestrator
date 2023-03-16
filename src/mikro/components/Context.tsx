@@ -7,6 +7,8 @@ import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Link, Model } from "../../linker";
+import { useDeleteLinkMate } from "../../mates/link/useDeleteFileMate";
+import { useDeleteModelMate } from "../../mates/model/useDeleteModelMate";
 import {
   CommentableModels,
   useDetailContextQuery,
@@ -15,6 +17,7 @@ import {
 } from "../api/graphql";
 import { withMikro } from "../MikroContext";
 import { LinkCard } from "./cards/LinkCard";
+import { ModelCard } from "./cards/ModelCard";
 
 export type IExperimentProps = {
   id: string;
@@ -25,8 +28,8 @@ const Context: React.FC<IExperimentProps> = ({ id }) => {
     variables: { id: id },
   });
 
-  const [updateExperiment] = withMikro(useUpdateExperimentMutation)();
-  const [pinExperiment] = withMikro(usePinExperimentMutation)();
+  const deleteLinkMate = useDeleteLinkMate();
+  const deleteModelMate = useDeleteModelMate();
 
   const { confirm } = useConfirm();
 
@@ -60,20 +63,18 @@ const Context: React.FC<IExperimentProps> = ({ id }) => {
           <SectionTitle> Relates </SectionTitle>
           <div className="grid grid-cols-1">
             {data.context?.links.filter(notEmpty).map((link) => (
-              <LinkCard key={link.id} link={link} minimal />
+              <LinkCard
+                key={link.id}
+                link={link}
+                minimal
+                mates={[deleteLinkMate(link)]}
+              />
             ))}
           </div>
           <SectionTitle> Created Models </SectionTitle>
           <ResponsiveGrid>
-            {data.context?.models.map((m) => (
-              <Model.Smart
-                object={m.id}
-                className="flex flex-row p-2 bg-gray-800 truncate text-gray-200 rounded"
-              >
-                <Model.DetailLink object={m.id} className="flex-initial">
-                  {m.name}
-                </Model.DetailLink>
-              </Model.Smart>
+            {data.context?.models.filter(notEmpty).map((m) => (
+              <ModelCard model={m} mates={[deleteModelMate(m)]} />
             ))}
           </ResponsiveGrid>
         </div>

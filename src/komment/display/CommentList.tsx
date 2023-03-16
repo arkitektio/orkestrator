@@ -18,7 +18,9 @@ export const CommentList: React.FunctionComponent<{
             ))}
           </>
         ) : (
-          <div className="flex flex-row">No Comments yet</div>
+          <div className="flex flex-row justify-center text-center font-light text-md">
+            No Comments yet
+          </div>
         )}
       </div>
     </>

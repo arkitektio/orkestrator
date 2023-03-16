@@ -6,6 +6,7 @@ import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Container, Whale } from "../../linker";
+import { useContainerLifecycleMate } from "../../mates/container/useContainerLifecycleMate";
 import {
   ContainerStatus,
   useContainersQuery,
@@ -23,6 +24,8 @@ const MyContainers: React.FC<IMyGraphsProps> = ({}) => {
     pollInterval: 1000,
   });
 
+  const cLF = useContainerLifecycleMate();
+
   return (
     <div>
       <Whale.ListLink>
@@ -32,7 +35,7 @@ const MyContainers: React.FC<IMyGraphsProps> = ({}) => {
       {JSON.stringify(error)}
       <ResponsiveContainerGrid>
         {data?.containers?.filter(notEmpty).map((s, index) => (
-          <ContainerCard container={s} key={index} />
+          <ContainerCard container={s} key={index} mates={[cLF]} />
         ))}
       </ResponsiveContainerGrid>
     </div>

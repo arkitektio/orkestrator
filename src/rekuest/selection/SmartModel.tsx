@@ -4,6 +4,8 @@ import React, { Fragment, useEffect, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { getEmptyImage, NativeTypes } from "react-dnd-html5-backend";
 import { usePopper } from "react-popper";
+import { composeMates } from "../../mates/compose";
+import { MateFinder } from "../../mates/types";
 import {
   Accept,
   AdditionalMate,
@@ -50,16 +52,14 @@ export interface SmartModelProps<T extends Accept> {
   hover?: boolean;
   showSelfMates?: boolean;
   className?: string;
-  additionalMates?:
-    | ((type: T, isSelf: boolean) => AdditionalMate[] | undefined)
-    | AdditionalMate[];
+  mates?: MateFinder[];
 }
 
 export const SmartModel = <T extends Accept>({
   showSelfMates = true,
   placement = "bottom",
   showSelectingIndex = true,
-  additionalMates,
+  mates,
   options,
   hover = false,
   ...props
@@ -144,8 +144,8 @@ export const SmartModel = <T extends Accept>({
     (({ isOver, canDrop }) =>
       `${props.className} ${
         hover &&
-        "hover:scale-110 transition-all ease-in-out duration-200 group hover:shadow-xl hover:shadow"
-      } ${isOver && "border-primary-200 border "}`);
+        "hover:scale-110 transition-all ease-in-out duration-200 group hover:shadow-xl hover:shadow border-2 border-hidden"
+      } ${isOver && "border-solid "}`);
 
   return (
     <div
@@ -201,7 +201,7 @@ export const SmartModel = <T extends Accept>({
               >
                 <div
                   className={
-                    "bg-slate-800 w-100 mt-[-1em] flex flex-col rounded-md shadow p-3 @container"
+                    "bg-back-900 border border-1 border-solid border-back-800 max-w-100 mt-[-1em] flex flex-col rounded-md shadow p-3 @container"
                   }
                   style={{ zIndex: 10 }}
                 >
@@ -210,14 +210,14 @@ export const SmartModel = <T extends Accept>({
                       type={type as T}
                       self={self}
                       options={options}
-                      additionalMates={additionalMates}
+                      additionalMates={mates && composeMates(mates)}
                     />
                   ) : (
                     <SelfMates
                       type={type as T}
                       self={self}
                       options={options}
-                      additionalMates={additionalMates}
+                      additionalMates={mates && composeMates(mates)}
                     />
                   )}
                 </div>
@@ -249,7 +249,7 @@ export const SmartModel = <T extends Accept>({
                 type={("item:" + props.identifier) as T}
                 self={self}
                 options={options}
-                additionalMates={additionalMates}
+                additionalMates={mates && composeMates(mates)}
               />
             </div>
           </div>

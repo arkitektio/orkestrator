@@ -183,9 +183,6 @@ export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
           onFilterChanged={async (filter) => setFilter(filter)}
           className="w-full p-3 rounded-md shadow-lg dark:bg-slate-200 dark:text-black"
         />
-        {props.flow.restrict && (
-          <>Restricted to {props.flow.restrict.map((r: string) => r)}</>
-        )}
       </div>
       <div className="flex-grow flex flex-col gap-2 p-5 overflow-y-scroll">
         {data?.allnodes && <NodeList nodes={data?.allnodes} />}

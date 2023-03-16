@@ -7,6 +7,8 @@ import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Container, Whale } from "../../linker";
+import { useDeleteWhaleMate } from "../../mates/whale/useDeleteWhaleMate";
+import { useWhaleLifecycleMate } from "../../mates/whale/useWhaleLifecycleMate";
 import {
   ContainerStatus,
   useWhalesQuery,
@@ -22,25 +24,8 @@ export type IMyGraphsProps = {};
 const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
   const { data, error, loading } = withPort(useWhalesQuery)({});
 
-  const [deploy] = withPort(useRunWhaleMutation)();
-
-  const [pull] = withPort(usePullWhaleMutation)();
-
-  const [deleteWhale] = withPort(useDeleteWhaleMutation)({
-    update(cache, result) {
-      const existing = cache.readQuery<WhalesQuery>({
-        query: WhalesDocument,
-      });
-      cache.writeQuery({
-        query: WhalesDocument,
-        data: {
-          whales: existing?.whales?.filter(
-            (t: any) => t.id !== result.data?.deleteWhale?.id
-          ),
-        },
-      });
-    },
-  });
+  const deleteWhaleMate = useDeleteWhaleMate();
+  const whaleLifecyleMate = useWhaleLifecycleMate();
 
   const { confirm } = useConfirm();
 
@@ -56,81 +41,7 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
             key={index}
             object={whale.id}
             className="max-w-sm rounded  shadow-md bg-slate-800 text-white group"
-            additionalMates={(accept, self) => {
-              if (!self) return [];
-
-              if (accept == "item:@port/whale") {
-                return [
-                  {
-                    accepts: [accept],
-                    action: async (self, drops) => {
-                      await confirm({
-                        message: "Do you really want to delete?",
-                        subtitle: "Deletion is irreversible!",
-                        confirmLabel: "Yes delete!",
-                      });
-
-                      await deleteWhale({
-                        variables: { id: self.object },
-                      });
-                    },
-                    label: <BsTrash />,
-                    description: "Delete Run",
-                  },
-                  {
-                    action: async (self, drops) => {
-                      await confirm({
-                        message: "Do you really want to deploy this whale?",
-                        confirmLabel: "Yes deploy!",
-                      });
-
-                      await deploy({ variables: { id: self.object } });
-                    },
-                    label: "Deploy",
-                    description: "Deploy Whale",
-                  },
-                  {
-                    action: async (self, drops) => {
-                      await confirm({
-                        message: "Do you really want to update this whale?",
-                        confirmLabel: "Yes deploy!",
-                      });
-
-                      await pull({ variables: { id: self.object } });
-                    },
-                    label: "Pull",
-                    description: "Pull Update",
-                  },
-                ];
-              }
-
-              if (accept == "list:@port/whale") {
-                return [
-                  {
-                    accepts: [accept],
-                    action: async (self, drops) => {
-                      await confirm({
-                        message: "Do you really want all this samples delete?",
-                        subtitle: "Deletion is irreversible!",
-                        confirmLabel: "Yes delete!",
-                      });
-
-                      for (const drop of drops) {
-                      }
-                    },
-                    label: (
-                      <div className="flex flex-row">
-                        <BsTrash className="my-auto" />{" "}
-                        <span className="my-auto">Delete all</span>
-                      </div>
-                    ),
-                    description: "Delete All Runs",
-                  },
-                ];
-              }
-
-              return [];
-            }}
+            mates={[deleteWhaleMate(whale), whaleLifecyleMate]}
           >
             <div className="p-2 ">
               <div className="flex">

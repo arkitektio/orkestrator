@@ -48,8 +48,8 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               width={"4rem"}
               height={"4rem"}
               cubeColor={"rgb(var(--color-primary-400))"}
-              aColor={"var(--color-back-700)"}
-              strokeColor={"var(--color-back-700)"}
+              aColor={"rgb(var(--color-back-200))"}
+              strokeColor={"rgb(var(--color-back-200))"}
             />
           </NavLink>
         </div>

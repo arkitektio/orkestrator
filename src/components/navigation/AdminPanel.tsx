@@ -1,7 +1,7 @@
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment } from "react";
 import { useNavigate } from "react-router";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 
 export type IAdminPanelProps = {};
 

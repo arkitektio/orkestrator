@@ -58,6 +58,7 @@ export const TauriLogin: React.FC<{}> = (props) => {
                 loginFuture.cancel();
                 setLoginFuture(undefined);
               }}
+              className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10"
             >
               {" "}
               Cancel login{" "}
@@ -71,6 +72,7 @@ export const TauriLogin: React.FC<{}> = (props) => {
                   })
                 )
               }
+              className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10"
             >
               {isAuthenticating ? "Logging in..." : "Login"}
             </button>

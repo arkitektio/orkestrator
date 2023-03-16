@@ -13,6 +13,8 @@ use tauri::{
     Runtime,
 };
 use tauri::{utils::config::AppUrl, window::WindowBuilder, WindowUrl};
+use tokio::net::UdpSocket;
+use tokio::time::{sleep, Duration};
 
 const EXIT: [u8; 4] = [1, 3, 3, 7];
 /// The optional server config.
@@ -190,8 +192,8 @@ pub fn oauth_start(app: tauri::AppHandle, config: Option<OauthConfig>) -> Result
                 println!("Error emitting oauth://url event: {}", emit_err)
             };
 
-            let loginwindow = windows.get("login").unwrap();
-            loginwindow.hide().unwrap();
+            // let loginwindow = windows.get("login").unwrap();
+            // loginwindow.hide().unwrap();
         }
         Err(err) => {
             let windows = app.windows();
@@ -201,8 +203,8 @@ pub fn oauth_start(app: tauri::AppHandle, config: Option<OauthConfig>) -> Result
                 println!("Error emitting oauth://invalid-url event: {}", emit_err)
             };
 
-            let loginwindow = windows.get("login").unwrap();
-            loginwindow.hide().unwrap();
+            // let loginwindow = windows.get("login").unwrap();
+            // loginwindow.hide().unwrap();
         }
     })
     .map_err(|err| err.to_string())

@@ -2,6 +2,7 @@ import React from "react";
 import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../../components/confirmer/confirmer-context";
 import { Dataset, Experiment } from "../../../linker";
+import { MateFinder } from "../../../mates/types";
 import { Data } from "../../../pages/Data";
 import {
   ListDatasetFragment,
@@ -11,9 +12,10 @@ import { withMikro } from "../../MikroContext";
 
 interface DatasetCardProps {
   dataset: ListDatasetFragment;
+  mates: MateFinder[];
 }
 
-export const DatasetCard = ({ dataset }: DatasetCardProps) => {
+export const DatasetCard = ({ dataset, mates }: DatasetCardProps) => {
   const onDrop = (...args: any) => {
     console.log(args);
   };
@@ -28,28 +30,7 @@ export const DatasetCard = ({ dataset }: DatasetCardProps) => {
     <Dataset.Smart
       object={dataset?.id}
       className={`bg-slate-700 text-white rounded shadow-md pl-3  group`}
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        return [
-          {
-            accepts: [accept],
-            action: async (self, drops) => {
-              await confirm({
-                message: "Do you really want to delete?",
-                subtitle: "Deletion is irreversible!",
-                confirmLabel: "Yes delete!",
-              });
-
-              await deleteDataset({
-                variables: { id: dataset.id },
-              });
-            },
-            label: <BsTrash />,
-            description: "Delete",
-          },
-        ];
-      }}
+      mates={mates}
     >
       <div className="px-1 py-2 truncate">
         <Dataset.DetailLink

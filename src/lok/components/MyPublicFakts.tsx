@@ -50,27 +50,7 @@ const MyPublicFakts: React.FC<IAppProps> = ({ onAppClicked }) => {
             object={app.id}
             key={index}
             className="bg-white rounded shadow-md pl-3 pr-2 py-2 flex group"
-            additionalMates={(drops, self) => {
-              if (drops == "item:@lok/publicfakt") {
-                return [
-                  {
-                    action: async (self, drops) => {
-                      await confirm({
-                        message: "Do you really want to delete?",
-                        subtitle: "Deletion is irreversible!",
-                        confirmLabel: "Yes delete!",
-                      });
-
-                      await deletePublicFakt({
-                        variables: { id: app?.id },
-                      });
-                    },
-                    label: <BsTrash />,
-                    description: "Delete Application",
-                  },
-                ];
-              }
-            }}
+            mates={[]}
           >
             <PublicFakt.DetailLink
               object={app.id}

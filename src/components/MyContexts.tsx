@@ -11,6 +11,7 @@ import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
 import { useDialog } from "../layout/dialog/DialogProvider";
 import { Context, Experiment } from "../linker";
+import { useDeleteContextMate } from "../mates/context/useDeleteContextMate";
 import {
   ListContextFragment,
   ListExperimentFragment,
@@ -22,6 +23,7 @@ import {
   useMyContextsQuery,
   useMyExperimentsQuery,
 } from "../mikro/api/graphql";
+import { ContextCard } from "../mikro/components/cards/ContextCard";
 import { CreateContextModal } from "../mikro/components/dialogs/CreateContextModal";
 import { CreateExperimentModal } from "../mikro/components/dialogs/CreateExperimentModal";
 import useDeleteContext from "../mikro/hooks/useDeleteContext";
@@ -33,60 +35,6 @@ import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
 export type IMyExperimentsProps = {};
-
-const ContextCard: React.FC<{
-  context: ListContextFragment;
-}> = ({ context }) => {
-  const onDrop = (...args: any) => {
-    console.log(args);
-  };
-
-  const { confirm } = useConfirm();
-
-  const [deleteContext] = withMikro(
-    withDelete(useDeleteContextMutation, context)
-  )();
-
-  if (!context?.id) return <></>;
-
-  return (
-    <Context.Smart
-      object={context?.id}
-      className={`bg-slate-700 text-white rounded shadow-md pl-3  group`}
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        return [
-          {
-            accepts: [accept],
-            action: async (self, drops) => {
-              await confirm({
-                message: "Do you really want to delete?",
-                subtitle: "Deletion is irreversible!",
-                confirmLabel: "Yes delete!",
-              });
-
-              await deleteContext({
-                variables: { id: context.id },
-              });
-            },
-            label: <BsTrash />,
-            description: "Delete",
-          },
-        ];
-      }}
-    >
-      <div className="px-1 py-2 truncate">
-        <Context.DetailLink
-          className="flex-grow cursor-pointer font-semibold"
-          object={context.id}
-        >
-          {context?.name}
-        </Context.DetailLink>
-      </div>
-    </Context.Smart>
-  );
-};
 
 const limit = 20;
 
@@ -101,6 +49,8 @@ const MyContexts: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
     variables,
     //pollInterval: 1000,
   });
+
+  const deleteContexMate = useDeleteContextMate();
 
   const { ask } = useDialog();
   const [show, setShow] = useState(false);
@@ -146,7 +96,11 @@ const MyContexts: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
           ?.slice(0, limit)
           .filter(notEmpty)
           .map((ex, index) => (
-            <ContextCard key={index} context={ex} />
+            <ContextCard
+              key={index}
+              context={ex}
+              mates={[deleteContexMate(ex)]}
+            />
           ))}
         <ActionButton
           label="Create new Experiment"

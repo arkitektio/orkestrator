@@ -12,23 +12,23 @@ use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemT
 
 use tokio::net::UdpSocket;
 use tokio::time::{sleep, Duration};
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+// // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
+// #[tauri::command]
+// fn greet(name: &str) -> String {
+//     format!("Hello, {}! You've been greeted from Rust!", name)
+// }
 
-#[tauri::command]
-fn login(app: tauri::AppHandle, url: &str) -> String {
-    let windows = app.windows();
-    let window = windows.get("login").unwrap();
-    window.show().unwrap();
-    window
-        .eval(format!("window.location.replace('{url}')").as_str())
-        .unwrap();
-    println!("login");
-    "Hello, world!".to_string()
-}
+// #[tauri::command]
+// fn login(app: tauri::AppHandle, url: &str) -> String {
+//     let windows = app.windows();
+//     let window = windows.get("login").unwrap();
+//     window.show().unwrap();
+//     window
+//         .eval(format!("window.location.replace('{url}')").as_str())
+//         .unwrap();
+//     println!("login");
+//     "Hello, world!".to_string()
+// }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 struct Beacon {
@@ -110,15 +110,15 @@ fn main() {
                 .disable_file_drop_handler()
                 .build()?;
 
-            WindowBuilder::new(
-                app,
-                "login".to_string(),
-                WindowUrl::External("http://localhost:3000/".parse().unwrap()),
-            )
-            .title("login")
-            .visible(false)
-            .disable_file_drop_handler()
-            .build()?;
+            // WindowBuilder::new(
+            //     app,
+            //     "login".to_string(),
+            //     WindowUrl::External("http://localhost:3000/".parse().unwrap()),
+            // )
+            // .title("login")
+            // .visible(false)
+            // .disable_file_drop_handler()
+            // .build()?;
 
             let next_handle = app.handle();
 
@@ -163,7 +163,7 @@ fn main() {
                             }
                         }
                     }
-                    sleep(Duration::from_millis(100)).await;
+                    sleep(Duration::from_millis(2000)).await;
                 }
 
                 println!("Done here");
@@ -172,8 +172,6 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            greet,
-            login,
             cmd::oauth_start,
             cmd::oauth_cancel,
         ])

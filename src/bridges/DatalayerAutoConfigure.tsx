@@ -1,6 +1,6 @@
 import { useFakts } from "@jhnnsrs/fakts";
 import React, { useEffect } from "react";
-import { useDatalayer } from "../datalayer/context";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import result from "../mikro/api/fragments";
 import {
   PresignDocument,

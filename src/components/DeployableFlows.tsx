@@ -4,9 +4,9 @@ import { useNodesQuery } from "../rekuest/api/graphql";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { NodeCard } from "./MyNodes";
 import { withRekuest } from "../rekuest";
 import { rekuestGuarded } from "../rekuest/RekuestGuard";
+import { NodeCard } from "../rekuest/components/cards/NodeCard";
 
 export type IMyNodesProps = {};
 
@@ -26,7 +26,7 @@ const DeployableFlows: React.FC<IMyNodesProps> = rekuestGuarded(({}) => {
       <br />
       <ResponsiveGrid>
         {data?.allnodes?.filter(notEmpty).map((n, index) => (
-          <NodeCard key={index} node={n} />
+          <NodeCard key={index} node={n} mates={[]} />
         ))}
       </ResponsiveGrid>
     </div>

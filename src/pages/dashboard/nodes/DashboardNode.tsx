@@ -3,14 +3,13 @@ import React, { useEffect } from "react";
 import { useParams } from "react-router";
 import { NodeActions } from "../../../actions/NodeActions";
 import {
-  ArgPortFragment,
   ChildPortFragment,
   DetailNodeEventDocument,
   DetailNodeEventSubscriptionResult,
   DetailNodeQuery,
   NodeKind,
   PortKind,
-  ReturnPortFragment,
+  PortFragment,
   useDetailNodeQuery,
 } from "../../../rekuest/api/graphql";
 import { notEmpty } from "../../../floating/utils";
@@ -21,6 +20,7 @@ import { withRekuest } from "../../../rekuest";
 import { TemplateCard } from "../../../rekuest/components/cards/TemplateCard";
 import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
+import { Port } from "../../../fluss/api/graphql";
 
 export type INodeScreenProps = {};
 
@@ -44,9 +44,7 @@ export const childMapper = (port: Maybe<ChildPortFragment>) => {
   }
 };
 
-export const portMapper = (
-  port: Maybe<ArgPortFragment | ReturnPortFragment>
-): React.ReactNode => {
+export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
   switch (port?.kind) {
     case PortKind.List:
       return (
@@ -68,8 +66,8 @@ export const portMapper = (
           </div>
           <div className="font-semibold my-auto">{port?.key}</div>
           <div className="ml-2 my-auto">{port?.description}</div>
-          {port.widget?.__typename && (
-            <div className="ml-2 my-auto">{port.widget?.__typename}</div>
+          {port.assignWidget?.__typename && (
+            <div className="ml-2 my-auto">{port.assignWidget?.__typename}</div>
           )}
         </div>
       );

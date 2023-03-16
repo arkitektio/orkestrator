@@ -1,17 +1,15 @@
 import { Form, Formik } from "formik";
 import React from "react";
 import { VscGraphLine } from "react-icons/vsc";
-import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { SelectInputField } from "../../../components/forms/fields/select_input";
 import { PopMenu } from "../../../layout/PopMenu";
 import { getDefaultSmartModel } from "../../../linker";
-import { GroupScreen } from "../../../pages/detail/GroupScreen";
+import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import {
   AvailableCharts,
   getMatchableChart,
   MatchableChart,
 } from "../charts/builder";
-import { Smart } from "../charts/generic/Smart";
 import { Group } from "./types";
 
 export interface TreeProps {

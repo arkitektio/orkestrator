@@ -1,4 +1,4 @@
-import { colorFromReserveStatus } from "../../../../components/Reservations";
+import { colorFromReservationStatus } from "../../../../rekuest/utils";
 import { useNodeLayout } from "../../../base/node/layout";
 import { useMonitorRiver } from "../../context";
 const additional = {
@@ -35,7 +35,7 @@ export const NodeMonitorLayout: React.FC<NodeProps> = ({
     (i) => i?.reference === id
   );
 
-  let classNames = colorFromReserveStatus(latestEvent?.status);
+  let classNames = colorFromReservationStatus(latestEvent?.status);
 
   return (
     <>

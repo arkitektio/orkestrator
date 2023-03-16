@@ -61,7 +61,7 @@ export const TableWidget: React.FC<StructureDisplayProps> = ({ value }) => {
         return {
           table: {
             ...prev.table,
-            query: [...prev.table.query, ...fetchMoreResult.table.query],
+            query: [...prev?.table?.query, ...fetchMoreResult.table.query],
           },
         };
       },

@@ -65,7 +65,7 @@ export const TrueXArrayProvider: React.FC<{
   const [pool, setPool] = useState<Pool<any> | undefined>();
 
   useEffect(() => {
-    let pool = Pool(() => spawn(new DownloadWorker()), 1 /* optional size */);
+    let pool = Pool(() => spawn(new DownloadWorker()), 2 /* optional size */);
     setPool(pool);
 
     return () => {
@@ -106,16 +106,23 @@ export const TrueXArrayProvider: React.FC<{
         selection,
         data?.request
       );
-      const multiplied = await renderSelection(
-        path,
-        selection,
-        data.request.accessKey,
-        data.request.secretKey,
-        data.request.sessionToken,
-        colormap
-      );
-      return multiplied;
+      try {
+        const multiplied = await renderSelection(
+          path,
+          selection,
+          data.request.accessKey,
+          data.request.secretKey,
+          data.request.sessionToken,
+          colormap
+        );
+
+        return multiplied;
+      } catch (e) {
+        console.error("Error rendering selection", e);
+        throw e;
+      }
     });
+
     return x;
   };
 

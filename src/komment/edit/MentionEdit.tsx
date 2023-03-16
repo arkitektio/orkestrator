@@ -45,7 +45,6 @@ export const MentionEdit = ({
             className="cursor-pointer flex flex-row"
           >
             @<b>{data?.user?.username}</b>
-            {data?.user?.id}
           </User.DetailLink>
         </User.Smart>
       ) : (

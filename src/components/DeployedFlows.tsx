@@ -1,20 +1,20 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { ReservationStatus } from "../rekuest/api/graphql";
-import { AdditionalMate, Mate } from "../rekuest/postman/mater/mater-context";
-import { useRequester } from "../rekuest/postman/requester/requester-context";
-import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Reservation } from "../linker";
+import { useRequesterMate } from "../mates/reservation/useRequesterMate";
+import { ReservationStatus } from "../rekuest/api/graphql";
+import { useReserver } from "../rekuest/postman/reserver/reserver-context";
+import { colorFromReservationStatus } from "../rekuest/utils";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { colorFromReserveStatus } from "./Reservations";
 
 export type IMyNodesProps = {};
 
 const DeployedFlows: React.FC<IMyNodesProps> = ({}) => {
   const { reservations, reserve, unreserve } = useReserver();
-  const { assign, unassign } = useRequester();
+
+  const requesterMate = useRequesterMate();
 
   const navigate = useNavigate();
 
@@ -32,36 +32,13 @@ const DeployedFlows: React.FC<IMyNodesProps> = ({}) => {
               placement="bottom"
               object={r.id}
               dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-                `rounded border overflow-hidden shadow-md p-3 ${colorFromReserveStatus(
+                `rounded border overflow-hidden shadow-md p-3 ${colorFromReservationStatus(
                   r?.status
                 )} ${isOver && !isDragging && "border-primary-200 border"} ${
                   isDragging && "border-primary-200 border"
                 } ${isSelected && "ring-1 ring-primary-200 "}`
               }
-              additionalMates={(accept, isself) => {
-                let mates: AdditionalMate[] = [];
-                if (!isself) {
-                  return mates;
-                }
-
-                if (r.status === ReservationStatus.Active) {
-                  mates.push({
-                    action: async () => {
-                      await assign({ reservation: r });
-                    },
-                    label: "Assign",
-                  });
-                }
-
-                return mates.concat([
-                  {
-                    action: async () => {
-                      await unreserve({ reservation: r.id });
-                    },
-                    label: "Unreserve",
-                  },
-                ]);
-              }}
+              mates={[requesterMate(r)]}
             >
               <Reservation.DetailLink
                 className={({ isActive }) =>

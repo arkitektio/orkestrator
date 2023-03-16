@@ -49,7 +49,6 @@ export const Mention = (props: { element: MentionType }) => {
             className="bg-gray-700 p-1 rounded text-white"
           >
             @{data?.user?.username}
-            {data.user.id}
           </User.DetailLink>
         </User.Smart>
       ) : (

@@ -29,7 +29,12 @@ import { preventOverflow } from "@popperjs/core";
 import { Icons } from "react-toastify";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 import { DataHomeFilterParams } from "../pages/data/Home";
-import { useDatalayer } from "../datalayer/context";
+import { useDatalayer } from "@jhnnsrs/datalayer";
+import { notEmpty } from "../floating/utils";
+import { FileCard } from "../mikro/components/cards/FileCard";
+import { useDeleteFileMate } from "../mates/file/useDeleteFileMate";
+import { useDownloadFileMate } from "../mates/file/useDownloadFileMate";
+import { useMikroLinkMate } from "../mates/generics/useLinkMate";
 export type IMyRepresentationsProps = {};
 
 const limit = 20;
@@ -58,6 +63,10 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
   const { upload } = useDatalayer();
 
   const { s3resolve } = useMikro();
+
+  const deleteFileMate = useDeleteFileMate();
+  const downloadFileMate = useDownloadFileMate();
+  const mikroLinkMate = useMikroLinkMate();
 
   const variables = { limit: limit, offset: 0, createdDay: createdDay };
 
@@ -195,97 +204,16 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
         </div>
       </SectionTitle>
       <ResponsiveContainerGrid>
-        {data?.myomerofiles?.map(
-          (file, index) =>
-            file?.id && (
-              <MikroFile.Smart
-                showSelectingIndex={true}
-                object={file?.id}
-                dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-                  `rounded shadow-xl group text-white bg-center truncate bg-cover ${
-                    isOver && !isDragging && "border-primary-200 border"
-                  } ${isDragging && "border-primary-200 border"} ${
-                    isSelected && "ring-1 ring-secondary-500 "
-                  }`
-                }
-                additionalMates={(over) => {
-                  if (over == "item:@mikro/omerofile") {
-                    return [
-                      {
-                        action: async (self, partner) => {
-                          await confirm({
-                            message:
-                              "Are you sure you want to delete this file?",
-                          });
-
-                          deleteOmeroFile({
-                            variables: { id: partner[0].object },
-                          });
-                        },
-                        label: (
-                          <>
-                            <BsTrash />
-                          </>
-                        ),
-                        description: "Delete this file",
-                      } as Mate,
-                      {
-                        action: async (self, partner) => {
-                          window.open(s3resolve(file?.file));
-                        },
-                        label: <BsDownload />,
-                        description: "Donwload this file",
-                      } as Mate,
-                    ];
-                  }
-
-                  if (over == "list:@mikro/omerofile") {
-                    return [
-                      {
-                        action: async (self, partners) => {
-                          await confirm({
-                            message:
-                              "Are you sure you want to delete all these files?",
-                          });
-
-                          for (let partner of partners) {
-                            await deleteOmeroFile({
-                              variables: { id: partner.object },
-                            });
-                          }
-                        },
-                        label: (
-                          <>
-                            <BsTrash /> Delete All
-                          </>
-                        ),
-                        description: "Delete all files",
-                      } as Mate,
-                    ];
-                  }
-                }}
-              >
-                <div
-                  key={index}
-                  className="rounded shadow-xl group text-white bg-center bg-cover"
-                  style={{
-                    background:
-                      "linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.95))",
-                  }}
-                >
-                  <div className="px-6 py-4">
-                    <MikroFile.DetailLink
-                      className="font-bold text-xl mb-2 cursor-pointer"
-                      object={file.id}
-                    >
-                      {file?.name}
-                    </MikroFile.DetailLink>
-                    <p className="text-white-700 text-base">{file?.type}</p>
-                  </div>
-                </div>
-              </MikroFile.Smart>
-            )
-        )}
+        {data?.myomerofiles?.filter(notEmpty).map((file) => (
+          <FileCard
+            file={file}
+            mates={[
+              deleteFileMate(file),
+              downloadFileMate(file.file),
+              mikroLinkMate,
+            ]}
+          />
+        ))}
 
         {uploadFutures.map((future, index) => (
           <div

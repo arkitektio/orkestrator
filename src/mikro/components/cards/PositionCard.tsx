@@ -3,6 +3,7 @@ import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../../components/confirmer/confirmer-context";
 import { OptimizedImage } from "../../../layout/OptimizedImage";
 import { Experiment, Position, Representation } from "../../../linker";
+import { MateFinder } from "../../../mates/types";
 import {
   ListPositionFragment,
   ListRepresentationFragment,
@@ -12,9 +13,10 @@ import { useMikro, withMikro } from "../../MikroContext";
 
 interface PositionCardProps {
   position: ListPositionFragment;
+  mates: MateFinder[];
 }
 
-export const PositionCard = ({ position }: PositionCardProps) => {
+export const PositionCard = ({ position, mates }: PositionCardProps) => {
   const { s3resolve } = useMikro();
   const [deletePosition] = withMikro(useDeleteRepresentationMutation)();
   const { confirm } = useConfirm();
@@ -31,28 +33,7 @@ export const PositionCard = ({ position }: PositionCardProps) => {
           isSelected && "ring-1 ring-primary-200 "
         }`
       }
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        return [
-          {
-            accepts: [accept],
-            action: async (self, drops) => {
-              await confirm({
-                message: "Do you really want to delete?",
-                subtitle: "Deletion is irreversible!",
-                confirmLabel: "Yes delete!",
-              });
-
-              await deletePosition({
-                variables: { id: position.id },
-              });
-            },
-            label: <BsTrash />,
-            description: "Delete",
-          },
-        ];
-      }}
+      mates={mates}
     >
       <div className="px-6 py-4 truncate relative">
         <Position.DetailLink

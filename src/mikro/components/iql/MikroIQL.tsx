@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createGraphiQLFetcher, Fetcher } from "@graphiql/toolkit";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 import { GraphiQLProvider } from "graphiql";
 import { IQL } from "./IQL";
 import { DocumentNode } from "@apollo/client";

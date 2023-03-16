@@ -7,10 +7,10 @@ import {
   useDetailRepositoryQuery,
 } from "../../rekuest/api/graphql";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
-import { NodeCard } from "../../components/MyNodes";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { withRekuest } from "../../rekuest";
+import { NodeCard } from "../../rekuest/components/cards/NodeCard";
 
 export type IRepositoryScreenProps = {
   id: string;
@@ -62,7 +62,7 @@ const RepositoryScreen: React.FC<IRepositoryScreenProps> = ({ id }) => {
       <div className="font-light mt-2 dark:text-white "> Defined Nodes </div>
       <ResponsiveGrid>
         {data?.repository?.nodes?.filter(notEmpty).map((node, index) => (
-          <NodeCard key={index} node={node} />
+          <NodeCard key={index} node={node} mates={[]} />
         ))}
       </ResponsiveGrid>
     </PageLayout>

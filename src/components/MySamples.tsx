@@ -8,9 +8,11 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { useNavigate } from "react-router";
+import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Sample } from "../linker";
+import { useDeleteSampleMate } from "../mates/sample/useDeleteSampleMutation";
 import {
   ListSampleFragment,
   MySamplesEventDocument,
@@ -19,6 +21,7 @@ import {
   useDeleteSampleMutation,
   useMySamplesQuery,
 } from "../mikro/api/graphql";
+import { SampleCard } from "../mikro/components/cards/SampleCard";
 import { CreateSampleModal } from "../mikro/components/dialogs/CreateSampleModal";
 import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
@@ -30,88 +33,6 @@ export type IMySamplesProps = {};
 export const SampleType = "Sample";
 
 const limit = 10;
-
-export const SampleCard: React.FC<{
-  sample: Maybe<ListSampleFragment>;
-}> = ({ sample }) => {
-  const { confirm } = useConfirm();
-
-  const [deleteSample, res] = withMikro(useDeleteSampleMutation)();
-
-  if (!sample?.id) return <></>;
-
-  return (
-    <Sample.Smart
-      object={sample?.id}
-      className={
-        "bg-slate-700 text-white rounded shadow-md pl-3 truncate group"
-      }
-      additionalMates={(accept, self) => {
-        if (!self) return [];
-
-        if (accept == "item:@mikro/sample") {
-          return [
-            {
-              accepts: [accept],
-              action: async (self, drops) => {
-                await confirm({
-                  message: "Do you really want to delete?",
-                  subtitle: "Deletion is irreversible!",
-                  confirmLabel: "Yes delete!",
-                });
-
-                await deleteSample({
-                  variables: { id: sample.id },
-                });
-              },
-              label: <BsTrash />,
-              description: "Delete Sample",
-            },
-          ];
-        }
-
-        if (accept == "list:@mikro/sample") {
-          return [
-            {
-              accepts: ["list:@mikro/sample"],
-              action: async (self, drops) => {
-                await confirm({
-                  message: "Do you really want all this samples delete?",
-                  subtitle: "Deletion is irreversible!",
-                  confirmLabel: "Yes delete!",
-                });
-
-                for (const drop of drops) {
-                  await deleteSample({
-                    variables: { id: drop.object },
-                  });
-                }
-              },
-              label: (
-                <div className="flex flex-row">
-                  <BsTrash className="my-auto" />{" "}
-                  <span className="my-auto">Delete all</span>
-                </div>
-              ),
-              description: "Delete All Samples",
-            },
-          ];
-        }
-
-        return [];
-      }}
-    >
-      <div className="my-2">
-        <Sample.DetailLink
-          className="cursor-pointer font-semibold"
-          object={sample.id}
-        >
-          {sample?.name}
-        </Sample.DetailLink>
-      </div>
-    </Sample.Smart>
-  );
-};
 
 const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
   createdDay,
@@ -125,6 +46,8 @@ const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
   } = withMikro(useMySamplesQuery)({
     variables: { limit: limit, offset: 0, createdDay: createdDay },
   });
+
+  const deleteSample = useDeleteSampleMate();
 
   const [show, setshow] = useState(false);
 
@@ -204,8 +127,12 @@ const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
         </div>
       </SectionTitle>
       <ResponsiveContainerGrid>
-        {samples?.mysamples?.map((sample, index) => (
-          <SampleCard key={index} sample={sample} />
+        {samples?.mysamples?.filter(notEmpty).map((sample, index) => (
+          <SampleCard
+            key={index}
+            sample={sample}
+            mates={[deleteSample(sample)]}
+          />
         ))}
         <div className="flex flex-row">
           <ActionButton
