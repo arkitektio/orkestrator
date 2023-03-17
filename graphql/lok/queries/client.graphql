@@ -1,0 +1,5 @@
+query DetailClient($id: ID!) {
+  client(id: $id) {
+    ...ListClient
+  }
+}

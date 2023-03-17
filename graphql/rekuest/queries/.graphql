@@ -34,27 +34,6 @@ query Reservations {
   }
 }
 
-query DeployReservations {
-  reservations(nodeInterfaces: ["fluss:deploy"]) {
-    id
-    waiter {
-      clientId
-    }
-    status
-    node {
-      id
-      name
-      description
-    }
-    title
-    provisions {
-      agent {
-        clientId
-      }
-    }
-  }
-}
-
 query FilteredReservations(
   $exclude: [ReservationStatusInput]
   $filter: [ReservationStatusInput]

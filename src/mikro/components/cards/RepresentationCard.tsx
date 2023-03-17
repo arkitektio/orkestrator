@@ -15,11 +15,11 @@ export const RepresentationCard = ({ rep, mates }: RepresentationCardProps) => {
   return (
     <Representation.Smart
       object={rep?.id}
-      dropClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `rounded group text-white bg-center bg-black shadow-lg h-20  hover:scale-110 transition-all ease-in-out duration-200 group ${
+      dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
+        `relative rounded group text-white bg-center bg-back-999 bg-opacity-20 shadow-lg h-20 border-1 border hover:bg-back-800 transition-all ease-in-out duration-200 group ${
           isOver && !isDragging && "border-primary-200 border"
-        } ${isDragging && "border-primary-200 border"} ${
-          isSelected && "ring-2 ring-secondary-500 "
+        } ${isDragging && "ring-primary-200 ring"} ${
+          isSelected && "ring-2 ring-secondary-500"
         }`
       }
       mates={mates}
@@ -28,14 +28,14 @@ export const RepresentationCard = ({ rep, mates }: RepresentationCardProps) => {
         <OptimizedImage
           src={s3resolve(rep?.latestThumbnail.image)}
           style={{ filter: "brightness(0.7)" }}
-          className="object-cover h-[4rem] w-full absolute top-0 left-0 rounded"
+          className="object-cover h-full w-full absolute top-0 left-0 rounded"
           blurhash={rep?.latestThumbnail.blurhash}
         />
       )}
-      <div className="px-6 py-4">
+      <div className="px-2 py-2 h-full w-full absolute top-0 left-0 hover:bg-opacity-20 bg-opacity-10 bg-back-999 transition-all ease-in-out duration-200">
         <Representation.DetailLink
           className={({ isActive } /*  */) =>
-            "font-bold text-md mb-2 cursor-pointer " +
+            "z-10 font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
           }
           object={rep.id}

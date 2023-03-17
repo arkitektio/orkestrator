@@ -6,6 +6,7 @@ import { RepresentationWidget } from "../../../../widgets/RepresentationWidget";
 import { RoiWidget } from "../../../../widgets/RoiWidget";
 import { StageWidget } from "../../../../widgets/StageWidget";
 import { TableWidget } from "../../../../widgets/TableWidget";
+import { ThumbnailWidget } from "../../../../widgets/ThumbnailWidget";
 import { Identifier } from "../../../postman/mater/mater-context";
 
 import { ReturnWidgetProps } from "../../types";
@@ -32,6 +33,8 @@ export const structure_to_widget = (
       return <StageWidget {...props} />;
     case "@mikro/position":
       return <PositionWidget {...props} />;
+    case "@mikro/thumbnail":
+      return <ThumbnailWidget {...props} />;
     case "@mikro/metric":
       return <MetricWidget {...props} />;
     default:

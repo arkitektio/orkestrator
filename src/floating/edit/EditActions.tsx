@@ -16,6 +16,8 @@ import { ActionButton } from "../../layout/ActionButton";
 import { Node } from "../../linker";
 import { useEditRiver } from "./context";
 import { withRekuest } from "../../rekuest";
+import { useDialog } from "../../layout/dialog/DialogProvider";
+import { DeployFlowDialog } from "../../fluss/components/dialogs/DeployFlowDialog";
 
 export interface EditActionsProps {
   flow: FlowFragment;
@@ -26,6 +28,8 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
   const { assign } = useRequester();
   const { reservations, reserve } = useReserver();
   const navigate = useNavigate();
+
+  const { ask } = useDialog();
 
   const { data: deployable, subscribeToMore } = withRekuest(useNodesQuery)({
     variables: { interfaces: [`flow:${flow?.id}`] },
@@ -116,12 +120,7 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
           inactive={!deployRes}
           description="Deploy this flow"
           onAction={async () => {
-            if (deployRes) {
-              assign({
-                reservation: deployRes,
-                defaults: { flow: flow?.id },
-              });
-            }
+            await ask(DeployFlowDialog, { flow: flow.id });
           }}
         />
       )}

@@ -199,9 +199,9 @@ export const GeneralMenu = () => {
               static
               className="max-h-96 overflow-y-auto pb-4 text-md border-t-2 border-gray-400 pt-2"
             >
-              {Object.keys(orderedActions).map((key) => {
+              {Object.keys(orderedActions).map((key, index) => {
                 return (
-                  <>
+                  <div key={index}>
                     {orderedActions[key].length > 0 && (
                       <>
                         <p className="`space-x-1 px-4 text-gray-400 mb-2">
@@ -232,7 +232,7 @@ export const GeneralMenu = () => {
                         ))}
                       </>
                     )}
-                  </>
+                  </div>
                 );
               })}
             </Combobox.Options>

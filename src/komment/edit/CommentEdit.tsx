@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createEditor, Editor, Node, Range, Transforms } from "slate";
-import { Editable, ReactEditor, Slate, withReact } from "slate-react";
+import { Editable, ReactEditor, Slate, useSlate, withReact } from "slate-react";
 import { useUserOptionsLazyQuery } from "../../lok/api/graphql";
 import { withMan } from "../../lok/context";
-import { CreateCommentFunc } from "../types";
-import { insertMention, KommentElement, Portal, withMentions } from "./shared";
+import { CreateCommentFunc, KommentEditor } from "../types";
+import {
+  insertMention,
+  KommentElement,
+  KommentLeaf,
+  Portal,
+  withMentions,
+} from "./shared";
+import { BiBold, BiItalic, BiUnderline, BiCode } from "react-icons/bi";
+import { TiTick } from "react-icons/ti";
 
 export type ICommentEditProps<T> = {
   id: string;
@@ -26,6 +34,47 @@ export type CommentEditProps<T extends any> = {
   createComment: CreateCommentFunc<T>;
 };
 
+const marks = ["bold", "italic", "underline", "code"] as const;
+type Mark = typeof marks[number];
+
+const toggleMark = (editor: KommentEditor, format: Mark) => {
+  const isActive = isMarkActive(editor, format);
+
+  if (isActive) {
+    Editor.removeMark(editor, format);
+  } else {
+    Editor.addMark(editor, format, true);
+  }
+};
+
+const isMarkActive = (editor: KommentEditor, format: Mark) => {
+  const marks = Editor.marks(editor);
+  return marks ? marks[format] === true : false;
+};
+
+export const MarkButton = ({
+  format,
+  children,
+}: {
+  format: Mark;
+  children: React.ReactNode;
+}) => {
+  const editor = useSlate();
+  return (
+    <button
+      className={`${
+        isMarkActive(editor, format) ? "opacity-100" : "opacity-20"
+      }`}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        toggleMark(editor, format);
+      }}
+    >
+      {children}
+    </button>
+  );
+};
+
 export const CommentEdit = <T extends any>({
   createComment,
   id,
@@ -42,6 +91,11 @@ export const CommentEdit = <T extends any>({
   const [saving, setSaving] = useState(false);
   const renderElement = useCallback(
     (props: any) => <KommentElement {...props} />,
+    []
+  );
+
+  const renderLeaf = useCallback(
+    (props: any) => <KommentLeaf {...props} />,
     []
   );
 
@@ -83,6 +137,12 @@ export const CommentEdit = <T extends any>({
       console.log("Definining target", target);
       if (event.ctrlKey && event.key === "Enter") {
         saveComment();
+      }
+      if (event.ctrlKey && event.key === "b") {
+        toggleMark(editor, "bold");
+      }
+      if (event.ctrlKey && event.key === "i") {
+        toggleMark(editor, "italic");
       }
 
       if (target) {
@@ -148,11 +208,27 @@ export const CommentEdit = <T extends any>({
         }}
       >
         {saving && <div>Saving...</div>}
-        <div className="flex flex-row">
+        <div className="flex flex-col relative">
+          <div className="flex flex-row bg-back-50 rounded-t-md p-1 gap-2 border-b-1 border-b border-back-600">
+            <MarkButton format="bold">
+              <BiBold />
+            </MarkButton>
+            <MarkButton format="italic">
+              <BiItalic />
+            </MarkButton>
+            <MarkButton format="underline">
+              <BiUnderline />
+            </MarkButton>
+            <MarkButton format="code">
+              <BiCode />
+            </MarkButton>
+          </div>
           <Editable
-            className="bg-slate-50 w-full border-rounded rounded-xl p-3 text-black"
+            className="bg-back-50 w-full border-rounded border-2 border-back-400 border rounded-b md p-2 text-black resize"
             renderElement={renderElement}
+            renderLeaf={renderLeaf}
             onKeyDown={onKeyDown}
+            placeholder="Leave a comment..."
           />
           {target && (
             <Portal>
@@ -190,13 +266,13 @@ export const CommentEdit = <T extends any>({
             </Portal>
           )}
 
-          <b className="text-black">
+          <b className="absolute bottom-0 right-0 text-black">
             <button
               type="button"
               onClick={() => saveComment()}
-              className="bg-primary-400 p-3 text-white ml-2 rounded-md"
+              className=" text-black ml-2 rounded-md"
             >
-              Save
+              <TiTick />
             </button>
           </b>
         </div>

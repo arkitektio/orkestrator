@@ -17,10 +17,10 @@ export const useMikroLinkMate = (): MateFinder => {
       : [
           {
             action: async (self, drops) => {
-              let xType = identifierToLinkableModel(self.identifier);
-              let yType = identifierToLinkableModel(drops[0].identifier);
+              let leftType = identifierToLinkableModel(self.identifier);
+              let rightType = identifierToLinkableModel(drops[0].identifier);
 
-              if (!xType || !yType) {
+              if (!leftType || !rightType) {
                 await alert({
                   message: "Cannot relate these two objects",
                   confirmLabel: "Ok, the developer should really fix this",
@@ -37,10 +37,10 @@ export const useMikroLinkMate = (): MateFinder => {
 
               await link({
                 variables: {
-                  xType: xType,
-                  yType: yType,
-                  xId: self.object,
-                  yId: drops[0].object,
+                  leftType: leftType,
+                  rightType: rightType,
+                  leftId: self.object,
+                  rightId: drops[0].object,
                   ...x,
                 },
               });

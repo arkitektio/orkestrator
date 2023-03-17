@@ -22,27 +22,7 @@ export const Mention = (props: { element: MentionType }) => {
           className=" px-1 border rounded-full inline "
           dropClassName={() => "inline"}
           containerClassName="inline mr-2"
-          additionalMates={(type, iself) => {
-            return [
-              {
-                label: "Email",
-                action: async (partner) => {
-                  let x = getDefaultSmartModel(partner.identifier);
-
-                  if (x) {
-                    window.open(
-                      `mailto:${
-                        data?.user?.email
-                      }?subject=Look at this&body=Follow this link arkitekt://${x.linkBuilder(
-                        partner.object
-                      )}"`,
-                      "_blank"
-                    );
-                  }
-                },
-              },
-            ] as AdditionalMate[];
-          }}
+          mates={[]}
         >
           <User.DetailLink
             object={data?.user.id}

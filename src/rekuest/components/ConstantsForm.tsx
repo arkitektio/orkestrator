@@ -134,31 +134,10 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
 }) => {
   const { registry } = useWidgetRegistry();
 
-  const { data, subscribeToMore } = withRekuest(useAssignNodeQuery)({
+  const { data } = withRekuest(useAssignNodeQuery)({
     variables: { id: node },
     fetchPolicy: "cache-and-network",
   });
-
-  useEffect(() => {
-    console.log("Subscribing to My Representations");
-    const unsubscribe = subscribeToMore<
-      AssignNodeEventSubscription,
-      AssignNodeEventSubscriptionVariables
-    >({
-      document: AssignNodeEventDocument,
-      variables: { id: node },
-      updateQuery: (prev, { subscriptionData }) => {
-        console.log("Received Representation", subscriptionData);
-        var data = subscriptionData;
-        let newnode = data.data?.nodeEvent;
-        return {
-          ...prev,
-          node: newnode,
-        };
-      },
-    });
-    return () => unsubscribe();
-  }, []);
 
   let initialValues = {
     ...data?.node?.args?.reduce((result: any, port) => {
@@ -167,8 +146,6 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
     }, {}),
     ...initial,
   };
-
-  console.log(initialValues);
 
   let unsetArgs =
     data?.node?.args?.filter(

@@ -4,7 +4,7 @@ import { ListReservationFragment, ReservationStatus } from "../../api/graphql";
 
 export type IMyReservationsProps = {};
 
-const colorFromStatus = (status: ReservationStatus | undefined) => {
+export const colorFromStatus = (status: ReservationStatus | undefined) => {
   switch (status) {
     case ReservationStatus.Active:
       return "text-md border-green-300 text-green-300 shadow-green-200/20";
@@ -18,11 +18,10 @@ const colorFromStatus = (status: ReservationStatus | undefined) => {
       return "bg-yellow-100  border-yellow-500 shadow-yellow-200/50";
     case ReservationStatus.Providing:
       return "bg-yellow-200  border-yellow-500 shadow-yellow-200/50";
-      return "bg-yellow-200  border-yellow-500 shadow-yellow-200/50";
     case ReservationStatus.Cancelled:
       return "bg-gray-400 shadow-blue-200/50";
     case ReservationStatus.Disconnect:
-      return "text-md border-gray-300 text-gray-300 shadow-red-200/20";
+      return "text-md border-gray-300 text-gray-300 shadow-red-200/20 opacity-30";
     case ReservationStatus.Waiting:
       return "bg-yellow-300 border-yellow-500 shadow-yellow-200/50";
     default:

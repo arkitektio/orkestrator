@@ -1,5 +1,10 @@
 import { Transforms } from "slate";
-import { DescendendInput, ElementRenderProps, KommentEditor } from "../types";
+import {
+  DescendendInput,
+  ElementRenderProps,
+  KommentEditor,
+  LeafRenderProps,
+} from "../types";
 import { MentionEdit } from "./MentionEdit";
 import ReactDOM from "react-dom";
 
@@ -25,6 +30,34 @@ export const KommentElement = (props: ElementRenderProps) => {
     default:
       return <p {...restprops.attributes}>{props.children}</p>;
   }
+};
+
+export const KommentLeaf = ({
+  attributes,
+  children,
+  leaf,
+}: LeafRenderProps) => {
+  if (leaf.bold) {
+    children = <strong>{children}</strong>;
+  }
+
+  if (leaf.code) {
+    children = (
+      <code className="bg-back-900 text-xs p-1 rounded-md text-white">
+        {children}
+      </code>
+    );
+  }
+
+  if (leaf.italic) {
+    children = <em>{children}</em>;
+  }
+
+  if (leaf.underline) {
+    children = <u>{children}</u>;
+  }
+
+  return <span {...attributes}>{children}</span>;
 };
 
 export const insertMention = (

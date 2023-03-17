@@ -1,0 +1,8 @@
+fragment Thumbnail on Thumbnail {
+  representation {
+    id
+    name
+  }
+  image
+  blurhash
+}

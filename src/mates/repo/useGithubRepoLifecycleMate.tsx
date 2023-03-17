@@ -1,3 +1,4 @@
+import { update } from "@react-spring/web";
 import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import {
@@ -24,15 +25,10 @@ export const useGithubRepoLifecycleMate = (): MateFinder => {
 
   const [pull] = withPort(usePullWhaleMutation)();
   return (type, isSelf) => {
-    if (type == "item:@port/whale") {
+    if (type == "item:@port/githubrepo") {
       return [
         {
           action: async (self, drops) => {
-            await confirm({
-              message: "Do you really want to deploy this whale?",
-              confirmLabel: "Yes deploy!",
-            });
-
             await scanRepo({ variables: { id: self.object } });
           },
           label: "Scan",

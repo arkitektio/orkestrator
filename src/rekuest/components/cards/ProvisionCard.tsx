@@ -2,14 +2,16 @@ import React from "react";
 import { Agent, App, Provision, Template, User } from "../../../linker";
 import { useAppQuery, useUserQuery } from "../../../lok/api/graphql";
 import { withMan } from "../../../lok/man";
+import { MateFinder } from "../../../mates/types";
 import { useMikro } from "../../../mikro/MikroContext";
 import { ListProvisionFragment, ListTemplateFragment } from "../../api/graphql";
 
 interface ProvisionCardProps {
   provision: ListProvisionFragment;
+  mates?: MateFinder[];
 }
 
-export const ProvisionCard = ({ provision }: ProvisionCardProps) => {
+export const ProvisionCard = ({ provision, mates }: ProvisionCardProps) => {
   const { data: appdata } = withMan(useAppQuery)({
     variables: {
       identifier: provision.agent?.registry?.app?.identifier,
@@ -17,6 +19,8 @@ export const ProvisionCard = ({ provision }: ProvisionCardProps) => {
     },
     fetchPolicy: "cache-first",
   });
+
+  
   const { data: userdata } = withMan(useUserQuery)({
     variables: { id: provision.agent?.registry?.user?.sub },
     fetchPolicy: "cache-first",
@@ -28,6 +32,7 @@ export const ProvisionCard = ({ provision }: ProvisionCardProps) => {
     <Provision.Smart
       object={provision.id}
       className="rounded-md rounded bg-back-500 border-gray-800 border-1"
+      mates={mates}
     >
       <div className="flex flex-col">
         {provision.agent && (

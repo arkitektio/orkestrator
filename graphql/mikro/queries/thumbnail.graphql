@@ -1,0 +1,5 @@
+query DetailThumbnail($id: ID!) {
+  thumbnail(id: $id) {
+    ...Thumbnail
+  }
+}

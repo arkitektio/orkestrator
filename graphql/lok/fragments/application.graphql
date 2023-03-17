@@ -10,12 +10,20 @@ fragment DetailApplication on Application {
   redirectUris
 }
 
-fragment ListApplication on Application {
+fragment ListClient on Application {
   id
   clientId
   name
   user {
     username
+  }
+  faktapplication {
+    app {
+      id
+      identifier
+      version
+      logo
+    }
   }
   created
   redirectUris

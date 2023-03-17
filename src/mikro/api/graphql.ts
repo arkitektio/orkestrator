@@ -269,12 +269,47 @@ export type Dataset = {
   pinned?: Maybe<Scalars['Boolean']>;
   /** The users that have pinned the experiment */
   pinnedBy: Array<User>;
-  representations: Array<Representation>;
+  /** Associated images through Omero */
+  representations?: Maybe<Array<Maybe<Representation>>>;
   samples: Array<Sample>;
   stages: Array<Stage>;
   tables: Array<Table>;
   /** Tags for the experiment */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
+};
+
+
+/**
+ *
+ *     A dataset is a collection of data files and metadata files.
+ *     It mimics the concept of a folder in a file system and is the top level
+ *     object in the data model.
+ *
+ *
+ */
+export type DatasetRepresentationsArgs = {
+  app?: InputMaybe<Scalars['String']>;
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  creator?: InputMaybe<Scalars['ID']>;
+  derivedTags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  forceThumbnail?: InputMaybe<Scalars['Boolean']>;
+  hasMetric?: InputMaybe<Scalars['String']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  noChildren?: InputMaybe<Scalars['Boolean']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ordering?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+  samples?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  stages?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  variety?: InputMaybe<RepresentationVarietyInput>;
 };
 
 export type DeleteContextResult = {
@@ -1530,11 +1565,11 @@ export type MutationFromXArrayArgs = {
 /** The root Mutation */
 export type MutationLinkArgs = {
   context?: InputMaybe<Scalars['ID']>;
+  leftId: Scalars['ID'];
+  leftType: LinkableModels;
   relation: Scalars['ID'];
-  xId: Scalars['ID'];
-  xType: LinkableModels;
-  yId: Scalars['ID'];
-  yType: LinkableModels;
+  rightId: Scalars['ID'];
+  rightType: LinkableModels;
 };
 
 
@@ -3476,6 +3511,7 @@ export type Representation = {
   labels: Array<Label>;
   latestThumbnail?: Maybe<Thumbnail>;
   meta?: Maybe<Scalars['GenericScalar']>;
+  metric?: Maybe<Metric>;
   /** Associated metrics of this Image */
   metrics?: Maybe<Array<Maybe<Metric>>>;
   /** Cleartext name */
@@ -3562,6 +3598,44 @@ export type RepresentationDerivedArgs = {
   stages?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   variety?: InputMaybe<RepresentationVarietyInput>;
+};
+
+
+/**
+ * A Representation is 5-dimensional representation of an image
+ *
+ *     Mikro stores each image as sa 5-dimensional representation. The dimensions are:
+ *     - t: time
+ *     - c: channel
+ *     - z: z-stack
+ *     - x: x-dimension
+ *     - y: y-dimension
+ *
+ *     This ensures a unified api for all images, regardless of their original dimensions. Another main
+ *     determining factor for a representation is its variety:
+ *     A representation can be a raw image representating voxels (VOXEL)
+ *     or a segmentation mask representing instances of a class. (MASK)
+ *     It can also representate a human perception of the image (RGB) or a human perception of the mask (RGBMASK)
+ *
+ *     # Meta
+ *
+ *     Meta information is stored in the omero field which gives access to the omero-meta data. Refer to the omero documentation for more information.
+ *
+ *
+ *     #Origins and Derivations
+ *
+ *     Images can be filtered, which means that a new representation is created from the other (original) representations. This new representation is then linked to the original representations. This way, we can always trace back to the original representation.
+ *     Both are encapsulaed in the origins and derived fields.
+ *
+ *     Representations belong to *one* sample. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
+ *     Each iamge has also a name, which is used to identify the image. The name is unique within a sample.
+ *     File and Rois that are used to create images are saved in the file origins and roi origins repectively.
+ *
+ *
+ *
+ */
+export type RepresentationMetricArgs = {
+  key: Scalars['String'];
 };
 
 
@@ -4148,7 +4222,7 @@ export type DetailContextFragment = { __typename?: 'Context', id: string, name: 
 
 export type ListContextFragment = { __typename?: 'Context', name: string, id: string };
 
-export type DetailDatasetFragment = { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> };
+export type DetailDatasetFragment = { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null };
 
 export type ListDatasetFragment = { __typename?: 'Dataset', id: string, name: string };
 
@@ -4218,6 +4292,8 @@ export type DetailTableFragment = { __typename?: 'Table', id: string, name: stri
 
 export type ListTableFragment = { __typename?: 'Table', id: string, name: string, columns?: Array<{ __typename?: 'Column', name?: string | null, fieldName: string, pandasType?: PandasDType | null, numpyType?: string | null, metadata?: any | null } | null> | null, repOrigins: Array<{ __typename?: 'Representation', id: string }>, sample?: { __typename?: 'Sample', id: string } | null, experiment?: { __typename?: 'Experiment', id: string } | null };
 
+export type ThumbnailFragment = { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } };
+
 export type CreateCommentMutationVariables = Exact<{
   id: Scalars['ID'];
   model: CommentableModels;
@@ -4262,7 +4338,7 @@ export type CreateDatasetMutationVariables = Exact<{
 }>;
 
 
-export type CreateDatasetMutation = { __typename?: 'Mutation', createDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> } | null };
+export type CreateDatasetMutation = { __typename?: 'Mutation', createDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
 
 export type DeleteDatasetMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4279,7 +4355,7 @@ export type UpdateDatasetMutationVariables = Exact<{
 }>;
 
 
-export type UpdateDatasetMutation = { __typename?: 'Mutation', updateDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> } | null };
+export type UpdateDatasetMutation = { __typename?: 'Mutation', updateDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
 
 export type PinDatasetMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4295,7 +4371,7 @@ export type PutSamplesMutationVariables = Exact<{
 }>;
 
 
-export type PutSamplesMutation = { __typename?: 'Mutation', putSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> } | null };
+export type PutSamplesMutation = { __typename?: 'Mutation', putSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
 
 export type ReleaseFilesMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4303,7 +4379,7 @@ export type ReleaseFilesMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseFilesMutation = { __typename?: 'Mutation', releaseFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> } | null };
+export type ReleaseFilesMutation = { __typename?: 'Mutation', releaseFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
 
 export type PutRepresentationsMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4311,7 +4387,7 @@ export type PutRepresentationsMutationVariables = Exact<{
 }>;
 
 
-export type PutRepresentationsMutation = { __typename?: 'Mutation', putRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> } | null };
+export type PutRepresentationsMutation = { __typename?: 'Mutation', putRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
 
 export type ReleaseRepresentationsMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4319,7 +4395,7 @@ export type ReleaseRepresentationsMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseRepresentationsMutation = { __typename?: 'Mutation', releaseRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> } | null };
+export type ReleaseRepresentationsMutation = { __typename?: 'Mutation', releaseRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
 
 export type ReleaseSamplesMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4327,7 +4403,7 @@ export type ReleaseSamplesMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseSamplesMutation = { __typename?: 'Mutation', releaseSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> } | null };
+export type ReleaseSamplesMutation = { __typename?: 'Mutation', releaseSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
 
 export type PutFilesMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4335,7 +4411,7 @@ export type PutFilesMutationVariables = Exact<{
 }>;
 
 
-export type PutFilesMutation = { __typename?: 'Mutation', putFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> } | null };
+export type PutFilesMutation = { __typename?: 'Mutation', putFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
 
 export type CreateExperimentMutationVariables = Exact<{
   name: Scalars['String'];
@@ -4404,10 +4480,10 @@ export type UnassociateFilesMutation = { __typename?: 'Mutation', unassociateFil
 
 export type LinkMutationVariables = Exact<{
   relation: Scalars['ID'];
-  xType: LinkableModels;
-  xId: Scalars['ID'];
-  yType: LinkableModels;
-  yId: Scalars['ID'];
+  leftType: LinkableModels;
+  leftId: Scalars['ID'];
+  rightType: LinkableModels;
+  rightId: Scalars['ID'];
   context?: InputMaybe<Scalars['ID']>;
 }>;
 
@@ -4697,7 +4773,7 @@ export type DetailDatasetQueryVariables = Exact<{
 }>;
 
 
-export type DetailDatasetQuery = { __typename?: 'Query', dataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations: Array<{ __typename?: 'Representation', id: string, name?: string | null }> } | null };
+export type DetailDatasetQuery = { __typename?: 'Query', dataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
 
 export type SearchDatasetsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -5137,6 +5213,13 @@ export type TagSearchQueryVariables = Exact<{
 
 
 export type TagSearchQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Tag', value: string, label: string } | null> | null };
+
+export type DetailThumbnailQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailThumbnailQuery = { __typename?: 'Query', thumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null };
 
 export type UserOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -6010,6 +6093,16 @@ export const ListTableFragmentDoc = gql`
   }
 }
     ${ColumnFragmentDoc}`;
+export const ThumbnailFragmentDoc = gql`
+    fragment Thumbnail on Thumbnail {
+  representation {
+    id
+    name
+  }
+  image
+  blurhash
+}
+    `;
 export const CreateCommentDocument = gql`
     mutation CreateComment($id: ID!, $model: CommentableModels!, $descendents: [DescendendInput]!, $parent: ID) {
   createComment(
@@ -6808,13 +6901,13 @@ export type UnassociateFilesMutationHookResult = ReturnType<typeof useUnassociat
 export type UnassociateFilesMutationResult = Apollo.MutationResult<UnassociateFilesMutation>;
 export type UnassociateFilesMutationOptions = Apollo.BaseMutationOptions<UnassociateFilesMutation, UnassociateFilesMutationVariables>;
 export const LinkDocument = gql`
-    mutation Link($relation: ID!, $xType: LinkableModels!, $xId: ID!, $yType: LinkableModels!, $yId: ID!, $context: ID) {
+    mutation Link($relation: ID!, $leftType: LinkableModels!, $leftId: ID!, $rightType: LinkableModels!, $rightId: ID!, $context: ID) {
   link(
     relation: $relation
-    xType: $xType
-    xId: $xId
-    yType: $yType
-    yId: $yId
+    leftType: $leftType
+    leftId: $leftId
+    rightType: $rightType
+    rightId: $rightId
     context: $context
   ) {
     ...ListLink
@@ -6837,10 +6930,10 @@ export type LinkMutationFn = Apollo.MutationFunction<LinkMutation, LinkMutationV
  * const [linkMutation, { data, loading, error }] = useLinkMutation({
  *   variables: {
  *      relation: // value for 'relation'
- *      xType: // value for 'xType'
- *      xId: // value for 'xId'
- *      yType: // value for 'yType'
- *      yId: // value for 'yId'
+ *      leftType: // value for 'leftType'
+ *      leftId: // value for 'leftId'
+ *      rightType: // value for 'rightType'
+ *      rightId: // value for 'rightId'
  *      context: // value for 'context'
  *   },
  * });
@@ -10381,6 +10474,41 @@ export function useTagSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<
 export type TagSearchQueryHookResult = ReturnType<typeof useTagSearchQuery>;
 export type TagSearchLazyQueryHookResult = ReturnType<typeof useTagSearchLazyQuery>;
 export type TagSearchQueryResult = Apollo.QueryResult<TagSearchQuery, TagSearchQueryVariables>;
+export const DetailThumbnailDocument = gql`
+    query DetailThumbnail($id: ID!) {
+  thumbnail(id: $id) {
+    ...Thumbnail
+  }
+}
+    ${ThumbnailFragmentDoc}`;
+
+/**
+ * __useDetailThumbnailQuery__
+ *
+ * To run a query within a React component, call `useDetailThumbnailQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailThumbnailQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailThumbnailQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailThumbnailQuery(baseOptions: Apollo.QueryHookOptions<DetailThumbnailQuery, DetailThumbnailQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailThumbnailQuery, DetailThumbnailQueryVariables>(DetailThumbnailDocument, options);
+      }
+export function useDetailThumbnailLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailThumbnailQuery, DetailThumbnailQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailThumbnailQuery, DetailThumbnailQueryVariables>(DetailThumbnailDocument, options);
+        }
+export type DetailThumbnailQueryHookResult = ReturnType<typeof useDetailThumbnailQuery>;
+export type DetailThumbnailLazyQueryHookResult = ReturnType<typeof useDetailThumbnailLazyQuery>;
+export type DetailThumbnailQueryResult = Apollo.QueryResult<DetailThumbnailQuery, DetailThumbnailQueryVariables>;
 export const UserOptionsDocument = gql`
     query UserOptions($search: String) {
   options: users(search: $search) {

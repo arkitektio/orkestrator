@@ -20,7 +20,11 @@ export const renderLeaf = (x: LeafType) => {
     return <b>{x.text}</b>;
   }
   if (x.code) {
-    return <span className="font-light">{x.text}</span>;
+    return (
+      <code className="bg-back-900 text-xs p-1 rounded-md text-white my-auto">
+        {x.text}
+      </code>
+    );
   }
 
   return x?.text;

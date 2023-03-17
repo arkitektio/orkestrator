@@ -770,6 +770,7 @@ export type QueryFlowArgs = {
 
 /** The root Query */
 export type QueryFlowsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   name?: InputMaybe<Scalars['String']>;
   workspace?: InputMaybe<Scalars['ID']>;
 };
@@ -798,6 +799,7 @@ export type QueryReactivetemplateArgs = {
 
 /** The root Query */
 export type QueryReactivetemplatesArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   name?: InputMaybe<Scalars['String']>;
 };
 
@@ -811,6 +813,7 @@ export type QueryRunArgs = {
 
 /** The root Query */
 export type QueryRunLogsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   run?: InputMaybe<Scalars['ID']>;
 };
 
@@ -818,6 +821,7 @@ export type QueryRunLogsArgs = {
 /** The root Query */
 export type QueryRunsArgs = {
   flow?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 
@@ -829,6 +833,7 @@ export type QuerySnapshotArgs = {
 
 /** The root Query */
 export type QuerySnapshotsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   run?: InputMaybe<Scalars['ID']>;
 };
 
@@ -856,6 +861,7 @@ export type QueryWorkspaceArgs = {
 
 /** The root Query */
 export type QueryWorkspacesArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   name?: InputMaybe<Scalars['String']>;
   search?: InputMaybe<Scalars['String']>;
 };

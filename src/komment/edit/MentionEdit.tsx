@@ -23,30 +23,7 @@ export const MentionEdit = ({
   return (
     <>
       {data?.user ? (
-        <User.Smart
-          {...attributes}
-          object={data?.user?.id}
-          data-cy={`mention-${element.user}`}
-          dragStyle={() => ({
-            padding: "3px 3px 2px",
-            margin: "0 1px",
-            verticalAlign: "baseline",
-            display: "inline-block",
-            borderRadius: "4px",
-            backgroundColor: "#eee",
-            fontSize: "0.9em",
-            boxShadow: selected && focused ? "0 0 0 2px #B4D5FF" : "none",
-          })}
-          dropClassName={() => "cursor-pointer inline"}
-          containerClassName="inline"
-        >
-          <User.DetailLink
-            object={data?.user.id}
-            className="cursor-pointer flex flex-row"
-          >
-            @<b>{data?.user?.username}</b>
-          </User.DetailLink>
-        </User.Smart>
+        <span className="font-light inline">@{data?.user?.username}</span>
       ) : (
         <span {...attributes} className="cursor-pointer flex flex-row">
           {element.user}{" "}

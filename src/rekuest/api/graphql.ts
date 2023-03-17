@@ -26,6 +26,7 @@ export type Scalars = {
 
 export type Agent = {
   __typename?: 'Agent';
+  clientId: Scalars['String'];
   id: Scalars['ID'];
   installedAt: Scalars['DateTime'];
   instanceId: Scalars['String'];
@@ -1617,6 +1618,7 @@ export type QueryReservationsArgs = {
   exclude?: InputMaybe<Array<InputMaybe<ReservationStatusInput>>>;
   filter?: InputMaybe<Array<InputMaybe<ReservationStatusInput>>>;
   identifier?: InputMaybe<Scalars['String']>;
+  nodeInterfaces?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
 
 
@@ -2277,6 +2279,7 @@ export type Waiter = {
   __typename?: 'Waiter';
   /** This Assignation app */
   assignations: Array<Assignation>;
+  clientId: Scalars['String'];
   id: Scalars['ID'];
   identifier: Scalars['String'];
   installedAt: Scalars['DateTime'];
@@ -3040,6 +3043,11 @@ export type ReservationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ReservationsQuery = { __typename?: 'Query', reservations?: Array<{ __typename?: 'Reservation', title?: string | null, status: ReservationStatus, statusmessage: string, id: string, reference: string, allowAutoRequest: boolean, node: { __typename?: 'Node', id: string, kind: NodeKind, name: string, interfaces?: Array<string | null> | null, args?: Array<{ __typename: 'Port', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind: PortKind, child?: { __typename?: 'ChildPort', kind: PortKind } | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null } | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null } | null } | null> | null, returns?: Array<{ __typename: 'Port', key: string, kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind: PortKind, identifier?: Identifier | null, nullable: boolean, child?: { __typename?: 'ChildPort', kind: PortKind, child?: { __typename?: 'ChildPort', kind: PortKind } | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null } | null, assignWidget?: { __typename: 'BoolWidget', kind: string } | { __typename: 'ChoiceWidget', kind: string, choices?: Array<{ __typename?: 'Choice', value: any, label: string } | null> | null } | { __typename: 'CustomWidget', kind: string, hook?: string | null, dependencies?: Array<string | null> | null } | { __typename: 'IntWidget', kind: string, dependencies?: Array<string | null> | null } | { __typename: 'LinkWidget', kind: string } | { __typename: 'QueryWidget', kind: string } | { __typename: 'SearchWidget', kind: string, query: string, ward: string, dependencies?: Array<string | null> | null } | { __typename: 'SliderWidget', kind: string, dependencies?: Array<string | null> | null, min?: number | null, max?: number | null } | { __typename: 'StringWidget', kind: string, dependencies?: Array<string | null> | null, placeholder?: string | null } | null, returnWidget?: { __typename: 'ChoiceReturnWidget', kind: string, choices?: Array<{ __typename?: 'Choice', label: string, value: any } | null> | null } | { __typename: 'CustomReturnWidget', kind: string, hook?: string | null, ward?: string | null } | { __typename: 'ImageReturnWidget', kind: string, query?: string | null, ward?: string | null } | null } | null } | null> | null }, waiter: { __typename?: 'Waiter', id: string, registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null } } | null> | null };
+
+export type DeployReservationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DeployReservationsQuery = { __typename?: 'Query', reservations?: Array<{ __typename?: 'Reservation', id: string, status: ReservationStatus, title?: string | null, waiter: { __typename?: 'Waiter', clientId: string }, node: { __typename?: 'Node', id: string, name: string, description: string }, provisions: Array<{ __typename?: 'Provision', agent?: { __typename?: 'Agent', clientId: string } | null }> } | null> | null };
 
 export type FilteredReservationsQueryVariables = Exact<{
   exclude?: InputMaybe<Array<InputMaybe<ReservationStatusInput>>>;
@@ -6383,6 +6391,55 @@ export function useReservationsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptio
 export type ReservationsQueryHookResult = ReturnType<typeof useReservationsQuery>;
 export type ReservationsLazyQueryHookResult = ReturnType<typeof useReservationsLazyQuery>;
 export type ReservationsQueryResult = Apollo.QueryResult<ReservationsQuery, ReservationsQueryVariables>;
+export const DeployReservationsDocument = gql`
+    query DeployReservations {
+  reservations(nodeInterfaces: ["fluss:deploy"]) {
+    id
+    waiter {
+      clientId
+    }
+    status
+    node {
+      id
+      name
+      description
+    }
+    title
+    provisions {
+      agent {
+        clientId
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useDeployReservationsQuery__
+ *
+ * To run a query within a React component, call `useDeployReservationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDeployReservationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDeployReservationsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useDeployReservationsQuery(baseOptions?: Apollo.QueryHookOptions<DeployReservationsQuery, DeployReservationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DeployReservationsQuery, DeployReservationsQueryVariables>(DeployReservationsDocument, options);
+      }
+export function useDeployReservationsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DeployReservationsQuery, DeployReservationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DeployReservationsQuery, DeployReservationsQueryVariables>(DeployReservationsDocument, options);
+        }
+export type DeployReservationsQueryHookResult = ReturnType<typeof useDeployReservationsQuery>;
+export type DeployReservationsLazyQueryHookResult = ReturnType<typeof useDeployReservationsLazyQuery>;
+export type DeployReservationsQueryResult = Apollo.QueryResult<DeployReservationsQuery, DeployReservationsQueryVariables>;
 export const FilteredReservationsDocument = gql`
     query FilteredReservations($exclude: [ReservationStatusInput], $filter: [ReservationStatusInput]) {
   myreservations(exclude: $exclude, filter: $filter) {

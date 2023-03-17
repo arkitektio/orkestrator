@@ -58,7 +58,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
       type="button"
       className={
         className ||
-        " text-white bg-slate-200 bg-opacity-20 shadow-md shadow-primary-300/30 hover:shadow-primary-400/60 bg-slate-800 disabled:shadow-none font-light items-center cursor-pointer z-50 border border-slate-300 p-2 rounded-md disabled:bg-gray-800 disabled:border-gray-800 truncate transition-all ease-in-out duration-300 disabled:cursor-not-allowed hover:bg-opacity-70"
+        " text-white bg-opacity-20 shadow-md bg-back-500 disabled:shadow-none font-light items-center cursor-pointer z-50 border border-slate-300 p-2 rounded-md disabled:bg-gray-800 disabled:border-gray-800 truncate transition-all ease-in-out duration-300 disabled:cursor-not-allowed hover:bg-opacity-70"
       }
       disabled={doing}
       onClick={onclick}

@@ -353,6 +353,8 @@ export type Query = {
   application?: Maybe<Application>;
   applications?: Maybe<Array<Maybe<Application>>>;
   apps?: Maybe<Array<Maybe<App>>>;
+  client?: Maybe<Application>;
+  clients?: Maybe<Array<Maybe<Application>>>;
   graphs?: Maybe<Array<Maybe<Graph>>>;
   /** Get a group */
   group?: Maybe<Group>;
@@ -363,6 +365,7 @@ export type Query = {
   /** Get information on your Docker Template */
   member?: Maybe<Member>;
   myapplications?: Maybe<Array<Maybe<Application>>>;
+  myclients?: Maybe<Array<Maybe<Application>>>;
   /** Get a list of users */
   mygroups?: Maybe<Array<Maybe<Group>>>;
   privatefaktapp?: Maybe<FaktApplication>;
@@ -396,6 +399,12 @@ export type QueryApplicationArgs = {
 /** The root Query */
 export type QueryAppsArgs = {
   search?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
+export type QueryClientArgs = {
+  id: Scalars['ID'];
 };
 
 
@@ -490,7 +499,7 @@ export type ListAppFragment = { __typename?: 'App', id: string, identifier: stri
 
 export type DetailApplicationFragment = { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null };
 
-export type ListApplicationFragment = { __typename?: 'Application', id: string, clientId: string, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null };
+export type ListClientFragment = { __typename?: 'Application', id: string, clientId: string, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null, faktapplication?: { __typename?: 'FaktApplication', app?: { __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null } | null } | null };
 
 export type PrivateFaktFragment = { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, token: string, app?: { __typename?: 'App', version: string, identifier: string } | null };
 
@@ -646,6 +655,13 @@ export type DetailUserApplicationQueryVariables = Exact<{
 
 export type DetailUserApplicationQuery = { __typename?: 'Query', userapp?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
 
+export type DetailClientQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailClientQuery = { __typename?: 'Query', client?: { __typename?: 'Application', id: string, clientId: string, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null, faktapplication?: { __typename?: 'FaktApplication', app?: { __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null } | null } | null } | null };
+
 export type PublicFaktsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -768,13 +784,21 @@ export const DetailApplicationFragmentDoc = gql`
   redirectUris
 }
     `;
-export const ListApplicationFragmentDoc = gql`
-    fragment ListApplication on Application {
+export const ListClientFragmentDoc = gql`
+    fragment ListClient on Application {
   id
   clientId
   name
   user {
     username
+  }
+  faktapplication {
+    app {
+      id
+      identifier
+      version
+      logo
+    }
   }
   created
   redirectUris
@@ -1484,6 +1508,41 @@ export function useDetailUserApplicationLazyQuery(baseOptions?: Apollo.LazyQuery
 export type DetailUserApplicationQueryHookResult = ReturnType<typeof useDetailUserApplicationQuery>;
 export type DetailUserApplicationLazyQueryHookResult = ReturnType<typeof useDetailUserApplicationLazyQuery>;
 export type DetailUserApplicationQueryResult = Apollo.QueryResult<DetailUserApplicationQuery, DetailUserApplicationQueryVariables>;
+export const DetailClientDocument = gql`
+    query DetailClient($id: ID!) {
+  client(id: $id) {
+    ...ListClient
+  }
+}
+    ${ListClientFragmentDoc}`;
+
+/**
+ * __useDetailClientQuery__
+ *
+ * To run a query within a React component, call `useDetailClientQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailClientQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailClientQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailClientQuery(baseOptions: Apollo.QueryHookOptions<DetailClientQuery, DetailClientQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailClientQuery, DetailClientQueryVariables>(DetailClientDocument, options);
+      }
+export function useDetailClientLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailClientQuery, DetailClientQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailClientQuery, DetailClientQueryVariables>(DetailClientDocument, options);
+        }
+export type DetailClientQueryHookResult = ReturnType<typeof useDetailClientQuery>;
+export type DetailClientLazyQueryHookResult = ReturnType<typeof useDetailClientLazyQuery>;
+export type DetailClientQueryResult = Apollo.QueryResult<DetailClientQuery, DetailClientQueryVariables>;
 export const PublicFaktsDocument = gql`
     query PublicFakts {
   publicfaktapps {

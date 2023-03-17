@@ -23,6 +23,7 @@ export const NodeCard = ({
     >
       <Node.DetailLink className="cursor-pointer" object={node?.id}>
         <div className="text-xl font-light mb-2">{node?.name}</div>
+        <div className="text-sm mb-2">{node?.description}</div>
         <p className="text-sm">{node?.interfaces?.join(", ")}</p>
       </Node.DetailLink>
     </Node.Smart>

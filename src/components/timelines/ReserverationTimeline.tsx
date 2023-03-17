@@ -15,6 +15,9 @@ import { UserEmblem } from "../../lok/components/UserEmblem";
 import { useAlert } from "../alerter/alerter-context";
 import { ReserveEvent } from "./types";
 import { withRekuest } from "../../rekuest";
+import { ProvisionCard } from "../../rekuest/components/cards/ProvisionCard";
+import { useLinkProvisionMate } from "../../mates/provision/useLinkProvisionMate";
+import { useUnlinkProvisionMate } from "../../mates/provision/useUnlinkProvisionMate";
 
 export type ReservationTimelineProps = {
   reservation: DetailReservationFragment;
@@ -29,6 +32,9 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
   let { data: provisions } = withRekuest(useLinkableProvisionsQuery)({
     variables: { reservation: reservation?.id },
   });
+
+  const linkMate = useLinkProvisionMate(reservation);
+  const unlinkMate = useUnlinkProvisionMate(reservation);
 
   const [unlink] = withRekuest(useUnlinkMutation)();
   const [link] = withRekuest(useLinkMutation)();
@@ -81,45 +87,7 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
           </div>
           <div className="grid grid-cols-6 gap-2">
             {reservation?.provisions.map((provision) => (
-              <Provision.Smart
-                object={provision.id}
-                className="border bg-white border-gray-600 rounded p-4 shadow-xl cursor-pointer relative"
-              >
-                {provision?.agent?.registry?.user?.sub && (
-                  <UserEmblem sub={provision?.agent?.registry?.user?.sub} />
-                )}
-                <div className="flex w-full flex-row">
-                  <ProvisionPulse status={provision.status} />
-                  <Provision.DetailLink
-                    className="flex-initial font-light cursor-pointer ml-2"
-                    object={provision?.id}
-                  >
-                    {provision?.agent?.registry?.app?.identifier}
-                  </Provision.DetailLink>{" "}
-                  <div className="flex-grow"></div>
-                </div>
-                <div className="mt-3 flex ">
-                  <div className="flex-initial">
-                    <button
-                      type="button"
-                      className="ml-2 px-1 border border-gray-400 rounded-md"
-                      onClick={() =>
-                        unlink({
-                          variables: {
-                            provision: provision?.id,
-                            reservation: reservation.id,
-                          },
-                        }).catch((e) => alert(e))
-                      }
-                    >
-                      {" "}
-                      Unlink
-                    </button>
-                  </div>
-                  <div className="flex-grow"></div>
-                  <div className="text-xs flex-initial"></div>
-                </div>
-              </Provision.Smart>
+              <ProvisionCard provision={provision} mates={[unlinkMate]} />
             ))}
           </div>
         </div>
@@ -132,48 +100,7 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
               provisions.linkableprovisions
                 ?.filter(notEmpty)
                 .map((provision) => (
-                  <Provision.Smart
-                    object={provision.id}
-                    className="border bg-white border-gray-600 rounded p-4 shadow-xl cursor-pointer relative"
-                  >
-                    {provision?.agent?.registry?.user?.sub && (
-                      <UserEmblem sub={provision?.agent?.registry?.user?.sub} />
-                    )}
-                    <div className="flex w-full flex-row">
-                      <ProvisionPulse status={provision?.status} />
-                      <Provision.DetailLink
-                        className="flex-initial font-light cursor-pointer ml-2"
-                        object={provision.id}
-                      >
-                        {provision?.agent?.registry?.app?.identifier}:
-                        {provision?.agent?.registry?.app?.version}
-                      </Provision.DetailLink>{" "}
-                      <div className="flex-grow"></div>
-                    </div>
-                    <div className="mt-3 flex ">
-                      <div className="flex-initial">
-                        {provision?.id && (
-                          <button
-                            type="button"
-                            className="ml-2 px-1 border border-gray-400 rounded-md"
-                            onClick={() =>
-                              link({
-                                variables: {
-                                  provision: provision.id,
-                                  reservation: reservation.id,
-                                },
-                              }).catch((e) => alert(e))
-                            }
-                          >
-                            {" "}
-                            Link
-                          </button>
-                        )}
-                      </div>
-                      <div className="flex-grow"></div>
-                      <div className="text-xs flex-initial"></div>
-                    </div>
-                  </Provision.Smart>
+                  <ProvisionCard provision={provision} mates={[linkMate]} />
                 ))}
           </div>
         </div>

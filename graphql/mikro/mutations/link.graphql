@@ -1,17 +1,17 @@
 mutation Link(
   $relation: ID!
-  $xType: LinkableModels!
-  $xId: ID!
-  $yType: LinkableModels!
-  $yId: ID!
+  $leftType: LinkableModels!
+  $leftId: ID!
+  $rightType: LinkableModels!
+  $rightId: ID!
   $context: ID
 ) {
   link(
     relation: $relation
-    xType: $xType
-    xId: $xId
-    yType: $yType
-    yId: $yId
+    leftType: $leftType
+    leftId: $leftId
+    rightType: $rightType
+    rightId: $rightId
     context: $context
   ) {
     ...ListLink

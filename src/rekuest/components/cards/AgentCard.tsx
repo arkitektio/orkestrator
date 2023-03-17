@@ -23,29 +23,6 @@ export const AgentCard = ({ agent }: TemplateCardProps) => {
           isSelected && "ring-1 ring-primary-200 "
         }`
       }
-      additionalMates={(partner, self) => {
-        if (
-          partner == "item:@rekuest/agent" ||
-          partner == "list:@rekuest/agent"
-        ) {
-          return [
-            {
-              label: "Delete Agent",
-              action: async (self, drops) => {
-                for (const drop of drops) {
-                  await deleteAgent({
-                    variables: {
-                      id: drop.object,
-                    },
-                  });
-                }
-              },
-            },
-          ];
-        }
-
-        return [];
-      }}
     >
       <div className="">
         <div className="flex flex-row w-full">
