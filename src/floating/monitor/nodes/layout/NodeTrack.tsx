@@ -1,3 +1,4 @@
+import { colorFromStatus } from "../../../../rekuest/components/cards/ReservationCard";
 import { colorFromReservationStatus } from "../../../../rekuest/utils";
 import { useNodeLayout } from "../../../base/node/layout";
 import { useMonitorRiver } from "../../context";
@@ -35,7 +36,7 @@ export const NodeMonitorLayout: React.FC<NodeProps> = ({
     (i) => i?.reference === id
   );
 
-  let classNames = colorFromReservationStatus(latestEvent?.status);
+  let classNames = colorFromStatus(latestEvent?.status);
 
   return (
     <>

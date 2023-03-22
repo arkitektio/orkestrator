@@ -41,7 +41,7 @@ export const ReturnTrackNodeWidget: React.FC<ReturnNodeProps> = withLayout(
           <Handle
             type="target"
             position={Position.Left}
-            id={"return_" + index}
+            id={"arg_" + index}
             style={{ background: "#555" }}
             data-tip={s && s.map((s) => s?.kind).join(" | ")}
             data-for={"tooltip" + id}

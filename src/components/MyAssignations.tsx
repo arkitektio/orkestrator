@@ -16,7 +16,7 @@ const colorFromStatus = (status: AssignationStatus | undefined) => {
     case AssignationStatus.Cancelled:
       return "border-yellow-100 text-yellow-100";
     case AssignationStatus.Yield:
-      return "border-green-400";
+      return "border-cyan-400";
     case AssignationStatus.Returned:
       return "border-green-300";
     case AssignationStatus.Error:
