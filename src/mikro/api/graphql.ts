@@ -3512,7 +3512,7 @@ export type Representation = {
   latestThumbnail?: Maybe<Thumbnail>;
   meta?: Maybe<Scalars['GenericScalar']>;
   metric?: Maybe<Metric>;
-  /** Associated metrics of this Image */
+  /** Associated metrics of this Imasge */
   metrics?: Maybe<Array<Maybe<Metric>>>;
   /** Cleartext name */
   name?: Maybe<Scalars['String']>;
@@ -3584,6 +3584,7 @@ export type RepresentationDerivedArgs = {
   creator?: InputMaybe<Scalars['ID']>;
   derivedTags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  flatten?: InputMaybe<Scalars['Int']>;
   forceThumbnail?: InputMaybe<Scalars['Boolean']>;
   hasMetric?: InputMaybe<Scalars['String']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -3680,6 +3681,7 @@ export type RepresentationMetricsArgs = {
   createdDay?: InputMaybe<Scalars['DateTime']>;
   creator?: InputMaybe<Scalars['ID']>;
   experiment?: InputMaybe<Scalars['ID']>;
+  flatten?: InputMaybe<Scalars['Int']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   keys?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -4758,6 +4760,14 @@ export type SearchContextsQueryVariables = Exact<{
 
 
 export type SearchContextsQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Context', label: string, value: string } | null> | null };
+
+export type DashboardQueryQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  id: Scalars['ID'];
+}>;
+
+
+export type DashboardQueryQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', positions: Array<{ __typename?: 'Position', x: number, y: number, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', store?: any | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null } } | null> | null }> } | null };
 
 export type MyDatasetsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -8156,6 +8166,56 @@ export function useSearchContextsLazyQuery(baseOptions?: Apollo.LazyQueryHookOpt
 export type SearchContextsQueryHookResult = ReturnType<typeof useSearchContextsQuery>;
 export type SearchContextsLazyQueryHookResult = ReturnType<typeof useSearchContextsLazyQuery>;
 export type SearchContextsQueryResult = Apollo.QueryResult<SearchContextsQuery, SearchContextsQueryVariables>;
+export const DashboardQueryDocument = gql`
+    query DashboardQuery($limit: Int, $id: ID!) {
+  stage(id: $id) {
+    positions {
+      x
+      y
+      omeros(limit: $limit) {
+        acquisitionDate
+        representation {
+          store
+          metrics(flatten: 3) {
+            id
+            key
+            value
+          }
+        }
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useDashboardQueryQuery__
+ *
+ * To run a query within a React component, call `useDashboardQueryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDashboardQueryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDashboardQueryQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDashboardQueryQuery(baseOptions: Apollo.QueryHookOptions<DashboardQueryQuery, DashboardQueryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DashboardQueryQuery, DashboardQueryQueryVariables>(DashboardQueryDocument, options);
+      }
+export function useDashboardQueryLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DashboardQueryQuery, DashboardQueryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DashboardQueryQuery, DashboardQueryQueryVariables>(DashboardQueryDocument, options);
+        }
+export type DashboardQueryQueryHookResult = ReturnType<typeof useDashboardQueryQuery>;
+export type DashboardQueryLazyQueryHookResult = ReturnType<typeof useDashboardQueryLazyQuery>;
+export type DashboardQueryQueryResult = Apollo.QueryResult<DashboardQueryQuery, DashboardQueryQueryVariables>;
 export const MyDatasetsDocument = gql`
     query MyDatasets($limit: Int, $offset: Int, $createdDay: DateTime) {
   mydatasets(limit: $limit, offset: $offset, createdDay: $createdDay) {

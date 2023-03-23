@@ -18950,6 +18950,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "flatten",
+                "description": "How many levels to flatten the metrics",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                },
+                "defaultValue": "0",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "forceThumbnail",
                 "description": null,
                 "type": {
@@ -19369,7 +19381,7 @@
           },
           {
             "name": "metrics",
-            "description": "Associated metrics of this Image",
+            "description": "Associated metrics of this Imasge",
             "args": [
               {
                 "name": "app",
@@ -19452,6 +19464,18 @@
                   "ofType": null
                 },
                 "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "flatten",
+                "description": "How many levels to flatten the metrics",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                },
+                "defaultValue": "0",
                 "isDeprecated": false,
                 "deprecationReason": null
               },
