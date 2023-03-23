@@ -98,6 +98,8 @@ import { SettingsHome } from "./pages/settings/SettingsHome";
 import { ProtectedApp } from "./ProtectedApp";
 import { PublicApp } from "./PublicApp";
 import { TauriProvider } from "./tauri/provider";
+import { DataLive } from "./pages/data/live/DataLive";
+import { DataLives } from "./pages/data/live/DataLives";
 
 export const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 export const Data = React.lazy(() => import("./pages/Data"));
@@ -291,6 +293,11 @@ export const MainApp: React.FC<Props> = (props) => {
                                     path="positions"
                                     element={<DataPositions />}
                                   />
+                                  <Route
+                                    path="lives/:id"
+                                    element={<DataLive />}
+                                  />
+                                  <Route path="lives" element={<DataLives />} />
                                   <Route
                                     path="tables/:table"
                                     element={<DataTable />}

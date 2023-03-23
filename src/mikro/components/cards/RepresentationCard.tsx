@@ -24,7 +24,7 @@ export const RepresentationCard = ({ rep, mates }: RepresentationCardProps) => {
       }
       mates={mates}
     >
-      {rep.latestThumbnail && (
+      {rep.latestThumbnail?.image && (
         <OptimizedImage
           src={s3resolve(rep?.latestThumbnail.image)}
           style={{ filter: "brightness(0.7)" }}

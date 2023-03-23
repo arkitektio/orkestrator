@@ -6,6 +6,7 @@ import { GrDocker } from "react-icons/gr";
 import { IconContext } from "react-icons/lib";
 import { TbLayoutDashboard } from "react-icons/tb";
 import { TiFlowSwitch } from "react-icons/ti";
+import { MdLiveTv, MdOutlineLiveTv } from "react-icons/md";
 import { NavLink } from "react-router-dom";
 import { FlussGuard } from "../../fluss/guard";
 import { ManGuard } from "../../lok/guard";
@@ -32,10 +33,12 @@ const navigation: {
     sm: true,
     icon: <TbLayoutDashboard />,
   },
+
+  { name: "Teams", href: "lok", sm: false, icon: <AiOutlineTeam /> },
   { name: "Flows", href: "fluss", sm: true, icon: <TiFlowSwitch /> },
   { name: "Port", href: "port", sm: false, icon: <GrDocker /> },
   // { name: "Search", href: "search", sm: true, icon: <AiOutlineSearch /> },
-  { name: "Teams", href: "lok", sm: false, icon: <AiOutlineTeam /> },
+  { name: "Live", href: "mikro/live", sm: false, icon: <MdLiveTv /> },
 ];
 
 const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
@@ -70,6 +73,18 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               }
             >
               <BiData />
+            </NavLink>
+          </MikroGuard>
+          <MikroGuard>
+            <NavLink
+              key={"Mikro Live"}
+              to={"mikro/lives"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-500" : "text-back-400"}`
+              }
+            >
+              <MdLiveTv />
             </NavLink>
           </MikroGuard>
           <RekuestGuard>
