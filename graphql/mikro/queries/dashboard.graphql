@@ -1,4 +1,4 @@
-query DashboardQuery($limit: Int, $id: ID!, order: String) {
+query DashboardQuery($limit: Int, $id: ID!, $order: String) {
   stage(id: $id) {
     name
     id
@@ -6,10 +6,12 @@ query DashboardQuery($limit: Int, $id: ID!, order: String) {
       id
       x
       y
-      omeros(limit: $limit,: order: order) {
+      z
+      omeros(limit: $limit, order: $order) {
         id
         acquisitionDate
         representation {
+          name
           id
           store
           shape

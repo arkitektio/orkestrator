@@ -4764,10 +4764,11 @@ export type SearchContextsQuery = { __typename?: 'Query', options?: Array<{ __ty
 export type DashboardQueryQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
   id: Scalars['ID'];
+  order?: InputMaybe<Scalars['String']>;
 }>;
 
 
-export type DashboardQueryQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', name: string, id: string, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, omeros?: Array<{ __typename?: 'Omero', id: string, acquisitionDate?: any | null, representation: { __typename?: 'Representation', id: string, store?: any | null, shape?: Array<number> | null, latestThumbnail?: { __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null } } | null> | null }> } | null };
+export type DashboardQueryQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', name: string, id: string, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, omeros?: Array<{ __typename?: 'Omero', id: string, acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, store?: any | null, shape?: Array<number> | null, latestThumbnail?: { __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null } } | null> | null }> } | null };
 
 export type MyDatasetsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -8167,7 +8168,7 @@ export type SearchContextsQueryHookResult = ReturnType<typeof useSearchContextsQ
 export type SearchContextsLazyQueryHookResult = ReturnType<typeof useSearchContextsLazyQuery>;
 export type SearchContextsQueryResult = Apollo.QueryResult<SearchContextsQuery, SearchContextsQueryVariables>;
 export const DashboardQueryDocument = gql`
-    query DashboardQuery($limit: Int, $id: ID!) {
+    query DashboardQuery($limit: Int, $id: ID!, $order: String) {
   stage(id: $id) {
     name
     id
@@ -8175,10 +8176,12 @@ export const DashboardQueryDocument = gql`
       id
       x
       y
-      omeros(limit: $limit) {
+      z
+      omeros(limit: $limit, order: $order) {
         id
         acquisitionDate
         representation {
+          name
           id
           store
           shape
@@ -8213,6 +8216,7 @@ export const DashboardQueryDocument = gql`
  *   variables: {
  *      limit: // value for 'limit'
  *      id: // value for 'id'
+ *      order: // value for 'order'
  *   },
  * });
  */
