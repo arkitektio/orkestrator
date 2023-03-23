@@ -4767,7 +4767,7 @@ export type DashboardQueryQueryVariables = Exact<{
 }>;
 
 
-export type DashboardQueryQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', positions: Array<{ __typename?: 'Position', x: number, y: number, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', store?: any | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null } } | null> | null }> } | null };
+export type DashboardQueryQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', name: string, id: string, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, omeros?: Array<{ __typename?: 'Omero', id: string, acquisitionDate?: any | null, representation: { __typename?: 'Representation', id: string, store?: any | null, shape?: Array<number> | null, latestThumbnail?: { __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null } } | null> | null }> } | null };
 
 export type MyDatasetsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -8169,13 +8169,24 @@ export type SearchContextsQueryResult = Apollo.QueryResult<SearchContextsQuery, 
 export const DashboardQueryDocument = gql`
     query DashboardQuery($limit: Int, $id: ID!) {
   stage(id: $id) {
+    name
+    id
     positions {
+      id
       x
       y
       omeros(limit: $limit) {
+        id
         acquisitionDate
         representation {
+          id
           store
+          shape
+          latestThumbnail {
+            id
+            image
+            blurhash
+          }
           metrics(flatten: 3) {
             id
             key

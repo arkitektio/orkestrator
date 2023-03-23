@@ -1,12 +1,23 @@
 query DashboardQuery($limit: Int, $id: ID!) {
   stage(id: $id) {
+    name
+    id
     positions {
+      id
       x
       y
       omeros(limit: $limit) {
+        id
         acquisitionDate
         representation {
+          id
           store
+          shape
+          latestThumbnail {
+            id
+            image
+            blurhash
+          }
           metrics(flatten: 3) {
             id
             key
