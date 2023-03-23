@@ -10,6 +10,7 @@ import { useNavigate } from "react-router";
 import { Link } from "react-router-dom";
 import { ResponsiveContainerGrid } from "../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../floating/utils";
+import { PageLayout } from "../layout/PageLayout";
 import { Stage } from "../linker";
 import { useMyStagesQuery } from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
@@ -36,7 +37,7 @@ const MyLives: React.FC<MyAcquisitionsProps> = ({ limit = 20 }) => {
   if (error) return <div>{error.message}</div>;
 
   return (
-    <div>
+    <PageLayout>
       <div className="font-light text-xl flex mr-2 dark:text-white">
         <Stage.ListLink className="flex-0">Stage</Stage.ListLink>
         <div className="flex-grow"></div>
@@ -68,12 +69,16 @@ const MyLives: React.FC<MyAcquisitionsProps> = ({ limit = 20 }) => {
           ?.slice(0, limit)
           .filter(notEmpty)
           .map((s, index) => (
-            <Stage.Smart object={s.id} mates={[]}>
-              <Link to={`/user/mikro/lives/${s.id}`}>Open {s.name}</Link>
+            <Stage.Smart
+              object={s.id}
+              mates={[]}
+              className="px-2 py-2 bg-back-900 border-1 border-white border text-white rounded rounded-md mt-2"
+            >
+              <Link to={`/user/mikro/lives/${s.id}`}>{s.name}</Link>
             </Stage.Smart>
           ))}
       </ResponsiveContainerGrid>
-    </div>
+    </PageLayout>
   );
 };
 
