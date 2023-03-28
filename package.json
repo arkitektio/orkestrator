@@ -26,7 +26,7 @@
     "@headlessui/react": "^1.5.0",
     "@heroicons/react": "^1.0.6",
     "@jhnnsrs/datalayer": "0.0.5",
-    "@jhnnsrs/fakts": "^0.1.2",
+    "@jhnnsrs/fakts": "0.1.2",
     "@jhnnsrs/herre": "0.0.4",
     "@popperjs/core": "^2.11.5",
     "@react-spring/web": "^9.5.2",

@@ -1196,7 +1196,7 @@
   dependencies:
     cancelable-promise "^4.3.0"
 
-"@jhnnsrs/fakts@^0.1.2":
+"@jhnnsrs/fakts@0.1.2":
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/@jhnnsrs/fakts/-/fakts-0.1.2.tgz#d879aff5fd2dbfcfb2351c8bdee7793678aa330e"
   integrity sha512-+8tcdlMNJxaGkqXIlmFQVcrMNTY0iHHT7Wcem/u8ff/L3bOSap+qOU0Tb8K5a0ZO7+OBno+7aCyE5u1+NxpIxA==
