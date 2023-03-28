@@ -12,4 +12,5 @@ fragment RunEvent on RunEvent {
   createdAt
   value
   t
+  causedBy
 }
