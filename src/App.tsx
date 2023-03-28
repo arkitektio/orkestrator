@@ -100,6 +100,7 @@ import { PublicApp } from "./PublicApp";
 import { TauriProvider } from "./tauri/provider";
 import { DataLive } from "./pages/data/live/DataLive";
 import { DataLives } from "./pages/data/live/DataLives";
+import { FlowTimeline } from "./pages/flows/timelines/FlowTimeline";
 
 export const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 export const Data = React.lazy(() => import("./pages/Data"));
@@ -389,6 +390,14 @@ export const MainApp: React.FC<Props> = (props) => {
                                   <Route
                                     path="flows/:flow"
                                     element={<FlowDiagramFlow />}
+                                  />
+                                  <Route
+                                    path="runs/:runid"
+                                    element={<RunScreen />}
+                                  />
+                                  <Route
+                                    path="timelines/:id"
+                                    element={<FlowTimeline />}
                                   />
                                   <Route
                                     path="runs/:runid"
