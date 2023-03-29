@@ -50,6 +50,7 @@ export const PrepareScanDialog = (
               clientSecret: app?.data?.createPrivateFakt.clientSecret,
               scopes: app?.data?.createPrivateFakt.scopes,
               token: app?.data?.createPrivateFakt.token,
+              command: data?.reposcan?.command,
               image: data?.reposcan?.image,
             },
           });

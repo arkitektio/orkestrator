@@ -5,6 +5,7 @@ fragment DetailRepoScan on RepoScan {
   scopes
   image
   runtime
+  command
 }
 
 fragment ListRepoScan on RepoScan {
@@ -17,4 +18,5 @@ fragment ListRepoScan on RepoScan {
   whales {
     id
   }
+  command
 }

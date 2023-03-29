@@ -23,6 +23,7 @@ mutation CreateWhale(
   $clientId: String!
   $clientSecret: String!
   $token: String!
+  $command: String,
   $scopes: [String]!
   $faktEndpoint: String
   $runtime: DockerRuntime
@@ -35,6 +36,7 @@ mutation CreateWhale(
     clientSecret: $clientSecret
     scopes: $scopes
     token: $token
+    command: $command
     faktEndpoint: $faktEndpoint
     runtime: $runtime
   ) {
