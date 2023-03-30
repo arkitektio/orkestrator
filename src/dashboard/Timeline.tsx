@@ -23,7 +23,26 @@ export type Event = {
 };
 
 export type NodeTimeline = FlowNodeFragment & {
-  events: ((RunEventFragment & { offset: number }) | null)[];
+  events: (RunEventFragment & { end: number; start: number })[];
+};
+
+export const recurseHighlight = (
+  event: RunEventFragment,
+  events: RunEventFragment[],
+  highlighted: number[]
+) => {
+  if (event.causedBy && event.causedBy.length > 0) {
+    event.causedBy.filter(notEmpty).forEach((e) => {
+      console.log(highlighted, e);
+      if (!highlighted.includes(e)) {
+        highlighted.push(e);
+        let potentialEle = events.find((ev) => ev?.t == e); // might not be found
+        if (potentialEle) {
+          recurseHighlight(potentialEle, events, highlighted);
+        }
+      }
+    });
+  }
 };
 
 export const Timeline = ({ id }: { id: string }) => {
@@ -36,28 +55,28 @@ export const Timeline = ({ id }: { id: string }) => {
   });
 
   const [timeline, setTimeline] = useState<NodeTimeline[]>([]);
+  const [highlighted, setHighlighted] = useState<number[]>([]);
 
-  const navigate = useNavigate();
-  const { s3resolve } = useDatalayer();
+  const highlightEvent = (event: RunEventFragment) => {
+    let highlighted = [event.t];
+    let betweens = events?.eventsBetween?.filter(notEmpty);
+    if (betweens) {
+      recurseHighlight(event, betweens, highlighted);
+    }
+    setHighlighted(highlighted);
+  };
 
   useEffect(() => {
     let betweens = events?.eventsBetween;
     let graph = run?.run?.flow?.graph;
 
     if (graph && betweens) {
-      let connectionMap = graph.edges.filter(notEmpty).reduce((acc, edge) => {
-        if (edge.source && edge.target) {
-          if (acc[edge.target]) {
-            acc[edge.target].push(edge.source);
-          } else {
-            acc[edge.target] = [edge.source];
-          }
-        }
-        return acc;
-      }, {} as Record<string, string[]>);
-
       // Create a node map of id to information on the node
       let nodeMap = graph.nodes.filter(notEmpty).reduce((acc, node) => {
+        if (node.id == "1" || node.id == "2" || node.id == "3") {
+          return acc;
+        }
+
         acc[node.id] = {
           ...node,
           events: [],
@@ -67,31 +86,36 @@ export const Timeline = ({ id }: { id: string }) => {
 
       let max = betweens.at(-1)?.createdAt;
       let min = betweens.at(0)?.createdAt;
+
+      const interpolate = (time: Date) => {
+        return (
+          (new Date(time).getTime() - new Date(min).getTime()) /
+          (new Date(max).getTime() - new Date(min).getTime())
+        );
+      };
+
       // Add events to the node map
       betweens
         .filter(notEmpty)
         .filter((e) => e.type == "NEXT")
         .forEach((event) => {
-          Object.keys(nodeMap).forEach((value, index) => {
+          let correspondingNode = nodeMap[event.source];
+
+          if (correspondingNode) {
             let pushevent = {
               ...event,
-              offset:
-                (new Date(event.createdAt).getTime() -
-                  new Date(min).getTime()) /
-                (new Date(max).getTime() - new Date(min).getTime()),
+              end: interpolate(event.createdAt),
+              start: interpolate(
+                betweens?.find(
+                  (e) =>
+                    e?.t ==
+                    Math.min(...(event.causedBy?.filter(notEmpty) || [0]))
+                )?.createdAt
+              ),
             };
 
-            if (event?.source === value) {
-              nodeMap[value].events.push(pushevent);
-            } else if (
-              connectionMap[value] &&
-              connectionMap[value].includes(event?.source)
-            ) {
-              nodeMap[value].events.push(pushevent);
-            } else {
-              nodeMap[value].events.push(null);
-            }
-          });
+            correspondingNode.events.push(pushevent);
+          }
         });
 
       // Convert the node map to an array
@@ -111,22 +135,27 @@ export const Timeline = ({ id }: { id: string }) => {
       <div>
         {timeline.map((node) => {
           return (
-            <div className="w-full relative">
-              <td>{node.id}</td>
+            <div className="w-full relative h-10">
+              <div className="absolute h-10 z-10">
+                {node.__typename == "ArkitektNode" && node.name}
+                {node.__typename == "ReactiveNode" && node.implementation}
+              </div>
 
               {node.events.map((event) => {
-                console.log(event?.offset);
-                if (!event) {
-                  return <div> </div>;
-                }
+                console.log(event?.end, console.log(event?.start));
                 return (
                   <div
-                    className="bg-green-200 absolute"
-                    style={{ left: event.offset * 100 + "%" }}
-                  >
-                    {" "}
-                    x{" "}
-                  </div>
+                    className={`${
+                      highlighted.includes(event.t)
+                        ? "bg-green-700 border-green-200 border-2"
+                        : "border-gray-100 border-1 border-opacity-20"
+                    } absolute h-10 border  z-1 bg-opacity-80 grid justify-items-end cursor-pointer`}
+                    style={{
+                      left: event.start * 100 + "%",
+                      width: (event.end - event.start) * 100 + "%",
+                    }}
+                    onClick={() => highlightEvent(event)}
+                  ></div>
                 );
               })}
             </div>

@@ -155,7 +155,9 @@ export const Container = (props: ContainerProps) => {
           </div>
           <div className="flex flex-row">
             <div className="w-1/2">Runtime</div>
-            <div className="w-1/2">{data?.container?.whale?.runtime}</div>
+            <div className="w-1/2">
+              {JSON.stringify(data?.container?.whale?.runtime)}
+            </div>
           </div>
         </div>
         {data?.container?.whale?.clientId && (

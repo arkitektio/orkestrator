@@ -177,6 +177,7 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
         runState: state,
         selectedNode,
         setRunState: setState,
+        run: data?.run,
       }}
     >
       <PageLayout

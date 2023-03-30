@@ -65,7 +65,7 @@ export const Canvas: React.FC<{
     console.log(z, path);
     console.log("Loading image slice...");
     renderImage(z, path);
-  }, [z, path]);
+  }, [path]);
 
   useEffect(() => {
     if (layerRef.current && imageData) {

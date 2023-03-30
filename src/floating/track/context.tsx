@@ -1,9 +1,14 @@
 import React, { useContext } from "react";
-import { FlowFragment, GlobalFragment } from "../../fluss/api/graphql";
+import {
+  FlowFragment,
+  GlobalFragment,
+  RunFragment,
+} from "../../fluss/api/graphql";
 import { FlowNode, RunState } from "../types";
 
 export type RiverTrackContextType = {
   flow?: FlowFragment | null;
+  run?: RunFragment | null;
   runState?: RunState | null;
   selectedNode?: FlowNode | null;
   setRunState: (runState: RunState) => void;
