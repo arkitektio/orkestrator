@@ -14,5 +14,6 @@ mutation ScanRepo($id: ID!) {
   scanRepo(id: $id) {
     id
     identifier
+    version
   }
 }

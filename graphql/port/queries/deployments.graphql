@@ -1,0 +1,11 @@
+query Deployments {
+  deployments {
+    ...ListDeployment
+  }
+}
+
+query DetailDeployment($id: ID!) {
+  deployment(id: $id) {
+    ...DetailDeployment
+  }
+}

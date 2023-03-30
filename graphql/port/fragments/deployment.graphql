@@ -1,20 +1,19 @@
-fragment DetailRepoScan on RepoScan {
+fragment DetailDeployment on Deployment {
   id
   identifier
   version
   scopes
   image
-  runtime
+  requirements
   command
 }
 
-fragment ListRepoScan on RepoScan {
+fragment ListDeployment on Deployment {
   id
   identifier
   version
   scopes
   image
-  runtime
   whales {
     id
   }

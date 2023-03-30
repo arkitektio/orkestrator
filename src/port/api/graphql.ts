@@ -64,6 +64,21 @@ export type DeleteWhaleReturn = {
   id?: Maybe<Scalars['ID']>;
 };
 
+export type Deployment = {
+  __typename?: 'Deployment';
+  command?: Maybe<Scalars['String']>;
+  createdAt: Scalars['DateTime'];
+  deployedAt: Scalars['DateTime'];
+  id: Scalars['ID'];
+  identifier: Scalars['String'];
+  image: Scalars['String'];
+  repo?: Maybe<GithubRepo>;
+  requirements?: Maybe<Scalars['GenericScalar']>;
+  scopes?: Maybe<Scalars['GenericScalar']>;
+  version: Scalars['String'];
+  whales: Array<Whale>;
+};
+
 /** Docker runtime. */
 export enum DockerRuntime {
   Nvidia = 'NVIDIA',
@@ -74,11 +89,11 @@ export type GithubRepo = {
   __typename?: 'GithubRepo';
   branch: Scalars['String'];
   createdAt: Scalars['DateTime'];
+  deployments: Array<Deployment>;
   id: Scalars['ID'];
   identifier: Scalars['String'];
   readme?: Maybe<Scalars['String']>;
   repo: Scalars['String'];
-  scans: Array<RepoScan>;
   scopes: Array<Maybe<Scalars['String']>>;
   user: Scalars['String'];
   version: Scalars['String'];
@@ -103,7 +118,7 @@ export type Mutation = {
   removeContainer?: Maybe<Container>;
   restartContainer?: Maybe<Container>;
   runWhale?: Maybe<Container>;
-  scanRepo?: Maybe<RepoScan>;
+  scanRepo?: Maybe<Deployment>;
   stopContainer?: Maybe<Container>;
 };
 
@@ -119,15 +134,9 @@ export type MutationCreateGithubRepoArgs = {
 /** The root Mutation */
 export type MutationCreateWhaleArgs = {
   clientId: Scalars['String'];
-  clientSecret: Scalars['String'];
-  command?: InputMaybe<Scalars['String']>;
+  deployment: Scalars['ID'];
   faktEndpoint?: InputMaybe<Scalars['String']>;
-  identifier: Scalars['String'];
-  image: Scalars['String'];
-  runtime?: InputMaybe<DockerRuntime>;
-  scopes: Array<InputMaybe<Scalars['String']>>;
   token: Scalars['String'];
-  version: Scalars['String'];
 };
 
 
@@ -163,6 +172,7 @@ export type MutationRestartContainerArgs = {
 
 /** The root Mutation */
 export type MutationRunWhaleArgs = {
+  command?: InputMaybe<Scalars['String']>;
   id: Scalars['ID'];
   instance?: InputMaybe<Scalars['String']>;
   network?: InputMaybe<Scalars['ID']>;
@@ -227,6 +237,22 @@ export type Query = {
    *
    */
   containers?: Maybe<Array<Maybe<Container>>>;
+  /**
+   * Get a single docker by ID
+   *
+   *     Returns a single feature by ID. If the user does not have access
+   *     to the feature, an error will be raised.
+   *
+   */
+  deployment?: Maybe<Deployment>;
+  /**
+   * Get a single feature by ID
+   *
+   *     Returns a single feature by ID. If the user does not have access
+   *     to the feature, an error will be raised.
+   *
+   */
+  deployments?: Maybe<Array<Maybe<Deployment>>>;
   /** Get information on your Docker Template */
   githubRepo?: Maybe<GithubRepo>;
   githubRepos?: Maybe<Array<Maybe<GithubRepo>>>;
@@ -239,22 +265,6 @@ export type Query = {
    *
    */
   networks?: Maybe<Array<Maybe<Network>>>;
-  /**
-   * Get a single docker by ID
-   *
-   *     Returns a single feature by ID. If the user does not have access
-   *     to the feature, an error will be raised.
-   *
-   */
-  reposcan?: Maybe<RepoScan>;
-  /**
-   * Get a single feature by ID
-   *
-   *     Returns a single feature by ID. If the user does not have access
-   *     to the feature, an error will be raised.
-   *
-   */
-  reposcans?: Maybe<Array<Maybe<RepoScan>>>;
   void?: Maybe<Scalars['String']>;
   /** Get information on your Docker Template */
   whale?: Maybe<Whale>;
@@ -283,6 +293,12 @@ export type QueryContainersArgs = {
 
 
 /** The root Query */
+export type QueryDeploymentArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
 export type QueryGithubRepoArgs = {
   id: Scalars['ID'];
 };
@@ -301,12 +317,6 @@ export type QueryNetworksArgs = {
 
 
 /** The root Query */
-export type QueryReposcanArgs = {
-  id: Scalars['ID'];
-};
-
-
-/** The root Query */
 export type QueryWhaleArgs = {
   id?: InputMaybe<Scalars['ID']>;
   template?: InputMaybe<Scalars['ID']>;
@@ -318,69 +328,38 @@ export type QueryWhalesArgs = {
   search?: InputMaybe<Scalars['String']>;
 };
 
-export type RepoScan = {
-  __typename?: 'RepoScan';
-  command?: Maybe<Scalars['String']>;
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
-  identifier: Scalars['String'];
-  image: Scalars['String'];
-  name: Scalars['String'];
-  repo: GithubRepo;
-  runtime: Scalars['String'];
-  scopes?: Maybe<Scalars['GenericScalar']>;
-  version: Scalars['String'];
-  whales: Array<Whale>;
-};
-
 export type Whale = {
   __typename?: 'Whale';
   clientId: Scalars['String'];
-  clientSecret: Scalars['String'];
-  command: Scalars['String'];
-  config?: Maybe<Scalars['GenericScalar']>;
   containers?: Maybe<Array<Maybe<Container>>>;
   createdAt: Scalars['DateTime'];
+  deployment: Deployment;
   id: Scalars['ID'];
-  identifier: Scalars['String'];
-  image: Scalars['String'];
   latestPull?: Maybe<Scalars['DateTime']>;
   pulled?: Maybe<Scalars['Boolean']>;
-  repo?: Maybe<RepoScan>;
-  runtime?: Maybe<WhaleRuntime>;
-  scopes?: Maybe<Scalars['GenericScalar']>;
   token?: Maybe<Scalars['String']>;
   url: Scalars['String'];
-  version: Scalars['String'];
 };
 
-/** An enumeration. */
-export enum WhaleRuntime {
-  /** NVIDIA */
-  Nvidia = 'NVIDIA',
-  /** RunC */
-  Runc = 'RUNC'
-}
+export type DetailContainerFragment = { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
-export type DetailContainerFragment = { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string, pulled?: boolean | null, latestPull?: any | null, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type ListContainerFragment = { __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
-export type ListContainerFragment = { __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string, pulled?: boolean | null, latestPull?: any | null, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type DetailDeploymentFragment = { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null };
+
+export type ListDeploymentFragment = { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> };
 
 export type DetailImageFragment = { __typename?: 'Image', tags?: Array<string | null> | null };
 
 export type DetailNetworkFragment = { __typename?: 'Network', name?: string | null, id: string };
 
-export type DetailGithubRepoFragment = { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string, readme?: string | null, scans: Array<{ __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }> };
+export type DetailGithubRepoFragment = { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string, readme?: string | null, deployments: Array<{ __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }> };
 
 export type ListGithubRepoFragment = { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string };
 
-export type DetailRepoScanFragment = { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string, command?: string | null };
+export type DetailWhaleFragment = { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null };
 
-export type ListRepoScanFragment = { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> };
-
-export type DetailWhaleFragment = { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string, pulled?: boolean | null, latestPull?: any | null, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null };
-
-export type ListWhaleFragment = { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, image: string, pulled?: boolean | null, latestPull?: any | null };
+export type ListWhaleFragment = { __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> } };
 
 export type StopContainerMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -424,7 +403,7 @@ export type ScanRepoMutationVariables = Exact<{
 }>;
 
 
-export type ScanRepoMutation = { __typename?: 'Mutation', scanRepo?: { __typename?: 'RepoScan', id: string, identifier: string } | null };
+export type ScanRepoMutation = { __typename?: 'Mutation', scanRepo?: { __typename?: 'Deployment', id: string, identifier: string, version: string } | null };
 
 export type RunWhaleMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -432,7 +411,7 @@ export type RunWhaleMutationVariables = Exact<{
 }>;
 
 
-export type RunWhaleMutation = { __typename?: 'Mutation', runWhale?: { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string, pulled?: boolean | null, latestPull?: any | null, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null };
+export type RunWhaleMutation = { __typename?: 'Mutation', runWhale?: { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null };
 
 export type DeleteWhaleMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -449,34 +428,40 @@ export type PullWhaleMutationVariables = Exact<{
 export type PullWhaleMutation = { __typename?: 'Mutation', pullWhale?: { __typename?: 'PullWhaleReturn', id?: string | null } | null };
 
 export type CreateWhaleMutationVariables = Exact<{
-  identifier: Scalars['String'];
-  version: Scalars['String'];
-  image: Scalars['String'];
+  deployment: Scalars['ID'];
   clientId: Scalars['String'];
-  clientSecret: Scalars['String'];
   token: Scalars['String'];
-  command?: InputMaybe<Scalars['String']>;
-  scopes: Array<InputMaybe<Scalars['String']>> | InputMaybe<Scalars['String']>;
   faktEndpoint?: InputMaybe<Scalars['String']>;
-  runtime?: InputMaybe<DockerRuntime>;
 }>;
 
 
-export type CreateWhaleMutation = { __typename?: 'Mutation', createWhale?: { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string, pulled?: boolean | null, latestPull?: any | null, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type CreateWhaleMutation = { __typename?: 'Mutation', createWhale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
 export type ContainersQueryVariables = Exact<{
   status?: InputMaybe<Array<InputMaybe<ContainerStatus>> | InputMaybe<ContainerStatus>>;
 }>;
 
 
-export type ContainersQuery = { __typename?: 'Query', containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string, pulled?: boolean | null, latestPull?: any | null, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null> | null };
+export type ContainersQuery = { __typename?: 'Query', containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null> | null };
 
 export type DetailContainerQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailContainerQuery = { __typename?: 'Query', container?: { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string, pulled?: boolean | null, latestPull?: any | null, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null };
+export type DetailContainerQuery = { __typename?: 'Query', container?: { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null };
+
+export type DeploymentsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DeploymentsQuery = { __typename?: 'Query', deployments?: Array<{ __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> } | null> | null };
+
+export type DetailDeploymentQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailDeploymentQuery = { __typename?: 'Query', deployment?: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null } | null };
 
 export type GithubReposQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -488,54 +473,49 @@ export type DetailGithubRepoQueryVariables = Exact<{
 }>;
 
 
-export type DetailGithubRepoQuery = { __typename?: 'Query', githubRepo?: { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string, readme?: string | null, scans: Array<{ __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }> } | null };
-
-export type RepoScansQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type RepoScansQuery = { __typename?: 'Query', reposcans?: Array<{ __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> } | null> | null };
-
-export type DetailRepoScanQueryVariables = Exact<{
-  id: Scalars['ID'];
-}>;
-
-
-export type DetailRepoScanQuery = { __typename?: 'Query', reposcan?: { __typename?: 'RepoScan', id: string, identifier: string, version: string, scopes?: any | null, image: string, runtime: string, command?: string | null } | null };
+export type DetailGithubRepoQuery = { __typename?: 'Query', githubRepo?: { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string, readme?: string | null, deployments: Array<{ __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }> } | null };
 
 export type PortGlobalSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
 }>;
 
 
-export type PortGlobalSearchQuery = { __typename?: 'Query', containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string, pulled?: boolean | null, latestPull?: any | null, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null> | null, whales?: Array<{ __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, image: string, pulled?: boolean | null, latestPull?: any | null } | null> | null };
+export type PortGlobalSearchQuery = { __typename?: 'Query', containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null> | null, whales?: Array<{ __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> } } | null> | null };
 
 export type DetailWhaleQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailWhaleQuery = { __typename?: 'Query', whale?: { __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, scopes?: any | null, image: string, pulled?: boolean | null, latestPull?: any | null, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type DetailWhaleQuery = { __typename?: 'Query', whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, requirements?: any | null, command?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
 export type WhalesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type WhalesQuery = { __typename?: 'Query', whales?: Array<{ __typename?: 'Whale', id: string, config?: any | null, runtime?: WhaleRuntime | null, createdAt: any, clientId: string, clientSecret: string, image: string, pulled?: boolean | null, latestPull?: any | null } | null> | null };
+export type WhalesQuery = { __typename?: 'Query', whales?: Array<{ __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes?: any | null, image: string, command?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> } } | null> | null };
 
 export const DetailImageFragmentDoc = gql`
     fragment DetailImage on Image {
   tags
 }
     `;
+export const DetailDeploymentFragmentDoc = gql`
+    fragment DetailDeployment on Deployment {
+  id
+  identifier
+  version
+  scopes
+  image
+  requirements
+  command
+}
+    `;
 export const DetailWhaleFragmentDoc = gql`
     fragment DetailWhale on Whale {
   id
-  config
-  runtime
-  createdAt
-  clientId
-  clientSecret
-  scopes
-  image
+  deployment {
+    ...DetailDeployment
+  }
   pulled
   latestPull
   containers {
@@ -549,7 +529,8 @@ export const DetailWhaleFragmentDoc = gql`
     status
   }
 }
-    ${DetailImageFragmentDoc}`;
+    ${DetailDeploymentFragmentDoc}
+${DetailImageFragmentDoc}`;
 export const DetailContainerFragmentDoc = gql`
     fragment DetailContainer on Container {
   id
@@ -587,14 +568,13 @@ export const DetailNetworkFragmentDoc = gql`
   id
 }
     `;
-export const ListRepoScanFragmentDoc = gql`
-    fragment ListRepoScan on RepoScan {
+export const ListDeploymentFragmentDoc = gql`
+    fragment ListDeployment on Deployment {
   id
   identifier
   version
   scopes
   image
-  runtime
   whales {
     id
   }
@@ -607,12 +587,12 @@ export const DetailGithubRepoFragmentDoc = gql`
   user
   repo
   branch
-  scans {
-    ...ListRepoScan
+  deployments {
+    ...ListDeployment
   }
   readme
 }
-    ${ListRepoScanFragmentDoc}`;
+    ${ListDeploymentFragmentDoc}`;
 export const ListGithubRepoFragmentDoc = gql`
     fragment ListGithubRepo on GithubRepo {
   id
@@ -621,30 +601,18 @@ export const ListGithubRepoFragmentDoc = gql`
   branch
 }
     `;
-export const DetailRepoScanFragmentDoc = gql`
-    fragment DetailRepoScan on RepoScan {
-  id
-  identifier
-  version
-  scopes
-  image
-  runtime
-  command
-}
-    `;
 export const ListWhaleFragmentDoc = gql`
     fragment ListWhale on Whale {
   id
-  config
-  runtime
   createdAt
+  deployment {
+    ...ListDeployment
+  }
   clientId
-  clientSecret
-  image
   pulled
   latestPull
 }
-    `;
+    ${ListDeploymentFragmentDoc}`;
 export const StopContainerDocument = gql`
     mutation StopContainer($id: ID!) {
   stopContainer(id: $id) {
@@ -823,6 +791,7 @@ export const ScanRepoDocument = gql`
   scanRepo(id: $id) {
     id
     identifier
+    version
   }
 }
     `;
@@ -953,19 +922,8 @@ export type PullWhaleMutationHookResult = ReturnType<typeof usePullWhaleMutation
 export type PullWhaleMutationResult = Apollo.MutationResult<PullWhaleMutation>;
 export type PullWhaleMutationOptions = Apollo.BaseMutationOptions<PullWhaleMutation, PullWhaleMutationVariables>;
 export const CreateWhaleDocument = gql`
-    mutation CreateWhale($identifier: String!, $version: String!, $image: String!, $clientId: String!, $clientSecret: String!, $token: String!, $command: String, $scopes: [String]!, $faktEndpoint: String, $runtime: DockerRuntime) {
-  createWhale(
-    version: $version
-    identifier: $identifier
-    image: $image
-    clientId: $clientId
-    clientSecret: $clientSecret
-    scopes: $scopes
-    token: $token
-    command: $command
-    faktEndpoint: $faktEndpoint
-    runtime: $runtime
-  ) {
+    mutation CreateWhale($deployment: ID!, $clientId: String!, $token: String!, $faktEndpoint: String) {
+  createWhale(deployment: $deployment, clientId: $clientId, token: $token) {
     ...DetailWhale
   }
 }
@@ -985,16 +943,10 @@ export type CreateWhaleMutationFn = Apollo.MutationFunction<CreateWhaleMutation,
  * @example
  * const [createWhaleMutation, { data, loading, error }] = useCreateWhaleMutation({
  *   variables: {
- *      identifier: // value for 'identifier'
- *      version: // value for 'version'
- *      image: // value for 'image'
+ *      deployment: // value for 'deployment'
  *      clientId: // value for 'clientId'
- *      clientSecret: // value for 'clientSecret'
  *      token: // value for 'token'
- *      command: // value for 'command'
- *      scopes: // value for 'scopes'
  *      faktEndpoint: // value for 'faktEndpoint'
- *      runtime: // value for 'runtime'
  *   },
  * });
  */
@@ -1075,6 +1027,75 @@ export function useDetailContainerLazyQuery(baseOptions?: Apollo.LazyQueryHookOp
 export type DetailContainerQueryHookResult = ReturnType<typeof useDetailContainerQuery>;
 export type DetailContainerLazyQueryHookResult = ReturnType<typeof useDetailContainerLazyQuery>;
 export type DetailContainerQueryResult = Apollo.QueryResult<DetailContainerQuery, DetailContainerQueryVariables>;
+export const DeploymentsDocument = gql`
+    query Deployments {
+  deployments {
+    ...ListDeployment
+  }
+}
+    ${ListDeploymentFragmentDoc}`;
+
+/**
+ * __useDeploymentsQuery__
+ *
+ * To run a query within a React component, call `useDeploymentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDeploymentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDeploymentsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useDeploymentsQuery(baseOptions?: Apollo.QueryHookOptions<DeploymentsQuery, DeploymentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DeploymentsQuery, DeploymentsQueryVariables>(DeploymentsDocument, options);
+      }
+export function useDeploymentsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DeploymentsQuery, DeploymentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DeploymentsQuery, DeploymentsQueryVariables>(DeploymentsDocument, options);
+        }
+export type DeploymentsQueryHookResult = ReturnType<typeof useDeploymentsQuery>;
+export type DeploymentsLazyQueryHookResult = ReturnType<typeof useDeploymentsLazyQuery>;
+export type DeploymentsQueryResult = Apollo.QueryResult<DeploymentsQuery, DeploymentsQueryVariables>;
+export const DetailDeploymentDocument = gql`
+    query DetailDeployment($id: ID!) {
+  deployment(id: $id) {
+    ...DetailDeployment
+  }
+}
+    ${DetailDeploymentFragmentDoc}`;
+
+/**
+ * __useDetailDeploymentQuery__
+ *
+ * To run a query within a React component, call `useDetailDeploymentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailDeploymentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailDeploymentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailDeploymentQuery(baseOptions: Apollo.QueryHookOptions<DetailDeploymentQuery, DetailDeploymentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailDeploymentQuery, DetailDeploymentQueryVariables>(DetailDeploymentDocument, options);
+      }
+export function useDetailDeploymentLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailDeploymentQuery, DetailDeploymentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailDeploymentQuery, DetailDeploymentQueryVariables>(DetailDeploymentDocument, options);
+        }
+export type DetailDeploymentQueryHookResult = ReturnType<typeof useDetailDeploymentQuery>;
+export type DetailDeploymentLazyQueryHookResult = ReturnType<typeof useDetailDeploymentLazyQuery>;
+export type DetailDeploymentQueryResult = Apollo.QueryResult<DetailDeploymentQuery, DetailDeploymentQueryVariables>;
 export const GithubReposDocument = gql`
     query GithubRepos {
   githubRepos {
@@ -1144,75 +1165,6 @@ export function useDetailGithubRepoLazyQuery(baseOptions?: Apollo.LazyQueryHookO
 export type DetailGithubRepoQueryHookResult = ReturnType<typeof useDetailGithubRepoQuery>;
 export type DetailGithubRepoLazyQueryHookResult = ReturnType<typeof useDetailGithubRepoLazyQuery>;
 export type DetailGithubRepoQueryResult = Apollo.QueryResult<DetailGithubRepoQuery, DetailGithubRepoQueryVariables>;
-export const RepoScansDocument = gql`
-    query RepoScans {
-  reposcans {
-    ...ListRepoScan
-  }
-}
-    ${ListRepoScanFragmentDoc}`;
-
-/**
- * __useRepoScansQuery__
- *
- * To run a query within a React component, call `useRepoScansQuery` and pass it any options that fit your needs.
- * When your component renders, `useRepoScansQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useRepoScansQuery({
- *   variables: {
- *   },
- * });
- */
-export function useRepoScansQuery(baseOptions?: Apollo.QueryHookOptions<RepoScansQuery, RepoScansQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<RepoScansQuery, RepoScansQueryVariables>(RepoScansDocument, options);
-      }
-export function useRepoScansLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<RepoScansQuery, RepoScansQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<RepoScansQuery, RepoScansQueryVariables>(RepoScansDocument, options);
-        }
-export type RepoScansQueryHookResult = ReturnType<typeof useRepoScansQuery>;
-export type RepoScansLazyQueryHookResult = ReturnType<typeof useRepoScansLazyQuery>;
-export type RepoScansQueryResult = Apollo.QueryResult<RepoScansQuery, RepoScansQueryVariables>;
-export const DetailRepoScanDocument = gql`
-    query DetailRepoScan($id: ID!) {
-  reposcan(id: $id) {
-    ...DetailRepoScan
-  }
-}
-    ${DetailRepoScanFragmentDoc}`;
-
-/**
- * __useDetailRepoScanQuery__
- *
- * To run a query within a React component, call `useDetailRepoScanQuery` and pass it any options that fit your needs.
- * When your component renders, `useDetailRepoScanQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useDetailRepoScanQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDetailRepoScanQuery(baseOptions: Apollo.QueryHookOptions<DetailRepoScanQuery, DetailRepoScanQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<DetailRepoScanQuery, DetailRepoScanQueryVariables>(DetailRepoScanDocument, options);
-      }
-export function useDetailRepoScanLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailRepoScanQuery, DetailRepoScanQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<DetailRepoScanQuery, DetailRepoScanQueryVariables>(DetailRepoScanDocument, options);
-        }
-export type DetailRepoScanQueryHookResult = ReturnType<typeof useDetailRepoScanQuery>;
-export type DetailRepoScanLazyQueryHookResult = ReturnType<typeof useDetailRepoScanLazyQuery>;
-export type DetailRepoScanQueryResult = Apollo.QueryResult<DetailRepoScanQuery, DetailRepoScanQueryVariables>;
 export const PortGlobalSearchDocument = gql`
     query PortGlobalSearch($search: String) {
   containers(search: $search) {

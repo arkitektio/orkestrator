@@ -3,8 +3,8 @@ fragment DetailGithubRepo on GithubRepo {
   user
   repo
   branch
-  scans {
-    ...ListRepoScan
+  deployments {
+    ...ListDeployment
   }
   readme
 }

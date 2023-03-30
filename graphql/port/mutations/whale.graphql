@@ -17,28 +17,15 @@ mutation PullWhale($id: ID!) {
 }
 
 mutation CreateWhale(
-  $identifier: String!
-  $version: String!
-  $image: String!
+  $deployment: ID!
   $clientId: String!
-  $clientSecret: String!
   $token: String!
-  $command: String,
-  $scopes: [String]!
   $faktEndpoint: String
-  $runtime: DockerRuntime
 ) {
   createWhale(
-    version: $version
-    identifier: $identifier
-    image: $image
+    deployment: $deployment
     clientId: $clientId
-    clientSecret: $clientSecret
-    scopes: $scopes
     token: $token
-    command: $command
-    faktEndpoint: $faktEndpoint
-    runtime: $runtime
   ) {
     ...DetailWhale
   }
