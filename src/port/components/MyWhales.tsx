@@ -46,14 +46,14 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
             <div className="p-2 ">
               <div className="flex">
                 <span className="flex-grow font-semibold text-xs">
-                  {whale?.image}
+                  {whale?.deployment.image}
                 </span>
               </div>
               <Whale.DetailLink
                 className="text-xl font-light cursor-pointer mb-1"
                 object={whale?.id}
               >
-                {whale?.image}
+                {whale?.deployment.version}
               </Whale.DetailLink>
             </div>
             <div className="pl-2 pb-2">

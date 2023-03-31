@@ -4,7 +4,7 @@ import { useDialog } from "../../../layout/dialog/DialogProvider";
 import { RepoScan } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
 import { ListRepoScanFragment } from "../../api/graphql";
-import { PrepareScanDialog } from "../dialogs/PrepareScanDialog";
+import { PrepareScanDialog } from "../dialogs/DeployDialog";
 
 interface UserCardProps {
   scan: ListRepoScanFragment;

@@ -82,6 +82,7 @@ export const EditRiverContext = React.createContext<EditRiverContextType>({
   args: [],
   returns: [],
   saving: false,
+  internalSignal: false,
 });
 
 export const useEditRiver = () => useContext(EditRiverContext);

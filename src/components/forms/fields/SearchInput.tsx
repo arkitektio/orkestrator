@@ -36,7 +36,7 @@ type GraphQlSearchResult = Promise<{
 export type GraphQLSearchProps<T extends Option> = CommonProps<T> & {
   name: string;
   disabled?: boolean;
-  searchFunction: (props: GraphQlSearchProps) => GraphQlSearchResult;
+  searchFunction: (options: GraphQlSearchProps) => GraphQlSearchResult;
 };
 
 export type CreateableProps<T extends Option> = CommonProps<T> & {

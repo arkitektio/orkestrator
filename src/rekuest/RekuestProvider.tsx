@@ -1,7 +1,5 @@
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
-import React, { useEffect, useState } from "react";
-import { useFakts } from "@jhnnsrs/fakts";
-import { useHerre } from "herre";
+import React, { useState } from "react";
 import { createRekuestClient } from "./client";
 import { RekuestContext } from "./RekuestContext";
 import { RekuestConfig } from "./types";

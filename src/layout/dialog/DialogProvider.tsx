@@ -42,13 +42,6 @@ export const Modal = (props: ModalProps) => {
   return <></>;
 };
 
-export const test = () => {
-  const { ask } = useDialog();
-  ask(Modal, { message: "hello", x: "nana" }).then((result) => {
-    console.log(result);
-  });
-};
-
 export const DialogProvider = ({
   children,
   registeredDialogs,

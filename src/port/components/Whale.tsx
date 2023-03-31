@@ -57,14 +57,11 @@ export const Whale = (props: WhaleProps) => {
 
   return (
     <PageLayout>
-      <SectionTitle>Whale {data?.whale?.image}</SectionTitle>
+      <SectionTitle>
+        Whale for deployment {data?.whale?.deployment.identifier}
+      </SectionTitle>
       <div className="text-white">
-        <div className="text-2xl">
-          Container hosting
-          {data?.whale?.clientId && (
-            <AppInfo clientId={data?.whale?.clientId} />
-          )}
-        </div>
+        <div className="text-2xl">Container hosting</div>
 
         {data?.whale?.containers?.filter(notEmpty).map((container) => (
           <Container.Smart

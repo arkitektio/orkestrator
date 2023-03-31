@@ -128,7 +128,7 @@ const MyRepresentations: React.FC<
               ?.slice(0, limit)
               .filter(notEmpty)
               .map((rep, index) => (
-                <RepresentationCard rep={rep} key={rep?.id} />
+                <RepresentationCard rep={rep} key={rep?.id} mates={[]} />
               ))}
           </ResponsiveContainerGrid>
         </>

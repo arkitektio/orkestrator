@@ -33,9 +33,7 @@ export const NotificationCenter = (props: {
           <div
             key={notification.id}
             className="bg-slate-50 gap-2 border-gray-800 p-1 border mb-1 rounded rounded-md font-thin"
-          >
-            {notification?.content}
-          </div>
+          ></div>
         ))}
       </div>
     </div>

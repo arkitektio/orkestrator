@@ -1,13 +1,11 @@
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import {
-  useDetailContainerQuery,
-  useStopContainerMutation,
-  useRestartContainerMutation,
-  useRemoveContainerMutation,
-  useDetailWhaleQuery,
-  useDetailGithubRepoQuery,
+  useDetailDeploymentQuery,
   useDetailRepoScanQuery,
+  useRemoveContainerMutation,
+  useRestartContainerMutation,
+  useStopContainerMutation,
 } from "../api/graphql";
 import { withPort } from "../PortContext";
 
@@ -15,8 +13,8 @@ export type RepoScanProps = {
   id: string;
 };
 
-export const RepoScan = (props: RepoScanProps) => {
-  const { data } = withPort(useDetailRepoScanQuery)({
+export const Deployment = (props: RepoScanProps) => {
+  const { data } = withPort(useDetailDeploymentQuery)({
     variables: { id: props.id },
     pollInterval: 1000,
   });
@@ -27,10 +25,12 @@ export const RepoScan = (props: RepoScanProps) => {
 
   return (
     <PageLayout>
-      <SectionTitle>Repo Identifier {data?.reposcan?.identifier}</SectionTitle>
+      <SectionTitle>
+        Deployment for: {data?.deployment?.identifier}
+      </SectionTitle>
       <div className="text-white">
         <div className="text-2xl">
-          Container hosting {data?.reposcan?.version}
+          This deployment is running {data?.deployment?.version}
         </div>
       </div>
     </PageLayout>
