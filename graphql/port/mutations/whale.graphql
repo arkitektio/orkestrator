@@ -16,17 +16,8 @@ mutation PullWhale($id: ID!) {
   }
 }
 
-mutation CreateWhale(
-  $deployment: ID!
-  $clientId: String!
-  $token: String!
-  $faktEndpoint: String
-) {
-  createWhale(
-    deployment: $deployment
-    clientId: $clientId
-    token: $token
-  ) {
+mutation CreateWhale($deployment: ID!, $clientId: String!, $token: String!) {
+  createWhale(deployment: $deployment, clientId: $clientId, token: $token) {
     ...DetailWhale
   }
 }
