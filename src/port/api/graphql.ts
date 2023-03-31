@@ -431,7 +431,6 @@ export type CreateWhaleMutationVariables = Exact<{
   deployment: Scalars['ID'];
   clientId: Scalars['String'];
   token: Scalars['String'];
-  faktEndpoint?: InputMaybe<Scalars['String']>;
 }>;
 
 
@@ -922,7 +921,7 @@ export type PullWhaleMutationHookResult = ReturnType<typeof usePullWhaleMutation
 export type PullWhaleMutationResult = Apollo.MutationResult<PullWhaleMutation>;
 export type PullWhaleMutationOptions = Apollo.BaseMutationOptions<PullWhaleMutation, PullWhaleMutationVariables>;
 export const CreateWhaleDocument = gql`
-    mutation CreateWhale($deployment: ID!, $clientId: String!, $token: String!, $faktEndpoint: String) {
+    mutation CreateWhale($deployment: ID!, $clientId: String!, $token: String!) {
   createWhale(deployment: $deployment, clientId: $clientId, token: $token) {
     ...DetailWhale
   }
@@ -946,7 +945,6 @@ export type CreateWhaleMutationFn = Apollo.MutationFunction<CreateWhaleMutation,
  *      deployment: // value for 'deployment'
  *      clientId: // value for 'clientId'
  *      token: // value for 'token'
- *      faktEndpoint: // value for 'faktEndpoint'
  *   },
  * });
  */
