@@ -35,54 +35,6 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
     variables: { interfaces: [`flow:${flow?.id}`] },
   });
 
-  useEffect(() => {
-    console.log("Subscribing to My Representations");
-    const unsubscribe = subscribeToMore<
-      WatchInterfaceSubscription,
-      WatchInterfaceSubscriptionVariables
-    >({
-      document: WatchInterfaceDocument,
-      variables: {},
-      updateQuery: (prev, { subscriptionData }) => {
-        console.log("Received Representation", subscriptionData);
-        let action = subscriptionData.data?.nodes;
-        let newelements;
-        // Try to update
-        if (action?.updated) {
-          let updated_res = action.updated;
-          newelements = prev.allnodes?.map((item: any) =>
-            item.id === updated_res?.id
-              ? { ...item, data: { ...item.data, ...updated_res } }
-              : item
-          );
-        }
-
-        if (action?.deleted) {
-          let ended_res = action.deleted;
-          newelements = prev.allnodes
-            ?.map((item: any) => (item.id === ended_res ? null : item))
-            .filter((item) => item != null);
-        }
-
-        if (action?.created) {
-          let updated_res = action.created;
-          if (prev.allnodes) {
-            newelements = [updated_res, ...prev.allnodes];
-          } else {
-            newelements = [updated_res];
-          }
-        }
-
-        console.log("Received ", subscriptionData);
-        return {
-          ...prev,
-          allnodes: newelements,
-        };
-      },
-    });
-    return () => unsubscribe();
-  }, [subscribeToMore]);
-
   const reserved = reservations?.reservations
     ?.filter((res) => res?.node?.interfaces?.includes(`flow:${flow?.id}`))
     .at(0);

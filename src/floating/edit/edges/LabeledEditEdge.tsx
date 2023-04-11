@@ -1,15 +1,9 @@
 import React from "react";
-import { useNodes, BezierEdge, getSmoothStepPath } from "reactflow";
+import { AiOutlineClose } from "react-icons/ai";
+import { getSmoothStepPath, useNodes } from "reactflow";
 import { StreamKind } from "../../../fluss/api/graphql";
 import { LabeledEdgeProps } from "../../types";
 import { useEditRiver } from "../context";
-import {
-  getSmartEdge,
-  svgDrawSmoothLinePath,
-  svgDrawStraightLinePath,
-  pathfindingJumpPointNoDiagonal,
-} from "@tisoap/react-flow-smart-edge";
-import { AiOutlineClose } from "react-icons/ai";
 
 const foreignObjectSize = 200;
 
@@ -29,8 +23,6 @@ export const LabeledEditEdge: React.FC<LabeledEdgeProps> = (props) => {
     markerEnd,
     data,
   } = props;
-
-  const nodes = useNodes();
 
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourcePosition,
@@ -67,7 +59,7 @@ export const LabeledEditEdge: React.FC<LabeledEdgeProps> = (props) => {
             {data?.stream.map((item, index) => (
               <span className="text-xs" key={index}>
                 {(item?.kind == StreamKind.List
-                  ? "[ " + item?.child?.identifier + " ]" || item?.kind
+                  ? "[ " + (item?.child?.identifier || item?.child?.kind) + " ]"
                   : item?.identifier || item?.kind) +
                   (item?.nullable ? "?" : "")}
               </span>
