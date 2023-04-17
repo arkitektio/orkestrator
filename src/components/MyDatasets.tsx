@@ -109,9 +109,10 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
           description="Create a new Dataset"
           className="text-white "
           onAction={async () => {
-            console.log("create dataset");
+            console.log("create dataset", "LOOOOLK");
 
             await ask(CreateDatasetModal, {});
+            await refetch();
           }}
         >
           <BsPlusCircle />

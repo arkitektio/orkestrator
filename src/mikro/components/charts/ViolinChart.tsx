@@ -11,12 +11,12 @@ import { Form, Formik } from "formik";
 import React, { useEffect } from "react";
 import * as s from "simple-statistics";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
-import { SelectInputField } from "../../../components/forms/fields/select_input";
 import { PopMenu } from "../../../layout/PopMenu";
 import { Group } from "../plot/types";
 import { Smart } from "./generic/Smart";
 import { SmartProps } from "./generic/types";
 import { ChartProps } from "./types";
+import { ListSearchInput } from "../../../components/forms/fields/SearchInput";
 export type ViolinChartProps = ChartProps;
 type BoxStats = {
   min: number;
@@ -358,12 +358,12 @@ export const ViolinChart = ({ group }: ViolinChartProps) => {
                       >
                         {(formik) => (
                           <Form>
-                            <ChangeSubmitHelper formik={formik} />
+                            <ChangeSubmitHelper />
                             <div className="w-full text-white">
-                              <SelectInputField
+                              <ListSearchInput
                                 name="axis"
                                 label="Axis"
-                                options={
+                                searchFunction={async () =>
                                   group?.schema?.axis.map((ax) => ({
                                     value: ax.key,
                                     label: ax.key,

@@ -1,6 +1,6 @@
 import React from "react";
 import { Route, RouteProps } from "react-router";
-import { useHerre } from "herre";
+import { useHerre } from "@jhnnsrs/herre";
 
 export type IProtectedRouteProps = RouteProps & {
   roles: [string];

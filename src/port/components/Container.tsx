@@ -125,20 +125,11 @@ export const Container = (props: ContainerProps) => {
         </>
       }
     >
-      <SectionTitle>Container {data?.container?.name}</SectionTitle>
       <div className="text-white">
         <div className="text-2xl">
-          Container hosting {data?.container?.whale?.image}
+          Container hosting {data?.container?.whale?.deployment?.identifier}:
+          {data?.container?.whale?.deployment?.version}
         </div>
-        {data?.container?.whale?.clientId && (
-          <AgentInformation
-            clientId={data?.container?.whale?.clientId}
-            instanceId={"main"}
-          />
-        )}
-        {data?.container?.whale?.clientId && (
-          <AppInformation clientId={data?.container?.whale?.clientId} />
-        )}
 
         <div className="text-sm flex flex-col">
           <div className="flex flex-row">
@@ -150,19 +141,18 @@ export const Container = (props: ContainerProps) => {
             <div className="w-1/2">{data?.container?.status}</div>
           </div>
           <div className="flex flex-row">
-            <div className="w-1/2">Image</div>
-            <div className="w-1/2">{data?.container?.image?.tags}</div>
+            <div className="w-1/2">Tags</div>
+            <div className="w-1/2">
+              {data?.container?.image?.tags?.join(" | ")}
+            </div>
           </div>
           <div className="flex flex-row">
-            <div className="w-1/2">Runtime</div>
+            <div className="w-1/2">Requirements</div>
             <div className="w-1/2">
-              {JSON.stringify(data?.container?.whale?.runtime)}
+              {data?.container?.whale?.deployment?.requirements.join(" | ")}
             </div>
           </div>
         </div>
-        {data?.container?.whale?.clientId && (
-          <ContainerProvisions clientId={data?.container?.whale?.clientId} />
-        )}
         <div className="mt-3 bg-black rounded-lg p-3">
           <pre>{data?.container?.logs}</pre>
         </div>

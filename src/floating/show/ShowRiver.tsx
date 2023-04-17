@@ -7,7 +7,6 @@ import { Graph } from "../base/Graph";
 import { NodeTypes, ReserveState } from "../types";
 import { edges_to_flowedges, nodes_to_flownodes } from "../utils";
 import { ShowRiverContext } from "./context";
-import { FancyTrackEdge } from "./edges/FancyTrackEdge";
 import { LabeledTrackEdge } from "./edges/LabeledTrackEdge";
 import { ArkitektTrackNodeWidget } from "./nodes/ArkitektTrackNodeWidget";
 import { ArgTrackNodeWidget } from "./nodes/generic/ArgTrackNodeWidget";
@@ -25,7 +24,7 @@ const nodeTypes: NodeTypes = {
 
 const edgeTypes: EdgeTypes = {
   LabeledEdge: LabeledTrackEdge,
-  FancyEdge: FancyTrackEdge,
+  FancyEdge: LabeledTrackEdge,
 };
 
 export type Props = {

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { BiSearch } from "react-icons/bi";
 import { FiArrowDown } from "react-icons/fi";
 import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
-import { SearchSelectInput } from "../../components/forms/fields/search_select_input";
 import {
   GlobalSearchQueryVariables,
   useStageSearchLazyQuery,
@@ -16,6 +15,10 @@ import "react-datepicker/dist/react-datepicker.css";
 import { DateInputField } from "../../components/forms/fields/date_input";
 import { withMikro } from "../../mikro/MikroContext";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
+import {
+  GraphQLListSearchInput,
+  GraphQLSearchInput,
+} from "../../components/forms/fields/SearchInput";
 
 interface NodeFilterBoxProps {
   onFilterChanged: (values: GlobalSearchQueryVariables) => any;
@@ -80,22 +83,20 @@ export const DataSearch: React.FC<NodeFilterBoxProps> = ({
               <>
                 <div className="grid grid-cols-1 mt-2 dark:border-t-slate-800">
                   <div className="flex flex-col">
-                    <SearchSelectInput
+                    <GraphQLSearchInput
                       name="creator"
-                      lazySearch={searchUser}
+                      searchFunction={searchUser}
                       label="Created by"
                     />
-                    <SearchSelectInput
+                    <GraphQLListSearchInput
                       name="tags"
-                      isMulti={true}
                       label="Has tags"
-                      lazySearch={searchTags}
+                      searchFunction={searchTags}
                     />
-                    <SearchSelectInput
+                    <GraphQLListSearchInput
                       name="stages"
-                      isMulti={true}
                       label="In stages"
-                      lazySearch={searchStages}
+                      searchFunction={searchStages}
                     />
                     <DateInputField
                       name="createdBefore"

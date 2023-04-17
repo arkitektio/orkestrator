@@ -16,6 +16,7 @@ fragment RepRoi on ROI {
   tags
   pinned
   label
+  createdWhile
 }
 
 fragment DetailRoi on ROI {
@@ -54,4 +55,5 @@ fragment DetailRoi on ROI {
     id
     email
   }
+  createdWhile
 }

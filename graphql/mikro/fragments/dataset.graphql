@@ -24,6 +24,9 @@ fragment DetailDataset on Dataset {
     id
     name
   }
+  children {
+    ...ListDataset
+  }
 }
 
 fragment ListDataset on Dataset {

@@ -19,6 +19,7 @@ import {
   DetailExperimentQuery,
   useDetailDatasetQuery,
   usePinDatasetMutation,
+  usePutDatasetsMutation,
   usePutFilesMutation,
   usePutRepresentationsMutation,
   usePutSamplesMutation,
@@ -39,6 +40,8 @@ import { useDeleteFileMate } from "../../mates/file/useDeleteFileMate";
 import { useReleaseSampleMate } from "../../mates/sample/useReleaseSampleMate";
 import { useReleaseRepresentationMate } from "../../mates/representation/useReleaseRepresentationMate";
 import { SampleCard } from "./cards/SampleCard";
+import { DatasetCard } from "./cards/DatasetCard";
+import { usePutDatasetsMate } from "../../mates/dataset/usePutDatasetsMate";
 
 export type IExperimentProps = {
   id: string;
@@ -57,13 +60,12 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
   const relaseFileMate = useReleaseFileMate(id);
   const deleteFileMate = useDeleteFileMate();
 
+  const [putDatasets] = withMikro(usePutDatasetsMutation)();
+  const putDatasetsMate = usePutDatasetsMate(id);
+  const releaseDatasetsMate = usePutDatasetsMate(id);
+
   const releaseSampleMate = useReleaseSampleMate(id);
   const releaseRepresentationMate = useReleaseRepresentationMate(id);
-
-  const [releaseSamples] = withMikro(useReleaseSamplesMutation)();
-  const [releaseRepresentations] = withMikro(
-    useReleaseRepresentationsMutation
-  )();
 
   const [searchTags, _t] = withMikro(useTagSearchLazyQuery)();
   const [show, setshow] = useState(false);
@@ -162,6 +164,28 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
               </button>
             </div>
           </div>
+          <SectionTitle> Datasets </SectionTitle>
+          <ResponsiveContainerGrid>
+            {data?.dataset?.children?.filter(notEmpty).map((sample) => (
+              <DatasetCard dataset={sample} mates={[releaseDatasetsMate]} />
+            ))}
+            <DropZone
+              accepts={["item:@mikro/dataset", "list:@mikro/dataset"]}
+              className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg truncate"
+              onDrop={async (item) => {
+                await putDatasets({
+                  variables: {
+                    dataset: id,
+                    datasets: item.map((i) => i.object),
+                  },
+                });
+              }}
+              canDropLabel={
+                "Drag datasets here to associated with this Dataset"
+              }
+              overLabel={"Release to add"}
+            />
+          </ResponsiveContainerGrid>
           <SectionTitle> Samples </SectionTitle>
           <ResponsiveContainerGrid>
             {data?.dataset?.samples?.filter(notEmpty).map((sample) => (

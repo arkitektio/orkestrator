@@ -1,33 +1,22 @@
-import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useEffect, useState } from "react";
-import { Data } from "react-csv/components/CommonPropTypes";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { useNavigate } from "react-router";
+import { BsCaretLeft, BsCaretRight, BsPlusCircle } from "react-icons/bs";
 import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
+import { useDialog } from "../layout/dialog/DialogProvider";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Sample } from "../linker";
 import { useDeleteSampleMate } from "../mates/sample/useDeleteSampleMutation";
 import {
-  ListSampleFragment,
   MySamplesEventDocument,
   MySamplesEventSubscriptionResult,
   MySamplesQuery,
-  useDeleteSampleMutation,
   useMySamplesQuery,
 } from "../mikro/api/graphql";
 import { SampleCard } from "../mikro/components/cards/SampleCard";
 import { CreateSampleModal } from "../mikro/components/dialogs/CreateSampleModal";
 import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
-import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMySamplesProps = {};
 
 export const SampleType = "Sample";
@@ -50,6 +39,7 @@ const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
   const deleteSample = useDeleteSampleMate();
 
   const [show, setshow] = useState(false);
+  const { ask } = useDialog();
 
   const [offset, setOffset] = useState(0);
 
@@ -139,11 +129,13 @@ const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
             label="Create new Sample"
             description="Create a new sample"
             className="text-white "
-            onAction={async () => setshow(true)}
+            onAction={async () => {
+              await ask(CreateSampleModal, {});
+              await refetch();
+            }}
           >
             <BsPlusCircle />
           </ActionButton>
-          <CreateSampleModal show={show} setShow={setshow} />
         </div>
       </ResponsiveContainerGrid>
     </>

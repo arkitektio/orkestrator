@@ -3,9 +3,11 @@ import React, { useEffect, useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
 import {
-  CreateableSearchSelectInput,
-  SearchSelectInput,
-} from "../../components/forms/fields/search_select_input";
+  CreateableListSearchInput,
+  GraphQLCreatableListSearchInput,
+  GraphQLListSearchInput,
+  GraphQLSearchInput,
+} from "../../components/forms/fields/SearchInput";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { SelfActions } from "../../components/SelfActions";
 import { ThumbnailCanvas } from "../../components/ThumbnailCanvas";
@@ -16,6 +18,7 @@ import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { SaveParentSize } from "../../layout/SaveParentSize";
 import {
+  Assignation,
   Dataset,
   Instrument,
   Metric,
@@ -66,7 +69,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
     usePinRepresentationMutation
   )();
 
-  const [showRois, setShowRois] = useState(false);
+  const [showRois, setShowRois] = useState(true);
 
   const [updateRepresentation, _] = withMikro(
     useUpdateRepresentationMutation
@@ -247,25 +250,10 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
         <div className="flex @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">
           <div className="flex-1 max-w-2xl mt-2 rounded rounded-lg overflow-hidden relative">
             {data?.representation && (
-              <ExperimentalFeature
-                fallback={
-                  <SaveParentSize debounceTime={800}>
-                    {({ width, height }) => (
-                      <ThumbnailCanvas
-                        rep={data?.representation}
-                        height={aspectRatio ? aspectRatio * width : height}
-                        width={width}
-                        wi
-                      />
-                    )}
-                  </SaveParentSize>
-                }
-              >
-                <TwoDOffcanvas
-                  representation={data?.representation}
-                  withRois={showRois}
-                />
-              </ExperimentalFeature>
+              <TwoDOffcanvas
+                representation={data?.representation}
+                withRois={showRois}
+              />
             )}
           </div>
           <div className="@container p-4 flex-1 bg-white border shadow mt-2 rounded">
@@ -300,6 +288,15 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
             <div className="text-md mt-2 ">
               <Timestamp date={data?.representation?.createdAt} />
             </div>
+            {data?.representation?.createdWhile && (
+              <div className="text-md mt-2 ">
+                <Assignation.DetailLink
+                  object={data?.representation?.createdWhile}
+                >
+                  Provenance
+                </Assignation.DetailLink>
+              </div>
+            )}
             <div className="font-light mt-2 ">Created by</div>
             <div className="text-md mt-2 ">
               {data?.representation?.creator?.email}
@@ -336,18 +333,21 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                   <Form>
                     <div className="flex flex-col">
                       <div className="flex-grow">
-                        <CreateableSearchSelect
+                        <GraphQLCreatableListSearchInput
                           name="tags"
-                          isMulti={true}
                           label="Tags"
-                          lazySearch={searchTags}
+                          searchFunction={searchTags}
+                          createFunction={async (name) => ({
+                            label: name,
+                            value: name,
+                          })}
                         />
                       </div>
                       <div className="flex-grow">
-                        <SearchSelectInput
+                        <GraphQLSearchInput
                           name="sample"
-                          label="Sample"
-                          lazySearch={searchSample}
+                          label="Samples"
+                          searchFunction={searchSample}
                         />
                       </div>
                     </div>

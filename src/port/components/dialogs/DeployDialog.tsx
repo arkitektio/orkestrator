@@ -6,6 +6,7 @@ import {
   DetailWhaleFragment,
   useCreateWhaleMutation,
   useDetailDeploymentQuery,
+  WhalesDocument,
 } from "../../api/graphql";
 import { withPort } from "../../PortContext";
 
@@ -19,7 +20,9 @@ export const DeployDialog = (
   });
 
   const [createApp] = withMan(useCreatePrivateFaktMutation)({});
-  const [createWhale] = withPort(useCreateWhaleMutation)({});
+  const [createWhale] = withPort(useCreateWhaleMutation)({
+    refetchQueries: [WhalesDocument],
+  });
 
   const dostuff = async () => {
     const app = await createApp({

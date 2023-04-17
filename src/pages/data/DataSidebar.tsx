@@ -3,6 +3,7 @@ import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveConta
 import { ResponsiveList } from "../../components/layout/ResponsiveList";
 import { OptimizedImage } from "../../layout/OptimizedImage";
 import {
+  Dataset,
   Experiment,
   MikroFile,
   Representation,
@@ -124,6 +125,38 @@ export const ExperimentItem = ({ experiment }: any) => {
   );
 };
 
+export const DatasetItem = ({ dataset }: any) => {
+  const { s3resolve } = useMikro();
+
+  return (
+    <Dataset.Smart
+      showSelfMates={true}
+      placement="bottom"
+      object={dataset.id}
+      dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
+        `rounded shadow-xl group text-white bg-slate-700 ${
+          isOver && !isDragging && "border-primary-200 border"
+        } ${isDragging && "border-primary-200 border"} ${
+          isSelected && "ring-1 ring-primary-200 "
+        }`
+      }
+    >
+      <div className="px-6 py-4 truncate">
+        <Dataset.DetailLink
+          className={({ isActive }) =>
+            "font-bold text-md mb-2 cursor-pointer " +
+            (isActive ? "text-primary-300" : "")
+          }
+          object={dataset.id}
+        >
+          <span className="truncate">{dataset?.name}</span>
+        </Dataset.DetailLink>
+        <p className="text-white-700 text-base"></p>
+      </div>
+    </Dataset.Smart>
+  );
+};
+
 export const TableItem = ({ table }: any) => {
   const { s3resolve } = useMikro();
 
@@ -219,6 +252,16 @@ const DataSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
           <ResponsiveContainerGrid>
             {data?.experiments?.map((experiment, index) => (
               <ExperimentItem key={index} experiment={experiment} />
+            ))}
+          </ResponsiveContainerGrid>
+          {data?.datasets && data?.datasets.length > 0 && (
+            <div className="font-semibold text-center text-xs dark:text-slate-50 mt-2">
+              Datasets
+            </div>
+          )}
+          <ResponsiveContainerGrid>
+            {data?.datasets?.map((dataset, index) => (
+              <DatasetItem key={index} dataset={dataset} />
             ))}
           </ResponsiveContainerGrid>
           {data?.samples && data?.samples.length > 0 && (

@@ -17,6 +17,7 @@ fragment ListRepresentation on Representation {
   }
   variety
   pinned
+  createdWhile
 }
 
 fragment ListSharedRepresentation on Representation {
@@ -39,6 +40,7 @@ fragment ListSharedRepresentation on Representation {
   creator {
     email
   }
+  createdWhile
 }
 
 fragment DetailRepresentation on Representation {
@@ -94,11 +96,11 @@ fragment DetailRepresentation on Representation {
       blurhash
     }
   }
+  createdWhile
   tables {
     id
     name
   }
-
   rois {
     ...RepRoi
   }

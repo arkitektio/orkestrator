@@ -1,9 +1,8 @@
 import { Form, Formik } from "formik";
 import {
-  CreatableSearchSelectWidget,
-  CreateableSearchSelect,
-  SearchSelectInput,
-} from "../../../components/forms/fields/search_select_input";
+  CreateableListSearchInput,
+  GraphQLListSearchInput,
+} from "../../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { SwitchInputField } from "../../../components/forms/fields/switch_input";
 import { TextInputField } from "../../../components/forms/fields/text_input";
@@ -12,6 +11,7 @@ import { TwDialog } from "../../../layout/dialog/TwDialog";
 import {
   CreatePublicFaktMutation,
   CreatePublicFaktMutationVariables,
+  PublicFaktType,
   useCreatePublicFaktMutation,
   useScopesOptionsLazyQuery,
 } from "../../api/graphql";
@@ -30,6 +30,7 @@ export const CreatePublicFaktDialgog = (
         redirectUris: [""],
         identifier: "",
         version: "",
+        kind: PublicFaktType.Website,
         scopes: [],
       }}
       onSubmit={async (values) => {
@@ -87,23 +88,23 @@ export const CreatePublicFaktDialgog = (
                 make sure the redirect uri is correct and only is able to redirect to domains that you control."
             />
 
-            <CreateableSearchSelect
+            <CreateableListSearchInput
               name="redirectUris"
               label="Redirect uris"
-              isMulti={true}
-              lazySearch={async () => ({
-                data: {
-                  options: [],
-                },
-              })}
+              createFunction={async (uri) => {
+                return {
+                  label: uri,
+                  value: uri,
+                };
+              }}
+              searchFunction={async () => []}
               description="Specify the redirect uris for this fakt"
             />
 
-            <SearchSelectInput
+            <GraphQLListSearchInput
               name="scopes"
               label="Scopes"
-              isMulti={true}
-              lazySearch={searchScopes}
+              searchFunction={searchScopes}
               description="Specify the scopes you want the app to be able to claim. These are not the scopes the app will eventually claim, but the scopes you want it to be able to claim."
             />
           </span>

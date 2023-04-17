@@ -1,11 +1,11 @@
 import React from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { RoiCanvas } from "../../components/RoiCanvas";
 import { SelfActions } from "../../components/SelfActions";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { Representation } from "../../linker";
+import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import { CommentableModels, useDetailRoiQuery } from "../api/graphql";
 import { withMikro } from "../MikroContext";
 import { RepresentationCard } from "./cards/RepresentationCard";
@@ -19,7 +19,8 @@ const Roi: React.FC<ISampleProps> = ({ id }) => {
     variables: { id: id },
   });
 
-  const deleteRepresentationMate = useDeleteRepresentationMate();
+  const mate = useDeleteRepresentationMate();
+
   return (
     <PageLayout
       actions={<SelfActions type={"@mikro/roi"} object={id} />}
@@ -57,13 +58,13 @@ const Roi: React.FC<ISampleProps> = ({ id }) => {
                   <RepresentationCard
                     key={index}
                     rep={rep}
-                    mates={[deleteRepresentationMate(rep)]}
+                    mates={[mate(rep)]}
                   />
                 ))}
             </ResponsiveContainerGrid>
           </div>
           <div className="ml-2 flex-1  shadow mt-2 rounded rounded-lg overflow-hidden">
-            {data?.roi && <RoiCanvas roi={data.roi} height={500} width={500} />}
+            {data?.roi?.label}
           </div>
         </div>
       </div>

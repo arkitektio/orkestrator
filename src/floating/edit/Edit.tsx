@@ -1,17 +1,16 @@
 import React, { useCallback, useRef, useState } from "react";
 import "react-contexify/dist/ReactContexify.css";
+import "react-toastify/dist/ReactToastify.css";
 import {
   Connection,
   Edge,
   EdgeTypes,
   Position,
   ReactFlowInstance,
-  ReactFlowProvider,
   updateEdge,
   useEdgesState,
   useNodesState,
 } from "reactflow";
-import "react-toastify/dist/ReactToastify.css";
 import { v4 as uuidv4 } from "uuid";
 import { useAlert } from "../../components/alerter/alerter-context";
 import {
@@ -47,7 +46,6 @@ import {
 } from "../utils";
 import { EditSidebar } from "./components/EditSidebar";
 import { EditRiverContext } from "./context";
-import { FancyEditEdge } from "./edges/FancyEditEdge";
 import { LabeledEditEdge } from "./edges/LabeledEditEdge";
 import { EditActions } from "./EditActions";
 import { defaultConnectionHandler, handle_to_index } from "./logic/connect";
@@ -59,12 +57,11 @@ import { ReactiveEditNodeWidget } from "./nodes/ReactiveEditNodeWidget";
 
 import dagre from "dagre";
 import { useDrop } from "react-dnd";
+import { FlussKomments } from "../../komment/FlussKomments";
 import { ModuleLayout } from "../../layout/ModuleLayout";
 import { PageLayout } from "../../layout/PageLayout";
 import FlowDiagramSidebar from "../../pages/flows/workspace/FlowDiagramSidebar";
-import { ColouredMiniMap } from "../base/ColouredMiniMap";
 import { DynamicSidebar } from "./DynamicSidebar";
-import { FlussKomments } from "../../komment/FlussKomments";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektEditNodeWidget,
@@ -76,7 +73,7 @@ const nodeTypes: NodeTypes = {
 
 const edgeTypes: EdgeTypes = {
   LabeledEdge: LabeledEditEdge,
-  FancyEdge: FancyEditEdge,
+  FancyEdge: LabeledEditEdge,
 };
 
 export type Props = {
@@ -560,7 +557,7 @@ export const EditRiver: React.FC<Props> = ({
           >
             <div ref={dropref} className="flex flex-grow h-full w-full">
               <Graph
-                onPaneClick={(e) => setSelectedNode(null)}
+                onPaneClick={(e) => setSelectedNode(undefined)}
                 onDragOver={onDragOver}
                 nodes={nodes}
                 edges={edges}

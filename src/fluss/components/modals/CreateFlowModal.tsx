@@ -2,7 +2,7 @@ import { Dialog } from "@headlessui/react";
 import { Form, Formik } from "formik";
 import { useNavigate } from "react-router";
 import { useAlert } from "../../../components/alerter/alerter-context";
-import { SearchSelectInput } from "../../../components/forms/fields/search_select_input";
+import { GraphQLListSearchInput } from "../../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { implementValidationSchema } from "../../../components/forms/implement/schema";
@@ -79,20 +79,13 @@ export const CreateFlowModal = modalfy(({ setShow, show }) => {
                     as="h3"
                     className="text-xl mt-2 mb-4 leading-6 font-medium text-gray-900"
                   >
-                    Create New Graph
+                    Create New Workspace
                   </Dialog.Title>
-                  <div className="mt-2 align-left text-left">
+                  <div className="mt-2  w-full">
                     <TextInputField
                       name="name"
                       label="Name"
                       description="How should your workflow be Called?"
-                    />
-                    <SearchSelectInput
-                      lazySearch={searchRestrict}
-                      isMulti={true}
-                      name="restrict"
-                      label="Restrict"
-                      description="Restrict the workflow to specific nodes of an app only. This can allow you to create a workflow that can run locally on this app"
                     />
                   </div>
                 </div>
@@ -101,7 +94,7 @@ export const CreateFlowModal = modalfy(({ setShow, show }) => {
             <div className="bg-gray-50 px-4 pb-2 sm:flex sm:flex-row-reverse">
               <SubmitButton className="mt-3 w-full inline-flex rounded-md border border-transparent shadow-sm px-4 py-2  bg-blue-600 text-base font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
                 {" "}
-                Create Graph
+                Create Workspace
               </SubmitButton>
               <button
                 type="button"

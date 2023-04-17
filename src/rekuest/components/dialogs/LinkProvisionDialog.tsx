@@ -1,5 +1,5 @@
 import { Form, Formik } from "formik";
-import { SearchSelectInput } from "../../../components/forms/fields/search_select_input";
+import { GraphQLSearchInput } from "../../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
@@ -57,10 +57,10 @@ export const LinkProvisionDialog = (
           }
         >
           <span className="font-light text-xl text-black">
-            <SearchSelectInput
+            <GraphQLSearchInput
               name="provisions"
               label="Provisions"
-              lazySearch={search}
+              searchFunction={search}
               description="This template can be hosted on different instances of the app. Chose the one you want to use."
             />
           </span>

@@ -4,7 +4,7 @@ import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ParagraphInputField } from "../../components/forms/fields/paragraph_input";
-import { CreateableSearchSelect } from "../../components/forms/fields/search_select_input";
+import { GraphQLCreatableListSearchInput } from "../../components/forms/fields/SearchInput";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { DropZone } from "../../components/layout/DropZone";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
@@ -189,11 +189,14 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
                         label="Description"
                       />
                       <div className="flex-grow">
-                        <CreateableSearchSelect
+                        <GraphQLCreatableListSearchInput
                           name="tags"
-                          isMulti={true}
                           label="Tags"
-                          lazySearch={searchTags}
+                          searchFunction={searchTags}
+                          createFunction={async (name) => ({
+                            label: name,
+                            value: name,
+                          })}
                         />
                       </div>
                       <button

@@ -25,6 +25,15 @@
     "Node": [
       "MentionDescendent",
       "ParagraphDescendent"
+    ],
+    "ProvenanceResult": [
+      "Context",
+      "Experiment",
+      "ROI",
+      "Representation",
+      "Sample",
+      "Stage",
+      "Table"
     ]
   }
 };

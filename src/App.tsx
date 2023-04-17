@@ -25,6 +25,7 @@ import { DashboardTemplates } from "./pages/dashboard/templates/DashboardTemplat
 import { DataDataset } from "./pages/data/datasets/DataDataset";
 import { DataDatasets } from "./pages/data/datasets/DataDatasets";
 import { DataFile } from "./pages/data/files/DataFile";
+import { DataProvenance } from "./pages/data/provenance/DataProvenance";
 import { DataFiles } from "./pages/data/files/DataFiles";
 import { DataRepresentation } from "./pages/data/representations/DataRepresentation";
 import { DataRepresentations } from "./pages/data/representations/DataRepresentations";
@@ -101,6 +102,7 @@ import { TauriProvider } from "./tauri/provider";
 import { DataLive } from "./pages/data/live/DataLive";
 import { DataLives } from "./pages/data/live/DataLives";
 import { FlowTimeline } from "./pages/flows/timelines/FlowTimeline";
+import { DashboardHistory } from "./pages/dashboard/history/DashboardHistory";
 
 export const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 export const Data = React.lazy(() => import("./pages/Data"));
@@ -225,6 +227,10 @@ export const MainApp: React.FC<Props> = (props) => {
                                   <Route
                                     path="contexts/:context"
                                     element={<DataContext />}
+                                  />
+                                  <Route
+                                    path="provenances/:id"
+                                    element={<DataProvenance />}
                                   />
                                   <Route
                                     path="contexts"
@@ -416,6 +422,10 @@ export const MainApp: React.FC<Props> = (props) => {
                                   <Route
                                     path="agents"
                                     element={<DashboardAgents />}
+                                  />
+                                  <Route
+                                    path="history"
+                                    element={<DashboardHistory />}
                                   />
                                   <Route
                                     path="agents/:id"

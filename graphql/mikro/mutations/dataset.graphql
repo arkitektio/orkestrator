@@ -39,6 +39,18 @@ mutation ReleaseFiles($dataset: ID!, $files: [ID!]!) {
   }
 }
 
+mutation PutDatasets($dataset: ID!, $datasets: [ID!]!) {
+  putDatasets(dataset: $dataset, datasets: $datasets) {
+    ...DetailDataset
+  }
+}
+
+mutation ReleaseDatasets($dataset: ID!, $datasets: [ID!]!) {
+  releaseDatasets(dataset: $dataset, datasets: $datasets) {
+    ...DetailDataset
+  }
+}
+
 mutation PutRepresentations($dataset: ID!, $representations: [ID!]!) {
   putRepresentations(dataset: $dataset, representations: $representations) {
     ...DetailDataset

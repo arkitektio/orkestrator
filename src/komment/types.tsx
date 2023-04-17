@@ -1,5 +1,5 @@
 import { MutationFunction } from "@apollo/client";
-import { BaseEditor } from "slate";
+import { BaseEditor, BaseElement, BaseText, Node } from "slate";
 import { ReactEditor, RenderElementProps, RenderLeafProps } from "slate-react";
 import {
   DescendentFragment,
@@ -52,6 +52,8 @@ export type ElementProps<T extends DescendendInput> = RenderElementProps & {
 };
 
 export type KommentEditor = ReactEditor & BaseEditor;
+
+export type KommentNode = KommentEditor | BaseElement | BaseText;
 
 export type ElementRenderProps = ElementProps<DescendendInput>;
 

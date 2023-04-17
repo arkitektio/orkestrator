@@ -9,7 +9,7 @@ import { MateFinder } from "../types";
 export const useMikroLinkMate = (): MateFinder => {
   const { ask } = useDialog();
   const { alert } = useAlert();
-  const [link] = withMikro(useLinkMutation)();
+  const [link] = withMikro(useLinkMutation)({});
 
   return (type: string, isSelf: boolean) =>
     isSelf

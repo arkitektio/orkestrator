@@ -1,30 +1,19 @@
 import { Form, Formik } from "formik";
 import { useEffect, useState } from "react";
 import { NumberInputField } from "../../../components/forms/fields/number_input";
-import {
-  enum_to_options,
-  SelectInputField,
-} from "../../../components/forms/fields/select_input";
-import {
-  ReserveParamsInput,
-  ReserveParams,
-  MapStrategy,
-} from "../../../fluss/api/graphql";
+import { MapStrategy, ReserveParamsInput } from "../../../fluss/api/graphql";
 import { withRekuest } from "../../../rekuest";
 import {
   ReserveBindsInput,
   useDetailNodeQuery,
   useHashReservableTemplatesQuery,
-  useReservableTemplatesQuery,
 } from "../../../rekuest/api/graphql";
 import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
 import { ReserveParamsField } from "../../../rekuest/components/ReserveParamsField";
-import { TemplatesDisplay } from "../../../rekuest/components/TemplatesDisplay";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { ArkitektNodeData, FlowNode } from "../../types";
 import { notEmpty } from "../../utils";
 import { useEditRiver } from "../context";
-import { StreamDisplay } from "./StreamDisplay";
 import { SidebarProps } from "./types";
 
 export const ArkitektNodeSidebar = (
@@ -128,13 +117,14 @@ export const ArkitektNodeSidebar = (
                 </button>
                 {advanced && (
                   <div className="grid grid-cols-2 gap-2">
+                    {/* 
                     <SelectInputField
                       label="Map Strategy"
                       options={enum_to_options(MapStrategy)}
                       name="mapStrategy"
                       labelClassName="text-white"
                       description="How long to wait for a reservation to succeed before giving up."
-                    />
+                    /> */}
                     <NumberInputField
                       label="reserveTimeout"
                       name="Reserve Tiemout"

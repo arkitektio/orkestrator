@@ -19,7 +19,6 @@ export const DataSamples: React.FC<DataSamplesProps> = (props) => {
       }
     >
       <MySamples limit={20} />
-      <CreateSampleModal show={show} setShow={setShow} />
     </PageLayout>
   );
 };

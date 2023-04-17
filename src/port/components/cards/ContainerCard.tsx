@@ -52,7 +52,10 @@ export const ContainerCard = ({ container, mates }: UserCardProps) => {
           className="text-xl font-light cursor-pointer mb-1"
           object={container?.id}
         >
-          {container?.whale?.image || "DEAD IMAGE RUNNING"}
+          <div className="text-xl font-light mb-1 flex">
+            {container?.whale?.deployment.identifier}:
+            {container?.whale?.deployment.version}
+          </div>
         </Container.DetailLink>
       </div>
       <div className="pl-2 pb-2"></div>

@@ -1,32 +1,20 @@
-import {
-  ApolloCache,
-  DefaultContext,
-  MutationUpdaterFunction,
-} from "@apollo/client";
-import { Dialog } from "@headlessui/react";
 import { Form, Formik } from "formik";
 import { useAlert } from "../../../components/alerter/alerter-context";
-import { SelectInputField } from "../../../components/forms/fields/select_input";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
-import { modalfy } from "../../../layout/Modal";
 import {
   CreatePlotMutation,
   CreatePlotMutationVariables,
-  CreateSampleMutationVariables,
-  MyPlotsDocument,
-  MyPlotsQuery,
+  MyDatasetsQuery,
+  MyDatasetsDocument,
   useCreateDatasetMutation,
-  useCreatePlotMutation,
-  useCreateSampleMutation,
-  useMyExperimentsQuery,
 } from "../../api/graphql";
 import { withMikro } from "../../MikroContext";
 
 export const CreateDatasetModal = (props: Submit<CreatePlotMutation>) => {
-  const [createPlot, data] = withMikro(useCreateDatasetMutation)({});
+  const [createDataset, data] = withMikro(useCreateDatasetMutation)({});
 
   const { alert } = useAlert();
 
@@ -40,7 +28,7 @@ export const CreateDatasetModal = (props: Submit<CreatePlotMutation>) => {
         console.log(values);
         setSubmitting(true);
         try {
-          let x = await createPlot({ variables: values });
+          let x = await createDataset({ variables: values });
           if (x.data) {
             props.submit(x.data);
           }

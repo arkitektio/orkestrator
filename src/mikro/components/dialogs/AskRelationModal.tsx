@@ -6,6 +6,7 @@ import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
 import { structure_to_widget } from "../../../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 import {
+  MyContextsDocument,
   useCreateContextMutation,
   useCreateRelationMutation,
   useSearchContextsLazyQuery,
@@ -28,7 +29,9 @@ export const AskRelationModal = (
   const [searchContexts] = withMikro(useSearchContextsLazyQuery)();
   const [searchRelations] = withMikro(useSearchRelationsLazyQuery)();
 
-  const [createContext] = withMikro(useCreateContextMutation)();
+  const [createContext] = withMikro(useCreateContextMutation)({
+    refetchQueries: [MyContextsDocument],
+  });
 
   const [createRelation] = withMikro(useCreateRelationMutation)();
 

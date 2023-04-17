@@ -108,6 +108,7 @@ const MyContexts: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
           className="text-white "
           onAction={async () => {
             await ask(CreateContextModal, {});
+            await refetch();
           }}
         >
           <BsPlusCircle />

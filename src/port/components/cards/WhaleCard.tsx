@@ -20,7 +20,9 @@ export const WhaleCard = ({ whale, mates }: UserCardProps) => {
           object={whale.id}
           className="flex-grow flex-col truncate"
         >
-          <div className="text-xl font-light mb-1 flex">{whale.image}</div>
+          <div className="text-xl font-light mb-1 flex">
+            {whale.deployment.identifier}:{whale.deployment.version}
+          </div>
           <div className="text-sm font-extralight">
             <Timestamp date={whale?.createdAt} relative></Timestamp>
           </div>

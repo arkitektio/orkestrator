@@ -37,6 +37,18 @@ query GlobalSearch(
     name
   }
 
+  datasets: datasets(
+    name: $search
+    limit: 10
+    createdBefore: $createdBefore
+    createdAfter: $createdAfter
+    pinned: $pinned
+    createdDay: $createdDay
+  ) {
+    id
+    name
+  }
+
   tables: mytables(
     name: $search
     limit: 10

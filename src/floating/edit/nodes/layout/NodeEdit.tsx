@@ -25,7 +25,7 @@ export const additionalForState: { [x: string]: string } = {
     "border-green-900 dark:border-green-900 dark:shadow-green-200/10 dark:bg-slate-800 ",
 };
 
-export const ErrorOverlay = (props) => {
+export const ErrorOverlay = (props: any) => {
   return <> </>;
 };
 

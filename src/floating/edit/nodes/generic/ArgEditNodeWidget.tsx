@@ -1,25 +1,11 @@
-import { FieldArray, Form, Formik } from "formik";
-import React, { memo, useEffect, useState } from "react";
-import { Handle, Position, useUpdateNodeInternals } from "reactflow";
+import React, { useEffect, useState } from "react";
 import ReactTooltip from "react-tooltip";
-import {
-  ArgNode,
-  ArgNodeFragment,
-  StreamItemInput,
-  StreamKind,
-} from "../../../../fluss/api/graphql";
+import { Handle, Position, useUpdateNodeInternals } from "reactflow";
 
-import { NodeEditLayout } from "../layout/NodeEdit";
-import { ArgNodeProps, FlowNode } from "../../../types";
 import { withLayout } from "../../../base/node/layout";
+import { ArgNodeProps } from "../../../types";
 import { useEditRiver } from "../../context";
-import { TextInputField } from "../../../../components/forms/fields/text_input";
-import { PortKind } from "../../../../rekuest/api/graphql";
-import { SubmitButton } from "../../../../components/forms/fields/SubmitButton";
-import { SelectInputField } from "../../../../components/forms/fields/select_input";
-import { ParagraphInputField } from "../../../../components/forms/fields/paragraph_input";
-import { ChangeSubmitHelper } from "../../../../rekuest/ui/helpers/ChangeSubmitter";
-import { useTrackRiver } from "../../../track/context";
+import { NodeEditLayout } from "../layout/NodeEdit";
 
 export const ArgEditNodeWidget: React.FC<ArgNodeProps> = withLayout(
   ({ data: { outstream, instream, constream }, id }) => {

@@ -1,29 +1,23 @@
 import { Form, Formik, FormikHelpers } from "formik";
-import { useState } from "react";
-import { SearchSelectInput } from "../../components/forms/fields/search_select_input";
+import {
+  GraphQLListSearchInput,
+  GraphQLSearchInput,
+} from "../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
-import { SectionTitle } from "../../layout/SectionTitle";
 import { useAppQuery, useUserQuery } from "../../lok/api/graphql";
-import { UserEmblem } from "../../lok/components/UserEmblem";
 import { withMan } from "../../lok/context";
 import { useMikro } from "../../mikro/MikroContext";
 import { useSettings } from "../../settings/settings-context";
 import {
-  ListTemplateFragment,
-  ReservableTemplateFragment,
   ReserveMutationVariables,
-  Template,
   useReservableTemplatesQuery,
-  useSearchTemplateOptionsLazyQuery,
   useUserOptionsLazyQuery,
 } from "../api/graphql";
 import { withRekuest } from "../RekuestContext";
 import { useWidgetRegistry } from "../widgets/widget-context";
-import { StatusPulse } from "./generic/StatusPulse";
 import { ReserveParamsField } from "./ReserveParamsField";
 
 export type ReserveFormProps = {
@@ -120,9 +114,9 @@ const ReserveForm: React.FC<ReserveFormProps> = ({ initial, onSubmit }) => {
                 label="Shorthand"
                 description="Your common name for this reservation (will appear as button text)"
               />
-              <SearchSelectInput
-                isMulti={false}
-                lazySearch={searchUsers}
+              <GraphQLSearchInput
+                label="Imitate"
+                searchFunction={searchUsers}
                 name={`imitate`}
                 description="Should we imitate a specific user doing this request?"
               />

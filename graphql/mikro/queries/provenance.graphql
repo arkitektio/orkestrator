@@ -1,0 +1,25 @@
+query Provenance($ids: [ID]!) {
+  provenance(createdWhiles: $ids) {
+    __typename
+    ... on Representation {
+      ...ListRepresentation
+    }
+    ... on ROI {
+      id
+      label
+      createdAt
+    }
+    ... on Sample {
+      id
+      createdAt
+    }
+    ... on Context {
+      id
+      createdAt
+    }
+    ... on Context {
+      id
+      createdAt
+    }
+  }
+}

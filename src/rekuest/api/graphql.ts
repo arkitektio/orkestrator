@@ -2851,6 +2851,13 @@ export type MyRequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type MyRequestsQuery = { __typename?: 'Query', myrequests?: Array<{ __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, agent: { __typename?: 'Agent', id: string, instanceId: string, status: AgentStatus, registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null } } | null } | null } | null> | null };
 
+export type RequestsHistoryQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+}>;
+
+
+export type RequestsHistoryQuery = { __typename?: 'Query', myrequests?: Array<{ __typename?: 'Assignation', status: AssignationStatus, id: string, args?: Array<any | null> | null, kwargs?: any | null, reference: string, createdAt: any, progress?: number | null, returns?: Array<any | null> | null, statusmessage: string, reservation?: { __typename?: 'Reservation', id: string, title?: string | null, node: { __typename?: 'Node', id: string, name: string, interfaces?: Array<string | null> | null }, template?: { __typename?: 'Template', interface: string, agent: { __typename?: 'Agent', id: string, instanceId: string, status: AgentStatus, registry?: { __typename?: 'Registry', name?: string | null, client: { __typename?: 'LokClient', clientId: string }, app?: { __typename?: 'LokApp', version: string, identifier: string } | null, user?: { __typename?: 'User', sub?: string | null, username: string } | null } | null } } | null } | null } | null> | null };
+
 export type FilteredAssignationsQueryVariables = Exact<{
   exclude?: InputMaybe<Array<InputMaybe<AssignationStatusInput>>>;
   filter?: InputMaybe<Array<InputMaybe<AssignationStatusInput>>>;
@@ -2954,6 +2961,13 @@ export type PermissionsOfQueryVariables = Exact<{
 
 
 export type PermissionsOfQuery = { __typename?: 'Query', permissionsOf?: { __typename?: 'PermissionsOfReturn', available?: Array<{ __typename?: 'Permission', name: string } | null> | null, options?: Array<{ __typename?: 'Permission', label: string, value: string } | null> | null, groupAssignments?: Array<{ __typename?: 'GroupAssignment', permissions: Array<string | null>, group: { __typename?: 'Group', name: string } } | null> | null, userAssignments?: Array<{ __typename?: 'UserAssignment', permissions: Array<string | null>, user: { __typename?: 'User', id: string, sub?: string | null, username: string, email: string } } | null> | null } | null };
+
+export type UnfoldProvenanceQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type UnfoldProvenanceQuery = { __typename?: 'Query', assignation?: { __typename?: 'Assignation', id: string, createdAt: any, children: Array<{ __typename?: 'Assignation', id: string, createdAt: any }> } | null };
 
 export type DetailProvisionQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -5328,6 +5342,41 @@ export function useMyRequestsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions
 export type MyRequestsQueryHookResult = ReturnType<typeof useMyRequestsQuery>;
 export type MyRequestsLazyQueryHookResult = ReturnType<typeof useMyRequestsLazyQuery>;
 export type MyRequestsQueryResult = Apollo.QueryResult<MyRequestsQuery, MyRequestsQueryVariables>;
+export const RequestsHistoryDocument = gql`
+    query RequestsHistory($limit: Int = 20) {
+  myrequests(limit: $limit) {
+    ...ListAssignation
+  }
+}
+    ${ListAssignationFragmentDoc}`;
+
+/**
+ * __useRequestsHistoryQuery__
+ *
+ * To run a query within a React component, call `useRequestsHistoryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRequestsHistoryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRequestsHistoryQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useRequestsHistoryQuery(baseOptions?: Apollo.QueryHookOptions<RequestsHistoryQuery, RequestsHistoryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<RequestsHistoryQuery, RequestsHistoryQueryVariables>(RequestsHistoryDocument, options);
+      }
+export function useRequestsHistoryLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<RequestsHistoryQuery, RequestsHistoryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<RequestsHistoryQuery, RequestsHistoryQueryVariables>(RequestsHistoryDocument, options);
+        }
+export type RequestsHistoryQueryHookResult = ReturnType<typeof useRequestsHistoryQuery>;
+export type RequestsHistoryLazyQueryHookResult = ReturnType<typeof useRequestsHistoryLazyQuery>;
+export type RequestsHistoryQueryResult = Apollo.QueryResult<RequestsHistoryQuery, RequestsHistoryQueryVariables>;
 export const FilteredAssignationsDocument = gql`
     query FilteredAssignations($exclude: [AssignationStatusInput], $filter: [AssignationStatusInput], $limit: Int) {
   myrequests(exclude: $exclude, filter: $filter, limit: $limit) {
@@ -5886,6 +5935,46 @@ export function usePermissionsOfLazyQuery(baseOptions?: Apollo.LazyQueryHookOpti
 export type PermissionsOfQueryHookResult = ReturnType<typeof usePermissionsOfQuery>;
 export type PermissionsOfLazyQueryHookResult = ReturnType<typeof usePermissionsOfLazyQuery>;
 export type PermissionsOfQueryResult = Apollo.QueryResult<PermissionsOfQuery, PermissionsOfQueryVariables>;
+export const UnfoldProvenanceDocument = gql`
+    query UnfoldProvenance($id: ID!) {
+  assignation(id: $id) {
+    id
+    createdAt
+    children {
+      id
+      createdAt
+    }
+  }
+}
+    `;
+
+/**
+ * __useUnfoldProvenanceQuery__
+ *
+ * To run a query within a React component, call `useUnfoldProvenanceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useUnfoldProvenanceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useUnfoldProvenanceQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useUnfoldProvenanceQuery(baseOptions: Apollo.QueryHookOptions<UnfoldProvenanceQuery, UnfoldProvenanceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<UnfoldProvenanceQuery, UnfoldProvenanceQueryVariables>(UnfoldProvenanceDocument, options);
+      }
+export function useUnfoldProvenanceLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<UnfoldProvenanceQuery, UnfoldProvenanceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<UnfoldProvenanceQuery, UnfoldProvenanceQueryVariables>(UnfoldProvenanceDocument, options);
+        }
+export type UnfoldProvenanceQueryHookResult = ReturnType<typeof useUnfoldProvenanceQuery>;
+export type UnfoldProvenanceLazyQueryHookResult = ReturnType<typeof useUnfoldProvenanceLazyQuery>;
+export type UnfoldProvenanceQueryResult = Apollo.QueryResult<UnfoldProvenanceQuery, UnfoldProvenanceQueryVariables>;
 export const DetailProvisionDocument = gql`
     query DetailProvision($id: ID!) {
   provision(id: $id) {

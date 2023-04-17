@@ -14,6 +14,7 @@ export type Scalars = {
   Int: number;
   Float: number;
   AffineMatrix: any;
+  AssignationID: any;
   BigFile: any;
   DateTime: any;
   FeatureValue: any;
@@ -166,13 +167,14 @@ export enum CommentableModels {
   GrunnlagUsermeta = 'GRUNNLAG_USERMETA'
 }
 
-/** Context(id, created_by, created_through, name, created_at, experiment, creator) */
+/** Context(id, created_by, created_through, created_while, name, created_at, experiment, creator) */
 export type Context = {
   __typename?: 'Context';
   /** The time the context was created */
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created the context */
   creator?: Maybe<User>;
   datasets: Array<Dataset>;
@@ -197,12 +199,15 @@ export type Credentials = {
   status: Scalars['String'];
 };
 
-/** DataLink(id, x_content_type, x_id, y_content_type, y_id, relation, left_type, right_type, context, created_at, creator) */
+/** DataLink(id, created_by, created_through, created_while, x_content_type, x_id, y_content_type, y_id, relation, left_type, right_type, context, created_at, creator) */
 export type DataLink = {
   __typename?: 'DataLink';
   context?: Maybe<Context>;
   /** The time the sample was created */
   createdAt: Scalars['DateTime'];
+  createdBy?: Maybe<User>;
+  createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created the sample */
   creator?: Maybe<User>;
   id: Scalars['ID'];
@@ -258,6 +263,7 @@ export type Dataset = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   experiments: Array<Experiment>;
   id: Scalars['ID'];
   models: Array<Model>;
@@ -293,6 +299,7 @@ export type DatasetRepresentationsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   derivedTags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -416,6 +423,7 @@ export type Experiment = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created the experiment */
   creator?: Maybe<User>;
   datasets: Array<Dataset>;
@@ -466,6 +474,7 @@ export type ExperimentSamplesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -506,6 +515,7 @@ export type Feature = {
   comments?: Maybe<Array<Maybe<Comment>>>;
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created the Feature */
   creator?: Maybe<User>;
   id: Scalars['ID'];
@@ -598,12 +608,13 @@ export type InputVector = {
   z?: InputMaybe<Scalars['Float']>;
 };
 
-/** Instrument(id, created_by, created_through, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number) */
+/** Instrument(id, created_by, created_through, created_while, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number) */
 export type Instrument = {
   __typename?: 'Instrument';
   comments?: Maybe<Array<Maybe<Comment>>>;
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   detectors?: Maybe<Scalars['GenericScalar']>;
   dichroics?: Maybe<Scalars['GenericScalar']>;
   filters?: Maybe<Scalars['GenericScalar']>;
@@ -620,12 +631,13 @@ export type Instrument = {
 };
 
 
-/** Instrument(id, created_by, created_through, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number) */
+/** Instrument(id, created_by, created_through, created_while, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number) */
 export type InstrumentOmerosArgs = {
   createdAfter?: InputMaybe<Scalars['DateTime']>;
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -652,6 +664,7 @@ export type Label = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created the Label */
   creator: User;
   feature?: Maybe<Feature>;
@@ -709,6 +722,7 @@ export type LabelFeaturesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['Float']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   keys?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
@@ -788,6 +802,7 @@ export type LokClient = {
   app: LokApp;
   clientId: Scalars['String'];
   contextCreatedThrough: Array<Context>;
+  datalinkCreatedThrough: Array<DataLink>;
   datasetCreatedThrough: Array<Dataset>;
   experimentCreatedThrough: Array<Experiment>;
   featureCreatedThrough: Array<Feature>;
@@ -803,6 +818,7 @@ export type LokClient = {
   omeroCreatedThrough: Array<Omero>;
   omerofileCreatedThrough: Array<OmeroFile>;
   positionCreatedThrough: Array<Position>;
+  relationCreatedThrough: Array<Relation>;
   representationCreatedThrough: Array<Representation>;
   roiCreatedThrough: Array<Roi>;
   sampleCreatedThrough: Array<Sample>;
@@ -860,6 +876,7 @@ export type Metric = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   creator?: Maybe<User>;
   /** The Representatoin this Metric belongs to */
   experiment?: Maybe<Experiment>;
@@ -888,6 +905,7 @@ export type Model = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created/uploaded the file */
   creator?: Maybe<User>;
   /** The model data */
@@ -1169,9 +1187,11 @@ export type Mutation = {
   pinStage?: Maybe<Stage>;
   /** Presign a file for upload */
   presign?: Maybe<Presigned>;
+  putDatasets?: Maybe<Dataset>;
   putFiles?: Maybe<Dataset>;
   putRepresentations?: Maybe<Dataset>;
   putSamples?: Maybe<Dataset>;
+  releaseDatasets?: Maybe<Dataset>;
   releaseFiles?: Maybe<Dataset>;
   releaseRepresentations?: Maybe<Dataset>;
   releaseSamples?: Maybe<Dataset>;
@@ -1286,6 +1306,7 @@ export type MutationCreateCommentArgs = {
 
 /** The root Mutation */
 export type MutationCreateContextArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   experiment?: InputMaybe<Scalars['ID']>;
   name: Scalars['String'];
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
@@ -1294,6 +1315,7 @@ export type MutationCreateContextArgs = {
 
 /** The root Mutation */
 export type MutationCreateDatasetArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   name: Scalars['String'];
   parent?: InputMaybe<Scalars['ID']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
@@ -1302,6 +1324,7 @@ export type MutationCreateDatasetArgs = {
 
 /** The root Mutation */
 export type MutationCreateExperimentArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['String']>;
   description?: InputMaybe<Scalars['String']>;
   name: Scalars['String'];
@@ -1311,6 +1334,7 @@ export type MutationCreateExperimentArgs = {
 
 /** The root Mutation */
 export type MutationCreateInstrumentArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   detectors?: InputMaybe<Array<InputMaybe<Scalars['GenericScalar']>>>;
   dichroics?: InputMaybe<Array<InputMaybe<Scalars['GenericScalar']>>>;
   filters?: InputMaybe<Array<InputMaybe<Scalars['GenericScalar']>>>;
@@ -1325,6 +1349,7 @@ export type MutationCreateInstrumentArgs = {
 
 /** The root Mutation */
 export type MutationCreateLabelArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['ID']>;
   instance: Scalars['Int'];
   name?: InputMaybe<Scalars['String']>;
@@ -1334,6 +1359,7 @@ export type MutationCreateLabelArgs = {
 
 /** The root Mutation */
 export type MutationCreateMetricArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['String']>;
   experiment?: InputMaybe<Scalars['ID']>;
   key: Scalars['String'];
@@ -1346,6 +1372,7 @@ export type MutationCreateMetricArgs = {
 /** The root Mutation */
 export type MutationCreateModelArgs = {
   contexts?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   data: Scalars['ModelFile'];
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   kind: ModelKind;
@@ -1355,6 +1382,7 @@ export type MutationCreateModelArgs = {
 
 /** The root Mutation */
 export type MutationCreateObjectiveArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   immersion?: InputMaybe<Scalars['String']>;
   magnification: Scalars['Float'];
   manufacturer?: InputMaybe<Scalars['String']>;
@@ -1372,6 +1400,7 @@ export type MutationCreatePlotArgs = {
 
 /** The root Mutation */
 export type MutationCreatePositionArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['ID']>;
   name?: InputMaybe<Scalars['String']>;
   stage: Scalars['ID'];
@@ -1385,6 +1414,7 @@ export type MutationCreatePositionArgs = {
 
 /** The root Mutation */
 export type MutationCreateRoiArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['ID']>;
   label?: InputMaybe<Scalars['String']>;
   meta?: InputMaybe<Scalars['GenericScalar']>;
@@ -1397,6 +1427,7 @@ export type MutationCreateRoiArgs = {
 
 /** The root Mutation */
 export type MutationCreateRoisArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['ID']>;
   labels?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   meta?: InputMaybe<Scalars['GenericScalar']>;
@@ -1409,6 +1440,7 @@ export type MutationCreateRoisArgs = {
 
 /** The root Mutation */
 export type MutationCreateRelationArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   description?: InputMaybe<Scalars['String']>;
   name: Scalars['String'];
 };
@@ -1416,6 +1448,7 @@ export type MutationCreateRelationArgs = {
 
 /** The root Mutation */
 export type MutationCreateSampleArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['String']>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   meta?: InputMaybe<Scalars['GenericScalar']>;
@@ -1426,6 +1459,7 @@ export type MutationCreateSampleArgs = {
 
 /** The root Mutation */
 export type MutationCreateStageArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['ID']>;
   instrument?: InputMaybe<Scalars['ID']>;
   name?: InputMaybe<Scalars['String']>;
@@ -1436,6 +1470,7 @@ export type MutationCreateStageArgs = {
 /** The root Mutation */
 export type MutationCreateTableArgs = {
   columns?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['String']>;
   experiment?: InputMaybe<Scalars['ID']>;
   name?: InputMaybe<Scalars['String']>;
@@ -1447,6 +1482,7 @@ export type MutationCreateTableArgs = {
 
 /** The root Mutation */
 export type MutationCreatefeatureArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['ID']>;
   key?: InputMaybe<Scalars['String']>;
   label: Scalars['ID'];
@@ -1534,6 +1570,7 @@ export type MutationDeleteTableArgs = {
 
 /** The root Mutation */
 export type MutationFromDfArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['String']>;
   df: Scalars['ParquetInput'];
   experiment?: InputMaybe<Scalars['ID']>;
@@ -1546,6 +1583,7 @@ export type MutationFromDfArgs = {
 
 /** The root Mutation */
 export type MutationFromXArrayArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['String']>;
   datasets?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -1565,6 +1603,7 @@ export type MutationFromXArrayArgs = {
 /** The root Mutation */
 export type MutationLinkArgs = {
   context?: InputMaybe<Scalars['ID']>;
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   leftId: Scalars['ID'];
   leftType: LinkableModels;
   relation: Scalars['ID'];
@@ -1636,6 +1675,13 @@ export type MutationPresignArgs = {
 
 
 /** The root Mutation */
+export type MutationPutDatasetsArgs = {
+  dataset: Scalars['ID'];
+  datasets: Array<InputMaybe<Scalars['ID']>>;
+};
+
+
+/** The root Mutation */
 export type MutationPutFilesArgs = {
   dataset: Scalars['ID'];
   files: Array<InputMaybe<Scalars['ID']>>;
@@ -1653,6 +1699,13 @@ export type MutationPutRepresentationsArgs = {
 export type MutationPutSamplesArgs = {
   dataset: Scalars['ID'];
   samples: Array<InputMaybe<Scalars['ID']>>;
+};
+
+
+/** The root Mutation */
+export type MutationReleaseDatasetsArgs = {
+  dataset: Scalars['ID'];
+  datasets: Array<InputMaybe<Scalars['ID']>>;
 };
 
 
@@ -1776,6 +1829,7 @@ export type MutationUpdateTableArgs = {
 
 /** The root Mutation */
 export type MutationUploadBigFileArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   datasets?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   file: Scalars['BigFile'];
 };
@@ -1783,6 +1837,7 @@ export type MutationUploadBigFileArgs = {
 
 /** The root Mutation */
 export type MutationUploadOmeroFileArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   datasets?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   file: Scalars['ImageFile'];
@@ -1793,6 +1848,7 @@ export type MutationUploadOmeroFileArgs = {
 /** The root Mutation */
 export type MutationUploadThumbnailArgs = {
   blurhash?: InputMaybe<Scalars['String']>;
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
   file: Scalars['ImageFile'];
   majorColor?: InputMaybe<Scalars['String']>;
   rep: Scalars['ID'];
@@ -1804,12 +1860,13 @@ export type Node = {
   untypedChildren?: Maybe<Scalars['GenericScalar']>;
 };
 
-/** Objective(id, created_by, created_through, serial_number, name, magnification, na, immersion) */
+/** Objective(id, created_by, created_through, created_while, serial_number, name, magnification, na, immersion) */
 export type Objective = {
   __typename?: 'Objective';
   comments?: Maybe<Array<Maybe<Comment>>>;
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   immersion?: Maybe<Scalars['String']>;
   instruments: Array<Instrument>;
@@ -1822,12 +1879,13 @@ export type Objective = {
 };
 
 
-/** Objective(id, created_by, created_through, serial_number, name, magnification, na, immersion) */
+/** Objective(id, created_by, created_through, created_while, serial_number, name, magnification, na, immersion) */
 export type ObjectiveOmerosArgs = {
   createdAfter?: InputMaybe<Scalars['DateTime']>;
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -1883,6 +1941,7 @@ export type Omero = {
   comments?: Maybe<Array<Maybe<Comment>>>;
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   imagingEnvironment?: Maybe<ImagingEnvironment>;
   instrument?: Maybe<Instrument>;
@@ -1901,6 +1960,7 @@ export type OmeroFile = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created/uploaded the file */
   creator?: Maybe<User>;
   datasets: Array<Dataset>;
@@ -2157,6 +2217,7 @@ export type Position = {
   comments?: Maybe<Array<Maybe<Comment>>>;
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   /** The name of the possition */
   name: Scalars['String'];
@@ -2184,6 +2245,7 @@ export type PositionOmerosArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2205,6 +2267,8 @@ export type PresignedFields = {
   xAmzDate: Scalars['String'];
   xAmzSignature: Scalars['String'];
 };
+
+export type ProvenanceResult = Context | Experiment | Roi | Representation | Sample | Stage | Table;
 
 /** The root Query */
 export type Query = {
@@ -2531,6 +2595,20 @@ export type Query = {
    */
   positions?: Maybe<Array<Maybe<Position>>>;
   /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  provenance?: Maybe<Array<Maybe<ProvenanceResult>>>;
+  /**
    * Get a random Representation
    *
    *     Gets a random Representation from the database. This is used for
@@ -2721,6 +2799,7 @@ export type QueryContextsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -2745,6 +2824,7 @@ export type QueryDatasetsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
@@ -2766,6 +2846,7 @@ export type QueryExperimentsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -2790,6 +2871,7 @@ export type QueryFeaturesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['Float']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   keys?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
@@ -2814,6 +2896,7 @@ export type QueryInstrumentsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
@@ -2841,6 +2924,7 @@ export type QueryLabelsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['Float']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -2863,6 +2947,7 @@ export type QueryLinksArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -2887,6 +2972,7 @@ export type QueryMetricsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   experiment?: InputMaybe<Scalars['ID']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -2913,6 +2999,7 @@ export type QueryModelsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['Float']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -2928,6 +3015,7 @@ export type QueryMycontextsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -2946,6 +3034,7 @@ export type QueryMydatasetsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
@@ -2961,6 +3050,7 @@ export type QueryMyexperimentsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -2980,6 +3070,7 @@ export type QueryMymodelsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['Float']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -2994,6 +3085,7 @@ export type QueryMyomerofilesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
@@ -3007,6 +3099,7 @@ export type QueryMyplotsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
 };
@@ -3019,6 +3112,7 @@ export type QueryMyrepresentationsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   derivedTags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -3047,6 +3141,7 @@ export type QueryMysamplesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -3067,6 +3162,7 @@ export type QueryMystagesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
@@ -3121,6 +3217,7 @@ export type QueryOmerofilesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
@@ -3161,12 +3258,19 @@ export type QueryPositionsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   stage?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryProvenanceArgs = {
+  createdWhiles: Array<InputMaybe<Scalars['ID']>>;
 };
 
 
@@ -3198,6 +3302,7 @@ export type QueryRepresentationsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   derivedTags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -3249,6 +3354,7 @@ export type QueryRoisArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -3276,6 +3382,7 @@ export type QuerySamplesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -3302,6 +3409,7 @@ export type QueryStagesArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
@@ -3353,6 +3461,7 @@ export type QueryThumbnailsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -3397,6 +3506,7 @@ export type Roi = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created the ROI */
   creator: User;
   derivedRepresentations: Array<Representation>;
@@ -3439,12 +3549,15 @@ export enum RoiType {
   Unknown = 'UNKNOWN'
 }
 
-/** Relation(id, name, description) */
+/** Relation(id, created_by, created_through, created_while, name, description) */
 export type Relation = {
   __typename?: 'Relation';
+  createdBy?: Maybe<User>;
+  createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The relation between the two objects */
   datalinkSet: Array<DataLink>;
-  /** The description of the relation */
+  /** A verbose description of the relation */
   description?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   /** The name of the relation */
@@ -3490,6 +3603,7 @@ export type Representation = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   creator?: Maybe<User>;
   datasets: Array<Dataset>;
   /** Derived Images from this Image */
@@ -3581,6 +3695,7 @@ export type RepresentationDerivedArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   derivedTags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -3679,6 +3794,7 @@ export type RepresentationMetricsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   experiment?: InputMaybe<Scalars['ID']>;
   flatten?: InputMaybe<Scalars['Int']>;
@@ -3731,6 +3847,7 @@ export type RepresentationRoisArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
@@ -3858,6 +3975,7 @@ export type Sample = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created the sample */
   creator?: Maybe<User>;
   datasets: Array<Dataset>;
@@ -3888,6 +4006,7 @@ export type SampleRepresentationsArgs = {
   createdAt?: InputMaybe<Scalars['DateTime']>;
   createdBefore?: InputMaybe<Scalars['DateTime']>;
   createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   creator?: InputMaybe<Scalars['ID']>;
   derivedTags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   experiments?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
@@ -3956,6 +4075,7 @@ export type Stage = {
   createdAt: Scalars['DateTime'];
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The user that created the stage */
   creator?: Maybe<User>;
   datasets: Array<Dataset>;
@@ -4114,6 +4234,7 @@ export type Thumbnail = {
   blurhash?: Maybe<Scalars['String']>;
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   image?: Maybe<Scalars['String']>;
   majorColor?: Maybe<Scalars['String']>;
@@ -4224,7 +4345,7 @@ export type DetailContextFragment = { __typename?: 'Context', id: string, name: 
 
 export type ListContextFragment = { __typename?: 'Context', name: string, id: string };
 
-export type DetailDatasetFragment = { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null };
+export type DetailDatasetFragment = { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> };
 
 export type ListDatasetFragment = { __typename?: 'Dataset', id: string, name: string };
 
@@ -4244,13 +4365,13 @@ export type DetailModelFragment = { __typename?: 'Model', id: string, name: stri
 
 export type ListModelFragment = { __typename?: 'Model', id: string, name: string, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> };
 
-export type ObjectiveFragment = { __typename?: 'Objective', id: string, name: string, magnification?: number | null, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null };
+export type ObjectiveFragment = { __typename?: 'Objective', id: string, name: string, magnification?: number | null, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null };
 
 export type ListObjectiveFragment = { __typename?: 'Objective', id: string, name: string, magnification?: number | null };
 
 export type OmeroFragment = { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null };
 
-export type DetailOmeroFileFragment = { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> };
+export type DetailOmeroFileFragment = { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> };
 
 export type ListOmeroFileFragment = { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null };
 
@@ -4262,7 +4383,7 @@ export type PlotFragment = { __typename?: 'Plot', id: string, query: string, nam
 
 export type ListPlotFragment = { __typename?: 'Plot', id: string, name: string, creator: { __typename?: 'User', username: string } };
 
-export type PositionFragment = { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null };
+export type PositionFragment = { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null };
 
 export type ListPositionFragment = { __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null };
 
@@ -4270,17 +4391,17 @@ export type DetailRelationFragment = { __typename?: 'Relation', name: string, de
 
 export type ListRelationFragment = { __typename?: 'Relation', name: string, description?: string | null, id: string };
 
-export type ListRepresentationFragment = { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null };
+export type ListRepresentationFragment = { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null };
 
-export type ListSharedRepresentationFragment = { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null };
+export type ListSharedRepresentationFragment = { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null };
 
-export type DetailRepresentationFragment = { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
+export type DetailRepresentationFragment = { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
 
-export type RepRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null };
+export type RepRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null };
 
-export type DetailRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, label?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
+export type DetailRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, label?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
 
-export type DetailSampleFragment = { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
+export type DetailSampleFragment = { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
 
 export type ListSampleFragment = { __typename?: 'Sample', name: string, id: string, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', name: string }> };
 
@@ -4340,7 +4461,7 @@ export type CreateDatasetMutationVariables = Exact<{
 }>;
 
 
-export type CreateDatasetMutation = { __typename?: 'Mutation', createDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
+export type CreateDatasetMutation = { __typename?: 'Mutation', createDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type DeleteDatasetMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4357,7 +4478,7 @@ export type UpdateDatasetMutationVariables = Exact<{
 }>;
 
 
-export type UpdateDatasetMutation = { __typename?: 'Mutation', updateDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
+export type UpdateDatasetMutation = { __typename?: 'Mutation', updateDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type PinDatasetMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4373,7 +4494,7 @@ export type PutSamplesMutationVariables = Exact<{
 }>;
 
 
-export type PutSamplesMutation = { __typename?: 'Mutation', putSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
+export type PutSamplesMutation = { __typename?: 'Mutation', putSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type ReleaseFilesMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4381,7 +4502,23 @@ export type ReleaseFilesMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseFilesMutation = { __typename?: 'Mutation', releaseFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
+export type ReleaseFilesMutation = { __typename?: 'Mutation', releaseFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+
+export type PutDatasetsMutationVariables = Exact<{
+  dataset: Scalars['ID'];
+  datasets: Array<Scalars['ID']>;
+}>;
+
+
+export type PutDatasetsMutation = { __typename?: 'Mutation', putDatasets?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+
+export type ReleaseDatasetsMutationVariables = Exact<{
+  dataset: Scalars['ID'];
+  datasets: Array<Scalars['ID']>;
+}>;
+
+
+export type ReleaseDatasetsMutation = { __typename?: 'Mutation', releaseDatasets?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type PutRepresentationsMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4389,7 +4526,7 @@ export type PutRepresentationsMutationVariables = Exact<{
 }>;
 
 
-export type PutRepresentationsMutation = { __typename?: 'Mutation', putRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
+export type PutRepresentationsMutation = { __typename?: 'Mutation', putRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type ReleaseRepresentationsMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4397,7 +4534,7 @@ export type ReleaseRepresentationsMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseRepresentationsMutation = { __typename?: 'Mutation', releaseRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
+export type ReleaseRepresentationsMutation = { __typename?: 'Mutation', releaseRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type ReleaseSamplesMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4405,7 +4542,7 @@ export type ReleaseSamplesMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseSamplesMutation = { __typename?: 'Mutation', releaseSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
+export type ReleaseSamplesMutation = { __typename?: 'Mutation', releaseSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type PutFilesMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4413,7 +4550,7 @@ export type PutFilesMutationVariables = Exact<{
 }>;
 
 
-export type PutFilesMutation = { __typename?: 'Mutation', putFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
+export type PutFilesMutation = { __typename?: 'Mutation', putFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type CreateExperimentMutationVariables = Exact<{
   name: Scalars['String'];
@@ -4513,7 +4650,7 @@ export type UploadOmeroFileMutationVariables = Exact<{
 }>;
 
 
-export type UploadOmeroFileMutation = { __typename?: 'Mutation', uploadOmeroFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
+export type UploadOmeroFileMutation = { __typename?: 'Mutation', uploadOmeroFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
 
 export type UploadBigFileMutationVariables = Exact<{
   file: Scalars['BigFile'];
@@ -4521,7 +4658,7 @@ export type UploadBigFileMutationVariables = Exact<{
 }>;
 
 
-export type UploadBigFileMutation = { __typename?: 'Mutation', uploadBigFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
+export type UploadBigFileMutation = { __typename?: 'Mutation', uploadBigFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
 
 export type DeleteOmeroFileMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4536,7 +4673,7 @@ export type UpdateOmeroFileMutationVariables = Exact<{
 }>;
 
 
-export type UpdateOmeroFileMutation = { __typename?: 'Mutation', updateOmeroFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
+export type UpdateOmeroFileMutation = { __typename?: 'Mutation', updateOmeroFile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
 
 export type ChangePermissionsMutationVariables = Exact<{
   type: SharableModels;
@@ -4580,7 +4717,7 @@ export type CreatePositionMutationVariables = Exact<{
 }>;
 
 
-export type CreatePositionMutation = { __typename?: 'Mutation', createPosition?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null } | null };
+export type CreatePositionMutation = { __typename?: 'Mutation', createPosition?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null } | null };
 
 export type DeletePositionMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4628,7 +4765,7 @@ export type UpdateRepresentationMutationVariables = Exact<{
 }>;
 
 
-export type UpdateRepresentationMutation = { __typename?: 'Mutation', updateRepresentation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type UpdateRepresentationMutation = { __typename?: 'Mutation', updateRepresentation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type PinRepresentationMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4659,7 +4796,7 @@ export type CreateSampleMutationVariables = Exact<{
 }>;
 
 
-export type CreateSampleMutation = { __typename?: 'Mutation', createSample?: { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type CreateSampleMutation = { __typename?: 'Mutation', createSample?: { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type DeleteSampleMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4676,7 +4813,7 @@ export type UpdateSampleMutationVariables = Exact<{
 }>;
 
 
-export type UpdateSampleMutation = { __typename?: 'Mutation', updateSample?: { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type UpdateSampleMutation = { __typename?: 'Mutation', updateSample?: { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type PinSampleMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4784,7 +4921,7 @@ export type DetailDatasetQueryVariables = Exact<{
 }>;
 
 
-export type DetailDatasetQuery = { __typename?: 'Query', dataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null } | null };
+export type DetailDatasetQuery = { __typename?: 'Query', dataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type SearchDatasetsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -4829,7 +4966,7 @@ export type GlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', experiments?: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null } | null> | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } | null> | null, files?: Array<{ __typename?: 'OmeroFile', id: string, name: string } | null> | null };
+export type GlobalSearchQuery = { __typename?: 'Query', experiments?: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null } | null> | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, datasets?: Array<{ __typename?: 'Dataset', id: string, name: string } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } | null> | null, files?: Array<{ __typename?: 'OmeroFile', id: string, name: string } | null> | null };
 
 export type DetailInstrumentQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -4907,7 +5044,7 @@ export type DetailObjectiveQueryVariables = Exact<{
 }>;
 
 
-export type DetailObjectiveQuery = { __typename?: 'Query', objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null } | null };
+export type DetailObjectiveQuery = { __typename?: 'Query', objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null } | null };
 
 export type ObjectivesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4935,7 +5072,7 @@ export type DetailOmeroFileQueryVariables = Exact<{
 }>;
 
 
-export type DetailOmeroFileQuery = { __typename?: 'Query', omerofile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
+export type DetailOmeroFileQuery = { __typename?: 'Query', omerofile?: { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> } | null };
 
 export type PermissionOptionsQueryVariables = Exact<{
   model: SharableModels;
@@ -4974,7 +5111,7 @@ export type DetailPositionQueryVariables = Exact<{
 }>;
 
 
-export type DetailPositionQuery = { __typename?: 'Query', position?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null } | null };
+export type DetailPositionQuery = { __typename?: 'Query', position?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null } | null };
 
 export type PositionSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -4983,6 +5120,13 @@ export type PositionSearchQueryVariables = Exact<{
 
 
 export type PositionSearchQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Position', value: string, label: string } | null> | null };
+
+export type ProvenanceQueryVariables = Exact<{
+  ids: Array<InputMaybe<Scalars['ID']>>;
+}>;
+
+
+export type ProvenanceQuery = { __typename?: 'Query', provenance?: Array<{ __typename: 'Context', id: string, createdAt: any } | { __typename: 'Experiment' } | { __typename: 'ROI', id: string, label?: string | null, createdAt: any } | { __typename: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | { __typename: 'Sample', id: string, createdAt: any } | { __typename: 'Stage' } | { __typename: 'Table' } | null> | null };
 
 export type MyRelationsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -5012,7 +5156,7 @@ export type DetailRepresentationQueryVariables = Exact<{
 }>;
 
 
-export type DetailRepresentationQuery = { __typename?: 'Query', representation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type DetailRepresentationQuery = { __typename?: 'Query', representation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type MyRepresentationsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -5023,26 +5167,26 @@ export type MyRepresentationsQueryVariables = Exact<{
 }>;
 
 
-export type MyRepresentationsQuery = { __typename?: 'Query', myrepresentations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null };
+export type MyRepresentationsQuery = { __typename?: 'Query', myrepresentations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null };
 
 export type SharedRepresentationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SharedRepresentationsQuery = { __typename?: 'Query', sharedrepresentations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null } | null> | null };
+export type SharedRepresentationsQuery = { __typename?: 'Query', sharedrepresentations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null } | null> | null };
 
 export type RepresentationsForQueryVariables = Exact<{
   group: Scalars['String'];
 }>;
 
 
-export type RepresentationsForQuery = { __typename?: 'Query', representationsForGroup?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null } | null> | null };
+export type RepresentationsForQuery = { __typename?: 'Query', representationsForGroup?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null } | null> | null };
 
 export type RepresentationsForUserQueryVariables = Exact<{
   email: Scalars['String'];
 }>;
 
 
-export type RepresentationsForUserQuery = { __typename?: 'Query', representationsForUser?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null } | null> | null };
+export type RepresentationsForUserQuery = { __typename?: 'Query', representationsForUser?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null } | null> | null };
 
 export type SearchableRepresentationsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -5057,7 +5201,7 @@ export type SearchableRepresentationsQueryVariables = Exact<{
 }>;
 
 
-export type SearchableRepresentationsQuery = { __typename?: 'Query', myrepresentations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null };
+export type SearchableRepresentationsQuery = { __typename?: 'Query', myrepresentations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null };
 
 export type RepresentationFilterSearchQueryVariables = Exact<{
   value: Scalars['String'];
@@ -5069,7 +5213,7 @@ export type RepresentationFilterSearchQuery = { __typename?: 'Query', Samples?: 
 export type PinnedRepresentationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PinnedRepresentationsQuery = { __typename?: 'Query', representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null };
+export type PinnedRepresentationsQuery = { __typename?: 'Query', representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null };
 
 export type RequestQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5082,21 +5226,21 @@ export type RoisForRepresentationQueryVariables = Exact<{
 }>;
 
 
-export type RoisForRepresentationQuery = { __typename?: 'Query', rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null };
+export type RoisForRepresentationQuery = { __typename?: 'Query', rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null };
 
 export type DetailRoiQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailRoiQuery = { __typename?: 'Query', roi?: { __typename?: 'ROI', id: string, type: RoiType, label?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type DetailRoiQuery = { __typename?: 'Query', roi?: { __typename?: 'ROI', id: string, type: RoiType, label?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type DetailSampleQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailSampleQuery = { __typename?: 'Query', sample?: { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type DetailSampleQuery = { __typename?: 'Query', sample?: { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type MySamplesQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -5259,21 +5403,21 @@ export type WatchMentionsSubscription = { __typename?: 'Subscription', mymention
 export type MyRepresentationsEventSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyRepresentationsEventSubscription = { __typename?: 'Subscription', myRepresentations?: { __typename?: 'RepresentationEvent', deleted?: string | null, create?: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null, update?: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null } | null };
+export type MyRepresentationsEventSubscription = { __typename?: 'Subscription', myRepresentations?: { __typename?: 'RepresentationEvent', deleted?: string | null, create?: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null, update?: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null } | null };
 
 export type MyRepresentationsOriginSubscriptionVariables = Exact<{
   origin: Scalars['ID'];
 }>;
 
 
-export type MyRepresentationsOriginSubscription = { __typename?: 'Subscription', myRepresentations?: { __typename?: 'RepresentationEvent', deleted?: string | null, create?: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null, update?: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null } | null };
+export type MyRepresentationsOriginSubscription = { __typename?: 'Subscription', myRepresentations?: { __typename?: 'RepresentationEvent', deleted?: string | null, create?: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null, update?: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null } | null };
 
 export type WatchRoisSubscriptionVariables = Exact<{
   representation: Scalars['ID'];
 }>;
 
 
-export type WatchRoisSubscription = { __typename?: 'Subscription', rois?: { __typename?: 'RoiEvent', delete?: string | null, update?: { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null, create?: { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null } | null };
+export type WatchRoisSubscription = { __typename?: 'Subscription', rois?: { __typename?: 'RoiEvent', delete?: string | null, update?: { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null, create?: { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null } | null };
 
 export type MySamplesEventSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -5478,6 +5622,12 @@ export const DetailContextFragmentDoc = gql`
   }
 }
     ${ListLinkFragmentDoc}`;
+export const ListDatasetFragmentDoc = gql`
+    fragment ListDataset on Dataset {
+  id
+  name
+}
+    `;
 export const DetailDatasetFragmentDoc = gql`
     fragment DetailDataset on Dataset {
   id
@@ -5505,14 +5655,11 @@ export const DetailDatasetFragmentDoc = gql`
     id
     name
   }
+  children {
+    ...ListDataset
+  }
 }
-    `;
-export const ListDatasetFragmentDoc = gql`
-    fragment ListDataset on Dataset {
-  id
-  name
-}
-    `;
+    ${ListDatasetFragmentDoc}`;
 export const DetailExperimentFragmentDoc = gql`
     fragment DetailExperiment on Experiment {
   id
@@ -5617,6 +5764,7 @@ export const ListRepresentationFragmentDoc = gql`
   }
   variety
   pinned
+  createdWhile
 }
     `;
 export const ObjectiveFragmentDoc = gql`
@@ -5814,6 +5962,7 @@ export const ListSharedRepresentationFragmentDoc = gql`
   creator {
     email
   }
+  createdWhile
 }
     `;
 export const OmeroFragmentDoc = gql`
@@ -5892,6 +6041,7 @@ export const RepRoiFragmentDoc = gql`
   tags
   pinned
   label
+  createdWhile
 }
     `;
 export const DetailRepresentationFragmentDoc = gql`
@@ -5948,6 +6098,7 @@ export const DetailRepresentationFragmentDoc = gql`
       blurhash
     }
   }
+  createdWhile
   tables {
     id
     name
@@ -6014,6 +6165,7 @@ export const DetailRoiFragmentDoc = gql`
     id
     email
   }
+  createdWhile
 }
     ${ListRepresentationFragmentDoc}`;
 export const DetailSampleFragmentDoc = gql`
@@ -6497,6 +6649,74 @@ export function useReleaseFilesMutation(baseOptions?: Apollo.MutationHookOptions
 export type ReleaseFilesMutationHookResult = ReturnType<typeof useReleaseFilesMutation>;
 export type ReleaseFilesMutationResult = Apollo.MutationResult<ReleaseFilesMutation>;
 export type ReleaseFilesMutationOptions = Apollo.BaseMutationOptions<ReleaseFilesMutation, ReleaseFilesMutationVariables>;
+export const PutDatasetsDocument = gql`
+    mutation PutDatasets($dataset: ID!, $datasets: [ID!]!) {
+  putDatasets(dataset: $dataset, datasets: $datasets) {
+    ...DetailDataset
+  }
+}
+    ${DetailDatasetFragmentDoc}`;
+export type PutDatasetsMutationFn = Apollo.MutationFunction<PutDatasetsMutation, PutDatasetsMutationVariables>;
+
+/**
+ * __usePutDatasetsMutation__
+ *
+ * To run a mutation, you first call `usePutDatasetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePutDatasetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [putDatasetsMutation, { data, loading, error }] = usePutDatasetsMutation({
+ *   variables: {
+ *      dataset: // value for 'dataset'
+ *      datasets: // value for 'datasets'
+ *   },
+ * });
+ */
+export function usePutDatasetsMutation(baseOptions?: Apollo.MutationHookOptions<PutDatasetsMutation, PutDatasetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PutDatasetsMutation, PutDatasetsMutationVariables>(PutDatasetsDocument, options);
+      }
+export type PutDatasetsMutationHookResult = ReturnType<typeof usePutDatasetsMutation>;
+export type PutDatasetsMutationResult = Apollo.MutationResult<PutDatasetsMutation>;
+export type PutDatasetsMutationOptions = Apollo.BaseMutationOptions<PutDatasetsMutation, PutDatasetsMutationVariables>;
+export const ReleaseDatasetsDocument = gql`
+    mutation ReleaseDatasets($dataset: ID!, $datasets: [ID!]!) {
+  releaseDatasets(dataset: $dataset, datasets: $datasets) {
+    ...DetailDataset
+  }
+}
+    ${DetailDatasetFragmentDoc}`;
+export type ReleaseDatasetsMutationFn = Apollo.MutationFunction<ReleaseDatasetsMutation, ReleaseDatasetsMutationVariables>;
+
+/**
+ * __useReleaseDatasetsMutation__
+ *
+ * To run a mutation, you first call `useReleaseDatasetsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useReleaseDatasetsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [releaseDatasetsMutation, { data, loading, error }] = useReleaseDatasetsMutation({
+ *   variables: {
+ *      dataset: // value for 'dataset'
+ *      datasets: // value for 'datasets'
+ *   },
+ * });
+ */
+export function useReleaseDatasetsMutation(baseOptions?: Apollo.MutationHookOptions<ReleaseDatasetsMutation, ReleaseDatasetsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ReleaseDatasetsMutation, ReleaseDatasetsMutationVariables>(ReleaseDatasetsDocument, options);
+      }
+export type ReleaseDatasetsMutationHookResult = ReturnType<typeof useReleaseDatasetsMutation>;
+export type ReleaseDatasetsMutationResult = Apollo.MutationResult<ReleaseDatasetsMutation>;
+export type ReleaseDatasetsMutationOptions = Apollo.BaseMutationOptions<ReleaseDatasetsMutation, ReleaseDatasetsMutationVariables>;
 export const PutRepresentationsDocument = gql`
     mutation PutRepresentations($dataset: ID!, $representations: [ID!]!) {
   putRepresentations(dataset: $dataset, representations: $representations) {
@@ -8477,6 +8697,17 @@ export const GlobalSearchDocument = gql`
     id
     name
   }
+  datasets: datasets(
+    name: $search
+    limit: 10
+    createdBefore: $createdBefore
+    createdAfter: $createdAfter
+    pinned: $pinned
+    createdDay: $createdDay
+  ) {
+    id
+    name
+  }
   tables: mytables(
     name: $search
     limit: 10
@@ -9311,6 +9542,61 @@ export function usePositionSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOpt
 export type PositionSearchQueryHookResult = ReturnType<typeof usePositionSearchQuery>;
 export type PositionSearchLazyQueryHookResult = ReturnType<typeof usePositionSearchLazyQuery>;
 export type PositionSearchQueryResult = Apollo.QueryResult<PositionSearchQuery, PositionSearchQueryVariables>;
+export const ProvenanceDocument = gql`
+    query Provenance($ids: [ID]!) {
+  provenance(createdWhiles: $ids) {
+    __typename
+    ... on Representation {
+      ...ListRepresentation
+    }
+    ... on ROI {
+      id
+      label
+      createdAt
+    }
+    ... on Sample {
+      id
+      createdAt
+    }
+    ... on Context {
+      id
+      createdAt
+    }
+    ... on Context {
+      id
+      createdAt
+    }
+  }
+}
+    ${ListRepresentationFragmentDoc}`;
+
+/**
+ * __useProvenanceQuery__
+ *
+ * To run a query within a React component, call `useProvenanceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProvenanceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProvenanceQuery({
+ *   variables: {
+ *      ids: // value for 'ids'
+ *   },
+ * });
+ */
+export function useProvenanceQuery(baseOptions: Apollo.QueryHookOptions<ProvenanceQuery, ProvenanceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ProvenanceQuery, ProvenanceQueryVariables>(ProvenanceDocument, options);
+      }
+export function useProvenanceLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ProvenanceQuery, ProvenanceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ProvenanceQuery, ProvenanceQueryVariables>(ProvenanceDocument, options);
+        }
+export type ProvenanceQueryHookResult = ReturnType<typeof useProvenanceQuery>;
+export type ProvenanceLazyQueryHookResult = ReturnType<typeof useProvenanceLazyQuery>;
+export type ProvenanceQueryResult = Apollo.QueryResult<ProvenanceQuery, ProvenanceQueryVariables>;
 export const MyRelationsDocument = gql`
     query MyRelations($limit: Int, $offset: Int) {
   relations(limit: $limit, offset: $offset) {

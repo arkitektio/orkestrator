@@ -10,6 +10,7 @@ import {
 } from "../../mikro/api/graphql";
 import { withMikro } from "../../mikro/MikroContext";
 import {
+  DeploymentsDocument,
   usePullWhaleMutation,
   useRunWhaleMutation,
   useScanRepoMutation,
@@ -21,7 +22,9 @@ import { MateFinder } from "../types";
 export const useGithubRepoLifecycleMate = (): MateFinder => {
   const { confirm } = useConfirm();
 
-  const [scanRepo, _] = withPort(useScanRepoMutation)();
+  const [scanRepo, _] = withPort(useScanRepoMutation)({
+    refetchQueries: [DeploymentsDocument],
+  });
 
   const [pull] = withPort(usePullWhaleMutation)();
   return (type, isSelf) => {

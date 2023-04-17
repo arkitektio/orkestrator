@@ -3,6 +3,7 @@ import { BsCaretLeft, BsCaretRight } from "react-icons/bs";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Representation } from "../linker";
+import { useMikroLinkMate } from "../mates/generics/useLinkMate";
 import {
   MyRepresentationsEventDocument,
   MyRepresentationsEventSubscriptionResult,
@@ -22,6 +23,8 @@ const MyRepresentations: React.FC<
   IMyRepresentationsProps & DataHomeFilterParams
 > = ({ createdDay, limit }) => {
   const [offset, setOffset] = useState(0);
+
+  const mikroLinkMate = useMikroLinkMate();
 
   const {
     data: reps,
@@ -128,7 +131,11 @@ const MyRepresentations: React.FC<
               ?.slice(0, limit)
               .filter(notEmpty)
               .map((rep, index) => (
-                <RepresentationCard rep={rep} key={rep?.id} mates={[]} />
+                <RepresentationCard
+                  rep={rep}
+                  key={rep?.id}
+                  mates={[mikroLinkMate]}
+                />
               ))}
           </ResponsiveContainerGrid>
         </>

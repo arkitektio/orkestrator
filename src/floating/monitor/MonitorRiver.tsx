@@ -1,13 +1,12 @@
 import React from "react";
 import "react-contexify/dist/ReactContexify.css";
-import { EdgeTypes, useEdgesState, useNodesState } from "reactflow";
 import "react-toastify/dist/ReactToastify.css";
+import { EdgeTypes, useEdgesState, useNodesState } from "reactflow";
 import { FlowFragment } from "../../fluss/api/graphql";
 import { Graph } from "../base/Graph";
 import { NodeTypes, ReserveState } from "../types";
 import { edges_to_flowedges, nodes_to_flownodes } from "../utils";
 import { RiverMonitorContext } from "./context";
-import { FancyTrackEdge } from "./edges/FancyTrackEdge";
 import { LabeledTrackEdge } from "./edges/LabeledTrackEdge";
 import { ArkitektTrackNodeWidget } from "./nodes/ArkitektTrackNodeWidget";
 import { ArgTrackNodeWidget } from "./nodes/generic/ArgTrackNodeWidget";
@@ -25,7 +24,7 @@ const nodeTypes: NodeTypes = {
 
 const edgeTypes: EdgeTypes = {
   LabeledEdge: LabeledTrackEdge,
-  FancyEdge: FancyTrackEdge,
+  FancyEdge: LabeledTrackEdge,
 };
 
 export type Props = {

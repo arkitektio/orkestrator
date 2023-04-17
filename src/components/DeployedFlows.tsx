@@ -16,8 +16,6 @@ const DeployedFlows: React.FC<IMyNodesProps> = ({}) => {
 
   const requesterMate = useRequesterMate();
 
-  const navigate = useNavigate();
-
   return (
     <div>
       <SectionTitle>Deployed Flows</SectionTitle>

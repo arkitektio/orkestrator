@@ -3,7 +3,6 @@ import ParentSize from "@visx/responsive/lib/components/ParentSize";
 import { Form, Formik } from "formik";
 import React, { useEffect, useRef } from "react";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
-import { SelectInputField } from "../../../components/forms/fields/select_input";
 import { SwitchInputField } from "../../../components/forms/fields/switch_input";
 import { PopMenu } from "../../../layout/PopMenu";
 import { Datum, Group, ValueAccesor } from "../plot/types";
@@ -27,6 +26,10 @@ import { GridRows, GridColumns } from "@visx/grid";
 import { localPoint } from "@visx/event";
 import { scaleBandInvert } from "../plot/helpers";
 import { guardValueNumber } from "../plot/parser";
+import {
+  ListSearchInput,
+  SearchInput,
+} from "../../../components/forms/fields/SearchInput";
 export interface ChartProps {
   group: Group;
 }
@@ -468,12 +471,12 @@ export const InnerMultiChart: React.FC<
                   >
                     {(formik) => (
                       <Form>
-                        <ChangeSubmitHelper formik={formik} />
+                        <ChangeSubmitHelper />
                         <div className="w-full text-white">
-                          <SelectInputField
+                          <SearchInput
                             name="xAxis"
                             label="X Axis"
-                            options={
+                            searchFunction={async () =>
                               group?.schema?.axis.map((ax) => ({
                                 value: ax.key,
                                 label: ax.key,
@@ -482,11 +485,10 @@ export const InnerMultiChart: React.FC<
                           />
                         </div>
                         <div className="w-full text-white">
-                          <SelectInputField
+                          <ListSearchInput
                             name="yAxis"
                             label="Y Axis"
-                            isMulti={true}
-                            options={
+                            searchFunction={async () =>
                               group?.schema?.axis.map((ax) => ({
                                 value: ax.key,
                                 label: ax.key,

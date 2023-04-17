@@ -1,11 +1,6 @@
-import {
-  getSmartEdge,
-  pathfindingJumpPointNoDiagonal,
-  svgDrawStraightLinePath,
-} from "@tisoap/react-flow-smart-edge";
 import React from "react";
-import { BezierEdge, getBezierPath, useNodes } from "reactflow";
-import { RunEventType } from "../../../fluss/api/graphql";
+import { getSmoothStepPath } from "reactflow";
+import { RunEventType, StreamKind } from "../../../fluss/api/graphql";
 import { LabeledEdgeProps } from "../../types";
 import { useTrackRiver } from "../context";
 
@@ -26,22 +21,7 @@ export const colorForLatestStyle: { [key in RunEventType]: string } = {
 export const LabeledTrackEdge: React.FC<LabeledEdgeProps> = (props) => {
   const { runState } = useTrackRiver();
 
-  const {
-    id,
-    sourcePosition,
-    targetPosition,
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    source,
-    style,
-    markerStart,
-    markerEnd,
-    data,
-  } = props;
-
-  const latestEvent = runState?.events?.find((e) => e?.source === source);
+  const latestEvent = runState?.events?.find((e) => e?.source === props.source);
   const latestGlobalEvent = runState?.events
     ?.sort((a, b) => (b?.t || 0) - (a?.t || 0))
     .at(0);
@@ -52,55 +32,65 @@ export const LabeledTrackEdge: React.FC<LabeledEdgeProps> = (props) => {
       ? colorForLatestStyle[latestEvent.type]
       : color;
 
-  const nodes = useNodes();
-
-  const getSmartEdgeResponse = getSmartEdge({
+  const {
+    id,
     sourcePosition,
     targetPosition,
     sourceX,
     sourceY,
     targetX,
     targetY,
-    nodes,
-    options: {
-      drawEdge: svgDrawStraightLinePath,
-      generatePath: pathfindingJumpPointNoDiagonal,
-    },
+    style,
+    markerStart,
+    markerEnd,
+    data,
+  } = props;
+
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
+    sourcePosition,
+    targetPosition,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
   });
-
-  if (getSmartEdgeResponse === null) {
-    return <BezierEdge {...props} />;
-  }
-
-  const { edgeCenterX, edgeCenterY, svgPathString } = getSmartEdgeResponse;
 
   return (
     <>
       <path
         id={id}
+        style={{ ...style, stroke: color }}
         className={`react-flow__edge-path transition-colors duration-300 ${
           latestEvent?.id == latestGlobalEvent?.id ? "animate-pulse" : ""
         }`}
-        d={svgPathString}
-        style={{ stroke: color }}
+        d={edgePath}
       />
       <text>
         <textPath
           href={`#${id}`}
-          style={{ fontSize: "13px", fill: color }}
-          className={` transition-colors duration-300 ${
-            latestEvent?.id == latestGlobalEvent?.id ? "animate-pulse" : ""
-          }`}
+          style={{ fontSize: "13px", fill: "white" }}
           startOffset="50%"
           textAnchor="middle"
-        >
-          {data?.stream && data.stream.length > 0
-            ? data.stream
-                .map((item) => item?.identifier || item?.kind)
-                .join(" | ")
-            : "Event"}
-        </textPath>
+          className="group"
+        ></textPath>
       </text>
+      <foreignObject x={labelX} y={labelY} width={150} height={150}>
+        <div className="flex group">
+          <div
+            className="relative m-auto hover:bg-gray-500 bg-gray-800 border-[#555] border rounded-lg shadow-lg p-1 cursor-pointer select-none text-gray-400 left[-75px] hover:text-gray-200 flex-col flex  transition-all duration-500 ease-in-out"
+            style={{ fontSize: "13px", fill: "white" }}
+          >
+            {data?.stream.map((item, index) => (
+              <span className="text-xs" key={index}>
+                {(item?.kind == StreamKind.List
+                  ? "[ " + (item?.child?.identifier || item?.child?.kind) + " ]"
+                  : item?.identifier || item?.kind) +
+                  (item?.nullable ? "?" : "")}
+              </span>
+            ))}
+          </div>
+        </div>
+      </foreignObject>
     </>
   );
 };

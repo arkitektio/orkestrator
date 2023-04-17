@@ -18,6 +18,7 @@ export const DynamicSidebar = () => {
     if (selectedNode) {
       console.warn(selectedNode, internalSignal);
       const n = nodes.find((n) => n.id === selectedNode);
+      if (!n) return;
       setNode(n);
     } else {
       setNode(null);

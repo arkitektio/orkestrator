@@ -4,7 +4,7 @@ import { BiData } from "react-icons/bi";
 import { FiSettings } from "react-icons/fi";
 import { GrDocker } from "react-icons/gr";
 import { IconContext } from "react-icons/lib";
-import { TbLayoutDashboard } from "react-icons/tb";
+import { TbHistory, TbLayoutDashboard } from "react-icons/tb";
 import { TiFlowSwitch } from "react-icons/ti";
 import { MdLiveTv, MdOutlineLiveTv } from "react-icons/md";
 import { NavLink } from "react-router-dom";
@@ -19,27 +19,6 @@ import { UserIcon } from "./UserIcon";
 export type INavigationBarProps = {
   children?: React.ReactNode;
 };
-
-const navigation: {
-  name: string;
-  href: string;
-  sm: boolean;
-  icon?: React.ReactNode;
-}[] = [
-  { name: "Data", href: "mikro", sm: true, icon: <BiData /> },
-  {
-    name: "Dashboard",
-    href: "rekuest",
-    sm: true,
-    icon: <TbLayoutDashboard />,
-  },
-
-  { name: "Teams", href: "lok", sm: false, icon: <AiOutlineTeam /> },
-  { name: "Flows", href: "fluss", sm: true, icon: <TiFlowSwitch /> },
-  { name: "Port", href: "port", sm: false, icon: <GrDocker /> },
-  // { name: "Search", href: "search", sm: true, icon: <AiOutlineSearch /> },
-  { name: "Live", href: "mikro/live", sm: false, icon: <MdLiveTv /> },
-];
 
 const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
   return (
@@ -75,7 +54,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               <BiData />
             </NavLink>
           </MikroGuard>
-          <MikroGuard>
+          {/* <MikroGuard>
             <NavLink
               key={"Mikro Live"}
               to={"mikro/lives"}
@@ -86,7 +65,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             >
               <MdLiveTv />
             </NavLink>
-          </MikroGuard>
+          </MikroGuard> */}
           <RekuestGuard>
             <NavLink
               key={"Dashboard"}
@@ -97,6 +76,18 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               }
             >
               <TbLayoutDashboard />
+            </NavLink>
+          </RekuestGuard>
+          <RekuestGuard>
+            <NavLink
+              key={"History"}
+              to={"rekuest/history"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-500" : "text-back-400"}`
+              }
+            >
+              <TbHistory />
             </NavLink>
           </RekuestGuard>
           <FlussGuard>

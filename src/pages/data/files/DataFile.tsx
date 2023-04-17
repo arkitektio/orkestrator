@@ -69,13 +69,13 @@ export const OmeroFile: React.FC<{ id: string }> = ({ id }) => {
             {data?.omerofile?.derivedRepresentations
               .filter(notEmpty)
               .map((rep, index) => (
-                <RepresentationCard rep={rep} key={rep?.id} />
+                <RepresentationCard rep={rep} key={rep?.id} mates={[]} />
               ))}
           </ResponsiveContainerGrid>
           <div className="font-light mt-2 ">In experiments</div>
           <ResponsiveContainerGrid>
             {data?.omerofile?.experiments.filter(notEmpty).map((ex, index) => (
-              <ExperimentCard experiment={ex} key={index} />
+              <ExperimentCard experiment={ex} key={index} mates={[]} />
             ))}
           </ResponsiveContainerGrid>
         </div>

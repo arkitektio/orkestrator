@@ -1,6 +1,8 @@
 import { Form, Formik } from "formik";
-import { ParagraphInputField } from "../../../components/forms/fields/paragraph_input";
-import { SelectInputField } from "../../../components/forms/fields/select_input";
+import {
+  ListSearchInput,
+  SearchInput,
+} from "../../../components/forms/fields/SearchInput";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { StreamKind } from "../../../fluss/api/graphql";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
@@ -56,8 +58,8 @@ export const ReturnNodeSidebar = (
                         description="Human readable label for the port"
                       />
                       {re?.returnWidget?.kind && (
-                        <SelectInputField
-                          options={widget_options}
+                        <SearchInput
+                          searchFunction={async () => widget_options}
                           name={`returnWidget.kind`}
                           label="label"
                           description="Human readable label for the port"

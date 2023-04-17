@@ -16,6 +16,12 @@ query MyRequests {
   }
 }
 
+query RequestsHistory($limit: Int = 20) {
+  myrequests(limit: $limit) {
+    ...ListAssignation
+  }
+}
+
 query FilteredAssignations(
   $exclude: [AssignationStatusInput]
   $filter: [AssignationStatusInput]

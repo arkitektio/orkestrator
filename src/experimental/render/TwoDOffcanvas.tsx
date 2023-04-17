@@ -57,7 +57,7 @@ export const Canvas: React.FC<{
       setImageData((image) => bitmap);
       setLoading(false);
     } catch (e) {
-      setError(e.message);
+      setError((e as Error).message);
     }
   };
 
@@ -94,7 +94,7 @@ export const Canvas: React.FC<{
       <div
         className={`absolute top-0 left-0 bg-gray-900 ${
           loading || error ? "opacity-100" : "opacity-0"
-        } animate-opacity ease-in-out duration-300 z-10 flex items-center justify-center text-white `}
+        } animate-opacity ease-in-out duration-300 z-2 flex items-center justify-center text-white `}
         style={{ width: width, height: height }}
       >
         {error ? (
@@ -136,17 +136,20 @@ export const RoiCanvas = ({
     x: number | null | undefined,
     y: number | null | undefined
   ) => {
-    // x and y are flipped in this space
     return [
-      ((y || 0) / (representation.shape?.at(4) || 1)) * height,
-      ((x || 0) / (representation.shape?.at(3) || 1)) * width,
+      ((x || 0) / (representation.shape?.at(4) || 1)) * height,
+      ((y || 0) / (representation.shape?.at(3) || 1)) * width,
     ];
   };
 
   const navigate = useNavigate();
 
   return (
-    <Stage width={width} height={height} className="absolute top-0 left-0">
+    <Stage
+      width={width}
+      height={height}
+      className="absolute top-0 left-0 z-10 "
+    >
       <Layer>
         {rectangles.filter(notEmpty).map((r, index) => {
           let vectors = r?.vectors?.map((v) => translate(v?.x, v?.y)) ?? [
@@ -158,10 +161,11 @@ export const RoiCanvas = ({
               closed={true}
               key={index}
               stroke="white"
-              onClick={(e) => {
+              onMouseDown={(e) => {
+                console.log(e);
                 navigate(Roi.linkBuilder(r.id));
               }}
-              strokeWidth={2}
+              strokeWidth={4}
             />
           );
         })}

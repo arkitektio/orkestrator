@@ -1,12 +1,4 @@
-import { Form, Formik } from "formik";
-import { ParagraphInputField } from "../../../components/forms/fields/paragraph_input";
-import { SelectInputField } from "../../../components/forms/fields/select_input";
-import { TextInputField } from "../../../components/forms/fields/text_input";
-import { StreamKind } from "../../../fluss/api/graphql";
-import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
-import { ArgNodeData, FlowNode } from "../../types";
 import { useEditRiver } from "../context";
-import { SidebarProps } from "./types";
 
 export const CanvasSidebar = (props: {}) => {
   const { flow } = useEditRiver();

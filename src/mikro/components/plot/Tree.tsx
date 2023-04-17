@@ -1,7 +1,7 @@
 import { Form, Formik } from "formik";
 import React from "react";
 import { VscGraphLine } from "react-icons/vsc";
-import { SelectInputField } from "../../../components/forms/fields/select_input";
+import { SearchInput } from "../../../components/forms/fields/SearchInput";
 import { PopMenu } from "../../../layout/PopMenu";
 import { getDefaultSmartModel } from "../../../linker";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
@@ -66,10 +66,10 @@ export const Tree: React.FC<TreeProps> = ({ group, depth = 0, index = 0 }) => {
                       <ChangeSubmitHelper />
                       <div className="bg-slate-600 p-3 rounded">
                         <div className="w-full text-white bg-slate-600">
-                          <SelectInputField
+                          <SearchInput
                             name="chart"
                             label="Chart"
-                            options={charts}
+                            searchFunction={async () => charts}
                           />
                         </div>
                       </div>

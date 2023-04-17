@@ -16,6 +16,7 @@ import {
   DescendendInput,
   ElementRenderProps,
   KommentEditor,
+  KommentNode,
   ReplyToFunc,
 } from "../types";
 import { MentionEdit } from "./MentionEdit";
@@ -31,7 +32,7 @@ const Element = (props: ElementRenderProps) => {
   }
 };
 
-const initialValue: Node[] = [
+const initialValue: KommentNode[] = [
   {
     typename: "ParagraphDescendent",
     children: [{ text: "", typename: "Leaf" }],

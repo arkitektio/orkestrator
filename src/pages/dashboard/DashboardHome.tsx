@@ -12,7 +12,6 @@ const DashBoardHome: React.FunctionComponent<IDashBoardHomeProps> = (props) => {
     <PageLayout>
       <MyAssignations />
       <Reservations />
-      <Provisions />
       <MyAgents />
     </PageLayout>
   );

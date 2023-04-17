@@ -1,0 +1,10 @@
+query UnfoldProvenance($id: ID!) {
+  assignation(id: $id) {
+    id
+    createdAt
+    children {
+      id
+      createdAt
+    }
+  }
+}

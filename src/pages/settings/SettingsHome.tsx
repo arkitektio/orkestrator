@@ -1,7 +1,6 @@
 import { Form, Formik } from "formik";
 import React, { useState, useEffect } from "react";
 import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
-import { SelectInputField } from "../../components/forms/fields/select_input";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import { PageLayout } from "../../layout/PageLayout";
 import { useSettings } from "../../settings/settings-context";
@@ -10,6 +9,11 @@ import { useExperimental } from "../../providers/experimental/context";
 import { available_color_maps } from "../../experimental/provider/provider";
 import { useFakts } from "@jhnnsrs/fakts";
 import { RekuestGuard } from "../../rekuest/RekuestGuard";
+import {
+  FuseSearchInput,
+  ListSearchInput,
+  SearchInput,
+} from "../../components/forms/fields/SearchInput";
 
 export interface SettingsHomeProps {}
 
@@ -55,20 +59,20 @@ export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
                   label="Dark Mode"
                   description="Set the default for autorequest to true or false"
                 />
-                <SelectInputField
+                <SearchInput
                   name="colorScheme"
-                  className="text-black"
+                  labelClassName="text-black"
                   label="Color Scheme"
                   description="Set the default for colors to true or false"
-                  options={[
+                  searchFunction={async (d) => [
                     { label: "Red", value: "red" },
                     { label: "Green", value: "green" },
                     { label: "Blue", value: "blue" },
                   ]}
                 />
-                <SelectInputField
+                <FuseSearchInput
                   name="defaultColormap"
-                  className="text-black"
+                  labelClassName="text-black"
                   label="Image Colormap"
                   description="Set the default for colors to true or false"
                   options={available_color_maps.map((c) => ({
@@ -76,9 +80,9 @@ export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
                     value: c,
                   }))}
                 />
-                <SelectInputField
+                <FuseSearchInput
                   name="defaultMaskColormap"
-                  className="text-black"
+                  labelClassName="text-black"
                   label="Mask Colormap"
                   description="Set the default for colors to true or false"
                   options={available_color_maps.map((c) => ({

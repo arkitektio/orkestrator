@@ -16,12 +16,16 @@ import {
   SharableModels,
 } from "../../rekuest/api/graphql";
 import { useMikro, withMikro } from "../../mikro/MikroContext";
-import { SearchSelectInput } from "../forms/fields/search_select_input";
-import { SelectInputField } from "../forms/fields/select_input";
 import { SubmitButton } from "../forms/fields/SubmitButton";
 import { withRekuest } from "../../rekuest";
 import { ResponsiveContainerGrid } from "../layout/ResponsiveContainerGrid";
 import { User } from "../../linker";
+import {
+  GraphQLListSearchInput,
+  GraphQLSearchInput,
+  ListSearchField,
+  ListSearchInput,
+} from "../forms/fields/SearchInput";
 
 export const PermissionUserInfo = (props: { sub: string }) => {
   const { data } = withMan(useUserQuery)({ variables: { id: props.sub } });
@@ -150,19 +154,21 @@ export const RekuestShare: React.FC<{
                                   sub={userAssignment?.user}
                                 />
                               ) : (
-                                <SearchSelectInput
-                                  isMulti={false}
-                                  lazySearch={searchUsers}
-                                  className="text-black "
+                                <GraphQLSearchInput
+                                  searchFunction={searchUsers}
+                                  labelClassName="text-black"
+                                  label="User"
                                   name={`userAssignments.${index}.user`}
                                 />
                               )}
                             </div>
-                            <SelectInputField
+                            <ListSearchInput
+                              label="Permissions"
                               name={`userAssignments.${index}.permissions`}
-                              isMulti={true}
-                              className="flex-1 text-black outline-none  block"
-                              options={data?.permissionsOf?.options || []}
+                              labelClassName="flex-1 text-black outline-none  block"
+                              searchFunction={async () =>
+                                data?.permissionsOf?.options || []
+                              }
                             />
                             <button
                               type="button"
@@ -205,18 +211,21 @@ export const RekuestShare: React.FC<{
                                   id={groupAssignment?.group}
                                 />
                               ) : (
-                                <SearchSelectInput
-                                  isMulti={false}
-                                  lazySearch={searchGroups}
+                                <GraphQLSearchInput
+                                  label="Group"
+                                  labelClassName="text-black"
+                                  searchFunction={searchGroups}
                                   name={`groupAssignments.${index}.group`}
                                 />
                               )}
                             </div>
-                            <SelectInputField
+                            <ListSearchInput
                               name={`groupAssignments.${index}.permissions`}
-                              isMulti={true}
-                              className="flex-1"
-                              options={data?.permissionsOf?.options || []}
+                              labelClassName="flex-1"
+                              label="Permissions"
+                              searchFunction={async () =>
+                                data?.permissionsOf?.options || []
+                              }
                             />
                             <button
                               type="button"

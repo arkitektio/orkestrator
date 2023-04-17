@@ -5,10 +5,6 @@ import { BiSearch } from "react-icons/bi";
 import { FiArrowDown } from "react-icons/fi";
 import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 import {
-  CreateableSearchSelect,
-  SearchSelectInput,
-} from "../../components/forms/fields/search_select_input";
-import {
   GlobalSearchQueryVariables,
   useTagSearchLazyQuery,
   useUserOptionsLazyQuery,
@@ -18,6 +14,10 @@ import "react-datepicker/dist/react-datepicker.css";
 import { DateInputField } from "../../components/forms/fields/date_input";
 import { withMikro } from "../../mikro/MikroContext";
 import { NodesQueryVariables } from "../../rekuest/api/graphql";
+import {
+  CreateableSearchInput,
+  GraphQLSearchInput,
+} from "../../components/forms/fields/SearchInput";
 
 interface NodeFilterBoxProps {
   onFilterChanged: (values: NodesQueryVariables) => any;
@@ -81,15 +81,10 @@ export const DashboardSearchFilter: React.FC<NodeFilterBoxProps> = ({
               <>
                 <div className="grid grid-cols-1 mt-2 dark:border-t-slate-800">
                   <div className="flex flex-col">
-                    <SearchSelectInput
+                    <GraphQLSearchInput
                       name="creator"
-                      lazySearch={searchUser}
+                      searchFunction={searchUser}
                       label="Created by"
-                    />
-                    <CreateableSearchSelect
-                      name="interfaces"
-                      isMulti={true}
-                      label="Has interface"
                     />
                   </div>
                 </div>

@@ -29,6 +29,7 @@ import { KwargTrackNodeWidget } from "./nodes/generic/KwargTrackNodeWidget";
 import { ReturnTrackNodeWidget } from "./nodes/generic/ReturnTrackNodeWidget";
 import { ReactiveTrackNodeWidget } from "./nodes/ReactiveTrackNodeWidget";
 import { BottomSlider } from "./Slider";
+import { Link } from "react-router-dom";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektTrackNodeWidget,
@@ -218,6 +219,7 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
             >
               {live ? "IS live" : "is past"}
             </div>
+
             <div className="flex-grow">
               <ReactSlider
                 className="horizontal-slider"
@@ -252,6 +254,12 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
                 min={range.min}
               />
             </div>
+            <Link
+              to={`/user/mikro/provenances/${id}`}
+              className="flex-initial  my-auto ml-3 dark:text-white cursor-pointer"
+            >
+              Prov
+            </Link>
           </div>
         </div>
       </PageLayout>

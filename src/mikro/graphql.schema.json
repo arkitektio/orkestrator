@@ -51,6 +51,16 @@
       },
       {
         "kind": "SCALAR",
+        "name": "AssignationID",
+        "description": "The context of a transaction (e.g an assignment\nthrough a rekuest server)",
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "SCALAR",
         "name": "BigFile",
         "description": "A big file uploaded to s3",
         "fields": null,
@@ -699,7 +709,7 @@
       {
         "kind": "OBJECT",
         "name": "Context",
-        "description": "Context(id, created_by, created_through, name, created_at, experiment, creator)",
+        "description": "Context(id, created_by, created_through, created_while, name, created_at, experiment, creator)",
         "fields": [
           {
             "name": "createdAt",
@@ -736,6 +746,18 @@
             "type": {
               "kind": "OBJECT",
               "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
@@ -993,7 +1015,7 @@
       {
         "kind": "OBJECT",
         "name": "DataLink",
-        "description": "DataLink(id, x_content_type, x_id, y_content_type, y_id, relation, left_type, right_type, context, created_at, creator)",
+        "description": "DataLink(id, created_by, created_through, created_while, x_content_type, x_id, y_content_type, y_id, relation, left_type, right_type, context, created_at, creator)",
         "fields": [
           {
             "name": "context",
@@ -1019,6 +1041,42 @@
                 "name": "DateTime",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdBy",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdThrough",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -1303,6 +1361,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "experiments",
             "description": "",
             "args": [],
@@ -1513,6 +1583,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -2390,6 +2476,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": "The user that created the experiment",
             "args": [],
@@ -2714,6 +2812,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": null,
                 "type": {
@@ -2999,6 +3113,18 @@
             "type": {
               "kind": "OBJECT",
               "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
@@ -3595,7 +3721,7 @@
       {
         "kind": "OBJECT",
         "name": "Instrument",
-        "description": "Instrument(id, created_by, created_through, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number)",
+        "description": "Instrument(id, created_by, created_through, created_while, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number)",
         "fields": [
           {
             "name": "comments",
@@ -3632,6 +3758,18 @@
             "type": {
               "kind": "OBJECT",
               "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
@@ -3818,6 +3956,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "ids",
                 "description": "Filter by values",
                 "type": {
@@ -3859,7 +4013,7 @@
               },
               {
                 "name": "order",
-                "description": "Ordering",
+                "description": "Order the omeros: options are -acquired or acquired",
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
@@ -3996,6 +4150,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": "The user that created the Label",
             "args": [],
@@ -4099,6 +4265,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -4790,6 +4972,30 @@
             "deprecationReason": null
           },
           {
+            "name": "datalinkCreatedThrough",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "DataLink",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "datasetCreatedThrough",
             "description": "",
             "args": [],
@@ -5109,6 +5315,30 @@
                   "ofType": {
                     "kind": "OBJECT",
                     "name": "Position",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "relationCreatedThrough",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "Relation",
                     "ofType": null
                   }
                 }
@@ -5512,6 +5742,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": "",
             "args": [],
@@ -5699,6 +5941,18 @@
             "type": {
               "kind": "OBJECT",
               "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
@@ -6143,6 +6397,18 @@
             "description": "Create an Experiment\n    \n    This mutation creates an Experiment and returns the created Experiment.\n    ",
             "args": [
               {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "experiment",
                 "description": "The experiment this context belongs to",
                 "type": {
@@ -6200,6 +6466,18 @@
             "description": "Create an Experiment\n    \n    This mutation creates an Experiment and returns the created Experiment.\n    ",
             "args": [
               {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "name",
                 "description": "A name for the experiment",
                 "type": {
@@ -6256,6 +6534,18 @@
             "name": "createExperiment",
             "description": "Create an Experiment\n    \n    This mutation creates an Experiment and returns the created Experiment.\n    ",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "creator",
                 "description": "The user that created this experiment (defaults to the logined user)",
@@ -6325,6 +6615,18 @@
             "name": "createInstrument",
             "description": "Creates an Instrument\n    \n    This mutation creates an Instrument and returns the created Instrument.\n    The serial number is required and the manufacturer is inferred from the serial number.\n    ",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "detectors",
                 "description": "Which Representaiton does this metric belong to",
@@ -6467,6 +6769,18 @@
             "description": "Creates a Label\n    \n    This mutation creates a Label and returns the created Label.\n    We require a reference to the image pixel value that the label belongs to.\n    (Labels can be created for any pixel in an image, no matter if this image\n    is a mask or not). However labels can only be created for pixels that are\n    integer values.\n\n    \n\n    ",
             "args": [
               {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": "The creator of this label",
                 "type": {
@@ -6535,6 +6849,18 @@
             "name": "createMetric",
             "description": "Create a metric\n\n    This mutation creates a metric and returns the created metric.\n    \n    ",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "creator",
                 "description": "The Email of the user creating the Representation (only for backend apps)",
@@ -6645,6 +6971,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "data",
                 "description": "The model",
                 "type": {
@@ -6721,6 +7059,18 @@
             "name": "createObjective",
             "description": "Creates an Instrument\n    \n    This mutation creates an Instrument and returns the created Instrument.\n    The serial number is required and the manufacturer is inferred from the serial number.\n    ",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "immersion",
                 "description": null,
@@ -6847,6 +7197,18 @@
             "name": "createPosition",
             "description": "Creates a Feature\n    \n    This mutation creates a Feature and returns the created Feature.\n    We require a reference to the label that the feature belongs to.\n    As well as the key and value of the feature.\n    \n    There can be multiple features with the same label, but only one feature per key\n    per label",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "creator",
                 "description": "The creator of this position",
@@ -6977,6 +7339,18 @@
             "description": "Creates a Sample",
             "args": [
               {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": "The email of the creator, only for backend app",
                 "type": {
@@ -7093,6 +7467,18 @@
             "name": "createROIS",
             "description": "Creates a Sample",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "creator",
                 "description": "The email of the creator, only for backend app",
@@ -7215,6 +7601,18 @@
             "description": "Creates a new Relation\n    \n    This mutation creates a Feature and returns the created Feature.\n    We require a reference to the label that the feature belongs to.\n    As well as the key and value of the feature.\n    \n    There can be multiple features with the same label, but only one feature per key\n    per label",
             "args": [
               {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "description",
                 "description": "The description of the relation",
                 "type": {
@@ -7255,6 +7653,18 @@
             "name": "createSample",
             "description": "Creates a Sample",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "creator",
                 "description": "The email of the creator, only for backend app",
@@ -7337,6 +7747,18 @@
             "description": "Creates a Stage\n    \n    This mutation creates a Feature and returns the created Feature.\n    We require a reference to the label that the feature belongs to.\n    As well as the key and value of the feature.\n    \n    There can be multiple features with the same label, but only one feature per key\n    per label",
             "args": [
               {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": "The creator of this position",
                 "type": {
@@ -7412,6 +7834,18 @@
                     "name": "String",
                     "ofType": null
                   }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -7506,6 +7940,18 @@
             "name": "createfeature",
             "description": "Creates a Feature\n    \n    This mutation creates a Feature and returns the created Feature.\n    We require a reference to the label that the feature belongs to.\n    As well as the key and value of the feature.\n    \n    There can be multiple features with the same label, but only one feature per key\n    per label",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "creator",
                 "description": "The creator of this feature",
@@ -7953,6 +8399,18 @@
             "description": "Creates a Representation",
             "args": [
               {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": "The Email of the user creating the Representation (only for backend apps)",
                 "type": {
@@ -8061,6 +8519,18 @@
             "name": "fromXArray",
             "description": "Creates a Representation",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "creator",
                 "description": "The Email of the user creating the Representation (only for backend apps)",
@@ -8264,6 +8734,18 @@
                 "type": {
                   "kind": "SCALAR",
                   "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -8741,6 +9223,55 @@
             "deprecationReason": null
           },
           {
+            "name": "putDatasets",
+            "description": null,
+            "args": [
+              {
+                "name": "dataset",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "datasets",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "ID",
+                      "ofType": null
+                    }
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Dataset",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "putFiles",
             "description": null,
             "args": [
@@ -8860,6 +9391,55 @@
               },
               {
                 "name": "samples",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "ID",
+                      "ofType": null
+                    }
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Dataset",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "releaseDatasets",
+            "description": null,
+            "args": [
+              {
+                "name": "dataset",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "datasets",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -9755,6 +10335,18 @@
             "description": "Upload a file to Mikro\n\n    This mutation uploads a file to Omero and returns the created OmeroFile.\n    ",
             "args": [
               {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "datasets",
                 "description": null,
                 "type": {
@@ -9799,6 +10391,18 @@
             "name": "uploadOmeroFile",
             "description": "Upload a file to Mikro\n\n    This mutation uploads a file to Omero and returns the created OmeroFile.\n    ",
             "args": [
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "datasets",
                 "description": null,
@@ -9878,6 +10482,18 @@
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": "The assignation id",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "AssignationID",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -9996,7 +10612,7 @@
       {
         "kind": "OBJECT",
         "name": "Objective",
-        "description": "Objective(id, created_by, created_through, serial_number, name, magnification, na, immersion)",
+        "description": "Objective(id, created_by, created_through, created_while, serial_number, name, magnification, na, immersion)",
         "fields": [
           {
             "name": "comments",
@@ -10033,6 +10649,18 @@
             "type": {
               "kind": "OBJECT",
               "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
@@ -10183,6 +10811,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "ids",
                 "description": "Filter by values",
                 "type": {
@@ -10224,7 +10868,7 @@
               },
               {
                 "name": "order",
-                "description": "Ordering",
+                "description": "Order the omeros: options are -acquired or acquired",
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
@@ -10473,6 +11117,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": "",
             "args": [],
@@ -10654,6 +11310,18 @@
             "type": {
               "kind": "OBJECT",
               "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
@@ -11941,6 +12609,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": "",
             "args": [],
@@ -12025,6 +12705,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "ids",
                 "description": "Filter by values",
                 "type": {
@@ -12066,7 +12762,7 @@
               },
               {
                 "name": "order",
-                "description": "Ordering",
+                "description": "Order the omeros: options are -acquired or acquired",
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
@@ -12362,6 +13058,52 @@
         "possibleTypes": null
       },
       {
+        "kind": "UNION",
+        "name": "ProvenanceResult",
+        "description": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": [
+          {
+            "kind": "OBJECT",
+            "name": "Context",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "Experiment",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "ROI",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "Representation",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "Sample",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "Stage",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "Table",
+            "ofType": null
+          }
+        ]
+      },
+      {
         "kind": "OBJECT",
         "name": "Query",
         "description": "The root Query",
@@ -12623,6 +13365,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": null,
                 "type": {
@@ -12833,6 +13591,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "ids",
                 "description": "Filter by values",
                 "type": {
@@ -12997,6 +13771,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -13203,6 +13993,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -13427,6 +14233,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "ids",
                 "description": "Filter by values",
                 "type": {
@@ -13626,6 +14448,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": null,
                 "type": {
@@ -13802,6 +14640,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -14008,6 +14862,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -14248,6 +15118,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": null,
                 "type": {
@@ -14383,6 +15269,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -14570,6 +15472,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "ids",
                 "description": "Filter by values",
                 "type": {
@@ -14705,6 +15623,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -14920,6 +15854,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": null,
                 "type": {
@@ -15049,6 +15999,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "ids",
                 "description": "Filter by values",
                 "type": {
@@ -15166,6 +16132,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "limit",
                 "description": "Query limit",
                 "type": {
@@ -15261,6 +16243,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -15588,6 +16586,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": null,
                 "type": {
@@ -15799,6 +16813,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -16250,6 +17280,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "ids",
                 "description": "Filter by values",
                 "type": {
@@ -16523,6 +17569,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "ids",
                 "description": "Filter by values",
                 "type": {
@@ -16605,6 +17667,43 @@
               "ofType": {
                 "kind": "OBJECT",
                 "name": "Position",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "provenance",
+            "description": "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    ",
+            "args": [
+              {
+                "name": "createdWhiles",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "ID",
+                      "ofType": null
+                    }
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "UNION",
+                "name": "ProvenanceResult",
                 "ofType": null
               }
             },
@@ -16809,6 +17908,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -17244,6 +18359,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": null,
                 "type": {
@@ -17488,6 +18619,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -17750,6 +18897,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -18169,6 +19332,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": null,
                 "type": {
@@ -18431,6 +19610,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": "The user that created the ROI",
             "args": [],
@@ -18668,8 +19859,44 @@
       {
         "kind": "OBJECT",
         "name": "Relation",
-        "description": "Relation(id, name, description)",
+        "description": "Relation(id, created_by, created_through, created_while, name, description)",
         "fields": [
+          {
+            "name": "createdBy",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdThrough",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "datalinkSet",
             "description": "The relation between the two objects",
@@ -18696,7 +19923,7 @@
           },
           {
             "name": "description",
-            "description": "The description of the relation",
+            "description": "A verbose description of the relation",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -18806,6 +20033,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": "",
             "args": [],
@@ -18900,6 +20139,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -19444,6 +20699,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "creator",
                 "description": null,
                 "type": {
@@ -19755,6 +21026,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -20463,6 +21750,18 @@
             "deprecationReason": null
           },
           {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": "The user that created the sample",
             "args": [],
@@ -20685,6 +21984,22 @@
                   "kind": "SCALAR",
                   "name": "DateTime",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "createdWhile",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -21239,6 +22554,18 @@
             "type": {
               "kind": "OBJECT",
               "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
@@ -22030,6 +23357,18 @@
             "type": {
               "kind": "OBJECT",
               "name": "LokClient",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createdWhile",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
