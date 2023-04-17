@@ -14,3 +14,21 @@ mutation DeleteRoi($id: ID!) {
     id
   }
 }
+
+mutation create_roi(
+  $representation: ID!
+  $vectors: [InputVector]!
+  $creator: ID
+  $type: RoiTypeInput!
+  $label: String
+) {
+  createROI(
+    representation: $representation
+    vectors: $vectors
+    type: $type
+    creator: $creator
+    label: $label
+  ) {
+    ...RepRoi
+  }
+}

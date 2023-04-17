@@ -13,6 +13,7 @@ import {
 import { ExperimentCard } from "../../../mikro/components/cards/ExperimentCard";
 import { RepresentationCard } from "../../../mikro/components/cards/RepresentationCard";
 import { useMikro, withMikro } from "../../../mikro/MikroContext";
+import { Assignation } from "../../../linker";
 
 export interface DataFileProps {}
 
@@ -62,6 +63,14 @@ export const OmeroFile: React.FC<{ id: string }> = ({ id }) => {
           <div className="text-md ">
             <Timestamp date={data?.omerofile?.createdAt} />
           </div>
+          {data?.omerofile?.createdWhile && (
+            <div className="text-md mt-2 ">
+              <Assignation.DetailLink object={data?.omerofile?.createdWhile}>
+                Provenance
+              </Assignation.DetailLink>
+            </div>
+          )}
+
           <div className="font-light mt-2 ">Type</div>
           <div className="text-md ">{data?.omerofile?.type}</div>
           <div className="font-light mt-2 ">Created</div>

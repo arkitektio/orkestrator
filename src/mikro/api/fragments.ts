@@ -34,6 +34,10 @@
       "Sample",
       "Stage",
       "Table"
+    ],
+    "Render": [
+      "Thumbnail",
+      "Video"
     ]
   }
 };

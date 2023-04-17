@@ -52,6 +52,15 @@ fragment DetailRepresentation on Representation {
   store
   createdAt
   variety
+  renders {
+    ... on Thumbnail {
+      ...Thumbnail
+    }
+    ... on Video {
+      ...DetailVideo
+    }
+  }
+
   latestThumbnail {
     image
     majorColor

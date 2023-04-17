@@ -17,6 +17,7 @@ import { MikroKomments } from "../../komment/MikroKomments";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { SaveParentSize } from "../../layout/SaveParentSize";
+import ReactPlayer from "react-player";
 import {
   Assignation,
   Dataset,
@@ -36,9 +37,11 @@ import {
   CommentableModels,
   DetailRepresentationFragment,
   DetailRepresentationQuery,
+  DetailVideoFragment,
   MyRepresentationsOriginDocument,
   MyRepresentationsOriginSubscription,
   MyRepresentationsOriginSubscriptionVariables,
+  ThumbnailFragment,
   UpdateRepresentationMutationVariables,
   useDeleteRepresentationMutation,
   useDeleteRoiMutation,
@@ -51,9 +54,41 @@ import {
   WatchRoisSubscriptionResult,
 } from "../api/graphql";
 import { useMikro, withMikro } from "../MikroContext";
+import { Tab } from "@headlessui/react";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 
 export type ISampleProps = {
   id: string;
+};
+
+const VideoPanel = ({ video }: { video: DetailVideoFragment }) => {
+  const { s3resolve } = useDatalayer();
+
+  return (
+    <>
+      {video?.data && (
+        <ReactPlayer
+          url={s3resolve(video.data)}
+          onError={(e) => {
+            console.log(e);
+          }}
+          controls
+        />
+      )}
+    </>
+  );
+};
+
+const ThumbnailPanel = ({ image }: { image: ThumbnailFragment }) => {
+  const { s3resolve } = useDatalayer();
+
+  return (
+    <>
+      {image.image && (
+        <img src={s3resolve(image.image)} className="w-full h-full" />
+      )}
+    </>
+  );
 };
 
 const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
@@ -248,13 +283,56 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
           </div>
         </div>
         <div className="flex @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">
-          <div className="flex-1 max-w-2xl mt-2 rounded rounded-lg overflow-hidden relative">
-            {data?.representation && (
-              <TwoDOffcanvas
-                representation={data?.representation}
-                withRois={showRois}
-              />
-            )}
+          <div className="flex-1 max-w-2xl mt-2  relative">
+            <Tab.Group>
+              <Tab.Panels className={""}>
+                <Tab.Panel className={"border border-slate-200  "}>
+                  {data?.representation && (
+                    <TwoDOffcanvas
+                      representation={data?.representation}
+                      withRois={showRois}
+                    />
+                  )}
+                </Tab.Panel>
+                {data?.representation?.renders
+                  ?.filter(notEmpty)
+                  .map((render, index) => (
+                    <Tab.Panel
+                      key={index}
+                      className="border border-slate-200  "
+                    >
+                      {render.__typename == "Thumbnail" && (
+                        <ThumbnailPanel image={render} />
+                      )}
+                      {render.__typename == "Video" && (
+                        <VideoPanel video={render} />
+                      )}
+                    </Tab.Panel>
+                  ))}
+                <Tab.List className="text-slate-300 flex flex-row gap-2">
+                  <Tab
+                    className={({ selected }) =>
+                      selected
+                        ? " bg-slate-200   text-slate-800 px-2 rounded-b-lg"
+                        : " px-2"
+                    }
+                  >
+                    Raw
+                  </Tab>
+                  {data?.representation?.renders?.filter(notEmpty).map((x) => (
+                    <Tab
+                      className={({ selected }) =>
+                        selected
+                          ? " bg-slate-200 text-slate-800 px-2 rounded-b-lg "
+                          : "px-2"
+                      }
+                    >
+                      {x.__typename}
+                    </Tab>
+                  ))}
+                </Tab.List>
+              </Tab.Panels>
+            </Tab.Group>
           </div>
           <div className="@container p-4 flex-1 bg-white border shadow mt-2 rounded">
             {data?.representation?.sample && (
