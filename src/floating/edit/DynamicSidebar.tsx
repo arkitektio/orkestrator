@@ -8,6 +8,7 @@ import { CanvasSidebar } from "./sidebars/CanvasSidebar";
 import { useEffect, useState } from "react";
 import { FlowNode } from "../types";
 import { useNodes } from "reactflow";
+import { LocalNodeSidebar } from "./sidebars/LocalNodeSidebar";
 
 export const DynamicSidebar = () => {
   const { selectedNode, nodes, internalSignal } = useEditRiver();
@@ -30,6 +31,7 @@ export const DynamicSidebar = () => {
   return (
     <>
       {node?.type == "ArkitektNode" && <ArkitektNodeSidebar node={node} />}
+      {node?.type == "LocalNode" && <LocalNodeSidebar node={node} />}
       {node?.type == "ReactiveNode" && <ReactiveNodeSidebar node={node} />}
       {node?.type == "ArgNode" && <ArgNodeSidebar node={node} />}
       {node?.type == "ReturnNode" && <ReturnNodeSidebar node={node} />}
