@@ -5,12 +5,14 @@ import {
   FlowFragment,
   GlobalFragment,
   ReactiveNodeFragment,
+  LocalNodeFragment,
 } from "../../fluss/api/graphql";
 
 import { RiverMode, FlowNode, FlowEdge } from "../types";
 
 export type EditRiverContextType = {
   addArkitekt: (node: FlowNode<ArkitektNodeFragment>) => void;
+  addLocal: (node: FlowNode<LocalNodeFragment>) => void;
   addReactive: (node: FlowNode<ReactiveNodeFragment>) => void;
   updateNodeIn: (id: string, data: any) => void;
   updateNodeOut: (id: string, data: any) => void;
@@ -37,6 +39,9 @@ export type EditRiverContextType = {
 
 export const EditRiverContext = React.createContext<EditRiverContextType>({
   addArkitekt: () => {
+    console.error("WE ARE LACKING AN ENGINE");
+  },
+  addLocal: () => {
     console.error("WE ARE LACKING AN ENGINE");
   },
   addReactive: () => {

@@ -10,6 +10,7 @@ fragment DetailNode on Node {
   templates {
     ...ListTemplate
   }
+  scope
 }
 
 fragment NodeListItem on Node {
@@ -20,6 +21,7 @@ fragment NodeListItem on Node {
   description
   interfaces
   meta
+  scope
 }
 
 fragment MiniNode on Node {
@@ -29,6 +31,7 @@ fragment MiniNode on Node {
   id
   meta
   hash
+  scope
 }
 
 fragment CompleteNode on Node {
@@ -38,4 +41,5 @@ fragment CompleteNode on Node {
   args {
     ...Port
   }
+  scope
 }

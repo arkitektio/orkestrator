@@ -1,38 +1,23 @@
 import { Form, Formik } from "formik";
 import { useEffect, useState } from "react";
 import { NumberInputField } from "../../../components/forms/fields/number_input";
-import {
-  ArkitektNodeFragment,
-  BindsInput,
-  MapStrategy,
-} from "../../../fluss/api/graphql";
+import { LocalNodeFragment, MapStrategy } from "../../../fluss/api/graphql";
 import { withRekuest } from "../../../rekuest";
-import {
-  ReserveBindsInput,
-  useDetailNodeQuery,
-  useHashReservableTemplatesQuery,
-} from "../../../rekuest/api/graphql";
+import { useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
-import { ReserveParamsField } from "../../../rekuest/components/ReserveParamsField";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
-import { ArkitektNodeData, FlowNode } from "../../types";
-import { notEmpty } from "../../utils";
+import { FlowNode, LocalNodeData } from "../../types";
 import { useEditRiver } from "../context";
 import { SidebarProps } from "./types";
 
-export const ArkitektNodeSidebar = (
-  props: SidebarProps<FlowNode<ArkitektNodeData>>
+export const LocalNodeSidebar = (
+  props: SidebarProps<FlowNode<LocalNodeData>>
 ) => {
-  const { updateNodeExtras } = useEditRiver();
+  const { updateNodeIn, updateNodeOut, updateNodeExtras } = useEditRiver();
   const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
     variables: { hash: props.node.data.hash },
   });
   const [advanced, setAdvanced] = useState(false);
-
-  const { data } = withRekuest(useHashReservableTemplatesQuery)({
-    variables: { hash: props.node.data.hash },
-    fetchPolicy: "network-only",
-  });
 
   useEffect(() => {
     if (node_data) {
@@ -77,7 +62,7 @@ export const ArkitektNodeSidebar = (
         <div className="flex flex-grow" />
 
         {node_data?.node?.id && (
-          <Formik<Partial<ArkitektNodeFragment>>
+          <Formik<Partial<LocalNodeFragment>>
             onSubmit={async (values) => {
               updateNodeExtras(props.node.id, {
                 ...props.node.data,
@@ -85,10 +70,8 @@ export const ArkitektNodeSidebar = (
               });
             }}
             initialValues={{
-              binds: props.node.data.binds,
               allowLocal: props.node.data.allowLocal,
               mapStrategy: props.node.data.mapStrategy,
-              reserveTimeout: props.node.data.reserveTimeout,
               assignTimeout: props.node.data.assignTimeout,
               yieldTimeout: props.node.data.yieldTimeout,
             }}
@@ -96,13 +79,6 @@ export const ArkitektNodeSidebar = (
             {(formikProps) => (
               <Form>
                 <ChangeSubmitHelper debounce={400} />
-                <div className="text-white mt-5">Reserve Params</div>
-                {data?.reservableTemplates && (
-                  <ReserveParamsField
-                    templates={data?.reservableTemplates?.filter(notEmpty)}
-                    name="binds"
-                  />
-                )}
                 <button
                   type="button"
                   className="text-white mt-5"
@@ -112,20 +88,6 @@ export const ArkitektNodeSidebar = (
                 </button>
                 {advanced && (
                   <div className="grid grid-cols-2 gap-2">
-                    {/* 
-                    <SelectInputField
-                      label="Map Strategy"
-                      options={enum_to_options(MapStrategy)}
-                      name="mapStrategy"
-                      labelClassName="text-white"
-                      description="How long to wait for a reservation to succeed before giving up."
-                    /> */}
-                    <NumberInputField
-                      label="reserveTimeout"
-                      name="Reserve Tiemout"
-                      labelClassName="text-white"
-                      description="How long to wait for a reservation to succeed before giving up."
-                    />
                     <NumberInputField
                       label="assignTimeout"
                       name="assignTimeout"

@@ -21,12 +21,27 @@ fragment ArkitektNode on ArkitektNode {
   defaults
   mapStrategy
   allowLocal
-  reserveParams {
-    agents
+  binds {
+    clients
+    templates
   }
   assignTimeout
   yieldTimeout
   reserveTimeout
+}
+
+fragment LocalNode on LocalNode {
+  ...FlowNodeCommons
+  __typename
+  name
+  description
+  hash
+  kind
+  defaults
+  mapStrategy
+  allowLocal
+  assignTimeout
+  yieldTimeout
 }
 
 fragment ReactiveNode on ReactiveNode {
@@ -51,8 +66,10 @@ fragment ReturnWidget on ReturnWidget {
 fragment PortChild on PortChild {
   identifier
   kind
+  scope
   nullable
   child {
+    scope
     identifier
     kind
   }
@@ -62,6 +79,7 @@ fragment Port on Port {
   key
   label
   identifier
+  scope
   kind
   name
   description
@@ -104,6 +122,7 @@ fragment FlowNode on FlowNode {
   ...ArgNode
   ...KwargNode
   ...ReturnNode
+  ...LocalNode
 }
 
 fragment FlowEdgeCommons on FlowEdgeCommons {
@@ -146,7 +165,9 @@ fragment Global on Global {
 fragment StreamItemChild on StreamItemChild {
   kind
   identifier
+  scope
   child {
+    scope
     kind
     identifier
   }
@@ -156,6 +177,7 @@ fragment StreamItem on StreamItem {
   key
   kind
   identifier
+  scope
   nullable
   child {
     ...StreamItemChild

@@ -10,6 +10,18 @@ fragment DetailReservation on Reservation {
     minimalInstances
     desiredInstances
   }
+  binds {
+    clients {
+      id
+      name
+      client_id
+    }
+    templates {
+      id
+      name
+      interface
+    }
+  }
   allowAutoRequest
   provision {
     reference
@@ -37,6 +49,7 @@ fragment DetailReservation on Reservation {
     id
     kind
     name
+    scope
     args {
       __typename
       key

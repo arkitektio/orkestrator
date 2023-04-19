@@ -30,6 +30,11 @@ export type ArkitektNodeData = LoadingEnhanced<
   DetailNodeFragment
 >;
 
+export type LocalNodeData = LoadingEnhanced<
+  ArkitektNodeFragment,
+  DetailNodeFragment
+>;
+
 export type ReactiveNodeData = LoadingEnhanced<ReactiveNodeFragment>;
 
 export type ArgNodeProps = NodeProps<ArgNodeData>;
@@ -38,6 +43,7 @@ export type KwargNodeProps = NodeProps<KwargNodeData>;
 export type IONodeProps = ArgNodeProps | ReturnNodeProps | KwargNodeProps;
 
 export type ArkitektNodeProps = NodeProps<ArkitektNodeData>;
+export type LocalNodeProps = NodeProps<LocalNodeData>;
 
 export type ReactiveNodeProps = NodeProps<ReactiveNodeData>;
 

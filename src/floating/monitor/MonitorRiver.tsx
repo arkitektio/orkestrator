@@ -13,11 +13,13 @@ import { ArgTrackNodeWidget } from "./nodes/generic/ArgTrackNodeWidget";
 import { KwargTrackNodeWidget } from "./nodes/generic/KwargTrackNodeWidget";
 import { ReturnTrackNodeWidget } from "./nodes/generic/ReturnTrackNodeWidget";
 import { ReactiveTrackNodeWidget } from "./nodes/ReactiveTrackNodeWidget";
+import { LocalMonitorNodeWidget } from "./nodes/LocalMonitorNodeWidget";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektTrackNodeWidget,
   ReactiveNode: ReactiveTrackNodeWidget,
   ArgNode: ArgTrackNodeWidget,
+  LocalNode: LocalMonitorNodeWidget,
   ReturnNode: ReturnTrackNodeWidget,
   KwargNode: KwargTrackNodeWidget,
 };

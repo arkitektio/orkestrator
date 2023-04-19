@@ -56,7 +56,6 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
               (ass) =>
                 ![
                   AssignationStatus.Returned,
-                  AssignationStatus.Progress,
                   AssignationStatus.Cancelled,
                   AssignationStatus.Acknowledged,
                   AssignationStatus.Done,
@@ -73,13 +72,13 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
                 }
                 key={index}
                 mates={[assignationMate(ass)]}
-                // dropStyle={() => ({
-                //   background: `center bottom linear-gradient(to right, var(--color-primary-300) ${
-                //     ass.progress ? Math.floor(ass.progress) : 0
-                //   }%, rgba(0,0,0,0.95) ${
-                //     ass.progress ? Math.floor(ass.progress) : 0
-                //   }% ${ass.progress ? Math.floor(100 - ass.progress) : 100}%)`,
-                // })}
+                dropStyle={() => ({
+                  background: `center bottom linear-gradient(to right, var(--color-primary-300) ${
+                    ass.progress ? Math.floor(ass.progress) : 0
+                  }%, rgba(0,0,0,0.95) ${
+                    ass.progress ? Math.floor(ass.progress) : 0
+                  }% ${ass.progress ? Math.floor(100 - ass.progress) : 100}%)`,
+                })}
               >
                 <div
                   className={`absolute top-0 left-0 h-full bg-orange-300 border-orange-300 rounded transition-width duration-100 ease-in-out`}

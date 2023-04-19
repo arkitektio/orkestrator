@@ -57,6 +57,7 @@ fragment ChildPortNested on ChildPort {
   child {
     kind
   }
+  scope
   assignWidget {
     ...InputWidget
   }
@@ -68,6 +69,7 @@ fragment ChildPortNested on ChildPort {
 fragment ChildPort on ChildPort {
   kind
   identifier
+  scope
   child {
     ...ChildPortNested
   }
@@ -97,6 +99,7 @@ fragment Port on Port {
   label
   nullable
   description
+  scope
   assignWidget {
     ...InputWidget
   }

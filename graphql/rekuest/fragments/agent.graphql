@@ -13,6 +13,7 @@ fragment DetailAgent on Agent {
     id
     node {
       name
+      scope
     }
     policy
     creator {

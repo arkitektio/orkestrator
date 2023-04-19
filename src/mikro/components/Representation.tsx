@@ -56,6 +56,7 @@ import {
 import { useMikro, withMikro } from "../MikroContext";
 import { Tab } from "@headlessui/react";
 import { useDatalayer } from "@jhnnsrs/datalayer";
+import { useDeleteRoiMate } from "../../mates/roi/useDeleteRoiMate";
 
 export type ISampleProps = {
   id: string;
@@ -100,6 +101,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
     fetchPolicy: "cache-and-network",
   });
 
+  const deleteRoiMate = useDeleteRoiMate();
   const [pinRepresentation, pindata] = withMikro(
     usePinRepresentationMutation
   )();
@@ -814,27 +816,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                       background:
                         "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95))",
                     })}
-                    additionalMates={(partner, self) => {
-                      if (
-                        partner == "item:@mikro/roi" ||
-                        partner == "list:@mikro/roi"
-                      ) {
-                        return [
-                          {
-                            label: "Delete Roi",
-                            async action(self, drops) {
-                              deleteRoi({
-                                variables: {
-                                  id: self.object,
-                                },
-                              });
-                            },
-                          },
-                        ];
-                      }
-
-                      return [];
-                    }}
+                    mates={[deleteRoiMate(roi)]}
                   >
                     <Roi.DetailLink object={roi.id}>
                       {roi?.label || roi?.type}

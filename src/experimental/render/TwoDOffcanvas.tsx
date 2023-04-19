@@ -1,11 +1,6 @@
-import { Dialog } from "@headlessui/react";
-import { x } from "@tauri-apps/api/path-e12e0e34";
-import { ParentSize } from "@visx/responsive";
-import Konva from "konva";
 import React, { useEffect, useRef, useState } from "react";
 import { Layer, Line, Rect, Stage } from "react-konva";
 import { useNavigate } from "react-router";
-import { RoiLabel } from "../../components/ThumbnailCanvas";
 import { notEmpty } from "../../floating/utils";
 import { SaveParentSize } from "../../layout/SaveParentSize";
 import { Roi } from "../../linker";
@@ -20,7 +15,7 @@ import {
 } from "../../mikro/api/graphql";
 import { useMikro, withMikro } from "../../mikro/MikroContext";
 import { useSettings } from "../../settings/settings-context";
-import { useXarray } from "../provider/context";
+import { ImageView, useXarray } from "../provider/context";
 import {
   AvailableColormap,
   XArrayProvider,
@@ -34,7 +29,10 @@ import {
   BsSquare,
 } from "react-icons/bs";
 import { C } from "@tauri-apps/api/event-2a9960e7";
-
+import ReactSlider from "react-slider";
+import { useDebounce } from "use-debounce";
+import cn from "classnames";
+import { dtypeToMinMax } from "../provider/utils";
 export interface TwoDProps {
   representation: DetailRepresentationFragment;
   colormap?: AvailableColormap;
@@ -104,28 +102,48 @@ export const Canvas: React.FC<{
   const [currentZ, setCurrentZ] = useState(z);
   const [currentC, setCurrentC] = useState(0);
   const [currentT, setCurrentT] = useState(0);
+  const [debouncedT] = useDebounce(currentT, 100);
+  const [debouncedZ] = useDebounce(currentZ, 100);
+  const [debouncedC] = useDebounce(currentC, 100);
+  const [auto, setAuto] = useState(true);
+  const [clims, setClims] = useState<{
+    cmin: number | undefined;
+    cmax: number | undefined;
+  }>({ cmin: undefined, cmax: undefined });
+  const [debouncedClims] = useDebounce(clims, 100);
   const [labeling, setLabeling] = useState(false);
+  const [imageView, setImageView] = useState<ImageView | undefined>();
   const [label, setActiveLabel] = useState<string | undefined>(undefined);
   let zdims = representation.shape?.at(2) || 0;
   let tdims = representation.shape?.at(1) || 0;
   let cdims = representation.shape?.at(0) || 0;
-  const { getSelectionAsImageData } = useXarray();
+  const { getSelectionAsImageView, renderImageView } = useXarray();
 
-  const renderImage = async (
+  const downloadImage = async (
     c: number,
     t: number,
     z: number,
-    path: string,
-    colormap: AvailableColormap
+    path: string
   ) => {
     setLoading(true);
     try {
-      let image = await getSelectionAsImageData(
-        path,
-        [c, t, z, ":", ":"],
-        colormap
-      );
+      let imageView = await getSelectionAsImageView(path, [c, t, z, ":", ":"]);
+      setImageView((image) => imageView);
+      setLoading(false);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
 
+  const renderImage = async (
+    imageView: ImageView,
+    colormap: AvailableColormap,
+    cmin?: number,
+    cmax?: number
+  ) => {
+    setLoading(true);
+    try {
+      let image = await renderImageView(imageView, colormap, cmin, cmax);
       let bitmap = await createImageBitmap(image);
       setImageData((image) => bitmap);
       setLoading(false);
@@ -162,10 +180,37 @@ export const Canvas: React.FC<{
     }
   };
 
+  const scroll = (e: React.WheelEvent<HTMLDivElement>) => {
+    setCurrentZ((curr) => {
+      if (representation.shape && curr == representation.shape[2]) {
+        return curr;
+      } else if (curr == 0) {
+        return 0;
+      } else if (e.deltaY > 0) {
+        return curr - 1;
+      } else {
+        return curr + 1;
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (imageView && !auto) {
+      renderImage(
+        imageView,
+        activeColormap,
+        debouncedClims.cmin,
+        debouncedClims.cmax
+      );
+    } else if (imageView) {
+      renderImage(imageView, activeColormap);
+    }
+  }, [imageView, activeColormap, debouncedClims, auto]);
+
   useEffect(() => {
     console.log("Loading image slice...");
-    renderImage(currentC, currentT, currentZ, path, activeColormap);
-  }, [path, activeColormap, currentC, currentT, currentZ]);
+    downloadImage(debouncedC, debouncedT, debouncedZ, path);
+  }, [path, debouncedC, debouncedT, debouncedZ]);
 
   useEffect(() => {
     if (layerRef.current && imageData) {
@@ -190,7 +235,11 @@ export const Canvas: React.FC<{
   }, [layerRef.current, imageData, height, width]);
 
   return (
-    <>
+    <div
+      className="relative group"
+      style={{ height: height, width: width }}
+      onWheel={scroll}
+    >
       <div
         className={`absolute top-0 left-0 bg-gray-900 ${
           loading || error ? "opacity-100" : "opacity-0"
@@ -221,8 +270,61 @@ export const Canvas: React.FC<{
       >
         <div className="flex flex-row px-2">
           <div className="font-light flex-initial mr-2">Colormap:</div>
-          <div className="font-light flex-1">
+          <div className="font-light flex-initial">
             <ColorMapSelect colormap={activeColormap} onChange={setColormap} />
+          </div>
+          <div className="font-light flex-1 flex flex-row flex-row-reverse">
+            <button
+              className="ml-2  hover:bg-gray-700 text-white font-bold  px-2 rounded group-hover:block hidden"
+              onClick={() => setAuto(!auto)}
+            >
+              {auto ? "<" : ">"}
+            </button>
+            {!auto && imageView && (
+              <ReactSlider
+                className="w-full flex-grow"
+                defaultValue={[imageView.min, imageView.max]}
+                ariaLabel={["Lower thumb", "Upper thumb"]}
+                ariaValuetext={(state) => `Thumb value ${state.valueNow}`}
+                renderThumb={(props, state) => (
+                  <div {...props} className="">
+                    {state.valueNow}
+                  </div>
+                )}
+                renderTrack={(props, state) => {
+                  //check if there are multiple values
+                  const points = Array.isArray(state.value)
+                    ? state.value.length
+                    : null;
+                  const isMulti = points && points > 0;
+                  const isLast = isMulti
+                    ? state.index === points
+                    : state.index === 1;
+                  const isFirst = state.index === 0;
+                  return (
+                    <div
+                      {...props}
+                      className={cn({
+                        //use 1/4 height or width depending on the orientation and make sure to center it.
+                        "h-1/4 top-1/2 -translate-y-1/2": true,
+                        "rounded-full": true,
+                        "bg-gray-200": isMulti ? isFirst || isLast : isLast,
+                        "bg-indigo-500": isMulti
+                          ? !isFirst || !isLast
+                          : isFirst,
+                      })}
+                    ></div>
+                  );
+                }}
+                pearling
+                onChange={(values) => {
+                  setClims({ cmin: values[0], cmax: values[1] });
+                }}
+                min={dtypeToMinMax(imageView.dtype)[0]}
+                max={dtypeToMinMax(imageView.dtype)[1]}
+                minDistance={10}
+              />
+            )}
           </div>
           {zdims > 1 && (
             <div className="flex-initial ml-2 group flex flex-row">
@@ -346,7 +448,7 @@ export const Canvas: React.FC<{
           representation={representation}
         />
       )}
-    </>
+    </div>
   );
 };
 
@@ -567,20 +669,6 @@ export const TwoDOffcanvas = ({
     representation.shape ? Math.floor(representation.shape[2] / 2) : 0
   );
 
-  const scroll = (e: React.WheelEvent<HTMLDivElement>) => {
-    setZ((curr) => {
-      if (representation.shape && curr == representation.shape[2]) {
-        return curr;
-      } else if (curr == 0) {
-        return 0;
-      } else if (e.deltaY > 0) {
-        return curr - 1;
-      } else {
-        return curr + 1;
-      }
-    });
-  };
-
   const { settings } = useSettings();
 
   let colorm: AvailableColormap =
@@ -600,20 +688,15 @@ export const TwoDOffcanvas = ({
         let bheight = follow == "width" ? width / aspectRatio : height;
 
         return (
-          <div
-            className="relative group"
-            style={{ height: bheight, width: bwidth }}
-          >
-            <Canvas
-              withRois={withRois}
-              representation={representation}
-              z={z}
-              width={bwidth}
-              height={bheight}
-              colormap={colorm}
-              path={s3resolve("/" + representation.store)}
-            />
-          </div>
+          <Canvas
+            withRois={withRois}
+            representation={representation}
+            z={z}
+            width={bwidth}
+            height={bheight}
+            colormap={colorm}
+            path={s3resolve("/" + representation.store)}
+          />
         );
       }}
     </SaveParentSize>

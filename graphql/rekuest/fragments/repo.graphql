@@ -13,6 +13,7 @@ fragment AppRepository on AppRepository {
   name
 
   nodes {
+    scope
     id
     name
   }
@@ -23,6 +24,7 @@ fragment MirrorRepository on MirrorRepository {
   url
   name
   nodes {
+    scope
     id
     name
   }

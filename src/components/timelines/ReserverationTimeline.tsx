@@ -56,28 +56,45 @@ export const ReservationTimeline: React.FC<ReservationTimelineProps> = ({
               </NavLink>{" "}
             </div>
           )}
-          <div className="font-light mt-2 text-black text-xl dark:text-white">
-            Parameters
-          </div>
-          <div className="w-80 bg-white border mt-2 border-gray-600 rounded p-4  ">
-            <div className="grid grid-cols-2 gap-2">
-              <div>auto provide</div>
-              <div className="ml-2">
-                {reservation?.params?.autoProvide == true ? "Yes" : "No"}
+          <div className="flex flex-row gap-2">
+            <div className="w-80 bg-white border mt-2 border-gray-600 rounded p-4  ">
+              <div className="font-light mb-2 text-black text-xl">
+                Parameters
               </div>
-              <div>auto unprovide </div>
-              <div className="ml-2">
-                {reservation?.params?.autoUnprovide == true ? "Yes" : "No"}
-              </div>
-              <div>minimalInstances </div>
-              <div className="ml-2">
-                {reservation?.params?.minimalInstances}
-              </div>
-              <div>desired Instances </div>
-              <div className="ml-2">
-                {reservation?.params?.desiredInstances}
+              <div className="grid grid-cols-2 gap-2">
+                <div>auto provide</div>
+                <div className="ml-2">
+                  {reservation?.params?.autoProvide == true ? "Yes" : "No"}
+                </div>
+                <div>auto unprovide </div>
+                <div className="ml-2">
+                  {reservation?.params?.autoUnprovide == true ? "Yes" : "No"}
+                </div>
+                <div>minimalInstances </div>
+                <div className="ml-2">
+                  {reservation?.params?.minimalInstances}
+                </div>
+                <div>desired Instances </div>
+                <div className="ml-2">
+                  {reservation?.params?.desiredInstances}
+                </div>
               </div>
             </div>
+            {reservation?.binds && (
+              <div className="w-80 bg-white border mt-2 border-gray-600 rounded p-4  ">
+                <div className="font-light mb-2 text-black text-xl">
+                  Requested Binds
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {reservation?.binds.clients?.map((bind) => (
+                    <div>{bind?.name}</div>
+                  ))}
+                  {reservation?.binds.templates?.map((bind) => (
+                    <div>{bind?.interface}</div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         {reservation?.statusmessage}

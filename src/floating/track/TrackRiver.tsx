@@ -30,6 +30,7 @@ import { ReturnTrackNodeWidget } from "./nodes/generic/ReturnTrackNodeWidget";
 import { ReactiveTrackNodeWidget } from "./nodes/ReactiveTrackNodeWidget";
 import { BottomSlider } from "./Slider";
 import { Link } from "react-router-dom";
+import { LocalTrackNodeWidget } from "./nodes/LocalTrackNodeWidget";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektTrackNodeWidget,
@@ -37,6 +38,7 @@ const nodeTypes: NodeTypes = {
   ArgNode: ArgTrackNodeWidget,
   ReturnNode: ReturnTrackNodeWidget,
   KwargNode: KwargTrackNodeWidget,
+  LocalNode: LocalTrackNodeWidget,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -102,7 +104,7 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
       ]);
       setRange((range) => ({
         min: range.min,
-        max: latestEvent.events?.create?.t ?? 0,
+        max: (latestEvent.events?.create?.t || 0) + 1,
         marks: range.marks,
       }));
       console.log(latestEvent);
@@ -125,7 +127,7 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
     let array = data?.run?.snapshots?.map((snapshot) => snapshot.t) || [0, 100];
     setRange({
       min: Math.min(...array),
-      max: Math.max(...array),
+      max: Math.max(...array) + 3,
       marks: array,
     });
   }, [data?.run?.snapshots]);

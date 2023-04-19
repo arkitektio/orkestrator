@@ -12,7 +12,6 @@ import {
 } from "zarr";
 import { DtypeString } from "zarr/types/types";
 import { isArrayBufferLike, IS_NODE, normalizeShape } from "./utils";
-import { getTypedArrayCtr } from "../workers/download";
 import { ArraySelection, Slice } from "zarr/types/core/types";
 import {
   flattenNestedArray,
@@ -20,6 +19,7 @@ import {
   setNestedArrayToScalar,
   sliceNestedArray,
 } from "./ops";
+import { getTypedArrayCtr } from "../provider/utils";
 
 export class NestedArray<T extends TypedArray> {
   dtype: DtypeString;

@@ -87,7 +87,7 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
 
     setIsOpen(
       props.sidebars?.map(
-        (s) => localStorage[`${s.key}leftsidebar`] === "true"
+        (s) => localStorage[`${s.key}rightsidebar`] === "true"
       ) || []
     );
 
@@ -95,7 +95,7 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
   }, [reload]);
 
   const setOpen = (key: string, open: boolean) => {
-    localStorage.setItem(`${key}leftsidebar`, open ? "true" : "false");
+    localStorage.setItem(`${key}rightsidebar`, open ? "true" : "false");
     setReload(!reload);
   };
 

@@ -44,6 +44,7 @@ fragment DetailAssignation on Assignation {
     reference
     status
     node {
+      scope
       id
       name
       interfaces

@@ -34,10 +34,12 @@ export const childport_to_stream = (
 ): StreamItemChild => ({
   kind: (port?.kind as unknown as StreamKind) || StreamKind.Unset,
   identifier: port?.identifier,
+  scope: port.scope,
 });
 
 export const port_to_stream = (port: PortFragment): StreamItem => {
   return {
+    scope: port.scope,
     key: port?.key || "unknown",
     kind: (port?.kind as unknown as StreamKind) || StreamKind.Unset,
     identifier: port?.identifier,
@@ -160,9 +162,7 @@ export const flownodes_to_nodes = (nodes: FlowNode[]): NodeInput[] => {
             defaults: (rest as any).defaults,
             mapStrategy: (rest as any).mapStrategy,
             allowLocal: (rest as any).allowLocal,
-            reserveParams: (rest as any).reserveParams
-              ? noTypename((rest as any).reserveParams)
-              : undefined,
+            binds: (rest as any).binds,
           };
           return node_;
         }

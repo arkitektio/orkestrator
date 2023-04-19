@@ -27,6 +27,7 @@
       "ArgNode",
       "ArkitektNode",
       "KwargNode",
+      "LocalNode",
       "ReactiveNode",
       "ReturnNode"
     ],
@@ -34,6 +35,7 @@
       "ArgNode",
       "ArkitektNode",
       "KwargNode",
+      "LocalNode",
       "ReactiveNode",
       "ReturnNode"
     ]

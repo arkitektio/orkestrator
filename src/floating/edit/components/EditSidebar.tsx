@@ -9,6 +9,8 @@ import {
   NodeListItemFragment,
   NodeKind,
   useNodesQuery,
+  Scope,
+  NodeScope,
 } from "../../../rekuest/api/graphql";
 import { useRekuest, withRekuest } from "../../../rekuest/RekuestContext";
 import { SmartModel } from "../../../rekuest/selection/SmartModel";
@@ -52,6 +54,26 @@ export const NodeItem = ({ node }: { node: Maybe<NodeListItemFragment> }) => {
   );
 };
 
+export const LocalItem = ({ node }: { node: Maybe<NodeListItemFragment> }) => {
+  return (
+    <SmartModel
+      accepts={[]}
+      identifier="@arkitekt/node"
+      object={node?.id || "ss"}
+      dragClassName={({ isDragging }) =>
+        `rounded-md dark:bg-slate-900 dark:text-slate-50 w-full hover:overflow-hidden p-2 shadow-md shadow-blue-700/20 bg-white hover:text-white hover:bg-gray-800 border-slate-500 border cursor-pointer ${
+          isDragging && "border-primary-300"
+        }`
+      }
+    >
+      <div className="p-1 ">
+        <div className="font-light text-md mb-1">{node?.name}</div>
+        <p className="text">{node?.description}</p>
+      </div>
+    </SmartModel>
+  );
+};
+
 export const ReactiveItem = ({ node }: { node: any }) => {
   return (
     <SmartModel
@@ -73,9 +95,6 @@ export const ReactiveItem = ({ node }: { node: any }) => {
 };
 
 export const NodeList: React.FC<NodeListProps> = ({ nodes }) => {
-  const { addArkitekt, saveDiagram } = useEditRiver();
-  const { client } = useRekuest();
-
   return (
     <div className="grid grid-cols-1 gap-4 text-gray-800 w-full mt-5">
       {nodes?.length > 0 && (
@@ -85,6 +104,21 @@ export const NodeList: React.FC<NodeListProps> = ({ nodes }) => {
       )}
       {nodes?.map((node) => (
         <NodeItem key={node?.id} node={node} />
+      ))}
+    </div>
+  );
+};
+
+export const LocalNodes: React.FC<NodeListProps> = ({ nodes }) => {
+  return (
+    <div className="grid grid-cols-1 gap-4 text-gray-800 w-full mt-5">
+      {nodes?.length > 0 && (
+        <div className="font-semibold text-center text-xs dark:text-slate-50">
+          Local Nodes
+        </div>
+      )}
+      {nodes?.map((node) => (
+        <LocalItem key={node?.id} node={node} />
       ))}
     </div>
   );
@@ -159,9 +193,24 @@ interface EditSidebarProps {
 
 export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
   if (!props.flow) return null;
-  const { data, loading, refetch } = withRekuest(useNodesQuery)({
+  const { data: arkitektNodes, refetch: refetchArkiNodes } = withRekuest(
+    useNodesQuery
+  )({
+    variables: {
+      scopes: [NodeScope.Global],
+    },
+  });
+
+  const { data: localNodes, refetch: refetchLocalNodes } = withRekuest(
+    useNodesQuery
+  )({
     variables: {
       restrict: props.flow.restrict,
+      scopes: [
+        NodeScope.BridgeGlobalToLocal,
+        NodeScope.Local,
+        NodeScope.BridgeLocalToGlobal,
+      ],
     },
   });
 
@@ -172,7 +221,8 @@ export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
   const [filter, setFilter] = React.useState<NodeFilterValues>({ search: "" });
 
   useEffect(() => {
-    refetch(filter);
+    refetchArkiNodes(filter);
+    refetchLocalNodes(filter);
     refetchReactiveNodes(filter);
   }, [filter]);
 
@@ -185,10 +235,13 @@ export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
         />
       </div>
       <div className="flex-grow flex flex-col gap-2 p-5 overflow-y-scroll">
-        {data?.allnodes && <NodeList nodes={data?.allnodes} />}
+        {arkitektNodes?.allnodes && (
+          <NodeList nodes={arkitektNodes?.allnodes} />
+        )}
         {reactiveNodes?.reactivetemplates && (
           <ReactiveList nodes={reactiveNodes?.reactivetemplates} />
         )}
+        {localNodes?.allnodes && <LocalNodes nodes={localNodes?.allnodes} />}
       </div>
     </>
   );

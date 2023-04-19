@@ -15,12 +15,14 @@ query Nodes(
   $interfaces: [String]
   $restrict: [String]
   $templated: Boolean
+  $scopes: [NodeScope]
 ) {
   allnodes(
     search: $search
     interfaces: $interfaces
     restrict: $restrict
     templated: $templated
+    scopes: $scopes
   ) {
     ...NodeListItem
   }

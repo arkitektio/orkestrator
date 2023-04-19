@@ -1,6 +1,6 @@
 import { addEdge } from "reactflow";
 import { PortFragment as ArkitektPortFragment } from "../../../rekuest/api/graphql";
-import { PortFragment } from "../../../fluss/api/graphql";
+import { PortFragment, Scope } from "../../../fluss/api/graphql";
 import {
   ArgNodeFragment,
   ArkitektNodeFragment,
@@ -59,6 +59,7 @@ const arkport_to_port = (argport: ArkitektPortFragment): PortFragment => {
       __typename: "PortChild",
       nullable: argport.child.nullable,
     },
+    scope: argport?.scope,
     assignWidget: argport?.assignWidget && {
       ...argport?.assignWidget,
       __typename: "Widget",
@@ -338,6 +339,7 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
             kind: StreamKind.Bool,
             __typename: "StreamItem",
             nullable: false,
+            scope: Scope.Global,
           },
         ],
       ];
@@ -389,6 +391,20 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
   }
 
   if (
+    [ReactiveImplementationModelInput.Ensure].includes(
+      targetNode.data.implementation
+    )
+  ) {
+    new_instream = [sourceStream];
+    new_outstream = [
+      sourceStream.map((x) => ({
+        ...x,
+        nullable: false,
+      })),
+    ];
+  }
+
+  if (
     [ReactiveImplementationModelInput.Split].includes(
       targetNode.data.implementation
     )
@@ -405,7 +421,7 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
 
     new_instream = [sourceStream];
 
-    new_outstream = sourceStream.map((s) => [s]);
+    new_outstream = sourceStream.map((s) => [{ ...s, nullable: false }]);
   }
 
   if (
@@ -429,11 +445,13 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
       [
         {
           child: {
+            scope: sourceStream[0].scope,
             kind: sourceStream[0].kind,
             identifier: sourceStream[0].identifier,
             child: sourceStream[0].child,
             __typename: "StreamItemChild",
           },
+          scope: Scope.Global,
           key: "list",
           kind: StreamKind.List,
           nullable: false,
@@ -916,6 +934,15 @@ export const defaultConnectionHandler: ConnectionMap = {
   ArkitektNode: {
     ArgNode: error_builder("Cannot connect to an Arg Node as an output"),
     ArkitektNode: ark_to_ark,
+    LocalNode: ark_to_ark,
+    KwargNode: error_builder("Cannot connect to a Kwarg Node as an output"),
+    ReactiveNode: to_reactive,
+    ReturnNode: ark_to_return,
+  },
+  LocalNode: {
+    ArgNode: error_builder("Cannot connect to an Arg Node as an output"),
+    ArkitektNode: ark_to_ark,
+    LocalNode: ark_to_ark,
     KwargNode: error_builder("Cannot connect to a Kwarg Node as an output"),
     ReactiveNode: to_reactive,
     ReturnNode: ark_to_return,
@@ -923,6 +950,7 @@ export const defaultConnectionHandler: ConnectionMap = {
   ArgNode: {
     ArgNode: void_updater,
     ArkitektNode: arg_to_ark,
+    LocalNode: arg_to_ark,
     KwargNode: void_updater,
     ReactiveNode: arg_to_reak,
     ReturnNode: void_updater,
@@ -930,6 +958,7 @@ export const defaultConnectionHandler: ConnectionMap = {
   KwargNode: {
     ArgNode: void_updater,
     ArkitektNode: void_updater,
+    LocalNode: void_updater,
     KwargNode: void_updater,
     ReactiveNode: void_updater,
     ReturnNode: void_updater,
@@ -937,6 +966,7 @@ export const defaultConnectionHandler: ConnectionMap = {
   ReturnNode: {
     ArgNode: void_updater,
     ArkitektNode: void_updater,
+    LocalNode: void_updater,
     KwargNode: void_updater,
     ReactiveNode: void_updater,
     ReturnNode: void_updater,
@@ -944,6 +974,7 @@ export const defaultConnectionHandler: ConnectionMap = {
   ReactiveNode: {
     ArgNode: void_updater,
     ArkitektNode: reak_to_ark,
+    LocalNode: reak_to_ark,
     KwargNode: void_updater,
     ReactiveNode: to_reactive,
     ReturnNode: reak_to_return,
