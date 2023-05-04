@@ -27,7 +27,6 @@ export const recurseHighlight = (
 ) => {
   if (event.causedBy && event.causedBy.length > 0) {
     event.causedBy.filter(notEmpty).forEach((e) => {
-      console.log(highlighted, e);
       if (!highlighted.includes(e)) {
         highlighted.push(e);
         let potentialEle = events.find((ev) => ev?.t == e); // might not be found
