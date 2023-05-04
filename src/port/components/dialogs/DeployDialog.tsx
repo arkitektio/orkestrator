@@ -1,6 +1,7 @@
+import { notEmpty } from "../../../floating/utils";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
-import { useCreatePrivateFaktMutation } from "../../../lok/api/graphql";
+import { useCreatePrivateClientMutation } from "../../../lok/api/graphql";
 import { withMan } from "../../../lok/context";
 import {
   DetailWhaleFragment,
@@ -19,29 +20,36 @@ export const DeployDialog = (
     variables: { id: props.scan },
   });
 
-  const [createApp] = withMan(useCreatePrivateFaktMutation)({});
+  const [createClient] = withMan(useCreatePrivateClientMutation)({});
   const [createWhale] = withPort(useCreateWhaleMutation)({
     refetchQueries: [WhalesDocument],
   });
 
   const dostuff = async () => {
-    const app = await createApp({
-      variables: { ...data.deployment },
-    });
-
-    if (app?.data?.createPrivateFakt?.app && data?.deployment?.image) {
-      const res = await createWhale({
+    if (data?.deployment) {
+      const app = await createClient({
         variables: {
-          clientId: app?.data?.createPrivateFakt.clientId,
-          token: app?.data?.createPrivateFakt.token,
-          deployment: data?.deployment?.id,
+          identifier: data?.deployment?.identifier,
+          version: data?.deployment?.version,
+          scopes: data?.deployment?.scopes.filter(notEmpty),
+          logoUrl: data?.deployment?.originalLogo,
         },
       });
 
-      console.log("res", res);
+      if (app?.data?.createPrivateClient?.token && data?.deployment?.image) {
+        const res = await createWhale({
+          variables: {
+            clientId: app?.data?.createPrivateClient.id,
+            token: app?.data?.createPrivateClient.token,
+            deployment: data?.deployment?.id,
+          },
+        });
 
-      if (res.data?.createWhale) {
-        props.submit(res.data?.createWhale);
+        console.log("res", res);
+
+        if (res.data?.createWhale) {
+          props.submit(res.data?.createWhale);
+        }
       }
     }
   };

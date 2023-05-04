@@ -119,6 +119,7 @@ fragment Port on Port {
       max
     }
   }
+  groups
 }
 
 fragment ImageReturnWidget on ImageReturnWidget {
@@ -157,5 +158,9 @@ fragment Ports on Node {
   }
   returns {
     ...Port
+  }
+  portGroups {
+    key
+    hidden
   }
 }

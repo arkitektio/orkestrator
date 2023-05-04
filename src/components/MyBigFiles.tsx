@@ -1,17 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsDownload,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { ImCancelCircle } from "react-icons/im";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
-import { Mate } from "../rekuest/postman/mater/mater-context";
+import { BsCaretLeft, BsCaretRight } from "react-icons/bs";
 import { SectionTitle } from "../layout/SectionTitle";
 import { MikroFile } from "../linker";
+import { useMikro, withMikro } from "../mikro/MikroContext";
 import {
   MyOmeroFilesDocument,
   MyOmeroFilesQuery,
@@ -19,22 +12,17 @@ import {
   useDeleteOmeroFileMutation,
   useMyOmeroFilesQuery,
   useUploadBigFileMutation,
-  useUploadOmeroFileMutation,
 } from "../mikro/api/graphql";
-import { useMikro, withMikro } from "../mikro/MikroContext";
 import { useConfirm } from "./confirmer/confirmer-context";
 
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { preventOverflow } from "@popperjs/core";
-import { Icons } from "react-toastify";
-import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
-import { DataHomeFilterParams } from "../pages/data/Home";
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { notEmpty } from "../floating/utils";
-import { FileCard } from "../mikro/components/cards/FileCard";
 import { useDeleteFileMate } from "../mates/file/useDeleteFileMate";
 import { useDownloadFileMate } from "../mates/file/useDownloadFileMate";
 import { useMikroLinkMate } from "../mates/generics/useLinkMate";
+import { FileCard } from "../mikro/components/cards/FileCard";
+import { DataHomeFilterParams } from "../pages/data/Home";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 export type IMyRepresentationsProps = {};
 
 const limit = 20;
@@ -103,7 +91,7 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
       drop: (item, monitor) => {
         const files: File[] = (item as any).files;
         console.log("files", files);
-        const futures: UploadFuture[] = files.map((file: any, index) => {
+        const futures: UploadFuture[] = files.map((file: File, index) => {
           let abortController = new AbortController();
 
           let hash = hashFile(file);
@@ -124,7 +112,10 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
                 );
               },
             })
-              .then((x) => uploadFile({ variables: { file: x } }))
+              .then((x) => {
+                console.log(x);
+                return uploadFile({ variables: { file: x } });
+              })
               .then((x) =>
                 setUploadFutures((futures) =>
                   futures.filter((f) => f.hash !== hashFile(file))

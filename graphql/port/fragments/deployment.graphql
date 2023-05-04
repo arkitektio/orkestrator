@@ -6,6 +6,8 @@ fragment DetailDeployment on Deployment {
   image
   requirements
   command
+  logo
+  originalLogo
 }
 
 fragment ListDeployment on Deployment {
@@ -18,4 +20,5 @@ fragment ListDeployment on Deployment {
     id
   }
   command
+  logo
 }

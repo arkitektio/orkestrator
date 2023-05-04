@@ -26,6 +26,7 @@
     "FlowNode": [
       "ArgNode",
       "ArkitektNode",
+      "GraphNode",
       "KwargNode",
       "LocalNode",
       "ReactiveNode",
@@ -34,6 +35,7 @@
     "FlowNodeCommons": [
       "ArgNode",
       "ArkitektNode",
+      "GraphNode",
       "KwargNode",
       "LocalNode",
       "ReactiveNode",

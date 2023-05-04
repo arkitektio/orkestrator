@@ -1,11 +1,7 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
-import { TwoDOffcanvas } from "../experimental/render/TwoDOffcanvas";
 import { OptimizedImage } from "../layout/OptimizedImage";
-import {
-  useDetailRepresentationQuery,
-  useDetailThumbnailQuery,
-} from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
+import { useDetailThumbnailQuery } from "../mikro/api/graphql";
 import { ExperimentalFeature } from "../providers/experimental/Experimental";
 import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 

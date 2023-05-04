@@ -7,26 +7,28 @@ import { Graph } from "../base/Graph";
 import { NodeTypes, ReserveState } from "../types";
 import { edges_to_flowedges, nodes_to_flownodes } from "../utils";
 import { RiverMonitorContext } from "./context";
-import { LabeledTrackEdge } from "./edges/LabeledTrackEdge";
+import { LabeledMonitorEdge } from "./edges/LabeledMonitorEdge";
 import { ArkitektTrackNodeWidget } from "./nodes/ArkitektTrackNodeWidget";
+import { GraphNodeMonitorWidget } from "./nodes/GraphNodeMonitorWidget";
+import { LocalMonitorNodeWidget } from "./nodes/LocalMonitorNodeWidget";
+import { ReactiveNodeMonitorWidget } from "./nodes/ReactiveNodeMonitorWidget";
 import { ArgTrackNodeWidget } from "./nodes/generic/ArgTrackNodeWidget";
 import { KwargTrackNodeWidget } from "./nodes/generic/KwargTrackNodeWidget";
 import { ReturnTrackNodeWidget } from "./nodes/generic/ReturnTrackNodeWidget";
-import { ReactiveTrackNodeWidget } from "./nodes/ReactiveTrackNodeWidget";
-import { LocalMonitorNodeWidget } from "./nodes/LocalMonitorNodeWidget";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektTrackNodeWidget,
-  ReactiveNode: ReactiveTrackNodeWidget,
+  ReactiveNode: ReactiveNodeMonitorWidget,
   ArgNode: ArgTrackNodeWidget,
   LocalNode: LocalMonitorNodeWidget,
   ReturnNode: ReturnTrackNodeWidget,
   KwargNode: KwargTrackNodeWidget,
+  GraphNode: GraphNodeMonitorWidget,
 };
 
 const edgeTypes: EdgeTypes = {
-  LabeledEdge: LabeledTrackEdge,
-  FancyEdge: LabeledTrackEdge,
+  LabeledEdge: LabeledMonitorEdge,
+  FancyEdge: LabeledMonitorEdge,
 };
 
 export type Props = {

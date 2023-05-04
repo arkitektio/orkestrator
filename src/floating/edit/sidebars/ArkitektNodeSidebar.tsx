@@ -1,14 +1,10 @@
 import { Form, Formik } from "formik";
 import { useEffect, useState } from "react";
+import { CarouselInputField } from "../../../components/forms/fields/carousel_inputs";
 import { NumberInputField } from "../../../components/forms/fields/number_input";
-import {
-  ArkitektNodeFragment,
-  BindsInput,
-  MapStrategy,
-} from "../../../fluss/api/graphql";
+import { ArkitektNodeFragment, MapStrategy } from "../../../fluss/api/graphql";
 import { withRekuest } from "../../../rekuest";
 import {
-  ReserveBindsInput,
   useDetailNodeQuery,
   useHashReservableTemplatesQuery,
 } from "../../../rekuest/api/graphql";
@@ -54,31 +50,34 @@ export const ArkitektNodeSidebar = (
           {node_data?.node?.description}
         </div>
         <div className="text-white mt-5">Constants</div>
-        {node_data?.node?.id && (
-          <ConstantsForm
-            node={node_data?.node.id}
-            omit={
-              (props.node.data.instream[0] &&
-                props.node.data.instream[0].map(
-                  (s) => s?.key || "oisnosins"
-                )) ||
-              []
-            }
-            autoSubmit={true}
-            onSubmit={async (values, values_as_dict) => {
-              updateNodeExtras(props.node.id, {
-                ...props.node.data,
-                defaults: values_as_dict,
-              });
-            }}
-            initial={props.node.data.defaults}
-          />
-        )}
+        <div className="text-white text-cl mt-4">
+          {node_data?.node?.id && (
+            <ConstantsForm
+              node={node_data?.node.id}
+              omit={
+                (props.node.data.instream[0] &&
+                  props.node.data.instream[0].map(
+                    (s) => s?.key || "oisnosins"
+                  )) ||
+                []
+              }
+              autoSubmit={true}
+              onSubmit={async (values, values_as_dict) => {
+                updateNodeExtras(props.node.id, {
+                  ...props.node.data,
+                  defaults: values_as_dict,
+                });
+              }}
+              initial={props.node.data.defaults}
+            />
+          )}
+        </div>
         <div className="flex flex-grow" />
 
         {node_data?.node?.id && (
           <Formik<Partial<ArkitektNodeFragment>>
             onSubmit={async (values) => {
+              console.log(values);
               updateNodeExtras(props.node.id, {
                 ...props.node.data,
                 ...values,
@@ -112,14 +111,23 @@ export const ArkitektNodeSidebar = (
                 </button>
                 {advanced && (
                   <div className="grid grid-cols-2 gap-2">
-                    {/* 
-                    <SelectInputField
+                    <CarouselInputField
                       label="Map Strategy"
-                      options={enum_to_options(MapStrategy)}
+                      options={[
+                        { value: MapStrategy.Map, label: "Map" },
+                        {
+                          value: MapStrategy.AsCompleted,
+                          label: "As Completed",
+                        },
+                        { value: MapStrategy.Ordered, label: "Ordered" },
+                      ]}
                       name="mapStrategy"
                       labelClassName="text-white"
+                      optionBuilder={(option) => (
+                        <div className="flex-1"> {option.label}</div>
+                      )}
                       description="How long to wait for a reservation to succeed before giving up."
-                    /> */}
+                    />
                     <NumberInputField
                       label="reserveTimeout"
                       name="Reserve Tiemout"

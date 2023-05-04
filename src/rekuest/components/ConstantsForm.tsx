@@ -1,24 +1,14 @@
 import { Form, Formik, FormikHelpers } from "formik";
 import { Maybe } from "graphql/jsutils/Maybe";
-import { useEffect } from "react";
-import { SubmitButton } from "../../components/forms/fields/SubmitButton";
-import {
-  AssignNodeEventDocument,
-  AssignNodeEventSubscription,
-  AssignNodeEventSubscriptionVariables,
-  ChildPortFragment,
-  PortFragment,
-  PortKind,
-  PortsFragment,
-  useAssignNodeQuery,
-} from "../api/graphql";
+import { useState } from "react";
+import * as Yup from "yup";
+import { notEmpty } from "../../floating/utils";
+import { withRekuest } from "../RekuestContext";
+import { PortFragment, PortKind, useAssignNodeQuery } from "../api/graphql";
 import { ChangeSubmitHelper } from "../ui/helpers/ChangeSubmitter";
 import { WidgetRegistry } from "../widgets/registry";
-import { useWidgetRegistry } from "../widgets/widget-context";
-import * as Yup from "yup";
 import { PortOptions } from "../widgets/types";
-import { withRekuest } from "../RekuestContext";
-import { notEmpty } from "../../floating/utils";
+import { useWidgetRegistry } from "../widgets/widget-context";
 
 export type ConstantsFormProps = {
   node: string;
@@ -122,6 +112,63 @@ export const validationSchemaBuilder = (
   return Yup.object(schema);
 };
 
+export const GroupRender = ({
+  group,
+  disable,
+}: {
+  group: { key: string; ports: PortFragment[]; hidden?: boolean | null };
+  disable?: string[];
+}) => {
+  const [hidden, setHidden] = useState(group.hidden || false);
+
+  const { registry } = useWidgetRegistry();
+
+  return (
+    <>
+      {group.ports && group.ports.length > 0 && (
+        <div
+          className={
+            group.key != "ungrouped"
+              ? "border border-1 border-slate-600 p-2 rounded gap-2 flex-1"
+              : "gap-2"
+          }
+        >
+          {group.key != "ungrouped" && (
+            <div
+              className="text-lg font-semibold"
+              onClick={() => setHidden(!hidden)}
+            >
+              {group?.key}
+            </div>
+          )}
+          {!hidden &&
+            group?.ports?.map((port, index) => (
+              <div key={index}>
+                <label className="font-light">{port.label || port.key}</label>
+                <div className="w-full mt-2 mb-2 relative text-black">
+                  {portToWidget(port, registry, {
+                    disable:
+                      disable && disable.includes(port?.key || "fakekey")
+                        ? true
+                        : false,
+                  })}
+                </div>
+                {port.description && (
+                  <div
+                    id={`${port.key}-help`}
+                    className="text-xs text-gray-600 mb-4 font-light"
+                  >
+                    {port.description}
+                  </div>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
+    </>
+  );
+};
+
 const ConstantsForm: React.FC<ConstantsFormProps> = ({
   node,
   initial,
@@ -132,13 +179,12 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
   disable,
   omit,
 }) => {
-  const { registry } = useWidgetRegistry();
-
   const { data } = withRekuest(useAssignNodeQuery)({
     variables: { id: node },
     fetchPolicy: "cache-and-network",
   });
 
+  console.log("NODE", data);
   let initialValues = {
     ...data?.node?.args?.reduce((result: any, port) => {
       result[port?.key || "test"] = port?.default;
@@ -151,6 +197,44 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
     data?.node?.args?.filter(
       (arg) => !omit || !omit.includes(arg?.key || "fosinosinoiens")
     ) || [];
+
+  let groups = unsetArgs.filter(notEmpty).reduce((prev, curr) => {
+    if (curr?.groups) {
+      for (let index in curr?.groups) {
+        let group = curr?.groups[index];
+        if (group) {
+          if (!prev[group]) {
+            prev[group] = [];
+          }
+          prev[group].push(curr);
+        }
+      }
+    } else {
+      if (!prev["ungrouped"]) {
+        prev["ungrouped"] = [];
+      }
+      prev["ungrouped"].push(curr);
+    }
+    return prev;
+  }, {} as { [key: string]: PortFragment[] });
+
+  console.log(groups);
+  let portGroups = data?.node?.portGroups || [];
+  console.log(portGroups);
+
+  let mappedPortGroups = portGroups.filter(notEmpty).map((group) => ({
+    ...group,
+    ports: groups[group.key],
+  }));
+
+  let mappedPortGroupsWithUngrouped = [
+    {
+      key: "ungrouped",
+      hidden: false,
+      ports: groups["ungrouped"],
+    },
+    ...mappedPortGroups,
+  ];
 
   return (
     <Formik<{ [key: string]: any }>
@@ -166,40 +250,10 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
       {(formikProps) => (
         <Form>
           {autoSubmit && <ChangeSubmitHelper debounce={500} />}
-          <div className="mt-2 align-left text-left">
-            {unsetArgs && unsetArgs?.length > 0 && (
-              <>
-                {unsetArgs
-                  ?.filter(
-                    (arg) =>
-                      !hide || !hide.includes(arg?.key || "fosinosinoiens")
-                  )
-                  .filter(notEmpty)
-                  .map((arg, index) => (
-                    <div key={index}>
-                      <label className="font-light">
-                        {arg.label || arg.key}
-                      </label>
-                      <div className="w-full mt-2 mb-2 relative">
-                        {portToWidget(arg, registry, {
-                          disable:
-                            disable && disable.includes(arg?.key || "fakekey")
-                              ? true
-                              : false,
-                        })}
-                      </div>
-                      {arg.description && (
-                        <div
-                          id={`${arg.key}-help`}
-                          className="text-xs text-gray-600 mb-4 font-light"
-                        >
-                          {arg.description}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </>
-            )}
+          <div className="grid grid-cols-1 @xl:grid-cols-2 @2xl:grid-cols-3 gap-4 w-full">
+            {mappedPortGroupsWithUngrouped.map((group, index) => (
+              <GroupRender key={index} group={group} disable={disable} />
+            ))}
           </div>
           {children && children}
         </Form>

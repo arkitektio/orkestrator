@@ -5,23 +5,21 @@ import { TfiMarkerAlt } from "react-icons/tfi";
 import Timestamp from "react-timestamp";
 import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { PageLayout } from "../../layout/PageLayout";
+import { useDialog } from "../../layout/dialog/DialogProvider";
 import {
   getDefaultSmartModel,
   getIdentifierForCommentableModel,
 } from "../../linker";
-import { CreatePublicFaktDialgog } from "../../lok/components/dialogs/CreatePublicFaktDialog";
-import { MyPrivateFakts } from "../../lok/components/MyPrivateFakts";
-import { MyPublicFakts } from "../../lok/components/MyPublicFakts";
+import { MyClients } from "../../lok/components/MyPrivateFakts";
 import { UserTag } from "../../lok/components/UserTag";
+import { CreatePublicClientDialog } from "../../lok/components/dialogs/CreatePublicClient";
+import { withMikro } from "../../mikro/MikroContext";
 import {
-  CommentableModels,
   MentionCommentFragment,
   useMyMentionsQuery,
   useResolveCommentMutation,
 } from "../../mikro/api/graphql";
-import { withMikro } from "../../mikro/MikroContext";
 
 interface IFlowHomeProps {}
 
@@ -116,7 +114,7 @@ const TeamHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
           <ActionButton
             label="Create Public App"
             onAction={async () => {
-              const x = await ask(CreatePublicFaktDialgog, {});
+              const x = await ask(CreatePublicClientDialog, {});
             }}
           />
         </>
@@ -128,8 +126,7 @@ const TeamHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
       {data?.mymentions?.filter(notEmpty).map((x, index) => (
         <MentionedComment key={index} comment={x} />
       ))}
-      <MyPublicFakts />
-      <MyPrivateFakts />
+      <MyClients />
     </PageLayout>
   );
 };

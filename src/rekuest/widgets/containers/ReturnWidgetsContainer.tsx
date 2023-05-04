@@ -36,6 +36,7 @@ export const WidgetsContainer: React.FC<WidgetsContainerProps> = (props) => {
                 port={port}
                 widget={port.returnWidget}
                 value={r}
+                
               />
             </div>
             {port.description && (

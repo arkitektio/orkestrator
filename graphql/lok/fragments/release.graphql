@@ -1,0 +1,20 @@
+fragment DetailRelease on Release {
+  id
+  version
+  logo
+  app {
+    ...ListApp
+  }
+  clients {
+    ...ListClient
+  }
+}
+
+fragment ListRelease on Release {
+  id
+  version
+  logo
+  app {
+    ...ListApp
+  }
+}

@@ -1,22 +1,19 @@
 import { Form, Formik, FormikHelpers } from "formik";
-import {
-  GraphQLListSearchInput,
-  GraphQLSearchInput,
-} from "../../components/forms/fields/SearchInput";
+import { GraphQLSearchInput } from "../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { notEmpty } from "../../floating/utils";
-import { useAppQuery, useUserQuery } from "../../lok/api/graphql";
+import { useDetailClientQuery, useUserQuery } from "../../lok/api/graphql";
 import { withMan } from "../../lok/context";
 import { useMikro } from "../../mikro/MikroContext";
 import { useSettings } from "../../settings/settings-context";
+import { withRekuest } from "../RekuestContext";
 import {
   ReserveMutationVariables,
   useReservableTemplatesQuery,
   useUserOptionsLazyQuery,
 } from "../api/graphql";
-import { withRekuest } from "../RekuestContext";
 import { useWidgetRegistry } from "../widgets/widget-context";
 import { ReserveParamsField } from "./ReserveParamsField";
 
@@ -52,23 +49,27 @@ export const UserImage: React.FC<{ sub: string }> = ({ sub }) => {
 };
 
 export const App: React.FC<{ clientId: string }> = ({ clientId }) => {
-  const { data, error } = withMan(useAppQuery)({
+  const { data, error } = withMan(useDetailClientQuery)({
     variables: { clientId: clientId },
   });
 
   const { s3resolve } = useMikro();
   return (
     <div>
-      {data?.app?.logo && (
+      {data?.client?.release?.logo && (
         <img
           className={`h-20 w-auto rounded-2 
           cursor-pointer`}
-          src={s3resolve(data?.app?.logo)}
+          src={s3resolve(data?.client?.release?.logo)}
           alt=""
         />
       )}
-      <div className="text-xs text-gray-500">{data?.app?.identifier}</div>
-      <div className="text-xs text-gray-500">{data?.app?.version}</div>
+      <div className="text-xs text-gray-500">
+        {data?.client?.release?.app?.identifier}
+      </div>
+      <div className="text-xs text-gray-500">
+        {data?.client?.release?.version}
+      </div>
     </div>
   );
 };
@@ -110,9 +111,9 @@ const ReserveForm: React.FC<ReserveFormProps> = ({ initial, onSubmit }) => {
 
             <div className="mt-2">
               <TextInputField
-                name="reference"
-                label="Shorthand"
-                description="Your common name for this reservation (will appear as button text)"
+                name="title"
+                label="Title"
+                description="Give this reservation a title"
               />
               <GraphQLSearchInput
                 label="Imitate"

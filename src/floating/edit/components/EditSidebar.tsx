@@ -29,6 +29,7 @@ import { withFluss } from "../../../fluss/fluss";
 import { FlowNode } from "../../types";
 import { notEmpty, port_to_stream } from "../../utils";
 import { useEditRiver } from "../context";
+import { Graph } from "../../base/Graph";
 
 interface NodeListProps {
   nodes: Maybe<NodeListItemFragment>[];
@@ -54,12 +55,12 @@ export const NodeItem = ({ node }: { node: Maybe<NodeListItemFragment> }) => {
   );
 };
 
-export const LocalItem = ({ node }: { node: Maybe<NodeListItemFragment> }) => {
+export const GraphItem = () => {
   return (
     <SmartModel
       accepts={[]}
-      identifier="@arkitekt/node"
-      object={node?.id || "ss"}
+      identifier="@arkitekt/graphnode"
+      object={"ss"}
       dragClassName={({ isDragging }) =>
         `rounded-md dark:bg-slate-900 dark:text-slate-50 w-full hover:overflow-hidden p-2 shadow-md shadow-blue-700/20 bg-white hover:text-white hover:bg-gray-800 border-slate-500 border cursor-pointer ${
           isDragging && "border-primary-300"
@@ -67,8 +68,7 @@ export const LocalItem = ({ node }: { node: Maybe<NodeListItemFragment> }) => {
       }
     >
       <div className="p-1 ">
-        <div className="font-light text-md mb-1">{node?.name}</div>
-        <p className="text">{node?.description}</p>
+        <div className="font-light text-md mb-1">GraphNode</div>
       </div>
     </SmartModel>
   );
@@ -104,21 +104,6 @@ export const NodeList: React.FC<NodeListProps> = ({ nodes }) => {
       )}
       {nodes?.map((node) => (
         <NodeItem key={node?.id} node={node} />
-      ))}
-    </div>
-  );
-};
-
-export const LocalNodes: React.FC<NodeListProps> = ({ nodes }) => {
-  return (
-    <div className="grid grid-cols-1 gap-4 text-gray-800 w-full mt-5">
-      {nodes?.length > 0 && (
-        <div className="font-semibold text-center text-xs dark:text-slate-50">
-          Local Nodes
-        </div>
-      )}
-      {nodes?.map((node) => (
-        <LocalItem key={node?.id} node={node} />
       ))}
     </div>
   );
@@ -241,7 +226,6 @@ export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
         {reactiveNodes?.reactivetemplates && (
           <ReactiveList nodes={reactiveNodes?.reactivetemplates} />
         )}
-        {localNodes?.allnodes && <LocalNodes nodes={localNodes?.allnodes} />}
       </div>
     </>
   );

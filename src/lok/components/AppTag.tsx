@@ -1,24 +1,23 @@
-import { Link } from "react-router-dom";
-import { App, User } from "../../linker";
-import { useAppQuery, useUserQuery } from "../api/graphql";
+import { Release } from "../../linker";
+import { useReleaseQuery } from "../api/graphql";
 import { withMan } from "../man";
 
-export const AppTag: React.FC<{ version: string; identifier: string }> = ({
+export const ReleaseTag: React.FC<{ version: string; identifier: string }> = ({
   version,
   identifier,
 }) => {
-  const { data, error } = withMan(useAppQuery)({
+  const { data, error } = withMan(useReleaseQuery)({
     variables: { identifier, version },
   });
 
   return (
     <div>
-      {data?.app?.id ? (
-        <App.DetailLink object={data?.app?.id}>
+      {data?.release?.id ? (
+        <Release.DetailLink object={data?.release?.id}>
           <div className="my-auto mr-2">
-            {data.app.identifier}:{data.app.version}
+            {data.release.app?.identifier}:{data.release.version}
           </div>
-        </App.DetailLink>
+        </Release.DetailLink>
       ) : (
         "Unknown"
       )}

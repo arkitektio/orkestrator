@@ -1,13 +1,14 @@
 fragment DetailApp on App {
   id
   identifier
-  version
   logo
+  releases {
+    ...ListRelease
+  }
 }
 
 fragment ListApp on App {
   id
   identifier
-  version
   logo
 }

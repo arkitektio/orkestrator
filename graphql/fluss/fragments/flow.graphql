@@ -110,6 +110,11 @@ fragment ReturnNode on ReturnNode {
   __typename
 }
 
+fragment GraphNode on GraphNode {
+  ...FlowNodeCommons
+  __typename
+}
+
 fragment FlowNode on FlowNode {
   id
   position {
@@ -117,12 +122,14 @@ fragment FlowNode on FlowNode {
     y
   }
   typename
+  parentNode
   ...ArkitektNode
   ...ReactiveNode
   ...ArgNode
   ...KwargNode
   ...ReturnNode
   ...LocalNode
+  ...GraphNode
 }
 
 fragment FlowEdgeCommons on FlowEdgeCommons {

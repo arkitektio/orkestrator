@@ -14,7 +14,7 @@ fragment DetailReservation on Reservation {
     clients {
       id
       name
-      client_id
+      clientId
     }
     templates {
       id
@@ -50,6 +50,7 @@ fragment DetailReservation on Reservation {
     kind
     name
     scope
+    description
     args {
       __typename
       key
@@ -102,6 +103,7 @@ fragment ListReservation on Reservation {
     id
     kind
     name
+    description
     args {
       __typename
       key

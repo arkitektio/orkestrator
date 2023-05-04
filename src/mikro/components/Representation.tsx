@@ -1,26 +1,26 @@
+import { Tab } from "@headlessui/react";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { Form, Formik } from "formik";
 import React, { useEffect, useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
+import ReactPlayer from "react-player";
 import Timestamp from "react-timestamp";
+import { SelfActions } from "../../components/SelfActions";
 import {
-  CreateableListSearchInput,
   GraphQLCreatableListSearchInput,
-  GraphQLListSearchInput,
   GraphQLSearchInput,
 } from "../../components/forms/fields/SearchInput";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { SelfActions } from "../../components/SelfActions";
-import { ThumbnailCanvas } from "../../components/ThumbnailCanvas";
 import { TwoDOffcanvas } from "../../experimental/render/TwoDOffcanvas";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
-import { SaveParentSize } from "../../layout/SaveParentSize";
-import ReactPlayer from "react-player";
 import {
   Assignation,
+  Channel,
   Dataset,
+  DimensionMap,
   Instrument,
   Metric,
   MikroFile,
@@ -32,7 +32,8 @@ import {
   Table,
 } from "../../linker";
 import { UserEmblem } from "../../lok/components/UserEmblem";
-import { ExperimentalFeature } from "../../providers/experimental/Experimental";
+import { useDeleteRoiMate } from "../../mates/roi/useDeleteRoiMate";
+import { useMikro, withMikro } from "../MikroContext";
 import {
   CommentableModels,
   DetailRepresentationFragment,
@@ -43,6 +44,8 @@ import {
   MyRepresentationsOriginSubscriptionVariables,
   ThumbnailFragment,
   UpdateRepresentationMutationVariables,
+  WatchRoisDocument,
+  WatchRoisSubscriptionResult,
   useDeleteRepresentationMutation,
   useDeleteRoiMutation,
   useDetailRepresentationQuery,
@@ -50,13 +53,7 @@ import {
   useSearchSampleLazyQuery,
   useTagSearchLazyQuery,
   useUpdateRepresentationMutation,
-  WatchRoisDocument,
-  WatchRoisSubscriptionResult,
 } from "../api/graphql";
-import { useMikro, withMikro } from "../MikroContext";
-import { Tab } from "@headlessui/react";
-import { useDatalayer } from "@jhnnsrs/datalayer";
-import { useDeleteRoiMate } from "../../mates/roi/useDeleteRoiMate";
 
 export type ISampleProps = {
   id: string;
@@ -445,31 +442,117 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     <div className="text-md text-black ">
                       <Timestamp
                         date={data?.representation?.omero?.acquisitionDate}
-                        relative
                       />
                     </div>
                   </div>
                 )}
-                {JSON.stringify(
-                  data?.representation?.omero?.affineTransformation
-                )}
+                {data?.representation?.omero?.affineTransformation &&
+                  JSON.stringify(
+                    data?.representation?.omero?.affineTransformation
+                  )}
 
-                {data?.representation?.omero?.position && (
-                  <Position.DetailLink
-                    object={data.representation.omero.position.id}
-                    className="flex flex-col "
-                  >
-                    <div className="font-semibold mr-2">Position on Stage </div>
-                    <div className="text-md text-black ">
-                      {data?.representation?.omero?.position?.x}
-                      <p className="text-sm inline">x [µm] </p>
-                      {data?.representation?.omero?.position?.y}
-                      <p className="text-sm inline">y [µm] </p>
-                      {data?.representation?.omero?.position?.z}
-                      <p className="text-sm inline">z [µm] </p>
-                    </div>
-                  </Position.DetailLink>
-                )}
+                {data?.representation?.omero?.positions
+                  .filter(notEmpty)
+                  .map((pos) => (
+                    <Position.DetailLink
+                      object={pos.id}
+                      className="flex flex-col "
+                    >
+                      <div className="font-semibold mr-2">
+                        Position on {pos.stage.name}
+                      </div>
+                      <div className="text-md text-black ">
+                        {pos.x}
+                        <p className="text-sm inline">x [µm] </p>
+                        {pos.y}
+                        <p className="text-sm inline">y [µm] </p>
+                        {pos.z}
+                        <p className="text-sm inline">z [µm] </p>
+                      </div>
+                    </Position.DetailLink>
+                  ))}
+                <div className="font-light my-1">Channels</div>
+                <ResponsiveContainerGrid>
+                  {data?.representation?.omero?.dimensionMaps
+                    ?.filter(notEmpty)
+                    .map((map) => (
+                      <DimensionMap.Smart
+                        object={map.id}
+                        className="flex flex-col "
+                      >
+                        <DimensionMap.DetailLink
+                          object={map.id}
+                          className="flex flex-col "
+                        >
+                          {map.channel && (
+                            <Channel.DetailLink
+                              className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer"
+                              object={map.channel.id}
+                            >
+                              <div className="flex flex-row">
+                                <div>{map.channel?.name || "Channel "}</div>
+                                <div
+                                  className="text-xs w-2 h-2 rounded-full ml-2 my-auto"
+                                  style={{
+                                    background: `${
+                                      map.channel?.color
+                                        ? map.channel.color
+                                        : "rbg(0,0,0)"
+                                    }`,
+                                  }}
+                                ></div>
+                                {map.channel?.emissionWavelength && (
+                                  <div className="text-sm">
+                                    {map.channel.emissionWavelength.toPrecision(
+                                      5
+                                    )}{" "}
+                                    nm
+                                  </div>
+                                )}
+                              </div>
+                            </Channel.DetailLink>
+                          )}
+                        </DimensionMap.DetailLink>
+                      </DimensionMap.Smart>
+                    ))}
+                </ResponsiveContainerGrid>
+                <div className="font-light my-1">Views</div>
+                <ResponsiveContainerGrid>
+                  {data?.representation?.omero?.views
+                    ?.filter(notEmpty)
+                    .map((map) => (
+                      <DimensionMap.Smart
+                        object={map.id}
+                        className="flex flex-col "
+                      >
+                        <DimensionMap.DetailLink
+                          object={map.id}
+                          className="flex flex-col "
+                        >
+                          {map.channel && (
+                            <Channel.DetailLink
+                              className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer"
+                              object={map.channel.id}
+                            >
+                              <div className="flex flex-row">
+                                <div>{map.channel?.name || "Channel "}</div>
+                                <div
+                                  className="text-xs w-2 h-2 rounded-full ml-2 my-auto"
+                                  style={{
+                                    background: `${
+                                      map.channel?.color
+                                        ? map.channel.color
+                                        : "rbg(0,0,0)"
+                                    }`,
+                                  }}
+                                ></div>
+                              </div>
+                            </Channel.DetailLink>
+                          )}
+                        </DimensionMap.DetailLink>
+                      </DimensionMap.Smart>
+                    ))}
+                </ResponsiveContainerGrid>
                 {data?.representation?.omero?.objective && (
                   <Objective.DetailLink
                     object={data?.representation?.omero?.objective.id}
@@ -541,29 +624,6 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     </div>
                   </>
                 )}
-                <div className="font-light my-1">Channels</div>
-                <ResponsiveContainerGrid>
-                  {data?.representation?.omero?.channels?.map((ch, index) => (
-                    <div className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer">
-                      <div className="flex flex-row">
-                        <div>{ch?.name || "Channel " + index}</div>
-                        <div
-                          className="text-xs w-2 h-2 rounded-full ml-2 my-auto"
-                          style={{
-                            background: `${
-                              ch?.color ? ch.color : "rbg(0,0,0)"
-                            }`,
-                          }}
-                        ></div>
-                      </div>
-                      {ch?.emmissionWavelength && (
-                        <div className="text-sm">
-                          {ch.emmissionWavelength.toPrecision(5)} nm
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </ResponsiveContainerGrid>
                 <div className="font-light my-1">Planes</div>
                 <ResponsiveContainerGrid>
                   {data?.representation?.omero?.planes?.map((pl, index) => (
@@ -626,6 +686,28 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                             {file.name}
                           </MikroFile.DetailLink>
                         </MikroFile.Smart>
+                      ))}
+                  </ResponsiveContainerGrid>
+                </>
+              )}
+            {data?.representation?.tableOrigins &&
+              data?.representation?.tableOrigins.length > 0 && (
+                <>
+                  <div className="font-light mb-2">Created from</div>
+                  <ResponsiveContainerGrid>
+                    {data?.representation?.tableOrigins
+                      ?.filter(notEmpty)
+                      .map((table) => (
+                        <Table.Smart
+                          object={table.id}
+                          dragClassName={(options) =>
+                            "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
+                          }
+                        >
+                          <Table.DetailLink object={table.id}>
+                            {table.name}
+                          </Table.DetailLink>
+                        </Table.Smart>
                       ))}
                   </ResponsiveContainerGrid>
                 </>

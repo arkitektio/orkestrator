@@ -1,37 +1,33 @@
 import React from "react";
-import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { notEmpty } from "../../floating/utils";
-import { PrivateFakt } from "../../linker";
+import { Client } from "../../linker";
 import {
-  ApplicationsDocument,
-  PrivateFaktDocument,
-  PrivateFaktsDocument,
-  PrivateFaktsQuery,
-  useApplicationsQuery,
-  useDeletePrivateFaktMutation,
-  usePrivateFaktsQuery,
+  MyPrivateClientsDocument,
+  MyPrivateClientsQuery,
+  useDeleteClientMutation,
+  useMyPrivateClientsQuery,
 } from "../api/graphql";
 import { withMan } from "../man";
 export type IAppProps = {
   onAppClicked?: (clientID: string) => void;
 };
 
-const MyPrivateFakts: React.FC<IAppProps> = ({ onAppClicked }) => {
-  const { data } = withMan(usePrivateFaktsQuery)();
+const MyClients: React.FC<IAppProps> = ({ onAppClicked }) => {
+  const { data } = withMan(useMyPrivateClientsQuery)();
 
   const { confirm } = useConfirm();
 
-  const [deletePrivateFakt] = withMan(useDeletePrivateFaktMutation)({
+  const [deletePrivateFakt] = withMan(useDeleteClientMutation)({
     update(cache, result) {
-      const query = cache.readQuery<PrivateFaktsQuery>({
-        query: PrivateFaktsDocument,
+      const query = cache.readQuery<MyPrivateClientsQuery>({
+        query: MyPrivateClientsDocument,
       });
       cache.writeQuery({
-        query: PrivateFaktsDocument,
+        query: MyPrivateClientsDocument,
         data: {
-          privatefaktapps: query?.privatefaktapps?.filter(
-            (t: any) => t.id !== result.data?.deletePrivateFakt?.id
+          privatefaktapps: query?.myPrivateClients?.filter(
+            (t: any) => t.id !== result.data?.deleteClient?.id
           ),
         },
       });
@@ -45,27 +41,27 @@ const MyPrivateFakts: React.FC<IAppProps> = ({ onAppClicked }) => {
         Private Applications{" "}
       </span>
       <div className="grid grid-cols-6 gap-3 mt-2 ">
-        {data?.privatefaktapps?.filter(notEmpty).map((app, index) => (
-          <PrivateFakt.Smart
-            object={app.id}
+        {data?.myPrivateClients?.filter(notEmpty).map((client, index) => (
+          <Client.Smart
+            object={client.id}
             key={index}
             className="bg-white rounded shadow-md pl-3 pr-2 py-2 flex group"
             mates={[]}
           >
-            <PrivateFakt.DetailLink
-              object={app.id}
+            <Client.DetailLink
+              object={client.id}
               className="flex-none cursor-pointer"
               onClick={() =>
-                app?.clientId && onAppClicked && onAppClicked(app?.clientId)
+                client?.id && onAppClicked && onAppClicked(client?.id)
               }
             >
-              {app?.app?.identifier}/{app?.app?.version}
-            </PrivateFakt.DetailLink>
-          </PrivateFakt.Smart>
+              {client?.release?.app?.identifier}/{client?.release?.version}
+            </Client.DetailLink>
+          </Client.Smart>
         ))}
       </div>
     </>
   );
 };
 
-export { MyPrivateFakts };
+export { MyClients };

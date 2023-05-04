@@ -9,23 +9,23 @@ import { TextInputField } from "../../../components/forms/fields/text_input";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
 import {
-  CreatePublicFaktMutation,
-  CreatePublicFaktMutationVariables,
+  CreatePublicClientMutation,
+  CreatePublicClientMutationVariables,
   PublicFaktType,
-  useCreatePublicFaktMutation,
+  useCreatePublicClientMutation,
   useScopesOptionsLazyQuery,
 } from "../../api/graphql";
 import { withMan } from "../../man";
 
-export const CreatePublicFaktDialgog = (
-  props: Submit<CreatePublicFaktMutation>
+export const CreatePublicClientDialog = (
+  props: Submit<CreatePublicClientMutation>
 ) => {
-  const [createPublicFakt] = withMan(useCreatePublicFaktMutation)();
+  const [createPublicFakt] = withMan(useCreatePublicClientMutation)();
 
   const [searchScopes] = withMan(useScopesOptionsLazyQuery)();
 
   return (
-    <Formik<CreatePublicFaktMutationVariables>
+    <Formik<CreatePublicClientMutationVariables>
       initialValues={{
         redirectUris: [""],
         identifier: "",
@@ -39,7 +39,7 @@ export const CreatePublicFaktDialgog = (
           variables: values,
         });
 
-        if (res.data?.createPublicFakt) {
+        if (res.data?.createPublicClient) {
           props.submit(res.data);
           return;
         }

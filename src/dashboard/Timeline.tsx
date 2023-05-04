@@ -1,9 +1,5 @@
-import { useDatalayer } from "@jhnnsrs/datalayer";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
-import { first } from "rxjs";
-import { ResponsiveContainerGrid } from "../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../floating/utils";
 import {
   FlowNodeFragment,
@@ -12,18 +8,16 @@ import {
   useEventsBetweenQuery,
 } from "../fluss/api/graphql";
 import { withFluss } from "../fluss/fluss";
-import { OptimizedImage } from "../layout/OptimizedImage";
-import { PageLayout } from "../layout/PageLayout";
-import { Representation } from "../linker";
-import { useDashboardQueryQuery } from "../mikro/api/graphql";
-import { withMikro } from "../mikro/MikroContext";
-
 export type Event = {
   timestamp: string;
 };
 
 export type NodeTimeline = FlowNodeFragment & {
-  events: (RunEventFragment & { end: number; start: number })[];
+  events: (RunEventFragment & {
+    end: number;
+    start: number;
+    startTime: Date;
+  })[];
 };
 
 export const recurseHighlight = (
@@ -45,6 +39,119 @@ export const recurseHighlight = (
   }
 };
 
+export const TimelineRender = ({
+  node,
+  highlighted,
+  highlightEvent,
+  relativeEvent,
+}: {
+  node: NodeTimeline;
+  highlighted: number[];
+  highlightEvent: (event: RunEventFragment) => void;
+  relativeEvent?: RunEventFragment;
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"waterfall" | "absolute">(
+    "waterfall"
+  );
+
+  return (
+    <>
+      <div
+        className={
+          expanded
+            ? "col-span-2 cursor-pointer bg-gray-800 border rounded border-gray-800 "
+            : "col-span-2 cursor-pointer border rounded border-gray-800 "
+        }
+      >
+        <div className="w-full flex flex-col relative h-10 text-xl align-center group p-2 truncate ">
+          <div onClick={() => setExpanded(!expanded)} className="">
+            {node.__typename == "ArkitektNode" && node.name}
+            {node.__typename == "ReactiveNode" && node.implementation}
+          </div>
+        </div>
+        {expanded && (
+          <div className="flex flex-row flex-wrap gap-2 mt-2 mx-2">
+            <button
+              onClick={() => setDisplayMode("waterfall")}
+              className={`text-xs hover:bg-gray-700 bg-gray-900 px-2 py-1 ${
+                displayMode == "waterfall" && "bg-gray-700"
+              }`}
+            >
+              As Waterfall
+            </button>
+            <button
+              onClick={() => setDisplayMode("absolute")}
+              className={`text-xs hover:bg-gray-700 bg-gray-900 px-2 py-1 ${
+                displayMode == "absolute" && "bg-gray-700"
+              }`}
+            >
+              As Absolute
+            </button>
+          </div>
+        )}
+      </div>
+      <div className="col-span-10">
+        <div className="relative h-10 w-full bg-gray-100 bg-opacity-10 border border-gray-100 border-opacity-0">
+          {node.events.map((event) => {
+            console.log(event?.end, console.log(event?.start));
+            return (
+              <div
+                className={`${
+                  highlighted.includes(event.t)
+                    ? "bg-green-700 border-green-200 border-2"
+                    : "border-gray-100 border-1 border-opacity-20"
+                } absolute h-10 border  z-1 bg-opacity-80 grid justify-items-center cursor-pointer`}
+                style={{
+                  left: event.start * 100 + "%",
+                  width: (event.end - event.start) * 100 + "%",
+                }}
+                onClick={(e) => {
+                  highlightEvent(event), e.stopPropagation();
+                }}
+              >
+                {highlighted.includes(event.t) && (
+                  <Timestamp
+                    date={event.startTime}
+                    relativeTo={event.createdAt}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {expanded && (
+          <>
+            {node.events.map((event, index) => {
+              return (
+                <div className="w-full relative h-2">
+                  <div
+                    className={`${
+                      highlighted.includes(event.t)
+                        ? "bg-green-700 border-green-200 border-2"
+                        : "border-gray-100 border-1 border-opacity-20"
+                    } absolute h-2 border  z-1 bg-opacity-80 grid justify-items-end cursor-pointer`}
+                    style={{
+                      left:
+                        displayMode == "waterfall"
+                          ? event.start * 100 + "%"
+                          : "0%",
+                      width: (event.end - event.start) * 100 + "%",
+                    }}
+                    onClick={(e) => {
+                      highlightEvent(event), e.stopPropagation();
+                    }}
+                  ></div>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+    </>
+  );
+};
+
 export const Timeline = ({ id }: { id: string }) => {
   const { data: run } = withFluss(useDetailRunQuery)({
     variables: { id },
@@ -56,6 +163,9 @@ export const Timeline = ({ id }: { id: string }) => {
 
   const [timeline, setTimeline] = useState<NodeTimeline[]>([]);
   const [highlighted, setHighlighted] = useState<number[]>([]);
+  const [relativeEvent, setRelativeEvent] = useState<
+    RunEventFragment | undefined
+  >();
 
   const highlightEvent = (event: RunEventFragment) => {
     let highlighted = [event.t];
@@ -64,6 +174,7 @@ export const Timeline = ({ id }: { id: string }) => {
       recurseHighlight(event, betweens, highlighted);
     }
     setHighlighted(highlighted);
+    setRelativeEvent(event);
   };
 
   useEffect(() => {
@@ -101,17 +212,17 @@ export const Timeline = ({ id }: { id: string }) => {
         .forEach((event) => {
           let correspondingNode = nodeMap[event.source];
 
+          let startTime = betweens?.find(
+            (e) =>
+              e?.t == Math.min(...(event.causedBy?.filter(notEmpty) || [0]))
+          )?.createdAt;
+
           if (correspondingNode) {
             let pushevent = {
               ...event,
               end: interpolate(event.createdAt),
-              start: interpolate(
-                betweens?.find(
-                  (e) =>
-                    e?.t ==
-                    Math.min(...(event.causedBy?.filter(notEmpty) || [0]))
-                )?.createdAt
-              ),
+              start: interpolate(startTime),
+              startTime: startTime,
             };
 
             correspondingNode.events.push(pushevent);
@@ -128,39 +239,22 @@ export const Timeline = ({ id }: { id: string }) => {
   }, [run, events]);
 
   return (
-    <div className="flex flex-grow flex-col text-white @container">
-      <div className="font-light text-xl flex mr-2 text-slate-2 mb-2">
-        Live Monitoring
-      </div>
+    <div
+      className="flex flex-grow flex-col text-white @container"
+      onClick={() => setHighlighted([])}
+    >
       <div>
-        {timeline.map((node) => {
-          return (
-            <div className="w-full relative h-10">
-              <div className="absolute h-10 z-10">
-                {node.__typename == "ArkitektNode" && node.name}
-                {node.__typename == "ReactiveNode" && node.implementation}
-              </div>
-
-              {node.events.map((event) => {
-                console.log(event?.end, console.log(event?.start));
-                return (
-                  <div
-                    className={`${
-                      highlighted.includes(event.t)
-                        ? "bg-green-700 border-green-200 border-2"
-                        : "border-gray-100 border-1 border-opacity-20"
-                    } absolute h-10 border  z-1 bg-opacity-80 grid justify-items-end cursor-pointer`}
-                    style={{
-                      left: event.start * 100 + "%",
-                      width: (event.end - event.start) * 100 + "%",
-                    }}
-                    onClick={() => highlightEvent(event)}
-                  ></div>
-                );
-              })}
-            </div>
-          );
-        })}
+        <div className="grid grid-cols-12 gap-2">
+          {timeline.map((node) => (
+            <TimelineRender
+              key={node.id}
+              node={node}
+              highlighted={highlighted}
+              highlightEvent={highlightEvent}
+              relativeEvent={relativeEvent}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

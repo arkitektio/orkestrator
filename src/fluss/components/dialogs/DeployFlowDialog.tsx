@@ -7,18 +7,16 @@ import { ClientCard } from "../../../lok/components/cards/ClientCard";
 import { withMan } from "../../../lok/man";
 import { withRekuest } from "../../../rekuest";
 import {
-  ListReservationFragment,
+  ListProvisionFragment,
   useDeployReservationsQuery,
 } from "../../../rekuest/api/graphql";
-import { colorFromStatus } from "../../../rekuest/components/cards/ReservationCard";
 import { ReservationPulse } from "../../../rekuest/components/generic/StatusPulse";
 import { useRequester } from "../../../rekuest/postman/requester/requester-context";
 import { useReserver } from "../../../rekuest/postman/reserver/reserver-context";
-import { colorFromReservationStatus } from "../../../rekuest/utils";
 
 export const ClientX = (props: { id: string }) => {
   const { data } = withMan(useDetailClientQuery)({
-    variables: { id: props.id },
+    variables: { clientId: props.id },
   });
 
   return (
@@ -50,7 +48,7 @@ export const ResCard = ({ res, flow }: { res: any; flow: string }) => {
         <ReservationPulse status={res.status} />
       </div>
       <div className="flex flex-row justify-start mt-2">
-        {res.provisions.map((provision: any) => (
+        {res.provisions.map((provision: ListProvisionFragment) => (
           <div className="flex flex-row">
             <ClientX id={provision?.agent?.clientId} />
           </div>

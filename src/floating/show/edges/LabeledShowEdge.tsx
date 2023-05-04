@@ -1,6 +1,6 @@
 import React from "react";
 import { AiOutlineClose } from "react-icons/ai";
-import { getSmoothStepPath, useNodes } from "reactflow";
+import { getSmoothStepPath, useNodes, EdgeLabelRenderer } from "reactflow";
 import { StreamKind } from "../../../fluss/api/graphql";
 import { LabeledEdgeProps } from "../../types";
 import { useShowRiver } from "../context";
@@ -41,32 +41,23 @@ export const LabeledShowEdge: React.FC<LabeledEdgeProps> = (props) => {
         className="react-flow__edge-path"
         d={edgePath}
       />
-      <text>
-        <textPath
-          href={`#${id}`}
-          style={{ fontSize: "13px", fill: "white" }}
-          startOffset="50%"
-          textAnchor="middle"
-          className="group"
-        ></textPath>
-      </text>
-      <foreignObject x={labelX} y={labelY} width={150} height={150}>
-        <div className="flex group">
-          <div
-            className="relative m-auto hover:bg-gray-500 bg-gray-800 border-[#555] border rounded-lg shadow-lg p-1 cursor-pointer select-none text-gray-400 left[-75px] hover:text-gray-200 flex-col flex  transition-all duration-500 ease-in-out"
-            style={{ fontSize: "13px", fill: "white" }}
-          >
-            {data?.stream.map((item, index) => (
-              <span className="text-xs" key={index}>
-                {(item?.kind == StreamKind.List
-                  ? "[ " + (item?.child?.identifier || item?.child?.kind) + " ]"
-                  : item?.identifier || item?.kind) +
-                  (item?.nullable ? "?" : "")}
-              </span>
-            ))}
-          </div>
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: "absolute",
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+          }}
+          className="relative m-auto hover:bg-gray-500 bg-gray-800 border-[#555] border rounded-lg shadow-lg p-1 cursor-pointer select-none text-gray-400 left[-75px] hover:text-gray-200 flex-col flex "
+        >
+          {data?.stream.map((item, index) => (
+            <span className="text-xs" key={index}>
+              {(item?.kind == StreamKind.List
+                ? "[ " + (item?.child?.identifier || item?.child?.kind) + " ]"
+                : item?.identifier || item?.kind) + (item?.nullable ? "?" : "")}
+            </span>
+          ))}
         </div>
-      </foreignObject>
+      </EdgeLabelRenderer>
     </>
   );
 

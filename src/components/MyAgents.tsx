@@ -1,23 +1,11 @@
-import React, { useDebugValue } from "react";
+import React from "react";
 import { useNavigate } from "react-router";
-import {
-  ListAgentFragment,
-  useDeleteAgentMutation,
-} from "../rekuest/api/graphql";
-import { AgentPulse } from "../rekuest/components/generic/StatusPulse";
-import { usePostman } from "../rekuest/postman/graphql/postman-context";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
-import { Agent } from "../linker";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { AppEmblem } from "../lok/components/AppEmblem";
-import { app } from "@tauri-apps/api";
-import { UserEmblem } from "../lok/components/UserEmblem";
-import { RegistryEmblem } from "../rekuest/components/RegistryEmblem";
-import { AppImage } from "../lok/components/AppImage";
-import { withRekuest } from "../rekuest";
-import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
+import { ListAgentFragment } from "../rekuest/api/graphql";
 import { AgentCard } from "../rekuest/components/cards/AgentCard";
+import { usePostman } from "../rekuest/postman/graphql/postman-context";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 
 export type IActiveClientsProps = {};
 

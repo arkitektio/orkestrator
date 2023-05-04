@@ -5,7 +5,11 @@ import "react-contexify/dist/ReactContexify.css";
 import { Handle, Position, ReactFlowState, useStore } from "reactflow";
 import ReactTooltip from "react-tooltip";
 import { withRekuest } from "../../../rekuest";
-import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
+import {
+  NodeKind,
+  PortFragment,
+  useDetailNodeQuery,
+} from "../../../rekuest/api/graphql";
 import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps, ConnState, FlowNode } from "../../types";
@@ -43,12 +47,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
         ? "1px solid #ff0033"
         : "1px solid #ff00ff";
 
-    const rotateArg = (arg: {
-      __typename: string;
-      key: string;
-      identifier?: null | string;
-      nullable: boolean;
-    }) => {
+    const rotateArg = (arg: PortFragment) => {
       if (data?.instream[0]) {
         console.log("Stream", data.instream[0]);
         if (data?.instream[0]?.find((s) => s?.key === arg.key)) {
@@ -59,6 +58,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           updateNodeIn(id, [
             data?.instream[0]?.concat({
               key: arg.key,
+              scope: arg.scope,
               kind: port_to_kind(arg),
               identifier: arg.identifier,
               nullable: arg.nullable,
@@ -68,12 +68,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
       }
     };
 
-    const rotateReturn = (arg: {
-      __typename: string;
-      key: string;
-      identifier?: null | string;
-      nullable: boolean;
-    }) => {
+    const rotateReturn = (arg: PortFragment) => {
       if (data?.outstream[0]) {
         console.log("Stream", data.outstream[0]);
         if (data?.outstream[0]?.find((s) => s?.key === arg.key)) {
@@ -84,6 +79,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           updateNodeOut(id, [
             data?.outstream[0]?.concat({
               key: arg.key,
+              scope: arg.scope,
               kind: port_to_kind(arg),
               identifier: arg.identifier,
               nullable: arg.nullable,

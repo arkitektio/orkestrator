@@ -37,7 +37,13 @@ const ResolveOnce = ({ request }: { request: AssignRequest }) => {
 
   return (
     <>
-      <div className="text-xl">{request?.variables.reservation.node.name}</div>
+      <div className="text-2xl mb-2">
+        {request?.variables.reservation.node.name}
+      </div>
+      <div className="text-sm mb-2">
+        {request?.variables.reservation.node.description}
+      </div>
+
       {request?.variables.reservation?.node?.id && (
         <ConstantsForm
           autoSubmit={false}
@@ -49,10 +55,10 @@ const ResolveOnce = ({ request }: { request: AssignRequest }) => {
           initial={request.variables.defaults}
           onSubmit={onSubmit}
         >
-          <div className="flex flex-row">
+          <div className="flex flex-row gap-2 mt-2">
             <div className="flex-grow"></div>
             <button
-              className="bg-red-400 px-3 py-1 border rounded text-white"
+              className="bg-secondary-400 px-3 py-1 border rounded text-white"
               onClick={() => reject(request)}
             >
               Cancel
@@ -110,16 +116,12 @@ export const RequestResolver: React.FC<{}> = () => {
             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
             <div>
-              <div className="inline-block align-middle bg-white text-left shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full rounded-md">
-                <div className="bg-white px-4 pt-2 pb-4 sm:p-6 sm:pb-4 rounded-lg">
+              <div className="inline-block align-middle bg-back-900 text-left shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full rounded-md">
+                <div className="bg-back-900 text-slate-100  px-4 pt-2 pb-4 sm:p-6 sm:pb-4 rounded-lg">
                   <div className="sm:w-full sm:items-start">
-                    <div className="mt-1 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                      <div className="">
-                        {pending.slice(-1).map((p) => (
-                          <ResolveOnce key={p.id} request={p} />
-                        ))}
-                      </div>
-                    </div>
+                    {pending.slice(-1).map((p) => (
+                      <ResolveOnce key={p.id} request={p} />
+                    ))}
                   </div>
                 </div>
               </div>

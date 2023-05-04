@@ -1,0 +1,5 @@
+query DetailMeta($id: ID!) {
+  meta(id: $id) {
+    ...DetailOmero
+  }
+}

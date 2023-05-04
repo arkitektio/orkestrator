@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Handle, Position } from "reactflow";
 import ReactTooltip from "react-tooltip";
+import { Handle, Position } from "reactflow";
 import { withLayout } from "../../../base/node/layout";
 import { ReturnNodeProps } from "../../../types";
 import { NodeTrackLayout } from "../layout/NodeTrack";
@@ -21,10 +21,6 @@ export const ReturnTrackNodeWidget: React.FC<ReturnNodeProps> = withLayout(
               Outputs
             </div>
             <p className="text-gray-700 text-base">
-              <>
-                {instream[0]?.map((o) => o?.kind).join(" | ")}
-                <br />
-              </>
               {!isSmall && (
                 <button
                   type="button"

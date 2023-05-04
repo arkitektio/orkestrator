@@ -1,5 +1,23 @@
-query DetailClient($id: ID!) {
-  client(id: $id) {
+query Clients {
+  clients {
+    ...ListClient
+  }
+}
+
+query DetailClient($clientId: ID, $id: ID) {
+  client(clientId: $clientId, id: $id) {
+    ...DetailClient
+  }
+}
+
+query MyPublicClients {
+  myPublicClients {
+    ...ListClient
+  }
+}
+
+query MyPrivateClients {
+  myPrivateClients {
     ...ListClient
   }
 }

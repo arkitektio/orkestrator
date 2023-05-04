@@ -41,5 +41,9 @@ fragment CompleteNode on Node {
   args {
     ...Port
   }
+  portGroups {
+    key
+    hidden
+  }
   scope
 }

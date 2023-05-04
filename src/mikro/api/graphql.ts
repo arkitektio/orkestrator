@@ -26,6 +26,7 @@ export type Scalars = {
   ModelFile: any;
   Parquet: any;
   ParquetInput: any;
+  Slice: any;
   Store: any;
   UUID: any;
   XArrayInput: any;
@@ -44,24 +45,37 @@ export type ChangePermissionsResult = {
   success?: Maybe<Scalars['Boolean']>;
 };
 
-/**
- * A channel in an image
- *
- * Channels can be highly variable in their properties. This class is a
- * representation of the most common properties of a channel.
- */
+/** Channel(id, created_by, created_through, created_while, name, emission_wavelength, excitation_wavelength, acquisition_mode, color) */
 export type Channel = {
   __typename?: 'Channel';
   /** The acquisition mode of the channel */
   acquisitionMode?: Maybe<Scalars['String']>;
   /** The default color for the channel (might be ommited by the rendered) */
   color?: Maybe<Scalars['String']>;
+  createdBy?: Maybe<User>;
+  createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
+  /** Associated maps of dimensions */
+  dimensionMaps?: Maybe<Array<Maybe<DimensionMap>>>;
   /** The emmission wavelength of the fluorophore in nm */
-  emmissionWavelength?: Maybe<Scalars['Float']>;
+  emissionWavelength?: Maybe<Scalars['Float']>;
   /** The excitation wavelength of the fluorophore in nm */
   excitationWavelength?: Maybe<Scalars['Float']>;
+  id: Scalars['ID'];
   /** The name of the channel */
-  name?: Maybe<Scalars['String']>;
+  name: Scalars['String'];
+  views: Array<View>;
+};
+
+
+/** Channel(id, created_by, created_through, created_while, name, emission_wavelength, excitation_wavelength, acquisition_mode, color) */
+export type ChannelDimensionMapsArgs = {
+  dims?: InputMaybe<Array<InputMaybe<Dimension>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  index?: InputMaybe<Scalars['Float']>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
 };
 
 /**
@@ -144,9 +158,11 @@ export enum CommentableModels {
   BordTable = 'BORD_TABLE',
   GrunnlagAnimal = 'GRUNNLAG_ANIMAL',
   GrunnlagAntibody = 'GRUNNLAG_ANTIBODY',
+  GrunnlagChannel = 'GRUNNLAG_CHANNEL',
   GrunnlagContext = 'GRUNNLAG_CONTEXT',
   GrunnlagDatalink = 'GRUNNLAG_DATALINK',
   GrunnlagDataset = 'GRUNNLAG_DATASET',
+  GrunnlagDimensionmap = 'GRUNNLAG_DIMENSIONMAP',
   GrunnlagExperiment = 'GRUNNLAG_EXPERIMENT',
   GrunnlagExperimentalgroup = 'GRUNNLAG_EXPERIMENTALGROUP',
   GrunnlagFeature = 'GRUNNLAG_FEATURE',
@@ -165,7 +181,8 @@ export enum CommentableModels {
   GrunnlagStage = 'GRUNNLAG_STAGE',
   GrunnlagThumbnail = 'GRUNNLAG_THUMBNAIL',
   GrunnlagUsermeta = 'GRUNNLAG_USERMETA',
-  GrunnlagVideo = 'GRUNNLAG_VIDEO'
+  GrunnlagVideo = 'GRUNNLAG_VIDEO',
+  GrunnlagView = 'GRUNNLAG_VIEW'
 }
 
 /** Context(id, created_by, created_through, created_while, name, created_at, experiment, creator) */
@@ -320,6 +337,11 @@ export type DatasetRepresentationsArgs = {
   variety?: InputMaybe<RepresentationVarietyInput>;
 };
 
+export type DeleteChannelResult = {
+  __typename?: 'DeleteChannelResult';
+  id?: Maybe<Scalars['ID']>;
+};
+
 export type DeleteContextResult = {
   __typename?: 'DeleteContextResult';
   id?: Maybe<Scalars['String']>;
@@ -328,6 +350,11 @@ export type DeleteContextResult = {
 export type DeleteDatasetResult = {
   __typename?: 'DeleteDatasetResult';
   id?: Maybe<Scalars['String']>;
+};
+
+export type DeleteDimensionsMap = {
+  __typename?: 'DeleteDimensionsMap';
+  id?: Maybe<Scalars['ID']>;
 };
 
 export type DeleteExperimentResult = {
@@ -385,6 +412,11 @@ export type DeleteTableResult = {
   id?: Maybe<Scalars['String']>;
 };
 
+export type DeleteViewReturn = {
+  __typename?: 'DeleteViewReturn';
+  id?: Maybe<Scalars['ID']>;
+};
+
 export type DescendendInput = {
   /** Is this a bold leaf? */
   bold?: InputMaybe<Scalars['Boolean']>;
@@ -404,6 +436,29 @@ export type DescendendInput = {
 /** A descendent of a node in the comment tree */
 export type Descendent = {
   typename?: Maybe<Scalars['String']>;
+};
+
+/** The dimension of the data */
+export enum Dimension {
+  C = 'C',
+  T = 'T',
+  X = 'X',
+  Y = 'Y',
+  Z = 'Z'
+}
+
+/** DimensionMap(id, created_by, created_through, created_while, omero, channel, dimension, index) */
+export type DimensionMap = {
+  __typename?: 'DimensionMap';
+  channel: Channel;
+  createdBy?: Maybe<User>;
+  createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
+  dimension: Scalars['String'];
+  id: Scalars['ID'];
+  /** The index of the channel */
+  index: Scalars['Int'];
+  omero: Omero;
 };
 
 /**
@@ -629,6 +684,7 @@ export type Instrument = {
   omeros?: Maybe<Array<Maybe<Omero>>>;
   serialNumber?: Maybe<Scalars['String']>;
   stageSet: Array<Stage>;
+  views: Array<View>;
 };
 
 
@@ -757,9 +813,11 @@ export enum LinkableModels {
   DbTestmodel = 'DB_TESTMODEL',
   GrunnlagAnimal = 'GRUNNLAG_ANIMAL',
   GrunnlagAntibody = 'GRUNNLAG_ANTIBODY',
+  GrunnlagChannel = 'GRUNNLAG_CHANNEL',
   GrunnlagContext = 'GRUNNLAG_CONTEXT',
   GrunnlagDatalink = 'GRUNNLAG_DATALINK',
   GrunnlagDataset = 'GRUNNLAG_DATASET',
+  GrunnlagDimensionmap = 'GRUNNLAG_DIMENSIONMAP',
   GrunnlagExperiment = 'GRUNNLAG_EXPERIMENT',
   GrunnlagExperimentalgroup = 'GRUNNLAG_EXPERIMENTALGROUP',
   GrunnlagFeature = 'GRUNNLAG_FEATURE',
@@ -779,6 +837,7 @@ export enum LinkableModels {
   GrunnlagThumbnail = 'GRUNNLAG_THUMBNAIL',
   GrunnlagUsermeta = 'GRUNNLAG_USERMETA',
   GrunnlagVideo = 'GRUNNLAG_VIDEO',
+  GrunnlagView = 'GRUNNLAG_VIEW',
   GuardianGroupobjectpermission = 'GUARDIAN_GROUPOBJECTPERMISSION',
   GuardianUserobjectpermission = 'GUARDIAN_USEROBJECTPERMISSION',
   KommentComment = 'KOMMENT_COMMENT',
@@ -802,10 +861,12 @@ export type LokApp = {
 export type LokClient = {
   __typename?: 'LokClient';
   app: LokApp;
+  channelCreatedThrough: Array<Channel>;
   clientId: Scalars['String'];
   contextCreatedThrough: Array<Context>;
   datalinkCreatedThrough: Array<DataLink>;
   datasetCreatedThrough: Array<Dataset>;
+  dimensionmapCreatedThrough: Array<DimensionMap>;
   experimentCreatedThrough: Array<Experiment>;
   featureCreatedThrough: Array<Feature>;
   grantType: LokClientGrantType;
@@ -825,8 +886,10 @@ export type LokClient = {
   roiCreatedThrough: Array<Roi>;
   sampleCreatedThrough: Array<Sample>;
   stageCreatedThrough: Array<Stage>;
+  tableCreatedThrough: Array<Table>;
   thumbnailCreatedThrough: Array<Thumbnail>;
   videoCreatedThrough: Array<Video>;
+  viewCreatedThrough: Array<View>;
 };
 
 /** An enumeration. */
@@ -939,6 +1002,17 @@ export type Mutation = {
   /** Creates a Sample */
   changePermissions?: Maybe<ChangePermissionsResult>;
   /**
+   * Creates a Feature
+   *
+   *     This mutation creates a Feature and returns the created Feature.
+   *     We require a reference to the label that the feature belongs to.
+   *     As well as the key and value of the feature.
+   *
+   *     There can be multiple features with the same label, but only one feature per key
+   *     per label
+   */
+  createChannel?: Maybe<Channel>;
+  /**
    * Create an Comment
    *
    *     This mutation creates a comment. It takes a commentable_id and a commentable_type.
@@ -972,6 +1046,17 @@ export type Mutation = {
    *
    */
   createDataset?: Maybe<Dataset>;
+  /**
+   * Creates a Feature
+   *
+   *     This mutation creates a Feature and returns the created Feature.
+   *     We require a reference to the label that the feature belongs to.
+   *     As well as the key and value of the feature.
+   *
+   *     There can be multiple features with the same label, but only one feature per key
+   *     per label
+   */
+  createDimensionMap?: Maybe<DimensionMap>;
   /**
    * Create an Experiment
    *
@@ -1078,7 +1163,24 @@ export type Mutation = {
    *     There can be multiple features with the same label, but only one feature per key
    *     per label
    */
+  createView?: Maybe<View>;
+  /**
+   * Creates a Feature
+   *
+   *     This mutation creates a Feature and returns the created Feature.
+   *     We require a reference to the label that the feature belongs to.
+   *     As well as the key and value of the feature.
+   *
+   *     There can be multiple features with the same label, but only one feature per key
+   *     per label
+   */
   createfeature?: Maybe<Feature>;
+  /**
+   * Delete Experiment
+   *
+   *     This mutation deletes an Experiment and returns the deleted Experiment.
+   */
+  deleteChannel?: Maybe<DeleteChannelResult>;
   /**
    * Delete Experiment
    *
@@ -1091,6 +1193,12 @@ export type Mutation = {
    *     This mutation deletes an Experiment and returns the deleted Experiment.
    */
   deleteDataset?: Maybe<DeleteDatasetResult>;
+  /**
+   * Delete Experiment
+   *
+   *     This mutation deletes an Experiment and returns the deleted Experiment.
+   */
+  deleteDimensionMap?: Maybe<DeleteDimensionsMap>;
   /**
    * Delete Experiment
    *
@@ -1133,6 +1241,12 @@ export type Mutation = {
   deleteStage?: Maybe<DeleteStageResult>;
   /** Create an experiment (only signed in users) */
   deleteTable?: Maybe<DeleteTableResult>;
+  /**
+   * Delete Experiment
+   *
+   *     This mutation deletes an Experiment and returns the deleted Experiment.
+   */
+  deleteView?: Maybe<DeleteViewReturn>;
   /** Creates a Representation */
   fromDf?: Maybe<Table>;
   /** Creates a Representation */
@@ -1300,6 +1414,16 @@ export type MutationChangePermissionsArgs = {
 
 
 /** The root Mutation */
+export type MutationCreateChannelArgs = {
+  acquisitionMode?: InputMaybe<Scalars['String']>;
+  color?: InputMaybe<Scalars['String']>;
+  emissionWavelength?: InputMaybe<Scalars['Float']>;
+  excitationWavelength?: InputMaybe<Scalars['Float']>;
+  name?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Mutation */
 export type MutationCreateCommentArgs = {
   descendents: Array<InputMaybe<DescendendInput>>;
   object: Scalars['ID'];
@@ -1323,6 +1447,16 @@ export type MutationCreateDatasetArgs = {
   name: Scalars['String'];
   parent?: InputMaybe<Scalars['ID']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Mutation */
+export type MutationCreateDimensionMapArgs = {
+  channel?: InputMaybe<Scalars['ID']>;
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
+  dim: Dimension;
+  index: Scalars['Int'];
+  omero: Scalars['ID'];
 };
 
 
@@ -1485,12 +1619,24 @@ export type MutationCreateTableArgs = {
 
 
 /** The root Mutation */
+export type MutationCreateViewArgs = {
+  view: ViewInput;
+};
+
+
+/** The root Mutation */
 export type MutationCreatefeatureArgs = {
   createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['ID']>;
   key?: InputMaybe<Scalars['String']>;
   label: Scalars['ID'];
   value: Scalars['FeatureValue'];
+};
+
+
+/** The root Mutation */
+export type MutationDeleteChannelArgs = {
+  id: Scalars['ID'];
 };
 
 
@@ -1502,6 +1648,12 @@ export type MutationDeleteContextArgs = {
 
 /** The root Mutation */
 export type MutationDeleteDatasetArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationDeleteDimensionMapArgs = {
   id: Scalars['ID'];
 };
 
@@ -1573,6 +1725,12 @@ export type MutationDeleteTableArgs = {
 
 
 /** The root Mutation */
+export type MutationDeleteViewArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
 export type MutationFromDfArgs = {
   createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['String']>;
@@ -1598,8 +1756,10 @@ export type MutationFromXArrayArgs = {
   origins?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   roiOrigins?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   sample?: InputMaybe<Scalars['ID']>;
+  tableOrigins?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   variety?: InputMaybe<RepresentationVarietyInput>;
+  views?: InputMaybe<Array<InputMaybe<RepresentationViewInput>>>;
   xarray: Scalars['XArrayInput'];
 };
 
@@ -1889,6 +2049,7 @@ export type Objective = {
   /** Associated images through Omero */
   omeros?: Maybe<Array<Maybe<Omero>>>;
   serialNumber: Scalars['String'];
+  views: Array<View>;
 };
 
 
@@ -1950,11 +2111,13 @@ export type Omero = {
   __typename?: 'Omero';
   acquisitionDate?: Maybe<Scalars['DateTime']>;
   affineTransformation?: Maybe<Scalars['AffineMatrix']>;
-  channels?: Maybe<Array<Maybe<Channel>>>;
+  channels?: Maybe<Array<Maybe<OmeroChannel>>>;
   comments?: Maybe<Array<Maybe<Comment>>>;
   createdBy?: Maybe<User>;
   createdThrough?: Maybe<LokClient>;
   createdWhile?: Maybe<Scalars['String']>;
+  /** Associated maps of dimensions */
+  dimensionMaps?: Maybe<Array<Maybe<DimensionMap>>>;
   id: Scalars['ID'];
   imagingEnvironment?: Maybe<ImagingEnvironment>;
   instrument?: Maybe<Instrument>;
@@ -1962,9 +2125,66 @@ export type Omero = {
   objectiveSettings?: Maybe<ObjectiveSettings>;
   physicalSize?: Maybe<PhysicalSize>;
   planes?: Maybe<Array<Maybe<Plane>>>;
-  position?: Maybe<Position>;
+  positions: Array<Position>;
   representation: Representation;
   scale?: Maybe<Array<Maybe<Scalars['Float']>>>;
+  /** Associated views */
+  views?: Maybe<Array<Maybe<View>>>;
+};
+
+
+/**
+ * Omero is a through model that stores the real world context of an image
+ *
+ *     This means that it stores the position (corresponding to the relative displacement to
+ *     a stage (Both are models)), objective and other meta data of the image.
+ *
+ *
+ */
+export type OmeroDimensionMapsArgs = {
+  dims?: InputMaybe<Array<InputMaybe<Dimension>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  index?: InputMaybe<Scalars['Float']>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+};
+
+
+/**
+ * Omero is a through model that stores the real world context of an image
+ *
+ *     This means that it stores the position (corresponding to the relative displacement to
+ *     a stage (Both are models)), objective and other meta data of the image.
+ *
+ *
+ */
+export type OmeroViewsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  z?: InputMaybe<Scalars['Float']>;
+};
+
+/**
+ * A channel in an image
+ *
+ * Channels can be highly variable in their properties. This class is a
+ * representation of the most common properties of a channel.
+ */
+export type OmeroChannel = {
+  __typename?: 'OmeroChannel';
+  /** The acquisition mode of the channel */
+  acquisitionMode?: Maybe<Scalars['String']>;
+  /** The default color for the channel (might be ommited by the rendered) */
+  color?: Maybe<Scalars['String']>;
+  /** The emmission wavelength of the fluorophore in nm */
+  emmissionWavelength?: Maybe<Scalars['Float']>;
+  /** The excitation wavelength of the fluorophore in nm */
+  excitationWavelength?: Maybe<Scalars['Float']>;
+  /** The name of the channel */
+  name?: Maybe<Scalars['String']>;
 };
 
 export type OmeroFile = {
@@ -2021,18 +2241,28 @@ export type OmeroRepresentationInput = {
   channels?: InputMaybe<Array<InputMaybe<ChannelInput>>>;
   imagingEnvironment?: InputMaybe<ImagingEnvironmentInput>;
   instrument?: InputMaybe<Scalars['ID']>;
+  maps?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   objective?: InputMaybe<Scalars['ID']>;
   objectiveSettings?: InputMaybe<ObjectiveSettingsInput>;
   physicalSize?: InputMaybe<PhysicalSizeInput>;
   planes?: InputMaybe<Array<InputMaybe<PlaneInput>>>;
-  position?: InputMaybe<Scalars['ID']>;
+  positions?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   scale?: InputMaybe<Array<InputMaybe<Scalars['Float']>>>;
 };
 
 export enum PandasDType {
   Bool = 'BOOL',
   Category = 'CATEGORY',
+  Datetime = 'DATETIME',
+  Datetime64 = 'DATETIME64',
+  Datetime64Ns = 'DATETIME64NS',
+  Datetime64Nsutc = 'DATETIME64NSUTC',
+  Datetime64Nsz = 'DATETIME64NSZ',
+  Datetime64Nszutc = 'DATETIME64NSZUTC',
+  Datetime64Tz = 'DATETIME64TZ',
   Datetime65 = 'DATETIME65',
+  Datetimetz = 'DATETIMETZ',
+  Datetimez = 'DATETIMEZ',
   Float64 = 'FLOAT64',
   Int64 = 'INT64',
   Object = 'OBJECT',
@@ -2243,6 +2473,7 @@ export type Position = {
   stage: Stage;
   /** A comma-separated list of tags. */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
+  views: Array<View>;
   /** pixelSize for x in microns */
   x: Scalars['Float'];
   /** pixelSize for y in microns */
@@ -2287,6 +2518,29 @@ export type ProvenanceResult = Context | Experiment | Roi | Representation | Sam
 export type Query = {
   __typename?: 'Query';
   accessiblerepresentations?: Maybe<Array<Maybe<Representation>>>;
+  /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
+  channel?: Maybe<Channel>;
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  channels?: Maybe<Array<Maybe<Channel>>>;
   columnsof?: Maybe<Array<Maybe<Column>>>;
   comment?: Maybe<Comment>;
   /**
@@ -2348,6 +2602,29 @@ export type Query = {
    *
    */
   datasets?: Maybe<Array<Maybe<Dataset>>>;
+  /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
+  dimensionmap?: Maybe<DimensionMap>;
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  dimensionmaps?: Maybe<Array<Maybe<DimensionMap>>>;
   /**
    * Get a single experiment by ID"
    *
@@ -2453,6 +2730,29 @@ export type Query = {
    */
   links?: Maybe<Array<Maybe<DataLink>>>;
   /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
+  meta?: Maybe<Omero>;
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  metas?: Maybe<Array<Maybe<Omero>>>;
+  /**
    * Get a single Metric by ID
    *
    *     Returns a single Metric by ID. If the user does not have access
@@ -2509,6 +2809,13 @@ export type Query = {
    */
   myexperiments?: Maybe<Array<Maybe<Experiment>>>;
   mymentions?: Maybe<Array<Maybe<Comment>>>;
+  /**
+   * My Experiments runs a fast query on the database to return all
+   *     Experiments that the user has created. This query is faster than
+   *     the `experiments` query, but it does not return all Experiments that
+   *     the user has access to.
+   */
+  mymetas?: Maybe<Array<Maybe<Omero>>>;
   /**
    * My Experiments runs a fast query on the database to return all
    *     Experiments that the user has created. This query is faster than
@@ -2792,7 +3099,45 @@ export type Query = {
    *
    */
   videos?: Maybe<Array<Maybe<Video>>>;
+  /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
+  view?: Maybe<View>;
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  views?: Maybe<Array<Maybe<View>>>;
   void?: Maybe<Scalars['String']>;
+};
+
+
+/** The root Query */
+export type QueryChannelArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryChannelsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
 };
 
 
@@ -2862,6 +3207,23 @@ export type QueryDatasetsArgs = {
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
+};
+
+
+/** The root Query */
+export type QueryDimensionmapArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryDimensionmapsArgs = {
+  dims?: InputMaybe<Array<InputMaybe<Dimension>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  index?: InputMaybe<Scalars['Float']>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
 };
 
 
@@ -2992,6 +3354,26 @@ export type QueryLinksArgs = {
 
 
 /** The root Query */
+export type QueryMetaArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryMetasArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
 export type QueryMetricArgs = {
   id: Scalars['ID'];
 };
@@ -3091,6 +3473,20 @@ export type QueryMyexperimentsArgs = {
   order?: InputMaybe<Scalars['String']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Query */
+export type QueryMymetasArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
 };
 
 
@@ -3539,6 +3935,22 @@ export type QueryVideosArgs = {
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
 
+
+/** The root Query */
+export type QueryViewArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryViewsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  z?: InputMaybe<Scalars['Float']>;
+};
+
 /**
  * A ROI is a region of interest in a representation.
  *
@@ -3701,6 +4113,7 @@ export type Representation = {
   /** The arrays shape format [c,t,z,y,x] */
   shape?: Maybe<Array<Scalars['Int']>>;
   store?: Maybe<Scalars['Store']>;
+  tableOrigins: Array<Table>;
   /** Associated tables */
   tables?: Maybe<Array<Maybe<Table>>>;
   /** A comma-separated list of tags. */
@@ -3998,6 +4411,35 @@ export enum RepresentationVarietyInput {
   Voxel = 'VOXEL'
 }
 
+export type RepresentationViewInput = {
+  /** The x coord of the position (relative to origin) */
+  cMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  cMin?: InputMaybe<Scalars['Int']>;
+  /** The channel you want to associate with this map */
+  channel?: InputMaybe<Scalars['ID']>;
+  /** The assignation id */
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
+  /** The position you want to associate with this map */
+  position?: InputMaybe<Scalars['ID']>;
+  /** The x coord of the position (relative to origin) */
+  tMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  tMin?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  xMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  xMin?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  yMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  yMin?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  zMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  zMin?: InputMaybe<Scalars['Int']>;
+};
+
 export type RoiEvent = {
   __typename?: 'RoiEvent';
   create?: Maybe<Roi>;
@@ -4098,9 +4540,11 @@ export enum SharableModels {
   BordTable = 'BORD_TABLE',
   GrunnlagAnimal = 'GRUNNLAG_ANIMAL',
   GrunnlagAntibody = 'GRUNNLAG_ANTIBODY',
+  GrunnlagChannel = 'GRUNNLAG_CHANNEL',
   GrunnlagContext = 'GRUNNLAG_CONTEXT',
   GrunnlagDatalink = 'GRUNNLAG_DATALINK',
   GrunnlagDataset = 'GRUNNLAG_DATASET',
+  GrunnlagDimensionmap = 'GRUNNLAG_DIMENSIONMAP',
   GrunnlagExperiment = 'GRUNNLAG_EXPERIMENT',
   GrunnlagExperimentalgroup = 'GRUNNLAG_EXPERIMENTALGROUP',
   GrunnlagFeature = 'GRUNNLAG_FEATURE',
@@ -4119,7 +4563,8 @@ export enum SharableModels {
   GrunnlagStage = 'GRUNNLAG_STAGE',
   GrunnlagThumbnail = 'GRUNNLAG_THUMBNAIL',
   GrunnlagUsermeta = 'GRUNNLAG_USERMETA',
-  GrunnlagVideo = 'GRUNNLAG_VIDEO'
+  GrunnlagVideo = 'GRUNNLAG_VIDEO',
+  GrunnlagView = 'GRUNNLAG_VIEW'
 }
 
 /**
@@ -4207,9 +4652,13 @@ export type Table = {
   comments?: Maybe<Array<Maybe<Comment>>>;
   /** When the Table was created */
   createdAt: Scalars['DateTime'];
+  createdBy?: Maybe<User>;
+  createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
   /** The creator of the Table */
   creator?: Maybe<User>;
   datasets: Array<Dataset>;
+  derivedRepresentations: Array<Representation>;
   /** The Experiment this Table belongs to. */
   experiment?: Maybe<Experiment>;
   id: Scalars['ID'];
@@ -4374,6 +4823,78 @@ export type Video = {
   representations: Array<Representation>;
 };
 
+/** View(id, created_by, created_through, created_while, omero, z_min, z_max, x_min, x_max, y_min, y_max, t_min, t_max, c_min, c_max, channel, position, objective, instrument) */
+export type View = {
+  __typename?: 'View';
+  c?: Maybe<Scalars['Slice']>;
+  /** The index of the channel */
+  cMax?: Maybe<Scalars['Int']>;
+  /** The index of the channel */
+  cMin?: Maybe<Scalars['Int']>;
+  channel?: Maybe<Channel>;
+  createdBy?: Maybe<User>;
+  createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
+  id: Scalars['ID'];
+  instrument?: Maybe<Instrument>;
+  objective?: Maybe<Objective>;
+  omero: Omero;
+  position?: Maybe<Position>;
+  t?: Maybe<Scalars['Slice']>;
+  /** The index of the channel */
+  tMax?: Maybe<Scalars['Int']>;
+  /** The index of the channel */
+  tMin?: Maybe<Scalars['Int']>;
+  x?: Maybe<Scalars['Slice']>;
+  /** The index of the channel */
+  xMax?: Maybe<Scalars['Int']>;
+  /** The index of the channel */
+  xMin?: Maybe<Scalars['Int']>;
+  y?: Maybe<Scalars['Slice']>;
+  /** The index of the channel */
+  yMax?: Maybe<Scalars['Int']>;
+  /** The index of the channel */
+  yMin?: Maybe<Scalars['Int']>;
+  z?: Maybe<Scalars['Slice']>;
+  /** The index of the channel */
+  zMax?: Maybe<Scalars['Int']>;
+  /** The index of the channel */
+  zMin?: Maybe<Scalars['Int']>;
+};
+
+export type ViewInput = {
+  /** The x coord of the position (relative to origin) */
+  cMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  cMin?: InputMaybe<Scalars['Int']>;
+  /** The channel you want to associate with this map */
+  channel?: InputMaybe<Scalars['ID']>;
+  /** The assignation id */
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
+  /** The stage this position belongs to */
+  omero: Scalars['ID'];
+  /** The position you want to associate with this map */
+  position?: InputMaybe<Scalars['ID']>;
+  /** The x coord of the position (relative to origin) */
+  tMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  tMin?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  xMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  xMin?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  yMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  yMin?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  zMax?: InputMaybe<Scalars['Int']>;
+  /** The x coord of the position (relative to origin) */
+  zMin?: InputMaybe<Scalars['Int']>;
+};
+
+export type ChannelFragment = { __typename?: 'Channel', name: string, id: string, emissionWavelength?: number | null, excitationWavelength?: number | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, omero: { __typename?: 'Omero', id: string } } | null> | null };
+
 export type LeafFragment = { __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' };
 
 type Node_MentionDescendent_Fragment = { __typename?: 'MentionDescendent', typename: 'MentionDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
@@ -4418,7 +4939,7 @@ export type DetailContextFragment = { __typename?: 'Context', id: string, name: 
 
 export type ListContextFragment = { __typename?: 'Context', name: string, id: string };
 
-export type DetailDatasetFragment = { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> };
+export type DetailDatasetFragment = { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> };
 
 export type ListDatasetFragment = { __typename?: 'Dataset', id: string, name: string };
 
@@ -4442,7 +4963,9 @@ export type ObjectiveFragment = { __typename?: 'Objective', id: string, name: st
 
 export type ListObjectiveFragment = { __typename?: 'Objective', id: string, name: string, magnification?: number | null };
 
-export type OmeroFragment = { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null };
+export type OmeroFragment = { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null };
+
+export type DetailOmeroFragment = { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, representation: { __typename?: 'Representation', id: string, name?: string | null }, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null };
 
 export type DetailOmeroFileFragment = { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, createdWhile?: string | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> };
 
@@ -4468,7 +4991,7 @@ export type ListRepresentationFragment = { __typename?: 'Representation', name?:
 
 export type ListSharedRepresentationFragment = { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null, creator?: { __typename?: 'User', email: string } | null };
 
-export type DetailRepresentationFragment = { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
+export type DetailRepresentationFragment = { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, tableOrigins: Array<{ __typename?: 'Table', id: string, name: string }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
 
 export type RepRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null };
 
@@ -4536,7 +5059,7 @@ export type CreateDatasetMutationVariables = Exact<{
 }>;
 
 
-export type CreateDatasetMutation = { __typename?: 'Mutation', createDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type CreateDatasetMutation = { __typename?: 'Mutation', createDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type DeleteDatasetMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4553,7 +5076,7 @@ export type UpdateDatasetMutationVariables = Exact<{
 }>;
 
 
-export type UpdateDatasetMutation = { __typename?: 'Mutation', updateDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type UpdateDatasetMutation = { __typename?: 'Mutation', updateDataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type PinDatasetMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4569,7 +5092,7 @@ export type PutSamplesMutationVariables = Exact<{
 }>;
 
 
-export type PutSamplesMutation = { __typename?: 'Mutation', putSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type PutSamplesMutation = { __typename?: 'Mutation', putSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type ReleaseFilesMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4577,7 +5100,7 @@ export type ReleaseFilesMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseFilesMutation = { __typename?: 'Mutation', releaseFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type ReleaseFilesMutation = { __typename?: 'Mutation', releaseFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type PutDatasetsMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4585,7 +5108,7 @@ export type PutDatasetsMutationVariables = Exact<{
 }>;
 
 
-export type PutDatasetsMutation = { __typename?: 'Mutation', putDatasets?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type PutDatasetsMutation = { __typename?: 'Mutation', putDatasets?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type ReleaseDatasetsMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4593,7 +5116,7 @@ export type ReleaseDatasetsMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseDatasetsMutation = { __typename?: 'Mutation', releaseDatasets?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type ReleaseDatasetsMutation = { __typename?: 'Mutation', releaseDatasets?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type PutRepresentationsMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4601,7 +5124,7 @@ export type PutRepresentationsMutationVariables = Exact<{
 }>;
 
 
-export type PutRepresentationsMutation = { __typename?: 'Mutation', putRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type PutRepresentationsMutation = { __typename?: 'Mutation', putRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type ReleaseRepresentationsMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4609,7 +5132,7 @@ export type ReleaseRepresentationsMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseRepresentationsMutation = { __typename?: 'Mutation', releaseRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type ReleaseRepresentationsMutation = { __typename?: 'Mutation', releaseRepresentations?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type ReleaseSamplesMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4617,7 +5140,7 @@ export type ReleaseSamplesMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseSamplesMutation = { __typename?: 'Mutation', releaseSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type ReleaseSamplesMutation = { __typename?: 'Mutation', releaseSamples?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type PutFilesMutationVariables = Exact<{
   dataset: Scalars['ID'];
@@ -4625,7 +5148,7 @@ export type PutFilesMutationVariables = Exact<{
 }>;
 
 
-export type PutFilesMutation = { __typename?: 'Mutation', putFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type PutFilesMutation = { __typename?: 'Mutation', putFiles?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type CreateExperimentMutationVariables = Exact<{
   name: Scalars['String'];
@@ -4840,7 +5363,7 @@ export type UpdateRepresentationMutationVariables = Exact<{
 }>;
 
 
-export type UpdateRepresentationMutation = { __typename?: 'Mutation', updateRepresentation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type UpdateRepresentationMutation = { __typename?: 'Mutation', updateRepresentation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, tableOrigins: Array<{ __typename?: 'Table', id: string, name: string }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type PinRepresentationMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -4948,6 +5471,21 @@ export type Create_ThumbnailMutationVariables = Exact<{
 
 export type Create_ThumbnailMutation = { __typename?: 'Mutation', uploadThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null };
 
+export type GetChannelQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type GetChannelQuery = { __typename?: 'Query', channel?: { __typename?: 'Channel', name: string, id: string, emissionWavelength?: number | null, excitationWavelength?: number | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, omero: { __typename?: 'Omero', id: string } } | null> | null } | null };
+
+export type SearchChannelsQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+  values?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+}>;
+
+
+export type SearchChannelsQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Channel', value: string, label: string } | null> | null };
+
 export type CommentsForQueryVariables = Exact<{
   id: Scalars['ID'];
   model: CommentableModels;
@@ -5015,7 +5553,7 @@ export type DetailDatasetQueryVariables = Exact<{
 }>;
 
 
-export type DetailDatasetQuery = { __typename?: 'Query', dataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
+export type DetailDatasetQuery = { __typename?: 'Query', dataset?: { __typename?: 'Dataset', id: string, name: string, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples: Array<{ __typename?: 'Sample', id: string, name: string }>, createdBy?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omerofiles: Array<{ __typename?: 'OmeroFile', id: string, name: string, file?: any | null }>, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null } | null> | null, children: Array<{ __typename?: 'Dataset', id: string, name: string }> } | null };
 
 export type SearchDatasetsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -5102,6 +5640,13 @@ export type SearchLinksQueryVariables = Exact<{
 
 
 export type SearchLinksQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'DataLink', label: string, value: string } | null> | null };
+
+export type DetailMetaQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailMetaQuery = { __typename?: 'Query', meta?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, representation: { __typename?: 'Representation', id: string, name?: string | null }, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null };
 
 export type DetailMetricQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -5250,7 +5795,7 @@ export type DetailRepresentationQueryVariables = Exact<{
 }>;
 
 
-export type DetailRepresentationQuery = { __typename?: 'Query', representation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'Channel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, position?: { __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } } | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type DetailRepresentationQuery = { __typename?: 'Query', representation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, tableOrigins: Array<{ __typename?: 'Table', id: string, name: string }>, roiOrigins: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType }>, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type MyRepresentationsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -5523,6 +6068,20 @@ export type MyTablesEventSubscriptionVariables = Exact<{ [key: string]: never; }
 
 export type MyTablesEventSubscription = { __typename?: 'Subscription', myTables?: { __typename?: 'TablesEvent', deleted?: string | null, create?: { __typename?: 'Table', id: string, name: string, columns?: Array<{ __typename?: 'Column', name?: string | null, fieldName: string, pandasType?: PandasDType | null, numpyType?: string | null, metadata?: any | null } | null> | null, repOrigins: Array<{ __typename?: 'Representation', id: string }>, sample?: { __typename?: 'Sample', id: string } | null, experiment?: { __typename?: 'Experiment', id: string } | null } | null, update?: { __typename?: 'Table', id: string, name: string, columns?: Array<{ __typename?: 'Column', name?: string | null, fieldName: string, pandasType?: PandasDType | null, numpyType?: string | null, metadata?: any | null } | null> | null, repOrigins: Array<{ __typename?: 'Representation', id: string }>, sample?: { __typename?: 'Sample', id: string } | null, experiment?: { __typename?: 'Experiment', id: string } | null } | null } | null };
 
+export const ChannelFragmentDoc = gql`
+    fragment Channel on Channel {
+  name
+  id
+  dimensionMaps {
+    id
+    omero {
+      id
+    }
+  }
+  emissionWavelength
+  excitationWavelength
+}
+    `;
 export const LeafFragmentDoc = gql`
     fragment Leaf on Leaf {
   typename: __typename
@@ -5744,6 +6303,7 @@ export const DetailDatasetFragmentDoc = gql`
   omerofiles {
     id
     name
+    file
   }
   representations {
     id
@@ -5879,6 +6439,102 @@ export const ListObjectiveFragmentDoc = gql`
   id
   name
   magnification
+}
+    `;
+export const DetailOmeroFragmentDoc = gql`
+    fragment DetailOmero on Omero {
+  representation {
+    id
+    name
+  }
+  id
+  physicalSize {
+    x
+    y
+    z
+    t
+  }
+  planes {
+    z
+    z
+    t
+    exposureTime
+    deltaT
+  }
+  channels {
+    name
+    emmissionWavelength
+    excitationWavelength
+    color
+  }
+  acquisitionDate
+  objectiveSettings {
+    correctionCollar
+    medium
+  }
+  positions {
+    id
+    x
+    y
+    z
+    stage {
+      id
+      name
+    }
+  }
+  views {
+    id
+    xMin
+    xMax
+    yMin
+    yMax
+    zMin
+    zMax
+    tMin
+    tMax
+    cMin
+    cMax
+    channel {
+      id
+      name
+      color
+    }
+    position {
+      id
+      name
+      x
+    }
+  }
+  dimensionMaps {
+    id
+    index
+    dimension
+    channel {
+      id
+      name
+      color
+      emissionWavelength
+      excitationWavelength
+    }
+  }
+  instrument {
+    id
+    name
+    model
+  }
+  objective {
+    id
+    name
+    magnification
+  }
+  affineTransformation
+  imagingEnvironment {
+    airPressure
+    co2Percent
+    humidity
+    temperature
+  }
+  scale
 }
     `;
 export const ListExperimentFragmentDoc = gql`
@@ -6104,7 +6760,7 @@ export const OmeroFragmentDoc = gql`
     correctionCollar
     medium
   }
-  position {
+  positions {
     id
     x
     y
@@ -6112,6 +6768,41 @@ export const OmeroFragmentDoc = gql`
     stage {
       id
       name
+    }
+  }
+  views {
+    id
+    xMin
+    xMax
+    yMin
+    yMax
+    zMin
+    zMax
+    tMin
+    tMax
+    cMin
+    cMax
+    channel {
+      id
+      name
+      color
+    }
+    position {
+      id
+      name
+      x
+    }
+  }
+  dimensionMaps {
+    id
+    index
+    dimension
+    channel {
+      id
+      name
+      color
+      emissionWavelength
+      excitationWavelength
     }
   }
   instrument {
@@ -6230,6 +6921,10 @@ export const DetailRepresentationFragmentDoc = gql`
     id
     name
     type
+  }
+  tableOrigins {
+    id
+    name
   }
   roiOrigins {
     id
@@ -8362,6 +9057,78 @@ export function useCreate_ThumbnailMutation(baseOptions?: Apollo.MutationHookOpt
 export type Create_ThumbnailMutationHookResult = ReturnType<typeof useCreate_ThumbnailMutation>;
 export type Create_ThumbnailMutationResult = Apollo.MutationResult<Create_ThumbnailMutation>;
 export type Create_ThumbnailMutationOptions = Apollo.BaseMutationOptions<Create_ThumbnailMutation, Create_ThumbnailMutationVariables>;
+export const GetChannelDocument = gql`
+    query GetChannel($id: ID!) {
+  channel(id: $id) {
+    ...Channel
+  }
+}
+    ${ChannelFragmentDoc}`;
+
+/**
+ * __useGetChannelQuery__
+ *
+ * To run a query within a React component, call `useGetChannelQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetChannelQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetChannelQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetChannelQuery(baseOptions: Apollo.QueryHookOptions<GetChannelQuery, GetChannelQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetChannelQuery, GetChannelQueryVariables>(GetChannelDocument, options);
+      }
+export function useGetChannelLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetChannelQuery, GetChannelQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetChannelQuery, GetChannelQueryVariables>(GetChannelDocument, options);
+        }
+export type GetChannelQueryHookResult = ReturnType<typeof useGetChannelQuery>;
+export type GetChannelLazyQueryHookResult = ReturnType<typeof useGetChannelLazyQuery>;
+export type GetChannelQueryResult = Apollo.QueryResult<GetChannelQuery, GetChannelQueryVariables>;
+export const SearchChannelsDocument = gql`
+    query SearchChannels($search: String, $values: [ID]) {
+  options: channels(name: $search, limit: 30, ids: $values) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __useSearchChannelsQuery__
+ *
+ * To run a query within a React component, call `useSearchChannelsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchChannelsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchChannelsQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      values: // value for 'values'
+ *   },
+ * });
+ */
+export function useSearchChannelsQuery(baseOptions?: Apollo.QueryHookOptions<SearchChannelsQuery, SearchChannelsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SearchChannelsQuery, SearchChannelsQueryVariables>(SearchChannelsDocument, options);
+      }
+export function useSearchChannelsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SearchChannelsQuery, SearchChannelsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SearchChannelsQuery, SearchChannelsQueryVariables>(SearchChannelsDocument, options);
+        }
+export type SearchChannelsQueryHookResult = ReturnType<typeof useSearchChannelsQuery>;
+export type SearchChannelsLazyQueryHookResult = ReturnType<typeof useSearchChannelsLazyQuery>;
+export type SearchChannelsQueryResult = Apollo.QueryResult<SearchChannelsQuery, SearchChannelsQueryVariables>;
 export const CommentsForDocument = gql`
     query CommentsFor($id: ID!, $model: CommentableModels!) {
   commentsfor(model: $model, id: $id) {
@@ -9180,6 +9947,41 @@ export function useSearchLinksLazyQuery(baseOptions?: Apollo.LazyQueryHookOption
 export type SearchLinksQueryHookResult = ReturnType<typeof useSearchLinksQuery>;
 export type SearchLinksLazyQueryHookResult = ReturnType<typeof useSearchLinksLazyQuery>;
 export type SearchLinksQueryResult = Apollo.QueryResult<SearchLinksQuery, SearchLinksQueryVariables>;
+export const DetailMetaDocument = gql`
+    query DetailMeta($id: ID!) {
+  meta(id: $id) {
+    ...DetailOmero
+  }
+}
+    ${DetailOmeroFragmentDoc}`;
+
+/**
+ * __useDetailMetaQuery__
+ *
+ * To run a query within a React component, call `useDetailMetaQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailMetaQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailMetaQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailMetaQuery(baseOptions: Apollo.QueryHookOptions<DetailMetaQuery, DetailMetaQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailMetaQuery, DetailMetaQueryVariables>(DetailMetaDocument, options);
+      }
+export function useDetailMetaLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailMetaQuery, DetailMetaQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailMetaQuery, DetailMetaQueryVariables>(DetailMetaDocument, options);
+        }
+export type DetailMetaQueryHookResult = ReturnType<typeof useDetailMetaQuery>;
+export type DetailMetaLazyQueryHookResult = ReturnType<typeof useDetailMetaLazyQuery>;
+export type DetailMetaQueryResult = Apollo.QueryResult<DetailMetaQuery, DetailMetaQueryVariables>;
 export const DetailMetricDocument = gql`
     query DetailMetric($id: ID!) {
   metric(id: $id) {

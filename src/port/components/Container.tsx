@@ -5,19 +5,18 @@ import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Provision } from "../../linker";
-import { useDetailApplicationQuery } from "../../lok/api/graphql";
+import { useReleaseQuery } from "../../lok/api/graphql";
 import { withMan } from "../../lok/context";
 import { withRekuest } from "../../rekuest";
 import {
   useClientProvisionsQuery,
-  useDetailAgentQuery,
   usePortAgentQuery,
 } from "../../rekuest/api/graphql";
 import {
   useDetailContainerQuery,
-  useStopContainerMutation,
-  useRestartContainerMutation,
   useRemoveContainerMutation,
+  useRestartContainerMutation,
+  useStopContainerMutation,
 } from "../api/graphql";
 import { withPort } from "../PortContext";
 
@@ -64,13 +63,13 @@ export const AgentInformation = (props: {
 };
 
 export const AppInformation = (props: { clientId: string }) => {
-  const { data, error } = withMan(useDetailApplicationQuery)({
+  const { data, error } = withMan(useReleaseQuery)({
     variables: { clientId: props.clientId },
   });
 
   return (
     <>
-      {data?.application?.name}
+      {data?.release?.app?.identifier}
       {JSON.stringify(error)}
     </>
   );

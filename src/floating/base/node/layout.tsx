@@ -87,6 +87,7 @@ export const NodeLayoutProvider: React.FC<NodeLayoutProviderProps> = ({
             width: state.width + "px",
             height: state.height + "px",
           }}
+          className="flex flex-col"
         >
           {children}
         </div>

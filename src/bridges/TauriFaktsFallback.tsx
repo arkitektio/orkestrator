@@ -1,21 +1,15 @@
+import { Disclosure } from "@headlessui/react";
+import { Beacon, Fakts, introspectUrl, useFakts } from "@jhnnsrs/fakts";
+import { FaktsEndpoint } from "@jhnnsrs/fakts/dist/FaktsContext";
 import { listen } from "@tauri-apps/api/event";
+import CancelablePromise from "cancelable-promise";
+import { Form, Formik } from "formik";
 import React, { useEffect, useState } from "react";
-import {
-  buildFaktsRetrieveGrant,
-  Fakts,
-  useFakts,
-  introspectBeacon,
-  Beacon,
-} from "@jhnnsrs/fakts";
-import { PublicNavigationBar } from "../components/navigation/PublicNavigationBar";
+import { useAlert } from "../components/alerter/alerter-context";
 import { SubmitButton } from "../components/forms/fields/SubmitButton";
 import { TextInputField } from "../components/forms/fields/text_input";
-import { Form, Formik } from "formik";
-import { useAlert } from "../components/alerter/alerter-context";
-import CancelablePromise from "cancelable-promise";
-import { grantBuilder } from "../constants";
-import { Disclosure } from "@headlessui/react";
-import { FaktsEndpoint } from "@jhnnsrs/fakts/dist/FaktsContext";
+import { PublicNavigationBar } from "../components/navigation/PublicNavigationBar";
+import { manifest } from "../constants";
 
 export interface CallbackProps {}
 
@@ -50,7 +44,7 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
   useEffect(() => {
     console.log("Found Becacons", beacons);
     for (let beacon of beacons) {
-      let fakts = introspectBeacon(beacon);
+      let fakts = introspectUrl(beacon.url, 4000);
       fakts
         .then((f) => {
           console.log("Found endpoint", f);
@@ -73,15 +67,14 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
               <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
                 <span className="block xl:inline text-white">Choose your </span>{" "}
                 <span className="block text-primary-300 xl:inline drop-shadow-2xl ">
-                  Fakts
+                  Server
                 </span>
               </h1>
               <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                We don't know yet where all of your services are being hosted,
-                in order to use this website with your data you need to point us
-                to your configuration. We are trying to autodiscover all
-                instances in your network. They are listed below. If you don't
-                see your instance, please enter the URL below.
+                We don't know yet where all arkitekt is hosted We are trying to
+                autodiscover all instances in your network. They are listed
+                below. If you don't see your instance, please enter the URL
+                below.
               </p>
               {endpoints.length > 0 && (
                 <div className="mt-3 text-white text-xl">
@@ -96,7 +89,7 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                     className="rounded rounded-md border border-gray-300 p-3 flex flex-col hover:bg-primary-300 cursor-pointer"
                     onClick={() => {
                       setFuture(
-                        load(grantBuilder(endpoint))
+                        load({ endpoint, manifest })
                           .then(() => {
                             setFuture(null);
                           })
@@ -125,17 +118,16 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
                     <Disclosure.Panel className=" sm:flex sm:justify-center lg:justify-start p-2 border-gray-200 rounded border rounded-md">
                       <Formik<ConfigValues>
                         initialValues={{
-                          host: `${window.location}`,
+                          host: `localhost:8000`,
                         }}
                         onSubmit={({ host }, { setSubmitting }) => {
                           setSubmitting(true);
                           setFuture(
-                            load(
-                              grantBuilder({
-                                name: "Localhost",
-                                base_url: host,
-                              })
-                            )
+                            load({
+                              endpoint: host,
+                              manifest,
+                              introspectTimeout: 3000,
+                            })
                               .then(() => {
                                 setFuture(null);
                                 setSubmitting(false);

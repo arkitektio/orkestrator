@@ -1,15 +1,12 @@
-import { buildSchema } from "graphql";
+import React from "react";
 import { NavLink, NavLinkProps } from "react-router-dom";
-import { object } from "yup";
+import { CommentableModels, LinkableModels } from "./mikro/api/graphql";
 import { Accept, Identifier } from "./rekuest/postman/mater/mater-context";
-import { isIdentifier } from "typescript";
-import React, { useState, useEffect } from "react";
 import {
   ClassNameOptions,
   SmartModel,
   SmartModelProps,
 } from "./rekuest/selection/SmartModel";
-import { CommentableModels, LinkableModels } from "./mikro/api/graphql";
 
 export interface CreatedSmartSmartProps<T extends Accept>
   extends Omit<SmartModelProps<T>, "accepts" | "identifier"> {
@@ -228,6 +225,26 @@ export const Position = buildSmart("@mikro/position", "positions", [
   "item:@mikro/representation",
 ]);
 
+export const DimensionMap = buildSmart("@mikro/dimensionmap", "dimensionmaps", [
+  "list:@mikro/dimensionmap",
+  "item:@mikro/dimensionmap",
+  "list:@mikro/position",
+  "item:@mikro/position",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Channel = buildSmart("@mikro/channel", "channels", [
+  "list:@mikro/channel",
+  "item:@mikro/channel",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
 export const Objective = buildSmart("@mikro/objective", "objectives", [
   "list:@mikro/objective",
   "item:@mikro/objective",
@@ -389,24 +406,20 @@ export const Team = buildSmart("@lok/team", "teams", [
   "list:@lok/team",
   "item:@lok/team",
 ]);
-export const Application = buildSmart("@lok/application", "applications", [
-  "list:@lok/user",
-  "item:@lok/user",
-]);
 
-export const PrivateFakt = buildSmart("@lok/privatefakt", "privatefakts", [
-  "list:@lok/privatefakt",
-  "item:@lok/privatefakt",
-]);
-
-export const PublicFakt = buildSmart("@lok/publicfakt", "publicfakts", [
-  "list:@lok/publicfakt",
-  "item:@lok/publicfakt",
+export const Client = buildSmart("@lok/client", "clients", [
+  "list:@lok/client",
+  "item:@lok/client",
 ]);
 
 export const App = buildSmart("@lok/app", "apps", [
   "list:@lok/app",
   "item:@lok/app",
+]);
+
+export const Release = buildSmart("@lok/c", "releases", [
+  "list:@lok/release",
+  "item:@lok/release",
 ]);
 
 export const Container = buildSmart("@port/container", "containers", [

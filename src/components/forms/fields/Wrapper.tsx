@@ -33,7 +33,7 @@ export const wrapped = <T extends { name: string }>(
             <div
               id={`${props.name}-help`}
               className={
-                descriptionClassName || "text-xs text-gray-600 mb-4 font-light"
+                descriptionClassName || "text-xs text-back-400 mb-4 font-light"
               }
             >
               {description}

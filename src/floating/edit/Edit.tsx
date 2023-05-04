@@ -19,13 +19,17 @@ import {
   FlowFragment,
   GlobalFragment,
   GraphInput,
+  GraphNodeFragment,
   LocalNodeFragment,
   MapStrategy,
   PortFragment,
   PortInput,
+  ReactiveImplementationModelInput,
   ReactiveNodeFragment,
   ReactiveTemplateDocument,
   ReactiveTemplateQuery,
+  Scope,
+  StreamKind,
 } from "../../fluss/api/graphql";
 import { useFluss } from "../../fluss/fluss-context";
 import {
@@ -65,6 +69,8 @@ import { PageLayout } from "../../layout/PageLayout";
 import FlowDiagramSidebar from "../../pages/flows/workspace/FlowDiagramSidebar";
 import { DynamicSidebar } from "./DynamicSidebar";
 import { LocalEditNodeWidget } from "./nodes/LocalEditNodeWidget";
+import { GraphNodeEditWidget } from "./nodes/GraphNodeEditWidget";
+import { ExperimentalSidebar } from "./components/ExperimentalSidebar";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektEditNodeWidget,
@@ -73,6 +79,7 @@ const nodeTypes: NodeTypes = {
   ArgNode: ArgEditNodeWidget,
   ReturnNode: ReturnEditNodeWidget,
   KwargNode: KwargEditNodeWidget,
+  GraphNode: GraphNodeEditWidget,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -338,6 +345,10 @@ export const EditRiver: React.FC<Props> = ({
     setNodes((nodes) => [...nodes, node]);
   };
 
+  const addNodes = (newnodes: FlowNode<any>[]) => {
+    setNodes((nodes) => [...nodes, ...newnodes]);
+  };
+
   const saveDiagram = async () => {
     const flownodes = flownodes_to_nodes(nodes);
     const flowedges = flowedges_to_edges(edges);
@@ -360,6 +371,8 @@ export const EditRiver: React.FC<Props> = ({
       accept: [
         "item:@arkitekt/node",
         "list:@arkitekt/node",
+        "item:@arkitekt/graphnode",
+        "list:@arkitekt/graphnode",
         "item:@fluss/reactivetemplate",
         "list:@fluss/reactivetemplate",
       ],
@@ -506,6 +519,41 @@ export const EditRiver: React.FC<Props> = ({
                     addReactive(node);
                   });
             }
+            if (type == "@arkitekt/graphnode") {
+              let node: FlowNode<GraphNodeFragment> = {
+                id: id,
+                type: "GraphNode",
+                dragHandle: ".custom-drag-handle",
+                data: {
+                  __typename: "GraphNode",
+                  instream: [
+                    [
+                      {
+                        __typename: "StreamItem",
+                        kind: StreamKind.Unset,
+                        nullable: true,
+                        scope: Scope.Global,
+                        key: "in",
+                      },
+                    ],
+                  ],
+                  outstream: [
+                    [
+                      {
+                        __typename: "StreamItem",
+                        kind: StreamKind.Unset,
+                        nullable: true,
+                        scope: Scope.Global,
+                        key: "in",
+                      },
+                    ],
+                  ],
+                  constream: [],
+                },
+                position: position,
+              };
+              addReactive(node);
+            }
           }
         });
 
@@ -568,6 +616,13 @@ export const EditRiver: React.FC<Props> = ({
                   <FlowDiagramSidebar workspace={flow.workspace.id} />
                 )}
               </>
+            ),
+          },
+          {
+            label: "Experimental",
+            key: "experimental",
+            content: (
+              <>{flow?.workspace?.id && <ExperimentalSidebar flow={flow} />}</>
             ),
           },
         ]}

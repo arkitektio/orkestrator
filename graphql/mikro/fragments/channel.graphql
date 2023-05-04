@@ -1,0 +1,12 @@
+fragment Channel on Channel {
+  name
+  id
+  dimensionMaps {
+    id
+    omero {
+      id
+    }
+  }
+  emissionWavelength
+  excitationWavelength
+}

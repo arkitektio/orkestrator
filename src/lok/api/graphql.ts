@@ -22,22 +22,21 @@ export type Scalars = {
 
 export type App = {
   __typename?: 'App';
-  faktApplications: Array<FaktApplication>;
   id: Scalars['ID'];
   identifier: Scalars['String'];
   logo?: Maybe<Scalars['String']>;
   name: Scalars['String'];
-  version: Scalars['String'];
+  releases: Array<Release>;
 };
 
 export type Application = {
   __typename?: 'Application';
   algorithm?: Maybe<ApplicationAlgorithm>;
   authorizationGrantType: ApplicationAuthorizationGrantType;
+  client?: Maybe<Client>;
   clientId: Scalars['String'];
   clientType: ApplicationClientType;
   created: Scalars['DateTime'];
-  faktapplication?: Maybe<FaktApplication>;
   id: Scalars['ID'];
   /** The Url of the Image */
   image?: Maybe<Scalars['String']>;
@@ -81,6 +80,38 @@ export enum ApplicationClientType {
   Public = 'PUBLIC'
 }
 
+export type Channel = {
+  __typename?: 'Channel';
+  id: Scalars['ID'];
+  name?: Maybe<Scalars['String']>;
+  token?: Maybe<Scalars['String']>;
+  user: HerreUser;
+};
+
+export type Client = {
+  __typename?: 'Client';
+  clientId: Scalars['String'];
+  clientSecret: Scalars['String'];
+  creator: HerreUser;
+  id: Scalars['ID'];
+  kind?: Maybe<ClientKind>;
+  oauth2Client: Application;
+  release?: Maybe<Release>;
+  scopes: Array<Maybe<Scalars['String']>>;
+  token: Scalars['String'];
+  user?: Maybe<HerreUser>;
+};
+
+/** An enumeration. */
+export enum ClientKind {
+  /** Dekstop */
+  Desktop = 'DESKTOP',
+  /** User */
+  User = 'USER',
+  /** Website */
+  Website = 'WEBSITE'
+}
+
 export type CreatedBackendApp = {
   __typename?: 'CreatedBackendApp';
   clientId?: Maybe<Scalars['String']>;
@@ -92,13 +123,13 @@ export type DeleteApplicationResult = {
   clientId?: Maybe<Scalars['ID']>;
 };
 
-export type DeletePrivateFaktResult = {
-  __typename?: 'DeletePrivateFaktResult';
-  id?: Maybe<Scalars['ID']>;
+export type DeleteChannelResult = {
+  __typename?: 'DeleteChannelResult';
+  token?: Maybe<Scalars['String']>;
 };
 
-export type DeletePublicFaktResult = {
-  __typename?: 'DeletePublicFaktResult';
+export type DeleteClientResult = {
+  __typename?: 'DeleteClientResult';
   id?: Maybe<Scalars['ID']>;
 };
 
@@ -109,6 +140,7 @@ export type DeviceCode = {
   graph?: Maybe<Graph>;
   id: Scalars['ID'];
   identifier?: Maybe<Scalars['String']>;
+  logo?: Maybe<Scalars['String']>;
   name?: Maybe<Scalars['String']>;
   scopes?: Maybe<Scalars['GenericScalar']>;
   user?: Maybe<HerreUser>;
@@ -122,31 +154,6 @@ export type Element = {
   name: Scalars['String'];
   values?: Maybe<Scalars['GenericScalar']>;
 };
-
-export type FaktApplication = {
-  __typename?: 'FaktApplication';
-  app?: Maybe<App>;
-  application: Application;
-  clientId: Scalars['String'];
-  clientSecret: Scalars['String'];
-  creator: HerreUser;
-  id: Scalars['ID'];
-  kind?: Maybe<FaktApplicationKind>;
-  logo?: Maybe<Scalars['String']>;
-  scopes: Array<Maybe<Scalars['String']>>;
-  token: Scalars['String'];
-  user?: Maybe<HerreUser>;
-};
-
-/** An enumeration. */
-export enum FaktApplicationKind {
-  /** Dekstop */
-  Desktop = 'DESKTOP',
-  /** User */
-  User = 'USER',
-  /** Website */
-  Website = 'WEBSITE'
-}
 
 export enum GrantType {
   AuthorizationCode = 'AUTHORIZATION_CODE',
@@ -211,15 +218,18 @@ export type Mutation = {
   __typename?: 'Mutation';
   changeMe?: Maybe<HerreUser>;
   createApplication?: Maybe<Application>;
+  createChannel?: Maybe<Channel>;
   createElement?: Maybe<Element>;
   createGraph?: Maybe<Graph>;
-  createPrivateFakt?: Maybe<FaktApplication>;
-  createPublicFakt?: Maybe<FaktApplication>;
+  createPrivateClient?: Maybe<Client>;
+  createPublicClient?: Maybe<Client>;
   createUserApp?: Maybe<CreatedBackendApp>;
   createUserLoginApp?: Maybe<Application>;
   deleteApplication?: Maybe<DeleteApplicationResult>;
-  deletePrivateFakt?: Maybe<DeletePrivateFaktResult>;
-  deletePublicFakt?: Maybe<DeletePublicFaktResult>;
+  deleteChannel?: Maybe<DeleteChannelResult>;
+  deleteClient?: Maybe<DeleteClientResult>;
+  notifyUser?: Maybe<Array<Maybe<PublishResult>>>;
+  publishToChannel?: Maybe<PublishResult>;
   updateApp?: Maybe<App>;
   updateGroup?: Maybe<Group>;
   updateUser?: Maybe<HerreUser>;
@@ -243,6 +253,13 @@ export type MutationCreateApplicationArgs = {
 
 
 /** The root Mutation */
+export type MutationCreateChannelArgs = {
+  name?: InputMaybe<Scalars['String']>;
+  token: Scalars['String'];
+};
+
+
+/** The root Mutation */
 export type MutationCreateElementArgs = {
   graph: Scalars['ID'];
   name: Scalars['String'];
@@ -257,18 +274,20 @@ export type MutationCreateGraphArgs = {
 
 
 /** The root Mutation */
-export type MutationCreatePrivateFaktArgs = {
+export type MutationCreatePrivateClientArgs = {
   identifier: Scalars['String'];
   imitate?: InputMaybe<Scalars['ID']>;
+  logoUrl?: InputMaybe<Scalars['String']>;
   scopes: Array<InputMaybe<Scalars['String']>>;
   version: Scalars['String'];
 };
 
 
 /** The root Mutation */
-export type MutationCreatePublicFaktArgs = {
+export type MutationCreatePublicClientArgs = {
   identifier: Scalars['String'];
   kind: PublicFaktType;
+  logoUrl?: InputMaybe<Scalars['String']>;
   redirectUris: Array<InputMaybe<Scalars['String']>>;
   scopes: Array<InputMaybe<Scalars['String']>>;
   version: Scalars['String'];
@@ -297,14 +316,31 @@ export type MutationDeleteApplicationArgs = {
 
 
 /** The root Mutation */
-export type MutationDeletePrivateFaktArgs = {
+export type MutationDeleteChannelArgs = {
+  token: Scalars['String'];
+};
+
+
+/** The root Mutation */
+export type MutationDeleteClientArgs = {
   id: Scalars['ID'];
 };
 
 
 /** The root Mutation */
-export type MutationDeletePublicFaktArgs = {
-  id: Scalars['ID'];
+export type MutationNotifyUserArgs = {
+  channels?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  message: Scalars['String'];
+  title: Scalars['String'];
+  user: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationPublishToChannelArgs = {
+  channel: Scalars['ID'];
+  message: Scalars['String'];
+  title: Scalars['String'];
 };
 
 
@@ -346,6 +382,12 @@ export enum PublicFaktType {
   Website = 'WEBSITE'
 }
 
+export type PublishResult = {
+  __typename?: 'PublishResult';
+  channel?: Maybe<Channel>;
+  status?: Maybe<Scalars['String']>;
+};
+
 /** The root Query */
 export type Query = {
   __typename?: 'Query';
@@ -353,8 +395,12 @@ export type Query = {
   application?: Maybe<Application>;
   applications?: Maybe<Array<Maybe<Application>>>;
   apps?: Maybe<Array<Maybe<App>>>;
-  client?: Maybe<Application>;
-  clients?: Maybe<Array<Maybe<Application>>>;
+  /** Get a group */
+  channel?: Maybe<Channel>;
+  /** Get a list of users */
+  channels?: Maybe<Array<Maybe<Channel>>>;
+  client?: Maybe<Client>;
+  clients?: Maybe<Array<Maybe<Client>>>;
   graphs?: Maybe<Array<Maybe<Graph>>>;
   /** Get a group */
   group?: Maybe<Group>;
@@ -364,14 +410,14 @@ export type Query = {
   me?: Maybe<HerreUser>;
   /** Get information on your Docker Template */
   member?: Maybe<Member>;
+  myPrivateClients?: Maybe<Array<Maybe<Client>>>;
+  myPublicClients?: Maybe<Array<Maybe<Client>>>;
   myapplications?: Maybe<Array<Maybe<Application>>>;
   myclients?: Maybe<Array<Maybe<Application>>>;
   /** Get a list of users */
   mygroups?: Maybe<Array<Maybe<Group>>>;
-  privatefaktapp?: Maybe<FaktApplication>;
-  privatefaktapps?: Maybe<Array<Maybe<FaktApplication>>>;
-  publicfaktapp?: Maybe<FaktApplication>;
-  publicfaktapps?: Maybe<Array<Maybe<FaktApplication>>>;
+  release?: Maybe<Release>;
+  releases?: Maybe<Array<Maybe<Release>>>;
   scope?: Maybe<Scope>;
   scopes?: Maybe<Array<Maybe<Scope>>>;
   user?: Maybe<HerreUser>;
@@ -383,7 +429,7 @@ export type Query = {
 
 /** The root Query */
 export type QueryAppArgs = {
-  clientId?: InputMaybe<Scalars['String']>;
+  clientId?: InputMaybe<Scalars['ID']>;
   id?: InputMaybe<Scalars['ID']>;
   identifier?: InputMaybe<Scalars['String']>;
   version?: InputMaybe<Scalars['String']>;
@@ -403,8 +449,25 @@ export type QueryAppsArgs = {
 
 
 /** The root Query */
+export type QueryChannelArgs = {
+  id?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryChannelsArgs = {
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  name?: InputMaybe<Scalars['String']>;
+  search?: InputMaybe<Scalars['String']>;
+  user?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
 export type QueryClientArgs = {
-  id: Scalars['ID'];
+  clientId?: InputMaybe<Scalars['ID']>;
+  id?: InputMaybe<Scalars['ID']>;
+  token?: InputMaybe<Scalars['ID']>;
 };
 
 
@@ -436,7 +499,8 @@ export type QueryMygroupsArgs = {
 
 
 /** The root Query */
-export type QueryPrivatefaktappArgs = {
+export type QueryReleaseArgs = {
+  clientId?: InputMaybe<Scalars['ID']>;
   id?: InputMaybe<Scalars['ID']>;
   identifier?: InputMaybe<Scalars['String']>;
   version?: InputMaybe<Scalars['String']>;
@@ -444,10 +508,8 @@ export type QueryPrivatefaktappArgs = {
 
 
 /** The root Query */
-export type QueryPublicfaktappArgs = {
-  id?: InputMaybe<Scalars['ID']>;
-  identifier?: InputMaybe<Scalars['String']>;
-  version?: InputMaybe<Scalars['String']>;
+export type QueryReleasesArgs = {
+  app?: InputMaybe<Scalars['ID']>;
 };
 
 
@@ -486,6 +548,16 @@ export type QueryUsersArgs = {
   username?: InputMaybe<Scalars['String']>;
 };
 
+export type Release = {
+  __typename?: 'Release';
+  app: App;
+  clients: Array<Client>;
+  id: Scalars['ID'];
+  logo?: Maybe<Scalars['String']>;
+  name: Scalars['String'];
+  version: Scalars['String'];
+};
+
 export type Scope = {
   __typename?: 'Scope';
   description?: Maybe<Scalars['String']>;
@@ -493,21 +565,21 @@ export type Scope = {
   value: Scalars['String'];
 };
 
-export type DetailAppFragment = { __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null };
+export type DetailAppFragment = { __typename?: 'App', id: string, identifier: string, logo?: string | null, releases: Array<{ __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } }> };
 
-export type ListAppFragment = { __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null };
+export type ListAppFragment = { __typename?: 'App', id: string, identifier: string, logo?: string | null };
 
-export type DetailApplicationFragment = { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null };
+export type DetailClientFragment = { __typename?: 'Client', id: string, token: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } };
 
-export type ListClientFragment = { __typename?: 'Application', id: string, clientId: string, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null, faktapplication?: { __typename?: 'FaktApplication', app?: { __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null } | null } | null };
-
-export type PrivateFaktFragment = { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, token: string, app?: { __typename?: 'App', version: string, identifier: string } | null };
-
-export type PublicFaktFragment = { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null };
+export type ListClientFragment = { __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null };
 
 export type DetailGroupFragment = { __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null };
 
 export type ListGroupFragment = { __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null };
+
+export type DetailReleaseFragment = { __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null }, clients: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null }> };
+
+export type ListReleaseFragment = { __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } };
 
 export type ListUserFragment = { __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null };
 
@@ -521,74 +593,36 @@ export type UpdateAppMutationVariables = Exact<{
 }>;
 
 
-export type UpdateAppMutation = { __typename?: 'Mutation', updateApp?: { __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null } | null };
+export type UpdateAppMutation = { __typename?: 'Mutation', updateApp?: { __typename?: 'App', id: string, identifier: string, logo?: string | null, releases: Array<{ __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } }> } | null };
 
-export type CreateApplicationMutationVariables = Exact<{
-  grantType: GrantType;
-  name: Scalars['String'];
-  redirectUris?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
-}>;
-
-
-export type CreateApplicationMutation = { __typename?: 'Mutation', createApplication?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
-
-export type CreateUserLoginAppMutationVariables = Exact<{
-  name: Scalars['String'];
-  redirectUris?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
-}>;
-
-
-export type CreateUserLoginAppMutation = { __typename?: 'Mutation', createUserLoginApp?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
-
-export type CreateUserAppMutationVariables = Exact<{
-  name: Scalars['String'];
-  identifier: Scalars['String'];
-  version: Scalars['String'];
-}>;
-
-
-export type CreateUserAppMutation = { __typename?: 'Mutation', createUserApp?: { __typename?: 'CreatedBackendApp', clientSecret?: string | null, clientId?: string | null } | null };
-
-export type DeleteApplicationMutationVariables = Exact<{
-  clientId: Scalars['ID'];
-}>;
-
-
-export type DeleteApplicationMutation = { __typename?: 'Mutation', deleteApplication?: { __typename?: 'DeleteApplicationResult', clientId?: string | null } | null };
-
-export type CreatePrivateFaktMutationVariables = Exact<{
+export type CreatePrivateClientMutationVariables = Exact<{
   identifier: Scalars['String'];
   version: Scalars['String'];
   scopes: Array<Scalars['String']>;
+  logoUrl?: InputMaybe<Scalars['String']>;
 }>;
 
 
-export type CreatePrivateFaktMutation = { __typename?: 'Mutation', createPrivateFakt?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, token: string, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
+export type CreatePrivateClientMutation = { __typename?: 'Mutation', createPrivateClient?: { __typename?: 'Client', id: string, token: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
 
-export type CreatePublicFaktMutationVariables = Exact<{
+export type CreatePublicClientMutationVariables = Exact<{
   identifier: Scalars['String'];
   version: Scalars['String'];
   redirectUris: Array<Scalars['String']>;
   scopes: Array<Scalars['String']>;
   kind: PublicFaktType;
+  logoUrl?: InputMaybe<Scalars['String']>;
 }>;
 
 
-export type CreatePublicFaktMutation = { __typename?: 'Mutation', createPublicFakt?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string } | null };
+export type CreatePublicClientMutation = { __typename?: 'Mutation', createPublicClient?: { __typename?: 'Client', id: string, token: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
 
-export type DeletePublicFaktMutationVariables = Exact<{
+export type DeleteClientMutationVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DeletePublicFaktMutation = { __typename?: 'Mutation', deletePublicFakt?: { __typename?: 'DeletePublicFaktResult', id?: string | null } | null };
-
-export type DeletePrivateFaktMutationVariables = Exact<{
-  id: Scalars['ID'];
-}>;
-
-
-export type DeletePrivateFaktMutation = { __typename?: 'Mutation', deletePrivateFakt?: { __typename?: 'DeletePrivateFaktResult', id?: string | null } | null };
+export type DeleteClientMutation = { __typename?: 'Mutation', deleteClient?: { __typename?: 'DeleteClientResult', id?: string | null } | null };
 
 export type UpdateGroupMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -623,68 +657,39 @@ export type UpdateUserMutation = { __typename?: 'Mutation', updateUser?: { __typ
 export type AppsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AppsQuery = { __typename?: 'Query', apps?: Array<{ __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null } | null> | null };
+export type AppsQuery = { __typename?: 'Query', apps?: Array<{ __typename?: 'App', id: string, identifier: string, logo?: string | null } | null> | null };
 
 export type AppQueryVariables = Exact<{
   identifier?: InputMaybe<Scalars['String']>;
-  version?: InputMaybe<Scalars['String']>;
   id?: InputMaybe<Scalars['ID']>;
-  clientId?: InputMaybe<Scalars['String']>;
-}>;
-
-
-export type AppQuery = { __typename?: 'Query', app?: { __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null } | null };
-
-export type ApplicationsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ApplicationsQuery = { __typename?: 'Query', applications?: Array<{ __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null> | null };
-
-export type DetailApplicationQueryVariables = Exact<{
-  clientId: Scalars['ID'];
-}>;
-
-
-export type DetailApplicationQuery = { __typename?: 'Query', application?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
-
-export type DetailUserApplicationQueryVariables = Exact<{
   clientId?: InputMaybe<Scalars['ID']>;
-  name?: InputMaybe<Scalars['String']>;
 }>;
 
 
-export type DetailUserApplicationQuery = { __typename?: 'Query', userapp?: { __typename?: 'Application', id: string, clientId: string, authorizationGrantType: ApplicationAuthorizationGrantType, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null } | null };
+export type AppQuery = { __typename?: 'Query', app?: { __typename?: 'App', id: string, identifier: string, logo?: string | null, releases: Array<{ __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } }> } | null };
+
+export type ClientsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ClientsQuery = { __typename?: 'Query', clients?: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null } | null> | null };
 
 export type DetailClientQueryVariables = Exact<{
-  id: Scalars['ID'];
+  clientId?: InputMaybe<Scalars['ID']>;
+  id?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type DetailClientQuery = { __typename?: 'Query', client?: { __typename?: 'Application', id: string, clientId: string, name: string, created: any, redirectUris?: Array<string | null> | null, user?: { __typename?: 'HerreUser', username: string } | null, faktapplication?: { __typename?: 'FaktApplication', app?: { __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null } | null } | null } | null };
+export type DetailClientQuery = { __typename?: 'Query', client?: { __typename?: 'Client', id: string, token: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
 
-export type PublicFaktsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type PublicFaktsQuery = { __typename?: 'Query', publicfaktapps?: Array<{ __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null> | null };
-
-export type PublicFaktQueryVariables = Exact<{
-  id: Scalars['ID'];
-}>;
+export type MyPublicClientsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PublicFaktQuery = { __typename?: 'Query', publicfaktapp?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
+export type MyPublicClientsQuery = { __typename?: 'Query', myPublicClients?: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null } | null> | null };
 
-export type PrivateFaktsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type PrivateFaktsQuery = { __typename?: 'Query', privatefaktapps?: Array<{ __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, token: string, app?: { __typename?: 'App', version: string, identifier: string } | null } | null> | null };
-
-export type PrivateFaktQueryVariables = Exact<{
-  id: Scalars['ID'];
-}>;
+export type MyPrivateClientsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PrivateFaktQuery = { __typename?: 'Query', privatefaktapp?: { __typename?: 'FaktApplication', id: string, clientId: string, clientSecret: string, scopes: Array<string | null>, token: string, app?: { __typename?: 'App', version: string, identifier: string } | null } | null };
+export type MyPrivateClientsQuery = { __typename?: 'Query', myPrivateClients?: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null } | null> | null };
 
 export type GroupOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -707,6 +712,21 @@ export type DetailGroupQueryVariables = Exact<{
 
 export type DetailGroupQuery = { __typename?: 'Query', group?: { __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null } | null };
 
+export type ReleasesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ReleasesQuery = { __typename?: 'Query', releases?: Array<{ __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null> | null };
+
+export type ReleaseQueryVariables = Exact<{
+  identifier?: InputMaybe<Scalars['String']>;
+  version?: InputMaybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['ID']>;
+  clientId?: InputMaybe<Scalars['ID']>;
+}>;
+
+
+export type ReleaseQuery = { __typename?: 'Query', release?: { __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null }, clients: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null }> } | null };
+
 export type ScopesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -722,7 +742,7 @@ export type LokGlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type LokGlobalSearchQuery = { __typename?: 'Query', apps?: Array<{ __typename?: 'App', id: string, identifier: string, version: string, logo?: string | null } | null> | null, users?: Array<{ __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null> | null, groups?: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null } | null> | null };
+export type LokGlobalSearchQuery = { __typename?: 'Query', apps?: Array<{ __typename?: 'App', id: string, identifier: string, logo?: string | null } | null> | null, users?: Array<{ __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null> | null, groups?: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null } | null> | null };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -755,77 +775,52 @@ export type ProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ProfileQuery = { __typename?: 'Query', me?: { __typename?: 'HerreUser', id: string, username: string, roles?: Array<string | null> | null, email: string, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null };
 
-export const DetailAppFragmentDoc = gql`
-    fragment DetailApp on App {
-  id
-  identifier
-  version
-  logo
-}
-    `;
 export const ListAppFragmentDoc = gql`
     fragment ListApp on App {
   id
   identifier
-  version
   logo
 }
     `;
-export const DetailApplicationFragmentDoc = gql`
-    fragment DetailApplication on Application {
+export const ListReleaseFragmentDoc = gql`
+    fragment ListRelease on Release {
   id
-  clientId
-  authorizationGrantType
-  name
-  user {
-    username
+  version
+  logo
+  app {
+    ...ListApp
   }
-  created
-  redirectUris
 }
-    `;
-export const ListClientFragmentDoc = gql`
-    fragment ListClient on Application {
+    ${ListAppFragmentDoc}`;
+export const DetailAppFragmentDoc = gql`
+    fragment DetailApp on App {
   id
-  clientId
-  name
+  identifier
+  logo
+  releases {
+    ...ListRelease
+  }
+}
+    ${ListReleaseFragmentDoc}`;
+export const DetailClientFragmentDoc = gql`
+    fragment DetailClient on Client {
+  id
+  token
   user {
     username
   }
-  faktapplication {
+  release {
+    version
+    logo
     app {
       id
       identifier
-      version
       logo
     }
   }
-  created
-  redirectUris
-}
-    `;
-export const PrivateFaktFragmentDoc = gql`
-    fragment PrivateFakt on FaktApplication {
-  id
-  clientId
-  clientSecret
-  scopes
-  app {
-    version
-    identifier
-  }
-  token
-}
-    `;
-export const PublicFaktFragmentDoc = gql`
-    fragment PublicFakt on FaktApplication {
-  id
-  clientId
-  clientSecret
-  scopes
-  app {
-    version
-    identifier
+  oauth2Client {
+    authorizationGrantType
+    redirectUris
   }
 }
     `;
@@ -864,6 +859,37 @@ export const ListGroupFragmentDoc = gql`
   }
 }
     `;
+export const ListClientFragmentDoc = gql`
+    fragment ListClient on Client {
+  id
+  user {
+    username
+  }
+  release {
+    version
+    logo
+    app {
+      id
+      identifier
+      logo
+    }
+  }
+}
+    `;
+export const DetailReleaseFragmentDoc = gql`
+    fragment DetailRelease on Release {
+  id
+  version
+  logo
+  app {
+    ...ListApp
+  }
+  clients {
+    ...ListClient
+  }
+}
+    ${ListAppFragmentDoc}
+${ListClientFragmentDoc}`;
 export const DetailUserFragmentDoc = gql`
     fragment DetailUser on HerreUser {
   id
@@ -928,294 +954,125 @@ export function useUpdateAppMutation(baseOptions?: Apollo.MutationHookOptions<Up
 export type UpdateAppMutationHookResult = ReturnType<typeof useUpdateAppMutation>;
 export type UpdateAppMutationResult = Apollo.MutationResult<UpdateAppMutation>;
 export type UpdateAppMutationOptions = Apollo.BaseMutationOptions<UpdateAppMutation, UpdateAppMutationVariables>;
-export const CreateApplicationDocument = gql`
-    mutation CreateApplication($grantType: GrantType!, $name: String!, $redirectUris: [String]) {
-  createApplication(
-    grantType: $grantType
-    name: $name
-    redirectUris: $redirectUris
+export const CreatePrivateClientDocument = gql`
+    mutation CreatePrivateClient($identifier: String!, $version: String!, $scopes: [String!]!, $logoUrl: String) {
+  createPrivateClient(
+    identifier: $identifier
+    version: $version
+    scopes: $scopes
+    logoUrl: $logoUrl
   ) {
-    ...DetailApplication
+    ...DetailClient
   }
 }
-    ${DetailApplicationFragmentDoc}`;
-export type CreateApplicationMutationFn = Apollo.MutationFunction<CreateApplicationMutation, CreateApplicationMutationVariables>;
+    ${DetailClientFragmentDoc}`;
+export type CreatePrivateClientMutationFn = Apollo.MutationFunction<CreatePrivateClientMutation, CreatePrivateClientMutationVariables>;
 
 /**
- * __useCreateApplicationMutation__
+ * __useCreatePrivateClientMutation__
  *
- * To run a mutation, you first call `useCreateApplicationMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateApplicationMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useCreatePrivateClientMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreatePrivateClientMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [createApplicationMutation, { data, loading, error }] = useCreateApplicationMutation({
- *   variables: {
- *      grantType: // value for 'grantType'
- *      name: // value for 'name'
- *      redirectUris: // value for 'redirectUris'
- *   },
- * });
- */
-export function useCreateApplicationMutation(baseOptions?: Apollo.MutationHookOptions<CreateApplicationMutation, CreateApplicationMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<CreateApplicationMutation, CreateApplicationMutationVariables>(CreateApplicationDocument, options);
-      }
-export type CreateApplicationMutationHookResult = ReturnType<typeof useCreateApplicationMutation>;
-export type CreateApplicationMutationResult = Apollo.MutationResult<CreateApplicationMutation>;
-export type CreateApplicationMutationOptions = Apollo.BaseMutationOptions<CreateApplicationMutation, CreateApplicationMutationVariables>;
-export const CreateUserLoginAppDocument = gql`
-    mutation CreateUserLoginApp($name: String!, $redirectUris: [String]) {
-  createUserLoginApp(name: $name, redirectUris: $redirectUris) {
-    ...DetailApplication
-  }
-}
-    ${DetailApplicationFragmentDoc}`;
-export type CreateUserLoginAppMutationFn = Apollo.MutationFunction<CreateUserLoginAppMutation, CreateUserLoginAppMutationVariables>;
-
-/**
- * __useCreateUserLoginAppMutation__
- *
- * To run a mutation, you first call `useCreateUserLoginAppMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateUserLoginAppMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createUserLoginAppMutation, { data, loading, error }] = useCreateUserLoginAppMutation({
- *   variables: {
- *      name: // value for 'name'
- *      redirectUris: // value for 'redirectUris'
- *   },
- * });
- */
-export function useCreateUserLoginAppMutation(baseOptions?: Apollo.MutationHookOptions<CreateUserLoginAppMutation, CreateUserLoginAppMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<CreateUserLoginAppMutation, CreateUserLoginAppMutationVariables>(CreateUserLoginAppDocument, options);
-      }
-export type CreateUserLoginAppMutationHookResult = ReturnType<typeof useCreateUserLoginAppMutation>;
-export type CreateUserLoginAppMutationResult = Apollo.MutationResult<CreateUserLoginAppMutation>;
-export type CreateUserLoginAppMutationOptions = Apollo.BaseMutationOptions<CreateUserLoginAppMutation, CreateUserLoginAppMutationVariables>;
-export const CreateUserAppDocument = gql`
-    mutation CreateUserApp($name: String!, $identifier: String!, $version: String!) {
-  createUserApp(name: $name, identifier: $identifier, version: $version) {
-    clientSecret
-    clientId
-  }
-}
-    `;
-export type CreateUserAppMutationFn = Apollo.MutationFunction<CreateUserAppMutation, CreateUserAppMutationVariables>;
-
-/**
- * __useCreateUserAppMutation__
- *
- * To run a mutation, you first call `useCreateUserAppMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateUserAppMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createUserAppMutation, { data, loading, error }] = useCreateUserAppMutation({
- *   variables: {
- *      name: // value for 'name'
- *      identifier: // value for 'identifier'
- *      version: // value for 'version'
- *   },
- * });
- */
-export function useCreateUserAppMutation(baseOptions?: Apollo.MutationHookOptions<CreateUserAppMutation, CreateUserAppMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<CreateUserAppMutation, CreateUserAppMutationVariables>(CreateUserAppDocument, options);
-      }
-export type CreateUserAppMutationHookResult = ReturnType<typeof useCreateUserAppMutation>;
-export type CreateUserAppMutationResult = Apollo.MutationResult<CreateUserAppMutation>;
-export type CreateUserAppMutationOptions = Apollo.BaseMutationOptions<CreateUserAppMutation, CreateUserAppMutationVariables>;
-export const DeleteApplicationDocument = gql`
-    mutation DeleteApplication($clientId: ID!) {
-  deleteApplication(clientId: $clientId) {
-    clientId
-  }
-}
-    `;
-export type DeleteApplicationMutationFn = Apollo.MutationFunction<DeleteApplicationMutation, DeleteApplicationMutationVariables>;
-
-/**
- * __useDeleteApplicationMutation__
- *
- * To run a mutation, you first call `useDeleteApplicationMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteApplicationMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deleteApplicationMutation, { data, loading, error }] = useDeleteApplicationMutation({
- *   variables: {
- *      clientId: // value for 'clientId'
- *   },
- * });
- */
-export function useDeleteApplicationMutation(baseOptions?: Apollo.MutationHookOptions<DeleteApplicationMutation, DeleteApplicationMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<DeleteApplicationMutation, DeleteApplicationMutationVariables>(DeleteApplicationDocument, options);
-      }
-export type DeleteApplicationMutationHookResult = ReturnType<typeof useDeleteApplicationMutation>;
-export type DeleteApplicationMutationResult = Apollo.MutationResult<DeleteApplicationMutation>;
-export type DeleteApplicationMutationOptions = Apollo.BaseMutationOptions<DeleteApplicationMutation, DeleteApplicationMutationVariables>;
-export const CreatePrivateFaktDocument = gql`
-    mutation CreatePrivateFakt($identifier: String!, $version: String!, $scopes: [String!]!) {
-  createPrivateFakt(identifier: $identifier, version: $version, scopes: $scopes) {
-    ...PrivateFakt
-  }
-}
-    ${PrivateFaktFragmentDoc}`;
-export type CreatePrivateFaktMutationFn = Apollo.MutationFunction<CreatePrivateFaktMutation, CreatePrivateFaktMutationVariables>;
-
-/**
- * __useCreatePrivateFaktMutation__
- *
- * To run a mutation, you first call `useCreatePrivateFaktMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreatePrivateFaktMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createPrivateFaktMutation, { data, loading, error }] = useCreatePrivateFaktMutation({
+ * const [createPrivateClientMutation, { data, loading, error }] = useCreatePrivateClientMutation({
  *   variables: {
  *      identifier: // value for 'identifier'
  *      version: // value for 'version'
  *      scopes: // value for 'scopes'
+ *      logoUrl: // value for 'logoUrl'
  *   },
  * });
  */
-export function useCreatePrivateFaktMutation(baseOptions?: Apollo.MutationHookOptions<CreatePrivateFaktMutation, CreatePrivateFaktMutationVariables>) {
+export function useCreatePrivateClientMutation(baseOptions?: Apollo.MutationHookOptions<CreatePrivateClientMutation, CreatePrivateClientMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<CreatePrivateFaktMutation, CreatePrivateFaktMutationVariables>(CreatePrivateFaktDocument, options);
+        return Apollo.useMutation<CreatePrivateClientMutation, CreatePrivateClientMutationVariables>(CreatePrivateClientDocument, options);
       }
-export type CreatePrivateFaktMutationHookResult = ReturnType<typeof useCreatePrivateFaktMutation>;
-export type CreatePrivateFaktMutationResult = Apollo.MutationResult<CreatePrivateFaktMutation>;
-export type CreatePrivateFaktMutationOptions = Apollo.BaseMutationOptions<CreatePrivateFaktMutation, CreatePrivateFaktMutationVariables>;
-export const CreatePublicFaktDocument = gql`
-    mutation CreatePublicFakt($identifier: String!, $version: String!, $redirectUris: [String!]!, $scopes: [String!]!, $kind: PublicFaktType!) {
-  createPublicFakt(
+export type CreatePrivateClientMutationHookResult = ReturnType<typeof useCreatePrivateClientMutation>;
+export type CreatePrivateClientMutationResult = Apollo.MutationResult<CreatePrivateClientMutation>;
+export type CreatePrivateClientMutationOptions = Apollo.BaseMutationOptions<CreatePrivateClientMutation, CreatePrivateClientMutationVariables>;
+export const CreatePublicClientDocument = gql`
+    mutation CreatePublicClient($identifier: String!, $version: String!, $redirectUris: [String!]!, $scopes: [String!]!, $kind: PublicFaktType!, $logoUrl: String) {
+  createPublicClient(
     identifier: $identifier
     version: $version
     redirectUris: $redirectUris
     scopes: $scopes
     kind: $kind
+    logoUrl: $logoUrl
   ) {
-    id
-    clientId
-    clientSecret
+    ...DetailClient
   }
 }
-    `;
-export type CreatePublicFaktMutationFn = Apollo.MutationFunction<CreatePublicFaktMutation, CreatePublicFaktMutationVariables>;
+    ${DetailClientFragmentDoc}`;
+export type CreatePublicClientMutationFn = Apollo.MutationFunction<CreatePublicClientMutation, CreatePublicClientMutationVariables>;
 
 /**
- * __useCreatePublicFaktMutation__
+ * __useCreatePublicClientMutation__
  *
- * To run a mutation, you first call `useCreatePublicFaktMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreatePublicFaktMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useCreatePublicClientMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreatePublicClientMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [createPublicFaktMutation, { data, loading, error }] = useCreatePublicFaktMutation({
+ * const [createPublicClientMutation, { data, loading, error }] = useCreatePublicClientMutation({
  *   variables: {
  *      identifier: // value for 'identifier'
  *      version: // value for 'version'
  *      redirectUris: // value for 'redirectUris'
  *      scopes: // value for 'scopes'
  *      kind: // value for 'kind'
+ *      logoUrl: // value for 'logoUrl'
  *   },
  * });
  */
-export function useCreatePublicFaktMutation(baseOptions?: Apollo.MutationHookOptions<CreatePublicFaktMutation, CreatePublicFaktMutationVariables>) {
+export function useCreatePublicClientMutation(baseOptions?: Apollo.MutationHookOptions<CreatePublicClientMutation, CreatePublicClientMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<CreatePublicFaktMutation, CreatePublicFaktMutationVariables>(CreatePublicFaktDocument, options);
+        return Apollo.useMutation<CreatePublicClientMutation, CreatePublicClientMutationVariables>(CreatePublicClientDocument, options);
       }
-export type CreatePublicFaktMutationHookResult = ReturnType<typeof useCreatePublicFaktMutation>;
-export type CreatePublicFaktMutationResult = Apollo.MutationResult<CreatePublicFaktMutation>;
-export type CreatePublicFaktMutationOptions = Apollo.BaseMutationOptions<CreatePublicFaktMutation, CreatePublicFaktMutationVariables>;
-export const DeletePublicFaktDocument = gql`
-    mutation DeletePublicFakt($id: ID!) {
-  deletePublicFakt(id: $id) {
+export type CreatePublicClientMutationHookResult = ReturnType<typeof useCreatePublicClientMutation>;
+export type CreatePublicClientMutationResult = Apollo.MutationResult<CreatePublicClientMutation>;
+export type CreatePublicClientMutationOptions = Apollo.BaseMutationOptions<CreatePublicClientMutation, CreatePublicClientMutationVariables>;
+export const DeleteClientDocument = gql`
+    mutation DeleteClient($id: ID!) {
+  deleteClient(id: $id) {
     id
   }
 }
     `;
-export type DeletePublicFaktMutationFn = Apollo.MutationFunction<DeletePublicFaktMutation, DeletePublicFaktMutationVariables>;
+export type DeleteClientMutationFn = Apollo.MutationFunction<DeleteClientMutation, DeleteClientMutationVariables>;
 
 /**
- * __useDeletePublicFaktMutation__
+ * __useDeleteClientMutation__
  *
- * To run a mutation, you first call `useDeletePublicFaktMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeletePublicFaktMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useDeleteClientMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteClientMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [deletePublicFaktMutation, { data, loading, error }] = useDeletePublicFaktMutation({
+ * const [deleteClientMutation, { data, loading, error }] = useDeleteClientMutation({
  *   variables: {
  *      id: // value for 'id'
  *   },
  * });
  */
-export function useDeletePublicFaktMutation(baseOptions?: Apollo.MutationHookOptions<DeletePublicFaktMutation, DeletePublicFaktMutationVariables>) {
+export function useDeleteClientMutation(baseOptions?: Apollo.MutationHookOptions<DeleteClientMutation, DeleteClientMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<DeletePublicFaktMutation, DeletePublicFaktMutationVariables>(DeletePublicFaktDocument, options);
+        return Apollo.useMutation<DeleteClientMutation, DeleteClientMutationVariables>(DeleteClientDocument, options);
       }
-export type DeletePublicFaktMutationHookResult = ReturnType<typeof useDeletePublicFaktMutation>;
-export type DeletePublicFaktMutationResult = Apollo.MutationResult<DeletePublicFaktMutation>;
-export type DeletePublicFaktMutationOptions = Apollo.BaseMutationOptions<DeletePublicFaktMutation, DeletePublicFaktMutationVariables>;
-export const DeletePrivateFaktDocument = gql`
-    mutation DeletePrivateFakt($id: ID!) {
-  deletePrivateFakt(id: $id) {
-    id
-  }
-}
-    `;
-export type DeletePrivateFaktMutationFn = Apollo.MutationFunction<DeletePrivateFaktMutation, DeletePrivateFaktMutationVariables>;
-
-/**
- * __useDeletePrivateFaktMutation__
- *
- * To run a mutation, you first call `useDeletePrivateFaktMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeletePrivateFaktMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deletePrivateFaktMutation, { data, loading, error }] = useDeletePrivateFaktMutation({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDeletePrivateFaktMutation(baseOptions?: Apollo.MutationHookOptions<DeletePrivateFaktMutation, DeletePrivateFaktMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<DeletePrivateFaktMutation, DeletePrivateFaktMutationVariables>(DeletePrivateFaktDocument, options);
-      }
-export type DeletePrivateFaktMutationHookResult = ReturnType<typeof useDeletePrivateFaktMutation>;
-export type DeletePrivateFaktMutationResult = Apollo.MutationResult<DeletePrivateFaktMutation>;
-export type DeletePrivateFaktMutationOptions = Apollo.BaseMutationOptions<DeletePrivateFaktMutation, DeletePrivateFaktMutationVariables>;
+export type DeleteClientMutationHookResult = ReturnType<typeof useDeleteClientMutation>;
+export type DeleteClientMutationResult = Apollo.MutationResult<DeleteClientMutation>;
+export type DeleteClientMutationOptions = Apollo.BaseMutationOptions<DeleteClientMutation, DeleteClientMutationVariables>;
 export const UpdateGroupDocument = gql`
     mutation UpdateGroup($id: ID!, $avatar: Upload, $name: String) {
   updateGroup(id: $id, avatar: $avatar, name: $name) {
@@ -1366,8 +1223,8 @@ export type AppsQueryHookResult = ReturnType<typeof useAppsQuery>;
 export type AppsLazyQueryHookResult = ReturnType<typeof useAppsLazyQuery>;
 export type AppsQueryResult = Apollo.QueryResult<AppsQuery, AppsQueryVariables>;
 export const AppDocument = gql`
-    query App($identifier: String, $version: String, $id: ID, $clientId: String) {
-  app(identifier: $identifier, version: $version, id: $id, clientId: $clientId) {
+    query App($identifier: String, $id: ID, $clientId: ID) {
+  app(identifier: $identifier, id: $id, clientId: $clientId) {
     ...DetailApp
   }
 }
@@ -1386,7 +1243,6 @@ export const AppDocument = gql`
  * const { data, loading, error } = useAppQuery({
  *   variables: {
  *      identifier: // value for 'identifier'
- *      version: // value for 'version'
  *      id: // value for 'id'
  *      clientId: // value for 'clientId'
  *   },
@@ -1403,118 +1259,47 @@ export function useAppLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AppQue
 export type AppQueryHookResult = ReturnType<typeof useAppQuery>;
 export type AppLazyQueryHookResult = ReturnType<typeof useAppLazyQuery>;
 export type AppQueryResult = Apollo.QueryResult<AppQuery, AppQueryVariables>;
-export const ApplicationsDocument = gql`
-    query Applications {
-  applications {
-    ...DetailApplication
-  }
-}
-    ${DetailApplicationFragmentDoc}`;
-
-/**
- * __useApplicationsQuery__
- *
- * To run a query within a React component, call `useApplicationsQuery` and pass it any options that fit your needs.
- * When your component renders, `useApplicationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useApplicationsQuery({
- *   variables: {
- *   },
- * });
- */
-export function useApplicationsQuery(baseOptions?: Apollo.QueryHookOptions<ApplicationsQuery, ApplicationsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<ApplicationsQuery, ApplicationsQueryVariables>(ApplicationsDocument, options);
-      }
-export function useApplicationsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ApplicationsQuery, ApplicationsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<ApplicationsQuery, ApplicationsQueryVariables>(ApplicationsDocument, options);
-        }
-export type ApplicationsQueryHookResult = ReturnType<typeof useApplicationsQuery>;
-export type ApplicationsLazyQueryHookResult = ReturnType<typeof useApplicationsLazyQuery>;
-export type ApplicationsQueryResult = Apollo.QueryResult<ApplicationsQuery, ApplicationsQueryVariables>;
-export const DetailApplicationDocument = gql`
-    query DetailApplication($clientId: ID!) {
-  application(clientId: $clientId) {
-    ...DetailApplication
-  }
-}
-    ${DetailApplicationFragmentDoc}`;
-
-/**
- * __useDetailApplicationQuery__
- *
- * To run a query within a React component, call `useDetailApplicationQuery` and pass it any options that fit your needs.
- * When your component renders, `useDetailApplicationQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useDetailApplicationQuery({
- *   variables: {
- *      clientId: // value for 'clientId'
- *   },
- * });
- */
-export function useDetailApplicationQuery(baseOptions: Apollo.QueryHookOptions<DetailApplicationQuery, DetailApplicationQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<DetailApplicationQuery, DetailApplicationQueryVariables>(DetailApplicationDocument, options);
-      }
-export function useDetailApplicationLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailApplicationQuery, DetailApplicationQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<DetailApplicationQuery, DetailApplicationQueryVariables>(DetailApplicationDocument, options);
-        }
-export type DetailApplicationQueryHookResult = ReturnType<typeof useDetailApplicationQuery>;
-export type DetailApplicationLazyQueryHookResult = ReturnType<typeof useDetailApplicationLazyQuery>;
-export type DetailApplicationQueryResult = Apollo.QueryResult<DetailApplicationQuery, DetailApplicationQueryVariables>;
-export const DetailUserApplicationDocument = gql`
-    query DetailUserApplication($clientId: ID, $name: String) {
-  userapp(clientId: $clientId, name: $name) {
-    ...DetailApplication
-  }
-}
-    ${DetailApplicationFragmentDoc}`;
-
-/**
- * __useDetailUserApplicationQuery__
- *
- * To run a query within a React component, call `useDetailUserApplicationQuery` and pass it any options that fit your needs.
- * When your component renders, `useDetailUserApplicationQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useDetailUserApplicationQuery({
- *   variables: {
- *      clientId: // value for 'clientId'
- *      name: // value for 'name'
- *   },
- * });
- */
-export function useDetailUserApplicationQuery(baseOptions?: Apollo.QueryHookOptions<DetailUserApplicationQuery, DetailUserApplicationQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<DetailUserApplicationQuery, DetailUserApplicationQueryVariables>(DetailUserApplicationDocument, options);
-      }
-export function useDetailUserApplicationLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailUserApplicationQuery, DetailUserApplicationQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<DetailUserApplicationQuery, DetailUserApplicationQueryVariables>(DetailUserApplicationDocument, options);
-        }
-export type DetailUserApplicationQueryHookResult = ReturnType<typeof useDetailUserApplicationQuery>;
-export type DetailUserApplicationLazyQueryHookResult = ReturnType<typeof useDetailUserApplicationLazyQuery>;
-export type DetailUserApplicationQueryResult = Apollo.QueryResult<DetailUserApplicationQuery, DetailUserApplicationQueryVariables>;
-export const DetailClientDocument = gql`
-    query DetailClient($id: ID!) {
-  client(id: $id) {
+export const ClientsDocument = gql`
+    query Clients {
+  clients {
     ...ListClient
   }
 }
     ${ListClientFragmentDoc}`;
+
+/**
+ * __useClientsQuery__
+ *
+ * To run a query within a React component, call `useClientsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useClientsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useClientsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useClientsQuery(baseOptions?: Apollo.QueryHookOptions<ClientsQuery, ClientsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ClientsQuery, ClientsQueryVariables>(ClientsDocument, options);
+      }
+export function useClientsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ClientsQuery, ClientsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ClientsQuery, ClientsQueryVariables>(ClientsDocument, options);
+        }
+export type ClientsQueryHookResult = ReturnType<typeof useClientsQuery>;
+export type ClientsLazyQueryHookResult = ReturnType<typeof useClientsLazyQuery>;
+export type ClientsQueryResult = Apollo.QueryResult<ClientsQuery, ClientsQueryVariables>;
+export const DetailClientDocument = gql`
+    query DetailClient($clientId: ID, $id: ID) {
+  client(clientId: $clientId, id: $id) {
+    ...DetailClient
+  }
+}
+    ${DetailClientFragmentDoc}`;
 
 /**
  * __useDetailClientQuery__
@@ -1528,11 +1313,12 @@ export const DetailClientDocument = gql`
  * @example
  * const { data, loading, error } = useDetailClientQuery({
  *   variables: {
+ *      clientId: // value for 'clientId'
  *      id: // value for 'id'
  *   },
  * });
  */
-export function useDetailClientQuery(baseOptions: Apollo.QueryHookOptions<DetailClientQuery, DetailClientQueryVariables>) {
+export function useDetailClientQuery(baseOptions?: Apollo.QueryHookOptions<DetailClientQuery, DetailClientQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
         return Apollo.useQuery<DetailClientQuery, DetailClientQueryVariables>(DetailClientDocument, options);
       }
@@ -1543,144 +1329,74 @@ export function useDetailClientLazyQuery(baseOptions?: Apollo.LazyQueryHookOptio
 export type DetailClientQueryHookResult = ReturnType<typeof useDetailClientQuery>;
 export type DetailClientLazyQueryHookResult = ReturnType<typeof useDetailClientLazyQuery>;
 export type DetailClientQueryResult = Apollo.QueryResult<DetailClientQuery, DetailClientQueryVariables>;
-export const PublicFaktsDocument = gql`
-    query PublicFakts {
-  publicfaktapps {
-    ...PublicFakt
+export const MyPublicClientsDocument = gql`
+    query MyPublicClients {
+  myPublicClients {
+    ...ListClient
   }
 }
-    ${PublicFaktFragmentDoc}`;
+    ${ListClientFragmentDoc}`;
 
 /**
- * __usePublicFaktsQuery__
+ * __useMyPublicClientsQuery__
  *
- * To run a query within a React component, call `usePublicFaktsQuery` and pass it any options that fit your needs.
- * When your component renders, `usePublicFaktsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useMyPublicClientsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyPublicClientsQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = usePublicFaktsQuery({
+ * const { data, loading, error } = useMyPublicClientsQuery({
  *   variables: {
  *   },
  * });
  */
-export function usePublicFaktsQuery(baseOptions?: Apollo.QueryHookOptions<PublicFaktsQuery, PublicFaktsQueryVariables>) {
+export function useMyPublicClientsQuery(baseOptions?: Apollo.QueryHookOptions<MyPublicClientsQuery, MyPublicClientsQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<PublicFaktsQuery, PublicFaktsQueryVariables>(PublicFaktsDocument, options);
+        return Apollo.useQuery<MyPublicClientsQuery, MyPublicClientsQueryVariables>(MyPublicClientsDocument, options);
       }
-export function usePublicFaktsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PublicFaktsQuery, PublicFaktsQueryVariables>) {
+export function useMyPublicClientsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyPublicClientsQuery, MyPublicClientsQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<PublicFaktsQuery, PublicFaktsQueryVariables>(PublicFaktsDocument, options);
+          return Apollo.useLazyQuery<MyPublicClientsQuery, MyPublicClientsQueryVariables>(MyPublicClientsDocument, options);
         }
-export type PublicFaktsQueryHookResult = ReturnType<typeof usePublicFaktsQuery>;
-export type PublicFaktsLazyQueryHookResult = ReturnType<typeof usePublicFaktsLazyQuery>;
-export type PublicFaktsQueryResult = Apollo.QueryResult<PublicFaktsQuery, PublicFaktsQueryVariables>;
-export const PublicFaktDocument = gql`
-    query PublicFakt($id: ID!) {
-  publicfaktapp(id: $id) {
-    ...PublicFakt
+export type MyPublicClientsQueryHookResult = ReturnType<typeof useMyPublicClientsQuery>;
+export type MyPublicClientsLazyQueryHookResult = ReturnType<typeof useMyPublicClientsLazyQuery>;
+export type MyPublicClientsQueryResult = Apollo.QueryResult<MyPublicClientsQuery, MyPublicClientsQueryVariables>;
+export const MyPrivateClientsDocument = gql`
+    query MyPrivateClients {
+  myPrivateClients {
+    ...ListClient
   }
 }
-    ${PublicFaktFragmentDoc}`;
+    ${ListClientFragmentDoc}`;
 
 /**
- * __usePublicFaktQuery__
+ * __useMyPrivateClientsQuery__
  *
- * To run a query within a React component, call `usePublicFaktQuery` and pass it any options that fit your needs.
- * When your component renders, `usePublicFaktQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useMyPrivateClientsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyPrivateClientsQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = usePublicFaktQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function usePublicFaktQuery(baseOptions: Apollo.QueryHookOptions<PublicFaktQuery, PublicFaktQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<PublicFaktQuery, PublicFaktQueryVariables>(PublicFaktDocument, options);
-      }
-export function usePublicFaktLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PublicFaktQuery, PublicFaktQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<PublicFaktQuery, PublicFaktQueryVariables>(PublicFaktDocument, options);
-        }
-export type PublicFaktQueryHookResult = ReturnType<typeof usePublicFaktQuery>;
-export type PublicFaktLazyQueryHookResult = ReturnType<typeof usePublicFaktLazyQuery>;
-export type PublicFaktQueryResult = Apollo.QueryResult<PublicFaktQuery, PublicFaktQueryVariables>;
-export const PrivateFaktsDocument = gql`
-    query PrivateFakts {
-  privatefaktapps {
-    ...PrivateFakt
-  }
-}
-    ${PrivateFaktFragmentDoc}`;
-
-/**
- * __usePrivateFaktsQuery__
- *
- * To run a query within a React component, call `usePrivateFaktsQuery` and pass it any options that fit your needs.
- * When your component renders, `usePrivateFaktsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = usePrivateFaktsQuery({
+ * const { data, loading, error } = useMyPrivateClientsQuery({
  *   variables: {
  *   },
  * });
  */
-export function usePrivateFaktsQuery(baseOptions?: Apollo.QueryHookOptions<PrivateFaktsQuery, PrivateFaktsQueryVariables>) {
+export function useMyPrivateClientsQuery(baseOptions?: Apollo.QueryHookOptions<MyPrivateClientsQuery, MyPrivateClientsQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<PrivateFaktsQuery, PrivateFaktsQueryVariables>(PrivateFaktsDocument, options);
+        return Apollo.useQuery<MyPrivateClientsQuery, MyPrivateClientsQueryVariables>(MyPrivateClientsDocument, options);
       }
-export function usePrivateFaktsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PrivateFaktsQuery, PrivateFaktsQueryVariables>) {
+export function useMyPrivateClientsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyPrivateClientsQuery, MyPrivateClientsQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<PrivateFaktsQuery, PrivateFaktsQueryVariables>(PrivateFaktsDocument, options);
+          return Apollo.useLazyQuery<MyPrivateClientsQuery, MyPrivateClientsQueryVariables>(MyPrivateClientsDocument, options);
         }
-export type PrivateFaktsQueryHookResult = ReturnType<typeof usePrivateFaktsQuery>;
-export type PrivateFaktsLazyQueryHookResult = ReturnType<typeof usePrivateFaktsLazyQuery>;
-export type PrivateFaktsQueryResult = Apollo.QueryResult<PrivateFaktsQuery, PrivateFaktsQueryVariables>;
-export const PrivateFaktDocument = gql`
-    query PrivateFakt($id: ID!) {
-  privatefaktapp(id: $id) {
-    ...PrivateFakt
-  }
-}
-    ${PrivateFaktFragmentDoc}`;
-
-/**
- * __usePrivateFaktQuery__
- *
- * To run a query within a React component, call `usePrivateFaktQuery` and pass it any options that fit your needs.
- * When your component renders, `usePrivateFaktQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = usePrivateFaktQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function usePrivateFaktQuery(baseOptions: Apollo.QueryHookOptions<PrivateFaktQuery, PrivateFaktQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<PrivateFaktQuery, PrivateFaktQueryVariables>(PrivateFaktDocument, options);
-      }
-export function usePrivateFaktLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PrivateFaktQuery, PrivateFaktQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<PrivateFaktQuery, PrivateFaktQueryVariables>(PrivateFaktDocument, options);
-        }
-export type PrivateFaktQueryHookResult = ReturnType<typeof usePrivateFaktQuery>;
-export type PrivateFaktLazyQueryHookResult = ReturnType<typeof usePrivateFaktLazyQuery>;
-export type PrivateFaktQueryResult = Apollo.QueryResult<PrivateFaktQuery, PrivateFaktQueryVariables>;
+export type MyPrivateClientsQueryHookResult = ReturnType<typeof useMyPrivateClientsQuery>;
+export type MyPrivateClientsLazyQueryHookResult = ReturnType<typeof useMyPrivateClientsLazyQuery>;
+export type MyPrivateClientsQueryResult = Apollo.QueryResult<MyPrivateClientsQuery, MyPrivateClientsQueryVariables>;
 export const GroupOptionsDocument = gql`
     query GroupOptions($search: String) {
   options: groups(name: $search) {
@@ -1793,6 +1509,83 @@ export function useDetailGroupLazyQuery(baseOptions?: Apollo.LazyQueryHookOption
 export type DetailGroupQueryHookResult = ReturnType<typeof useDetailGroupQuery>;
 export type DetailGroupLazyQueryHookResult = ReturnType<typeof useDetailGroupLazyQuery>;
 export type DetailGroupQueryResult = Apollo.QueryResult<DetailGroupQuery, DetailGroupQueryVariables>;
+export const ReleasesDocument = gql`
+    query Releases {
+  releases {
+    ...ListRelease
+  }
+}
+    ${ListReleaseFragmentDoc}`;
+
+/**
+ * __useReleasesQuery__
+ *
+ * To run a query within a React component, call `useReleasesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useReleasesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useReleasesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useReleasesQuery(baseOptions?: Apollo.QueryHookOptions<ReleasesQuery, ReleasesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ReleasesQuery, ReleasesQueryVariables>(ReleasesDocument, options);
+      }
+export function useReleasesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ReleasesQuery, ReleasesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ReleasesQuery, ReleasesQueryVariables>(ReleasesDocument, options);
+        }
+export type ReleasesQueryHookResult = ReturnType<typeof useReleasesQuery>;
+export type ReleasesLazyQueryHookResult = ReturnType<typeof useReleasesLazyQuery>;
+export type ReleasesQueryResult = Apollo.QueryResult<ReleasesQuery, ReleasesQueryVariables>;
+export const ReleaseDocument = gql`
+    query Release($identifier: String, $version: String, $id: ID, $clientId: ID) {
+  release(
+    identifier: $identifier
+    version: $version
+    id: $id
+    clientId: $clientId
+  ) {
+    ...DetailRelease
+  }
+}
+    ${DetailReleaseFragmentDoc}`;
+
+/**
+ * __useReleaseQuery__
+ *
+ * To run a query within a React component, call `useReleaseQuery` and pass it any options that fit your needs.
+ * When your component renders, `useReleaseQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useReleaseQuery({
+ *   variables: {
+ *      identifier: // value for 'identifier'
+ *      version: // value for 'version'
+ *      id: // value for 'id'
+ *      clientId: // value for 'clientId'
+ *   },
+ * });
+ */
+export function useReleaseQuery(baseOptions?: Apollo.QueryHookOptions<ReleaseQuery, ReleaseQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ReleaseQuery, ReleaseQueryVariables>(ReleaseDocument, options);
+      }
+export function useReleaseLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ReleaseQuery, ReleaseQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ReleaseQuery, ReleaseQueryVariables>(ReleaseDocument, options);
+        }
+export type ReleaseQueryHookResult = ReturnType<typeof useReleaseQuery>;
+export type ReleaseLazyQueryHookResult = ReturnType<typeof useReleaseLazyQuery>;
+export type ReleaseQueryResult = Apollo.QueryResult<ReleaseQuery, ReleaseQueryVariables>;
 export const ScopesDocument = gql`
     query Scopes {
   scopes {

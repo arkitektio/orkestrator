@@ -57,6 +57,13 @@ const arkport_to_port = (argport: ArkitektPortFragment): PortFragment => {
       identifier: argport.child.identifier,
       kind: argport.child.kind as unknown as StreamKind,
       __typename: "PortChild",
+      scope: argport.child.scope,
+      child: argport.child.child && {
+        identifier: argport.child.child.identifier,
+        kind: argport.child.child.kind as unknown as StreamKind,
+        __typename: "PortChild",
+        scope: argport.child.child.scope,
+      },
       nullable: argport.child.nullable,
     },
     scope: argport?.scope,
@@ -383,9 +390,10 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
       sourceStream.map((x) => ({
         key: "element",
         ...x.child,
+        scope: Scope.Global,
         nullable: false,
         __typename: "StreamItem",
-        kind: x.child?.kind || StreamKind.Structure,
+        kind: x.child?.kind || StreamKind.Bool,
       })),
     ];
   }
@@ -455,7 +463,6 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
           key: "list",
           kind: StreamKind.List,
           nullable: false,
-          identifier: sourceStream[0].identifier,
         },
       ],
     ];
@@ -938,6 +945,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     KwargNode: error_builder("Cannot connect to a Kwarg Node as an output"),
     ReactiveNode: to_reactive,
     ReturnNode: ark_to_return,
+    GraphNode: arg_to_ark,
   },
   LocalNode: {
     ArgNode: error_builder("Cannot connect to an Arg Node as an output"),
@@ -946,6 +954,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     KwargNode: error_builder("Cannot connect to a Kwarg Node as an output"),
     ReactiveNode: to_reactive,
     ReturnNode: ark_to_return,
+    GraphNode: ark_to_ark,
   },
   ArgNode: {
     ArgNode: void_updater,
@@ -954,6 +963,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     KwargNode: void_updater,
     ReactiveNode: arg_to_reak,
     ReturnNode: void_updater,
+    GraphNode: arg_to_ark,
   },
   KwargNode: {
     ArgNode: void_updater,
@@ -962,6 +972,16 @@ export const defaultConnectionHandler: ConnectionMap = {
     KwargNode: void_updater,
     ReactiveNode: void_updater,
     ReturnNode: void_updater,
+    GraphNode: arg_to_ark,
+  },
+  GraphNode: {
+    ArgNode: void_updater,
+    ArkitektNode: void_updater,
+    LocalNode: void_updater,
+    KwargNode: void_updater,
+    ReactiveNode: void_updater,
+    ReturnNode: void_updater,
+    GraphNode: void_updater,
   },
   ReturnNode: {
     ArgNode: void_updater,
@@ -970,6 +990,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     KwargNode: void_updater,
     ReactiveNode: void_updater,
     ReturnNode: void_updater,
+    GraphNode: void_updater,
   },
   ReactiveNode: {
     ArgNode: void_updater,
@@ -978,5 +999,6 @@ export const defaultConnectionHandler: ConnectionMap = {
     KwargNode: void_updater,
     ReactiveNode: to_reactive,
     ReturnNode: reak_to_return,
+    GraphNode: reak_to_ark,
   },
 };

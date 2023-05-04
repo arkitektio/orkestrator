@@ -1,8 +1,7 @@
-import { Form, Formik } from "formik";
-import React, { memo, useState } from "react";
-import { Handle, Position } from "reactflow";
+import React, { useState } from "react";
 import { BsPlay, BsStop } from "react-icons/bs";
 import ReactTooltip from "react-tooltip";
+import { Handle, Position } from "reactflow";
 import { RunEventFragment } from "../../../../fluss/api/graphql";
 import { withLayout } from "../../../base/node/layout";
 import { ArgNodeProps } from "../../../types";
@@ -45,48 +44,7 @@ export const ArgTrackNodeWidget: React.FC<ArgNodeProps> = withLayout(
                 {frozenevent == undefined ? <BsStop /> : <BsPlay />}
               </button>
             </div>
-            <p className="text-base">
-              {outstream && (
-                <>
-                  {outstream.map((s, index) => (
-                    <div className="cursor-pointer">
-                      {s && s.map((s) => s?.kind).join(" | ")}
-                    </div>
-                  ))}
-                  <br />
-                </>
-              )}
-              {!isSmall && (
-                <>
-                  <Formik
-                    initialValues={{
-                      args: outstream,
-                    }}
-                    onSubmit={(values) => {
-                      console.log(values);
-                    }}
-                  >
-                    <Form>
-                      <div className="flex flex-col">
-                        <div className="flex flex-row">
-                          {outstream?.map((arg, index) => (
-                            <>
-                              <div className="flex-1 mt-2">
-                                <textarea
-                                  className="w-full px-2 py-2 rounded-md text-2xs dark:text-white dark:bg-slate-600 caret-green-500 mt-2"
-                                  name={`args.${index}.description`}
-                                  placeholder="Description"
-                                />
-                              </div>
-                            </>
-                          ))}
-                        </div>
-                      </div>
-                    </Form>
-                  </Formik>
-                </>
-              )}
-            </p>
+            <p className="text-base"></p>
           </div>
         </NodeTrackLayout>
         {outstream.map((s, index) => (

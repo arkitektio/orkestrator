@@ -130,7 +130,7 @@ export function getTypedArrayCtr(dtype: DtypeString) {
   const ctr = DTYPE_TYPEDARRAY_MAPPING[dtype];
   if (!ctr) {
     throw Error(
-      `Dtype not recognized or not supported in zarr.js, got ${dtype}.`
+      `Dtype not recognized or not supported in extended zarr.js, got ${dtype}.`
     );
   }
   return ctr;

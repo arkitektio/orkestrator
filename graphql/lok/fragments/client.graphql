@@ -1,0 +1,36 @@
+fragment DetailClient on Client {
+  id
+  token
+  user {
+    username
+  }
+  release {
+    version
+    logo
+    app {
+      id
+      identifier
+      logo
+    }
+  }
+  oauth2Client {
+    authorizationGrantType
+    redirectUris
+  }
+}
+
+fragment ListClient on Client {
+  id
+  user {
+    username
+  }
+  release {
+    version
+    logo
+    app {
+      id
+      identifier
+      logo
+    }
+  }
+}

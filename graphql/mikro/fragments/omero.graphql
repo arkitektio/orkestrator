@@ -24,7 +24,7 @@ fragment Omero on Omero {
     correctionCollar
     medium
   }
-  position {
+  positions {
     id
     x
     y
@@ -34,6 +34,141 @@ fragment Omero on Omero {
       name
     }
   }
+  views {
+    id
+    xMin
+    xMax
+    yMin
+    yMax
+    zMin
+    zMax
+    tMin
+    tMax
+    cMin
+    cMax
+    channel {
+      id
+      name
+      color
+    }
+    position {
+      id
+      name
+      x
+    }
+  }
+
+  dimensionMaps {
+    id
+    index
+    dimension
+    channel {
+      id
+      name
+      color
+      emissionWavelength
+      excitationWavelength
+    }
+  }
+
+  instrument {
+    id
+    name
+    model
+  }
+  objective {
+    id
+    name
+    magnification
+  }
+  affineTransformation
+  imagingEnvironment {
+    airPressure
+    co2Percent
+    humidity
+    temperature
+  }
+
+  scale
+}
+
+fragment DetailOmero on Omero {
+  representation {
+    id
+    name
+  }
+  id
+  physicalSize {
+    x
+    y
+    z
+    t
+  }
+  planes {
+    z
+    z
+    t
+    exposureTime
+    deltaT
+  }
+  channels {
+    name
+    emmissionWavelength
+    excitationWavelength
+    color
+  }
+  acquisitionDate
+  objectiveSettings {
+    correctionCollar
+    medium
+  }
+  positions {
+    id
+    x
+    y
+    z
+    stage {
+      id
+      name
+    }
+  }
+  views {
+    id
+    xMin
+    xMax
+    yMin
+    yMax
+    zMin
+    zMax
+    tMin
+    tMax
+    cMin
+    cMax
+    channel {
+      id
+      name
+      color
+    }
+    position {
+      id
+      name
+      x
+    }
+  }
+
+  dimensionMaps {
+    id
+    index
+    dimension
+    channel {
+      id
+      name
+      color
+      emissionWavelength
+      excitationWavelength
+    }
+  }
+
   instrument {
     id
     name

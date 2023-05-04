@@ -1,47 +1,41 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import React, { useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
+import { SelfActions } from "../../components/SelfActions";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { DropZone } from "../../components/layout/DropZone";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { SelfActions } from "../../components/SelfActions";
-import { useDatalayer } from "@jhnnsrs/datalayer";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { MikroFile, Representation, Sample } from "../../linker";
+import { usePutDatasetsMate } from "../../mates/dataset/usePutDatasetsMate";
+import { useDeleteFileMate } from "../../mates/file/useDeleteFileMate";
+import { useDownloadFileMate } from "../../mates/file/useDownloadFileMate";
+import { useReleaseFileMate } from "../../mates/file/useReleaseFileMate";
+import { useReleaseRepresentationMate } from "../../mates/representation/useReleaseRepresentationMate";
+import { useReleaseSampleMate } from "../../mates/sample/useReleaseSampleMate";
+import { withMikro } from "../MikroContext";
 import {
   CommentableModels,
   DetailDatasetDocument,
   DetailDatasetQuery,
-  DetailExperimentDocument,
-  DetailExperimentQuery,
   useDetailDatasetQuery,
   usePinDatasetMutation,
   usePutDatasetsMutation,
   usePutFilesMutation,
   usePutRepresentationsMutation,
   usePutSamplesMutation,
-  useReleaseFilesMutation,
-  useReleaseRepresentationsMutation,
-  useReleaseSamplesMutation,
   useTagSearchLazyQuery,
   useUpdateDatasetMutation,
   useUploadBigFileMutation,
-  useUploadOmeroFileMutation,
 } from "../api/graphql";
-import { withMikro } from "../MikroContext";
-import { RepresentationCard } from "./cards/RepresentationCard";
 import { UploadZone } from "./UploadZone";
-import { FileCard } from "./cards/FileCard";
-import { useReleaseFileMate } from "../../mates/file/useReleaseFileMate";
-import { useDeleteFileMate } from "../../mates/file/useDeleteFileMate";
-import { useReleaseSampleMate } from "../../mates/sample/useReleaseSampleMate";
-import { useReleaseRepresentationMate } from "../../mates/representation/useReleaseRepresentationMate";
-import { SampleCard } from "./cards/SampleCard";
 import { DatasetCard } from "./cards/DatasetCard";
-import { usePutDatasetsMate } from "../../mates/dataset/usePutDatasetsMate";
+import { FileCard } from "./cards/FileCard";
+import { RepresentationCard } from "./cards/RepresentationCard";
+import { SampleCard } from "./cards/SampleCard";
 
 export type IExperimentProps = {
   id: string;
@@ -59,6 +53,7 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
 
   const relaseFileMate = useReleaseFileMate(id);
   const deleteFileMate = useDeleteFileMate();
+  const downloadMate = useDownloadFileMate();
 
   const [putDatasets] = withMikro(usePutDatasetsMutation)();
   const putDatasetsMate = usePutDatasetsMate(id);
@@ -72,6 +67,7 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
 
   const [updateDataset] = withMikro(useUpdateDatasetMutation)();
   const [pinDataset] = withMikro(usePinDatasetMutation)();
+
   const { upload } = useDatalayer();
 
   const { confirm } = useConfirm();
@@ -241,7 +237,11 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
             {data?.dataset?.omerofiles?.filter(notEmpty).map((omerofile) => (
               <FileCard
                 file={omerofile}
-                mates={[relaseFileMate, deleteFileMate(omerofile)]}
+                mates={[
+                  relaseFileMate,
+                  deleteFileMate(omerofile),
+                  downloadMate(omerofile.file),
+                ]}
               />
             ))}
 

@@ -1,8 +1,9 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { Agent } from "../../../linker";
-import { AppImage } from "../../../lok/components/AppImage";
-import { UserEmblem } from "../../../lok/components/UserEmblem";
-import { ListAgentFragment, useDeleteAgentMutation } from "../../api/graphql";
+import { useDetailClientQuery } from "../../../lok/api/graphql";
+import { withMan } from "../../../lok/context";
 import { withRekuest } from "../../RekuestContext";
+import { ListAgentFragment, useDeleteAgentMutation } from "../../api/graphql";
 
 interface TemplateCardProps {
   agent: ListAgentFragment;
@@ -10,6 +11,12 @@ interface TemplateCardProps {
 
 export const AgentCard = ({ agent }: TemplateCardProps) => {
   const [deleteAgent] = withRekuest(useDeleteAgentMutation)();
+  const { data, loading } = withMan(useDetailClientQuery)({
+    variables: {
+      clientId: agent.registry?.client.clientId,
+    },
+  });
+  const { s3resolve } = useDatalayer();
 
   return (
     <Agent.Smart
@@ -24,31 +31,42 @@ export const AgentCard = ({ agent }: TemplateCardProps) => {
         }`
       }
     >
-      <div className="">
-        <div className="flex flex-row w-full">
-          <Agent.DetailLink
-            className={({ isActive }) =>
-              "flex-grow cursor-pointer p-4 " +
-              (isActive ? "text-primary-300" : "")
-            }
-            object={agent?.id}
-          >
-            {agent.registry?.app?.identifier}
-            <p className="text-sm text-gray-500 my-auto">
-              {agent?.registry?.app?.version} on {agent?.instanceId}
-            </p>
-          </Agent.DetailLink>
-          <div className="flex-initial">
-            {agent.registry?.app && (
-              <AppImage
-                className="w-full h-full"
-                identifier={agent.registry?.app?.identifier}
-                version={agent.registry?.app?.version}
+      {loading ? (
+        <div>
+          <div className="h-10 w-10 rounded-md animate-pulse bg-gray-200" />
+        </div>
+      ) : (
+        <div className="">
+          <div className="flex flex-row w-full">
+            <Agent.DetailLink
+              className={({ isActive }) =>
+                "flex-grow cursor-pointer p-4 flex flex-row" +
+                (isActive ? "text-primary-300" : "")
+              }
+              object={agent?.id}
+            >
+              <img
+                className="h-10 w-10 rounded-md"
+                src={
+                  data?.client?.release?.logo
+                    ? s3resolve(data?.client?.release?.logo)
+                    : `https://eu.ui-avatars.com/api/?name=${data?.client?.release?.app?.identifier}&background=random`
+                }
+                alt=""
               />
-            )}
+
+              <div className="my-auto ml-2">
+                <div className="font-semibold text-md">
+                  {data?.client?.release?.app.identifier}:
+                </div>
+                <div className="font-light text-md">
+                  {data?.client?.release?.version}: on {agent?.instanceId}
+                </div>
+              </div>
+            </Agent.DetailLink>
           </div>
         </div>
-      </div>
+      )}
     </Agent.Smart>
   );
 };

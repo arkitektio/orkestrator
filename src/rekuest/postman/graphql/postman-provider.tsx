@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { toast } from "react-toastify";
 import { useAlert } from "../../../components/alerter/alerter-context";
-import { useFakts } from "@jhnnsrs/fakts";
+import { notEmpty } from "../../../floating/utils";
 import {
   AgentsEventDocument,
   AgentsEventSubscriptionResult,
@@ -29,11 +29,10 @@ import {
   WatchReservationsSubscription,
   WatchReservationsSubscriptionVariables,
 } from "../../api/graphql";
-import { WidgetsContainer } from "../../widgets/containers/ReturnWidgetsContainer";
-import { PostmanContext } from "./postman-context";
 import { withRekuest } from "../../RekuestContext";
 import { RekuestGuard } from "../../RekuestGuard";
-import { notEmpty } from "../../../floating/utils";
+import { WidgetsContainer } from "../../widgets/containers/ReturnWidgetsContainer";
+import { PostmanContext } from "./postman-context";
 export type PostmanProviderProps = {
   allowBatch?: boolean;
   children: React.ReactNode;

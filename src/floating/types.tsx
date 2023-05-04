@@ -17,6 +17,7 @@ import {
   ReturnNodeFragment,
   RunEventFragment,
   StreamItem,
+  GraphNodeFragment,
 } from "../fluss/api/graphql";
 
 export type LoadingEnhanced<T, L = {}> = T & { extras?: L };
@@ -35,6 +36,8 @@ export type LocalNodeData = LoadingEnhanced<
   DetailNodeFragment
 >;
 
+export type GraphNodeData = LoadingEnhanced<GraphNodeFragment>;
+
 export type ReactiveNodeData = LoadingEnhanced<ReactiveNodeFragment>;
 
 export type ArgNodeProps = NodeProps<ArgNodeData>;
@@ -43,6 +46,7 @@ export type KwargNodeProps = NodeProps<KwargNodeData>;
 export type IONodeProps = ArgNodeProps | ReturnNodeProps | KwargNodeProps;
 
 export type ArkitektNodeProps = NodeProps<ArkitektNodeData>;
+export type GraphNodeProps = NodeProps<GraphNodeData>;
 export type LocalNodeProps = NodeProps<LocalNodeData>;
 
 export type ReactiveNodeProps = NodeProps<ReactiveNodeData>;

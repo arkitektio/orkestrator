@@ -1,45 +1,41 @@
-mutation CreatePrivateFakt(
+mutation CreatePrivateClient(
   $identifier: String!
   $version: String!
   $scopes: [String!]!
+  $logoUrl: String
 ) {
-  createPrivateFakt(
+  createPrivateClient(
     identifier: $identifier
     version: $version
     scopes: $scopes
+    logoUrl: $logoUrl
   ) {
-    ...PrivateFakt
+    ...DetailClient
   }
 }
 
-mutation CreatePublicFakt(
+mutation CreatePublicClient(
   $identifier: String!
   $version: String!
   $redirectUris: [String!]!
   $scopes: [String!]!
   $kind: PublicFaktType!
+  $logoUrl: String
 ) {
-  createPublicFakt(
+  createPublicClient(
     identifier: $identifier
     version: $version
     redirectUris: $redirectUris
     scopes: $scopes
     kind: $kind
+    logoUrl: $logoUrl
   ) {
-    id
-    clientId
-    clientSecret
+    ...DetailClient
   }
 }
 
-mutation DeletePublicFakt($id: ID!) {
-  deletePublicFakt(id: $id) {
-    id
-  }
-}
-
-mutation DeletePrivateFakt($id: ID!) {
-  deletePrivateFakt(id: $id) {
+mutation DeleteClient($id: ID!) {
+  deleteClient(id: $id) {
     id
   }
 }

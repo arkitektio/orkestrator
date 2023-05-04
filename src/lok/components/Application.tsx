@@ -1,11 +1,11 @@
 import React from "react";
-import { AgentStatus, useAgentsQuery } from "../../rekuest/api/graphql";
 import {
   ApplicationAuthorizationGrantType,
-  useDetailApplicationQuery,
+  useDetailClientQuery,
 } from "../../lok/api/graphql";
-import { withMan } from "../man";
 import { withRekuest } from "../../rekuest";
+import { AgentStatus, useAgentsQuery } from "../../rekuest/api/graphql";
+import { withMan } from "../man";
 
 export type IAppProps = {
   clientId: string;
@@ -18,7 +18,7 @@ const isBackendApp = (
 };
 
 const Application: React.FC<IAppProps> = ({ clientId }) => {
-  const { data } = withMan(useDetailApplicationQuery)({
+  const { data } = withMan(useDetailClientQuery)({
     variables: { clientId: clientId },
   });
 
@@ -31,17 +31,21 @@ const Application: React.FC<IAppProps> = ({ clientId }) => {
       <div>
         <div>
           <div className="bg-white p-6 border border-gray-200 rounded shadow-md mt-2">
-            <p className="font-light text-xl">{data?.application?.name}</p>
+            <p className="font-light text-xl">
+              Client for {data?.client?.release?.app?.identifier}
+            </p>
             <p className="font-semibold text-md">
-              Created by {data?.application?.user?.username}
+              Created by {data?.client?.user?.username}
             </p>
 
-            {!isBackendApp(data?.application?.authorizationGrantType) && (
+            {!isBackendApp(
+              data?.client?.oauth2Client?.authorizationGrantType
+            ) && (
               <>
                 <div className="mt-4 mb-2 font-light text-md">
                   Redirect URIs
                 </div>
-                {data?.application?.redirectUris?.map((uri) => (
+                {data?.client?.oauth2Client?.redirectUris?.map((uri) => (
                   <div>{uri}</div>
                 ))}
               </>
@@ -59,7 +63,9 @@ const Application: React.FC<IAppProps> = ({ clientId }) => {
                           : "border-gray-200"
                       }`}
                     >
-                      {!isBackendApp(data?.application?.authorizationGrantType)
+                      {!isBackendApp(
+                        data?.client?.oauth2Client?.authorizationGrantType
+                      )
                         ? agent?.registry?.user?.sub
                         : "Backend"}
                     </div>

@@ -1,14 +1,10 @@
 import { useField } from "formik";
-import React, { useState } from "react";
+import React from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { useAppQuery, useUserQuery } from "../../lok/api/graphql";
+import { useDetailClientQuery, useUserQuery } from "../../lok/api/graphql";
 import { withMan } from "../../lok/man";
 import { useMikro } from "../../mikro/MikroContext";
-import {
-  ReservableTemplateFragment,
-  ReserveBindsInput,
-  ReserveParamsInput,
-} from "../api/graphql";
+import { ReservableTemplateFragment, ReserveBindsInput } from "../api/graphql";
 import { StatusPulse } from "./generic/StatusPulse";
 
 interface TemplatesDisplayProps {
@@ -40,23 +36,27 @@ export const UserImage: React.FC<{ sub: string }> = ({ sub }) => {
 };
 
 export const App: React.FC<{ clientId: string }> = ({ clientId }) => {
-  const { data, error } = withMan(useAppQuery)({
+  const { data, error } = withMan(useDetailClientQuery)({
     variables: { clientId: clientId },
   });
 
   const { s3resolve } = useMikro();
   return (
     <div>
-      {data?.app?.logo && (
+      {data?.client?.release?.logo && (
         <img
           className={`h-20 w-auto rounded-2 
             cursor-pointer`}
-          src={s3resolve(data?.app?.logo)}
+          src={s3resolve(data?.client?.release?.logo)}
           alt=""
         />
       )}
-      <div className="text-xs text-gray-500">{data?.app?.identifier}</div>
-      <div className="text-xs text-gray-500">{data?.app?.version}</div>
+      <div className="text-xs text-gray-500">
+        {data?.client?.release?.app?.identifier}
+      </div>
+      <div className="text-xs text-gray-500">
+        {data?.client?.release?.version}
+      </div>
     </div>
   );
 };

@@ -1,9 +1,5 @@
 import React, { useContext } from "react";
-import {
-  FlowFragment,
-  GlobalFragment,
-  RunFragment,
-} from "../../fluss/api/graphql";
+import { FlowFragment, RunFragment } from "../../fluss/api/graphql";
 import { FlowNode, RunState } from "../types";
 
 export type RiverTrackContextType = {
@@ -11,7 +7,7 @@ export type RiverTrackContextType = {
   run?: RunFragment | null;
   runState?: RunState | null;
   selectedNode?: FlowNode | null;
-  setRunState: (runState: RunState) => void;
+  setRunState: React.Dispatch<React.SetStateAction<RunState>>;
 };
 
 export const RiverTrackContext = React.createContext<RiverTrackContextType>({

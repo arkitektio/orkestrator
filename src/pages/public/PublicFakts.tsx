@@ -1,12 +1,12 @@
+import { Disclosure } from "@headlessui/react";
+import { useFakts } from "@jhnnsrs/fakts";
 import { Form, Formik } from "formik";
 import React from "react";
+import { useAlert } from "../../components/alerter/alerter-context";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
-import { buildFaktsRetrieveGrant, useFakts } from "@jhnnsrs/fakts";
-import { grantBuilder } from "../../constants";
-import { Disclosure } from "@headlessui/react";
-import { useAlert } from "../../components/alerter/alerter-context";
+import { manifest } from "../../constants";
 
 export interface PublicHomeProps {}
 
@@ -59,12 +59,10 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                     <button
                       type="button"
                       onClick={() =>
-                        load(
-                          grantBuilder({
-                            name: e,
-                            base_url: `${e}/f/`,
-                          })
-                        ).catch((e) => {
+                        load({
+                          endpoint: e,
+                          manifest,
+                        }).catch((e) => {
                           alert({
                             subtitle: e.message,
                             message: "Could not load fakts from this endpoint",
@@ -85,12 +83,10 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                     }}
                     onSubmit={({ host }, { setSubmitting }) => {
                       setSubmitting(true);
-                      load(
-                        grantBuilder({
-                          name: "Localhost",
-                          base_url: `${host}/f/`,
-                        })
-                      ).catch((e) => {
+                      load({
+                        endpoint: host,
+                        manifest,
+                      }).catch((e) => {
                         alert({
                           subtitle: e.message,
                           message: "Could not load fakts from this endpoint",
@@ -137,16 +133,15 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                   <Disclosure.Panel className=" sm:flex sm:justify-center lg:justify-start p-2 border-gray-200 rounded border rounded-md">
                     <Formik<ConfigValues>
                       initialValues={{
-                        host: `${window.location}`,
+                        host: `localhost:8000`,
                       }}
                       onSubmit={({ host }, { setSubmitting }) => {
                         setSubmitting(true);
-                        load(
-                          grantBuilder({
-                            name: "Localhost",
-                            base_url: `${host}/f/`,
-                          })
-                        ).catch((e) => {
+                        load({
+                          endpoint: host,
+                          manifest,
+                          introspectTimeout: 1000,
+                        }).catch((e) => {
                           alert({
                             subtitle: e.message,
                             message: "Could not load fakts from this endpoint",

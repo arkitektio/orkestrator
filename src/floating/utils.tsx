@@ -7,6 +7,7 @@ import {
 import {
   EdgeInput,
   FlowFragment,
+  FlowNodeFragment,
   NodeInput,
   StreamItem,
   StreamItemChild,
@@ -68,7 +69,7 @@ export function noTypename<T extends { [key: string]: any }>(obj: T): T {
 }
 
 export const nodes_to_flownodes = (
-  nodes: FlowFragment["graph"]["nodes"]
+  nodes: (FlowNodeFragment | null | undefined)[] | null | undefined
 ): FlowNode[] => {
   const nodes_ =
     nodes
@@ -84,6 +85,7 @@ export const nodes_to_flownodes = (
               ...rest,
             },
             dragHandle: ".custom-drag-handle",
+            parentNode: rest.parentNode ? rest.parentNode : undefined,
           };
           return node_;
         }
@@ -140,6 +142,7 @@ export const flownodes_to_nodes = (nodes: FlowNode[]): NodeInput[] => {
             id,
             position,
             type,
+            parentNode,
             data: { outstream, constream, instream, ...rest },
           } = node;
           const node_: NodeInput = {
@@ -163,6 +166,7 @@ export const flownodes_to_nodes = (nodes: FlowNode[]): NodeInput[] => {
             mapStrategy: (rest as any).mapStrategy,
             allowLocal: (rest as any).allowLocal,
             binds: (rest as any).binds,
+            parentNode: parentNode,
           };
           return node_;
         }

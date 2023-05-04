@@ -1,36 +1,29 @@
 import React, { useEffect, useState } from "react";
 import "react-contexify/dist/ReactContexify.css";
-import { EdgeTypes, useEdgesState, useNodesState } from "reactflow";
 import { AiOutlineReload } from "react-icons/ai";
-import { FiPlay } from "react-icons/fi";
-import { RiStopLine } from "react-icons/ri";
-import ReactSlider from "react-slider";
-import Timestamp from "react-timestamp";
+import { Link } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  FlowFragment,
-  RunEventFragment,
-  useDetailRunQuery,
-  useEventsBetweenLazyQuery,
-  useEventsSubscription,
-} from "../../fluss/api/graphql";
+import { EdgeTypes, useEdgesState, useNodesState } from "reactflow";
+import { useDetailRunQuery } from "../../fluss/api/graphql";
 import { withFluss } from "../../fluss/fluss";
 import { PageLayout } from "../../layout/PageLayout";
 import { Graph } from "../base/Graph";
+import { GraphNodeWidget } from "../show/nodes/GraphNodeWidget";
 import { FlowNode, NodeTypes, RunState } from "../types";
 import { edges_to_flowedges, nodes_to_flownodes } from "../utils";
-import { RiverTrackContext } from "./context";
 import { DynamicSidebar } from "./DynamicSidebar";
+import { LiveTracker } from "./LiveTracker";
+import { RangeTracker } from "./RangeTracker";
+import { RiverTrackContext } from "./context";
 import { FancyTrackEdge } from "./edges/FancyTrackEdge";
 import { LabeledTrackEdge } from "./edges/LabeledTrackEdge";
 import { ArkitektTrackNodeWidget } from "./nodes/ArkitektTrackNodeWidget";
+import { LocalTrackNodeWidget } from "./nodes/LocalTrackNodeWidget";
+import { ReactiveTrackNodeWidget } from "./nodes/ReactiveTrackNodeWidget";
 import { ArgTrackNodeWidget } from "./nodes/generic/ArgTrackNodeWidget";
 import { KwargTrackNodeWidget } from "./nodes/generic/KwargTrackNodeWidget";
 import { ReturnTrackNodeWidget } from "./nodes/generic/ReturnTrackNodeWidget";
-import { ReactiveTrackNodeWidget } from "./nodes/ReactiveTrackNodeWidget";
-import { BottomSlider } from "./Slider";
-import { Link } from "react-router-dom";
-import { LocalTrackNodeWidget } from "./nodes/LocalTrackNodeWidget";
+import { TimelineSidebar } from "./sidebars/TimelineSidebar";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektTrackNodeWidget,
@@ -39,6 +32,7 @@ const nodeTypes: NodeTypes = {
   ReturnNode: ReturnTrackNodeWidget,
   KwargNode: KwargTrackNodeWidget,
   LocalNode: LocalTrackNodeWidget,
+  GraphNode: GraphNodeWidget,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -55,113 +49,8 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
     variables: { id: id },
   });
 
-  const { data: latestEvent } = withFluss(useEventsSubscription)({
-    variables: { id: id },
-  });
-
-  const [t, setT] = useState(0);
-  const [play, setPlay] = useState(false);
-  const [triggerRange, setTriggerRange] = useState({ min: 0, max: 10 });
-
-  const [range, setRange] = useState({ min: 0, max: 100, marks: [0] });
-
-  const [rangeEvents, setRangeEvents] = useState<
-    (RunEventFragment | null | undefined)[]
-  >([]);
-
   const [state, setState] = useState<RunState>({ t: 0 });
-  const [reload, setReload] = useState(false);
   const [live, setLive] = useState<boolean>(false);
-
-  const [fetchInbetweenEvents] = withFluss(useEventsBetweenLazyQuery)();
-
-  useEffect(() => {
-    if (!live) {
-      let newEvents = rangeEvents?.reduce((prev, event) => {
-        if (event && event.t <= t) {
-          let prev_node = prev?.find((i) => i.source === event?.source);
-          if (prev_node) {
-            if (prev_node.t <= event.t) {
-              return prev.map((i) => (i.source === event.source ? event : i));
-            }
-            return prev;
-          }
-          return [...prev, event];
-        }
-        return prev;
-      }, [] as RunEventFragment[]);
-
-      console.log(newEvents);
-      setState({ t: t, events: newEvents });
-    }
-  }, [rangeEvents, t]);
-
-  useEffect(() => {
-    if (latestEvent && live) {
-      setRangeEvents((rangeEvents) => [
-        ...rangeEvents,
-        latestEvent.events?.create,
-      ]);
-      setRange((range) => ({
-        min: range.min,
-        max: (latestEvent.events?.create?.t || 0) + 1,
-        marks: range.marks,
-      }));
-      console.log(latestEvent);
-      setT(latestEvent.events?.create?.t ?? 0);
-    }
-  }, [latestEvent]);
-
-  useEffect(() => {}, [live]);
-
-  useEffect(() => {
-    if (play) {
-      const interval = setInterval(() => {
-        setT((t) => (t > range.max ? 0 : t + 1));
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [play, range]);
-
-  useEffect(() => {
-    let array = data?.run?.snapshots?.map((snapshot) => snapshot.t) || [0, 100];
-    setRange({
-      min: Math.min(...array),
-      max: Math.max(...array) + 3,
-      marks: array,
-    });
-  }, [data?.run?.snapshots]);
-
-  useEffect(() => {
-    if (t > triggerRange.max || t < triggerRange.min) {
-      setTriggerRange({ min: t, max: t + 10 });
-    }
-  }, [t, triggerRange]);
-
-  useEffect(() => {
-    setState((state) => ({
-      t: t,
-      events: state?.events?.filter((event) => event && event?.t <= t),
-    }));
-  }, [t]);
-
-  useEffect(() => {
-    console.log("fetching events");
-    fetchInbetweenEvents({
-      variables: {
-        id: id,
-        min: triggerRange.min,
-        max: triggerRange.max,
-      },
-    })
-      .then((res) => {
-        console.error(res.data?.eventsBetween);
-        setRangeEvents(res.data?.eventsBetween || []);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }, [triggerRange, fetchInbetweenEvents, id]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -184,7 +73,11 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
       }}
     >
       <PageLayout
-        sidebars={[{ key: "flow", label: "Flow", content: <DynamicSidebar /> }]}
+        sidebars={[
+          { key: "flow", label: "Flow", content: <DynamicSidebar /> },
+          ,
+          { key: "timeline", label: "Timeline", content: <TimelineSidebar /> },
+        ]}
       >
         <div className="flex flex-col flex-grow h-full overflow-x-hidden">
           <div className="flex-grow">
@@ -202,7 +95,7 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
               attributionPosition="top-right"
             />
           </div>
-          <div className="flex-initial flex row pl-3 pr-3">
+          <div className="flex-initial flex row pl-3 pr-3 h-10">
             <div
               className="flex-initial my-auto mr-4 dark:text-white cursor-pointer"
               onClick={() => refetch()}
@@ -211,57 +104,26 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
             </div>
             <div
               className="flex-initial my-auto mr-4 dark:text-white cursor-pointer"
-              onClick={() => setPlay(!play)}
-            >
-              {play ? <RiStopLine size={"1em"} /> : <FiPlay size={"1em"} />}
-            </div>
-            <div
-              className="flex-initial my-auto mr-4 dark:text-white cursor-pointer"
               onClick={() => setLive(!live)}
             >
-              {live ? "IS live" : "is past"}
+              {live ? "Live" : "Range"}
             </div>
-
-            <div className="flex-grow">
-              <ReactSlider
-                className="horizontal-slider"
-                thumbClassName="example-thumb rounded text-white border-[5px] border border-gray-100 transition-all duration-300 ease-linear"
-                markClassName="example-thumb border border-indigo-700 bg-indigo-500 cursor-pointer rounded-xs "
-                trackClassName="example-track bg-gray-700 cursor-pointer"
-                onChange={(val) => {
-                  setT(val), setPlay(false);
-                }}
-                value={t}
-                step={1}
-                renderMark={(props) => <div {...props}></div>}
-                renderThumb={(props, state) => (
-                  <div
-                    {...props}
-                    key={props.key}
-                    className={props.className + "group relative"}
-                  >
-                    <div className="absolute bottom-1  group-hover:block -translate-x-[50%] w-[10rem] p-2 text-center  rounded">
-                      <Timestamp
-                        relative
-                        date={
-                          rangeEvents.find((e) => e?.t === state.valueNow)
-                            ?.createdAt
-                        }
-                      />
-                    </div>
-                  </div>
+            {data?.run?.latestSnapshot && (
+              <div className="flex-grow flex flex-row">
+                {live ? (
+                  <LiveTracker startT={data?.run?.latestSnapshot.t} run={id} />
+                ) : (
+                  <RangeTracker run={data?.run} />
                 )}
-                marks={range.marks}
-                max={range.max}
-                min={range.min}
-              />
-            </div>
-            <Link
-              to={`/user/mikro/provenances/${id}`}
-              className="flex-initial  my-auto ml-3 dark:text-white cursor-pointer"
-            >
-              Prov
-            </Link>
+
+                <Link
+                  to={`/user/mikro/provenances/${id}`}
+                  className="flex-initial  my-auto ml-3 dark:text-white cursor-pointer"
+                >
+                  Prov
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </PageLayout>

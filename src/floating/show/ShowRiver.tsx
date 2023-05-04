@@ -14,6 +14,7 @@ import { KwargTrackNodeWidget } from "./nodes/generic/KwargTrackNodeWidget";
 import { ReturnTrackNodeWidget } from "./nodes/generic/ReturnTrackNodeWidget";
 import { ReactiveTrackNodeWidget } from "./nodes/ReactiveTrackNodeWidget";
 import { LocalShowNodeWIdget } from "./nodes/LocalShowNodeWidget";
+import { GraphNodeWidget } from "./nodes/GraphNodeWidget";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektTrackNodeWidget,
@@ -22,6 +23,7 @@ const nodeTypes: NodeTypes = {
   ArgNode: ArgTrackNodeWidget,
   ReturnNode: ReturnTrackNodeWidget,
   KwargNode: KwargTrackNodeWidget,
+  GraphNode: GraphNodeWidget,
 };
 
 const edgeTypes: EdgeTypes = {

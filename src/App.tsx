@@ -1,7 +1,7 @@
 import { FaktsGuard, FaktsProvider } from "@jhnnsrs/fakts";
 import React, { CSSProperties } from "react";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import { QueryParamProvider } from "use-query-params";
 import { ReactRouter6Adapter } from "use-query-params/adapters/react-router-6";
@@ -11,9 +11,13 @@ import "allotment/dist/style.css";
 import { MouseTransition, Preview } from "react-dnd-multi-backend";
 import "./index.css";
 import { Callback } from "./pages/Callback";
+import { Home } from "./pages/Home";
+import { Port } from "./pages/Port";
+import { Search } from "./pages/Search";
+import { Team } from "./pages/Team";
+import DashBoardHome from "./pages/dashboard/DashboardHome";
 import { DashboardAssignation } from "./pages/dashboard/assignations/DashboardAssignation";
 import { DashboardAssignations } from "./pages/dashboard/assignations/DashboardAssignations";
-import DashBoardHome from "./pages/dashboard/DashboardHome";
 import { DashboardNode } from "./pages/dashboard/nodes/DashboardNode";
 import { DashboardNodes } from "./pages/dashboard/nodes/DashboardNodes";
 import { DashboardProvision } from "./pages/dashboard/provisions/DashboardProvision";
@@ -22,11 +26,12 @@ import { DashboardReservation } from "./pages/dashboard/reservations/DashboardRe
 import { DashboardReservations } from "./pages/dashboard/reservations/DashboardReservations";
 import { DashboardTemplate } from "./pages/dashboard/templates/DashboardTemplate";
 import { DashboardTemplates } from "./pages/dashboard/templates/DashboardTemplates";
+import { DataChannel } from "./pages/data/channels/DataChannel";
 import { DataDataset } from "./pages/data/datasets/DataDataset";
 import { DataDatasets } from "./pages/data/datasets/DataDatasets";
 import { DataFile } from "./pages/data/files/DataFile";
-import { DataProvenance } from "./pages/data/provenance/DataProvenance";
 import { DataFiles } from "./pages/data/files/DataFiles";
+import { DataProvenance } from "./pages/data/provenance/DataProvenance";
 import { DataRepresentation } from "./pages/data/representations/DataRepresentation";
 import { DataRepresentations } from "./pages/data/representations/DataRepresentations";
 import { DataSample } from "./pages/data/samples/DataSample";
@@ -38,30 +43,35 @@ import { SnapshotScreen } from "./pages/detail/SnapshotScreen";
 import { TableScreen } from "./pages/detail/TableScreen";
 import { NoRoute } from "./pages/fallbacks/NoRoute";
 import FlowHome from "./pages/flows/FlowHome";
-import { Home } from "./pages/Home";
 import TeamHome from "./pages/lok/TeamHome";
-import { Port } from "./pages/Port";
 import { PortHome } from "./pages/port/PortHome";
-import { Search } from "./pages/Search";
 import { SearchHome } from "./pages/search/SearchHome";
-import { Team } from "./pages/Team";
 import "./popping.css";
 import { ExperimentalProvider } from "./providers/experimental/provider";
 
+import { ProtectedApp } from "./ProtectedApp";
+import { PublicApp } from "./PublicApp";
 import { AdaptiveHerreProvider } from "./bridges/AdaptiveHerreProvider";
 import { TauriFaktsFallback } from "./bridges/TauriFaktsFallback";
 import { TauriHerreCallback } from "./bridges/TauriHerreCallback";
 import { AlerterProvider } from "./components/alerter/alerter-provider";
 import { ConfirmerProvider } from "./components/confirmer/confirmer-provider";
 import { HealthzProvider } from "./healthz/provider";
+import { Fluss } from "./pages/Fluss";
+import { Settings } from "./pages/Settings";
 import { DashboardAgent } from "./pages/dashboard/agents/DashboardAgent";
 import { DashboardAgents } from "./pages/dashboard/agents/DashboardAgents";
+import { DashboardHistory } from "./pages/dashboard/history/DashboardHistory";
 import { DashboardRepositories } from "./pages/dashboard/repositories/DashboardRepositories";
 import { DashboardRepository } from "./pages/dashboard/repositories/DashboardRepository";
 import { DataInstrument } from "./pages/data/instruments/DataInstrument";
 import { DataInstruments } from "./pages/data/instruments/DataInstruments";
 import { DataLabel } from "./pages/data/labels/DataLabel";
 import { DataLabels } from "./pages/data/labels/DataLabels";
+import { DataLive } from "./pages/data/live/DataLive";
+import { DataLives } from "./pages/data/live/DataLives";
+import { DataMeta } from "./pages/data/metas/DataMeta";
+import { DataMetas } from "./pages/data/metas/DataMetas";
 import { DataMetric } from "./pages/data/metrics/DataMetric";
 import { DataMetrics } from "./pages/data/metrics/DataMetrics";
 import { DataObjective } from "./pages/data/objectives/DataObjective";
@@ -73,12 +83,16 @@ import { DataPositions } from "./pages/data/positions/DataPositions";
 import { DataRoi } from "./pages/data/rois/DataRoi";
 import { DataStage } from "./pages/data/stages/DataStage";
 import { DataStages } from "./pages/data/stages/DataStages";
+import { FlowTimeline } from "./pages/flows/timelines/FlowTimeline";
 import { FlowDiagram } from "./pages/flows/workspace/FlowDiagram";
 import { FlowDiagramFlow } from "./pages/flows/workspace/FlowDiagramFlow";
 import { FlowDiagramHome } from "./pages/flows/workspace/FlowDiagramHome";
-import { Fluss } from "./pages/Fluss";
 import { LokApp } from "./pages/lok/apps/LokApp";
 import { LokApps } from "./pages/lok/apps/LokApps";
+import { LokClient } from "./pages/lok/clients/LokClient";
+import { LokClients } from "./pages/lok/clients/LokClients";
+import { LokRelease } from "./pages/lok/releases/LokRelease";
+import { LokReleases } from "./pages/lok/releases/LokReleases";
 import { ManTeam } from "./pages/lok/teams/ManTeam";
 import { ManTeams } from "./pages/lok/teams/ManTeams";
 import { ManUser } from "./pages/lok/users/ManUser";
@@ -94,15 +108,8 @@ import { PortWhales } from "./pages/port/whales/PortWhales";
 import { PublicFakts } from "./pages/public/PublicFakts";
 import { PublicHealthz } from "./pages/public/PublicHealthz";
 import { PublicLogin } from "./pages/public/PublicLogin";
-import { Settings } from "./pages/Settings";
 import { SettingsHome } from "./pages/settings/SettingsHome";
-import { ProtectedApp } from "./ProtectedApp";
-import { PublicApp } from "./PublicApp";
 import { TauriProvider } from "./tauri/provider";
-import { DataLive } from "./pages/data/live/DataLive";
-import { DataLives } from "./pages/data/live/DataLives";
-import { FlowTimeline } from "./pages/flows/timelines/FlowTimeline";
-import { DashboardHistory } from "./pages/dashboard/history/DashboardHistory";
 
 export const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 export const Data = React.lazy(() => import("./pages/Data"));
@@ -289,6 +296,10 @@ export const MainApp: React.FC<Props> = (props) => {
                                     element={<DataObjective />}
                                   />
                                   <Route
+                                    path="channels/:channel"
+                                    element={<DataChannel />}
+                                  />
+                                  <Route
                                     path="objectives"
                                     element={<DataObjectives />}
                                   />
@@ -300,6 +311,11 @@ export const MainApp: React.FC<Props> = (props) => {
                                     path="positions"
                                     element={<DataPositions />}
                                   />
+                                  <Route
+                                    path="metas/:id"
+                                    element={<DataMeta />}
+                                  />
+                                  <Route path="metas" element={<DataMetas />} />
                                   <Route
                                     path="lives/:id"
                                     element={<DataLive />}
@@ -360,24 +376,24 @@ export const MainApp: React.FC<Props> = (props) => {
                                     element={<ManUser />}
                                   />
                                   <Route path="users" element={<ManUsers />} />
-                                  <Route
-                                    path="publicfakts/:id"
-                                    element={<ManUsers />}
-                                  />
-                                  <Route
-                                    path="publicfakts"
-                                    element={<ManUsers />}
-                                  />
-                                  <Route
-                                    path="privatefakts/:id"
-                                    element={<ManUsers />}
-                                  />
-                                  <Route
-                                    path="privatefakts"
-                                    element={<ManUsers />}
-                                  />
                                   <Route path="apps/:id" element={<LokApp />} />
                                   <Route path="apps" element={<LokApps />} />
+                                  <Route
+                                    path="clients/:id"
+                                    element={<LokClient />}
+                                  />
+                                  <Route
+                                    path="clients"
+                                    element={<LokClients />}
+                                  />
+                                  <Route
+                                    path="releases/:id"
+                                    element={<LokRelease />}
+                                  />
+                                  <Route
+                                    path="releases"
+                                    element={<LokReleases />}
+                                  />
                                 </Route>
 
                                 {/* Fluss */}

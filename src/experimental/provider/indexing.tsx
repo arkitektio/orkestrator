@@ -1,7 +1,4 @@
 import {
-  HTTPStore,
-  openGroup,
-  openArray,
   ZarrArray,
   Group as ZarrGroup,
   slice,

@@ -1,22 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useParams } from "react-router";
+import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
+import { notEmpty } from "../../../floating/utils";
+import { PageLayout } from "../../../layout/PageLayout";
+import { SectionTitle } from "../../../layout/SectionTitle";
+import { Provision, Reservation, Template } from "../../../linker";
+import { withRekuest } from "../../../rekuest";
 import {
   useDetailAgentQuery,
   useProvideMutation,
 } from "../../../rekuest/api/graphql";
-import { ProvisionPulse } from "../../../rekuest/components/generic/StatusPulse";
-import { SmartModel } from "../../../rekuest/selection/SmartModel";
-import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
-import { notEmpty } from "../../../floating/utils";
-import { PageLayout } from "../../../layout/PageLayout";
-import { Provision, Reservation, Template } from "../../../linker";
-import { withRekuest } from "../../../rekuest";
-import { AppImage } from "../../../lok/components/AppImage";
-import { UserEmblem } from "../../../lok/components/UserEmblem";
-import { UserTag } from "../../../lok/components/UserTag";
-import { AppTag } from "../../../lok/components/AppTag";
 import { RegistryTag } from "../../../rekuest/components/RegistryTag";
-import { SectionTitle } from "../../../layout/SectionTitle";
+import { ProvisionPulse } from "../../../rekuest/components/generic/StatusPulse";
 
 export interface DashboardAgentProps {}
 

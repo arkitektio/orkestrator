@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { TrackRiver } from "../../floating/track/TrackRiver";
 import { DetailAssignationFragment } from "../../rekuest/api/graphql";
 import { useDetailRunQuery } from "../api/graphql";
 import { withFluss } from "../fluss";
-import { Run } from "./Run";
 
 export interface FlussAssignationProps {
   assignation: DetailAssignationFragment;

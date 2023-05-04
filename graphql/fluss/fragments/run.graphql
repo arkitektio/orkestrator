@@ -27,6 +27,7 @@ fragment Run on Run {
     id
     status
     t
+    createdAt
   }
   createdAt
   latestSnapshot {

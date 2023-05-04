@@ -1,17 +1,13 @@
-import { HTMLAttributes, ImgHTMLAttributes } from "react";
-import { Link } from "react-router-dom";
-import { App, User } from "../../linker";
 import { useMikro } from "../../mikro/MikroContext";
-import { useAppQuery, useUserQuery } from "../api/graphql";
+import { useAppQuery } from "../api/graphql";
 import { withMan } from "../man";
 
 export const AppImage: React.FC<{
-  version: string;
   identifier: string;
   className?: string;
-}> = ({ version, identifier, ...props }) => {
+}> = ({ identifier, ...props }) => {
   const { data, error } = withMan(useAppQuery)({
-    variables: { identifier, version },
+    variables: { identifier },
   });
 
   const { s3resolve } = useMikro();

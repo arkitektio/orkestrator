@@ -120,6 +120,11 @@ fragment DetailRepresentation on Representation {
     type
   }
 
+  tableOrigins {
+    id
+    name
+  }
+
   roiOrigins {
     id
     label
