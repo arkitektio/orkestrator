@@ -4,6 +4,7 @@ import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Representation } from "../linker";
 import { useMikroLinkMate } from "../mates/generics/useLinkMate";
+import { withMikro } from "../mikro/MikroContext";
 import {
   MyRepresentationsEventDocument,
   MyRepresentationsEventSubscriptionResult,
@@ -11,7 +12,6 @@ import {
   useMyRepresentationsQuery,
 } from "../mikro/api/graphql";
 import { RepresentationCard } from "../mikro/components/cards/RepresentationCard";
-import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 
@@ -98,7 +98,7 @@ const MyRepresentations: React.FC<
           <SectionTitle>
             <div className="flex flex-row">
               <Representation.ListLink className="flex-0">
-                Latest Images
+                Images
               </Representation.ListLink>
               <div className="flex-grow"></div>
               <div className="flex-0">
