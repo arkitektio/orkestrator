@@ -30,7 +30,7 @@ const MyEras: React.FC<MyAcquisitionsProps & DataHomeFilterParams> = ({
 
   return (
     <div>
-      <div className="font-light text-xl flex mr-2 dark:text-white">
+      {data?.myeras && data?.myeras.length > 0 && <><div className="font-light text-xl flex mr-2 dark:text-white">
         <Stage.ListLink className="flex-0">Eras</Stage.ListLink>
         <div className="flex-grow"></div>
         <div className="flex-0">
@@ -63,7 +63,8 @@ const MyEras: React.FC<MyAcquisitionsProps & DataHomeFilterParams> = ({
           .map((e, index) => (
             <EraCard key={index} era={e} mates={[]} />
           ))}
-      </ResponsiveContainerGrid>
+      </ResponsiveContainerGrid></>
+}
     </div>
   );
 };
