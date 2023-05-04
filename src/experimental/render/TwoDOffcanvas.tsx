@@ -1,37 +1,34 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Layer, Line, Rect, Stage } from "react-konva";
-import { useNavigate } from "react-router";
-import { notEmpty } from "../../floating/utils";
-import { SaveParentSize } from "../../layout/SaveParentSize";
-import { Roi } from "../../linker";
-import {
-  DetailRepresentationDocument,
-  DetailRepresentationFragment,
-  RepresentationVariety,
-  RoiType,
-  RoiTypeInput,
-  useCreate_RoiMutation,
-  useCreate_ThumbnailMutation,
-} from "../../mikro/api/graphql";
-import { useMikro, withMikro } from "../../mikro/MikroContext";
-import { useSettings } from "../../settings/settings-context";
-import { ImageView, useXarray } from "../provider/context";
-import {
-  AvailableColormap,
-  XArrayProvider,
-  available_color_maps,
-} from "../provider/provider";
 import { Listbox } from "@headlessui/react";
+import { useDatalayer } from "@jhnnsrs/datalayer";
+import cn from "classnames";
+import React, { useEffect, useRef, useState } from "react";
 import {
   BsCloudUpload,
   BsDownload,
   BsFillSquareFill,
   BsSquare,
 } from "react-icons/bs";
-import { C } from "@tauri-apps/api/event-2a9960e7";
+import { Layer, Line, Rect, Stage } from "react-konva";
+import { useNavigate } from "react-router";
 import ReactSlider from "react-slider";
 import { useDebounce } from "use-debounce";
-import cn from "classnames";
+import { notEmpty } from "../../floating/utils";
+import { SaveParentSize } from "../../layout/SaveParentSize";
+import { Channel, Roi, Timepoint } from "../../linker";
+import { withMikro } from "../../mikro/MikroContext";
+import {
+  DetailRepresentationDocument,
+  DetailRepresentationFragment,
+  RepresentationVariety,
+  RoiType,
+  RoiTypeInput,
+  useActivesViewForRepresentationLazyQuery,
+  useCreate_RoiMutation,
+  useCreate_ThumbnailMutation,
+} from "../../mikro/api/graphql";
+import { useSettings } from "../../settings/settings-context";
+import { ImageView, useXarray } from "../provider/context";
+import { AvailableColormap, available_color_maps } from "../provider/provider";
 import { dtypeToMinMax } from "../provider/utils";
 export interface TwoDProps {
   representation: DetailRepresentationFragment;
@@ -94,6 +91,11 @@ export const Canvas: React.FC<{
       ];
     },
   });
+
+  const [getViews, { data: views }] = withMikro(
+    useActivesViewForRepresentationLazyQuery
+  )();
+
   const layerRef = useRef<HTMLCanvasElement>(null);
   const [imageData, setImageData] = useState<ImageBitmap | null>(null);
   const [activeColormap, setColormap] = useState<AvailableColormap>(colormap);
@@ -210,6 +212,18 @@ export const Canvas: React.FC<{
   useEffect(() => {
     console.log("Loading image slice...");
     downloadImage(debouncedC, debouncedT, debouncedZ, path);
+  }, [path, debouncedC, debouncedT, debouncedZ]);
+
+  useEffect(() => {
+    console.log("Loading image slice...");
+    getViews({
+      variables: {
+        representation: representation.id,
+        c: debouncedC,
+        t: debouncedT,
+        z: debouncedZ,
+      },
+    }).catch((e) => console.log(e));
   }, [path, debouncedC, debouncedT, debouncedZ]);
 
   useEffect(() => {
@@ -353,7 +367,7 @@ export const Canvas: React.FC<{
               <button
                 className="ml-2  hover:bg-gray-700 text-white font-bold  px-2 rounded group-hover:block hidden"
                 onClick={() => {
-                  setCurrentT((t) => (t - 1 <= 0 ? -1 : z - 1));
+                  setCurrentT((t) => (t - 1 <= 0 ? -1 : t - 1));
                 }}
               >
                 -
@@ -361,7 +375,7 @@ export const Canvas: React.FC<{
               <button
                 className=" hover:bg-gray-700 text-white font-bold px-2 rounded group-hover:block hidden"
                 onClick={() => {
-                  setCurrentT((t) => (t + 1 > tdims - 1 ? 0 : z + 1));
+                  setCurrentT((t) => (t + 1 > tdims - 1 ? 0 : t + 1));
                 }}
               >
                 +
@@ -447,6 +461,39 @@ export const Canvas: React.FC<{
           height={height}
           representation={representation}
         />
+      )}
+      {views?.views && views.views.length > 0 && (
+        <div className="absolute top-10 left-0 z-10 flex flex-col gap-2 group-hover:block hidden text-white opacity-100 flex flex-row">
+          {views?.views?.filter(notEmpty).map((view) => {
+            return (
+              <div
+                key={view.id}
+                className=" pb-1 from-black to- z-10 flex flex-row gap-2 group-hover:block hidden text-white opacity-100"
+                style={{ width: width }}
+              >
+                <div className="flex flex-row px-2 mb-1">
+                  <div className="flex-initial group flex flex-row">
+                    {view.channel && (
+                      <Channel.DetailLink object={view.channel.id}>
+                        C: {view.channel.name}
+                      </Channel.DetailLink>
+                    )}
+                    {view.timepoint && (
+                      <Timepoint.DetailLink object={view.timepoint.id}>
+                        T: {view.timepoint.name}
+                      </Timepoint.DetailLink>
+                    )}
+                    {view.position && (
+                      <Timepoint.DetailLink object={view.position.id}>
+                        P: {view.position.name}
+                      </Timepoint.DetailLink>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -664,7 +711,7 @@ export const TwoDOffcanvas = ({
   withRois,
   follow = "width",
 }: TwoDProps) => {
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   const [z, setZ] = useState(
     representation.shape ? Math.floor(representation.shape[2] / 2) : 0
   );

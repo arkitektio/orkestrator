@@ -1,0 +1,18 @@
+query DetailEra($id: ID!) {
+  era(id: $id) {
+    ...Era
+  }
+}
+
+query MyEras($limit: Int, $offset: Int, $createdDay: DateTime) {
+  myeras(limit: $limit, offset: $offset, createdDay: $createdDay) {
+    ...ListEra
+  }
+}
+
+query EraSearch($search: String) {
+  options: eras(name: $search, limit: 30) {
+    value: id
+    label: name
+  }
+}

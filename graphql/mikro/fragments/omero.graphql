@@ -132,6 +132,11 @@ fragment DetailOmero on Omero {
       name
     }
   }
+  timepoints {
+    id
+    name
+    deltaT
+  }
   views {
     id
     xMin
@@ -153,6 +158,13 @@ fragment DetailOmero on Omero {
       id
       name
       x
+      y
+      z
+    }
+    timepoint {
+      id
+      name
+      deltaT
     }
   }
 

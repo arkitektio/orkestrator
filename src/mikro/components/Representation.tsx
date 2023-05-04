@@ -764,20 +764,6 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                                     "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95))",
                                 }
                           }
-                          additionalMates={() => {
-                            return [
-                              {
-                                label: "Delete Rep",
-                                action: async () => {
-                                  return deleteRepresentation({
-                                    variables: {
-                                      id: rep.id,
-                                    },
-                                  });
-                                },
-                              },
-                            ];
-                          }}
                         >
                           <div className="truncate">
                             <Representation.DetailLink object={rep.id}>
@@ -821,20 +807,6 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                                     "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95))",
                                 }
                           }
-                          additionalMates={() => {
-                            return [
-                              {
-                                label: "Delete Rep",
-                                action: async () => {
-                                  return deleteRepresentation({
-                                    variables: {
-                                      id: rep.id,
-                                    },
-                                  });
-                                },
-                              },
-                            ];
-                          }}
                         >
                           <Representation.DetailLink object={rep.id}>
                             {rep.name}

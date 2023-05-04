@@ -1,0 +1,31 @@
+query ActivesViewForRepresentation(
+  $representation: ID!
+  $z: Float
+  $t: Float
+  $c: Float
+  $x: Float
+  $y: Float
+) {
+  views(
+    representation: $representation
+    activeForZ: $z
+    activeForT: $t
+    activeForC: $c
+    activeForX: $x
+    activeForY: $y
+  ) {
+    id
+    timepoint {
+      id
+      name
+    }
+    position {
+      id
+      name
+    }
+    channel {
+      id
+      name
+    }
+  }
+}

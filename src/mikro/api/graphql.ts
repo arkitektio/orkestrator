@@ -163,6 +163,7 @@ export enum CommentableModels {
   GrunnlagDatalink = 'GRUNNLAG_DATALINK',
   GrunnlagDataset = 'GRUNNLAG_DATASET',
   GrunnlagDimensionmap = 'GRUNNLAG_DIMENSIONMAP',
+  GrunnlagEra = 'GRUNNLAG_ERA',
   GrunnlagExperiment = 'GRUNNLAG_EXPERIMENT',
   GrunnlagExperimentalgroup = 'GRUNNLAG_EXPERIMENTALGROUP',
   GrunnlagFeature = 'GRUNNLAG_FEATURE',
@@ -180,6 +181,7 @@ export enum CommentableModels {
   GrunnlagSample = 'GRUNNLAG_SAMPLE',
   GrunnlagStage = 'GRUNNLAG_STAGE',
   GrunnlagThumbnail = 'GRUNNLAG_THUMBNAIL',
+  GrunnlagTimepoint = 'GRUNNLAG_TIMEPOINT',
   GrunnlagUsermeta = 'GRUNNLAG_USERMETA',
   GrunnlagVideo = 'GRUNNLAG_VIDEO',
   GrunnlagView = 'GRUNNLAG_VIEW'
@@ -357,6 +359,11 @@ export type DeleteDimensionsMap = {
   id?: Maybe<Scalars['ID']>;
 };
 
+export type DeleteEraResult = {
+  __typename?: 'DeleteEraResult';
+  id?: Maybe<Scalars['String']>;
+};
+
 export type DeleteExperimentResult = {
   __typename?: 'DeleteExperimentResult';
   id?: Maybe<Scalars['String']>;
@@ -412,6 +419,11 @@ export type DeleteTableResult = {
   id?: Maybe<Scalars['String']>;
 };
 
+export type DeleteTimepointResult = {
+  __typename?: 'DeleteTimepointResult';
+  id?: Maybe<Scalars['String']>;
+};
+
 export type DeleteViewReturn = {
   __typename?: 'DeleteViewReturn';
   id?: Maybe<Scalars['ID']>;
@@ -459,6 +471,47 @@ export type DimensionMap = {
   /** The index of the channel */
   index: Scalars['Int'];
   omero: Omero;
+};
+
+/** Era(id, created_by, created_through, created_while, name, start, end, created_at) */
+export type Era = {
+  __typename?: 'Era';
+  comments?: Maybe<Array<Maybe<Comment>>>;
+  /** The time the experiment was created */
+  createdAt: Scalars['DateTime'];
+  createdBy?: Maybe<User>;
+  createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
+  /** The end of the era */
+  end?: Maybe<Scalars['DateTime']>;
+  id: Scalars['ID'];
+  /** The name of the era */
+  name: Scalars['String'];
+  pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the era */
+  pinnedBy: Array<User>;
+  /** The start of the era */
+  start?: Maybe<Scalars['DateTime']>;
+  /** A comma-separated list of tags. */
+  tags?: Maybe<Array<Maybe<Scalars['String']>>>;
+  /** Associated Timepoints */
+  timepoints?: Maybe<Array<Maybe<Timepoint>>>;
+};
+
+
+/** Era(id, created_by, created_through, created_while, name, start, end, created_at) */
+export type EraTimepointsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  deltaT?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
 };
 
 /**
@@ -818,6 +871,7 @@ export enum LinkableModels {
   GrunnlagDatalink = 'GRUNNLAG_DATALINK',
   GrunnlagDataset = 'GRUNNLAG_DATASET',
   GrunnlagDimensionmap = 'GRUNNLAG_DIMENSIONMAP',
+  GrunnlagEra = 'GRUNNLAG_ERA',
   GrunnlagExperiment = 'GRUNNLAG_EXPERIMENT',
   GrunnlagExperimentalgroup = 'GRUNNLAG_EXPERIMENTALGROUP',
   GrunnlagFeature = 'GRUNNLAG_FEATURE',
@@ -835,6 +889,7 @@ export enum LinkableModels {
   GrunnlagSample = 'GRUNNLAG_SAMPLE',
   GrunnlagStage = 'GRUNNLAG_STAGE',
   GrunnlagThumbnail = 'GRUNNLAG_THUMBNAIL',
+  GrunnlagTimepoint = 'GRUNNLAG_TIMEPOINT',
   GrunnlagUsermeta = 'GRUNNLAG_USERMETA',
   GrunnlagVideo = 'GRUNNLAG_VIDEO',
   GrunnlagView = 'GRUNNLAG_VIEW',
@@ -867,6 +922,7 @@ export type LokClient = {
   datalinkCreatedThrough: Array<DataLink>;
   datasetCreatedThrough: Array<Dataset>;
   dimensionmapCreatedThrough: Array<DimensionMap>;
+  eraCreatedThrough: Array<Era>;
   experimentCreatedThrough: Array<Experiment>;
   featureCreatedThrough: Array<Feature>;
   grantType: LokClientGrantType;
@@ -888,6 +944,7 @@ export type LokClient = {
   stageCreatedThrough: Array<Stage>;
   tableCreatedThrough: Array<Table>;
   thumbnailCreatedThrough: Array<Thumbnail>;
+  timepointCreatedThrough: Array<Timepoint>;
   videoCreatedThrough: Array<Video>;
   viewCreatedThrough: Array<View>;
 };
@@ -1058,6 +1115,17 @@ export type Mutation = {
    */
   createDimensionMap?: Maybe<DimensionMap>;
   /**
+   * Creates a Stage
+   *
+   *     This mutation creates a Feature and returns the created Feature.
+   *     We require a reference to the label that the feature belongs to.
+   *     As well as the key and value of the feature.
+   *
+   *     There can be multiple features with the same label, but only one feature per key
+   *     per label
+   */
+  createEra?: Maybe<Era>;
+  /**
    * Create an Experiment
    *
    *     This mutation creates an Experiment and returns the created Experiment.
@@ -1154,6 +1222,17 @@ export type Mutation = {
   /** Creates a Representation */
   createTable?: Maybe<Table>;
   /**
+   * Creates a Timepoint
+   *
+   *     This mutation creates a Feature and returns the created Feature.
+   *     We require a reference to the label that the feature belongs to.
+   *     As well as the key and value of the feature.
+   *
+   *     There can be multiple features with the same label, but only one feature per key
+   *     per label
+   */
+  createTimepoint?: Maybe<Timepoint>;
+  /**
    * Creates a Feature
    *
    *     This mutation creates a Feature and returns the created Feature.
@@ -1204,6 +1283,12 @@ export type Mutation = {
    *
    *     This mutation deletes an Experiment and returns the deleted Experiment.
    */
+  deleteEra?: Maybe<DeleteEraResult>;
+  /**
+   * Delete Experiment
+   *
+   *     This mutation deletes an Experiment and returns the deleted Experiment.
+   */
   deleteExperiment?: Maybe<DeleteExperimentResult>;
   /**
    * Delete Experiment
@@ -1246,6 +1331,12 @@ export type Mutation = {
    *
    *     This mutation deletes an Experiment and returns the deleted Experiment.
    */
+  deleteTimepoint?: Maybe<DeleteTimepointResult>;
+  /**
+   * Delete Experiment
+   *
+   *     This mutation deletes an Experiment and returns the deleted Experiment.
+   */
   deleteView?: Maybe<DeleteViewReturn>;
   /** Creates a Representation */
   fromDf?: Maybe<Table>;
@@ -1279,6 +1370,12 @@ export type Mutation = {
    */
   pinDataset?: Maybe<Dataset>;
   /**
+   * Pin Stage
+   *
+   *     This mutation pins an Experiment and returns the pinned Experiment.
+   */
+  pinEra?: Maybe<Era>;
+  /**
    * Pin Experiment
    *
    *     This mutation pins an Experiment and returns the pinned Experiment.
@@ -1302,6 +1399,12 @@ export type Mutation = {
    *     This mutation pins an Experiment and returns the pinned Experiment.
    */
   pinStage?: Maybe<Stage>;
+  /**
+   * Pin Acquisition
+   *
+   *     This mutation pins an Experiment and returns the pinned Experiment.
+   */
+  pinTimepoint?: Maybe<Timepoint>;
   /** Presign a file for upload */
   presign?: Maybe<Presigned>;
   putDatasets?: Maybe<Dataset>;
@@ -1457,6 +1560,16 @@ export type MutationCreateDimensionMapArgs = {
   dim: Dimension;
   index: Scalars['Int'];
   omero: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationCreateEraArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
+  end?: InputMaybe<Scalars['DateTime']>;
+  name?: InputMaybe<Scalars['String']>;
+  start?: InputMaybe<Scalars['DateTime']>;
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
 
 
@@ -1619,6 +1732,17 @@ export type MutationCreateTableArgs = {
 
 
 /** The root Mutation */
+export type MutationCreateTimepointArgs = {
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
+  deltaT: Scalars['Float'];
+  era: Scalars['ID'];
+  name?: InputMaybe<Scalars['String']>;
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  tolerance?: InputMaybe<Scalars['Float']>;
+};
+
+
+/** The root Mutation */
 export type MutationCreateViewArgs = {
   view: ViewInput;
 };
@@ -1654,6 +1778,12 @@ export type MutationDeleteDatasetArgs = {
 
 /** The root Mutation */
 export type MutationDeleteDimensionMapArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationDeleteEraArgs = {
   id: Scalars['ID'];
 };
 
@@ -1725,6 +1855,12 @@ export type MutationDeleteTableArgs = {
 
 
 /** The root Mutation */
+export type MutationDeleteTimepointArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
 export type MutationDeleteViewArgs = {
   id: Scalars['ID'];
 };
@@ -1791,6 +1927,13 @@ export type MutationPinDatasetArgs = {
 
 
 /** The root Mutation */
+export type MutationPinEraArgs = {
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+};
+
+
+/** The root Mutation */
 export type MutationPinExperimentArgs = {
   id: Scalars['ID'];
   pin: Scalars['Boolean'];
@@ -1827,6 +1970,13 @@ export type MutationPinSampleArgs = {
 
 /** The root Mutation */
 export type MutationPinStageArgs = {
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+};
+
+
+/** The root Mutation */
+export type MutationPinTimepointArgs = {
   id: Scalars['ID'];
   pin: Scalars['Boolean'];
 };
@@ -2128,6 +2278,8 @@ export type Omero = {
   positions: Array<Position>;
   representation: Representation;
   scale?: Maybe<Array<Maybe<Scalars['Float']>>>;
+  /** Associated Timepoints */
+  timepoints?: Maybe<Array<Maybe<Timepoint>>>;
   /** Associated views */
   views?: Maybe<Array<Maybe<View>>>;
 };
@@ -2159,12 +2311,42 @@ export type OmeroDimensionMapsArgs = {
  *
  *
  */
-export type OmeroViewsArgs = {
+export type OmeroTimepointsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  deltaT?: InputMaybe<Scalars['Float']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
-  z?: InputMaybe<Scalars['Float']>;
+  order?: InputMaybe<Scalars['String']>;
+};
+
+
+/**
+ * Omero is a through model that stores the real world context of an image
+ *
+ *     This means that it stores the position (corresponding to the relative displacement to
+ *     a stage (Both are models)), objective and other meta data of the image.
+ *
+ *
+ */
+export type OmeroViewsArgs = {
+  activeForC?: InputMaybe<Scalars['Float']>;
+  activeForT?: InputMaybe<Scalars['Float']>;
+  activeForX?: InputMaybe<Scalars['Float']>;
+  activeForY?: InputMaybe<Scalars['Float']>;
+  activeForZ?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  omero?: InputMaybe<Scalars['ID']>;
+  representation?: InputMaybe<Scalars['ID']>;
+  z?: InputMaybe<Scalars['String']>;
 };
 
 /**
@@ -2248,6 +2430,7 @@ export type OmeroRepresentationInput = {
   planes?: InputMaybe<Array<InputMaybe<PlaneInput>>>;
   positions?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   scale?: InputMaybe<Array<InputMaybe<Scalars['Float']>>>;
+  timepoints?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 export enum PandasDType {
@@ -2633,6 +2816,29 @@ export type Query = {
    *
    *
    */
+  era?: Maybe<Era>;
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  eras?: Maybe<Array<Maybe<Era>>>;
+  /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
   experiment?: Maybe<Experiment>;
   /**
    * All Experiments
@@ -2807,6 +3013,13 @@ export type Query = {
    *     the `experiments` query, but it does not return all Experiments that
    *     the user has access to.
    */
+  myeras?: Maybe<Array<Maybe<Era>>>;
+  /**
+   * My Experiments runs a fast query on the database to return all
+   *     Experiments that the user has created. This query is faster than
+   *     the `experiments` query, but it does not return all Experiments that
+   *     the user has access to.
+   */
   myexperiments?: Maybe<Array<Maybe<Experiment>>>;
   mymentions?: Maybe<Array<Maybe<Comment>>>;
   /**
@@ -2854,6 +3067,13 @@ export type Query = {
   mystages?: Maybe<Array<Maybe<Stage>>>;
   /** My samples return all of the users samples attached to the current user */
   mytables?: Maybe<Array<Maybe<Table>>>;
+  /**
+   * My Experiments runs a fast query on the database to return all
+   *     Experiments that the user has created. This query is faster than
+   *     the `experiments` query, but it does not return all Experiments that
+   *     the user has access to.
+   */
+  mytimepoints?: Maybe<Array<Maybe<Timepoint>>>;
   /**
    * Get a single instrumes by ID
    *
@@ -3076,6 +3296,29 @@ export type Query = {
    *
    */
   thumbnails?: Maybe<Array<Maybe<Thumbnail>>>;
+  /**
+   * Get a single experiment by ID"
+   *
+   *     Returns a single experiment by ID. If the user does not have access
+   *     to the experiment, an error will be raised.
+   *
+   *
+   */
+  timepoint?: Maybe<Timepoint>;
+  /**
+   * All Experiments
+   *
+   *     This query returns all Experiments that are stored on the platform
+   *     depending on the user's permissions. Generally, this query will return
+   *     all Experiments that the user has access to. If the user is an amdin
+   *     or superuser, all Experiments will be returned.
+   *
+   *     If you want to retrieve only the Experiments that you have created,
+   *     use the `myExperiments` query.
+   *
+   *
+   */
+  timepoints?: Maybe<Array<Maybe<Timepoint>>>;
   /** Get a list of users */
   user?: Maybe<User>;
   /** Get a list of users */
@@ -3221,6 +3464,26 @@ export type QueryDimensionmapsArgs = {
   dims?: InputMaybe<Array<InputMaybe<Dimension>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   index?: InputMaybe<Scalars['Float']>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+};
+
+
+/** The root Query */
+export type QueryEraArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryErasArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -3458,6 +3721,20 @@ export type QueryMydatasetsArgs = {
 
 
 /** The root Query */
+export type QueryMyerasArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+};
+
+
+/** The root Query */
 export type QueryMyexperimentsArgs = {
   app?: InputMaybe<Scalars['String']>;
   createdAfter?: InputMaybe<Scalars['DateTime']>;
@@ -3611,6 +3888,22 @@ export type QueryMytablesArgs = {
   offset?: InputMaybe<Scalars['Int']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Query */
+export type QueryMytimepointsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  deltaT?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
 };
 
 
@@ -3900,6 +4193,28 @@ export type QueryThumbnailsArgs = {
 
 
 /** The root Query */
+export type QueryTimepointArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryTimepointsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  deltaT?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
 export type QueryUserArgs = {
   id?: InputMaybe<Scalars['ID']>;
 };
@@ -3944,11 +4259,18 @@ export type QueryViewArgs = {
 
 /** The root Query */
 export type QueryViewsArgs = {
+  activeForC?: InputMaybe<Scalars['Float']>;
+  activeForT?: InputMaybe<Scalars['Float']>;
+  activeForX?: InputMaybe<Scalars['Float']>;
+  activeForY?: InputMaybe<Scalars['Float']>;
+  activeForZ?: InputMaybe<Scalars['Float']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
-  z?: InputMaybe<Scalars['Float']>;
+  omero?: InputMaybe<Scalars['ID']>;
+  representation?: InputMaybe<Scalars['ID']>;
+  z?: InputMaybe<Scalars['String']>;
 };
 
 /**
@@ -4426,6 +4748,8 @@ export type RepresentationViewInput = {
   tMax?: InputMaybe<Scalars['Int']>;
   /** The x coord of the position (relative to origin) */
   tMin?: InputMaybe<Scalars['Int']>;
+  /** The position you want to associate with this map */
+  timepoint?: InputMaybe<Scalars['ID']>;
   /** The x coord of the position (relative to origin) */
   xMax?: InputMaybe<Scalars['Int']>;
   /** The x coord of the position (relative to origin) */
@@ -4545,6 +4869,7 @@ export enum SharableModels {
   GrunnlagDatalink = 'GRUNNLAG_DATALINK',
   GrunnlagDataset = 'GRUNNLAG_DATASET',
   GrunnlagDimensionmap = 'GRUNNLAG_DIMENSIONMAP',
+  GrunnlagEra = 'GRUNNLAG_ERA',
   GrunnlagExperiment = 'GRUNNLAG_EXPERIMENT',
   GrunnlagExperimentalgroup = 'GRUNNLAG_EXPERIMENTALGROUP',
   GrunnlagFeature = 'GRUNNLAG_FEATURE',
@@ -4562,6 +4887,7 @@ export enum SharableModels {
   GrunnlagSample = 'GRUNNLAG_SAMPLE',
   GrunnlagStage = 'GRUNNLAG_STAGE',
   GrunnlagThumbnail = 'GRUNNLAG_THUMBNAIL',
+  GrunnlagTimepoint = 'GRUNNLAG_TIMEPOINT',
   GrunnlagUsermeta = 'GRUNNLAG_USERMETA',
   GrunnlagVideo = 'GRUNNLAG_VIDEO',
   GrunnlagView = 'GRUNNLAG_VIEW'
@@ -4752,6 +5078,44 @@ export type Thumbnail = {
   representation: Representation;
 };
 
+/** The relative position of a sample on a microscope stage */
+export type Timepoint = {
+  __typename?: 'Timepoint';
+  comments?: Maybe<Array<Maybe<Comment>>>;
+  /** The time the experiment was created */
+  createdAt: Scalars['DateTime'];
+  createdBy?: Maybe<User>;
+  createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
+  deltaT?: Maybe<Scalars['Float']>;
+  era: Era;
+  id: Scalars['ID'];
+  /** The name of the timepoint */
+  name?: Maybe<Scalars['String']>;
+  /** Associated images through Omero */
+  omeros?: Maybe<Array<Maybe<Omero>>>;
+  pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the position */
+  pinnedBy: Array<User>;
+  /** A comma-separated list of tags. */
+  tags?: Maybe<Array<Maybe<Scalars['String']>>>;
+  views: Array<View>;
+};
+
+
+/** The relative position of a sample on a microscope stage */
+export type TimepointOmerosArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+};
+
 /**
  * User
  *
@@ -4823,9 +5187,10 @@ export type Video = {
   representations: Array<Representation>;
 };
 
-/** View(id, created_by, created_through, created_while, omero, z_min, z_max, x_min, x_max, y_min, y_max, t_min, t_max, c_min, c_max, channel, position, objective, instrument) */
+/** View(id, created_by, created_through, created_while, omero, z_min, z_max, x_min, x_max, y_min, y_max, t_min, t_max, c_min, c_max, channel, position, objective, instrument, timepoint) */
 export type View = {
   __typename?: 'View';
+  accessors?: Maybe<Array<Maybe<Scalars['String']>>>;
   c?: Maybe<Scalars['Slice']>;
   /** The index of the channel */
   cMax?: Maybe<Scalars['Int']>;
@@ -4845,6 +5210,7 @@ export type View = {
   tMax?: Maybe<Scalars['Int']>;
   /** The index of the channel */
   tMin?: Maybe<Scalars['Int']>;
+  timepoint?: Maybe<Timepoint>;
   x?: Maybe<Scalars['Slice']>;
   /** The index of the channel */
   xMax?: Maybe<Scalars['Int']>;
@@ -4879,6 +5245,8 @@ export type ViewInput = {
   tMax?: InputMaybe<Scalars['Int']>;
   /** The x coord of the position (relative to origin) */
   tMin?: InputMaybe<Scalars['Int']>;
+  /** The position you want to associate with this map */
+  timepoint?: InputMaybe<Scalars['ID']>;
   /** The x coord of the position (relative to origin) */
   xMax?: InputMaybe<Scalars['Int']>;
   /** The x coord of the position (relative to origin) */
@@ -4943,6 +5311,10 @@ export type DetailDatasetFragment = { __typename?: 'Dataset', id: string, name: 
 
 export type ListDatasetFragment = { __typename?: 'Dataset', id: string, name: string };
 
+export type EraFragment = { __typename?: 'Era', name: string, id: string, start?: any | null, end?: any | null, tags?: Array<string | null> | null, pinned?: boolean | null, timepoints?: Array<{ __typename?: 'Timepoint', id: string, name?: string | null, deltaT?: number | null, omeros?: Array<{ __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null> | null } | null> | null };
+
+export type ListEraFragment = { __typename?: 'Era', id: string, name: string, start?: any | null, end?: any | null };
+
 export type DetailExperimentFragment = { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> };
 
 export type ListExperimentFragment = { __typename?: 'Experiment', id: string, name: string, description?: string | null };
@@ -4965,7 +5337,7 @@ export type ListObjectiveFragment = { __typename?: 'Objective', id: string, name
 
 export type OmeroFragment = { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null };
 
-export type DetailOmeroFragment = { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, representation: { __typename?: 'Representation', id: string, name?: string | null }, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null };
+export type DetailOmeroFragment = { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, representation: { __typename?: 'Representation', id: string, name?: string | null }, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, timepoints?: Array<{ __typename?: 'Timepoint', id: string, name?: string | null, deltaT?: number | null } | null> | null, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number } | null, timepoint?: { __typename?: 'Timepoint', id: string, name?: string | null, deltaT?: number | null } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null };
 
 export type DetailOmeroFileFragment = { __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType, createdAt: any, file?: any | null, tags?: Array<string | null> | null, createdWhile?: string | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, experiments: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null }> };
 
@@ -5013,7 +5385,13 @@ export type ListTableFragment = { __typename?: 'Table', id: string, name: string
 
 export type ThumbnailFragment = { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } };
 
+export type TimepointFragment = { __typename?: 'Timepoint', name?: string | null, id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string }, omeros?: Array<{ __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, views: Array<{ __typename?: 'View', id: string, accessors?: Array<string | null> | null, omero: { __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } } }> };
+
+export type ListTimepointFragment = { __typename?: 'Timepoint', id: string, name?: string | null, deltaT?: number | null, omeros?: Array<{ __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null> | null };
+
 export type DetailVideoFragment = { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null };
+
+export type ListViewFragment = { __typename?: 'View', id: string, accessors?: Array<string | null> | null, omero: { __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } } };
 
 export type CreateCommentMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -5562,6 +5940,29 @@ export type SearchDatasetsQueryVariables = Exact<{
 
 export type SearchDatasetsQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Dataset', label: string, value: string } | null> | null };
 
+export type DetailEraQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailEraQuery = { __typename?: 'Query', era?: { __typename?: 'Era', name: string, id: string, start?: any | null, end?: any | null, tags?: Array<string | null> | null, pinned?: boolean | null, timepoints?: Array<{ __typename?: 'Timepoint', id: string, name?: string | null, deltaT?: number | null, omeros?: Array<{ __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null> | null } | null> | null } | null };
+
+export type MyErasQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+}>;
+
+
+export type MyErasQuery = { __typename?: 'Query', myeras?: Array<{ __typename?: 'Era', id: string, name: string, start?: any | null, end?: any | null } | null> | null };
+
+export type EraSearchQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type EraSearchQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Era', value: string, label: string } | null> | null };
+
 export type MyExperimentsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -5646,7 +6047,7 @@ export type DetailMetaQueryVariables = Exact<{
 }>;
 
 
-export type DetailMetaQuery = { __typename?: 'Query', meta?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, representation: { __typename?: 'Representation', id: string, name?: string | null }, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null };
+export type DetailMetaQuery = { __typename?: 'Query', meta?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, representation: { __typename?: 'Representation', id: string, name?: string | null }, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, timepoints?: Array<{ __typename?: 'Timepoint', id: string, name?: string | null, deltaT?: number | null } | null> | null, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number } | null, timepoint?: { __typename?: 'Timepoint', id: string, name?: string | null, deltaT?: number | null } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null };
 
 export type DetailMetricQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -6015,6 +6416,29 @@ export type DetailThumbnailQueryVariables = Exact<{
 
 export type DetailThumbnailQuery = { __typename?: 'Query', thumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null };
 
+export type DetailTimepointQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailTimepointQuery = { __typename?: 'Query', timepoint?: { __typename?: 'Timepoint', name?: string | null, id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string }, omeros?: Array<{ __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, views: Array<{ __typename?: 'View', id: string, accessors?: Array<string | null> | null, omero: { __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } } }> } | null };
+
+export type MyTimepointsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+}>;
+
+
+export type MyTimepointsQuery = { __typename?: 'Query', mytimepoints?: Array<{ __typename?: 'Timepoint', id: string, name?: string | null, deltaT?: number | null, omeros?: Array<{ __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null> | null } | null> | null };
+
+export type TimepointSearchQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type TimepointSearchQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Timepoint', value: string, label?: string | null } | null> | null };
+
 export type UserOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
 }>;
@@ -6028,6 +6452,18 @@ export type MikroUserQueryVariables = Exact<{
 
 
 export type MikroUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', sub?: string | null, id: string, firstName: string } | null };
+
+export type ActivesViewForRepresentationQueryVariables = Exact<{
+  representation: Scalars['ID'];
+  z?: InputMaybe<Scalars['Float']>;
+  t?: InputMaybe<Scalars['Float']>;
+  c?: InputMaybe<Scalars['Float']>;
+  x?: InputMaybe<Scalars['Float']>;
+  y?: InputMaybe<Scalars['Float']>;
+}>;
+
+
+export type ActivesViewForRepresentationQuery = { __typename?: 'Query', views?: Array<{ __typename?: 'View', id: string, timepoint?: { __typename?: 'Timepoint', id: string, name?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string } | null, channel?: { __typename?: 'Channel', id: string, name: string } | null } | null> | null };
 
 export type MyExperimentsEventSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -6314,6 +6750,41 @@ export const DetailDatasetFragmentDoc = gql`
   }
 }
     ${ListDatasetFragmentDoc}`;
+export const ListTimepointFragmentDoc = gql`
+    fragment ListTimepoint on Timepoint {
+  id
+  name
+  deltaT
+  omeros {
+    id
+    representation {
+      id
+      name
+    }
+  }
+}
+    `;
+export const EraFragmentDoc = gql`
+    fragment Era on Era {
+  name
+  id
+  timepoints(order: "delta_t") {
+    ...ListTimepoint
+  }
+  start
+  end
+  tags
+  pinned
+}
+    ${ListTimepointFragmentDoc}`;
+export const ListEraFragmentDoc = gql`
+    fragment ListEra on Era {
+  id
+  name
+  start
+  end
+}
+    `;
 export const DetailExperimentFragmentDoc = gql`
     fragment DetailExperiment on Experiment {
   id
@@ -6482,6 +6953,11 @@ export const DetailOmeroFragmentDoc = gql`
       name
     }
   }
+  timepoints {
+    id
+    name
+    deltaT
+  }
   views {
     id
     xMin
@@ -6503,6 +6979,13 @@ export const DetailOmeroFragmentDoc = gql`
       id
       name
       x
+      y
+      z
+    }
+    timepoint {
+      id
+      name
+      deltaT
     }
   }
   dimensionMaps {
@@ -7073,6 +7556,43 @@ export const ListTableFragmentDoc = gql`
   }
 }
     ${ColumnFragmentDoc}`;
+export const ListViewFragmentDoc = gql`
+    fragment ListView on View {
+  id
+  accessors
+  omero {
+    id
+    representation {
+      id
+      name
+      latestThumbnail {
+        image
+      }
+    }
+  }
+}
+    `;
+export const TimepointFragmentDoc = gql`
+    fragment Timepoint on Timepoint {
+  name
+  id
+  deltaT
+  era {
+    id
+    name
+  }
+  omeros {
+    id
+    representation {
+      ...ListRepresentation
+    }
+  }
+  views {
+    ...ListView
+  }
+}
+    ${ListRepresentationFragmentDoc}
+${ListViewFragmentDoc}`;
 export const CreateCommentDocument = gql`
     mutation CreateComment($id: ID!, $model: CommentableModels!, $descendents: [DescendendInput]!, $parent: ID) {
   createComment(
@@ -9515,6 +10035,114 @@ export function useSearchDatasetsLazyQuery(baseOptions?: Apollo.LazyQueryHookOpt
 export type SearchDatasetsQueryHookResult = ReturnType<typeof useSearchDatasetsQuery>;
 export type SearchDatasetsLazyQueryHookResult = ReturnType<typeof useSearchDatasetsLazyQuery>;
 export type SearchDatasetsQueryResult = Apollo.QueryResult<SearchDatasetsQuery, SearchDatasetsQueryVariables>;
+export const DetailEraDocument = gql`
+    query DetailEra($id: ID!) {
+  era(id: $id) {
+    ...Era
+  }
+}
+    ${EraFragmentDoc}`;
+
+/**
+ * __useDetailEraQuery__
+ *
+ * To run a query within a React component, call `useDetailEraQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailEraQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailEraQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailEraQuery(baseOptions: Apollo.QueryHookOptions<DetailEraQuery, DetailEraQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailEraQuery, DetailEraQueryVariables>(DetailEraDocument, options);
+      }
+export function useDetailEraLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailEraQuery, DetailEraQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailEraQuery, DetailEraQueryVariables>(DetailEraDocument, options);
+        }
+export type DetailEraQueryHookResult = ReturnType<typeof useDetailEraQuery>;
+export type DetailEraLazyQueryHookResult = ReturnType<typeof useDetailEraLazyQuery>;
+export type DetailEraQueryResult = Apollo.QueryResult<DetailEraQuery, DetailEraQueryVariables>;
+export const MyErasDocument = gql`
+    query MyEras($limit: Int, $offset: Int, $createdDay: DateTime) {
+  myeras(limit: $limit, offset: $offset, createdDay: $createdDay) {
+    ...ListEra
+  }
+}
+    ${ListEraFragmentDoc}`;
+
+/**
+ * __useMyErasQuery__
+ *
+ * To run a query within a React component, call `useMyErasQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyErasQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyErasQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *      createdDay: // value for 'createdDay'
+ *   },
+ * });
+ */
+export function useMyErasQuery(baseOptions?: Apollo.QueryHookOptions<MyErasQuery, MyErasQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyErasQuery, MyErasQueryVariables>(MyErasDocument, options);
+      }
+export function useMyErasLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyErasQuery, MyErasQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyErasQuery, MyErasQueryVariables>(MyErasDocument, options);
+        }
+export type MyErasQueryHookResult = ReturnType<typeof useMyErasQuery>;
+export type MyErasLazyQueryHookResult = ReturnType<typeof useMyErasLazyQuery>;
+export type MyErasQueryResult = Apollo.QueryResult<MyErasQuery, MyErasQueryVariables>;
+export const EraSearchDocument = gql`
+    query EraSearch($search: String) {
+  options: eras(name: $search, limit: 30) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __useEraSearchQuery__
+ *
+ * To run a query within a React component, call `useEraSearchQuery` and pass it any options that fit your needs.
+ * When your component renders, `useEraSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useEraSearchQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useEraSearchQuery(baseOptions?: Apollo.QueryHookOptions<EraSearchQuery, EraSearchQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<EraSearchQuery, EraSearchQueryVariables>(EraSearchDocument, options);
+      }
+export function useEraSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<EraSearchQuery, EraSearchQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<EraSearchQuery, EraSearchQueryVariables>(EraSearchDocument, options);
+        }
+export type EraSearchQueryHookResult = ReturnType<typeof useEraSearchQuery>;
+export type EraSearchLazyQueryHookResult = ReturnType<typeof useEraSearchLazyQuery>;
+export type EraSearchQueryResult = Apollo.QueryResult<EraSearchQuery, EraSearchQueryVariables>;
 export const MyExperimentsDocument = gql`
     query MyExperiments($limit: Int, $offset: Int, $createdDay: DateTime) {
   myexperiments(limit: $limit, offset: $offset, createdDay: $createdDay) {
@@ -11861,6 +12489,114 @@ export function useDetailThumbnailLazyQuery(baseOptions?: Apollo.LazyQueryHookOp
 export type DetailThumbnailQueryHookResult = ReturnType<typeof useDetailThumbnailQuery>;
 export type DetailThumbnailLazyQueryHookResult = ReturnType<typeof useDetailThumbnailLazyQuery>;
 export type DetailThumbnailQueryResult = Apollo.QueryResult<DetailThumbnailQuery, DetailThumbnailQueryVariables>;
+export const DetailTimepointDocument = gql`
+    query DetailTimepoint($id: ID!) {
+  timepoint(id: $id) {
+    ...Timepoint
+  }
+}
+    ${TimepointFragmentDoc}`;
+
+/**
+ * __useDetailTimepointQuery__
+ *
+ * To run a query within a React component, call `useDetailTimepointQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailTimepointQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailTimepointQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailTimepointQuery(baseOptions: Apollo.QueryHookOptions<DetailTimepointQuery, DetailTimepointQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailTimepointQuery, DetailTimepointQueryVariables>(DetailTimepointDocument, options);
+      }
+export function useDetailTimepointLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailTimepointQuery, DetailTimepointQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailTimepointQuery, DetailTimepointQueryVariables>(DetailTimepointDocument, options);
+        }
+export type DetailTimepointQueryHookResult = ReturnType<typeof useDetailTimepointQuery>;
+export type DetailTimepointLazyQueryHookResult = ReturnType<typeof useDetailTimepointLazyQuery>;
+export type DetailTimepointQueryResult = Apollo.QueryResult<DetailTimepointQuery, DetailTimepointQueryVariables>;
+export const MyTimepointsDocument = gql`
+    query MyTimepoints($limit: Int, $offset: Int, $createdDay: DateTime) {
+  mytimepoints(limit: $limit, offset: $offset, createdDay: $createdDay) {
+    ...ListTimepoint
+  }
+}
+    ${ListTimepointFragmentDoc}`;
+
+/**
+ * __useMyTimepointsQuery__
+ *
+ * To run a query within a React component, call `useMyTimepointsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyTimepointsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyTimepointsQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *      createdDay: // value for 'createdDay'
+ *   },
+ * });
+ */
+export function useMyTimepointsQuery(baseOptions?: Apollo.QueryHookOptions<MyTimepointsQuery, MyTimepointsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyTimepointsQuery, MyTimepointsQueryVariables>(MyTimepointsDocument, options);
+      }
+export function useMyTimepointsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyTimepointsQuery, MyTimepointsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyTimepointsQuery, MyTimepointsQueryVariables>(MyTimepointsDocument, options);
+        }
+export type MyTimepointsQueryHookResult = ReturnType<typeof useMyTimepointsQuery>;
+export type MyTimepointsLazyQueryHookResult = ReturnType<typeof useMyTimepointsLazyQuery>;
+export type MyTimepointsQueryResult = Apollo.QueryResult<MyTimepointsQuery, MyTimepointsQueryVariables>;
+export const TimepointSearchDocument = gql`
+    query TimepointSearch($search: String) {
+  options: timepoints(name: $search, limit: 30) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __useTimepointSearchQuery__
+ *
+ * To run a query within a React component, call `useTimepointSearchQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTimepointSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTimepointSearchQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useTimepointSearchQuery(baseOptions?: Apollo.QueryHookOptions<TimepointSearchQuery, TimepointSearchQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<TimepointSearchQuery, TimepointSearchQueryVariables>(TimepointSearchDocument, options);
+      }
+export function useTimepointSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<TimepointSearchQuery, TimepointSearchQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<TimepointSearchQuery, TimepointSearchQueryVariables>(TimepointSearchDocument, options);
+        }
+export type TimepointSearchQueryHookResult = ReturnType<typeof useTimepointSearchQuery>;
+export type TimepointSearchLazyQueryHookResult = ReturnType<typeof useTimepointSearchLazyQuery>;
+export type TimepointSearchQueryResult = Apollo.QueryResult<TimepointSearchQuery, TimepointSearchQueryVariables>;
 export const UserOptionsDocument = gql`
     query UserOptions($search: String) {
   options: users(search: $search) {
@@ -11934,6 +12670,65 @@ export function useMikroUserLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<
 export type MikroUserQueryHookResult = ReturnType<typeof useMikroUserQuery>;
 export type MikroUserLazyQueryHookResult = ReturnType<typeof useMikroUserLazyQuery>;
 export type MikroUserQueryResult = Apollo.QueryResult<MikroUserQuery, MikroUserQueryVariables>;
+export const ActivesViewForRepresentationDocument = gql`
+    query ActivesViewForRepresentation($representation: ID!, $z: Float, $t: Float, $c: Float, $x: Float, $y: Float) {
+  views(
+    representation: $representation
+    activeForZ: $z
+    activeForT: $t
+    activeForC: $c
+    activeForX: $x
+    activeForY: $y
+  ) {
+    id
+    timepoint {
+      id
+      name
+    }
+    position {
+      id
+      name
+    }
+    channel {
+      id
+      name
+    }
+  }
+}
+    `;
+
+/**
+ * __useActivesViewForRepresentationQuery__
+ *
+ * To run a query within a React component, call `useActivesViewForRepresentationQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActivesViewForRepresentationQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActivesViewForRepresentationQuery({
+ *   variables: {
+ *      representation: // value for 'representation'
+ *      z: // value for 'z'
+ *      t: // value for 't'
+ *      c: // value for 'c'
+ *      x: // value for 'x'
+ *      y: // value for 'y'
+ *   },
+ * });
+ */
+export function useActivesViewForRepresentationQuery(baseOptions: Apollo.QueryHookOptions<ActivesViewForRepresentationQuery, ActivesViewForRepresentationQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ActivesViewForRepresentationQuery, ActivesViewForRepresentationQueryVariables>(ActivesViewForRepresentationDocument, options);
+      }
+export function useActivesViewForRepresentationLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ActivesViewForRepresentationQuery, ActivesViewForRepresentationQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ActivesViewForRepresentationQuery, ActivesViewForRepresentationQueryVariables>(ActivesViewForRepresentationDocument, options);
+        }
+export type ActivesViewForRepresentationQueryHookResult = ReturnType<typeof useActivesViewForRepresentationQuery>;
+export type ActivesViewForRepresentationLazyQueryHookResult = ReturnType<typeof useActivesViewForRepresentationLazyQuery>;
+export type ActivesViewForRepresentationQueryResult = Apollo.QueryResult<ActivesViewForRepresentationQuery, ActivesViewForRepresentationQueryVariables>;
 export const MyExperimentsEventDocument = gql`
     subscription MyExperimentsEvent {
   myExperiments {

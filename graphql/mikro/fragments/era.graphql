@@ -1,0 +1,18 @@
+fragment Era on Era {
+  name
+  id
+  timepoints(order: "delta_t") {
+    ...ListTimepoint
+  }
+  start
+  end
+  tags
+  pinned
+}
+
+fragment ListEra on Era {
+  id
+  name
+  start
+  end
+}

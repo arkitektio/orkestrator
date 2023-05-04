@@ -1,22 +1,15 @@
 import * as React from "react";
-import { useSearchParams } from "react-router-dom";
-import Timestamp from "react-timestamp";
 import {
-  useQueryParams,
-  StringParam,
-  NumberParam,
-  ArrayParam,
-  withDefault,
-  DateParam,
   BooleanParam,
+  NumberParam,
+  useQueryParams,
+  withDefault,
 } from "use-query-params";
-import { number } from "yup/lib/locale";
 import { Generators } from "../../components/Generators";
 import { MyBigFiles } from "../../components/MyBigFiles";
 import { MyContexts } from "../../components/MyContexts";
 import { MyDatasets } from "../../components/MyDatasets";
 import { MyExperiments } from "../../components/MyExperiments";
-import { MyFiles } from "../../components/MyFiles";
 import { MyModels } from "../../components/MyModels";
 import { MyPlots } from "../../components/MyPlots";
 import { MyRepresentations } from "../../components/MyRepresentations";
@@ -24,6 +17,7 @@ import { MySamples } from "../../components/MySamples";
 import { MyTables } from "../../components/MyTables";
 import { Producers } from "../../components/Producers";
 import { PageLayout } from "../../layout/PageLayout";
+import { MyEras } from "../../mikro/components/MyEras";
 import { MyStages } from "../../mikro/components/MyStages";
 import HomeSidebar from "./HomeSidebar";
 
@@ -83,6 +77,7 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
       <MyContexts {...filterParams} />
       <MyModels {...filterParams} />
       <MySamples {...filterParams} />
+      <MyEras {...filterParams} />
       <MyStages {...filterParams} />
       <MyRepresentations {...filterParams} />
       <MyBigFiles {...filterParams} />

@@ -1,0 +1,14 @@
+fragment ListView on View {
+  id
+  accessors
+  omero {
+    id
+    representation {
+      id
+      name
+      latestThumbnail {
+        image
+      }
+    }
+  }
+}

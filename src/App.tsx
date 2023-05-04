@@ -64,6 +64,8 @@ import { DashboardAgents } from "./pages/dashboard/agents/DashboardAgents";
 import { DashboardHistory } from "./pages/dashboard/history/DashboardHistory";
 import { DashboardRepositories } from "./pages/dashboard/repositories/DashboardRepositories";
 import { DashboardRepository } from "./pages/dashboard/repositories/DashboardRepository";
+import { DataEra } from "./pages/data/eras/DataEra";
+import { DataEras } from "./pages/data/eras/DataEras";
 import { DataInstrument } from "./pages/data/instruments/DataInstrument";
 import { DataInstruments } from "./pages/data/instruments/DataInstruments";
 import { DataLabel } from "./pages/data/labels/DataLabel";
@@ -83,6 +85,8 @@ import { DataPositions } from "./pages/data/positions/DataPositions";
 import { DataRoi } from "./pages/data/rois/DataRoi";
 import { DataStage } from "./pages/data/stages/DataStage";
 import { DataStages } from "./pages/data/stages/DataStages";
+import { DataTimepoint } from "./pages/data/timepoints/DataTimepoint";
+import { DataTimepoints } from "./pages/data/timepoints/DataTimepoints";
 import { FlowTimeline } from "./pages/flows/timelines/FlowTimeline";
 import { FlowDiagram } from "./pages/flows/workspace/FlowDiagram";
 import { FlowDiagramFlow } from "./pages/flows/workspace/FlowDiagramFlow";
@@ -282,6 +286,19 @@ export const MainApp: React.FC<Props> = (props) => {
                                   <Route
                                     path="stages"
                                     element={<DataStages />}
+                                  />
+                                  <Route
+                                    path="eras/:id"
+                                    element={<DataEra />}
+                                  />
+                                  <Route path="eras" element={<DataEras />} />
+                                  <Route
+                                    path="timepoints/:id"
+                                    element={<DataTimepoint />}
+                                  />
+                                  <Route
+                                    path="timepoints"
+                                    element={<DataTimepoints />}
                                   />
                                   <Route
                                     path="instruments/:instrument"

@@ -1,0 +1,18 @@
+query DetailTimepoint($id: ID!) {
+  timepoint(id: $id) {
+    ...Timepoint
+  }
+}
+
+query MyTimepoints($limit: Int, $offset: Int, $createdDay: DateTime) {
+  mytimepoints(limit: $limit, offset: $offset, createdDay: $createdDay) {
+    ...ListTimepoint
+  }
+}
+
+query TimepointSearch($search: String) {
+  options: timepoints(name: $search, limit: 30) {
+    value: id
+    label: name
+  }
+}

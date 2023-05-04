@@ -274,6 +274,39 @@ export const MikroFile = buildSmart("@mikro/omerofile", "files", [
   "item:@mikro/representation",
 ]);
 
+export const View = buildSmart("@mikro/view", "views", [
+  "list:@mikro/view",
+  "item:@mikro/view",
+  "list:@mikro/omerofile",
+  "item:@mikro/omerofile",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Era = buildSmart("@mikro/era", "eras", [
+  "list:@mikro/era",
+  "item:@mikro/era",
+  "list:@mikro/omerofile",
+  "item:@mikro/omerofile",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Timepoint = buildSmart("@mikro/timepoint", "timepoints", [
+  "list:@mikro/timepoint",
+  "item:@mikro/timepoint",
+  "list:@mikro/omerofile",
+  "item:@mikro/omerofile",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
 export const Metric = buildSmart("@mikro/metric", "metrics", [
   "list:@mikro/sample",
   "item:@mikro/sample",

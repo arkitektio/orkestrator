@@ -1,0 +1,31 @@
+fragment Timepoint on Timepoint {
+  name
+  id
+  deltaT
+  era {
+    id
+    name
+  }
+  omeros {
+    id
+    representation {
+      ...ListRepresentation
+    }
+  }
+  views {
+    ...ListView
+  }
+}
+
+fragment ListTimepoint on Timepoint {
+  id
+  name
+  deltaT
+  omeros {
+    id
+    representation {
+      id
+      name
+    }
+  }
+}
