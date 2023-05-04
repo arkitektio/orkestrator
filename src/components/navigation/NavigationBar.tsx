@@ -6,34 +6,50 @@ import { GrDocker } from "react-icons/gr";
 import { IconContext } from "react-icons/lib";
 import { TbHistory, TbLayoutDashboard } from "react-icons/tb";
 import { TiFlowSwitch } from "react-icons/ti";
-import { MdLiveTv, MdOutlineLiveTv } from "react-icons/md";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { FlussGuard } from "../../fluss/guard";
 import { ManGuard } from "../../lok/guard";
 import { MikroGuard } from "../../mikro/MikroGuard";
 import { PortGuard } from "../../port/PortGuard";
 import { RekuestGuard } from "../../rekuest/RekuestGuard";
+import { Back } from "./Back";
 import { Logo } from "./Logo";
-import "./styles.css";
 import { UserIcon } from "./UserIcon";
+import "./styles.css";
 export type INavigationBarProps = {
   children?: React.ReactNode;
 };
 
 const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   return (
     <div className="dark:text-white flex sm:flex-col h-full flex-row bg-slate-900 sm:pt-0 shadow-element overflow-hidden border-r-2  border-r-gray-700 ">
       <div className="flex flex-grow sm:flex-col flex-row gap-8 mt-2 items-center">
         <div className="hidden flex-initial  font-light text-xl md:block text-slate-400 dark:text-slate-500 border-b-gray-600 ">
-          <NavLink to={"/"} className="rounded-md text-xl font-light">
-            <Logo
+          {window.__TAURI__ && location.pathname != "/" ? (
+            <Back
               width={"4rem"}
               height={"4rem"}
               cubeColor={"rgb(var(--color-primary-400))"}
               aColor={"rgb(var(--color-back-200))"}
               strokeColor={"rgb(var(--color-back-200))"}
+              onClick={() => navigate(-1)}
             />
-          </NavLink>
+          ) : (
+            <>
+              <NavLink to={"/"}>
+                <Logo
+                  width={"4rem"}
+                  height={"4rem"}
+                  cubeColor={"rgb(var(--color-primary-400))"}
+                  aColor={"rgb(var(--color-back-200))"}
+                  strokeColor={"rgb(var(--color-back-200))"}
+                />
+              </NavLink>
+            </>
+          )}
         </div>
 
         <IconContext.Provider
