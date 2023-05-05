@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router";
+import { useDialog } from "../../layout/dialog/DialogProvider";
 import { Flow } from "../../linker";
 import { NodeListItemFragment } from "../../rekuest/api/graphql";
-import { usePostman } from "../../rekuest/postman/graphql/postman-context";
+import { ReserveDialog } from "../../rekuest/components/dialogs/ReserveDialog";
 import { AdditionalMate } from "../../rekuest/postman/mater/mater-context";
 import { useRequester } from "../../rekuest/postman/requester/requester-context";
 import { useReserver } from "../../rekuest/postman/reserver/reserver-context";
@@ -12,6 +13,7 @@ export const useNodeActionMate = (): ((
 ) => MateFinder) => {
   const { assign, unassign } = useRequester();
 
+  const { ask } = useDialog();
   const { reserve } = useReserver();
   const navigate = useNavigate();
 
@@ -26,6 +28,14 @@ export const useNodeActionMate = (): ((
         await reserve({ node: node.id });
       },
       label: "Reserve",
+    });
+
+    mates.push({
+      action: async () => {
+        let res = await ask(ReserveDialog, { initial: { node: node.id } });
+        console.log(res);
+      },
+      label: "Reserve New",
     });
 
     if (node.interfaces?.includes("workflow") && node.meta?.flow) {

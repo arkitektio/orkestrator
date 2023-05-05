@@ -1,7 +1,7 @@
 import React from "react";
 import {
-  ListSearchField,
-  SearchField,
+  ListSearchInput,
+  SearchInput,
 } from "../../../../components/forms/fields/SearchInput";
 import { SearchWidgetFragment } from "../../../api/graphql";
 import { InputWidgetProps } from "../../types";
@@ -15,7 +15,7 @@ const people = [
   { id: 5, name: "Katelyn Rohan" },
 ];
 
-export type Person = typeof people[number];
+export type Person = (typeof people)[number];
 
 export const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
   port,
@@ -64,10 +64,18 @@ export const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
   };
 
   return (
-    <SearchField
+    <SearchInput
       name={port.key || "fake"}
-      disabled={options?.disable}
+      validate={(value) =>
+        value
+          ? undefined
+          : port.nullable
+          ? undefined
+          : "Please select a valid choice"
+      }
       searchFunction={searchFunction}
+      label={port.label || port.key}
+      description={port.description || ""}
     />
   );
 };
@@ -120,10 +128,18 @@ export const ListSearchWidget: React.FC<
   };
 
   return (
-    <ListSearchField
+    <ListSearchInput
       name={port.key || "fake"}
-      disabled={options?.disable}
+      validate={(value) =>
+        value
+          ? undefined
+          : port.nullable
+          ? undefined
+          : "Please select a valid choice"
+      }
       searchFunction={searchFunction}
+      label={port.label || port.key}
+      description={port.description || ""}
     />
   );
 };

@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import { Alert } from "../Alert";
 import { Option } from "./SearchInput";
 import { wrapped } from "./Wrapper";
+import { CommonFieldProps } from "./types";
 
 export type OptionType<T> = {
   [key: string]: T;
@@ -49,16 +50,12 @@ export function CarouselInputFieldBuilder<T extends Option>({
   );
 }
 
-interface Props<T extends Option> {
-  name: string;
-  label: string;
-
-  description?: string;
+export type Props<T extends Option> = CommonFieldProps<T> & {
   options: T[];
   optionBuilder: (option: T, index: number, options: T[]) => ReactNode;
-}
+};
 
-export const CarouselInputField = wrapped((props: Props<Option>) => {
+export const CarouselField = (props: Props<Option>) => {
   return (
     <Field
       id={props.name}
@@ -67,6 +64,9 @@ export const CarouselInputField = wrapped((props: Props<Option>) => {
       className="form-control"
       options={props.options}
       optionBuilder={props.optionBuilder}
+      validate={props.validate}
     />
   );
-});
+};
+
+export const CarouselInputField = wrapped(CarouselField);

@@ -1,17 +1,20 @@
 import { Field } from "formik";
-import React from "react";
 import { Alert } from "../Alert";
 import { wrapped } from "./Wrapper";
+import { CommonFieldProps } from "./types";
 
 interface Props {
   name: string;
   label: string;
   description?: string;
   placeholder?: string;
-  disabled?: boolean;
 }
 
-export const TextInputField = wrapped((props: Props) => {
+export type TextInputFieldProps = CommonFieldProps<string> & {
+  placeholder?: string;
+};
+
+export const TextField = (props: TextInputFieldProps) => {
   return (
     <Field name={props.name}>
       {({
@@ -25,10 +28,10 @@ export const TextInputField = wrapped((props: Props) => {
           <input
             type="text"
             placeholder={props.placeholder}
-            className="w-full border h-10 border-grey-light rounded px-3 relative focus:border-blue focus:shadow disabled:text-gray-400"
+            className="w-full border h-10 border-grey-light rounded px-3 relative focus:border-blue focus:shadow disabled:text-gray-400 text-black"
             value={field.value}
             {...field}
-            disabled={meta.submitting || props.disabled}
+            disabled={meta.submitting}
           />
           {meta.touched && meta.error && (
             <Alert prepend="Error" message={meta.error} />
@@ -37,4 +40,6 @@ export const TextInputField = wrapped((props: Props) => {
       )}
     </Field>
   );
-});
+};
+
+export const TextInputField = wrapped(TextField);

@@ -1,6 +1,5 @@
 import { Dialog, Transition } from "@headlessui/react";
-import { Children, Fragment, useRef } from "react";
-import { ModalProps, Submit } from "./DialogProvider";
+import { Fragment } from "react";
 
 export type TwDialogProps = {
   children: React.ReactNode;
@@ -31,23 +30,24 @@ export const TwDialog = <T extends {}>(props: TwDialogProps) => {
         leaveFrom="opacity-100 translate-y-0 sm:scale-100"
         leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
       >
-        <div className="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
-          <div className="bg-white px-4 pt-2 pb-4 sm:p-6 sm:pb-4">
-            <div className="sm:flex sm:items-start">
-              <div className="mt-1 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                <Dialog.Title
-                  as="h3"
-                  className="text-xl mt-2 mb-4 leading-6 font-medium text-gray-900"
-                >
-                  {props.title}
-                </Dialog.Title>
-                <div className="mt-2 align-left text-left text-black">
+        <div className="inline-block align-middle bg-slate-800 border-1 border-slate-900 border rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+          <Dialog.Title
+            as="h3"
+            className="text-2xl px-3 py-3 w-full justify-items-center flex leading-6 text-slate-200 bg-slate-800"
+          >
+            {props.title}
+          </Dialog.Title>
+
+          <div className="bg-slate-900 px-4 pt-2 pb-4 sm:p-6 sm:pb-4">
+            <div className="sm:flex sm:items-center w-full">
+              <div className="mt-1 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                <div className="mt-2 w-full text-slate-200">
                   {props.children}
                 </div>
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 px-4 pb-2 sm:flex sm:flex-row-reverse">
+          <div className="bg-slate-800 px-4 pb-2 sm:flex sm:flex-row-reverse">
             {props.buttons}
           </div>
         </div>

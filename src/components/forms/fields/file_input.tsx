@@ -1,22 +1,23 @@
 import { useField } from "formik";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useFilePicker } from "use-file-picker";
 import { Alert } from "../Alert";
 import { wrapped } from "./Wrapper";
+import { CommonFieldProps } from "./types";
 
-interface Props {
-  name: string;
-  label: string;
-  description?: string;
-  placeholder?: string;
+export type FieldInputProps = CommonFieldProps<File> & {
   multiple?: boolean;
-}
+  accept?: string | string[];
+};
 
-export const FileInputField = wrapped((props: Props) => {
-  const [field, meta, { setValue }] = useField(props);
+export const FileField = (props: FieldInputProps) => {
+  const [field, meta, { setValue }] = useField({
+    name: props.name,
+    validate: props.validate,
+  });
 
   const [openFileSelector, { filesContent, plainFiles }] = useFilePicker({
-    accept: ".*",
+    accept: props.accept || ".*",
     multiple: props.multiple || false,
   });
 
@@ -48,4 +49,6 @@ export const FileInputField = wrapped((props: Props) => {
       )}
     </div>
   );
-});
+};
+
+export const FileInputField = wrapped(FileField);

@@ -1,7 +1,6 @@
 import { Field } from "formik";
 import React from "react";
 import { Alert } from "../../../../components/forms/Alert";
-import { SearchSelectWidget } from "../../../../components/forms/fields/search_select_input";
 import { InputWidgetProps } from "../../types";
 import { ListSearchWidget } from "../additionals/SearchWidget";
 
@@ -15,7 +14,16 @@ const ListWidget: React.FC<InputWidgetProps> = ({ port, widget }) => {
   }
 
   return (
-    <Field name={port.key}>
+    <Field
+      name={port.key}
+      validate={(value: any) =>
+        value
+          ? undefined
+          : port.nullable
+          ? undefined
+          : "Please select a valid choice"
+      }
+    >
       {({
         field, // { name, value, onChange, onBlur }// also values, setXXXX, handleXXXX, dirty, isValid, status, etc.
         meta,

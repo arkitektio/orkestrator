@@ -56,7 +56,7 @@ export const DeployDialog = (
 
   return (
     <TwDialog
-      title="Create App"
+      title="Appify"
       buttons={
         <>
           <button
@@ -76,10 +76,16 @@ export const DeployDialog = (
         </>
       }
     >
-      <span className="font-light text-xl text-black">
+      <span className="font-light text-xl">
         <div className="font-light text-sm mb-2">
-          This repo would like to create an App on your behalf
+          Appyfing this scan will create a new app with the following
+          permissions.
         </div>
+        <ul className="list-disc">
+          {data?.deployment?.scopes.filter(notEmpty).map((s) => (
+            <li className="font-light text-sm ">{s}</li>
+          ))}
+        </ul>
       </span>
     </TwDialog>
   );

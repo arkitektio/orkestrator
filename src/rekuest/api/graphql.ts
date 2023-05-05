@@ -2904,6 +2904,7 @@ export type MyRequestsQuery = { __typename?: 'Query', myrequests?: Array<{ __typ
 
 export type RequestsHistoryQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
+  filter?: InputMaybe<Array<InputMaybe<AssignationStatusInput>>>;
 }>;
 
 
@@ -5432,8 +5433,8 @@ export type MyRequestsQueryHookResult = ReturnType<typeof useMyRequestsQuery>;
 export type MyRequestsLazyQueryHookResult = ReturnType<typeof useMyRequestsLazyQuery>;
 export type MyRequestsQueryResult = Apollo.QueryResult<MyRequestsQuery, MyRequestsQueryVariables>;
 export const RequestsHistoryDocument = gql`
-    query RequestsHistory($limit: Int = 20) {
-  myrequests(limit: $limit) {
+    query RequestsHistory($limit: Int = 20, $filter: [AssignationStatusInput]) {
+  myrequests(limit: $limit, filter: $filter) {
     ...ListAssignation
   }
 }
@@ -5452,6 +5453,7 @@ export const RequestsHistoryDocument = gql`
  * const { data, loading, error } = useRequestsHistoryQuery({
  *   variables: {
  *      limit: // value for 'limit'
+ *      filter: // value for 'filter'
  *   },
  * });
  */

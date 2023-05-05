@@ -113,6 +113,7 @@ export const TimelineRender = ({
                   <Timestamp
                     date={event.startTime}
                     relativeTo={event.createdAt}
+                    options={{ includeDay: true }}
                   />
                 )}
               </div>

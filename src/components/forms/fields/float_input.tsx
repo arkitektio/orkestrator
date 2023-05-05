@@ -7,7 +7,7 @@ export type NumberInputFieldProps = CommonFieldProps<number> & {
   placeholder?: string;
 };
 
-export const NumberField = (props: NumberInputFieldProps) => {
+export const FloatField = (props: NumberInputFieldProps) => {
   return (
     <Field {...props}>
       {({
@@ -27,7 +27,7 @@ export const NumberField = (props: NumberInputFieldProps) => {
               if (e.target.value === "") {
                 field.onChange(props.name)(null);
               } else {
-                field.onChange(props.name)(parseInt(e.target.value));
+                field.onChange(props.name)(parseFloat(e.target.value));
               }
             }}
             {...field}
@@ -41,4 +41,4 @@ export const NumberField = (props: NumberInputFieldProps) => {
   );
 };
 
-export const NumberInputField = wrapped(NumberField);
+export const FloatInputField = wrapped(FloatField);

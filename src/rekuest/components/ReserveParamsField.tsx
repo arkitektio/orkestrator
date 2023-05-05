@@ -104,7 +104,7 @@ export const ReserveParamsField = ({
         {!field.value ? (
           <button
             type="button"
-            className="border border-1 rounded round-md p-1 bg-gray-300 text-center ring-primary-400 ring-2 cursor-pointer"
+            className="border border-1 w-full items-center border-slate-600  rounded rounded-md p-2 flex flex-col bg-slate-800 ring-primary-400 ring-2 cursor-pointer"
             onClick={() => helpers.setValue(undefined)}
           >
             Auto
@@ -113,7 +113,7 @@ export const ReserveParamsField = ({
           field.value.templates.length === 0 ? (
           <button
             type="button"
-            className="border border-1 rounded round-md p-1 bg-gray-300 text-center ring-primary-400 ring-2 mb-1 cursor-pointer"
+            className="border border-1  w-full items-centerborder-slate-600 rounded rounded-md p-2 flex flex-col bg-slate-800 ring-primary-400 ring-2 mb-1 cursor-pointer"
             onClick={() => helpers.setValue(undefined)}
           >
             Auto
@@ -121,7 +121,7 @@ export const ReserveParamsField = ({
         ) : (
           <button
             type="button"
-            className="border border-1 rounded round-md p-1 bg-gray-300 text-center mb-1 cursor-pointer"
+            className="border border-1  w-full items-center border-slate-600 rounded rounded-md p-2 flex flex-col bg-slate-800 mb-1 cursor-pointer"
             onClick={() => helpers.setValue(undefined)}
           >
             Auto
@@ -132,7 +132,7 @@ export const ReserveParamsField = ({
         {restructuredData?.map((app) => (
           <div
             key={app.clientId}
-            className={`border border-1 rounded rounded-md p-2 flex flex-col bg-gray-300  @container ${
+            className={`border border-1 border-slate-600 rounded rounded-md p-2 flex flex-col bg-slate-800  @container ${
               field.value?.clients.includes(app.clientId)
                 ? "ring-primary-400 ring-2"
                 : "hover:ring-primary-200 hover:ring-2"
@@ -153,11 +153,11 @@ export const ReserveParamsField = ({
           >
             <App clientId={app.clientId} />
 
-            <ResponsiveContainerGrid>
+            <ResponsiveContainerGrid fitLength={app.templates?.length}>
               {app.templates.map((template) => (
                 <div
                   key={template.id}
-                  className={`flex flex-row @container justify-between p-1 rounded rounded-md ${
+                  className={`flex flex-row @container justify-between p-1 w-full rounded rounded-md ${
                     field.value?.templates.includes(template.id)
                       ? "ring-primary-400 ring-2"
                       : "hover:ring-primary-200 hover:ring-2"
@@ -188,7 +188,7 @@ export const ReserveParamsField = ({
                   <label className="my-auto text-sm font-medium text-gray-700">
                     {template.agent.instanceId}
                   </label>
-                  <label className="my-auto text-sm font-medium text-gray-700">
+                  <label className="flex-initial my-auto font-medium text-gray-700">
                     {template.agent.status && (
                       <StatusPulse status={template.agent.status} />
                     )}

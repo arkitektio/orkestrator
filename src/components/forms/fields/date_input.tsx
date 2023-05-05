@@ -1,21 +1,17 @@
 import { Field, FieldProps } from "formik";
-import React from "react";
 import DatePicker from "react-datepicker";
 import { Alert } from "../Alert";
 
 import "react-datepicker/dist/react-datepicker.css";
 import { VscClose } from "react-icons/vsc";
 import { wrapped } from "./Wrapper";
-interface Props {
-  name: string;
-  label: string;
-  description?: string;
-  placeholder?: string;
-}
+import { CommonFieldProps } from "./types";
 
-export const DateInputField = wrapped((props: Props) => {
+export type DateInputFieldProps = CommonFieldProps<Date> & {};
+
+export const DateField = (props: DateInputFieldProps) => {
   return (
-    <Field name={props.name}>
+    <Field {...props}>
       {({ field, form, meta }: FieldProps) => (
         <div className="w-full mt-2 mb-2 relative z-100">
           <div className="relative flex flex-row">
@@ -42,4 +38,6 @@ export const DateInputField = wrapped((props: Props) => {
       )}
     </Field>
   );
-});
+};
+
+export const DateInputField = wrapped(DateField);

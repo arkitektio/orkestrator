@@ -1,17 +1,17 @@
-import React, { Children, useCallback, useEffect } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useSelectionContainer, Box } from "@air/react-drag-to-select";
-import { SmartModelProps } from "../../rekuest/selection/SmartModel";
+import React, { useEffect } from "react";
 import { notEmpty } from "../../floating/utils";
-import { useModelSelector } from "../../rekuest/selection/context";
 import { Identifier } from "../../rekuest/postman/mater/mater-context";
+import { useModelSelector } from "../../rekuest/selection/context";
 
 export type IResponsiveGridProps = {
   children?: React.ReactNode;
+  fitLength?: number;
 };
 
 const ResponsiveContainerGrid: React.FC<IResponsiveGridProps> = ({
   children,
+  fitLength,
 }) => {
   const [parent] = useAutoAnimate<HTMLDivElement>(/* optional config */);
   const { registerSelectables, unregisterSelectables } = useModelSelector();
@@ -43,9 +43,15 @@ const ResponsiveContainerGrid: React.FC<IResponsiveGridProps> = ({
     }
   }, [children]);
 
+  let lg_size = fitLength && fitLength < 2 ? fitLength : 2;
+  let xl_size = fitLength && fitLength < 3 ? fitLength : 3;
+  let xxl_size = fitLength && fitLength < 4 ? fitLength : 4;
+  let xxxl_size = fitLength && fitLength < 5 ? fitLength : 5;
+  let xxxxl_size = fitLength && fitLength < 6 ? fitLength : 6;
+
   return (
     <div
-      className="grid @lg:grid-cols-2 @xl-grid-cols-3 @2xl:grid-cols-4  @3xl:grid-cols-5   @5xl:grid-cols-6 gap-4"
+      className={`grid @lg:grid-cols-${lg_size} @xl-grid-cols-${xl_size} @2xl:grid-cols-${xxl_size}  @3xl:grid-cols-${xxxl_size}   @5xl:grid-cols-${xxxxl_size} gap-4`}
       data-enableselect="true"
       ref={parent}
     >

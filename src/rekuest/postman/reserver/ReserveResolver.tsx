@@ -2,7 +2,6 @@ import { Dialog, Transition } from "@headlessui/react";
 import { FormikHelpers } from "formik";
 import React, { Fragment, useEffect, useState } from "react";
 import { ReserveForm } from "../../components/ReserveForm";
-import { usePostman } from "../graphql/postman-context";
 import {
   ReserveOptions,
   ReserveRequest,

@@ -150,6 +150,8 @@ export const Representation = buildSmart(
   [
     "list:@mikro/sample",
     "item:@mikro/sample",
+    "list:@mikro/model",
+    "item:@mikro/model",
     "list:@mikro/experiment",
     "item:@mikro/experiment",
     "list:@mikro/representation",

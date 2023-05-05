@@ -144,23 +144,12 @@ export const GroupRender = ({
           {!hidden &&
             group?.ports?.map((port, index) => (
               <div key={index}>
-                <label className="font-light">{port.label || port.key}</label>
-                <div className="w-full mt-2 mb-2 relative text-black">
-                  {portToWidget(port, registry, {
-                    disable:
-                      disable && disable.includes(port?.key || "fakekey")
-                        ? true
-                        : false,
-                  })}
-                </div>
-                {port.description && (
-                  <div
-                    id={`${port.key}-help`}
-                    className="text-xs text-gray-600 mb-4 font-light"
-                  >
-                    {port.description}
-                  </div>
-                )}
+                {portToWidget(port, registry, {
+                  disable:
+                    disable && disable.includes(port?.key || "fakekey")
+                      ? true
+                      : false,
+                })}
               </div>
             ))}
         </div>
@@ -218,9 +207,7 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
     return prev;
   }, {} as { [key: string]: PortFragment[] });
 
-  console.log(groups);
   let portGroups = data?.node?.portGroups || [];
-  console.log(portGroups);
 
   let mappedPortGroups = portGroups.filter(notEmpty).map((group) => ({
     ...group,
@@ -245,7 +232,7 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
         onSubmit && (await onSubmit(set_values, values, formikHelpers));
       }}
       validateOnMount={unsetArgs.length == 0}
-      validationSchema={validationSchemaBuilder(unsetArgs)}
+      validateOnChange
     >
       {(formikProps) => (
         <Form>

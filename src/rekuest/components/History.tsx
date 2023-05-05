@@ -1,18 +1,30 @@
 import { Link } from "react-router-dom";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { MyAssignations } from "../../components/MyAssignations";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Assignation } from "../../linker";
-import { useRequestsHistoryQuery } from "../api/graphql";
+import { useAssignationMate } from "../../mates/assignation/useAssignationMates";
 import { withRekuest } from "../RekuestContext";
+import {
+  AssignationStatusInput,
+  useRequestsHistoryQuery,
+} from "../api/graphql";
 import { colorFromAssignationStatus } from "../utils";
 
 export const History = () => {
   const { data } = withRekuest(useRequestsHistoryQuery)({
-    variables: { limit: 100 },
+    variables: {
+      limit: 100,
+      filter: [
+        AssignationStatusInput.Assigned,
+        AssignationStatusInput.Yield,
+        AssignationStatusInput.Progress,
+      ],
+    },
   });
+
+  const assignationMate = useAssignationMate();
 
   return (
     <PageLayout>
@@ -36,7 +48,7 @@ export const History = () => {
                 )}`
               }
               key={index}
-              mates={[]}
+              mates={[assignationMate(ass)]}
             >
               <div
                 className={`absolute top-0 left-0 h-full bg-orange-300 border-orange-300 rounded transition-width duration-100 ease-in-out`}

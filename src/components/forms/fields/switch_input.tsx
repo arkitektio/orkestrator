@@ -1,27 +1,17 @@
 import { Field, FieldProps } from "formik";
-import React from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsCheck,
-  BsPlusCircle,
-  BsTrash,
-  BsX,
-} from "react-icons/bs";
+import { BsCheck, BsX } from "react-icons/bs";
 import { Alert } from "../Alert";
 import { wrapped } from "./Wrapper";
-interface Props {
-  name: string;
-  label: string;
-  falseLabel?: string;
-  description?: string;
-  falseDescription?: string;
-  placeholder?: string;
-}
+import { CommonFieldProps } from "./types";
 
-export const SwitchInputField: React.FC<Props> = wrapped((props) => {
+export type SwitchInputFieldProps = CommonFieldProps<boolean> & {
+  trueLabel?: string;
+  falseLabel?: string;
+};
+
+export const SwitchField = (props: SwitchInputFieldProps) => {
   return (
-    <Field name={props.name} type="checkbox">
+    <Field name={props.name} validate={props.validate} type="checkbox">
       {({
         form,
         field, // { name, value, onChange, onBlur }// also values, setXXXX, handleXXXX, dirty, isValid, status, etc.
@@ -39,20 +29,22 @@ export const SwitchInputField: React.FC<Props> = wrapped((props) => {
             <div className="my-auto mr-2 cursor-pointer ">
               {field.value ? <BsCheck /> : <BsX />}
             </div>
-            <div>
+            {props.trueLabel && props.falseLabel && (
               <label
                 className="font-light my-auto cursor-pointer"
                 htmlFor={props.name}
               >
-                {field.value ? props.label : props.falseLabel || props.label}
+                {field.value ? props.trueLabel : props.falseLabel}
               </label>
-            </div>
+            )}
           </div>
-          {meta.touched && meta.error && (
+          {meta && meta.touched && meta.error && (
             <Alert prepend="Error" message={meta.error} />
           )}
         </>
       )}
     </Field>
   );
-});
+};
+
+export const SwitchInputField = wrapped(SwitchField);

@@ -16,8 +16,8 @@ query MyRequests {
   }
 }
 
-query RequestsHistory($limit: Int = 20) {
-  myrequests(limit: $limit) {
+query RequestsHistory($limit: Int = 20, $filter: [AssignationStatusInput]) {
+  myrequests(limit: $limit, filter: $filter) {
     ...ListAssignation
   }
 }

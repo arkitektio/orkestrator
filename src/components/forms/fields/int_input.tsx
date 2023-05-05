@@ -7,7 +7,7 @@ export type NumberInputFieldProps = CommonFieldProps<number> & {
   placeholder?: string;
 };
 
-export const NumberField = (props: NumberInputFieldProps) => {
+export const IntField = (props: NumberInputFieldProps) => {
   return (
     <Field {...props}>
       {({
@@ -41,4 +41,4 @@ export const NumberField = (props: NumberInputFieldProps) => {
   );
 };
 
-export const NumberInputField = wrapped(NumberField);
+export const IntInputField = wrapped(IntField);

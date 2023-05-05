@@ -24,7 +24,7 @@ import HomeSidebar from "./HomeSidebar";
 interface IDataHomeProps {}
 
 export interface DataHomeFilterParams {
-  createdDay?: Date | null;
+  createdDay?: Date;
   limit: number;
   pinned?: boolean;
 }
@@ -42,10 +42,11 @@ const ISOString = {
 // create a custom parameter with a default value
 const Bool = withDefault(BooleanParam, false);
 const Number = withDefault(NumberParam, 10);
+const CreatedDay = withDefault(ISOString, new Date());
 
 export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
   const [filterParams, setFilterParams] = useQueryParams({
-    createdDay: ISOString,
+    createdDay: CreatedDay,
     limit: Number,
     pinned: Bool,
   });
