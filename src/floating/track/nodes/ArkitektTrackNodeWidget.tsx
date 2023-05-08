@@ -1,18 +1,17 @@
-import { Transition } from "@headlessui/react";
 import React, { useState } from "react";
 import "react-contexify/dist/ReactContexify.css";
-import { Handle, Position } from "reactflow";
+import { BsPlay, BsStop } from "react-icons/bs";
 import ReactTooltip from "react-tooltip";
+import { Handle, Position } from "reactflow";
+import { RunEventFragment, RunEventType } from "../../../fluss/api/graphql";
+import { withRekuest } from "../../../rekuest";
 import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { WidgetsContainer } from "../../../rekuest/widgets/containers/ReturnWidgetsContainer";
-import { RunEventFragment, RunEventType } from "../../../fluss/api/graphql";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps } from "../../types";
+import { notEmpty } from "../../utils";
 import { useTrackRiver } from "../context";
 import { NodeTrackLayout } from "./layout/NodeTrack";
-import { withRekuest } from "../../../rekuest";
-import { notEmpty } from "../../utils";
-import { BsPlay, BsStop } from "react-icons/bs";
 
 export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id }) => {
@@ -33,10 +32,6 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
       data.kind === NodeKind.Generator
         ? "1px solid #ff0033"
         : "1px solid #ff00ff";
-
-    if (error) {
-      return <NodeTrackLayout id={id}>NOT AVAIALBLES</NodeTrackLayout>;
-    }
 
     return (
       <NodeTrackLayout id={id}>
@@ -84,7 +79,7 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           onDoubleClick={() => toggleExpanded()}
         >
           <div className="w-full flex flex-row justify-between">
-            {node_data?.node?.name}{" "}
+            {node_data?.node?.name || data.name}{" "}
             <button
               type="button"
               className="text-md font-light"

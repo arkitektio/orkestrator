@@ -1,17 +1,11 @@
+import { Popover, Transition } from "@headlessui/react";
 import { Allotment } from "allotment";
-import React, { useEffect, useRef, useState } from "react";
-import {
-  RiArrowLeftFill,
-  RiArrowLeftSFill,
-  RiArrowRightSFill,
-} from "react-icons/ri";
-import { MeDocument } from "../rekuest/api/graphql";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { GiHelp } from "react-icons/gi";
+import { usePopper } from "react-popper";
 import BreadCrumbs from "../components/navigation/Breadcrumbs";
 import { Actionbar } from "./Actionbar";
-import { GiHelp } from "react-icons/gi";
-import { Popover, Transition } from "@headlessui/react";
-import { usePopper } from "react-popper";
-import { createPortal } from "react-dom";
 export type Sidebar = {
   label: string;
   key: string;

@@ -1,19 +1,18 @@
-import { Form, Formik } from "formik";
-import React, { useState, useEffect } from "react";
-import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
-import { SwitchInputField } from "../../components/forms/fields/switch_input";
-import { PageLayout } from "../../layout/PageLayout";
-import { useSettings } from "../../settings/settings-context";
-import { DebugScreen } from "../admin/DebugScreen";
-import { useExperimental } from "../../providers/experimental/context";
-import { available_color_maps } from "../../experimental/provider/provider";
 import { useFakts } from "@jhnnsrs/fakts";
-import { RekuestGuard } from "../../rekuest/RekuestGuard";
+import { Form, Formik } from "formik";
+import React from "react";
 import {
   FuseSearchInput,
-  ListSearchInput,
   SearchInput,
 } from "../../components/forms/fields/SearchInput";
+import { IntInputField } from "../../components/forms/fields/int_input";
+import { SwitchInputField } from "../../components/forms/fields/switch_input";
+import { available_color_maps } from "../../experimental/provider/provider";
+import { PageLayout } from "../../layout/PageLayout";
+import { RekuestGuard } from "../../rekuest/RekuestGuard";
+import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
+import { useSettings } from "../../settings/settings-context";
+import { DebugScreen } from "../admin/DebugScreen";
 
 export interface SettingsHomeProps {}
 
@@ -58,6 +57,11 @@ export const SettingsHome: React.FC<SettingsHomeProps> = (props) => {
                   name="darkMode"
                   label="Dark Mode"
                   description="Set the default for autorequest to true or false"
+                />
+                <IntInputField
+                  name="pollInterval"
+                  label="Poll Interval"
+                  description="Set the default poll interval to increase or decrease the frequency of polling for new data"
                 />
                 <SearchInput
                   name="colorScheme"

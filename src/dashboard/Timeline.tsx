@@ -93,7 +93,6 @@ export const TimelineRender = ({
       <div className="col-span-10">
         <div className="relative h-10 w-full bg-gray-100 bg-opacity-10 border border-gray-100 border-opacity-0">
           {node.events.map((event) => {
-            console.log(event?.end, console.log(event?.start));
             return (
               <div
                 className={`${

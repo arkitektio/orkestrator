@@ -63,7 +63,9 @@ export const DeployFlowDialog = (props: Submit<{}> & { flow: string }) => {
 
   const { reservations, reserve } = useReserver();
 
-  const { data } = withRekuest(useDeployReservationsQuery)();
+  const { data } = withRekuest(useDeployReservationsQuery)({
+    fetchPolicy: "network-only",
+  });
 
   const deployRes = reservations?.reservations?.filter((res) =>
     res?.node?.interfaces?.includes("fluss:deploy")

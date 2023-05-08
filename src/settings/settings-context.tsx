@@ -1,6 +1,4 @@
-import { ApolloClient, NormalizedCacheObject, useQuery } from "@apollo/client";
 import React, { useContext } from "react";
-import { boolean } from "yup";
 import { AvailableColormap } from "../experimental/provider/provider";
 
 export type Settings = {
@@ -12,6 +10,7 @@ export type Settings = {
   experimental: boolean;
   defaultColormap: AvailableColormap;
   defaultMaskColormap: AvailableColormap;
+  pollInterval: number;
 };
 
 export type SettingsContextType = {
@@ -29,6 +28,7 @@ export const SettingsContext = React.createContext<SettingsContextType>({
     experimental: false,
     defaultColormap: "viridis",
     defaultMaskColormap: "viridis",
+    pollInterval: 1000,
   },
   setSettings: () => {},
 });

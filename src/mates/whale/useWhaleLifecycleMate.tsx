@@ -1,19 +1,10 @@
-import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
-import {
-  MyOmeroFilesDocument,
-  MyOmeroFilesQuery,
-  MyOmeroFilesQueryVariables,
-  useDeleteOmeroFileMutation,
-  useReleaseFilesMutation,
-} from "../../mikro/api/graphql";
-import { withMikro } from "../../mikro/MikroContext";
+import { withPort } from "../../port/PortContext";
 import {
   usePullWhaleMutation,
+  usePurgeWhaleMutation,
   useRunWhaleMutation,
 } from "../../port/api/graphql";
-import { withPort } from "../../port/PortContext";
-import { Mate } from "../../rekuest/postman/mater/mater-context";
 import { MateFinder } from "../types";
 
 export const useWhaleLifecycleMate = (): MateFinder => {
@@ -22,6 +13,10 @@ export const useWhaleLifecycleMate = (): MateFinder => {
   const [deploy] = withPort(useRunWhaleMutation)();
 
   const [pull] = withPort(usePullWhaleMutation)();
+  const [purge] = withPort(usePurgeWhaleMutation)({
+    refetchQueries: ["ListWhales"],
+  });
+
   return (type, isSelf) => {
     if (type == "item:@port/whale") {
       return [
@@ -48,6 +43,19 @@ export const useWhaleLifecycleMate = (): MateFinder => {
           },
           label: "Pull",
           description: "Pull Update",
+        },
+        {
+          action: async (self, drops) => {
+            await confirm({
+              message:
+                "Do you really want to delete the downloaded image for this whale (you need to pull before deploying it!)?",
+              confirmLabel: "Yes deploy!",
+            });
+
+            await purge({ variables: { id: self.object } });
+          },
+          label: "Purge",
+          description: "Purge Image",
         },
       ];
     }

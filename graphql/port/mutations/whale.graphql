@@ -1,6 +1,6 @@
 mutation RunWhale($id: ID!, $instance: String) {
   runWhale(id: $id, instance: $instance) {
-    ...DetailContainer
+    ...DetailWhale
   }
 }
 
@@ -13,6 +13,12 @@ mutation DeleteWhale($id: ID!) {
 mutation PullWhale($id: ID!) {
   pullWhale(id: $id) {
     id
+  }
+}
+
+mutation PurgeWhale($id: ID!) {
+  purgeWhale(id: $id) {
+    ...DetailWhale
   }
 }
 

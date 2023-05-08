@@ -1,16 +1,21 @@
 import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { withPort } from "../../port/PortContext";
 import {
+  ContainerStatus,
+  ListContainerFragment,
   usePullWhaleMutation,
   useRemoveContainerMutation,
   useRestartContainerMutation,
   useScanRepoMutation,
   useStopContainerMutation,
 } from "../../port/api/graphql";
-import { withPort } from "../../port/PortContext";
+import { AdditionalMate } from "../../rekuest/postman/mater/mater-context";
 import { MateFinder } from "../types";
 
-export const useContainerLifecycleMate = (): MateFinder => {
+export const useContainerLifecycleMate = (): ((
+  contianer: ListContainerFragment
+) => MateFinder) => {
   const { confirm } = useConfirm();
 
   const [restart] = withPort(useRestartContainerMutation)();
@@ -20,22 +25,10 @@ export const useContainerLifecycleMate = (): MateFinder => {
   const [scanRepo, _] = withPort(useScanRepoMutation)();
 
   const [pull] = withPort(usePullWhaleMutation)();
-  return (type, isSelf) => {
+  return (container: ListContainerFragment) => (type, isSelf) => {
+    let actions: AdditionalMate[] = [];
     if (isSelf) {
-      return [
-        {
-          action: async (self, drops) => {
-            await confirm({
-              message: "Do you really want to delete?",
-              subtitle: "Deletion is irreversible!",
-              confirmLabel: "Yes delete!",
-            });
-
-            await remove({ variables: { id: self.object } });
-          },
-          label: <BsTrash />,
-          description: "Delete Run",
-        },
+      actions = actions.concat([
         {
           action: async (self, drops) => {
             await confirm({
@@ -53,8 +46,9 @@ export const useContainerLifecycleMate = (): MateFinder => {
           action: async (self, drops) => {
             await confirm({
               message: "Do you really want to stop?",
-              subtitle: "Deletion is irreversible!",
-              confirmLabel: "Yes delete!",
+              subtitle:
+                "Your container will be stopped! And all data will be lost!",
+              confirmLabel: "Yes stop!",
             });
 
             await stop({ variables: { id: self.object } });
@@ -62,9 +56,28 @@ export const useContainerLifecycleMate = (): MateFinder => {
           label: "Stop",
           description: "Delete Run",
         },
-      ];
+      ]);
     }
 
-    return [];
+    if (isSelf && container.status == ContainerStatus.Exited) {
+      actions = actions.concat([
+        {
+          action: async (self, drops) => {
+            await confirm({
+              message: "Do you really want to delete?",
+              subtitle:
+                "Deletion is irreversible! You will have to deploy again!",
+              confirmLabel: "Yes delete!",
+            });
+
+            await remove({ variables: { id: self.object } });
+          },
+          label: <BsTrash />,
+          description: "Delete Container",
+        },
+      ]);
+    }
+
+    return actions;
   };
 };

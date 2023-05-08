@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
 import { useFakts } from "@jhnnsrs/fakts";
-import { Settings, SettingsContext } from "./settings-context";
+import React, { useEffect, useState } from "react";
 import * as yup from "yup";
+import { Settings, SettingsContext } from "./settings-context";
 
 export type SettingsProps = {
   children: React.ReactNode;
@@ -17,6 +17,7 @@ const settingsValidator = yup.object().shape({
   experimental: yup.boolean().required(),
   defaultColormap: yup.string().required(),
   defaultMaskColormap: yup.string().required(),
+  pollInterval: yup.number().required(),
 });
 
 export const SettingsProvider: React.FC<SettingsProps> = ({
@@ -30,6 +31,7 @@ export const SettingsProvider: React.FC<SettingsProps> = ({
     experimental: false,
     defaultColormap: "viridis",
     defaultMaskColormap: "viridis",
+    pollInterval: 3000,
   },
 }) => {
   const [settings, setSettings] = useState<Settings | undefined>(undefined);

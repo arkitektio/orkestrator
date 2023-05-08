@@ -1,10 +1,9 @@
-import React from "react";
-import { Agent, App, Provision, Template, User } from "../../../linker";
-import { useAppQuery, useUserQuery } from "../../../lok/api/graphql";
+import { App, Provision, User } from "../../../linker";
+import { useReleaseQuery, useUserQuery } from "../../../lok/api/graphql";
 import { withMan } from "../../../lok/man";
 import { MateFinder } from "../../../mates/types";
 import { useMikro } from "../../../mikro/MikroContext";
-import { ListProvisionFragment, ListTemplateFragment } from "../../api/graphql";
+import { ListProvisionFragment } from "../../api/graphql";
 
 interface ProvisionCardProps {
   provision: ListProvisionFragment;
@@ -12,15 +11,13 @@ interface ProvisionCardProps {
 }
 
 export const ProvisionCard = ({ provision, mates }: ProvisionCardProps) => {
-  const { data: appdata } = withMan(useAppQuery)({
+  const { data: appdata } = withMan(useReleaseQuery)({
     variables: {
-      identifier: provision.agent?.registry?.app?.identifier,
-      version: provision.agent?.registry?.app?.version,
+      clientId: provision.agent?.registry?.client?.clientId,
     },
     fetchPolicy: "cache-first",
   });
 
-  
   const { data: userdata } = withMan(useUserQuery)({
     variables: { id: provision.agent?.registry?.user?.sub },
     fetchPolicy: "cache-first",
@@ -42,12 +39,12 @@ export const ProvisionCard = ({ provision, mates }: ProvisionCardProps) => {
             </pre>
           </Provision.DetailLink>
         )}
-        {appdata?.app?.id && (
+        {appdata?.release && (
           <App.DetailLink
-            object={appdata?.app?.id}
+            object={appdata?.release?.id}
             className="my-auto pr-1   p-1"
           >
-            {appdata.app.identifier}:{appdata.app.version}
+            {appdata.release.app?.identifier}:{appdata.release.version}
           </App.DetailLink>
         )}
         {userdata?.user?.id ? (

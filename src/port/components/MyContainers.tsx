@@ -1,28 +1,41 @@
-import React from "react";
-import { BsTrash } from "react-icons/bs";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
+import React, { useEffect } from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Container, Whale } from "../../linker";
+import { Whale } from "../../linker";
 import { useContainerLifecycleMate } from "../../mates/container/useContainerLifecycleMate";
-import {
-  ContainerStatus,
-  useContainersQuery,
-  useStopContainerMutation,
-  useRestartContainerMutation,
-  useRemoveContainerMutation,
-} from "../api/graphql";
+import { useSettings } from "../../settings/settings-context";
 import { withPort } from "../PortContext";
+import { ContainerStatus, useContainersQuery } from "../api/graphql";
 import { ContainerCard } from "./cards/ContainerCard";
 export type IMyGraphsProps = {};
 
 const MyContainers: React.FC<IMyGraphsProps> = ({}) => {
-  const { data, error, loading } = withPort(useContainersQuery)({
-    variables: { status: [ContainerStatus.Exited, ContainerStatus.Running] },
-    pollInterval: 1000,
+  const { settings } = useSettings();
+  const { data, error, loading, refetch, startPolling, stopPolling } = withPort(
+    useContainersQuery
+  )({
+    variables: {
+      status: [
+        ContainerStatus.Exited,
+        ContainerStatus.Running,
+        ContainerStatus.Dead,
+        ContainerStatus.Created,
+        ContainerStatus.Paused,
+        ContainerStatus.Restarting,
+      ],
+    },
+    fetchPolicy: "network-only",
   });
+
+  useEffect(() => {
+    // versionRefetch()
+
+    startPolling(settings.pollInterval);
+    return () => {
+      stopPolling();
+    };
+  }, [stopPolling, startPolling]);
 
   const cLF = useContainerLifecycleMate();
 
@@ -31,11 +44,12 @@ const MyContainers: React.FC<IMyGraphsProps> = ({}) => {
       <Whale.ListLink>
         <SectionTitle>My Contained Apps</SectionTitle>
       </Whale.ListLink>
+      <button onClick={() => refetch()}>Hallo</button>
       <br />
       {JSON.stringify(error)}
       <ResponsiveContainerGrid>
         {data?.containers?.filter(notEmpty).map((s, index) => (
-          <ContainerCard container={s} key={index} mates={[cLF]} />
+          <ContainerCard container={s} key={index} mates={[cLF(s)]} />
         ))}
       </ResponsiveContainerGrid>
     </div>

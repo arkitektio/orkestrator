@@ -23,13 +23,6 @@ export const FloatField = (props: NumberInputFieldProps) => {
             placeholder={props.placeholder}
             className="w-full border h-10 border-grey-light rounded px-3 relative focus:border-blue focus:shadow text-black"
             value={field.value}
-            onChange={(e) => {
-              if (e.target.value === "") {
-                field.onChange(props.name)(null);
-              } else {
-                field.onChange(props.name)(parseFloat(e.target.value));
-              }
-            }}
             {...field}
           />
           {meta && meta.touched && meta.error && (

@@ -1,33 +1,52 @@
-import React from "react";
-import { BsTrash } from "react-icons/bs";
+import React, { useEffect } from "react";
 import Timestamp from "react-timestamp";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Container, Whale } from "../../linker";
+import { Whale } from "../../linker";
 import { useDeleteWhaleMate } from "../../mates/whale/useDeleteWhaleMate";
 import { useWhaleLifecycleMate } from "../../mates/whale/useWhaleLifecycleMate";
-import {
-  ContainerStatus,
-  useWhalesQuery,
-  useRunWhaleMutation,
-  useDeleteWhaleMutation,
-  WhalesDocument,
-  WhalesQuery,
-  usePullWhaleMutation,
-} from "../api/graphql";
 import { withPort } from "../PortContext";
+import {
+  ListWhaleFragment,
+  MyWhalesUpdateDocument,
+  MyWhalesUpdateSubscription,
+  WhaleEvent,
+  useWhalesQuery,
+} from "../api/graphql";
 export type IMyGraphsProps = {};
 
+export type DisplayWhale = ListWhaleFragment & { latestEvent?: WhaleEvent };
+
 const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
-  const { data, error, loading } = withPort(useWhalesQuery)({});
+  const { data, error, loading, subscribeToMore } = withPort(useWhalesQuery)(
+    {}
+  );
 
   const deleteWhaleMate = useDeleteWhaleMate();
   const whaleLifecyleMate = useWhaleLifecycleMate();
 
   const { confirm } = useConfirm();
+
+  useEffect(() => {
+    if (!subscribeToMore) return;
+    let x = subscribeToMore<MyWhalesUpdateSubscription>({
+      document: MyWhalesUpdateDocument,
+      variables: {},
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev;
+        const newEvent = subscriptionData.data.whalesEvent;
+        const newWhales = prev?.whales?.map((w) =>
+          w?.id == newEvent?.whale ? { ...w, latestEvent: newEvent } : w
+        );
+        return {
+          whales: newWhales?.slice(),
+        };
+      },
+    });
+    return () => x();
+  }, [subscribeToMore]);
 
   return (
     <div>
@@ -40,10 +59,27 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
           <Whale.Smart
             key={index}
             object={whale.id}
-            className="max-w-sm rounded  shadow-md bg-slate-800 text-white group"
+            className="max-w-sm rounded  shadow-md bg-slate-800 text-white group relative"
             mates={[deleteWhaleMate(whale), whaleLifecyleMate]}
           >
-            <div className="p-2 ">
+            <div
+              className={`absolute top-0 opacity-40 left-0 h-full bg-green-300 border-green-300 rounded transition-width duration-100 ease-in-out`}
+              style={{
+                zIndex: 1,
+                width: `${
+                  whale?.latestEvent?.pull?.progress != undefined &&
+                  whale?.latestEvent?.pull?.progress != 1
+                    ? Math.floor(whale?.latestEvent?.pull?.progress * 100)
+                    : 0
+                }%`,
+              }}
+            ></div>
+            <div
+              className="p-2"
+              style={{
+                zIndex: 100,
+              }}
+            >
               <div className="flex">
                 <span className="flex-grow font-semibold text-xs">
                   {whale?.deployment.image}
@@ -55,12 +91,12 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
               >
                 {whale?.deployment.version}
               </Whale.DetailLink>
-            </div>
-            <div className="pl-2 pb-2">
-              Updated{" "}
-              {whale.latestPull && (
-                <Timestamp date={whale.latestPull} relative={true} />
-              )}
+              <div className="text-xs pb-2">
+                Build:{" "}
+                {whale.latestPull && (
+                  <Timestamp date={whale.latestPull} relative={true} />
+                )}
+              </div>
             </div>
           </Whale.Smart>
         ))}
