@@ -7,8 +7,8 @@ import { RoiWidget } from "../../../../widgets/RoiWidget";
 import { StageWidget } from "../../../../widgets/StageWidget";
 import { TableWidget } from "../../../../widgets/TableWidget";
 import { ThumbnailWidget } from "../../../../widgets/ThumbnailWidget";
-import { Identifier } from "../../../postman/mater/mater-context";
 
+import { FileWidget } from "../../../../widgets/FileWidget";
 import { ReturnWidgetProps } from "../../types";
 
 export type StructureDisplayProps = {
@@ -37,6 +37,8 @@ export const structure_to_widget = (
       return <ThumbnailWidget {...props} />;
     case "@mikro/metric":
       return <MetricWidget {...props} />;
+    case "@mikro/omerofile":
+      return <FileWidget {...props} />;
     default:
       return <>{type}</>;
   }

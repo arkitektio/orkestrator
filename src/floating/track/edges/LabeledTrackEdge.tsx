@@ -1,5 +1,5 @@
 import React from "react";
-import { getSmoothStepPath } from "reactflow";
+import { EdgeLabelRenderer, getSmoothStepPath } from "reactflow";
 import { RunEventType, StreamKind } from "../../../fluss/api/graphql";
 import { LabeledEdgeProps } from "../../types";
 import { useTrackRiver } from "../context";
@@ -59,9 +59,13 @@ export const LabeledTrackEdge: React.FC<LabeledEdgeProps> = (props) => {
     <>
       <path
         id={id}
-        style={{ ...style, stroke: color }}
+        style={{
+          ...style,
+          stroke: color,
+          strokeWidth: latestEvent?.id == latestGlobalEvent?.id ? 5 : 1,
+        }}
         className={`react-flow__edge-path transition-colors duration-300 ${
-          latestEvent?.id == latestGlobalEvent?.id ? "animate-pulse" : ""
+          latestEvent?.id == latestGlobalEvent?.id ? "animate-pulse  " : ""
         }`}
         d={edgePath}
       />
@@ -74,23 +78,28 @@ export const LabeledTrackEdge: React.FC<LabeledEdgeProps> = (props) => {
           className="group"
         ></textPath>
       </text>
-      <foreignObject x={labelX} y={labelY} width={150} height={150}>
-        <div className="flex group">
-          <div
-            className="relative m-auto hover:bg-gray-500 bg-gray-800 border-[#555] border rounded-lg shadow-lg p-1 cursor-pointer select-none text-gray-400 left[-75px] hover:text-gray-200 flex-col flex  transition-all duration-500 ease-in-out"
-            style={{ fontSize: "13px", fill: "white" }}
-          >
-            {data?.stream.map((item, index) => (
-              <span className="text-xs" key={index}>
-                {(item?.kind == StreamKind.List
-                  ? "[ " + (item?.child?.identifier || item?.child?.kind) + " ]"
-                  : item?.identifier || item?.kind) +
-                  (item?.nullable ? "?" : "")}
-              </span>
-            ))}
-          </div>
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: "absolute",
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            pointerEvents: "all",
+          }}
+          className={`${
+            latestEvent?.id == latestGlobalEvent?.id
+              ? "opacity-100"
+              : "opacity-0"
+          } transition-all duration-500 flex flex-row group m-auto hover:bg-gray-500 bg-gray-800 border-[#555] border rounded-lg shadow-lg p-1 cursor-pointer select-none text-gray-400 left[-75px] hover:text-gray-200 `}
+        >
+          {data?.stream.map((item, index) => (
+            <div className="text-xs " key={index}>
+              {(item?.kind == StreamKind.List
+                ? "[ " + (item?.child?.identifier || item?.child?.kind) + " ]"
+                : item?.identifier || item?.kind) + (item?.nullable ? "?" : "")}
+            </div>
+          ))}
         </div>
-      </foreignObject>
+      </EdgeLabelRenderer>
     </>
   );
 };

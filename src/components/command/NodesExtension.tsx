@@ -20,7 +20,9 @@ export type ReserveModifierParams = {
 };
 
 export const NodesExtension: React.FC<NavigationActionsProps> = ({}) => {
-  const [searchNodes] = withRekuest(useNodesLazyQuery)();
+  const [searchNodes] = withRekuest(useNodesLazyQuery)({
+    fetchPolicy: "network-only",
+  });
 
   const { reserve } = useReserver();
   const { assign } = useRequester();

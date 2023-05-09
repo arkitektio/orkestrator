@@ -257,16 +257,12 @@ export const Canvas: React.FC<{
       <div
         className={`absolute top-0 left-0 bg-gray-900 ${
           loading || error ? "opacity-100" : "opacity-0"
-        } animate-opacity ease-in-out duration-300 z-2 flex items-center justify-center text-white `}
+        } animate-opacity ease-in-out duration-500 z-2 flex items-center justify-center text-white `}
         style={{ width: width, height: height }}
       >
-        {error ? (
+        {error && (
           <div className="ring-2 ring-primary-300 ring-inset p-3 rounded rounded-lg">
             {error}
-          </div>
-        ) : (
-          <div className="ring-2 ring-primary-300 ring-inset p-3 rounded rounded-lg">
-            Loading
           </div>
         )}
       </div>

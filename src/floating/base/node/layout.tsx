@@ -2,8 +2,8 @@
 // This component provides the layoutstate of the node, e.g if the node is expanded or not
 
 import React, { useContext, useState } from "react";
-import { NodeProps } from "reactflow";
 import { Resizable, ResizeCallbackData } from "react-resizable";
+import { NodeProps } from "reactflow";
 
 export interface NodeLayoutState {
   isExpanded: boolean;
@@ -32,6 +32,10 @@ export type NodeLayoutProviderProps = {
   collapsedWidth?: number;
   id: string;
   children?: React.ReactNode;
+};
+
+const MyHandle = (props: any) => {
+  return <div ref={props.innerRef} className="foo" {...props} />;
 };
 
 export const NodeLayoutProvider: React.FC<NodeLayoutProviderProps> = ({
@@ -80,6 +84,7 @@ export const NodeLayoutProvider: React.FC<NodeLayoutProviderProps> = ({
       width={state.width}
       onResize={onResize}
       resizeHandles={["se"]}
+      handleSize={[40, 40]}
     >
       <NodeLayoutContext.Provider value={{ ...state, toggleExpanded }}>
         <div

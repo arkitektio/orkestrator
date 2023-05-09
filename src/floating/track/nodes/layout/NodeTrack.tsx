@@ -1,4 +1,3 @@
-import { RunEventType } from "../../../../fluss/api/graphql";
 import { useNodeLayout } from "../../../base/node/layout";
 import { useTrackRiver } from "../../context";
 const additional = {
@@ -39,7 +38,7 @@ export const NodeTrackLayout: React.FC<NodeProps> = ({
     <>
       <div
         className={
-          `px-2 py-2 z-50 shadow-xl bg-white rounded-md dark:bg-gray-800 dark:text-white text-black border flex-grow flex flex-col h-full w-full transition-colors ease-in-out delay-150 ` +
+          `px-2 py-2 z-50 shadow-xl bg-white rounded-md dark:bg-gray-800 dark:text-white text-black border border-1 flex-grow flex flex-col h-full w-full transition-colors ease-in-out delay-150 ` +
           classNames
         }
       >

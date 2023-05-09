@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Timestamp from "react-timestamp";
+import { useTrackRiver } from "../floating/track/context";
 import { notEmpty } from "../floating/utils";
 import {
   FlowNodeFragment,
@@ -160,11 +161,22 @@ export const Timeline = ({ id }: { id: string }) => {
     variables: { id },
   });
 
+  const { runState } = useTrackRiver();
+
   const [timeline, setTimeline] = useState<NodeTimeline[]>([]);
   const [highlighted, setHighlighted] = useState<number[]>([]);
   const [relativeEvent, setRelativeEvent] = useState<
     RunEventFragment | undefined
   >();
+
+  useEffect(() => {
+    if (runState?.t) {
+      let x = events?.eventsBetween?.find((e) => e?.t == runState?.t);
+      if (x) {
+        highlightEvent(x);
+      }
+    }
+  }, [runState?.t]);
 
   const highlightEvent = (event: RunEventFragment) => {
     let highlighted = [event.t];

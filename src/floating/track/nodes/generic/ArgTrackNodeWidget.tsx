@@ -29,7 +29,7 @@ export const ArgTrackNodeWidget: React.FC<ArgNodeProps> = withLayout(
               className="font-light text-xl custom-drag-handle cursor-pointer"
               onDoubleClick={() => setIsSmall(!isSmall)}
             >
-              Inputs {latestEvent?.id}
+              Inputs
               <button
                 type="button"
                 className="text-md font-light"
