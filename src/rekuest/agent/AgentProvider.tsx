@@ -1,12 +1,14 @@
-import { preventOverflow } from "@popperjs/core";
-import React, { useEffect, useState } from "react";
-import { v4 } from "uuid";
-import { Assign } from "yup/lib/object";
 import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "@jhnnsrs/herre";
+import React, { useEffect, useState } from "react";
+import useWebSocket, { ReadyState } from "react-use-websocket";
+import { v4 } from "uuid";
+import { withRekuest } from "../RekuestContext";
+import { RekuestGuard } from "../RekuestGuard";
 import {
   AssignationStatus,
   DefinitionInput,
+  LogLevelInput,
   ProvisionStatus,
   useTemplateMutation,
 } from "../api/graphql";
@@ -16,16 +18,15 @@ import {
   AgentContext,
   AgentInMessage,
   AgentOutMessage,
-  AssignationsRegistry,
+  AssignHelpers,
   AssignMessage,
+  AssignationsRegistry,
   ListProvisionsProvision,
   ProvisionRegistry,
-  Replier,
 } from "./AgentContext";
 export type ArkitektProps = { children: React.ReactNode; instanceId?: string };
-import useWebSocket, { ReadyState } from "react-use-websocket";
-import { withRekuest } from "../RekuestContext";
-import { RekuestGuard } from "../RekuestGuard";
+
+let actorRegistry = {};
 
 export const TrueAgentProvider: React.FC<ArkitektProps> = ({
   children,
@@ -38,13 +39,25 @@ export const TrueAgentProvider: React.FC<ArkitektProps> = ({
 
   const [template] = withRekuest(useTemplateMutation)();
 
+  const [definitionRegistry, setDefinitionRegistry] = useState<{
+    [id: string]: DefinitionInput | undefined;
+  }>({});
+  const [actorRegistry, setActorRegistry] = useState<{
+    [id: string]: ActorBuilder | undefined;
+  }>({});
+
+  const [templateActorMap, setTemplateActorMap] = useState<{
+    [id: string]: ActorBuilder;
+  }>({});
+
   const [registry, setRegistry] = useState<ActorBuilderRegistry>({});
   const [provisions, setProvisions] = useState<ProvisionRegistry>({});
   const [assignations, setAssignations] = useState<AssignationsRegistry>({});
-  const [ws, setWebsocket] = useState<WebSocket | undefined>(undefined);
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
-    `${fakts.rekuest.agent.endpoint_url}?token=${token}`
+    `${fakts.rekuest.agent.endpoint_url}?token=${token}&instance_id=${instanceId}`,
+    {},
+    provide
   );
 
   useEffect(() => {
@@ -52,6 +65,42 @@ export const TrueAgentProvider: React.FC<ArkitektProps> = ({
       sendMessage(JSON.stringify({ type: "LIST_PROVISIONS", id: "1" }));
     }
   }, [readyState, provide]);
+
+  const startProvide = async () => {
+    console.log("Start providing");
+    let definitions = Object.entries(definitionRegistry);
+    let actors: { [template_id: string]: ActorBuilder } = {};
+    for (let [key, definition] of definitions) {
+      if (definition && definition.interface) {
+        let t = await template({
+          variables: {
+            definition,
+            instanceId: instanceId,
+          },
+        });
+        if (!t.data?.createTemplate) {
+          throw Error("Could not create template");
+        }
+        console.log(key);
+        console.log(actorRegistry);
+        let actor = actorRegistry[key];
+        if (actor) {
+          actors[t.data.createTemplate.id] = actor;
+        } else {
+          throw Error("Mismatch in tempalte");
+        }
+      }
+    }
+
+    setTemplateActorMap(actors);
+    setProvide(true);
+    console.log("Providing", actors, definitions);
+  };
+
+  const cancelProvide = async () => {
+    setProvide(false);
+    console.log("Providingin....");
+  };
 
   useEffect(() => {
     if (lastMessage !== null) {
@@ -93,7 +142,7 @@ export const TrueAgentProvider: React.FC<ArkitektProps> = ({
   const onProvisionIn = async (provision: ListProvisionsProvision) => {
     const { provision: provisionId, template: templateId } = provision;
 
-    const actorBuilder = registry[templateId];
+    const actorBuilder = templateActorMap[templateId];
     if (!actorBuilder) {
       rep({
         id: v4(),
@@ -143,6 +192,9 @@ export const TrueAgentProvider: React.FC<ArkitektProps> = ({
     const { provision: provisionId, assignation: assignationID } = assignation;
 
     console.log(provisions);
+
+    const controller = new AbortController();
+
     const actor = provisions[provisionId.toString()];
     if (!actor) {
       rep({
@@ -156,28 +208,64 @@ export const TrueAgentProvider: React.FC<ArkitektProps> = ({
       return Promise.reject("Actor was never provided");
     }
 
-    const controller = new AbortController();
-    const future = actor
-      .onAssign(assignation, controller)
-      .then((returns) => {
+    const helpers: AssignHelpers = {
+      yield: async (returns: any) => {
+        rep({
+          id: v4(),
+          type: "ASSIGN_CHANGED",
+          assignation: assignationID,
+          status: AssignationStatus.Yield,
+          returns: returns ?? [],
+        });
+      },
+      return: async (returns: any) => {
         rep({
           id: v4(),
           type: "ASSIGN_CHANGED",
           assignation: assignationID,
           status: AssignationStatus.Returned,
           returns: returns ?? [],
-          message: "Actor was never provided",
         });
-      })
-      .catch((e: any) => {
+      },
+      done: async () => {
         rep({
           id: v4(),
           type: "ASSIGN_CHANGED",
           assignation: assignationID,
-          status: AssignationStatus.Error,
-          message: e.message ?? "Unknown error",
+          status: AssignationStatus.Done,
         });
+      },
+      progress: async (value: number) => {
+        rep({
+          id: v4(),
+          type: "ASSIGN_CHANGED",
+          assignation: assignationID,
+          status: AssignationStatus.Progress,
+          progress: value,
+        });
+      },
+      log: async (level: LogLevelInput, message?: string) => {
+        rep({
+          id: v4(),
+          type: "ASSIGN_LOG",
+          assignation: assignationID,
+          level: level,
+          message: message,
+        });
+      },
+      abortController: controller,
+      assignation: assignation,
+    };
+
+    const future = actor.onAssign(helpers).catch((e: any) => {
+      rep({
+        id: v4(),
+        type: "ASSIGN_CHANGED",
+        assignation: assignationID,
+        status: AssignationStatus.Error,
+        message: e.message || "Unknown error",
       });
+    });
     setAssignations((prev) => ({
       ...prev,
       [assignationID]: { future, abortController: controller },
@@ -186,31 +274,36 @@ export const TrueAgentProvider: React.FC<ArkitektProps> = ({
     return future;
   };
 
-  const register = async (definition: DefinitionInput, actor: ActorBuilder) => {
-    const temp = await template({
-      variables: { definition: definition, instanceId: instanceId },
-    });
-    if (!temp.data?.createTemplate?.id) {
-      throw new Error("Templating failed");
-    }
-
-    setRegistry((registry) => ({
+  const register = (definition: DefinitionInput, actor: ActorBuilder) => {
+    setDefinitionRegistry((registry) => ({
       ...registry,
-      [temp.data?.createTemplate?.id as string]: actor,
+      [definition.interface]: definition,
     }));
-    return temp.data?.createTemplate?.id;
-  };
+    setActorRegistry((registry) => ({
+      ...registry,
+      [definition.interface]: actor,
+    }));
 
-  const unregister = (id: string) => {
-    setRegistry({ ...registry, [id]: undefined });
+    console.log("REGISTER", definition.interface, actor);
+
+    return () => {
+      setDefinitionRegistry((registry) => ({
+        ...registry,
+        [definition.interface]: undefined,
+      }));
+      setActorRegistry((registry) => ({
+        ...registry,
+        [definition.interface]: undefined,
+      }));
+    };
   };
 
   return (
     <AgentContext.Provider
       value={{
         register: register,
-        unregister: unregister,
-        setProvide: setProvide,
+        startProvide: startProvide,
+        cancelProvide: cancelProvide,
         provide: provide,
         registry: registry,
         provisions: provisions,
@@ -231,9 +324,11 @@ const NoAgentProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <AgentContext.Provider
       value={{
-        register: failureFunc,
-        unregister: failureFunc,
-        setProvide: failureFunc,
+        register: () => {
+          return () => {};
+        },
+        cancelProvide: failureFunc,
+        startProvide: failureFunc,
         provide: false,
       }}
     >

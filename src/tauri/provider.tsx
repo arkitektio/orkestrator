@@ -1,7 +1,6 @@
-import { invoke } from "@tauri-apps/api";
+import { appWindow } from "@tauri-apps/api/window";
 import React, { useEffect } from "react";
 import { TauriContext } from "./context";
-import { appWindow } from "@tauri-apps/api/window";
 
 export type TauriProviderProps = {
   children?: React.ReactNode;
@@ -37,6 +36,8 @@ export const TauriProvider: React.FC<TauriProviderProps> = (props) => {
   }, []);
 
   return (
-    <TauriContext.Provider value={{}}>{props.children}</TauriContext.Provider>
+    <TauriContext.Provider value={{ intauri: window.__TAURI__ != undefined }}>
+      {props.children}
+    </TauriContext.Provider>
   );
 };

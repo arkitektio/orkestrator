@@ -1,15 +1,16 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Representation } from "../linker";
-import { AssignMessage, useAgent } from "../rekuest/agent/AgentContext";
+import { Actor, useAgent } from "../rekuest/agent/AgentContext";
 import {
   NodeKindInput,
   PortKindInput,
+  Scope,
   WidgetKind,
 } from "../rekuest/api/graphql";
 
 export const MikroDoer: React.FC<{}> = () => {
-  const { register, unregister } = useAgent();
+  const { register } = useAgent();
 
   const navigate = useNavigate();
 
@@ -27,23 +28,26 @@ export const MikroDoer: React.FC<{}> = () => {
         name: "Navigate Home",
         description: "Navigate to the home page",
         kind: NodeKindInput.Function,
+        portGroups: [],
       },
       () => navigateHome
     );
 
-    let representationNavigator = {
-      onAssign: async (assign: AssignMessage) => {
-        const [rep] = assign.args;
+    let representationNavigator: Actor = {
+      onAssign: async (helper) => {
+        const [rep] = helper.assignation.args;
         navigate(Representation.linkBuilder(rep));
+        helper.return([]);
       },
     };
 
-    register(
+    return register(
       {
         interface: "navigate_representation",
         name: "Navigate to Representaiton",
         description: "Shows the currently active representation",
         kind: NodeKindInput.Function,
+        portGroups: [],
         args: [
           {
             key: "representation",
@@ -57,15 +61,12 @@ export const MikroDoer: React.FC<{}> = () => {
                 "query Search($search: String) { options: representations(name: $search) { value: id label: name } }",
             },
             nullable: false,
+            scope: Scope.Global,
           },
         ],
       },
       () => representationNavigator
     );
-
-    return () => {
-      unregister(token);
-    };
   }, []);
 
   return <></>;

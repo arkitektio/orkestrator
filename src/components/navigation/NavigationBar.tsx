@@ -4,7 +4,7 @@ import { BiData } from "react-icons/bi";
 import { FiSettings } from "react-icons/fi";
 import { GrDocker } from "react-icons/gr";
 import { IconContext } from "react-icons/lib";
-import { TbHistory, TbLayoutDashboard } from "react-icons/tb";
+import { Tb2Fa, TbHistory, TbLayoutDashboard } from "react-icons/tb";
 import { TiFlowSwitch } from "react-icons/ti";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { FlussGuard } from "../../fluss/guard";
@@ -12,6 +12,7 @@ import { ManGuard } from "../../lok/guard";
 import { MikroGuard } from "../../mikro/MikroGuard";
 import { PortGuard } from "../../port/PortGuard";
 import { RekuestGuard } from "../../rekuest/RekuestGuard";
+import { TauriGuard } from "../../tauri/guard";
 import { Back } from "./Back";
 import { Logo } from "./Logo";
 import { UserIcon } from "./UserIcon";
@@ -106,6 +107,18 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               <TbHistory />
             </NavLink>
           </RekuestGuard>
+          <TauriGuard>
+            <NavLink
+              key={"Tauri"}
+              to={"local"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-500" : "text-back-400"}`
+              }
+            >
+              <Tb2Fa />
+            </NavLink>
+          </TauriGuard>
           <FlussGuard>
             <NavLink
               key={"Flows"}

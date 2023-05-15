@@ -9,12 +9,14 @@ export interface MateProps {
   self: Partner;
   options?: MateOptions;
   focus?: boolean;
+  progress: (x: number | undefined) => Promise<void>;
 }
 
 export const DisplayMate: React.FC<MateProps> = ({
   mate,
   self,
   focus = false,
+  progress: prog,
 }) => {
   const { alert } = useAlert();
 
@@ -27,11 +29,13 @@ export const DisplayMate: React.FC<MateProps> = ({
         }
         console.log(partners);
         mate
-          .action(self, partners)
+          .action(self, partners, prog)
           .then(() => {
+            prog(undefined);
             console.log("done");
           })
           .catch((error) => {
+            prog(undefined);
             alert({ message: error.message });
           });
         return {};
@@ -50,11 +54,13 @@ export const DisplayMate: React.FC<MateProps> = ({
           if (e.key === " ") {
             e.stopPropagation();
             mate
-              .action(self, [self])
+              .action(self, [self], prog)
               .then(() => {
                 console.log("done");
+                prog(undefined);
               })
               .catch((error) => {
+                prog(undefined);
                 alert({ message: error.message });
               });
           }

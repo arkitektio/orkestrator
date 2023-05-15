@@ -1,35 +1,20 @@
 import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useEffect, useState } from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { useNavigate } from "react-router";
+import { BsCaretLeft, BsCaretRight, BsPlusCircle } from "react-icons/bs";
 import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
-import { useDialog } from "../layout/dialog/DialogProvider";
 import { SectionTitle } from "../layout/SectionTitle";
-import { Dataset, Experiment } from "../linker";
+import { useDialog } from "../layout/dialog/DialogProvider";
+import { Dataset } from "../linker";
 import { useDeleteDatesetMate } from "../mates/dataset/useDeleteDatasetMate";
-import {
-  ListExperimentFragment,
-  MyExperimentsEventDocument,
-  MyExperimentsEventSubscriptionResult,
-  MyExperimentsQuery,
-  useDeleteExperimentMutation,
-  useMyDatasetsQuery,
-  useMyExperimentsQuery,
-} from "../mikro/api/graphql";
+import { useExportDatasetMate } from "../mates/dataset/useExportDatasetMate";
+import { withMikro } from "../mikro/MikroContext";
+import { useMyDatasetsQuery } from "../mikro/api/graphql";
 import { DatasetCard } from "../mikro/components/cards/DatasetCard";
 import { CreateDatasetModal } from "../mikro/components/dialogs/CreateDatasetModal";
 import { CreateExperimentModal } from "../mikro/components/dialogs/CreateExperimentModal";
-import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
-import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
 export type IMyExperimentsProps = {
   subscribe?: Maybe<boolean>;
@@ -55,6 +40,7 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
   const { ask } = useDialog();
 
   const deleteDatasetMate = useDeleteDatesetMate();
+  const exportDatasetMate = useExportDatasetMate();
 
   useEffect(() => {
     refetch({ limit: limit, offset: offset });
@@ -101,7 +87,7 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
             <DatasetCard
               key={index}
               dataset={ex}
-              mates={[deleteDatasetMate(ex)]}
+              mates={[deleteDatasetMate(ex), exportDatasetMate]}
             />
           ))}
         <ActionButton

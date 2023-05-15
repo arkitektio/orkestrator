@@ -2,19 +2,18 @@ import { Transition } from "@headlessui/react";
 import { Placement } from "@popperjs/core";
 import React, { Fragment, useEffect, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
-import { getEmptyImage, NativeTypes } from "react-dnd-html5-backend";
+import { NativeTypes, getEmptyImage } from "react-dnd-html5-backend";
 import { usePopper } from "react-popper";
 import { composeMates } from "../../mates/compose";
 import { MateFinder } from "../../mates/types";
 import {
   Accept,
-  AdditionalMate,
   Identifier,
   MateOptions,
 } from "../postman/mater/mater-context";
-import { useModelSelect } from "./context";
 import { SelfMates } from "./SelfMates";
 import { ShowMates } from "./ShowMates";
+import { useModelSelect } from "./context";
 
 export type ClassNameOptions = {
   isOver: boolean;
@@ -23,6 +22,7 @@ export type ClassNameOptions = {
   isDragging: boolean;
   isSelecting: boolean;
   isSelected: boolean;
+  progress: number | undefined;
 };
 
 export type DropObject = {
@@ -74,6 +74,12 @@ export const SmartModel = <T extends Accept>({
   );
   const [referenceElement, setReferenceElement] =
     useState<HTMLDivElement | null>(null);
+
+  const [progress, setProgress] = useState<number | undefined>(undefined);
+
+  const on_progress = async (x: number | undefined) => {
+    setProgress(x);
+  };
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
     placement: placement || "bottom",
@@ -141,11 +147,11 @@ export const SmartModel = <T extends Accept>({
 
   const dropClassNameFunc =
     props.dropClassName ||
-    (({ isOver, canDrop }) =>
+    (({ isOver, canDrop, progress }) =>
       `${props.className} ${
         hover &&
         "hover:scale-110 transition-all ease-in-out duration-200 group hover:shadow-xl hover:shadow border-2 border-hidden"
-      } ${isOver && "border-solid "}`);
+      } ${isOver && "border-solid "} ${progress && "animate-pulse"}`);
 
   return (
     <div
@@ -161,6 +167,7 @@ export const SmartModel = <T extends Accept>({
         isSelected,
         canDrop,
         type,
+        progress,
       })}
       style={
         props.dropStyle &&
@@ -171,6 +178,7 @@ export const SmartModel = <T extends Accept>({
           isSelected,
           canDrop,
           type,
+          progress,
         })
       }
     >
@@ -208,6 +216,7 @@ export const SmartModel = <T extends Accept>({
                   {!isDragging ? (
                     <ShowMates
                       type={type as T}
+                      progress={on_progress}
                       self={self}
                       options={options}
                       additionalMates={mates && composeMates(mates)}
@@ -215,6 +224,7 @@ export const SmartModel = <T extends Accept>({
                   ) : (
                     <SelfMates
                       type={type as T}
+                      progress={on_progress}
                       self={self}
                       options={options}
                       additionalMates={mates && composeMates(mates)}
@@ -249,6 +259,7 @@ export const SmartModel = <T extends Accept>({
                 type={("item:" + props.identifier) as T}
                 self={self}
                 options={options}
+                progress={on_progress}
                 additionalMates={mates && composeMates(mates)}
               />
             </div>
@@ -264,6 +275,7 @@ export const SmartModel = <T extends Accept>({
             isSelected,
             canDrop,
             type,
+            progress,
           })}
           style={
             props.dragStyle &&
@@ -274,6 +286,7 @@ export const SmartModel = <T extends Accept>({
               isSelected,
               canDrop,
               type,
+              progress,
             })
           }
           draggable={true}

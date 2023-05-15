@@ -1,17 +1,18 @@
 import { Popover } from "@headlessui/react";
+import { useFakts } from "@jhnnsrs/fakts";
+import { useHerre } from "@jhnnsrs/herre";
 import React, { useState } from "react";
+import { TbCloudDataConnection } from "react-icons/tb";
 import { usePopper } from "react-popper";
 import {
   NotificationCenterItem,
   useNotificationCenter,
 } from "react-toastify/addons/use-notification-center";
-import { useAgent } from "../../rekuest/agent/AgentContext";
-import { useHerre } from "@jhnnsrs/herre";
 import { useProfileQuery } from "../../lok/api/graphql";
 import { withMan } from "../../lok/context";
 import { useMikro } from "../../mikro/MikroContext";
-import { useFakts } from "@jhnnsrs/fakts";
-import { TbCloudDataConnection } from "react-icons/tb";
+import { useAgent } from "../../rekuest/agent/AgentContext";
+import { useAlert } from "../alerter/alerter-context";
 
 interface Props {}
 
@@ -42,7 +43,7 @@ export const NotificationCenter = (props: {
 
 export const UserIcon: React.FC<Props> = (props: Props) => {
   const { user, logout } = useHerre();
-  const { provide, setProvide } = useAgent();
+  const { provide, startProvide, cancelProvide } = useAgent();
   const { fakts } = useFakts();
 
   const {
@@ -66,6 +67,7 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
   });
 
   const { s3resolve } = useMikro();
+  const { alert } = useAlert();
 
   return (
     <>
@@ -116,14 +118,34 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
                 <div className="flex-grow"></div>
                 <div className="flex flex-row gap-2">
                   <div className="flex grow"></div>
-                  <div
-                    onClick={() => setProvide(!provide)}
-                    className={
-                      "px-2 text-sm text-slate-50 hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-primary rounded-400"
-                    }
-                  >
-                    {provide ? "...Providing" : "Provide"}
-                  </div>
+                  {!provide ? (
+                    <div
+                      onClick={() =>
+                        startProvide().catch((e) =>
+                          alert({
+                            message: e.message,
+                            subtitle: "Provision Error",
+                          })
+                        )
+                      }
+                      className={
+                        "px-2 text-sm text-slate-50 hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-primary rounded-400"
+                      }
+                    >
+                      {provide ? "...Providing" : "Provide"}
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() =>
+                        cancelProvide().catch((e) => alert(e.message))
+                      }
+                      className={
+                        "px-2 text-sm text-slate-50 hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-primary rounded-400"
+                      }
+                    >
+                      {provide ? "...Providing" : "Provide"}
+                    </div>
+                  )}
                   <div
                     onClick={() => logout()}
                     className={

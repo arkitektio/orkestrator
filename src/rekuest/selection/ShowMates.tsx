@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { MyReservationsQuery, ReservationsQuery } from "../api/graphql";
+import { useEffect, useState } from "react";
 import {
   Accept,
   AdditionalMate,
   Mate,
   MateOptions,
   Partner,
+  useMater,
 } from "../postman/mater/mater-context";
-import { useMater } from "../postman/mater/mater-context";
 import { DisplayMate } from "./DisplayMate";
 
 export interface ShowMatesProps<T extends Accept> {
   type: T;
   self: Partner;
   options?: MateOptions;
+  progress: (x: number | undefined) => Promise<void>;
   additionalMates?:
     | ((type: T, isSelf: boolean) => AdditionalMate[] | undefined)
     | AdditionalMate[];
@@ -23,6 +23,7 @@ export const ShowMates = <T extends Accept>({
   type,
   self,
   options,
+  progress,
   additionalMates,
 }: ShowMatesProps<T>) => {
   const { reservations, calculateMates } = useMater();
@@ -57,6 +58,7 @@ export const ShowMates = <T extends Accept>({
               <DisplayMate
                 key={index}
                 mate={mate}
+                progress={progress}
                 self={self}
                 options={options}
               />
@@ -71,6 +73,7 @@ export const ShowMates = <T extends Accept>({
           {moreMates?.map((mate: any, index: any) =>
             mate ? (
               <DisplayMate
+                progress={progress}
                 key={index}
                 mate={mate}
                 self={self}

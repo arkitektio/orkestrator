@@ -490,7 +490,7 @@ export type DefinitionInput = {
   description?: InputMaybe<Scalars['String']>;
   idempotent?: InputMaybe<Scalars['Boolean']>;
   /** The interface of this template */
-  interface?: InputMaybe<Scalars['String']>;
+  interface: Scalars['String'];
   /** The Interfaces this node provides makes sense of the metadata */
   interfaces?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   /** The variety */

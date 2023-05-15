@@ -58,6 +58,7 @@ import { AlerterProvider } from "./components/alerter/alerter-provider";
 import { ConfirmerProvider } from "./components/confirmer/confirmer-provider";
 import { HealthzProvider } from "./healthz/provider";
 import { Fluss } from "./pages/Fluss";
+import { Local } from "./pages/Local";
 import { Settings } from "./pages/Settings";
 import { DashboardAgent } from "./pages/dashboard/agents/DashboardAgent";
 import { DashboardAgents } from "./pages/dashboard/agents/DashboardAgents";
@@ -91,6 +92,7 @@ import { FlowTimeline } from "./pages/flows/timelines/FlowTimeline";
 import { FlowDiagram } from "./pages/flows/workspace/FlowDiagram";
 import { FlowDiagramFlow } from "./pages/flows/workspace/FlowDiagramFlow";
 import { FlowDiagramHome } from "./pages/flows/workspace/FlowDiagramHome";
+import { Test } from "./pages/local/Test";
 import { LokApp } from "./pages/lok/apps/LokApp";
 import { LokApps } from "./pages/lok/apps/LokApps";
 import { LokClient } from "./pages/lok/clients/LokClient";
@@ -567,7 +569,12 @@ export const MainApp: React.FC<Props> = (props) => {
                                   <Route index element={<SettingsHome />} />
                                 </Route>
 
-                                <Route element={<NoRoute />} />
+                                {/* Tauri */}
+                                <Route path="local" element={<Local />}>
+                                  <Route index element={<Test />} />
+                                </Route>
+
+                                <Route path="*" element={<NoRoute />} />
                               </Route>
                             </Routes>
                           </React.Suspense>

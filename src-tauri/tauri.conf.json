@@ -18,8 +18,15 @@
       "notification": {
         "all": true 
       },
+      "fs": {
+        "all": true,
+        "scope": ["$APP/**/*", "$APPDATA/**/*", "$APPLOCALDATA/**/*","$HOME/**/*", "$DATA/**/*", "$XDG_CONFIG_HOME/**/*", "$TMP/**/*", "$TEMP/**/*", "$TMPDIR/**/*"]
+      },
       "shell": {
         "open": true
+      },
+      "path": {
+        "all": true 
       },
       "http": {
         "all": true,

@@ -1,13 +1,10 @@
 import React, { useContext } from "react";
-import { Id } from "react-toastify";
 import {
-  Assignation,
   AssignationStatus,
   DefinitionInput,
-  Provision,
+  LogLevelInput,
   ProvisionMode,
   ProvisionStatus,
-  Template,
 } from "../api/graphql";
 
 export type ActorBuilderRegistry = {
@@ -28,22 +25,26 @@ export type Token = string;
 
 export type ActorBuilder = () => Actor;
 
+export type AssignHelpers = {
+  yield: (returns: any[]) => Promise<void>;
+  return: (returns: any[]) => Promise<void>;
+  done: () => Promise<void>;
+  progress: (x: number) => Promise<void>;
+  log: (level: LogLevelInput, message?: string) => Promise<void>;
+  abortController: AbortController;
+  assignation: AssignMessage;
+};
+
 export type Actor<T extends [] = []> = {
   onProvide?: (provision: any) => Promise<void>;
   onUnprovide?: (provision: any) => Promise<void>;
-  onAssign: (
-    assignation: any,
-    abortController: AbortController
-  ) => Promise<T | void>;
+  onAssign: (helpers: AssignHelpers) => Promise<T | void>;
 };
 
 export type AgentContextType = {
-  register: (
-    definition: DefinitionInput,
-    actor: ActorBuilder
-  ) => Promise<Token>;
-  unregister: (token: Token) => void;
-  setProvide: (provide: boolean) => void;
+  register: (definition: DefinitionInput, actor: ActorBuilder) => () => void;
+  startProvide: () => Promise<void>;
+  cancelProvide: () => Promise<void>;
   provide: boolean;
   registry?: ActorBuilderRegistry;
   provisions?: ProvisionRegistry;
@@ -103,18 +104,29 @@ export type AssignChangedMessage = CommonAgentMessage & {
   status?: AssignationStatus;
   returns?: any[];
   message?: string;
+  progress?: number;
 };
 
-export type AgentOutMessage = ProvisionChangedMessage | AssignChangedMessage;
+export type AssignLogMessage = CommonAgentMessage & {
+  type: "ASSIGN_LOG";
+  assignation: string;
+  message?: string;
+  level: LogLevelInput;
+};
+
+export type AgentOutMessage =
+  | ProvisionChangedMessage
+  | AssignChangedMessage
+  | AssignLogMessage;
 
 export type Replier = (message: AgentOutMessage) => void;
 
 export const AgentContext = React.createContext<AgentContextType>({
-  register: async () => {
-    return "NOT REGISTERESY";
+  register: () => {
+    return () => {};
   },
-  unregister: () => {},
-  setProvide: () => {},
+  startProvide: async () => {},
+  cancelProvide: async () => {},
   provide: false,
   registry: {},
   provisions: {},

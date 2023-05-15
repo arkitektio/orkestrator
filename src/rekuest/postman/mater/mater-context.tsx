@@ -1,20 +1,5 @@
 import React, { useContext } from "react";
-import {
-  AcknowledgeMutationFn,
-  AgentsQuery,
-  AssignMutationFn,
-  AssignMutationVariables,
-  ListReservationFragment,
-  MyReservationsQuery,
-  ProvideMutationFn,
-  ProvisionsQuery,
-  RequestsQuery,
-  ReservationsQuery,
-  ReserveMutationFn,
-  UnassignMutationFn,
-  UnprovideMutationFn,
-  UnreserveMutationFn,
-} from "../../api/graphql";
+import { ListReservationFragment, ReservationsQuery } from "../../api/graphql";
 
 export type AssignRequest = {
   id: string;
@@ -45,7 +30,11 @@ export type Partner = {
 export type Mate<T extends Accept = any> = {
   accepts: T[];
 
-  action: (self: Partner, drops: Partner[]) => Promise<any>;
+  action: (
+    self: Partner,
+    drops: Partner[],
+    progress: (x: number) => Promise<void>
+  ) => Promise<any>;
   label: React.ReactNode;
   className?: (options: { isOver: boolean }) => string | string;
   description?:
@@ -54,7 +43,11 @@ export type Mate<T extends Accept = any> = {
 };
 
 export type AdditionalMate = {
-  action: (self: Partner, drops: Partner[]) => Promise<any>;
+  action: (
+    self: Partner,
+    drops: Partner[],
+    progress: (x: number) => Promise<void>
+  ) => Promise<any>;
   label: React.ReactNode;
   className?: (options: { isOver: boolean }) => string | string;
   description?:

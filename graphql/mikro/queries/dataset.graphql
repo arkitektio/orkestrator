@@ -16,3 +16,12 @@ query SearchDatasets($search: String) {
     value: id
   }
 }
+
+query DownloadFiles($dataset: ID!) {
+  dataset(id: $dataset) {
+    omerofiles {
+      file
+      name
+    }
+  }
+}

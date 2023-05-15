@@ -173,6 +173,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             cmd::oauth_start,
+            cmd::upload_file,
+            cmd::download_file,
             cmd::oauth_cancel,
         ])
         .run(context)

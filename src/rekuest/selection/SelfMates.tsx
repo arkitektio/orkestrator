@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { MyReservationsQuery } from "../api/graphql";
+import { useEffect, useState } from "react";
 import {
   Accept,
   AdditionalMate,
@@ -14,6 +13,7 @@ export interface SelfMatesProps<T extends Accept> {
   type: T;
   self: Partner;
   options?: MateOptions;
+  progress: (x: number | undefined) => Promise<void>;
   additionalMates?:
     | ((type: T, isSelf: boolean) => AdditionalMate[] | undefined)
     | AdditionalMate[];
@@ -23,6 +23,7 @@ export const SelfMates = <T extends Accept>({
   type,
   self,
   options,
+  progress,
   additionalMates,
 }: SelfMatesProps<T>) => {
   const { reservations, calculateSelfMates } = useMater();
@@ -82,6 +83,7 @@ export const SelfMates = <T extends Accept>({
                 key={index}
                 mate={mate}
                 self={self}
+                progress={progress}
                 options={options}
                 focus={focusIndex === index}
               />
@@ -99,6 +101,7 @@ export const SelfMates = <T extends Accept>({
                 key={index}
                 mate={mate}
                 self={self}
+                progress={progress}
                 options={options}
                 focus={
                   focusIndex

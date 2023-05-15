@@ -1,10 +1,12 @@
 use httparse;
 use httparse::Request;
+use std::io::Cursor;
 use std::{
     borrow::Cow,
+    error::Error,
     io::{Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
-    thread,
+    result, thread,
 };
 use tauri::command;
 use tauri::Manager;
@@ -16,6 +18,7 @@ use tauri::{utils::config::AppUrl, window::WindowBuilder, WindowUrl};
 use tokio::net::UdpSocket;
 use tokio::time::{sleep, Duration};
 
+type DownloadResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 const EXIT: [u8; 4] = [1, 3, 3, 7];
 /// The optional server config.
 #[derive(Default, serde::Deserialize)]
@@ -213,4 +216,62 @@ pub fn oauth_start(app: tauri::AppHandle, config: Option<OauthConfig>) -> Result
 #[tauri::command]
 pub fn oauth_cancel(port: u16) -> Result<(), String> {
     cancel_listen(port).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn upload_file(
+    file: std::path::PathBuf,
+    url: String,
+    key: String,
+    bucket: String,
+    amz_algorithm: String,
+    amz_credential: String,
+    amz_date: String,
+    amz_signature: String,
+    policy: String,
+) -> Result<String, String> {
+    // ^We expect the frontend to send a file path.
+
+    let client = reqwest::Client::new();
+    let copy_key = key.clone();
+
+    let file_name = file.file_name().unwrap().to_string_lossy().to_string();
+    let file_content = tokio::fs::read(file).await.map_err(|err| err.to_string())?;
+    let part = reqwest::multipart::Part::bytes(file_content).file_name(file_name);
+
+    let form = reqwest::multipart::Form::new()
+        .part("file", part)
+        .text("key", key)
+        .text("bucket", bucket)
+        .text("X-Amz-Algorithm", amz_algorithm)
+        .text("X-Amz-Credential", amz_credential)
+        .text("X-Amz-Date", amz_date)
+        .text("X-Amz_Signature", amz_signature)
+        .text("Policy", policy);
+
+    let cresult = client.post(url).multipart(form).send().await;
+
+    match cresult {
+        Ok(_) => Ok(copy_key),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+async fn download_with_rekuest(file: std::path::PathBuf, url: String) -> DownloadResult<()> {
+    let response = reqwest::get(url).await?;
+    let mut file = std::fs::File::create(file)?;
+    let mut content = Cursor::new(response.bytes().await?);
+    std::io::copy(&mut content, &mut file)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn download_file(file: std::path::PathBuf, url: String) -> Result<String, String> {
+    // ^We expect the frontend to send a file path.
+    let x = download_with_rekuest(file, url).await;
+
+    match x {
+        Ok(_) => Ok("done".to_string()),
+        Err(e) => Err(e.to_string()),
+    }
 }
