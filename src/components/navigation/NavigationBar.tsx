@@ -1,16 +1,17 @@
 import React from "react";
 import { AiOutlineTeam } from "react-icons/ai";
-import { BiData } from "react-icons/bi";
+import { BiData, BiSync } from "react-icons/bi";
 import { FiSettings } from "react-icons/fi";
 import { GrDocker } from "react-icons/gr";
 import { IconContext } from "react-icons/lib";
-import { Tb2Fa, TbHistory, TbLayoutDashboard } from "react-icons/tb";
+import { TbHistory, TbLayoutDashboard } from "react-icons/tb";
 import { TiFlowSwitch } from "react-icons/ti";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { FlussGuard } from "../../fluss/guard";
 import { ManGuard } from "../../lok/guard";
 import { MikroGuard } from "../../mikro/MikroGuard";
 import { PortGuard } from "../../port/PortGuard";
+import { ExperimentalFeature } from "../../providers/experimental/Experimental";
 import { RekuestGuard } from "../../rekuest/RekuestGuard";
 import { TauriGuard } from "../../tauri/guard";
 import { Back } from "./Back";
@@ -107,18 +108,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               <TbHistory />
             </NavLink>
           </RekuestGuard>
-          <TauriGuard>
-            <NavLink
-              key={"Tauri"}
-              to={"local"}
-              className={({ isActive }) =>
-                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
-                } ${isActive ? "dark:text-back-500" : "text-back-400"}`
-              }
-            >
-              <Tb2Fa />
-            </NavLink>
-          </TauriGuard>
+
           <FlussGuard>
             <NavLink
               key={"Flows"}
@@ -166,7 +156,28 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
           </NavLink>
         </IconContext.Provider>
       </div>
-      <div className="flex flex-initial sm:flex-col flex-row gap-8 items-center">
+      <div className="flex flex-initial sm:flex-col flex-row gap-1 items-center pb-2">
+        <ExperimentalFeature>
+          <TauriGuard>
+            <IconContext.Provider
+              value={{
+                size: "2.6em",
+                style: { stroke: "1px" },
+              }}
+            >
+              <NavLink
+                key={"Tauri"}
+                to={"local"}
+                className={({ isActive }) =>
+                  ` dark:hover:text-back-500 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-500" : "text-back-400"}`
+                }
+              >
+                <BiSync />
+              </NavLink>
+            </IconContext.Provider>
+          </TauriGuard>
+        </ExperimentalFeature>
         <UserIcon />
       </div>
     </div>

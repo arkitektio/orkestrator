@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BsCaretLeft, BsCaretRight } from "react-icons/bs";
-import { notEmpty } from "../floating/utils";
-import { SectionTitle } from "../layout/SectionTitle";
+import { ListRender } from "../layout/SectionTitle";
 import { Representation } from "../linker";
 import { useMikroLinkMate } from "../mates/generics/useLinkMate";
 import { withMikro } from "../mikro/MikroContext";
@@ -13,7 +11,6 @@ import {
 } from "../mikro/api/graphql";
 import { RepresentationCard } from "../mikro/components/cards/RepresentationCard";
 import { DataHomeFilterParams } from "../pages/data/Home";
-import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 
 export type IMyRepresentationsProps = {};
 
@@ -26,12 +23,9 @@ const MyRepresentations: React.FC<
 
   const mikroLinkMate = useMikroLinkMate();
 
-  const {
-    data: reps,
-    loading: all_loading,
-    subscribeToMore,
-    refetch,
-  } = withMikro(useMyRepresentationsQuery)({
+  const { data, loading, subscribeToMore, refetch } = withMikro(
+    useMyRepresentationsQuery
+  )({
     variables: {
       limit: limit,
       offset: 0,
@@ -93,53 +87,20 @@ const MyRepresentations: React.FC<
 
   return (
     <>
-      {reps && reps.myrepresentations && reps.myrepresentations.length > 0 && (
-        <>
-          <SectionTitle>
-            <div className="flex flex-row">
-              <Representation.ListLink className="flex-0">
-                Images
-              </Representation.ListLink>
-              <div className="flex-grow"></div>
-              <div className="flex-0">
-                {offset != 0 && (
-                  <button
-                    type="button"
-                    className="p-1 text-gray-600 rounded"
-                    onClick={() => setOffset(offset - limit)}
-                  >
-                    {" "}
-                    <BsCaretLeft />{" "}
-                  </button>
-                )}
-                {reps.myrepresentations &&
-                  reps.myrepresentations.length == limit && (
-                    <button
-                      type="button"
-                      className="p-1 text-gray-600 rounded"
-                      onClick={() => setOffset(offset + limit)}
-                    >
-                      {" "}
-                      <BsCaretRight />{" "}
-                    </button>
-                  )}
-              </div>
-            </div>
-          </SectionTitle>
-          <ResponsiveContainerGrid>
-            {reps?.myrepresentations
-              ?.slice(0, limit)
-              .filter(notEmpty)
-              .map((rep, index) => (
-                <RepresentationCard
-                  rep={rep}
-                  key={rep?.id}
-                  mates={[mikroLinkMate]}
-                />
-              ))}
-          </ResponsiveContainerGrid>
-        </>
-      )}
+      <ListRender
+        array={data?.myrepresentations}
+        loading={loading}
+        title={
+          <Representation.ListLink className="flex-0">
+            Images
+          </Representation.ListLink>
+        }
+        refetch={refetch}
+      >
+        {(rep, index) => (
+          <RepresentationCard rep={rep} key={rep?.id} mates={[mikroLinkMate]} />
+        )}
+      </ListRender>
     </>
   );
 };

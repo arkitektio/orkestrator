@@ -1,24 +1,17 @@
 import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useEffect, useState } from "react";
-import { BsCaretLeft, BsCaretRight, BsPlusCircle } from "react-icons/bs";
-import { notEmpty } from "../floating/utils";
-import { ActionButton } from "../layout/ActionButton";
-import { SectionTitle } from "../layout/SectionTitle";
+import { ListRender } from "../layout/SectionTitle";
 import { Experiment } from "../linker";
 import { useDeleteExperimentMate } from "../mates/experiment/useDeleteExperimentMate";
+import { withMikro } from "../mikro/MikroContext";
 import {
-  ListExperimentFragment,
   MyExperimentsEventDocument,
   MyExperimentsEventSubscriptionResult,
   MyExperimentsQuery,
   useMyExperimentsQuery,
 } from "../mikro/api/graphql";
 import { ExperimentCard } from "../mikro/components/cards/ExperimentCard";
-import { CreateExperimentModal } from "../mikro/components/dialogs/CreateExperimentModal";
-import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
-import { useConfirm } from "./confirmer/confirmer-context";
-import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 
 export type IMyExperimentsProps = {
   subscribe?: Maybe<boolean>;
@@ -97,61 +90,23 @@ const MyExperiments: React.FC<IMyExperimentsProps> = ({
   if (error) return <div>{error.message}</div>;
 
   return (
-    <>
-      <SectionTitle>
-        <div className="flex flex-row">
-          <Experiment.ListLink className="flex-0">
-            Experiments
-          </Experiment.ListLink>
-          <div className="flex-grow"></div>
-          <div className="flex-0">
-            {offset != 0 && (
-              <button
-                type="button"
-                className="p-1 text-gray-600 rounded"
-                onClick={() => setOffset(offset - limit)}
-              >
-                {" "}
-                <BsCaretLeft />{" "}
-              </button>
-            )}
-            {experiments?.myexperiments &&
-              experiments?.myexperiments.length == limit && (
-                <button
-                  type="button"
-                  className="p-1 text-gray-600 rounded"
-                  onClick={() => setOffset(offset + limit)}
-                >
-                  {" "}
-                  <BsCaretRight />{" "}
-                </button>
-              )}
-          </div>
-        </div>
-      </SectionTitle>
-
-      <ResponsiveContainerGrid>
-        {experiments?.myexperiments
-          ?.slice(0, limit)
-          .filter(notEmpty)
-          .map((ex, index) => (
-            <ExperimentCard
-              key={index}
-              experiment={ex}
-              mates={[deleteExperimentMate(ex)]}
-            />
-          ))}
-        <ActionButton
-          label="Create new Experiment"
-          description="Create a new experiment"
-          className="text-white "
-          onAction={async () => setShow((show) => true)}
-        >
-          <BsPlusCircle />
-        </ActionButton>
-      </ResponsiveContainerGrid>
-      <CreateExperimentModal show={show} setShow={setShow} />
-    </>
+    <ListRender
+      array={experiments?.myexperiments}
+      title={
+        <Experiment.ListLink className="flex-0">
+          Experiments
+        </Experiment.ListLink>
+      }
+      refetch={refetch}
+    >
+      {(ex, index) => (
+        <ExperimentCard
+          key={index}
+          experiment={ex}
+          mates={[deleteExperimentMate(ex)]}
+        />
+      )}
+    </ListRender>
   );
 };
 

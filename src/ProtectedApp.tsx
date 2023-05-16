@@ -4,7 +4,6 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { Outlet } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { MikroDoer } from "./bridges/MikroDoer";
 import { GeneralMenu } from "./components/command/GeneralMenu";
 import { GeneralMenuProvider } from "./components/command/GeneralMenuProvider";
 import { NavigationActions } from "./components/command/NavigationActions";
@@ -32,8 +31,7 @@ import { ReserverProvider } from "./rekuest/postman/reserver/reserver-provider";
 import { SettingsProvider } from "./settings/settings-provider";
 
 import { DatalayerProvider } from "@jhnnsrs/datalayer";
-import ExportActor from "./actors/ExportActor";
-import ImportActor from "./actors/ImportActor";
+import { Actors } from "./actors/Actors";
 import { DatalayerAutoConfigure } from "./bridges/DatalayerAutoConfigure";
 import { FlussAutoConfigure } from "./bridges/FlussAutoConfigure";
 import { LokAutoConfigure } from "./bridges/LokAutoConfigure";
@@ -45,7 +43,7 @@ import { XArrayProvider } from "./experimental/provider/provider";
 import { DialogProvider } from "./layout/dialog/DialogProvider";
 import { PublicLogin } from "./pages/public/PublicLogin";
 import { PortProvider } from "./port/PortProvider";
-import { CreateRepoDialog } from "./port/components/dialogs/CreateRepoDialog";
+import { ExperimentalFeature } from "./providers/experimental/Experimental";
 import { RekuestGuard } from "./rekuest/RekuestGuard";
 import { MaterProvider } from "./rekuest/postman/mater/mater-provider";
 import { RequesterProvider } from "./rekuest/postman/requester/requester-provider";
@@ -141,19 +139,13 @@ export const ProtectedApp: React.FC<Props> = () => {
                                     <MaterProvider>
                                       <AgentProvider>
                                         <XArrayProvider>
-                                          <RekuestGuard>
-                                            <MikroDoer />
-                                          </RekuestGuard>
-                                          <ExportActor />
-                                          <ImportActor />
+                                          <ExperimentalFeature>
+                                            <Actors />
+                                          </ExperimentalFeature>
 
                                           <DndProvider options={HTML5toTouch}>
                                             <SelectionProvider>
-                                              <DialogProvider
-                                                registeredDialogs={{
-                                                  create: CreateRepoDialog,
-                                                }}
-                                              >
+                                              <DialogProvider>
                                                 <ToastContainer
                                                   position="bottom-right"
                                                   theme="dark"

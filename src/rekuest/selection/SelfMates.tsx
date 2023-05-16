@@ -17,6 +17,8 @@ export interface SelfMatesProps<T extends Accept> {
   additionalMates?:
     | ((type: T, isSelf: boolean) => AdditionalMate[] | undefined)
     | AdditionalMate[];
+  onDone?: () => Promise<void>;
+  onError?: (error: Error) => Promise<void>;
 }
 
 export const SelfMates = <T extends Accept>({
@@ -24,6 +26,8 @@ export const SelfMates = <T extends Accept>({
   self,
   options,
   progress,
+  onDone,
+  onError,
   additionalMates,
 }: SelfMatesProps<T>) => {
   const { reservations, calculateSelfMates } = useMater();
@@ -86,6 +90,9 @@ export const SelfMates = <T extends Accept>({
                 progress={progress}
                 options={options}
                 focus={focusIndex === index}
+                clickable={true}
+                onDone={onDone}
+                onError={onError}
               />
             ) : (
               <>hmmm</>
@@ -108,6 +115,9 @@ export const SelfMates = <T extends Accept>({
                     ? focusIndex - (selfMates?.length || 0) === index
                     : undefined
                 }
+                clickable={true}
+                onDone={onDone}
+                onError={onError}
               />
             ) : (
               <>hmmm</>

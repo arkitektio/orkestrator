@@ -17,12 +17,16 @@ export interface ShowMatesProps<T extends Accept> {
   additionalMates?:
     | ((type: T, isSelf: boolean) => AdditionalMate[] | undefined)
     | AdditionalMate[];
+  onDone?: () => Promise<void>;
+  onError?: (error: Error) => Promise<void>;
 }
 
 export const ShowMates = <T extends Accept>({
   type,
   self,
   options,
+  onDone,
+  onError,
   progress,
   additionalMates,
 }: ShowMatesProps<T>) => {
@@ -61,6 +65,8 @@ export const ShowMates = <T extends Accept>({
                 progress={progress}
                 self={self}
                 options={options}
+                onDone={onDone}
+                onError={onError}
               />
             ) : (
               <>hmmm</>
@@ -78,6 +84,8 @@ export const ShowMates = <T extends Accept>({
                 mate={mate}
                 self={self}
                 options={options}
+                onDone={onDone}
+                onError={onError}
               />
             ) : (
               <>hmmm</>

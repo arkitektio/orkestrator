@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
-import { BsCaretLeft, BsCaretRight } from "react-icons/bs";
-import { SectionTitle } from "../layout/SectionTitle";
+import { Offsetter, SectionTitle } from "../layout/SectionTitle";
 import { MikroFile } from "../linker";
 import { useMikro, withMikro } from "../mikro/MikroContext";
 import {
@@ -166,33 +165,17 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
 
   return (
     <div>
-      <SectionTitle>
-        <div className="flex flex-row">
-          <MikroFile.ListLink className="flex-0">Files</MikroFile.ListLink>
-          <div className="flex-grow"></div>
-          <div className="flex-0">
-            {offset != 0 && (
-              <button
-                type="button"
-                className="p-1 text-gray-600 rounded"
-                onClick={() => setOffset(offset - limit)}
-              >
-                {" "}
-                <BsCaretLeft />{" "}
-              </button>
-            )}
-            {data?.myomerofiles && data?.myomerofiles.length == limit && (
-              <button
-                type="button"
-                className="p-1 text-gray-600 rounded"
-                onClick={() => setOffset(offset + limit)}
-              >
-                {" "}
-                <BsCaretRight />{" "}
-              </button>
-            )}
-          </div>
-        </div>
+      <SectionTitle
+        right={
+          <Offsetter
+            offset={offset}
+            setOffset={setOffset}
+            array={data?.myomerofiles}
+            step={limit}
+          />
+        }
+      >
+        <MikroFile.ListLink className="flex-0">Files</MikroFile.ListLink>
       </SectionTitle>
       <ResponsiveContainerGrid>
         {data?.myomerofiles?.filter(notEmpty).map((file) => (

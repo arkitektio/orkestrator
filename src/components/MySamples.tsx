@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { BsCaretLeft, BsCaretRight, BsPlusCircle } from "react-icons/bs";
-import { notEmpty } from "../floating/utils";
-import { ActionButton } from "../layout/ActionButton";
+import { ListRender } from "../layout/SectionTitle";
 import { useDialog } from "../layout/dialog/DialogProvider";
-import { SectionTitle } from "../layout/SectionTitle";
 import { Sample } from "../linker";
 import { useDeleteSampleMate } from "../mates/sample/useDeleteSampleMutation";
+import { withMikro } from "../mikro/MikroContext";
 import {
   MySamplesEventDocument,
   MySamplesEventSubscriptionResult,
@@ -13,10 +11,7 @@ import {
   useMySamplesQuery,
 } from "../mikro/api/graphql";
 import { SampleCard } from "../mikro/components/cards/SampleCard";
-import { CreateSampleModal } from "../mikro/components/dialogs/CreateSampleModal";
-import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
-import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 export type IMySamplesProps = {};
 
 export const SampleType = "Sample";
@@ -27,12 +22,9 @@ const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
   createdDay,
   limit,
 }) => {
-  const {
-    data: samples,
-    loading,
-    refetch,
-    subscribeToMore,
-  } = withMikro(useMySamplesQuery)({
+  const { data, loading, refetch, subscribeToMore } = withMikro(
+    useMySamplesQuery
+  )({
     variables: { limit: limit, offset: 0, createdDay: createdDay },
   });
 
@@ -88,56 +80,16 @@ const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
 
   return (
     <>
-      <SectionTitle>
-        <div className="flex flex-row">
-          <Sample.ListLink className="flex-0">Samples</Sample.ListLink>
-          <div className="flex-grow"></div>
-          <div className="flex-0">
-            {offset != 0 && (
-              <button
-                type="button"
-                className="p-1 text-gray-600 rounded"
-                onClick={() => setOffset(offset - limit)}
-              >
-                {" "}
-                <BsCaretLeft />{" "}
-              </button>
-            )}
-            {samples?.mysamples && samples?.mysamples.length == limit && (
-              <button
-                type="button"
-                className="p-1 text-gray-600 rounded"
-                onClick={() => setOffset(offset + limit)}
-              >
-                {" "}
-                <BsCaretRight />{" "}
-              </button>
-            )}
-          </div>
-        </div>
-      </SectionTitle>
-      <ResponsiveContainerGrid>
-        {samples?.mysamples?.filter(notEmpty).map((sample, index) => (
-          <SampleCard
-            key={index}
-            sample={sample}
-            mates={[deleteSample(sample)]}
-          />
-        ))}
-        <div className="flex flex-row">
-          <ActionButton
-            label="Create new Sample"
-            description="Create a new sample"
-            className="text-white "
-            onAction={async () => {
-              await ask(CreateSampleModal, {});
-              await refetch();
-            }}
-          >
-            <BsPlusCircle />
-          </ActionButton>
-        </div>
-      </ResponsiveContainerGrid>
+      <ListRender
+        array={data?.mysamples}
+        loading={loading}
+        title={<Sample.ListLink className="flex-0">Stages</Sample.ListLink>}
+        refetch={refetch}
+      >
+        {(s, index) => (
+          <SampleCard key={index} sample={s} mates={[deleteSample(s)]} />
+        )}
+      </ListRender>
     </>
   );
 };

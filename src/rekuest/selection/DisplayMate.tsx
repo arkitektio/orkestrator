@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
-import { useAlert } from "../../components/alerter/alerter-context";
 import { Mate, MateOptions, Partner } from "../postman/mater/mater-context";
 
 export interface MateProps {
@@ -9,7 +8,10 @@ export interface MateProps {
   self: Partner;
   options?: MateOptions;
   focus?: boolean;
+  clickable?: boolean;
   progress: (x: number | undefined) => Promise<void>;
+  onDone?: () => Promise<void>;
+  onError?: (error: Error) => Promise<void>;
 }
 
 export const DisplayMate: React.FC<MateProps> = ({
@@ -17,8 +19,28 @@ export const DisplayMate: React.FC<MateProps> = ({
   self,
   focus = false,
   progress: prog,
+  clickable = false,
+  onDone,
+  onError,
 }) => {
-  const { alert } = useAlert();
+  const click = (e: Event) => {
+    console.log("click");
+    if (clickable) {
+      e.stopPropagation();
+      console.log("clickable");
+      mate
+        .action(self, [self], prog)
+        .then(() => {
+          prog(undefined);
+          onDone && onDone();
+          console.log("done");
+        })
+        .catch((error) => {
+          prog(undefined);
+          onError && onError(error);
+        });
+    }
+  };
 
   const [{ isOver, canDrop }, drop] = useDrop(() => {
     return {
@@ -32,11 +54,12 @@ export const DisplayMate: React.FC<MateProps> = ({
           .action(self, partners, prog)
           .then(() => {
             prog(undefined);
+            onDone && onDone();
             console.log("done");
           })
           .catch((error) => {
             prog(undefined);
-            alert({ message: error.message });
+            onError && onError(error);
           });
         return {};
       },
@@ -57,11 +80,12 @@ export const DisplayMate: React.FC<MateProps> = ({
               .action(self, [self], prog)
               .then(() => {
                 console.log("done");
+                onDone && onDone();
                 prog(undefined);
               })
               .catch((error) => {
                 prog(undefined);
-                alert({ message: error.message });
+                onError && onError(error);
               });
           }
         },
@@ -84,8 +108,14 @@ export const DisplayMate: React.FC<MateProps> = ({
             : mate.className
           : `flex-1 rounded shadow-md group  text-black bg-center bg-cover bg-primary-200 px-2 py-1 transition-colors ${
               isOver || focus ? "bg-primary-500 text-slate-50" : ""
-            }`
+            }${
+              clickable &&
+              "hover:bg-primary-500 hover:text-slate-50 cursor-pointer"
+            }
+            
+            `
       }
+      onClick={click}
     >
       {mate?.label}
     </div>

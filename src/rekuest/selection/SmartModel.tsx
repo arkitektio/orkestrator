@@ -76,6 +76,7 @@ export const SmartModel = <T extends Accept>({
     useState<HTMLDivElement | null>(null);
 
   const [progress, setProgress] = useState<number | undefined>(undefined);
+  const [show, setShow] = useState(false);
 
   const on_progress = async (x: number | undefined) => {
     setProgress(x);
@@ -85,6 +86,22 @@ export const SmartModel = <T extends Accept>({
     placement: placement || "bottom",
     modifiers: [{ name: "arrow", options: { element: ".arrow" } }],
   });
+
+  useEffect(() => {
+    if (show) {
+      const listener = {
+        handleEvent: (e: Event) => {
+          e.stopPropagation();
+          setShow(false);
+        },
+      };
+      document.addEventListener("click", listener);
+
+      return () => {
+        document.removeEventListener("click", listener);
+      };
+    }
+  }, [show]);
 
   const [{ isOver, canDrop, type }, drop] = useDrop(() => {
     return {
@@ -181,6 +198,13 @@ export const SmartModel = <T extends Accept>({
           progress,
         })
       }
+      onDoubleClick={() => {
+        setShow(!show);
+      }}
+      onContextMenu={(e) => {
+        setShow(!show);
+        e.preventDefault();
+      }}
     >
       <div
         ref={setReferenceElement}
@@ -235,7 +259,7 @@ export const SmartModel = <T extends Accept>({
             )}
           </>
         )}
-        {isFocused && !isOver && (
+        {((isFocused && !isOver) || show) && (
           <div
             ref={setPopperElement}
             style={{
@@ -251,7 +275,7 @@ export const SmartModel = <T extends Accept>({
           >
             <div
               className={
-                "bg-slate-800 w-100 mt-[-1em] flex flex-col rounded-md shadow p-3"
+                "bg-back-900 border border-1 border-solid border-back-800 max-w-100 mt-[-1em] flex flex-col rounded-md shadow p-3 @container"
               }
               style={{ zIndex: 10 }}
             >
@@ -260,6 +284,8 @@ export const SmartModel = <T extends Accept>({
                 self={self}
                 options={options}
                 progress={on_progress}
+                onDone={async () => setShow(false)}
+                onError={async () => setShow(false)}
                 additionalMates={mates && composeMates(mates)}
               />
             </div>

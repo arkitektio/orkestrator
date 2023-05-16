@@ -1,19 +1,19 @@
 import React from "react";
 import { useParams } from "react-router";
 import Timestamp from "react-timestamp";
-import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
 import { SelfActions } from "../../../components/SelfActions";
+import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../../floating/utils";
 import { MikroKomments } from "../../../komment/MikroKomments";
 import { PageLayout } from "../../../layout/PageLayout";
+import { Assignation } from "../../../linker";
+import { useMikro, withMikro } from "../../../mikro/MikroContext";
 import {
   CommentableModels,
   useDetailOmeroFileQuery,
 } from "../../../mikro/api/graphql";
 import { ExperimentCard } from "../../../mikro/components/cards/ExperimentCard";
 import { RepresentationCard } from "../../../mikro/components/cards/RepresentationCard";
-import { useMikro, withMikro } from "../../../mikro/MikroContext";
-import { Assignation } from "../../../linker";
 
 export interface DataFileProps {}
 
@@ -27,7 +27,7 @@ export const OmeroFile: React.FC<{ id: string }> = ({ id }) => {
         <>
           {data?.omerofile?.file && (
             <a
-              className="flex text-white font-semibold items-center cursor-pointer z-50 border-primary-400 bg-primary-300 p-3 rounded-full"
+              className="backdrop-blur-md text-white bg-opacity-20 shadow-md bg-back-500 disabled:shadow-none font-light items-center cursor-pointer z-50 border border-slate-300 p-2 rounded-md disabled:bg-gray-800 disabled:border-gray-800 truncate transition-all ease-in-out duration-300 disabled:cursor-not-allowed hover:bg-opacity-70"
               href={s3resolve && s3resolve(data?.omerofile?.file)}
               download={data?.omerofile?.name}
               rel="noopener noreferrer"

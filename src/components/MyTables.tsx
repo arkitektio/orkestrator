@@ -1,42 +1,26 @@
-import React, { useEffect, useState } from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { useNavigate } from "react-router";
-import { notEmpty } from "../floating/utils";
-import { SectionTitle } from "../layout/SectionTitle";
+import React, { useEffect } from "react";
+import { ListRender } from "../layout/SectionTitle";
 import { Table } from "../linker";
 import { useDeleteTableMate } from "../mates/table/useDeleteTableMate";
+import { withMikro } from "../mikro/MikroContext";
 import {
   MyTablesEventDocument,
   MyTablesEventSubscriptionResult,
   MyTablesQuery,
-  useDeleteTableMutation,
   useMyTablesQuery,
 } from "../mikro/api/graphql";
 import { TableCard } from "../mikro/components/cards/TableCard";
-import { withMikro } from "../mikro/MikroContext";
 import { DataHomeFilterParams } from "../pages/data/Home";
 import { useConfirm } from "./confirmer/confirmer-context";
-import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMyRepresentationsProps = {};
 
 const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
   createdDay,
   limit,
 }) => {
-  const [offset, setOffset] = useState(0);
-
-  const {
-    data,
-    loading: all_loading,
-    refetch,
-    subscribeToMore,
-  } = withMikro(useMyTablesQuery)({
+  const { data, loading, refetch, subscribeToMore } = withMikro(
+    useMyTablesQuery
+  )({
     variables: { limit: limit, offset: 0, createdDay: createdDay },
   });
 
@@ -87,45 +71,20 @@ const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
   const { confirm } = useConfirm();
 
   return (
-    <div>
-      <div className="font-light text-xl flex mr-2">
-        <Table.ListLink>
-          <SectionTitle>Tables</SectionTitle>
-        </Table.ListLink>
-        <div className="flex-grow"></div>
-        <div className="flex-0">
-          {offset != 0 && (
-            <button
-              type="button"
-              className="p-1 text-gray-600 rounded"
-              onClick={() => setOffset(offset - limit)}
-            >
-              {" "}
-              <BsCaretLeft />{" "}
-            </button>
-          )}
-          {data?.mytables && data?.mytables.length == limit && (
-            <button
-              type="button"
-              className="p-1 text-gray-600 rounded"
-              onClick={() => setOffset(offset + limit)}
-            >
-              {" "}
-              <BsCaretRight />{" "}
-            </button>
-          )}
-        </div>
-      </div>
-      <ResponsiveContainerGrid>
-        {data?.mytables?.filter(notEmpty).map((table) => (
-          <TableCard
-            table={table}
-            key={table.id}
-            mates={[deleteTableMate(table)]}
-          />
-        ))}
-      </ResponsiveContainerGrid>
-    </div>
+    <ListRender
+      array={data?.mytables}
+      loading={loading}
+      title={<Table.ListLink className="flex-0">Stages</Table.ListLink>}
+      refetch={refetch}
+    >
+      {(table, index) => (
+        <TableCard
+          table={table}
+          key={table.id}
+          mates={[deleteTableMate(table)]}
+        />
+      )}
+    </ListRender>
   );
 };
 

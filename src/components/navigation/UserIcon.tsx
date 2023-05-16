@@ -102,7 +102,7 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
               ref={(ref: any) => setPopperElement(ref)}
               id="tooltip"
               role="tooltip"
-              className="bg-back-400 dark:bg-back-800 p-2 rounded rounded-md  mb-2 border-back-700 shadow shadow-lg shadow-black-800 border"
+              className="bg-back-400 dark:bg-back-800 p-2 rounded rounded-md  mb-2 border-back-700 shadow shadow-lg shadow-slate-800 border"
               style={styles.popper}
               {...attributes.popper}
             >
@@ -113,7 +113,6 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
                   {fakts?.self?.name}
                 </div>
               </div>
-              <NotificationCenter notifications={notifications} />
               <div className="flex flex-row mt-2">
                 <div className="flex-grow"></div>
                 <div className="flex flex-row gap-2">
@@ -129,7 +128,7 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
                         )
                       }
                       className={
-                        "px-2 text-sm text-slate-50 hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-primary rounded-400"
+                        "px-2 text-sm text-slate-50 hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-primary rounded-400 p-2 rounded-md"
                       }
                     >
                       {provide ? "...Providing" : "Provide"}
@@ -140,16 +139,16 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
                         cancelProvide().catch((e) => alert(e.message))
                       }
                       className={
-                        "px-2 text-sm text-slate-50 hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-primary rounded-400"
+                        "px-2 text-sm text-slate-50 hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-primary rounded-400 p-2 animate-pulse rounded-md"
                       }
                     >
-                      {provide ? "...Providing" : "Provide"}
+                      {provide ? "Providing" : "Provide"}
                     </div>
                   )}
                   <div
                     onClick={() => logout()}
                     className={
-                      "text-center px-2 text-sm  hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-red-400  text-red-500"
+                      "text-center px-2 text-sm  hover:bg-gray-700 hover:text-gray-200 cursor-pointer border border-red-400  text-red-500 p-2 rounded-md"
                     }
                   >
                     Log Out
