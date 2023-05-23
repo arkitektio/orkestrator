@@ -56,7 +56,7 @@ export const available_color_maps = [
   "cubehelix",
 ] as const;
 
-export type AvailableColormap = typeof available_color_maps[number];
+export type AvailableColormap = (typeof available_color_maps)[number];
 
 export const TrueXArrayProvider: React.FC<{
   children: React.ReactNode;

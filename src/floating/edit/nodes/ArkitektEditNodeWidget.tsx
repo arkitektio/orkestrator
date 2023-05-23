@@ -1,24 +1,18 @@
-import { introspectionFromSchema } from "graphql";
-import React, { useEffect, useState } from "react";
-import { animation, Item, Menu, Separator } from "react-contexify";
+import React, { useEffect } from "react";
 import "react-contexify/dist/ReactContexify.css";
-import { Handle, Position, ReactFlowState, useStore } from "reactflow";
-import ReactTooltip from "react-tooltip";
+import { Handle, Position } from "reactflow";
 import { withRekuest } from "../../../rekuest";
 import {
   NodeKind,
   PortFragment,
   useDetailNodeQuery,
 } from "../../../rekuest/api/graphql";
-import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
-import { ArkitektNodeProps, ConnState, FlowNode } from "../../types";
-import { notEmpty, port_to_type as port_to_kind } from "../../utils";
+import { ArkitektNodeProps } from "../../types";
+import { notEmpty, rekuestPortToFluss } from "../../utils";
 import { useEditRiver } from "../context";
-import { additional, NodeEditLayout } from "./layout/NodeEdit";
-import { handle_to_index } from "../logic/connect";
-import { boolean } from "yup";
 import { useArkitektConnState } from "../hooks/useArkitektConnState";
+import { NodeEditLayout } from "./layout/NodeEdit";
 
 export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
   ({ data, id, isConnectable }) => {
@@ -56,13 +50,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           ]);
         } else {
           updateNodeIn(id, [
-            data?.instream[0]?.concat({
-              key: arg.key,
-              scope: arg.scope,
-              kind: port_to_kind(arg),
-              identifier: arg.identifier,
-              nullable: arg.nullable,
-            }),
+            data?.instream[0]?.concat(rekuestPortToFluss(arg)),
           ]);
         }
       }
@@ -77,13 +65,7 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           ]);
         } else {
           updateNodeOut(id, [
-            data?.outstream[0]?.concat({
-              key: arg.key,
-              scope: arg.scope,
-              kind: port_to_kind(arg),
-              identifier: arg.identifier,
-              nullable: arg.nullable,
-            }),
+            data?.outstream[0]?.concat(rekuestPortToFluss(arg)),
           ]);
         }
       }

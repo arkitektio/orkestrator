@@ -159,6 +159,17 @@ export const Representation = buildSmart(
   ]
 );
 
+export const Graph = buildSmart("@mikro/graph", "graphs", [
+  "list:@mikro/graph",
+  "item:@mikro/graph",
+  "list:@mikro/model",
+  "item:@mikro/model",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
 export const Label = buildSmart("@mikro/label", "labels", []);
 export const Feature = buildSmart("@mikro/feature", "features", []);
 

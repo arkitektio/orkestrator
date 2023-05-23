@@ -1,22 +1,17 @@
-import {
-  MutableRefObject,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { withLayout } from "../../base/node/layout";
+import { useCallback, useEffect, useState } from "react";
 import { useDrop } from "react-dnd";
+import { Resizable, ResizeCallbackData } from "react-resizable";
+import { Handle, Position, useNodes } from "reactflow";
+import { v4 as uuidv4 } from "uuid";
 import {
-  NodeProps,
-  useReactFlow,
-  useNodes,
-  useNodesState,
-  Handle,
-  Position,
-} from "reactflow";
-import { useEditRiver } from "../context";
+  ArkitektNodeFragment,
+  MapStrategy,
+  ReactiveNodeFragment,
+  ReactiveTemplateDocument,
+  ReactiveTemplateQuery,
+} from "../../../fluss/api/graphql";
 import { useFluss } from "../../../fluss/fluss-context";
+import { useRekuest } from "../../../rekuest";
 import {
   DetailNodeDocument,
   DetailNodeQuery,
@@ -24,19 +19,8 @@ import {
   NodeScope,
 } from "../../../rekuest/api/graphql";
 import { FlowNode, GraphNodeProps } from "../../types";
-import {
-  ArkitektNodeFragment,
-  LocalNodeFragment,
-  MapStrategy,
-  ReactiveNodeFragment,
-  ReactiveTemplateDocument,
-  ReactiveTemplateQuery,
-} from "../../../fluss/api/graphql";
-import { v4 as uuidv4 } from "uuid";
-import { notEmpty, port_to_stream } from "../../utils";
-import { useRekuest } from "../../../rekuest";
-import { useDebounce } from "use-debounce";
-import { Resizable, ResizeCallbackData } from "react-resizable";
+import { notEmpty, rekuestPortToFluss } from "../../utils";
+import { useEditRiver } from "../context";
 
 export const GraphNodeEditWidget = ({ data, ...props }: GraphNodeProps) => {
   const { addReactive, addArkitekt } = useEditRiver();
@@ -140,80 +124,42 @@ export const GraphNodeEditWidget = ({ data, ...props }: GraphNodeProps) => {
                   .then((event) => {
                     console.log(event);
 
-                    if (event.data?.node) {
-                      // two paths according to node scope
-                      if (event.data.node.scope == NodeScope.Global) {
-                        let id = "@" + props.id + "/" + "arkid-" + uuidv4();
-                        let node: FlowNode<ArkitektNodeFragment> = {
-                          id: id,
-                          type: "ArkitektNode",
-                          dragHandle: ".custom-drag-handle",
-                          data: {
-                            __typename: "ArkitektNode",
-                            instream: [
-                              event?.data?.node?.args
-                                ?.filter(
-                                  (x) => !x?.nullable && x?.default == undefined
-                                ) // by default, all nullable and default values are optional so not part of stream
-                                .filter(notEmpty)
-                                .map(port_to_stream) || [],
-                            ],
-                            mapStrategy: MapStrategy.Map,
-                            allowLocal: false,
-                            assignTimeout: 2000,
-                            yieldTimeout: 2000,
-                            reserveTimeout: 2000,
-                            outstream: [
-                              event?.data?.node?.returns
-                                ?.filter(notEmpty)
-                                .map(port_to_stream) || [],
-                            ],
-                            constream: [],
-                            name: event.data?.node?.name || "no-name",
-                            hash: event.data?.node?.hash || "",
-                            kind: event.data?.node?.kind || NodeKind.Generator,
-                          },
-                          position: position,
-                          parentNode: props.id,
-                          extent: "parent",
-                        };
-                        addArkitekt(node);
-                      } else {
-                        let id = "@" + props.id + "/" + "localid-" + uuidv4();
-                        let node: FlowNode<LocalNodeFragment> = {
-                          id: id,
-                          type: "LocalNode",
-                          dragHandle: ".custom-drag-handle",
-                          data: {
-                            __typename: "LocalNode",
-                            instream: [
-                              event?.data?.node?.args
-                                ?.filter(
-                                  (x) => !x?.nullable && x?.default == undefined
-                                ) // by default, all nullable and default values are optional so not part of stream
-                                .filter(notEmpty)
-                                .map(port_to_stream) || [],
-                            ],
-                            mapStrategy: MapStrategy.Map,
-                            allowLocal: false,
-                            assignTimeout: 2000,
-                            yieldTimeout: 2000,
-                            outstream: [
-                              event?.data?.node?.returns
-                                ?.filter(notEmpty)
-                                .map(port_to_stream) || [],
-                            ],
-                            constream: [],
-                            name: event.data?.node?.name || "no-name",
-                            hash: event.data?.node?.hash || "",
-                            kind: event.data?.node?.kind || NodeKind.Generator,
-                          },
-                          position: position,
-                          parentNode: props.id,
-                          extent: "parent",
-                        };
-                        addArkitekt(node);
-                      }
+                    if (event?.data?.node?.scope == NodeScope.Global) {
+                      let id = "@" + props.id + "/" + "arkid-" + uuidv4();
+                      let node: FlowNode<ArkitektNodeFragment> = {
+                        id: id,
+                        type: "ArkitektNode",
+                        dragHandle: ".custom-drag-handle",
+                        data: {
+                          __typename: "ArkitektNode",
+                          instream: [
+                            event?.data?.node?.args
+                              ?.filter(
+                                (x) => !x?.nullable && x?.default == undefined
+                              ) // by default, all nullable and default values are optional so not part of stream
+                              .filter(notEmpty)
+                              .map(rekuestPortToFluss) || [],
+                          ],
+                          mapStrategy: MapStrategy.Map,
+                          allowLocal: false,
+                          assignTimeout: 2000,
+                          yieldTimeout: 2000,
+                          reserveTimeout: 2000,
+                          outstream: [
+                            event?.data?.node?.returns
+                              ?.filter(notEmpty)
+                              .map(rekuestPortToFluss) || [],
+                          ],
+                          constream: [],
+                          name: event.data?.node?.name || "no-name",
+                          hash: event.data?.node?.hash || "",
+                          kind: event.data?.node?.kind || NodeKind.Generator,
+                        },
+                        position: position,
+                        parentNode: props.id,
+                        extent: "parent",
+                      };
+                      addArkitekt(node);
                     }
                   });
             }

@@ -1,26 +1,22 @@
-import { Maybe } from "graphql/jsutils/Maybe";
-import {
-  PortFragment,
-  ChildPortFragment,
-  PortKind,
-} from "../rekuest/api/graphql";
 import {
   EdgeInput,
   FlowFragment,
   FlowNodeFragment,
   NodeInput,
+  PortChildFragment,
+  PortFragment,
   StreamItem,
   StreamItemChild,
   StreamKind,
 } from "../fluss/api/graphql";
 import {
-  ArkitektNodeData,
-  FlowEdge,
-  FlowNode,
-  ReactiveNodeData,
-} from "./types";
+  PortKind,
+  ChildPortFragment as RekuestChildPortFragment,
+  PortFragment as RekuestPortFragment,
+} from "../rekuest/api/graphql";
+import { FlowEdge, FlowNode } from "./types";
 
-export const port_to_type = (
+export const rekuestPortToStream = (
   port: {
     kind?: PortKind | null | undefined;
     identifier?: string | null;
@@ -30,22 +26,81 @@ export const port_to_type = (
   return port?.kind as unknown as StreamKind;
 };
 
-export const childport_to_stream = (
-  port: ChildPortFragment
-): StreamItemChild => ({
-  kind: (port?.kind as unknown as StreamKind) || StreamKind.Unset,
-  identifier: port?.identifier,
-  scope: port.scope,
-});
+export const flussPortChildToStreamItem = (
+  port: PortChildFragment
+): StreamItemChild => {
+  return {
+    kind: port.kind,
+    identifier: port.identifier,
+    nullable: port.nullable,
+    scope: port.scope,
+    child: port.child && flussPortChildToStreamItem(port.child),
+  };
+};
 
-export const port_to_stream = (port: PortFragment): StreamItem => {
+export const flussPortToStreamItem = (port: PortFragment): StreamItem => {
+  return {
+    key: port.key,
+    kind: port.kind,
+    identifier: port.identifier,
+    nullable: port.nullable,
+    scope: port.scope,
+    child: port.child && flussPortChildToStreamItem(port.child),
+  };
+};
+
+export const rekuestChildPortToFluss = (
+  port: RekuestChildPortFragment
+): PortChildFragment => {
+  let cleanedAssign = undefined;
+  if (port?.assignWidget) {
+    let { __typename, ...rest } = port?.assignWidget;
+    cleanedAssign = rest;
+  }
+
+  let cleanedReturn = undefined;
+  if (port?.returnWidget) {
+    let { __typename, ...rest } = port?.returnWidget;
+    cleanedReturn = rest;
+  }
+
+  return {
+    kind: (port?.kind as unknown as StreamKind) || StreamKind.Unset,
+    identifier: port?.identifier,
+    scope: port.scope,
+    assignWidget: cleanedAssign,
+    returnWidget: cleanedReturn,
+    nullable: port?.nullable || false,
+    child:
+      port?.child &&
+      rekuestChildPortToFluss(port?.child as RekuestChildPortFragment), //TODO: manage this
+  };
+};
+
+export const rekuestPortToFluss = (port: RekuestPortFragment): PortFragment => {
+  let cleanedAssign = undefined;
+  if (port?.assignWidget) {
+    let { __typename, ...rest } = port?.assignWidget;
+    cleanedAssign = rest;
+  }
+
+  let cleanedReturn = undefined;
+  if (port?.returnWidget) {
+    let { __typename, ...rest } = port?.returnWidget;
+    cleanedReturn = rest;
+  }
+
   return {
     scope: port.scope,
     key: port?.key || "unknown",
     kind: (port?.kind as unknown as StreamKind) || StreamKind.Unset,
     identifier: port?.identifier,
     nullable: port?.nullable || false,
-    child: port?.child && childport_to_stream(port?.child),
+    description: port?.description,
+    label: port.label,
+    assignWidget: cleanedAssign,
+    returnWidget: cleanedReturn,
+    child: port?.child && rekuestChildPortToFluss(port?.child),
   };
 };
 
@@ -167,6 +222,7 @@ export const flownodes_to_nodes = (nodes: FlowNode[]): NodeInput[] => {
             allowLocal: (rest as any).allowLocal,
             binds: (rest as any).binds,
             parentNode: parentNode,
+            interface: (rest as any).interface,
           };
           return node_;
         }

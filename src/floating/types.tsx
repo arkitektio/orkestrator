@@ -1,24 +1,25 @@
 import { Connection, Edge, EdgeProps, Node, NodeProps } from "reactflow";
 import {
-  DetailNodeFragment,
-  ListReservationFragment,
-} from "../rekuest/api/graphql";
-import {
   ArgNodeFragment,
-  PortFragment,
   ArkitektNodeFragment,
+  ConditionEventFragment,
   FancyEdgeFragment,
   FlowEdgeCommonsFragment,
   FlowFragment,
   FlowNodeCommonsFragment,
+  GraphNodeFragment,
   KwargNodeFragment,
   LabeledEdgeFragment,
+  LocalNodeFragment,
+  PortFragment,
   ReactiveNodeFragment,
   ReturnNodeFragment,
   RunEventFragment,
-  StreamItem,
-  GraphNodeFragment,
 } from "../fluss/api/graphql";
+import {
+  DetailNodeFragment,
+  ListReservationFragment,
+} from "../rekuest/api/graphql";
 
 export type LoadingEnhanced<T, L = {}> = T & { extras?: L };
 
@@ -32,7 +33,7 @@ export type ArkitektNodeData = LoadingEnhanced<
 >;
 
 export type LocalNodeData = LoadingEnhanced<
-  ArkitektNodeFragment,
+  LocalNodeFragment,
   DetailNodeFragment
 >;
 
@@ -73,6 +74,11 @@ export type RunState = {
   t: number;
 };
 
+export type ConditionState = {
+  events?: (ConditionEventFragment | null)[];
+  timepoint: Date;
+};
+
 export type ConnectionUpdate = {
   nodes?: FlowNode[];
   edges?: FlowEdge[];
@@ -100,8 +106,8 @@ export type Connector<
   params: Connection;
   sourceNode: FlowNode<X>;
   targetNode: FlowNode<Y>;
-  sourceStream: StreamItem[];
-  targetStream: StreamItem[];
+  sourceStream: PortFragment[];
+  targetStream: PortFragment[];
   sourceTypes: string[];
   targetTypes: string[];
   nodes: FlowNode[];

@@ -1,0 +1,21 @@
+fragment ListGraph on Graph {
+  id
+  name
+  image
+  usedColumns
+  tables {
+    id
+    name
+  }
+}
+
+fragment DetailGraph on Graph {
+  id
+  name
+  image
+  usedColumns
+  tables {
+    id
+    name
+  }
+}

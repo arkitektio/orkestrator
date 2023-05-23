@@ -81,3 +81,9 @@ query SearchTemplateOptions($node: ID!, $search: String) {
     }
   }
 }
+
+query NodeTemplates($search: String, $scopes: [NodeScope]) {
+  templates(search: $search, scopes: $scopes) {
+    ...DisplayTemplate
+  }
+}

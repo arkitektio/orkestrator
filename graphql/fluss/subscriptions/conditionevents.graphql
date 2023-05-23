@@ -1,0 +1,11 @@
+subscription ConditionEvents($id: ID!) {
+  conditionevents(id: $id) {
+    deleted
+    create {
+      ...ConditionEvent
+    }
+    update {
+      ...ConditionEvent
+    }
+  }
+}

@@ -71,10 +71,11 @@ export const TrueAgentProvider: React.FC<ArkitektProps> = ({
     let definitions = Object.entries(definitionRegistry);
     let actors: { [template_id: string]: ActorBuilder } = {};
     for (let [key, definition] of definitions) {
-      if (definition && definition.interface) {
+      if (key && definition) {
         let t = await template({
           variables: {
-            definition,
+            interface: key,
+            definition: definition,
             instanceId: instanceId,
           },
         });
@@ -274,26 +275,30 @@ export const TrueAgentProvider: React.FC<ArkitektProps> = ({
     return future;
   };
 
-  const register = (definition: DefinitionInput, actor: ActorBuilder) => {
+  const register = (
+    on_interface: string,
+    definition: DefinitionInput,
+    actor: ActorBuilder
+  ) => {
     setDefinitionRegistry((registry) => ({
       ...registry,
-      [definition.interface]: definition,
+      [on_interface]: definition,
     }));
     setActorRegistry((registry) => ({
       ...registry,
-      [definition.interface]: actor,
+      [on_interface]: actor,
     }));
 
-    console.log("REGISTER", definition.interface, actor);
+    console.log("REGISTER", on_interface, definition, actor);
 
     return () => {
       setDefinitionRegistry((registry) => ({
         ...registry,
-        [definition.interface]: undefined,
+        [on_interface]: undefined,
       }));
       setActorRegistry((registry) => ({
         ...registry,
-        [definition.interface]: undefined,
+        [on_interface]: undefined,
       }));
     };
   };

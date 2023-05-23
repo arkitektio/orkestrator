@@ -3,22 +3,22 @@ import { Field, Form, Formik } from "formik";
 import { useState } from "react";
 import { BiSearch } from "react-icons/bi";
 import { FiArrowDown } from "react-icons/fi";
-import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 import {
   GlobalSearchQueryVariables,
   useStageSearchLazyQuery,
   useTagSearchLazyQuery,
   useUserOptionsLazyQuery,
 } from "../../mikro/api/graphql";
+import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 
 import "react-datepicker/dist/react-datepicker.css";
-import { DateInputField } from "../../components/forms/fields/date_input";
-import { withMikro } from "../../mikro/MikroContext";
-import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import {
   GraphQLListSearchInput,
   GraphQLSearchInput,
 } from "../../components/forms/fields/SearchInput";
+import { DateInputField } from "../../components/forms/fields/date_input";
+import { SwitchInputField } from "../../components/forms/fields/switch_input";
+import { withMikro } from "../../mikro/MikroContext";
 
 interface NodeFilterBoxProps {
   onFilterChanged: (values: GlobalSearchQueryVariables) => any;
@@ -96,6 +96,7 @@ export const DataSearch: React.FC<NodeFilterBoxProps> = ({
                     <GraphQLListSearchInput
                       name="stages"
                       label="In stages"
+                      accepts={["list:@mikro/stage", "item:@mikro/stage"]}
                       searchFunction={searchStages}
                     />
                     <DateInputField

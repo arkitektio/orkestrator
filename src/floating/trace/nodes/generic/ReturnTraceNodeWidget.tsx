@@ -1,0 +1,50 @@
+import React, { useState } from "react";
+import ReactTooltip from "react-tooltip";
+import { Handle, Position } from "reactflow";
+import { withLayout } from "../../../base/node/layout";
+import { ReturnNodeProps } from "../../../types";
+import { NodeTraceLayout } from "../layout/NodeTrack";
+
+export const ReturnTraceNodeWidget: React.FC<ReturnNodeProps> = withLayout(
+  ({ data: { outstream, instream }, id }) => {
+    const [show, setShow] = useState(false);
+    const [isSmall, setIsSmall] = useState(true);
+
+    return (
+      <>
+        <NodeTraceLayout color="red" id={id}>
+          <div className="px-2 py-2">
+            <div
+              className="font-light text-xl custom-drag-handle cursor-pointer"
+              onDoubleClick={() => setIsSmall(!isSmall)}
+            >
+              Outputs
+            </div>
+            <p className="text-gray-700 text-base">
+              {!isSmall && (
+                <button
+                  type="button"
+                  className="rounded px-2 py-1 text-xs font-semibold border-gray-300"
+                  onClick={() => setShow(true)}
+                >
+                  Add Documentation
+                </button>
+              )}
+            </p>
+          </div>
+        </NodeTraceLayout>
+        {instream.map((s, index) => (
+          <Handle
+            type="target"
+            position={Position.Left}
+            id={"arg_" + index}
+            style={{ background: "#555" }}
+            data-tip={s && s.map((s) => s?.kind).join(" | ")}
+            data-for={"tooltip" + id}
+          />
+        ))}
+        <ReactTooltip id={"tooltip" + id} />
+      </>
+    );
+  }
+);

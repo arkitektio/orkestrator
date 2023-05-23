@@ -2,7 +2,9 @@ import { Combobox } from "@headlessui/react";
 import { useField } from "formik";
 import Fuse from "fuse.js";
 import { useEffect, useState } from "react";
+import { useDrop } from "react-dnd";
 import { notEmpty } from "../../../floating/utils";
+import { Partner } from "../../../rekuest/postman/mater/mater-context";
 import { Alert } from "../Alert";
 import { wrapped } from "./Wrapper";
 import { CommonFieldProps } from "./types";
@@ -73,6 +75,7 @@ export const ListSearchField = <T extends Option>({
   name,
   searchFunction,
   validate,
+  accepts,
 }: ListSearchInputProps<T>) => {
   const [field, meta, helpers] = useField<T["value"][] | undefined>({
     name: name,
@@ -88,61 +91,95 @@ export const ListSearchField = <T extends Option>({
   >([]);
 
   useEffect(() => {
-    searchFunction(query.trim(), undefined).then((x) => {
-      console.log(x);
-      setFilteredOptions(x);
-    });
+    if (query) {
+      searchFunction(query.trim(), undefined).then((x) => {
+        console.log(x);
+        setFilteredOptions(x);
+      });
+    }
   }, [query]);
 
-  useEffect(() => {
-    let value = field.value || (meta.touched ? undefined : meta.initialValue);
+  const displayValue = (value: any | undefined) => {
     console.log(value);
-    if (!value) {
+    if (!value || value.length === 0) {
       setDisplayedOptions([]);
-      return;
+      return Promise.resolve();
     }
-    searchFunction(undefined, field.value).then((x) => {
+    return searchFunction(undefined, value).then((x) => {
       console.log(x);
       setDisplayedOptions(x);
     });
-  }, [field.value]);
+  };
 
-  const setValues = async (values: T["value"][]) => {
-    const value = values;
+  const [{ isOver, canDrop, type }, drop] = useDrop(() => {
+    return {
+      accept: (accepts || []).concat(),
+      drop: (partners: Partner[], monitor) => {
+        console.log("dropped", partners);
+
+        setValues(partners.map((p) => p.object));
+
+        return {};
+      },
+      collect: (monitor) => {
+        let type = monitor.getItemType() as Partner | null;
+        let settype = type;
+        return {
+          isOver: !!monitor.isOver(),
+          type: settype,
+          canDrop: !!monitor.canDrop(),
+        };
+      },
+    };
+  });
+
+  useEffect(() => {
+    console.log("initial value", meta.initialValue);
+    if (meta.initialValue) {
+      displayValue(meta.initialValue);
+    }
+  }, []);
+
+  const setValues = async (value: T["value"]) => {
+    console.log("setting", value);
     helpers.setValue(value);
-    setQuery("");
+    displayValue(value).then(() => {
+      setQuery("");
+    });
   };
 
   return (
     <>
-      <Combobox<T["value"]> onChange={setValues} multiple>
-        <div className="flex flex-row bg-white text-black focus-within:ring-5 focus-within:ring ring-primary-400 rounded ring-offset-1 gap-1 p-1">
+      <Combobox<T["value"]>
+        onChange={setValues}
+        multiple
+        value={field.value || []}
+      >
+        <div
+          className="flex flex-row bg-white text-black focus-within:ring-5 focus-within:ring ring-primary-400 rounded ring-offset-1 gap-1 p-1"
+          ref={drop}
+        >
           {displayOptions &&
             displayOptions.filter(notEmpty).map((option) => (
-              <div
-                key={option.value}
-                className="group flex-shrink flex flex-row border-gray-400 border border-1 rounded-md"
+              <button
+                type="button"
+                className="p-1 flex-grow border-1 border-gray-300 rounded-md border"
+                onDoubleClick={() =>
+                  setValues(
+                    field.value
+                      ? field.value.filter((p) => p != option.value)
+                      : []
+                  )
+                }
               >
-                <div className="p-1 flex-1">{option.label}</div>
-                <button
-                  type="button"
-                  onDoubleClick={() =>
-                    setValues(
-                      field.value
-                        ? field.value.filter((p) => p != option.value)
-                        : []
-                    )
-                  }
-                  className="flex-shrink flex flex-row bg-primary-400 hover:bg-primary-600 group-hover:opacity-100 overflow-hidden rounded-r-md"
-                >
-                  <div className="p-1">x</div>
-                </button>
-              </div>
+                {option.label}
+              </button>
             ))}
           <Combobox.Input
             onChange={(event) => setQuery(event.target.value)}
             className="flex-grow focus:outline-none"
           />
+          {isOver && <>Drop here</>}
         </div>
         <Combobox.Options
           className={"bg-white text-black p-1 rounded rounded-md"}
@@ -152,6 +189,7 @@ export const ListSearchField = <T extends Option>({
               No results found
             </div>
           )}
+
           {filteredOptions &&
             filteredOptions.filter(notEmpty).map((option) => (
               <Combobox.Option
@@ -160,7 +198,7 @@ export const ListSearchField = <T extends Option>({
                 className={({ active, selected }) =>
                   `relative cursor-default select-none py-2 pl-10 pr-4 ${
                     active ? "bg-primary-400 text-white" : "text-gray-900"
-                  } ${selected ? "font-semibold" : ""}`
+                  } ${selected ? "font-semibold" : "font-normal"}`
                 }
               >
                 {option.label}
@@ -231,7 +269,10 @@ export const SearchField = <T extends Option>({
 
   return (
     <>
-      <Combobox<T["value"]> onChange={setValues} value={query}>
+      <Combobox<T["value"]>
+        onChange={setValues}
+        value={displayOptions?.at(0)?.value}
+      >
         <div className="flex flex-row bg-white text-black focus-within:ring-5 focus-within:ring ring-primary-400 rounded ring-offset-1 gap-1 p-1">
           {displayOptions && displayOptions.at(0) ? (
             <div className="flex-grow text-center flex flex-row border-gray-400 border border-1 rounded-md">
@@ -458,7 +499,7 @@ export const CreateableSearchField = <T extends Option>({
             filteredOptions &&
             filteredOptions.length === 0 && (
               <Combobox.Button
-                className="relative cursor-default select-none py-2 px-4 text-gray-700 font-semibold hover:"
+                className="relative cursor-default select-none py-2 px-4 text-gray-700 font-semibold"
                 onClick={async () => {
                   let result = await createFunction(query);
                   console.log(result);
@@ -649,6 +690,7 @@ export const GraphQLListSearchInput = wrapped(
       let result = await searchFunction({
         variables: { search: query, values: values },
       });
+      console.log(result);
       return result?.data?.options || [];
     };
 

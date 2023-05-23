@@ -1,6 +1,12 @@
 import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useEffect } from "react";
+import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
+import { withRekuest } from "..";
+import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { FlussProvision } from "../../fluss/components/FlussProvision";
+import { ActionButton } from "../../layout/ActionButton";
+import { PageLayout } from "../../layout/PageLayout";
 import {
   DetailProvisionFragment,
   DetailProvisionQuery,
@@ -15,12 +21,6 @@ import {
   WatchReservationsOnProvisionSubscriptionVariables,
 } from "../api/graphql";
 import { ProvisionPulse } from "./generic/StatusPulse";
-import { FlussProvision } from "../../fluss/components/FlussProvision";
-import { PageLayout } from "../../layout/PageLayout";
-import { withRekuest } from "..";
-import { ActionButton } from "../../layout/ActionButton";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { useNavigate } from "react-router";
 export type IProvisionScreenProps = {};
 export type ProvisionToolBarProps = {
   provision: Maybe<DetailProvisionFragment>;
@@ -103,6 +103,10 @@ export const DetailProvision: React.FC<{ id: string }> = ({ id }) => {
     return () => unsubscribe();
   }, [id, subscribeToMore]);
 
+  if (data?.provision?.template?.node?.interfaces?.includes("workflow")) {
+    return <FlussProvision provision={data.provision} />;
+  }
+
   return (
     <PageLayout
       actions={
@@ -150,11 +154,6 @@ export const DetailProvision: React.FC<{ id: string }> = ({ id }) => {
               </div>
             ))}
           </div>
-        </div>
-        <div className="flex-grow">
-          {data?.provision?.template?.node?.interfaces?.includes(
-            "workflow"
-          ) && <FlussProvision provision={data.provision} />}
         </div>
       </div>
     </PageLayout>

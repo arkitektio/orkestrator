@@ -8,6 +8,7 @@ fragment StringWidget on StringWidget {
   kind
   dependencies
   placeholder
+  asParagraph
 }
 
 fragment BoolWidget on BoolWidget {
@@ -56,6 +57,14 @@ fragment ChildPortNested on ChildPort {
   kind
   child {
     kind
+    identifier
+    scope
+    assignWidget {
+      ...InputWidget
+    }
+    returnWidget {
+      ...ReturnWidget
+    }
   }
   scope
   assignWidget {

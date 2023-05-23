@@ -280,7 +280,11 @@ export const SmartModel = <T extends Accept>({
               style={{ zIndex: 10 }}
             >
               <SelfMates
-                type={("item:" + props.identifier) as T}
+                type={
+                  isSelecting
+                    ? "list:" + props.identifier
+                    : "item:" + props.identifier
+                }
                 self={self}
                 options={options}
                 progress={on_progress}

@@ -1,9 +1,7 @@
 import React, { useContext } from "react";
-import { NestedArray, TypedArray, ZarrArray } from "zarr";
 import { ArraySelection } from "zarr/types/core/types";
-import { AvailableColormap } from "./provider";
-import { S3Store } from "./store";
 import { DtypeString } from "zarr/types/types";
+import { AvailableColormap } from "./provider";
 
 export type ImageView = {
   data: Array<number>;

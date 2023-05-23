@@ -1,46 +1,30 @@
-import { Dialog } from "@headlessui/react";
 import { Field, Form, Formik, FormikHelpers } from "formik";
 import { Maybe } from "graphql/jsutils/Maybe";
-import React, { useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import React, { useEffect } from "react";
+import { FlowFragment } from "../../../fluss/api/graphql";
+import { withRekuest } from "../../../rekuest/RekuestContext";
 import {
-  DetailNodeDocument,
-  DetailNodeQuery,
-  NodeListItemFragment,
-  NodeKind,
-  useNodesQuery,
-  Scope,
+  DisplayTemplateFragment,
   NodeScope,
+  useNodeTemplatesQuery,
 } from "../../../rekuest/api/graphql";
-import { useRekuest, withRekuest } from "../../../rekuest/RekuestContext";
 import { SmartModel } from "../../../rekuest/selection/SmartModel";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
-import { useModal } from "../../../components/modals/modal-context";
-import {
-  ArkitektNodeFragment,
-  ReactiveNodeFragment,
-  ReactiveTemplateFragment,
-  StreamKind,
-  useReactiveTemplateQuery,
-  FlowFragment,
-  useReactiveTemplatesQuery,
-} from "../../../fluss/api/graphql";
-import { withFluss } from "../../../fluss/fluss";
-import { FlowNode } from "../../types";
-import { notEmpty, port_to_stream } from "../../utils";
-import { useEditRiver } from "../context";
-import { Graph } from "../../base/Graph";
 
 interface NodeListProps {
-  nodes: Maybe<NodeListItemFragment>[];
+  templates: Maybe<DisplayTemplateFragment>[];
 }
 
-export const LocalItem = ({ node }: { node: Maybe<NodeListItemFragment> }) => {
+export const LocalItem = ({
+  template,
+}: {
+  template: Maybe<DisplayTemplateFragment>;
+}) => {
   return (
     <SmartModel
       accepts={[]}
-      identifier="@arkitekt/node"
-      object={node?.id || "ss"}
+      identifier="@arkitekt/template"
+      object={template?.id || "ss"}
       dragClassName={({ isDragging }) =>
         `rounded-md dark:bg-slate-900 dark:text-slate-50 w-full hover:overflow-hidden p-2 shadow-md shadow-blue-700/20 bg-white hover:text-white hover:bg-gray-800 border-slate-500 border cursor-pointer ${
           isDragging && "border-primary-300"
@@ -48,8 +32,10 @@ export const LocalItem = ({ node }: { node: Maybe<NodeListItemFragment> }) => {
       }
     >
       <div className="p-1 ">
-        <div className="font-light text-md mb-1">{node?.name}</div>
-        <p className="text">{node?.description}</p>
+        <div className="font-light text-md mb-1">
+          {template?.node?.name} @ {template?.interface}
+        </div>
+        <p className="text">{template?.node?.description}</p>
       </div>
     </SmartModel>
   );
@@ -74,16 +60,16 @@ export const GraphItem = () => {
   );
 };
 
-export const LocalNodes: React.FC<NodeListProps> = ({ nodes }) => {
+export const LocalTemplate: React.FC<NodeListProps> = ({ templates }) => {
   return (
     <div className="grid grid-cols-1 gap-4 text-gray-800 w-full mt-5">
-      {nodes?.length > 0 && (
+      {templates?.length > 0 && (
         <div className="font-semibold text-center text-xs dark:text-slate-50">
           Local Nodes
         </div>
       )}
-      {nodes?.map((node) => (
-        <LocalItem key={node?.id} node={node} />
+      {templates?.map((template) => (
+        <LocalItem key={template?.id} template={template} />
       ))}
     </div>
   );
@@ -141,19 +127,11 @@ interface EditSidebarProps {
 
 export const ExperimentalSidebar: React.FC<EditSidebarProps> = (props) => {
   if (!props.flow) return null;
-  const { data: arkitektNodes, refetch: refetchArkiNodes } = withRekuest(
-    useNodesQuery
-  )({
-    variables: {
-      scopes: [NodeScope.Global],
-    },
-  });
 
   const { data: localNodes, refetch: refetchLocalNodes } = withRekuest(
-    useNodesQuery
+    useNodeTemplatesQuery
   )({
     variables: {
-      restrict: props.flow.restrict,
       scopes: [
         NodeScope.BridgeGlobalToLocal,
         NodeScope.Local,
@@ -162,16 +140,10 @@ export const ExperimentalSidebar: React.FC<EditSidebarProps> = (props) => {
     },
   });
 
-  const { data: reactiveNodes, refetch: refetchReactiveNodes } = withFluss(
-    useReactiveTemplatesQuery
-  )();
-
   const [filter, setFilter] = React.useState<NodeFilterValues>({ search: "" });
 
   useEffect(() => {
-    refetchArkiNodes(filter);
     refetchLocalNodes(filter);
-    refetchReactiveNodes(filter);
   }, [filter]);
 
   return (
@@ -184,7 +156,9 @@ export const ExperimentalSidebar: React.FC<EditSidebarProps> = (props) => {
       </div>
       <div className="flex-grow flex flex-col gap-2 p-5 overflow-y-scroll">
         <GraphItem />
-        {localNodes?.allnodes && <LocalNodes nodes={localNodes?.allnodes} />}
+        {localNodes?.templates && (
+          <LocalTemplate templates={localNodes?.templates} />
+        )}
       </div>
     </>
   );

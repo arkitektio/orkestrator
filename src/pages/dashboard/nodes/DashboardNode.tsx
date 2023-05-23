@@ -2,27 +2,22 @@ import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useEffect } from "react";
 import { useParams } from "react-router";
 import { NodeActions } from "../../../actions/NodeActions";
+import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
+import { notEmpty } from "../../../floating/utils";
+import { PageLayout } from "../../../layout/PageLayout";
+import { withRekuest } from "../../../rekuest";
 import {
   ChildPortFragment,
   DetailNodeEventDocument,
   DetailNodeEventSubscriptionResult,
   DetailNodeQuery,
   NodeKind,
-  PortKind,
   PortFragment,
-  useDetailNodeQuery,
-  NodeScope,
+  PortKind,
   Scope,
+  useDetailNodeQuery,
 } from "../../../rekuest/api/graphql";
-import { notEmpty } from "../../../floating/utils";
-import { FlussTemplate } from "../../../fluss/components/FlussTemplate";
-import { PageLayout } from "../../../layout/PageLayout";
-import { Template } from "../../../linker";
-import { withRekuest } from "../../../rekuest";
 import { TemplateCard } from "../../../rekuest/components/cards/TemplateCard";
-import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
-import { Port } from "../../../fluss/api/graphql";
 
 export type INodeScreenProps = {};
 
@@ -52,7 +47,7 @@ export const childMapper = (port: Maybe<ChildPortFragment>) => {
 
 export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
   switch (port?.kind) {
-    case PortKind.Dict:
+    case PortKind.List:
       return (
         <div className="flex flex-row">
           <div
@@ -63,8 +58,13 @@ export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
             <div className="my-auto mr-3">List of</div>{" "}
             {childMapper((port as any).child)}
           </div>
-          <div className="font-semibold my-auto">{port?.key}</div>
-          <div className="ml-2 my-auto">{port?.description}</div>
+          <div className="font-semibold my-auto">{port?.label || port.key}</div>
+          {port.assignWidget?.__typename && (
+            <div className="ml-2 my-auto">{port.assignWidget?.__typename}</div>
+          )}
+          {port.returnWidget?.__typename && (
+            <div className="ml-2 my-auto">{port.returnWidget?.__typename}</div>
+          )}
         </div>
       );
     case PortKind.Dict:
@@ -78,7 +78,7 @@ export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
             <div className="my-auto mr-3">Map of</div>{" "}
             {childMapper((port as any).child)}
           </div>
-          <div className="font-semibold my-auto">{port?.key}</div>
+          <div className="font-semibold my-auto">{port?.label || port.key}</div>
           <div className="ml-2 my-auto">{port?.description}</div>
           {port.assignWidget?.__typename && (
             <div className="ml-2 my-auto">{port.assignWidget?.__typename}</div>
@@ -95,8 +95,16 @@ export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
           >
             {port?.identifier || port?.kind}
           </div>
-          <div className="font-semibold my-auto">{port?.key}</div>
+          <div className="font-semibold my-auto">
+            {port?.label || port?.key}
+          </div>
           <div className="ml-2 my-auto">{port?.description}</div>
+          {port?.assignWidget?.__typename && (
+            <div className="ml-2 my-auto">{port.assignWidget?.__typename}</div>
+          )}
+          {port?.returnWidget?.__typename && (
+            <div className="ml-2 my-auto">{port?.returnWidget?.__typename}</div>
+          )}
         </div>
       );
   }
@@ -173,10 +181,6 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
             </div>
           </div>
         </div>
-      </div>
-      <div className="flex-grow">
-        {data?.node?.interfaces?.includes("workflow") &&
-          data?.node?.meta?.flow && <FlussTemplate node={data?.node} />}
       </div>
       <div className="flex-initial">
         <div className="font-light mt-3 mb-1 text-xl text-white">

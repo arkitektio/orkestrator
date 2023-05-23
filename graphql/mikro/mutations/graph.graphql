@@ -1,0 +1,5 @@
+mutation DeleteGraph($id: ID!) {
+  deleteGraph(id: $id) {
+    id
+  }
+}

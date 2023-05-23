@@ -1,12 +1,12 @@
 fragment FlowNodeCommons on FlowNodeCommons {
   instream {
-    ...StreamItem
+    ...Port
   }
   outstream {
-    ...StreamItem
+    ...Port
   }
   constream {
-    ...StreamItem
+    ...Port
   }
   constants
 }
@@ -35,6 +35,7 @@ fragment LocalNode on LocalNode {
   __typename
   name
   description
+  interface
   hash
   kind
   defaults
@@ -68,10 +69,35 @@ fragment PortChild on PortChild {
   kind
   scope
   nullable
+  assignWidget {
+    ...Widget
+  }
+  returnWidget {
+    ...ReturnWidget
+  }
   child {
     scope
     identifier
     kind
+    nullable
+    assignWidget {
+      ...Widget
+    }
+    returnWidget {
+      ...ReturnWidget
+    }
+    child {
+      identifier
+      scope
+      kind
+      nullable
+      assignWidget {
+        ...Widget
+      }
+      returnWidget {
+        ...ReturnWidget
+      }
+    }
   }
 }
 
@@ -173,9 +199,11 @@ fragment StreamItemChild on StreamItemChild {
   kind
   identifier
   scope
+  nullable
   child {
     scope
     kind
+    nullable
     identifier
   }
 }

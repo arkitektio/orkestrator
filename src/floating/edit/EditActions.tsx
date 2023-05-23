@@ -1,30 +1,23 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router";
-import {
-  AssignationStatus,
-  ReservationStatus,
-  useNodesQuery,
-  WatchInterfaceSubscription,
-  WatchInterfaceSubscriptionVariables,
-  WatchInterfaceDocument,
-} from "../../rekuest/api/graphql";
-import { usePostman } from "../../rekuest/postman/graphql/postman-context";
+import { FlowFragment } from "../../fluss/api/graphql";
+import { DeployFlowDialog } from "../../fluss/components/dialogs/DeployFlowDialog";
+import { ActionButton } from "../../layout/ActionButton";
+import { useDialog } from "../../layout/dialog/DialogProvider";
+import { Node } from "../../linker";
+import { withRekuest } from "../../rekuest";
+import { ReservationStatus, useNodesQuery } from "../../rekuest/api/graphql";
 import { useRequester } from "../../rekuest/postman/requester/requester-context";
 import { useReserver } from "../../rekuest/postman/reserver/reserver-context";
-import { FlowFragment } from "../../fluss/api/graphql";
-import { ActionButton } from "../../layout/ActionButton";
-import { Node } from "../../linker";
 import { useEditRiver } from "./context";
-import { withRekuest } from "../../rekuest";
-import { useDialog } from "../../layout/dialog/DialogProvider";
-import { DeployFlowDialog } from "../../fluss/components/dialogs/DeployFlowDialog";
 
 export interface EditActionsProps {
   flow: FlowFragment;
 }
 
 export const EditActions: React.FC<EditActionsProps> = (props) => {
-  const { saveDiagram, flow, addArkitekt, saving, setLayout } = useEditRiver();
+  const { saveDiagram, flow, addArkitekt, saving, setLayout, exportDiagram } =
+    useEditRiver();
   const { assign } = useRequester();
   const { reservations, reserve } = useReserver();
   const navigate = useNavigate();
@@ -50,6 +43,24 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
     ?.filter((res) => res?.node?.interfaces?.includes("fluss:undeploy"))
     .at(0);
 
+  const onExport = () => {
+    let nput = exportDiagram();
+    let x = JSON.stringify(nput, null, 4);
+    // Download the file
+    const element = document.createElement("a");
+    element.setAttribute(
+      "href",
+      "data:text/plain;charset=utf-8," + encodeURIComponent(x)
+    );
+    element.setAttribute("download", `${flow?.name}.json`);
+
+    element.style.display = "none";
+
+    element.click();
+
+    document.body.removeChild(element);
+  };
+
   return (
     <>
       <ActionButton
@@ -64,6 +75,13 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
         description="Auto Layout this flow"
         onAction={async () => {
           setLayout("LR");
+        }}
+      />
+      <ActionButton
+        label="Export"
+        description="Export this flow"
+        onAction={async () => {
+          onExport();
         }}
       />
       {!deployed && (

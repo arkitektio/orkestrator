@@ -49,8 +49,8 @@ export const ExportActor: React.FC<Props> = (props) => {
     console.log("Registering");
     if (client && config && window.__TAURI__) {
       return register(
+        "export-dataset",
         {
-          interface: "export-dataset",
           name: "Export files in dataset",
           description: "Expirt files of dataset into orkestrator folder",
           args: [
@@ -65,6 +65,7 @@ export const ExportActor: React.FC<Props> = (props) => {
           kind: NodeKindInput.Function,
           returns: [],
           portGroups: [],
+          interfaces: [],
         },
         () => ({
           onAssign: async (assignation) => {

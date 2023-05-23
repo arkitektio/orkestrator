@@ -1,12 +1,12 @@
 fragment ReactiveTemplate on ReactiveTemplate {
   constream {
-    ...StreamItem
+    ...Port
   }
   instream {
-    ...StreamItem
+    ...Port
   }
   outstream {
-    ...StreamItem
+    ...Port
   }
   name
   implementation

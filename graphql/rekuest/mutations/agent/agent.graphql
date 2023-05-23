@@ -1,5 +1,13 @@
-mutation template($definition: DefinitionInput!, $instanceId: ID!) {
-  createTemplate(definition: $definition, instanceId: $instanceId) {
+mutation template(
+  $interface: String!
+  $definition: DefinitionInput!
+  $instanceId: ID!
+) {
+  createTemplate(
+    interface: $interface
+    definition: $definition
+    instanceId: $instanceId
+  ) {
     id
   }
 }

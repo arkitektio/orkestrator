@@ -15,3 +15,9 @@ mutation CreateVanillaDiagram($name: String, $restrict: [String]) {
     ...Workspace
   }
 }
+
+mutation ImportFlow($name: String, $graph: GraphInput!) {
+  importflow(name: $name, graph: $graph) {
+    ...Workspace
+  }
+}

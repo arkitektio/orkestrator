@@ -19,6 +19,9 @@ fragment DetailTable on Table {
   experiment {
     id
   }
+  graphs {
+    ...ListGraph
+  }
 }
 
 fragment ListTable on Table {

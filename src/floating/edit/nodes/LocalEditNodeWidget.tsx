@@ -9,7 +9,7 @@ import {
 } from "../../../rekuest/api/graphql";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { LocalNodeProps } from "../../types";
-import { notEmpty, port_to_type as port_to_kind } from "../../utils";
+import { notEmpty, rekuestPortToFluss } from "../../utils";
 import { useEditRiver } from "../context";
 import { useArkitektConnState } from "../hooks/useArkitektConnState";
 import { NodeEditLayout } from "./layout/NodeEdit";
@@ -50,13 +50,7 @@ export const LocalEditNodeWidget: React.FC<LocalNodeProps> = withLayout(
           ]);
         } else {
           updateNodeIn(id, [
-            data?.instream[0]?.concat({
-              key: arg.key,
-              scope: arg.scope,
-              kind: port_to_kind(arg),
-              identifier: arg.identifier,
-              nullable: arg.nullable,
-            }),
+            data?.instream[0]?.concat(rekuestPortToFluss(arg)),
           ]);
         }
       }
@@ -71,13 +65,7 @@ export const LocalEditNodeWidget: React.FC<LocalNodeProps> = withLayout(
           ]);
         } else {
           updateNodeOut(id, [
-            data?.outstream[0]?.concat({
-              key: arg.key,
-              scope: arg.scope,
-              kind: port_to_kind(arg),
-              identifier: arg.identifier,
-              nullable: arg.nullable,
-            }),
+            data?.outstream[0]?.concat(rekuestPortToFluss(arg)),
           ]);
         }
       }
@@ -151,7 +139,7 @@ export const LocalEditNodeWidget: React.FC<LocalNodeProps> = withLayout(
             className="flex-none font-light text-xl mb-1 custom-drag-handle cursor-pointer"
             onDoubleClick={() => toggleExpanded()}
           >
-            {node_data?.node?.name}{" "}
+            {node_data?.node?.name} @ {data?.interface}
           </div>
           <div className="flex-grow"></div>
         </div>

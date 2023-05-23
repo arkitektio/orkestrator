@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useAlert } from "../../../components/alerter/alerter-context";
 import { notEmpty } from "../../../floating/utils";
 import { useSettings } from "../../../settings/settings-context";
 import { ListReservationFragment, ReservationStatus } from "../../api/graphql";
-import { usePostman } from "../graphql/postman-context";
 import { useRequester } from "../requester/requester-context";
 import { useReserver } from "../reserver/reserver-context";
 import { Accept, Mate, MaterContext, Partner } from "./mater-context";
@@ -208,6 +207,8 @@ export const MaterProvider: React.FC<MaterProviderProps> = ({ children }) => {
       return [];
     }
 
+    console.log("Calculating self mates for list", over, self);
+
     const [modifier, element] = over.split(":");
     const left = self.identifier;
 
@@ -230,6 +231,7 @@ export const MaterProvider: React.FC<MaterProviderProps> = ({ children }) => {
     }
 
     if (modifier == "list") {
+      console.log("Calculating self mates for list");
       const partner_reservations =
         reservations?.reservations
           ?.filter((res) => res?.status == ReservationStatus.Active)

@@ -42,7 +42,11 @@ export type Actor<T extends [] = []> = {
 };
 
 export type AgentContextType = {
-  register: (definition: DefinitionInput, actor: ActorBuilder) => () => void;
+  register: (
+    on_interface: string,
+    definition: DefinitionInput,
+    actor: ActorBuilder
+  ) => () => void;
   startProvide: () => Promise<void>;
   cancelProvide: () => Promise<void>;
   provide: boolean;

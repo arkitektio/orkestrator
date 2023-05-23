@@ -1,0 +1,60 @@
+fragment ConditionSnapshot on ConditionSnapshot {
+  id
+  condition {
+    id
+    provision
+  }
+  status
+  events {
+    ...ConditionEvent
+  }
+}
+
+fragment ListConditionSnapshot on ConditionSnapshot {
+  id
+  condition {
+    id
+    provision
+  }
+}
+
+fragment Condition on Condition {
+  id
+  snapshots {
+    id
+    status
+    createdAt
+  }
+  provision
+  createdAt
+  latestSnapshot {
+    createdAt
+    events {
+      ...ConditionEvent
+    }
+  }
+  flow {
+    ...Flow
+  }
+}
+
+fragment ListCondition on Condition {
+  id
+  provision
+  createdAt
+  flow {
+    id
+    name
+    workspace {
+      name
+    }
+  }
+}
+
+fragment ConditionEvent on ConditionEvent {
+  id
+  source
+  createdAt
+  value
+  state
+}

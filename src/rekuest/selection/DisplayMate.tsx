@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
 import { Mate, MateOptions, Partner } from "../postman/mater/mater-context";
+import { useModelSelector } from "./context";
 
 export interface MateProps {
   mate: Mate;
@@ -23,13 +24,19 @@ export const DisplayMate: React.FC<MateProps> = ({
   onDone,
   onError,
 }) => {
+  const { selection } = useModelSelector();
+
   const click = (e: Event) => {
     console.log("click");
     if (clickable) {
       e.stopPropagation();
       console.log("clickable");
       mate
-        .action(self, [self], prog)
+        .action(
+          self,
+          selection && selection.length > 0 ? selection : [self],
+          prog
+        )
         .then(() => {
           prog(undefined);
           onDone && onDone();

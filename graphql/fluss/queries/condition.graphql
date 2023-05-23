@@ -1,0 +1,29 @@
+query ConditionSnapshots {
+  conditionSnapshots {
+    ...ListConditionSnapshot
+  }
+}
+
+query DetailConditionSnapshot($id: ID!) {
+  conditionSnapshot(id: $id) {
+    ...ConditionSnapshot
+  }
+}
+
+query Conditions {
+  conditions {
+    ...ListCondition
+  }
+}
+
+query DetailCondition($id: ID, $provision: ID) {
+  condition(id: $id, provision: $provision) {
+    ...Condition
+  }
+}
+
+query ConditionEventsBetween($id: ID!, $min: DateTime, $max: DateTime) {
+  conditionEventsBetween(condition: $id, min: $min, max: $max) {
+    ...ConditionEvent
+  }
+}

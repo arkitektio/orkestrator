@@ -1,14 +1,15 @@
 import React, { useContext } from "react";
 import {
-  PortFragment,
   ArkitektNodeFragment,
   FlowFragment,
   GlobalFragment,
-  ReactiveNodeFragment,
+  GraphInput,
   LocalNodeFragment,
+  PortFragment,
+  ReactiveNodeFragment,
 } from "../../fluss/api/graphql";
 
-import { RiverMode, FlowNode, FlowEdge } from "../types";
+import { FlowEdge, FlowNode } from "../types";
 
 export type EditRiverContextType = {
   addArkitekt: (node: FlowNode<ArkitektNodeFragment>) => void;
@@ -19,6 +20,7 @@ export type EditRiverContextType = {
   updateNodeExtras: (id: string, extras: any) => void;
   setDiagramError: (error: string) => void;
   saveDiagram: () => void;
+  exportDiagram: () => GraphInput;
   setArgs: (args: (PortFragment | null)[]) => void;
   setReturns: (args: (PortFragment | null)[]) => void;
   setNodeError: (id: string, error: string) => void;
@@ -49,6 +51,9 @@ export const EditRiverContext = React.createContext<EditRiverContextType>({
   },
   saveDiagram: () => {
     console.error("WE ARE LACKING AN ENGINE");
+  },
+  exportDiagram: () => {
+    throw Error("WE ARE LACKING AN ENGINE");
   },
   setNodeError: () => () => {
     console.error("WE ARE LACKING AN ENGINE");

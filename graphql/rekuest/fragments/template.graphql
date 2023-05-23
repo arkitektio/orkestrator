@@ -17,9 +17,7 @@ fragment DetailTemplate on Template {
   params
   interface
   node {
-    scope
-    id
-    name
+    ...DetailNode
   }
   agent {
     id
@@ -64,5 +62,17 @@ fragment ReservableTemplate on Template {
   provisions {
     id
     status
+  }
+}
+
+fragment DisplayTemplate on Template {
+  id
+  name
+  interface
+  node {
+    scope
+    id
+    name
+    description
   }
 }

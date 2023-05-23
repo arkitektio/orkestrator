@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { PortKind } from "../api/graphql";
-import { WardRegistry } from "../ward_registry";
 import { ChoiceWidget } from "./inputs/additionals/ChoiceWidget";
+import { EnhancedStringWidget } from "./inputs/additionals/EnhancedStringWidget";
 import { SearchWidget } from "./inputs/additionals/SearchWidget";
 import { SliderWidget } from "./inputs/additionals/SliderWidget";
 import { BoolWidget } from "./inputs/fallbacks/BoolWidget";
@@ -42,7 +42,7 @@ export const WidgetRegistryProvider: React.FC<WidgetRegistryProviderProps> = ({
     x.registerInputWidgetFallback(PortKind.List, ListWidget);
 
     x.registerInputWidget("SearchWidget", SearchWidget);
-    x.registerInputWidget("StringWidget", StringWidget);
+    x.registerInputWidget("StringWidget", EnhancedStringWidget);
     x.registerInputWidget("SliderWidget", SliderWidget);
     x.registerInputWidget("ChoiceWidget", ChoiceWidget);
 

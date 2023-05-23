@@ -20,11 +20,13 @@ import {
 import { Form, Formik } from "formik";
 import { CSVLink } from "react-csv";
 import { TbCsv } from "react-icons/tb";
+import { SelfActions } from "../../components/SelfActions";
 import { NumberInputField } from "../../components/forms/fields/number_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { Representation } from "../../linker";
+import { GraphCard } from "./cards/GraphCard";
 
 type TableData = { [key: string]: any };
 
@@ -138,6 +140,9 @@ const Table: React.FC<ISampleProps> = ({ id }) => {
           key: "filter",
         },
       ]}
+      actions={
+        <SelfActions type={"@mikro/table"} object={tabledata?.table?.id} />
+      }
     >
       <SectionTitle
         right={
@@ -177,6 +182,16 @@ const Table: React.FC<ISampleProps> = ({ id }) => {
             </ResponsiveGrid>
           </div>
         )}
+      {tabledata?.table?.graphs && tabledata?.table?.graphs.length > 0 && (
+        <div className="flex-shrink mt-4 text-black font-light bg-white p-4 rounded border-gray-200 rounded-md">
+          <div className="font-light my-2">Rendered in Graphs</div>
+          <ResponsiveGrid>
+            {tabledata?.table?.graphs?.filter(notEmpty).map((rep) => (
+              <GraphCard graph={rep} mates={[]} />
+            ))}
+          </ResponsiveGrid>
+        </div>
+      )}
 
       <table className="flex-grow table-auto text-white rounded rounded-md">
         <thead className="text-xl mb-3 bg-slate-800 p-3 mb-2 rounded-md rounded rounded-md  ">

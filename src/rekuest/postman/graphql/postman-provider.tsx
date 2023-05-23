@@ -42,13 +42,15 @@ const Internal = (props: any) => {
     variables: { id: props.ass.reservation.node.id as string },
   });
 
-  return data?.node?.returns && props.ass.returns ? (
+  return data?.node?.returns &&
+    props.ass.returns &&
+    props.ass.returns.length > 0 ? (
     <WidgetsContainer
       ports={data.node.returns.filter(notEmpty)}
       values={props.ass.returns}
     />
   ) : (
-    <>Assignation finished</>
+    <>Done </>
   );
 };
 

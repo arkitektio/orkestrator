@@ -1,0 +1,18 @@
+query MyGraphs($limit: Int, $offset: Int, $createdDay: DateTime) {
+  mygraphs(limit: $limit, offset: $offset, createdDay: $createdDay) {
+    ...ListGraph
+  }
+}
+
+query DetailGraph($id: ID!) {
+  graph(id: $id) {
+    ...DetailGraph
+  }
+}
+
+query SearchGraphs($search: String, $values: [ID!]) {
+  options: models(name: $search, ids: $values, limit: 10) {
+    label: name
+    value: id
+  }
+}

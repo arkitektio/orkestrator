@@ -1,6 +1,5 @@
 import * as React from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { ResponsiveList } from "../../components/layout/ResponsiveList";
 import { OptimizedImage } from "../../layout/OptimizedImage";
 import {
   Dataset,
@@ -10,11 +9,11 @@ import {
   Sample,
   Table,
 } from "../../linker";
+import { useMikro, withMikro } from "../../mikro/MikroContext";
 import {
   GlobalSearchQueryVariables,
   useGlobalSearchLazyQuery,
 } from "../../mikro/api/graphql";
-import { useMikro, withMikro } from "../../mikro/MikroContext";
 import { DataSearch } from "./DataSearch";
 
 interface IDataSidebarProps {}
@@ -24,7 +23,6 @@ export const RepresentationItem = ({ re }: any) => {
 
   return (
     <Representation.Smart
-      showSelfMates={true}
       placement="bottom"
       object={re.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>

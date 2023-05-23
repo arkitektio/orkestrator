@@ -1,11 +1,8 @@
 import React from "react";
 import "react-contexify/dist/ReactContexify.css";
 import { Handle, Position } from "reactflow";
-import ReactTooltip from "react-tooltip";
 import { ReactiveImplementationModelInput } from "../../../fluss/api/graphql";
-import { withLayout } from "../../base/node/layout";
 import { ReactiveNodeProps } from "../../types";
-import { NodeShowLayout } from "./layout/NodeTrack";
 
 export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = ({
   data: { outstream, instream, constream, implementation },
@@ -33,6 +30,19 @@ export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = ({
             </svg>
           )}
         {implementation &&
+          [ReactiveImplementationModelInput.Gate].includes(implementation) && (
+            <svg height="40" width="40">
+              <polygon
+                points="0,40 40,20 0,0"
+                style={{
+                  strokeWidth: 1,
+                  stroke: "white",
+                  fill: "var(--color-primary-500)",
+                }}
+              />
+            </svg>
+          )}
+        {implementation &&
           [ReactiveImplementationModelInput.Split].includes(implementation) && (
             <svg height="40" width="40">
               <polygon
@@ -46,9 +56,10 @@ export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = ({
             </svg>
           )}
         {implementation &&
-          [ReactiveImplementationModelInput.ToList].includes(
-            implementation
-          ) && (
+          [
+            ReactiveImplementationModelInput.ToList,
+            ReactiveImplementationModelInput.BufferComplete,
+          ].includes(implementation) && (
             <svg height="40" width="40">
               <polygon
                 points="0,0 40,0 40,40 0,40"

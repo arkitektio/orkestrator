@@ -1,11 +1,8 @@
 import { addEdge } from "reactflow";
-import { PortFragment as ArkitektPortFragment } from "../../../rekuest/api/graphql";
-import { PortFragment, Scope } from "../../../fluss/api/graphql";
 import {
-  ArgNodeFragment,
-  ArkitektNodeFragment,
+  PortFragment,
   ReactiveImplementationModelInput,
-  StreamItem,
+  Scope,
   StreamKind,
 } from "../../../fluss/api/graphql";
 import {
@@ -15,11 +12,10 @@ import {
   ConnectionMap,
   Connector,
   FlowEdge,
-  FlowNode,
   ReactiveNodeData,
   ReturnNodeData,
 } from "../../types";
-import { notEmpty } from "../../utils";
+import { flussPortToStreamItem, notEmpty } from "../../utils";
 
 export const void_updater: Connector = ({ params, nodes, edges }) => {
   return {
@@ -27,6 +23,14 @@ export const void_updater: Connector = ({ params, nodes, edges }) => {
     edges: edges,
     errors: [{ message: "Not Implemented yet" }],
   };
+};
+
+export const unsetPort: PortFragment = {
+  key: "unset",
+  kind: StreamKind.Unset,
+  identifier: "unset",
+  nullable: false,
+  scope: Scope.Global,
 };
 
 export const error_updater: Connector = ({ params, nodes, edges }) => {
@@ -48,46 +52,11 @@ export const handle_to_index: (handle: string | null | undefined) => number = (
   return parseInt(handle.split("_")[1]);
 };
 
-const arkport_to_port = (argport: ArkitektPortFragment): PortFragment => {
-  return {
-    key: argport?.key,
-    kind: argport?.kind as unknown as StreamKind,
-    // TODO: List of list are not supported yet
-    child: argport?.child && {
-      identifier: argport.child.identifier,
-      kind: argport.child.kind as unknown as StreamKind,
-      __typename: "PortChild",
-      scope: argport.child.scope,
-      child: argport.child.child && {
-        identifier: argport.child.child.identifier,
-        kind: argport.child.child.kind as unknown as StreamKind,
-        __typename: "PortChild",
-        scope: argport.child.child.scope,
-      },
-      nullable: argport.child.nullable,
-    },
-    scope: argport?.scope,
-    assignWidget: argport?.assignWidget && {
-      ...argport?.assignWidget,
-      __typename: "Widget",
-      kind: argport.assignWidget?.__typename,
-    },
-    returnWidget: argport?.returnWidget && {
-      // can be null but not kind unset
-      ...argport?.returnWidget,
-      __typename: "ReturnWidget",
-      kind: argport.returnWidget?.__typename,
-    },
-    identifier: argport?.identifier,
-    nullable: argport?.nullable,
-  };
-};
-
 export const calculateWrongEdges = (
   edges: FlowEdge[],
   node: { id: string },
-  new_instream: ((StreamItem | null | undefined)[] | null)[] | null,
-  new_outstream: ((StreamItem | null | undefined)[] | null)[] | null
+  new_instream: ((PortFragment | null | undefined)[] | null)[] | null,
+  new_outstream: ((PortFragment | null | undefined)[] | null)[] | null
 ) => {
   let wrong_edges_out = edges
     .filter(notEmpty)
@@ -159,19 +128,12 @@ export const arg_to_ark: Connector<ArgNodeData, ArkitektNodeData> = ({
     edges: addEdge(
       {
         ...params,
-        data: { stream: targetStream },
+        data: { stream: targetStream.map(flussPortToStreamItem) },
         type: "LabeledEdge",
       },
       edges
     ),
-    args: targetNode.data.extras?.args
-      ?.filter((arg) =>
-        targetStream
-          .map((i) => i.key)
-          .includes(arg?.key || "doeinosienfosienfosienf")
-      )
-      .filter(notEmpty)
-      .map(arkport_to_port),
+    args: targetStream,
   };
 };
 
@@ -209,20 +171,13 @@ export const ark_to_return: Connector<ArkitektNodeData, ReturnNodeData> = ({
         {
           ...params,
           data: {
-            stream: sourceStream,
+            stream: sourceStream.map(flussPortToStreamItem),
           },
           type: "LabeledEdge",
         },
         edges
       ),
-      returns: sourceNode.data.extras?.returns
-        ?.filter((p) =>
-          sourceStream
-            .map((i) => i.key)
-            .includes(p?.key || "doeinosienfosienfosienf")
-        )
-        .filter(notEmpty)
-        .map(arkport_to_port),
+      returns: sourceStream,
     };
   }
 
@@ -248,7 +203,7 @@ export const ark_to_return: Connector<ArkitektNodeData, ReturnNodeData> = ({
     edges: addEdge(
       {
         ...params,
-        data: { stream: sourceStream },
+        data: { stream: sourceStream.map(flussPortToStreamItem) },
         type: "LabeledEdge",
       },
       edges
@@ -293,7 +248,7 @@ export const ark_to_ark: Connector = ({
     edges: addEdge(
       {
         ...params,
-        data: { stream: sourceStream },
+        data: { stream: sourceStream.map(flussPortToStreamItem) },
         type: "LabeledEdge",
       },
       edges
@@ -314,8 +269,8 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
 }) => {
   let target_index = handle_to_index(params.targetHandle);
 
-  let new_instream = [[]] as (StreamItem | null)[][];
-  let new_outstream = [[]] as (StreamItem | null)[][];
+  let new_instream = [[]] as (PortFragment | null)[][];
+  let new_outstream = [[]] as (PortFragment | null)[][];
 
   if (
     [
@@ -333,6 +288,28 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
   }
 
   if (
+    [ReactiveImplementationModelInput.Gate].includes(
+      targetNode.data.implementation
+    )
+  ) {
+    if (target_index == 0) {
+      console.log(targetNode.data.instream);
+      new_instream = [
+        sourceStream,
+        targetNode.data.instream.at(1) || [unsetPort],
+      ];
+
+      new_outstream = [sourceStream];
+    } else {
+      new_instream = [
+        targetNode.data.instream.at(0) || [unsetPort],
+        sourceStream,
+      ];
+      new_outstream = targetNode.data.outstream || [[unsetPort]];
+    }
+  }
+
+  if (
     [ReactiveImplementationModelInput.If].includes(
       targetNode.data.implementation
     )
@@ -344,7 +321,7 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
           {
             key: "true",
             kind: StreamKind.Bool,
-            __typename: "StreamItem",
+            __typename: "Port",
             nullable: false,
             scope: Scope.Global,
           },
@@ -370,6 +347,42 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
   }
 
   if (
+    [ReactiveImplementationModelInput.BufferComplete].includes(
+      targetNode.data.implementation
+    )
+  ) {
+    if (sourceStream.length > 1) {
+      return {
+        errors: [
+          { message: "Buffercomplete can only buzffer one input currently" },
+        ],
+      };
+    }
+
+    let x = sourceStream.at(0);
+
+    if (!x) {
+      return {
+        errors: [{ message: "Needs to have a defined stream" }],
+      };
+    }
+    new_instream = [sourceStream];
+
+    let { key, label, description, __typename, ...clean_child } = x;
+    new_outstream = [
+      [
+        {
+          key: "buffer",
+          child: { ...clean_child, __typename: "PortChild" },
+          scope: Scope.Global,
+          nullable: false,
+          kind: StreamKind.List,
+        },
+      ],
+    ];
+  }
+
+  if (
     [ReactiveImplementationModelInput.Chunk].includes(
       targetNode.data.implementation
     )
@@ -385,15 +398,20 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
         errors: [{ message: "Chunk only takes lists as input with a child" }],
       };
     }
+
+    // Flaten
     new_instream = [sourceStream];
     new_outstream = [
       sourceStream.map((x) => ({
         key: "element",
-        ...x.child,
-        scope: Scope.Global,
-        nullable: false,
-        __typename: "StreamItem",
+        label: "Element of" + (x.label || x.key),
+        description: "Element of" + x.description,
+        nullable: x.nullable,
         kind: x.child?.kind || StreamKind.Bool,
+        identifier: x.child?.identifier,
+        assignWidget: x.child?.assignWidget, // yanked up
+        returnWidget: x.child?.returnWidget,
+        scope: Scope.Global,
       })),
     ];
   }
@@ -457,7 +475,7 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
             kind: sourceStream[0].kind,
             identifier: sourceStream[0].identifier,
             child: sourceStream[0].child,
-            __typename: "StreamItemChild",
+            nullable: false,
           },
           scope: Scope.Global,
           key: "list",
@@ -491,7 +509,7 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
     edges: addEdge(
       {
         ...params,
-        data: { stream: sourceStream },
+        data: { stream: sourceStream.map(flussPortToStreamItem) },
         type: "LabeledEdge",
       },
       edges
@@ -512,6 +530,7 @@ export const reak_to_return: Connector = ({
   nodes,
   sourceNode,
   targetNode,
+  sourceStream,
   edges,
   sourceTypes,
   targetTypes,
@@ -563,11 +582,12 @@ export const reak_to_return: Connector = ({
       edges: addEdge(
         {
           ...params,
-          data: { stream: sourceNode.data.outstream[0] },
+          data: { stream: sourceStream.map(flussPortToStreamItem) },
           type: "LabeledEdge",
         },
         edges
       ),
+      returns: sourceStream,
     };
   }
 
@@ -593,7 +613,7 @@ export const reak_to_return: Connector = ({
     edges: addEdge(
       {
         ...params,
-        data: { stream: sourceNode.data.outstream[0] },
+        data: { stream: sourceStream.map(flussPortToStreamItem) },
         type: "LabeledEdge",
       },
       edges
@@ -653,7 +673,7 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
       edges: addEdge(
         {
           ...params,
-          data: { stream: targetStream },
+          data: { stream: targetStream.map(flussPortToStreamItem) },
           type: "LabeledEdge",
         },
         edges
@@ -693,7 +713,48 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
       edges: addEdge(
         {
           ...params,
-          data: { stream: targetStream },
+          data: { stream: targetStream.map(flussPortToStreamItem) },
+          type: "LabeledEdge",
+        },
+        edges
+      ).filter((e) => !wrongEdges.includes(e.id)),
+    };
+  }
+
+  if (
+    [ReactiveImplementationModelInput.Gate].includes(
+      sourceNode.data.implementation
+    )
+  ) {
+    let new_reak_outstreams = [targetStream];
+    let new_reak_instreams = [targetStream, sourceNode.data.instream.at(1)];
+
+    // check which edges are wrong now
+
+    let wrongEdges = calculateWrongEdges(
+      edges,
+      sourceNode,
+      new_reak_instreams,
+      new_reak_outstreams
+    );
+
+    return {
+      nodes: nodes.map((node) =>
+        node.id === sourceNode.id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                instream: new_reak_instreams,
+                oustream: new_reak_outstreams,
+              },
+            }
+          : node
+      ),
+      edges: addEdge(
+        {
+          ...params,
+          data: { stream: targetStream.map(flussPortToStreamItem) },
           type: "LabeledEdge",
         },
         edges
@@ -739,7 +800,48 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
       edges: addEdge(
         {
           ...params,
-          data: { stream: targetStream },
+          data: { stream: targetStream.map(flussPortToStreamItem) },
+          type: "LabeledEdge",
+        },
+        edges
+      ).filter((e) => !wrongEdges.includes(e.id)),
+    };
+  }
+
+  if (
+    [ReactiveImplementationModelInput.BufferComplete].includes(
+      sourceNode.data.implementation
+    )
+  ) {
+    let new_reak_outstreams = [targetStream];
+    let new_reak_instreams = sourceNode.data.instream;
+
+    // check which edges are wrong now
+
+    let wrongEdges = calculateWrongEdges(
+      edges,
+      sourceNode,
+      new_reak_instreams,
+      new_reak_outstreams
+    );
+
+    return {
+      nodes: nodes.map((node) =>
+        node.id === sourceNode.id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                instream: new_reak_instreams,
+                oustream: new_reak_outstreams,
+              },
+            }
+          : node
+      ),
+      edges: addEdge(
+        {
+          ...params,
+          data: { stream: targetStream.map(flussPortToStreamItem) },
           type: "LabeledEdge",
         },
         edges
@@ -786,7 +888,7 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
       edges: addEdge(
         {
           ...params,
-          data: { stream: targetStream },
+          data: { stream: targetStream.map(flussPortToStreamItem) },
           type: "LabeledEdge",
         },
         edges
@@ -833,7 +935,7 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
       edges: addEdge(
         {
           ...params,
-          data: { stream: targetStream },
+          data: { stream: targetStream.map(flussPortToStreamItem) },
           type: "LabeledEdge",
         },
         edges
@@ -885,56 +987,34 @@ export const arg_to_reak: Connector<ArgNodeData, ReactiveNodeData> = ({
   sourceTypes,
   targetTypes,
 }) => {
-  console.log(sourceNode, sourceTypes);
+  console.log(sourceNode, targetStream);
 
-  if (targetStream.length != 1) {
-    return {
-      errors: [{ message: "Targetstream should only contain one item." }],
-    };
-  }
+  // This is the port that is not connected to anything
 
-  if (sourceTypes.length === 0) {
-    // This is the port that is not connected to anything
-    let arg = targetStream.at(0);
-    if (!arg) {
-      return {
-        errors: [{ message: "Targetstream should only contain one item." }],
-      };
-    }
+  let wrongEdges = calculateWrongEdges(edges, sourceNode, [], [targetStream]);
 
-    return {
-      nodes: nodes.map((node) =>
-        node.id === sourceNode.id
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                outstream: [targetStream, ...node.data.outstream],
-              },
-            }
-          : node
-      ),
-      edges: addEdge(
-        {
-          ...params,
-          data: { stream: targetStream },
-          type: "LabeledEdge",
-        },
-        edges
-      ),
-      args: [...args, { ...arg, __typename: "ArgPort" }],
-    };
-  }
-
-  if (sourceTypes.length !== targetTypes.length) {
-    return { errors: [{ message: "Types don't match" }] };
-  }
-
-  if (sourceTypes.join(",") !== targetTypes.join(",")) {
-    return { errors: [{ message: "Types don't match" }] };
-  }
-
-  return { errors: [{ message: "Types don't match" }] };
+  return {
+    nodes: nodes.map((node) =>
+      node.id === sourceNode.id
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              outstream: [targetStream],
+            },
+          }
+        : node
+    ),
+    edges: addEdge(
+      {
+        ...params,
+        data: { stream: targetStream.map(flussPortToStreamItem) },
+        type: "LabeledEdge",
+      },
+      edges
+    ).filter((e) => !wrongEdges.includes(e.id)),
+    args: targetStream,
+  };
 };
 
 export const defaultConnectionHandler: ConnectionMap = {

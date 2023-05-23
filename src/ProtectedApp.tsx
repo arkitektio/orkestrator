@@ -114,38 +114,39 @@ const ComponentPreview = ({ text }: { text: string }): JSX.Element => {
 export const ProtectedApp: React.FC<Props> = () => {
   return (
     <HerreGuard fallback={<PublicLogin />}>
-      <RekuestProvider>
-        <RekuestAutoConfigure />
-        <WidgetRegistryProvider>
-          <ManProvider>
-            <LokAutoConfigure />
-            <ManGuard>
-              <DatalayerProvider>
-                <FlussProvider>
-                  <FlussAutoConfigure />
-                  <FlussWard>
-                    <PortProvider>
-                      <PortAutoConfigure />
-                      <MikroProvider>
-                        <MikroAutoConfigure />
+      <DndProvider options={HTML5toTouch}>
+        <RekuestProvider>
+          <RekuestAutoConfigure />
+          <WidgetRegistryProvider>
+            <ManProvider>
+              <LokAutoConfigure />
+              <ManGuard>
+                <DatalayerProvider>
+                  <FlussProvider>
+                    <FlussAutoConfigure />
+                    <FlussWard>
+                      <PortProvider>
+                        <PortAutoConfigure />
+                        <MikroProvider>
+                          <MikroAutoConfigure />
 
-                        <DatalayerAutoConfigure />
-                        <SettingsProvider>
-                          <MikroWard>
-                            <GeneralMenuProvider>
-                              <PostmanProvider>
-                                <ReserverProvider>
-                                  <RequesterProvider>
-                                    <MaterProvider>
-                                      <AgentProvider>
-                                        <XArrayProvider>
-                                          <ExperimentalFeature>
-                                            <Actors />
-                                          </ExperimentalFeature>
+                          <DatalayerAutoConfigure />
+                          <SettingsProvider>
+                            <MikroWard>
+                              <GeneralMenuProvider>
+                                <PostmanProvider>
+                                  <ReserverProvider>
+                                    <RequesterProvider>
+                                      <MaterProvider>
+                                        <AgentProvider>
+                                          <XArrayProvider>
+                                            <ExperimentalFeature>
+                                              <Actors />
+                                            </ExperimentalFeature>
 
-                                          <DndProvider options={HTML5toTouch}>
                                             <SelectionProvider>
                                               <DialogProvider>
+                                                {" "}
                                                 <ToastContainer
                                                   position="bottom-right"
                                                   theme="dark"
@@ -158,7 +159,6 @@ export const ProtectedApp: React.FC<Props> = () => {
                                                 <MikroGuard>
                                                   <SearchActions />
                                                 </MikroGuard>
-
                                                 <RekuestGuard>
                                                   <NodesExtension />
                                                 </RekuestGuard>
@@ -166,7 +166,6 @@ export const ProtectedApp: React.FC<Props> = () => {
                                                 <MikroGuard>
                                                   <MentionListener />
                                                 </MikroGuard>
-
                                                 <div className="flex flex-col h-screen sm:flex-row-reverse">
                                                   <div className="flex-grow flex bg-gradient-to-b from-back-900 via-back-900 via-back-850 via-back-850 to-back-800 overflow-y-auto">
                                                     <React.Suspense
@@ -181,25 +180,25 @@ export const ProtectedApp: React.FC<Props> = () => {
                                                 </div>
                                               </DialogProvider>
                                             </SelectionProvider>
-                                          </DndProvider>
-                                        </XArrayProvider>
-                                      </AgentProvider>
-                                    </MaterProvider>
-                                  </RequesterProvider>
-                                </ReserverProvider>
-                              </PostmanProvider>
-                            </GeneralMenuProvider>
-                          </MikroWard>
-                        </SettingsProvider>
-                      </MikroProvider>
-                    </PortProvider>
-                  </FlussWard>
-                </FlussProvider>
-              </DatalayerProvider>
-            </ManGuard>
-          </ManProvider>
-        </WidgetRegistryProvider>
-      </RekuestProvider>
+                                          </XArrayProvider>
+                                        </AgentProvider>
+                                      </MaterProvider>
+                                    </RequesterProvider>
+                                  </ReserverProvider>
+                                </PostmanProvider>
+                              </GeneralMenuProvider>
+                            </MikroWard>
+                          </SettingsProvider>
+                        </MikroProvider>
+                      </PortProvider>
+                    </FlussWard>
+                  </FlussProvider>
+                </DatalayerProvider>
+              </ManGuard>
+            </ManProvider>
+          </WidgetRegistryProvider>
+        </RekuestProvider>
+      </DndProvider>
     </HerreGuard>
   );
 };

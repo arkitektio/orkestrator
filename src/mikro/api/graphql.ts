@@ -154,6 +154,7 @@ export type CommentChildrenArgs = {
 };
 
 export enum CommentableModels {
+  BordGraph = 'BORD_GRAPH',
   BordTable = 'BORD_TABLE',
   GrunnlagAnimal = 'GRUNNLAG_ANIMAL',
   GrunnlagAntibody = 'GRUNNLAG_ANTIBODY',
@@ -284,6 +285,7 @@ export type Dataset = {
   createdThrough?: Maybe<LokClient>;
   createdWhile?: Maybe<Scalars['String']>;
   experiments: Array<Experiment>;
+  graphs: Array<Graph>;
   id: Scalars['ID'];
   models: Array<Model>;
   /** The name of the experiment */
@@ -365,6 +367,11 @@ export type DeleteEraResult = {
 
 export type DeleteExperimentResult = {
   __typename?: 'DeleteExperimentResult';
+  id?: Maybe<Scalars['String']>;
+};
+
+export type DeleteGraphResult = {
+  __typename?: 'DeleteGraphResult';
   id?: Maybe<Scalars['String']>;
 };
 
@@ -637,6 +644,24 @@ export type Feature = {
 
 export type GenericObject = Experiment | Feature | Label | Model | Position | Roi | Representation | Sample | Stage;
 
+/** Graph(id, created_by, created_through, created_while, name, used_columns, image) */
+export type Graph = {
+  __typename?: 'Graph';
+  comments?: Maybe<Array<Maybe<Comment>>>;
+  createdBy?: Maybe<User>;
+  createdThrough?: Maybe<LokClient>;
+  createdWhile?: Maybe<Scalars['String']>;
+  datasets: Array<Dataset>;
+  id: Scalars['ID'];
+  image?: Maybe<Scalars['String']>;
+  name: Scalars['String'];
+  pinnedBy: Array<User>;
+  tables: Array<Table>;
+  /** A comma-separated list of tags. */
+  tags?: Maybe<Array<Maybe<Scalars['String']>>>;
+  usedColumns?: Maybe<Scalars['GenericScalar']>;
+};
+
 /**
  * Group
  *
@@ -860,6 +885,7 @@ export enum LinkableModels {
   AdminLogentry = 'ADMIN_LOGENTRY',
   AuthGroup = 'AUTH_GROUP',
   AuthPermission = 'AUTH_PERMISSION',
+  BordGraph = 'BORD_GRAPH',
   BordTable = 'BORD_TABLE',
   ContenttypesContenttype = 'CONTENTTYPES_CONTENTTYPE',
   DbTestmodel = 'DB_TESTMODEL',
@@ -925,6 +951,7 @@ export type LokClient = {
   experimentCreatedThrough: Array<Experiment>;
   featureCreatedThrough: Array<Feature>;
   grantType: LokClientGrantType;
+  graphCreatedThrough: Array<Graph>;
   id: Scalars['ID'];
   instrumentCreatedThrough: Array<Instrument>;
   iss: Scalars['String'];
@@ -1131,6 +1158,8 @@ export type Mutation = {
    *
    */
   createExperiment?: Maybe<Experiment>;
+  /** Creates a Representation */
+  createGraph?: Maybe<Graph>;
   /**
    * Creates an Instrument
    *
@@ -1289,6 +1318,8 @@ export type Mutation = {
    *     This mutation deletes an Experiment and returns the deleted Experiment.
    */
   deleteExperiment?: Maybe<DeleteExperimentResult>;
+  /** Create an experiment (only signed in users) */
+  deleteGraph?: Maybe<DeleteGraphResult>;
   /**
    * Delete Experiment
    *
@@ -1583,6 +1614,17 @@ export type MutationCreateExperimentArgs = {
 
 
 /** The root Mutation */
+export type MutationCreateGraphArgs = {
+  columns?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  createdWhile?: InputMaybe<Scalars['AssignationID']>;
+  image: Scalars['ImageFile'];
+  name?: InputMaybe<Scalars['String']>;
+  tables?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Mutation */
 export type MutationCreateInstrumentArgs = {
   createdWhile?: InputMaybe<Scalars['AssignationID']>;
   detectors?: InputMaybe<Array<InputMaybe<Scalars['GenericScalar']>>>;
@@ -1789,6 +1831,12 @@ export type MutationDeleteEraArgs = {
 
 /** The root Mutation */
 export type MutationDeleteExperimentArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationDeleteGraphArgs = {
   id: Scalars['ID'];
 };
 
@@ -2871,6 +2919,10 @@ export type Query = {
    *
    */
   features?: Maybe<Array<Maybe<Feature>>>;
+  /** Get a single representation by ID */
+  graph?: Maybe<Graph>;
+  /** My samples return all of the users samples attached to the current user */
+  graphs?: Maybe<Array<Maybe<Graph>>>;
   hello?: Maybe<Scalars['String']>;
   /**
    * Get a single instrumes by ID
@@ -3020,6 +3072,8 @@ export type Query = {
    *     the user has access to.
    */
   myexperiments?: Maybe<Array<Maybe<Experiment>>>;
+  /** My samples return all of the users samples attached to the current user */
+  mygraphs?: Maybe<Array<Maybe<Graph>>>;
   mymentions?: Maybe<Array<Maybe<Comment>>>;
   /**
    * My Experiments runs a fast query on the database to return all
@@ -3539,6 +3593,27 @@ export type QueryFeaturesArgs = {
 
 
 /** The root Query */
+export type QueryGraphArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryGraphsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Query */
 export type QueryInstrumentArgs = {
   id?: InputMaybe<Scalars['ID']>;
   name?: InputMaybe<Scalars['String']>;
@@ -3747,6 +3822,21 @@ export type QueryMyexperimentsArgs = {
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Query */
+export type QueryMygraphsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  creator?: InputMaybe<Scalars['ID']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
@@ -4165,6 +4255,7 @@ export type QueryTagsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
+  values?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 };
 
 
@@ -4860,6 +4951,7 @@ export type SamplesEvent = {
 
 /** Sharable Models are models that can be shared amongst users and groups. They representent the models of the DB */
 export enum SharableModels {
+  BordGraph = 'BORD_GRAPH',
   BordTable = 'BORD_TABLE',
   GrunnlagAnimal = 'GRUNNLAG_ANIMAL',
   GrunnlagAntibody = 'GRUNNLAG_ANTIBODY',
@@ -4986,6 +5078,7 @@ export type Table = {
   derivedRepresentations: Array<Representation>;
   /** The Experiment this Table belongs to. */
   experiment?: Maybe<Experiment>;
+  graphs: Array<Graph>;
   id: Scalars['ID'];
   name: Scalars['String'];
   /** Is the table pinned by the active user */
@@ -5318,6 +5411,10 @@ export type DetailExperimentFragment = { __typename?: 'Experiment', id: string, 
 
 export type ListExperimentFragment = { __typename?: 'Experiment', id: string, name: string, description?: string | null };
 
+export type ListGraphFragment = { __typename?: 'Graph', id: string, name: string, image?: string | null, usedColumns?: any | null, tables: Array<{ __typename?: 'Table', id: string, name: string }> };
+
+export type DetailGraphFragment = { __typename?: 'Graph', id: string, name: string, image?: string | null, usedColumns?: any | null, tables: Array<{ __typename?: 'Table', id: string, name: string }> };
+
 export type InstrumentFragment = { __typename?: 'Instrument', id: string, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null, name?: string | null } } | null> | null };
 
 export type ListInstrumentFragment = { __typename?: 'Instrument', id: string, name: string };
@@ -5378,7 +5475,7 @@ export type ListStageFragment = { __typename?: 'Stage', id: string, tags?: Array
 
 export type ColumnFragment = { __typename?: 'Column', name?: string | null, fieldName: string, pandasType?: PandasDType | null, numpyType?: string | null, metadata?: any | null };
 
-export type DetailTableFragment = { __typename?: 'Table', id: string, name: string, repOrigins: Array<{ __typename?: 'Representation', id: string, name?: string | null }>, sample?: { __typename?: 'Sample', id: string } | null, experiment?: { __typename?: 'Experiment', id: string } | null };
+export type DetailTableFragment = { __typename?: 'Table', id: string, name: string, repOrigins: Array<{ __typename?: 'Representation', id: string, name?: string | null }>, sample?: { __typename?: 'Sample', id: string } | null, experiment?: { __typename?: 'Experiment', id: string } | null, graphs: Array<{ __typename?: 'Graph', id: string, name: string, image?: string | null, usedColumns?: any | null, tables: Array<{ __typename?: 'Table', id: string, name: string }> }> };
 
 export type ListTableFragment = { __typename?: 'Table', id: string, name: string, columns?: Array<{ __typename?: 'Column', name?: string | null, fieldName: string, pandasType?: PandasDType | null, numpyType?: string | null, metadata?: any | null } | null> | null, repOrigins: Array<{ __typename?: 'Representation', id: string }>, sample?: { __typename?: 'Sample', id: string } | null, experiment?: { __typename?: 'Experiment', id: string } | null };
 
@@ -5591,6 +5688,13 @@ export type UnassociateFilesMutationVariables = Exact<{
 
 
 export type UnassociateFilesMutation = { __typename?: 'Mutation', unassociateFiles?: { __typename?: 'Experiment', id: string, name: string, description?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, omeroFiles: Array<{ __typename?: 'OmeroFile', id: string, name: string }> } | null };
+
+export type DeleteGraphMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DeleteGraphMutation = { __typename?: 'Mutation', deleteGraph?: { __typename?: 'DeleteGraphResult', id?: string | null } | null };
 
 export type LinkMutationVariables = Exact<{
   relation: Scalars['ID'];
@@ -6007,6 +6111,30 @@ export type GlobalSearchQueryVariables = Exact<{
 
 export type GlobalSearchQuery = { __typename?: 'Query', experiments?: Array<{ __typename?: 'Experiment', id: string, name: string, description?: string | null } | null> | null, samples?: Array<{ __typename?: 'Sample', id: string, name: string } | null> | null, datasets?: Array<{ __typename?: 'Dataset', id: string, name: string } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, representations?: Array<{ __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } | null> | null, files?: Array<{ __typename?: 'OmeroFile', id: string, name: string } | null> | null };
 
+export type MyGraphsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+}>;
+
+
+export type MyGraphsQuery = { __typename?: 'Query', mygraphs?: Array<{ __typename?: 'Graph', id: string, name: string, image?: string | null, usedColumns?: any | null, tables: Array<{ __typename?: 'Table', id: string, name: string }> } | null> | null };
+
+export type DetailGraphQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailGraphQuery = { __typename?: 'Query', graph?: { __typename?: 'Graph', id: string, name: string, image?: string | null, usedColumns?: any | null, tables: Array<{ __typename?: 'Table', id: string, name: string }> } | null };
+
+export type SearchGraphsQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']>;
+  values?: InputMaybe<Array<Scalars['ID']>>;
+}>;
+
+
+export type SearchGraphsQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'Model', label: string, value: string } | null> | null };
+
 export type DetailInstrumentQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
@@ -6383,6 +6511,7 @@ export type MyStagesQuery = { __typename?: 'Query', mystages?: Array<{ __typenam
 
 export type StageSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
+  values?: InputMaybe<Array<Scalars['ID']>>;
 }>;
 
 
@@ -6397,7 +6526,7 @@ export type DetailTableQueryVariables = Exact<{
 }>;
 
 
-export type DetailTableQuery = { __typename?: 'Query', table?: { __typename?: 'Table', query?: Array<any | null> | null, id: string, name: string, columns?: Array<{ __typename?: 'Column', name?: string | null, fieldName: string, pandasType?: PandasDType | null, numpyType?: string | null, metadata?: any | null } | null> | null, repOrigins: Array<{ __typename?: 'Representation', id: string, name?: string | null }>, sample?: { __typename?: 'Sample', id: string } | null, experiment?: { __typename?: 'Experiment', id: string } | null } | null };
+export type DetailTableQuery = { __typename?: 'Query', table?: { __typename?: 'Table', query?: Array<any | null> | null, id: string, name: string, columns?: Array<{ __typename?: 'Column', name?: string | null, fieldName: string, pandasType?: PandasDType | null, numpyType?: string | null, metadata?: any | null } | null> | null, repOrigins: Array<{ __typename?: 'Representation', id: string, name?: string | null }>, sample?: { __typename?: 'Sample', id: string } | null, experiment?: { __typename?: 'Experiment', id: string } | null, graphs: Array<{ __typename?: 'Graph', id: string, name: string, image?: string | null, usedColumns?: any | null, tables: Array<{ __typename?: 'Table', id: string, name: string }> }> } | null };
 
 export type MyTablesQueryVariables = Exact<{
   createdDay?: InputMaybe<Scalars['DateTime']>;
@@ -6410,6 +6539,7 @@ export type MyTablesQuery = { __typename?: 'Query', mytables?: Array<{ __typenam
 
 export type TagSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
+  values?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
 }>;
 
 
@@ -6812,6 +6942,18 @@ export const DetailExperimentFragmentDoc = gql`
     email
   }
   omeroFiles {
+    id
+    name
+  }
+}
+    `;
+export const DetailGraphFragmentDoc = gql`
+    fragment DetailGraph on Graph {
+  id
+  name
+  image
+  usedColumns
+  tables {
     id
     name
   }
@@ -7519,6 +7661,18 @@ export const ListStageFragmentDoc = gql`
   kind
 }
     ${ListInstrumentFragmentDoc}`;
+export const ListGraphFragmentDoc = gql`
+    fragment ListGraph on Graph {
+  id
+  name
+  image
+  usedColumns
+  tables {
+    id
+    name
+  }
+}
+    `;
 export const DetailTableFragmentDoc = gql`
     fragment DetailTable on Table {
   id
@@ -7533,8 +7687,11 @@ export const DetailTableFragmentDoc = gql`
   experiment {
     id
   }
+  graphs {
+    ...ListGraph
+  }
 }
-    `;
+    ${ListGraphFragmentDoc}`;
 export const ColumnFragmentDoc = gql`
     fragment Column on Column {
   name
@@ -8464,6 +8621,39 @@ export function useUnassociateFilesMutation(baseOptions?: Apollo.MutationHookOpt
 export type UnassociateFilesMutationHookResult = ReturnType<typeof useUnassociateFilesMutation>;
 export type UnassociateFilesMutationResult = Apollo.MutationResult<UnassociateFilesMutation>;
 export type UnassociateFilesMutationOptions = Apollo.BaseMutationOptions<UnassociateFilesMutation, UnassociateFilesMutationVariables>;
+export const DeleteGraphDocument = gql`
+    mutation DeleteGraph($id: ID!) {
+  deleteGraph(id: $id) {
+    id
+  }
+}
+    `;
+export type DeleteGraphMutationFn = Apollo.MutationFunction<DeleteGraphMutation, DeleteGraphMutationVariables>;
+
+/**
+ * __useDeleteGraphMutation__
+ *
+ * To run a mutation, you first call `useDeleteGraphMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteGraphMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteGraphMutation, { data, loading, error }] = useDeleteGraphMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteGraphMutation(baseOptions?: Apollo.MutationHookOptions<DeleteGraphMutation, DeleteGraphMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteGraphMutation, DeleteGraphMutationVariables>(DeleteGraphDocument, options);
+      }
+export type DeleteGraphMutationHookResult = ReturnType<typeof useDeleteGraphMutation>;
+export type DeleteGraphMutationResult = Apollo.MutationResult<DeleteGraphMutation>;
+export type DeleteGraphMutationOptions = Apollo.BaseMutationOptions<DeleteGraphMutation, DeleteGraphMutationVariables>;
 export const LinkDocument = gql`
     mutation Link($relation: ID!, $leftType: LinkableModels!, $leftId: ID!, $rightType: LinkableModels!, $rightId: ID!, $context: ID) {
   link(
@@ -10407,6 +10597,115 @@ export function useGlobalSearchLazyQuery(baseOptions?: Apollo.LazyQueryHookOptio
 export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
 export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
 export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
+export const MyGraphsDocument = gql`
+    query MyGraphs($limit: Int, $offset: Int, $createdDay: DateTime) {
+  mygraphs(limit: $limit, offset: $offset, createdDay: $createdDay) {
+    ...ListGraph
+  }
+}
+    ${ListGraphFragmentDoc}`;
+
+/**
+ * __useMyGraphsQuery__
+ *
+ * To run a query within a React component, call `useMyGraphsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyGraphsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyGraphsQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *      createdDay: // value for 'createdDay'
+ *   },
+ * });
+ */
+export function useMyGraphsQuery(baseOptions?: Apollo.QueryHookOptions<MyGraphsQuery, MyGraphsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyGraphsQuery, MyGraphsQueryVariables>(MyGraphsDocument, options);
+      }
+export function useMyGraphsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyGraphsQuery, MyGraphsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyGraphsQuery, MyGraphsQueryVariables>(MyGraphsDocument, options);
+        }
+export type MyGraphsQueryHookResult = ReturnType<typeof useMyGraphsQuery>;
+export type MyGraphsLazyQueryHookResult = ReturnType<typeof useMyGraphsLazyQuery>;
+export type MyGraphsQueryResult = Apollo.QueryResult<MyGraphsQuery, MyGraphsQueryVariables>;
+export const DetailGraphDocument = gql`
+    query DetailGraph($id: ID!) {
+  graph(id: $id) {
+    ...DetailGraph
+  }
+}
+    ${DetailGraphFragmentDoc}`;
+
+/**
+ * __useDetailGraphQuery__
+ *
+ * To run a query within a React component, call `useDetailGraphQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailGraphQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailGraphQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailGraphQuery(baseOptions: Apollo.QueryHookOptions<DetailGraphQuery, DetailGraphQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailGraphQuery, DetailGraphQueryVariables>(DetailGraphDocument, options);
+      }
+export function useDetailGraphLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailGraphQuery, DetailGraphQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailGraphQuery, DetailGraphQueryVariables>(DetailGraphDocument, options);
+        }
+export type DetailGraphQueryHookResult = ReturnType<typeof useDetailGraphQuery>;
+export type DetailGraphLazyQueryHookResult = ReturnType<typeof useDetailGraphLazyQuery>;
+export type DetailGraphQueryResult = Apollo.QueryResult<DetailGraphQuery, DetailGraphQueryVariables>;
+export const SearchGraphsDocument = gql`
+    query SearchGraphs($search: String, $values: [ID!]) {
+  options: models(name: $search, ids: $values, limit: 10) {
+    label: name
+    value: id
+  }
+}
+    `;
+
+/**
+ * __useSearchGraphsQuery__
+ *
+ * To run a query within a React component, call `useSearchGraphsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchGraphsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchGraphsQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      values: // value for 'values'
+ *   },
+ * });
+ */
+export function useSearchGraphsQuery(baseOptions?: Apollo.QueryHookOptions<SearchGraphsQuery, SearchGraphsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SearchGraphsQuery, SearchGraphsQueryVariables>(SearchGraphsDocument, options);
+      }
+export function useSearchGraphsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SearchGraphsQuery, SearchGraphsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SearchGraphsQuery, SearchGraphsQueryVariables>(SearchGraphsDocument, options);
+        }
+export type SearchGraphsQueryHookResult = ReturnType<typeof useSearchGraphsQuery>;
+export type SearchGraphsLazyQueryHookResult = ReturnType<typeof useSearchGraphsLazyQuery>;
+export type SearchGraphsQueryResult = Apollo.QueryResult<SearchGraphsQuery, SearchGraphsQueryVariables>;
 export const DetailInstrumentDocument = gql`
     query DetailInstrument($id: ID!) {
   instrument(id: $id) {
@@ -12346,8 +12645,8 @@ export type MyStagesQueryHookResult = ReturnType<typeof useMyStagesQuery>;
 export type MyStagesLazyQueryHookResult = ReturnType<typeof useMyStagesLazyQuery>;
 export type MyStagesQueryResult = Apollo.QueryResult<MyStagesQuery, MyStagesQueryVariables>;
 export const StageSearchDocument = gql`
-    query StageSearch($search: String) {
-  options: stages(name: $search, limit: 30) {
+    query StageSearch($search: String, $values: [ID!]) {
+  options: stages(name: $search, ids: $values, limit: 30) {
     value: id
     label: name
   }
@@ -12367,6 +12666,7 @@ export const StageSearchDocument = gql`
  * const { data, loading, error } = useStageSearchQuery({
  *   variables: {
  *      search: // value for 'search'
+ *      values: // value for 'values'
  *   },
  * });
  */
@@ -12463,8 +12763,8 @@ export type MyTablesQueryHookResult = ReturnType<typeof useMyTablesQuery>;
 export type MyTablesLazyQueryHookResult = ReturnType<typeof useMyTablesLazyQuery>;
 export type MyTablesQueryResult = Apollo.QueryResult<MyTablesQuery, MyTablesQueryVariables>;
 export const TagSearchDocument = gql`
-    query TagSearch($search: String) {
-  options: tags(name: $search, limit: 20) {
+    query TagSearch($search: String, $values: [String]) {
+  options: tags(name: $search, values: $values, limit: 20) {
     value: name
     label: slug
   }
@@ -12484,6 +12784,7 @@ export const TagSearchDocument = gql`
  * const { data, loading, error } = useTagSearchQuery({
  *   variables: {
  *      search: // value for 'search'
+ *      values: // value for 'values'
  *   },
  * });
  */

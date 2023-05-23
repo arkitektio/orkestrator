@@ -57,8 +57,8 @@ export const ImportActor: React.FC<Props> = (props) => {
     console.log("Registering");
     if (client && config && window.__TAURI__) {
       return register(
+        "streams-file-in-dataset",
         {
-          interface: "stream-files",
           name: "Stream Files into Dataset",
           description: "Stream files in the orkestrator folder",
           args: [
@@ -81,6 +81,7 @@ export const ImportActor: React.FC<Props> = (props) => {
             },
           ],
           portGroups: [],
+          interfaces: [],
         },
         () => ({
           onAssign: async (assignation) => {
