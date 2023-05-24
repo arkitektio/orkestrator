@@ -8918,6 +8918,22 @@
                 "deprecationReason": null
               },
               {
+                "name": "roiOrigins",
+                "description": "The Rois that were used to define this position",
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "stage",
                 "description": "The stage this position belongs to",
                 "type": {
@@ -15612,6 +15628,30 @@
                   "ofType": {
                     "kind": "OBJECT",
                     "name": "User",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "roiOrigins",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "ROI",
                     "ofType": null
                   }
                 }
@@ -24343,6 +24383,30 @@
                 "kind": "OBJECT",
                 "name": "User",
                 "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "derivedPositions",
+            "description": "",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "Position",
+                    "ofType": null
+                  }
+                }
               }
             },
             "isDeprecated": false,

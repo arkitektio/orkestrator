@@ -67,6 +67,19 @@ export const ReactiveEditNodeWidget: React.FC<ReactiveNodeProps> = ({
             </svg>
           )}
         {implementation &&
+          [ReactiveImplementationModelInput.All].includes(implementation) && (
+            <svg height="40" width="40">
+              <polygon
+                points="0,20 40,0 40,40"
+                style={{
+                  strokeWidth: 1,
+                  stroke: "white",
+                  fill: "var(--color-primary-300)",
+                }}
+              />
+            </svg>
+          )}
+        {implementation &&
           [
             ReactiveImplementationModelInput.Chunk,
             ReactiveImplementationModelInput.BufferComplete,

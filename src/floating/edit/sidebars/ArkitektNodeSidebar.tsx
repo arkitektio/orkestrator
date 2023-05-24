@@ -19,7 +19,7 @@ import { SidebarProps } from "./types";
 export const ArkitektNodeSidebar = (
   props: SidebarProps<FlowNode<ArkitektNodeData>>
 ) => {
-  const { updateNodeExtras } = useEditRiver();
+  const { updateNodeExtras, globals } = useEditRiver();
   const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
     variables: { hash: props.node.data.hash },
   });
@@ -29,6 +29,17 @@ export const ArkitektNodeSidebar = (
     variables: { hash: props.node.data.hash },
     fetchPolicy: "network-only",
   });
+
+  const omitKeys = props.node.data.instream.at(0)?.map((s) => s?.key) || [];
+  const omitKeys2 =
+    globals
+      ?.reduce(
+        (a, b) => a.concat(b?.toKeys.filter(notEmpty) || []),
+        [] as string[]
+      )
+      .filter((x) => x.startsWith(props.node.id))
+      .map((x) => x.split(".").at(1)) || [];
+  const omitKeys3 = omitKeys.concat(omitKeys2).filter(notEmpty);
 
   useEffect(() => {
     if (node_data) {
@@ -54,13 +65,7 @@ export const ArkitektNodeSidebar = (
           {node_data?.node?.id && (
             <ConstantsForm
               node={node_data?.node.id}
-              omit={
-                (props.node.data.instream[0] &&
-                  props.node.data.instream[0].map(
-                    (s) => s?.key || "oisnosins"
-                  )) ||
-                []
-              }
+              omit={omitKeys3}
               autoSubmit={true}
               onSubmit={async (values, values_as_dict) => {
                 updateNodeExtras(props.node.id, {

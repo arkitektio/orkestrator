@@ -23,6 +23,7 @@ fragment ListSnapshot on Snapshot {
 fragment Run on Run {
   id
   status
+  assignation
   snapshots {
     id
     status

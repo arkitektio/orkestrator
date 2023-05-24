@@ -1,13 +1,14 @@
 import React from "react";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { SelfActions } from "../../components/SelfActions";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { Representation } from "../../linker";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
-import { CommentableModels, useDetailRoiQuery } from "../api/graphql";
 import { withMikro } from "../MikroContext";
+import { CommentableModels, useDetailRoiQuery } from "../api/graphql";
+import { PositionCard } from "./cards/PositionCard";
 import { RepresentationCard } from "./cards/RepresentationCard";
 
 export type ISampleProps = {
@@ -60,6 +61,15 @@ const Roi: React.FC<ISampleProps> = ({ id }) => {
                     rep={rep}
                     mates={[mate(rep)]}
                   />
+                ))}
+            </ResponsiveContainerGrid>
+
+            <div className="mt-2">Derived Positions </div>
+            <ResponsiveContainerGrid>
+              {data?.roi?.derivedPositions
+                ?.filter(notEmpty)
+                .map((rep, index) => (
+                  <PositionCard key={index} position={rep} mates={[]} />
                 ))}
             </ResponsiveContainerGrid>
           </div>

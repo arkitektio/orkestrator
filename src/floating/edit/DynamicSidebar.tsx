@@ -1,14 +1,13 @@
-import { useEditRiver } from "./context";
-import { ArkitektNodeSidebar } from "./sidebars/ArkitektNodeSidebar";
-import { EditSidebar } from "./components/EditSidebar";
-import { ReactiveNodeSidebar } from "./sidebars/ReactiveNodeSidebar";
-import { ArgNodeSidebar } from "./sidebars/ArgNodeSidebar";
-import { ReturnNodeSidebar } from "./sidebars/ReturnNodeSidebar";
-import { CanvasSidebar } from "./sidebars/CanvasSidebar";
 import { useEffect, useState } from "react";
 import { FlowNode } from "../types";
-import { useNodes } from "reactflow";
+import { useEditRiver } from "./context";
+import { ArgNodeSidebar } from "./sidebars/ArgNodeSidebar";
+import { ArkitektNodeSidebar } from "./sidebars/ArkitektNodeSidebar";
+import { CanvasSidebar } from "./sidebars/CanvasSidebar";
+import { KwargNodeSidebar } from "./sidebars/KwargNodeSidebar";
 import { LocalNodeSidebar } from "./sidebars/LocalNodeSidebar";
+import { ReactiveNodeSidebar } from "./sidebars/ReactiveNodeSidebar";
+import { ReturnNodeSidebar } from "./sidebars/ReturnNodeSidebar";
 
 export const DynamicSidebar = () => {
   const { selectedNode, nodes, internalSignal } = useEditRiver();
@@ -35,6 +34,7 @@ export const DynamicSidebar = () => {
       {node?.type == "ReactiveNode" && <ReactiveNodeSidebar node={node} />}
       {node?.type == "ArgNode" && <ArgNodeSidebar node={node} />}
       {node?.type == "ReturnNode" && <ReturnNodeSidebar node={node} />}
+      {node?.type == "KwargNode" && <KwargNodeSidebar node={node} />}
     </>
   );
 };

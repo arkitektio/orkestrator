@@ -13,6 +13,9 @@ fragment Position on Position {
       ...ListRepresentation
     }
   }
+  roiOrigins {
+    ...RepRoi
+  }
 }
 
 fragment ListPosition on Position {

@@ -310,6 +310,18 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
   }
 
   if (
+    [ReactiveImplementationModelInput.All].includes(
+      targetNode.data.implementation
+    )
+  ) {
+    new_instream = [sourceStream];
+    new_outstream = [
+      sourceStream.map((x) => ({ ...x, nullable: false })),
+      targetNode.data.outstream.at(1),
+    ];
+  }
+
+  if (
     [ReactiveImplementationModelInput.If].includes(
       targetNode.data.implementation
     )
@@ -682,6 +694,46 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
   }
 
   if (
+    [ReactiveImplementationModelInput.All].includes(
+      sourceNode.data.implementation
+    )
+  ) {
+    let new_reak_instreams = [targetStream];
+    let new_reak_outstreams = [targetStream, sourceNode.data.outstream[0]];
+    // check which edges are wrong now
+
+    let wrongEdges = calculateWrongEdges(
+      edges,
+      sourceNode,
+      new_reak_instreams,
+      new_reak_outstreams
+    );
+
+    return {
+      nodes: nodes.map((node) =>
+        node.id === sourceNode.id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                instream: new_reak_instreams,
+                oustream: new_reak_outstreams,
+              },
+            }
+          : node
+      ),
+      edges: addEdge(
+        {
+          ...params,
+          data: { stream: targetStream.map(flussPortToStreamItem) },
+          type: "LabeledEdge",
+        },
+        edges
+      ).filter((e) => !wrongEdges.includes(e.id)),
+    };
+  }
+
+  if (
     [ReactiveImplementationModelInput.Chunk].includes(
       sourceNode.data.implementation
     )
@@ -966,12 +1018,18 @@ export const reak_to_reak: Connector<ReactiveNodeData, ReactiveNodeData> = ({
   let outtypes = sourceTypes;
   let intypes = targetTypes;
 
+  let sourceUnset = sourceStream.some((i) => i.kind == StreamKind.Unset);
+  let targetUnset = targetStream.some((i) => i.kind == StreamKind.Unset);
+
+  if (sourceUnset && targetUnset) {
+    return {
+      errors:
+        "both source and target are unset, this should not happen, please report this as a bug",
+    };
+  }
+
   return {
-    errors: [
-      {
-        message: "nOt implemented yet",
-      },
-    ],
+    errors: "Not implemented yet,....",
   };
 };
 

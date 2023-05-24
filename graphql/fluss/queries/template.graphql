@@ -13,9 +13,6 @@ query DetailReactiveTemplate(
 ) {
   reactivetemplate(id: $id, implementation: $implementation) {
     ...ReactiveTemplate
-    constants {
-      ...Constant
-    }
   }
 }
 

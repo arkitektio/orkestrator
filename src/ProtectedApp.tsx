@@ -150,6 +150,7 @@ export const ProtectedApp: React.FC<Props> = () => {
                                                 <ToastContainer
                                                   position="bottom-right"
                                                   theme="dark"
+                                                  pauseOnFocusLoss={false}
                                                 />
                                                 <ComponentPreview
                                                   text={"sdfsdf"}

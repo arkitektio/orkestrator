@@ -12,4 +12,7 @@ fragment ReactiveTemplate on ReactiveTemplate {
   implementation
   description
   id
+  constants {
+    ...Port
+  }
 }

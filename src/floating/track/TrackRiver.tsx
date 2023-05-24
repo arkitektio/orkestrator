@@ -117,7 +117,7 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
                 )}
 
                 <Link
-                  to={`/user/mikro/provenances/${id}`}
+                  to={`/user/mikro/provenances/${data?.run?.assignation}`}
                   className="flex-initial  my-auto ml-3 dark:text-white cursor-pointer"
                 >
                   Prov

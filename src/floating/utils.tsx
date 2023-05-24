@@ -2,6 +2,8 @@ import {
   EdgeInput,
   FlowFragment,
   FlowNodeFragment,
+  GlobalFragment,
+  GlobalInput,
   NodeInput,
   PortChildFragment,
   PortFragment,
@@ -47,6 +49,10 @@ export const flussPortToStreamItem = (port: PortFragment): StreamItem => {
     scope: port.scope,
     child: port.child && flussPortChildToStreamItem(port.child),
   };
+};
+
+export const globalArgKey = (id: string, key: string) => {
+  return `${id}.${key}`;
 };
 
 export const rekuestChildPortToFluss = (
@@ -248,6 +254,27 @@ export const flowedges_to_edges = (flowedges: FlowEdge[]): EdgeInput[] => {
             target,
             targetHandle: targetHandle || "args",
             stream: data?.stream.filter(notEmpty).map(noTypename) || [],
+          };
+          return input;
+        }
+        return undefined;
+      })
+      .filter(notEmpty) || [];
+
+  return edges;
+};
+
+export const flowglobals_to_globals = (
+  globals: (GlobalFragment | null | undefined)[] | null | undefined
+): GlobalInput[] => {
+  const edges =
+    globals
+      ?.map((global) => {
+        console.log(global);
+        if (global) {
+          const input: GlobalInput = {
+            toKeys: global.toKeys,
+            port: noTypename(global.port),
           };
           return input;
         }

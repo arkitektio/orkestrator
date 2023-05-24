@@ -32,6 +32,7 @@ import {
   Table,
 } from "../../linker";
 import { UserEmblem } from "../../lok/components/UserEmblem";
+import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import { useDeleteRoiMate } from "../../mates/roi/useDeleteRoiMate";
 import { useMikro, withMikro } from "../MikroContext";
 import {
@@ -46,7 +47,6 @@ import {
   UpdateRepresentationMutationVariables,
   WatchRoisDocument,
   WatchRoisSubscriptionResult,
-  useDeleteRepresentationMutation,
   useDeleteRoiMutation,
   useDetailRepresentationQuery,
   usePinRepresentationMutation,
@@ -109,7 +109,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
     useUpdateRepresentationMutation
   )();
 
-  const [deleteRepresentation] = withMikro(useDeleteRepresentationMutation)();
+  const deleteRepresentationMate = useDeleteRepresentationMate();
 
   const [deleteRoi] = withMikro(useDeleteRoiMutation)();
 
@@ -446,10 +446,32 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     </div>
                   </div>
                 )}
-                {data?.representation?.omero?.affineTransformation &&
-                  JSON.stringify(
-                    data?.representation?.omero?.affineTransformation
-                  )}
+                {data?.representation?.omero?.affineTransformation && (
+                  <>
+                    <table className="table-auto mb-2 border-1 border rounded-md border-gray-300 p-2">
+                      <thead>
+                        <tr>
+                          <th className="text-md text-black ">x</th>
+                          <th className="text-md text-black ">y</th>
+                          <th className="text-md text-black ">z</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data?.representation?.omero?.affineTransformation.map(
+                          (val: number[], index: any) => (
+                            <tr>
+                              {val.map((val2, index2) => (
+                                <td className="text-md text-black ">
+                                  {val2.toFixed(2)}
+                                </td>
+                              ))}
+                            </tr>
+                          )
+                        )}
+                      </tbody>
+                    </table>
+                  </>
+                )}
 
                 {data?.representation?.omero?.positions
                   .filter(notEmpty)
@@ -807,6 +829,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                                     "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95))",
                                 }
                           }
+                          mates={[deleteRepresentationMate(rep)]}
                         >
                           <Representation.DetailLink object={rep.id}>
                             {rep.name}

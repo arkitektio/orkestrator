@@ -1,16 +1,17 @@
 import React from "react";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { PositionCanvas } from "../../components/PositionCanvas";
 import { SelfActions } from "../../components/SelfActions";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SaveParentSize } from "../../layout/SaveParentSize";
 import { Stage } from "../../linker";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
-import { CommentableModels, useDetailPositionQuery } from "../api/graphql";
 import { withMikro } from "../MikroContext";
+import { CommentableModels, useDetailPositionQuery } from "../api/graphql";
 import { RepresentationCard } from "./cards/RepresentationCard";
+import { RoiCard } from "./cards/RoiCard";
 
 export type PositionProps = {
   id: string;
@@ -91,6 +92,14 @@ const Position: React.FC<PositionProps> = ({ id }) => {
                   mates={[deleteRepresentationMate(omero.representation)]}
                 />
               ))}
+            </ResponsiveContainerGrid>
+            <div className="font-bold">Derived from </div>
+            <ResponsiveContainerGrid>
+              {data?.position?.roiOrigins
+                ?.filter(notEmpty)
+                .map((roi, index) => (
+                  <RoiCard roi={roi} mates={[]} />
+                ))}
             </ResponsiveContainerGrid>
           </div>
         </div>

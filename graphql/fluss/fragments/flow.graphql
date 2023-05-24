@@ -107,7 +107,6 @@ fragment Port on Port {
   identifier
   scope
   kind
-  name
   description
   assignWidget {
     ...Widget
@@ -186,13 +185,10 @@ fragment FlowEdge on FlowEdge {
 }
 
 fragment Global on Global {
-  locked
-  key
-  value
-  mapped
-  identifier
-  typename
-  widget
+  toKeys
+  port {
+    ...Port
+  }
 }
 
 fragment StreamItemChild on StreamItemChild {

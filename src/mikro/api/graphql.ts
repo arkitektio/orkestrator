@@ -1695,6 +1695,7 @@ export type MutationCreatePositionArgs = {
   createdWhile?: InputMaybe<Scalars['AssignationID']>;
   creator?: InputMaybe<Scalars['ID']>;
   name?: InputMaybe<Scalars['String']>;
+  roiOrigins?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   stage: Scalars['ID'];
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   tolerance?: InputMaybe<Scalars['Float']>;
@@ -2700,6 +2701,7 @@ export type Position = {
   pinned?: Maybe<Scalars['Boolean']>;
   /** The users that have pinned the position */
   pinnedBy: Array<User>;
+  roiOrigins: Array<Roi>;
   stage: Stage;
   /** A comma-separated list of tags. */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
@@ -4388,6 +4390,7 @@ export type Roi = {
   createdWhile?: Maybe<Scalars['String']>;
   /** The user that created the ROI */
   creator: User;
+  derivedPositions: Array<Position>;
   derivedRepresentations: Array<Representation>;
   id: Scalars['ID'];
   /** The label of the ROI (for UI) */
@@ -5447,7 +5450,7 @@ export type PlotFragment = { __typename?: 'Plot', id: string, query: string, nam
 
 export type ListPlotFragment = { __typename?: 'Plot', id: string, name: string, creator: { __typename?: 'User', username: string } };
 
-export type PositionFragment = { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null };
+export type PositionFragment = { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, roiOrigins: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null }> };
 
 export type ListPositionFragment = { __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null };
 
@@ -5463,7 +5466,7 @@ export type DetailRepresentationFragment = { __typename?: 'Representation', id: 
 
 export type RepRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null };
 
-export type DetailRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, label?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
+export type DetailRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, label?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, derivedPositions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
 
 export type DetailSampleFragment = { __typename?: 'Sample', name: string, id: string, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', id: string, name: string }>, representations?: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> };
 
@@ -5796,7 +5799,7 @@ export type CreatePositionMutationVariables = Exact<{
 }>;
 
 
-export type CreatePositionMutation = { __typename?: 'Mutation', createPosition?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null } | null };
+export type CreatePositionMutation = { __typename?: 'Mutation', createPosition?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, roiOrigins: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null }> } | null };
 
 export type DeletePositionMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -6285,7 +6288,7 @@ export type DetailPositionQueryVariables = Exact<{
 }>;
 
 
-export type DetailPositionQuery = { __typename?: 'Query', position?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null } | null };
+export type DetailPositionQuery = { __typename?: 'Query', position?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, roiOrigins: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null }> } | null };
 
 export type PositionSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -6407,7 +6410,7 @@ export type DetailRoiQueryVariables = Exact<{
 }>;
 
 
-export type DetailRoiQuery = { __typename?: 'Query', roi?: { __typename?: 'ROI', id: string, type: RoiType, label?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+export type DetailRoiQuery = { __typename?: 'Query', roi?: { __typename?: 'ROI', id: string, type: RoiType, label?: string | null, tags?: Array<string | null> | null, createdAt: any, pinned?: boolean | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string }, representation?: { __typename?: 'Representation', id: string, name?: string | null, variety: RepresentationVariety, tags?: Array<string | null> | null, shape?: Array<number> | null, creator?: { __typename?: 'User', id: string } | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null, derivedRepresentations: Array<{ __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null }>, derivedPositions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null } | null> | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type DetailSampleQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -7290,6 +7293,28 @@ export const StageFragmentDoc = gql`
 }
     ${ListPositionFragmentDoc}
 ${ListInstrumentFragmentDoc}`;
+export const RepRoiFragmentDoc = gql`
+    fragment RepRoi on ROI {
+  id
+  type
+  createdAt
+  creator {
+    id
+    sub
+  }
+  vectors {
+    x
+    y
+    z
+    t
+    c
+  }
+  tags
+  pinned
+  label
+  createdWhile
+}
+    `;
 export const PositionFragmentDoc = gql`
     fragment Position on Position {
   id
@@ -7306,9 +7331,13 @@ export const PositionFragmentDoc = gql`
       ...ListRepresentation
     }
   }
+  roiOrigins {
+    ...RepRoi
+  }
 }
     ${StageFragmentDoc}
-${ListRepresentationFragmentDoc}`;
+${ListRepresentationFragmentDoc}
+${RepRoiFragmentDoc}`;
 export const DetailRelationFragmentDoc = gql`
     fragment DetailRelation on Relation {
   name
@@ -7456,28 +7485,6 @@ export const OmeroFragmentDoc = gql`
   scale
 }
     `;
-export const RepRoiFragmentDoc = gql`
-    fragment RepRoi on ROI {
-  id
-  type
-  createdAt
-  creator {
-    id
-    sub
-  }
-  vectors {
-    x
-    y
-    z
-    t
-    c
-  }
-  tags
-  pinned
-  label
-  createdWhile
-}
-    `;
 export const DetailRepresentationFragmentDoc = gql`
     fragment DetailRepresentation on Representation {
   id
@@ -7602,6 +7609,9 @@ export const DetailRoiFragmentDoc = gql`
   derivedRepresentations {
     ...ListRepresentation
   }
+  derivedPositions {
+    ...ListPosition
+  }
   createdAt
   vectors {
     x
@@ -7615,7 +7625,8 @@ export const DetailRoiFragmentDoc = gql`
   }
   createdWhile
 }
-    ${ListRepresentationFragmentDoc}`;
+    ${ListRepresentationFragmentDoc}
+${ListPositionFragmentDoc}`;
 export const DetailSampleFragmentDoc = gql`
     fragment DetailSample on Sample {
   name

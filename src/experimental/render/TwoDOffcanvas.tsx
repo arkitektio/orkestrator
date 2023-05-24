@@ -8,7 +8,7 @@ import {
   BsFillSquareFill,
   BsSquare,
 } from "react-icons/bs";
-import { Layer, Line, Rect, Stage } from "react-konva";
+import { Circle, Layer, Line, Rect, Stage } from "react-konva";
 import { useNavigate } from "react-router";
 import ReactSlider from "react-slider";
 import { useDebounce } from "use-debounce";
@@ -542,6 +542,15 @@ export const RoiCanvas = ({
         r.vectors?.at(0)?.t == t
     ) ?? [];
 
+  let points =
+    representation.rois?.filter(
+      (r) =>
+        r?.type === RoiType.Point &&
+        r.vectors?.at(0)?.z == z &&
+        r.vectors?.at(0)?.c == c &&
+        r.vectors?.at(0)?.t == t
+    ) ?? [];
+
   const translate = (
     x: number | null | undefined,
     y: number | null | undefined
@@ -672,6 +681,26 @@ export const RoiCanvas = ({
           return (
             <Line
               points={vectors.flat()}
+              closed={true}
+              key={index}
+              stroke="white"
+              onMouseDown={(e) => {
+                console.log(e);
+                navigate(Roi.linkBuilder(r.id));
+              }}
+              strokeWidth={4}
+            />
+          );
+        })}
+        {points.filter(notEmpty).map((r, index) => {
+          let vectors = r?.vectors?.map((v) => translate(v?.x, v?.y)) ?? [
+            [0, 0],
+          ];
+          return (
+            <Circle
+              x={vectors[0][0]}
+              y={vectors[0][1]}
+              radius={5}
               closed={true}
               key={index}
               stroke="white"

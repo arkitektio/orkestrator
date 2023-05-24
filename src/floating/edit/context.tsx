@@ -22,6 +22,7 @@ export type EditRiverContextType = {
   saveDiagram: () => void;
   exportDiagram: () => GraphInput;
   setArgs: (args: (PortFragment | null)[]) => void;
+  setGlobals: (globals: (GlobalFragment | null)[]) => void;
   setReturns: (args: (PortFragment | null)[]) => void;
   setNodeError: (id: string, error: string) => void;
   addGlobal: (global: GlobalFragment) => void;
@@ -76,6 +77,7 @@ export const EditRiverContext = React.createContext<EditRiverContextType>({
   updateGlobal: () => {
     console.error("WE ARE LACKING AN ENGINE");
   },
+  setGlobals: () => {},
   removeEdge: () => {},
   setArgs: () => {},
   setReturns: () => {},

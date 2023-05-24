@@ -100,6 +100,19 @@ export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = ({
             </svg>
           )}
         {implementation &&
+          [ReactiveImplementationModelInput.Gate].includes(implementation) && (
+            <svg height="40" width="40">
+              <polygon
+                points="0,40 40,20 0,0"
+                style={{
+                  strokeWidth: 1,
+                  stroke: "white",
+                  fill: color,
+                }}
+              />
+            </svg>
+          )}
+        {implementation &&
           [ReactiveImplementationModelInput.Omit].includes(implementation) && (
             <svg height="40" width="40">
               <text>

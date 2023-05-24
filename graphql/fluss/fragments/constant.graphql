@@ -1,8 +1,0 @@
-fragment Constant on Constant {
-  key
-  kind
-  nullable
-  default
-  label
-  description
-}

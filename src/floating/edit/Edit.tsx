@@ -45,6 +45,7 @@ import { ConnectionMap, FlowNode, NodeTypes } from "../types";
 import {
   edges_to_flowedges,
   flowedges_to_edges,
+  flowglobals_to_globals,
   flownodes_to_nodes,
   noTypename,
   nodes_to_flownodes,
@@ -370,6 +371,7 @@ export const EditRiver: React.FC<Props> = ({
   const saveDiagram = async () => {
     const flownodes = flownodes_to_nodes(nodes);
     const flowedges = flowedges_to_edges(edges);
+    const flowglobals = flowglobals_to_globals(globals);
 
     setSaving(true);
 
@@ -378,7 +380,7 @@ export const EditRiver: React.FC<Props> = ({
     await onFlowSave({
       nodes: flownodes,
       edges: flowedges,
-      globals: [],
+      globals: flowglobals,
       args: args.filter(notEmpty).map(noTypename),
       returns: returns.filter(notEmpty).map(noTypename),
     });
@@ -634,6 +636,7 @@ export const EditRiver: React.FC<Props> = ({
         internalSignal,
         setLayout: onLayout,
         addGlobal,
+        setGlobals,
         updateGlobal,
         saveDiagram: saveDiagram,
         setNodeError: (id: string) => (error: string) => {
