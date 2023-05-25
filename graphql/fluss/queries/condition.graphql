@@ -16,6 +16,22 @@ query Conditions {
   }
 }
 
+query MyConditions(
+  $limit: Int
+  $offset: Int
+  $order: String
+  $createdDay: DateTime
+) {
+  myconditions(
+    limit: $limit
+    offset: $offset
+    order: $order
+    createdDay: $createdDay
+  ) {
+    ...ListCondition
+  }
+}
+
 query DetailCondition($id: ID, $provision: ID) {
   condition(id: $id, provision: $provision) {
     ...Condition

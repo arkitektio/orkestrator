@@ -1,7 +1,7 @@
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import React from "react";
+import { ActionButton } from "../layout/ActionButton";
 import { NodeKind, ReservationStatus } from "../rekuest/api/graphql";
-import { usePostman } from "../rekuest/postman/graphql/postman-context";
 import { useRequester } from "../rekuest/postman/requester/requester-context";
 import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 
@@ -27,13 +27,12 @@ const Generators: React.FC<IGeneratorsProps> = ({}) => {
         {generatorReservations?.map((res, index) => (
           <div key={index}>
             {res?.reference && res?.node?.id && (
-              <button
-                type="button"
-                className="bg-primary-300 p-2 border rounded-md text-white hover:bg-primary-400 transition-colors"
-                onClick={() => assign({ reservation: res })}
-              >
-                {res?.title || res?.node?.name}
-              </button>
+              <ActionButton
+                onAction={async () => {
+                  await assign({ reservation: res });
+                }}
+                label={res?.title || res?.node?.name}
+              />
             )}
           </div>
         ))}

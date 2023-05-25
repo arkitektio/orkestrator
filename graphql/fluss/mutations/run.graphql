@@ -9,3 +9,14 @@ mutation DeleteRun($id: ID!) {
     id
   }
 }
+
+mutation PinRun($id: ID!, $pin: Boolean!) {
+  pinRun(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}

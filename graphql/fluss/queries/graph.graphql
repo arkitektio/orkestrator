@@ -10,8 +10,35 @@ query Workspace($id: ID!) {
   }
 }
 
-query MyWorkspaces {
-  myworkspaces {
+query MyWorkspaces(
+  $limit: Int
+  $offset: Int
+  $order: String
+  $createdDay: DateTime
+) {
+  myworkspaces(
+    limit: $limit
+    offset: $offset
+    order: $order
+    createdDay: $createdDay
+  ) {
+    ...ListWorkspace
+  }
+}
+
+query PinnedWorkspaces(
+  $limit: Int
+  $offset: Int
+  $order: String
+  $createdDay: DateTime
+) {
+  workspaces(
+    limit: $limit
+    offset: $offset
+    order: $order
+    pinned: true
+    createdDay: $createdDay
+  ) {
     ...ListWorkspace
   }
 }

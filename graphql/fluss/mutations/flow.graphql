@@ -21,3 +21,14 @@ mutation ImportFlow($name: String, $graph: GraphInput!) {
     ...Workspace
   }
 }
+
+mutation pinFlow($id: ID!, $pin: Boolean!) {
+  pinFlow(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}

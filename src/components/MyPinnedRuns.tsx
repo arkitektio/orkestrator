@@ -1,5 +1,5 @@
 import React from "react";
-import { useMyRunsQuery } from "../fluss/api/graphql";
+import { usePinnedRunsQuery } from "../fluss/api/graphql";
 import { RunCard } from "../fluss/components/cards/RunCard";
 import { withFluss } from "../fluss/fluss";
 import { ListRender } from "../layout/SectionTitle";
@@ -10,8 +10,8 @@ import { FlowHomeFilterParams } from "../pages/flows/FlowHome";
 import { useConfirm } from "./confirmer/confirmer-context";
 export type IMyGraphsProps = {} & FlowHomeFilterParams;
 
-const MyRuns: React.FC<IMyGraphsProps> = ({ limit, offset, createdDay }) => {
-  const { data, error, loading, refetch } = withFluss(useMyRunsQuery)({
+const MyPinnedRuns: React.FC<IMyGraphsProps> = ({ limit, createdDay }) => {
+  const { data, error, loading, refetch } = withFluss(usePinnedRunsQuery)({
     variables: { limit: limit, offset: 0, createdDay: createdDay },
   });
 
@@ -21,9 +21,9 @@ const MyRuns: React.FC<IMyGraphsProps> = ({ limit, offset, createdDay }) => {
 
   return (
     <ListRender
-      array={data?.myruns}
+      array={data?.runs}
       loading={loading}
-      title={<Run.ListLink className="flex-0">Datasets</Run.ListLink>}
+      title={<Run.ListLink className="flex-0">Pinned Runs</Run.ListLink>}
       refetch={refetch}
     >
       {(s, index) => (
@@ -37,4 +37,4 @@ const MyRuns: React.FC<IMyGraphsProps> = ({ limit, offset, createdDay }) => {
   );
 };
 
-export { MyRuns };
+export { MyPinnedRuns };

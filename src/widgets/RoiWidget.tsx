@@ -1,6 +1,6 @@
 import ParentSize from "@visx/responsive/lib/components/ParentSizeModern";
-import { useDetailRoiQuery } from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
+import { useDetailRoiQuery } from "../mikro/api/graphql";
 import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 
 export const RoiWidget: React.FC<StructureDisplayProps> = ({ value }) => {
@@ -14,7 +14,10 @@ export const RoiWidget: React.FC<StructureDisplayProps> = ({ value }) => {
         <ParentSize debounceTime={500}>
           {({ width, height }) => (
             <>
-              <div className="text-white">NOT</div>
+              <div className="text-white">
+                {data.roi?.label || ""}
+                {data?.roi?.type}
+              </div>
             </>
           )}
         </ParentSize>

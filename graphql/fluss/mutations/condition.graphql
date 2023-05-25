@@ -1,0 +1,16 @@
+mutation DeleteCondition($id: ID!) {
+  deleteCondition(id: $id) {
+    id
+  }
+}
+
+mutation pinCondition($id: ID!, $pin: Boolean!) {
+  pinCondition(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}

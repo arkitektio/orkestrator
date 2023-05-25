@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ListRender } from "../../layout/SectionTitle";
 import { Stage } from "../../linker";
+import { useDeleteStageMate } from "../../mates/stage/useDeleteStageMate";
 import { DataHomeFilterParams } from "../../pages/data/Home";
 import { withMikro } from "../MikroContext";
 import { useMyStagesQuery } from "../api/graphql";
@@ -22,6 +23,8 @@ const MyStages: React.FC<MyAcquisitionsProps & DataHomeFilterParams> = ({
 
   const [offset, setOffset] = useState(0);
 
+  const deleteStageMate = useDeleteStageMate();
+
   useEffect(() => {
     refetch({ limit: limit, offset: offset });
   }, [offset, limit]);
@@ -35,7 +38,9 @@ const MyStages: React.FC<MyAcquisitionsProps & DataHomeFilterParams> = ({
       title={<Stage.ListLink className="flex-0">Stages</Stage.ListLink>}
       refetch={refetch}
     >
-      {(s, index) => <StageCard key={index} stage={s} mates={[]} />}
+      {(s, index) => (
+        <StageCard key={index} stage={s} mates={[deleteStageMate(s)]} />
+      )}
     </ListRender>
   );
 };

@@ -160,10 +160,15 @@ export enum CommentableModels {
 export type Condition = {
   __typename?: 'Condition';
   createdAt: Scalars['DateTime'];
+  createdBy?: Maybe<User>;
+  createdWhile?: Maybe<Scalars['String']>;
   events: Array<ConditionEvent>;
   flow?: Maybe<Flow>;
   id: Scalars['ID'];
   latestSnapshot?: Maybe<ConditionSnapshot>;
+  pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the position */
+  pinnedBy: Array<User>;
   provision?: Maybe<Scalars['String']>;
   snapshotInterval?: Maybe<Scalars['Int']>;
   snapshots: Array<ConditionSnapshot>;
@@ -299,6 +304,8 @@ export type Flow = {
   brittle: Scalars['Boolean'];
   conditions: Array<Condition>;
   createdAt: Scalars['DateTime'];
+  createdBy?: Maybe<User>;
+  createdWhile?: Maybe<Scalars['String']>;
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']>;
   edges?: Maybe<Scalars['GenericScalar']>;
@@ -307,6 +314,9 @@ export type Flow = {
   id: Scalars['ID'];
   name: Scalars['String'];
   nodes?: Maybe<Scalars['GenericScalar']>;
+  pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the position */
+  pinnedBy: Array<User>;
   position?: Maybe<Array<Maybe<Scalars['Int']>>>;
   restrict?: Maybe<Scalars['GenericScalar']>;
   runs: Array<Run>;
@@ -536,6 +546,30 @@ export type Mutation = {
   drawvanilla?: Maybe<Workspace>;
   importflow?: Maybe<Workspace>;
   /**
+   * Pin Condition
+   *
+   *     This mutation pins an Runs and returns the pinned Run.
+   */
+  pinCondition?: Maybe<Condition>;
+  /**
+   * Pin Run
+   *
+   *     This mutation pins an Runs and returns the pinned Run.
+   */
+  pinFlow?: Maybe<Flow>;
+  /**
+   * Pin Run
+   *
+   *     This mutation pins an Runs and returns the pinned Run.
+   */
+  pinRun?: Maybe<Run>;
+  /**
+   * Pin Run
+   *
+   *     This mutation pins an Runs and returns the pinned Run.
+   */
+  pinWorkspace?: Maybe<Workspace>;
+  /**
    * Reply to an Comment
    *
    *     This mutation creates a comment. It takes a commentable_id and a commentable_type.
@@ -660,6 +694,34 @@ export type MutationDrawvanillaArgs = {
 export type MutationImportflowArgs = {
   graph?: InputMaybe<GraphInput>;
   name?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Mutation */
+export type MutationPinConditionArgs = {
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+};
+
+
+/** The root Mutation */
+export type MutationPinFlowArgs = {
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+};
+
+
+/** The root Mutation */
+export type MutationPinRunArgs = {
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+};
+
+
+/** The root Mutation */
+export type MutationPinWorkspaceArgs = {
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
 };
 
 
@@ -879,7 +941,10 @@ export type Query = {
   flows?: Maybe<Array<Maybe<Flow>>>;
   hello?: Maybe<Scalars['String']>;
   me?: Maybe<User>;
+  myconditions?: Maybe<Array<Maybe<Condition>>>;
+  myflows?: Maybe<Array<Maybe<Flow>>>;
   mymentions?: Maybe<Array<Maybe<Comment>>>;
+  myruns?: Maybe<Array<Maybe<Run>>>;
   myworkspaces?: Maybe<Array<Maybe<Workspace>>>;
   permissionsFor?: Maybe<Array<Maybe<Permission>>>;
   permissionsOf?: Maybe<PermissionsOfReturn>;
@@ -943,8 +1008,17 @@ export type QueryConditionSnapshotsArgs = {
 
 /** The root Query */
 export type QueryConditionsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
 };
 
 
@@ -964,9 +1038,84 @@ export type QueryFlowArgs = {
 
 /** The root Query */
 export type QueryFlowsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
   workspace?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryMyconditionsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+};
+
+
+/** The root Query */
+export type QueryMyflowsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+  workspace?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryMyrunsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+};
+
+
+/** The root Query */
+export type QueryMyworkspacesArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+  search?: InputMaybe<Scalars['String']>;
 };
 
 
@@ -1014,8 +1163,17 @@ export type QueryRunLogsArgs = {
 
 /** The root Query */
 export type QueryRunsArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
 };
 
 
@@ -1055,8 +1213,17 @@ export type QueryWorkspaceArgs = {
 
 /** The root Query */
 export type QueryWorkspacesArgs = {
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
   search?: InputMaybe<Scalars['String']>;
 };
 
@@ -1163,11 +1330,16 @@ export type Run = {
   __typename?: 'Run';
   assignation?: Maybe<Scalars['String']>;
   createdAt: Scalars['DateTime'];
+  createdBy?: Maybe<User>;
+  createdWhile?: Maybe<Scalars['String']>;
   events: Array<RunEvent>;
   flow?: Maybe<Flow>;
   id: Scalars['ID'];
   latestSnapshot?: Maybe<Snapshot>;
   logs: Array<RunLog>;
+  pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the position */
+  pinnedBy: Array<User>;
   snapshotInterval?: Maybe<Scalars['Int']>;
   snapshots: Array<Snapshot>;
   status?: Maybe<Scalars['String']>;
@@ -1320,9 +1492,11 @@ export type User = {
   /** The associated color for this user */
   color?: Maybe<Scalars['String']>;
   comments: Array<Comment>;
+  conditionCreatedBy: Array<Condition>;
   dateJoined: Scalars['DateTime'];
   email: Scalars['String'];
   firstName: Scalars['String'];
+  flowCreatedBy: Array<Flow>;
   flowSet: Array<Flow>;
   /** The groups this user belongs to. A user will get all permissions granted to each of their groups. */
   groups: Array<Group>;
@@ -1340,13 +1514,23 @@ export type User = {
   /** The name of the user */
   name?: Maybe<Scalars['String']>;
   password: Scalars['String'];
+  /** The users that have pinned the position */
+  pinnedConditions: Array<Condition>;
+  /** The users that have pinned the position */
+  pinnedFlows: Array<Flow>;
+  /** The users that have pinned the position */
+  pinnedRuns: Array<Run>;
+  /** The users that have pinned the position */
+  pinnedWorkspaces: Array<Workspace>;
   resolvedComments: Array<Comment>;
+  runCreatedBy: Array<Run>;
   /** The sub of the user */
   sub?: Maybe<Scalars['String']>;
   /** Specific permissions for this user. */
   userPermissions: Array<Permission>;
   /** Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
   username: Scalars['String'];
+  workspaceCreatedBy: Array<Workspace>;
   workspaceSet: Array<Workspace>;
 };
 
@@ -1412,12 +1596,18 @@ export type WidgetInput = {
 
 export type Workspace = {
   __typename?: 'Workspace';
+  createdAt: Scalars['DateTime'];
+  createdBy?: Maybe<User>;
+  createdWhile?: Maybe<Scalars['String']>;
   creator?: Maybe<User>;
   flows: Array<Flow>;
   id: Scalars['ID'];
   /** The latest flow */
   latestFlow?: Maybe<Flow>;
   name?: Maybe<Scalars['String']>;
+  pinned?: Maybe<Scalars['Boolean']>;
+  /** The users that have pinned the position */
+  pinnedBy: Array<User>;
   restrict: Array<Maybe<Scalars['String']>>;
 };
 
@@ -1594,6 +1784,21 @@ export type ResolveCommentMutationVariables = Exact<{
 
 export type ResolveCommentMutation = { __typename?: 'Mutation', resolveComment?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', sub?: string | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', sub?: string | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', sub?: string | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
 
+export type DeleteConditionMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DeleteConditionMutation = { __typename?: 'Mutation', deleteCondition?: { __typename?: 'DeleteConditionReturn', id: string } | null };
+
+export type PinConditionMutationVariables = Exact<{
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+}>;
+
+
+export type PinConditionMutation = { __typename?: 'Mutation', pinCondition?: { __typename?: 'Condition', id: string, pinned?: boolean | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+
 export type UpdateFlowMutationVariables = Exact<{
   id: Scalars['ID'];
   graph: GraphInput;
@@ -1626,6 +1831,14 @@ export type ImportFlowMutationVariables = Exact<{
 
 export type ImportFlowMutation = { __typename?: 'Mutation', importflow?: { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, parentNode?: string | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, parentNode?: string | null, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, binds?: { __typename?: 'Binds', clients?: Array<string | null> | null, templates?: Array<string | null> | null } | null, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'GraphNode', id: string, typename: string, parentNode?: string | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, parentNode?: string | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'LocalNode', id: string, typename: string, parentNode?: string | null, name?: string | null, description?: string | null, interface: string, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, parentNode?: string | null, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, parentNode?: string | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, scope: Scope, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, scope: Scope, nullable: boolean, child?: { __typename?: 'StreamItemChild', scope: Scope, kind: StreamKind, nullable: boolean, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, scope: Scope, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, scope: Scope, nullable: boolean, child?: { __typename?: 'StreamItemChild', scope: Scope, kind: StreamKind, nullable: boolean, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', toKeys: Array<string | null>, port: { __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
 
+export type PinFlowMutationVariables = Exact<{
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+}>;
+
+
+export type PinFlowMutation = { __typename?: 'Mutation', pinFlow?: { __typename?: 'Flow', id: string, pinned?: boolean | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+
 export type DeleteSnapshotMutationVariables = Exact<{
   id: Scalars['ID'];
 }>;
@@ -1640,12 +1853,28 @@ export type DeleteRunMutationVariables = Exact<{
 
 export type DeleteRunMutation = { __typename?: 'Mutation', deleteRun?: { __typename?: 'DeleteRunReturn', id: string } | null };
 
+export type PinRunMutationVariables = Exact<{
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+}>;
+
+
+export type PinRunMutation = { __typename?: 'Mutation', pinRun?: { __typename?: 'Run', id: string, pinned?: boolean | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
+
 export type DeleteWorkspaceMutationVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
 export type DeleteWorkspaceMutation = { __typename?: 'Mutation', deleteWorkspace?: { __typename?: 'DeleteWorkspaceReturn', id?: string | null } | null };
+
+export type PinWorkspaceMutationVariables = Exact<{
+  id: Scalars['ID'];
+  pin: Scalars['Boolean'];
+}>;
+
+
+export type PinWorkspaceMutation = { __typename?: 'Mutation', pinWorkspace?: { __typename?: 'Workspace', id: string, pinned?: boolean | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }> } | null };
 
 export type CommentsForQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -1684,6 +1913,16 @@ export type ConditionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ConditionsQuery = { __typename?: 'Query', conditions?: Array<{ __typename?: 'Condition', id: string, provision?: string | null, createdAt: any, flow?: { __typename?: 'Flow', id: string, name: string, workspace?: { __typename?: 'Workspace', name?: string | null } | null } | null } | null> | null };
 
+export type MyConditionsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+}>;
+
+
+export type MyConditionsQuery = { __typename?: 'Query', myconditions?: Array<{ __typename?: 'Condition', id: string, provision?: string | null, createdAt: any, flow?: { __typename?: 'Flow', id: string, name: string, workspace?: { __typename?: 'Workspace', name?: string | null } | null } | null } | null> | null };
+
 export type DetailConditionQueryVariables = Exact<{
   id?: InputMaybe<Scalars['ID']>;
   provision?: InputMaybe<Scalars['ID']>;
@@ -1715,10 +1954,25 @@ export type WorkspaceQueryVariables = Exact<{
 
 export type WorkspaceQuery = { __typename?: 'Query', workspace?: { __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename: 'Flow', id: string, restrict?: any | null, name: string, screenshot?: string | null, createdAt: any, graph: { __typename?: 'FlowGraph', nodes: Array<{ __typename: 'ArgNode', id: string, typename: string, parentNode?: string | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'ArkitektNode', id: string, typename: string, parentNode?: string | null, name?: string | null, description?: string | null, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, reserveTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, binds?: { __typename?: 'Binds', clients?: Array<string | null> | null, templates?: Array<string | null> | null } | null, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'GraphNode', id: string, typename: string, parentNode?: string | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'KwargNode', id: string, typename: string, parentNode?: string | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'LocalNode', id: string, typename: string, parentNode?: string | null, name?: string | null, description?: string | null, interface: string, hash: string, kind: string, defaults?: any | null, mapStrategy: MapStrategy, allowLocal: boolean, assignTimeout: number, yieldTimeout: number, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'ReactiveNode', id: string, typename: string, parentNode?: string | null, implementation: ReactiveImplementationModelInput, defaults?: any | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | { __typename: 'ReturnNode', id: string, typename: string, parentNode?: string | null, constants?: any | null, position: { __typename?: 'Position', x: number, y: number }, instream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, outstream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null>, constream: Array<Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> | null> } | null>, edges: Array<{ __typename: 'FancyEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, scope: Scope, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, scope: Scope, nullable: boolean, child?: { __typename?: 'StreamItemChild', scope: Scope, kind: StreamKind, nullable: boolean, identifier?: string | null } | null } | null } | null> } | { __typename: 'LabeledEdge', id: string, source: string, sourceHandle: string, target: string, targetHandle: string, typename: string, stream: Array<{ __typename?: 'StreamItem', key: string, kind: StreamKind, identifier?: string | null, scope: Scope, nullable: boolean, child?: { __typename?: 'StreamItemChild', kind: StreamKind, identifier?: string | null, scope: Scope, nullable: boolean, child?: { __typename?: 'StreamItemChild', scope: Scope, kind: StreamKind, nullable: boolean, identifier?: string | null } | null } | null } | null> } | null>, globals: Array<{ __typename?: 'Global', toKeys: Array<string | null>, port: { __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } } | null>, args: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null>, returns: Array<{ __typename?: 'Port', key: string, label?: string | null, identifier?: string | null, scope: Scope, kind: StreamKind, description?: string | null, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, kind: StreamKind, scope: Scope, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', scope: Scope, identifier?: string | null, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null, child?: { __typename?: 'PortChild', identifier?: string | null, scope: Scope, kind: StreamKind, nullable: boolean, assignWidget?: { __typename?: 'Widget', kind: string, query?: string | null, hook?: string | null, ward?: string | null } | null, returnWidget?: { __typename?: 'ReturnWidget', kind: string, query?: string | null } | null } | null } | null } | null } | null> }, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null };
 
-export type MyWorkspacesQueryVariables = Exact<{ [key: string]: never; }>;
+export type MyWorkspacesQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+}>;
 
 
 export type MyWorkspacesQuery = { __typename?: 'Query', myworkspaces?: Array<{ __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename?: 'Flow', id: string, name: string, screenshot?: string | null, createdAt: any, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null> | null };
+
+export type PinnedWorkspacesQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+}>;
+
+
+export type PinnedWorkspacesQuery = { __typename?: 'Query', workspaces?: Array<{ __typename?: 'Workspace', id: string, name?: string | null, latestFlow?: { __typename?: 'Flow', id: string, name: string, screenshot?: string | null, createdAt: any, workspace?: { __typename?: 'Workspace', id: string } | null } | null } | null> | null };
 
 export type SearchWorkspacesQueryVariables = Exact<{
   name?: InputMaybe<Scalars['String']>;
@@ -1751,6 +2005,26 @@ export type RunsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type RunsQuery = { __typename?: 'Query', runs?: Array<{ __typename?: 'Run', id: string, status?: string | null, assignation?: string | null, createdAt: any, flow?: { __typename?: 'Flow', id: string, name: string, workspace?: { __typename?: 'Workspace', name?: string | null } | null } | null } | null> | null };
+
+export type MyRunsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+}>;
+
+
+export type MyRunsQuery = { __typename?: 'Query', myruns?: Array<{ __typename?: 'Run', id: string, status?: string | null, assignation?: string | null, createdAt: any, flow?: { __typename?: 'Flow', id: string, name: string, workspace?: { __typename?: 'Workspace', name?: string | null } | null } | null } | null> | null };
+
+export type PinnedRunsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  order?: InputMaybe<Scalars['String']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+}>;
+
+
+export type PinnedRunsQuery = { __typename?: 'Query', runs?: Array<{ __typename?: 'Run', id: string, status?: string | null, assignation?: string | null, createdAt: any, flow?: { __typename?: 'Flow', id: string, name: string, workspace?: { __typename?: 'Workspace', name?: string | null } | null } | null } | null> | null };
 
 export type DetailRunQueryVariables = Exact<{
   id?: InputMaybe<Scalars['ID']>;
@@ -2559,6 +2833,78 @@ export function useResolveCommentMutation(baseOptions?: Apollo.MutationHookOptio
 export type ResolveCommentMutationHookResult = ReturnType<typeof useResolveCommentMutation>;
 export type ResolveCommentMutationResult = Apollo.MutationResult<ResolveCommentMutation>;
 export type ResolveCommentMutationOptions = Apollo.BaseMutationOptions<ResolveCommentMutation, ResolveCommentMutationVariables>;
+export const DeleteConditionDocument = gql`
+    mutation DeleteCondition($id: ID!) {
+  deleteCondition(id: $id) {
+    id
+  }
+}
+    `;
+export type DeleteConditionMutationFn = Apollo.MutationFunction<DeleteConditionMutation, DeleteConditionMutationVariables>;
+
+/**
+ * __useDeleteConditionMutation__
+ *
+ * To run a mutation, you first call `useDeleteConditionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteConditionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteConditionMutation, { data, loading, error }] = useDeleteConditionMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteConditionMutation(baseOptions?: Apollo.MutationHookOptions<DeleteConditionMutation, DeleteConditionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteConditionMutation, DeleteConditionMutationVariables>(DeleteConditionDocument, options);
+      }
+export type DeleteConditionMutationHookResult = ReturnType<typeof useDeleteConditionMutation>;
+export type DeleteConditionMutationResult = Apollo.MutationResult<DeleteConditionMutation>;
+export type DeleteConditionMutationOptions = Apollo.BaseMutationOptions<DeleteConditionMutation, DeleteConditionMutationVariables>;
+export const PinConditionDocument = gql`
+    mutation pinCondition($id: ID!, $pin: Boolean!) {
+  pinCondition(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}
+    `;
+export type PinConditionMutationFn = Apollo.MutationFunction<PinConditionMutation, PinConditionMutationVariables>;
+
+/**
+ * __usePinConditionMutation__
+ *
+ * To run a mutation, you first call `usePinConditionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinConditionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinConditionMutation, { data, loading, error }] = usePinConditionMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      pin: // value for 'pin'
+ *   },
+ * });
+ */
+export function usePinConditionMutation(baseOptions?: Apollo.MutationHookOptions<PinConditionMutation, PinConditionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PinConditionMutation, PinConditionMutationVariables>(PinConditionDocument, options);
+      }
+export type PinConditionMutationHookResult = ReturnType<typeof usePinConditionMutation>;
+export type PinConditionMutationResult = Apollo.MutationResult<PinConditionMutation>;
+export type PinConditionMutationOptions = Apollo.BaseMutationOptions<PinConditionMutation, PinConditionMutationVariables>;
 export const UpdateFlowDocument = gql`
     mutation UpdateFlow($id: ID!, $graph: GraphInput!, $screenshot: ImageFile) {
   updateworkspace(id: $id, graph: $graph, screenshot: $screenshot) {
@@ -2695,6 +3041,45 @@ export function useImportFlowMutation(baseOptions?: Apollo.MutationHookOptions<I
 export type ImportFlowMutationHookResult = ReturnType<typeof useImportFlowMutation>;
 export type ImportFlowMutationResult = Apollo.MutationResult<ImportFlowMutation>;
 export type ImportFlowMutationOptions = Apollo.BaseMutationOptions<ImportFlowMutation, ImportFlowMutationVariables>;
+export const PinFlowDocument = gql`
+    mutation pinFlow($id: ID!, $pin: Boolean!) {
+  pinFlow(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}
+    `;
+export type PinFlowMutationFn = Apollo.MutationFunction<PinFlowMutation, PinFlowMutationVariables>;
+
+/**
+ * __usePinFlowMutation__
+ *
+ * To run a mutation, you first call `usePinFlowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinFlowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinFlowMutation, { data, loading, error }] = usePinFlowMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      pin: // value for 'pin'
+ *   },
+ * });
+ */
+export function usePinFlowMutation(baseOptions?: Apollo.MutationHookOptions<PinFlowMutation, PinFlowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PinFlowMutation, PinFlowMutationVariables>(PinFlowDocument, options);
+      }
+export type PinFlowMutationHookResult = ReturnType<typeof usePinFlowMutation>;
+export type PinFlowMutationResult = Apollo.MutationResult<PinFlowMutation>;
+export type PinFlowMutationOptions = Apollo.BaseMutationOptions<PinFlowMutation, PinFlowMutationVariables>;
 export const DeleteSnapshotDocument = gql`
     mutation DeleteSnapshot($id: ID!) {
   deleteSnapshot(id: $id) {
@@ -2761,6 +3146,45 @@ export function useDeleteRunMutation(baseOptions?: Apollo.MutationHookOptions<De
 export type DeleteRunMutationHookResult = ReturnType<typeof useDeleteRunMutation>;
 export type DeleteRunMutationResult = Apollo.MutationResult<DeleteRunMutation>;
 export type DeleteRunMutationOptions = Apollo.BaseMutationOptions<DeleteRunMutation, DeleteRunMutationVariables>;
+export const PinRunDocument = gql`
+    mutation PinRun($id: ID!, $pin: Boolean!) {
+  pinRun(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}
+    `;
+export type PinRunMutationFn = Apollo.MutationFunction<PinRunMutation, PinRunMutationVariables>;
+
+/**
+ * __usePinRunMutation__
+ *
+ * To run a mutation, you first call `usePinRunMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinRunMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinRunMutation, { data, loading, error }] = usePinRunMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      pin: // value for 'pin'
+ *   },
+ * });
+ */
+export function usePinRunMutation(baseOptions?: Apollo.MutationHookOptions<PinRunMutation, PinRunMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PinRunMutation, PinRunMutationVariables>(PinRunDocument, options);
+      }
+export type PinRunMutationHookResult = ReturnType<typeof usePinRunMutation>;
+export type PinRunMutationResult = Apollo.MutationResult<PinRunMutation>;
+export type PinRunMutationOptions = Apollo.BaseMutationOptions<PinRunMutation, PinRunMutationVariables>;
 export const DeleteWorkspaceDocument = gql`
     mutation DeleteWorkspace($id: ID!) {
   deleteWorkspace(id: $id) {
@@ -2794,6 +3218,45 @@ export function useDeleteWorkspaceMutation(baseOptions?: Apollo.MutationHookOpti
 export type DeleteWorkspaceMutationHookResult = ReturnType<typeof useDeleteWorkspaceMutation>;
 export type DeleteWorkspaceMutationResult = Apollo.MutationResult<DeleteWorkspaceMutation>;
 export type DeleteWorkspaceMutationOptions = Apollo.BaseMutationOptions<DeleteWorkspaceMutation, DeleteWorkspaceMutationVariables>;
+export const PinWorkspaceDocument = gql`
+    mutation PinWorkspace($id: ID!, $pin: Boolean!) {
+  pinWorkspace(id: $id, pin: $pin) {
+    id
+    pinnedBy {
+      id
+      email
+    }
+    pinned
+  }
+}
+    `;
+export type PinWorkspaceMutationFn = Apollo.MutationFunction<PinWorkspaceMutation, PinWorkspaceMutationVariables>;
+
+/**
+ * __usePinWorkspaceMutation__
+ *
+ * To run a mutation, you first call `usePinWorkspaceMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinWorkspaceMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinWorkspaceMutation, { data, loading, error }] = usePinWorkspaceMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      pin: // value for 'pin'
+ *   },
+ * });
+ */
+export function usePinWorkspaceMutation(baseOptions?: Apollo.MutationHookOptions<PinWorkspaceMutation, PinWorkspaceMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<PinWorkspaceMutation, PinWorkspaceMutationVariables>(PinWorkspaceDocument, options);
+      }
+export type PinWorkspaceMutationHookResult = ReturnType<typeof usePinWorkspaceMutation>;
+export type PinWorkspaceMutationResult = Apollo.MutationResult<PinWorkspaceMutation>;
+export type PinWorkspaceMutationOptions = Apollo.BaseMutationOptions<PinWorkspaceMutation, PinWorkspaceMutationVariables>;
 export const CommentsForDocument = gql`
     query CommentsFor($id: ID!, $model: CommentableModels!) {
   commentsfor(model: $model, id: $id) {
@@ -3002,6 +3465,49 @@ export function useConditionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions
 export type ConditionsQueryHookResult = ReturnType<typeof useConditionsQuery>;
 export type ConditionsLazyQueryHookResult = ReturnType<typeof useConditionsLazyQuery>;
 export type ConditionsQueryResult = Apollo.QueryResult<ConditionsQuery, ConditionsQueryVariables>;
+export const MyConditionsDocument = gql`
+    query MyConditions($limit: Int, $offset: Int, $order: String, $createdDay: DateTime) {
+  myconditions(
+    limit: $limit
+    offset: $offset
+    order: $order
+    createdDay: $createdDay
+  ) {
+    ...ListCondition
+  }
+}
+    ${ListConditionFragmentDoc}`;
+
+/**
+ * __useMyConditionsQuery__
+ *
+ * To run a query within a React component, call `useMyConditionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyConditionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyConditionsQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *      order: // value for 'order'
+ *      createdDay: // value for 'createdDay'
+ *   },
+ * });
+ */
+export function useMyConditionsQuery(baseOptions?: Apollo.QueryHookOptions<MyConditionsQuery, MyConditionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyConditionsQuery, MyConditionsQueryVariables>(MyConditionsDocument, options);
+      }
+export function useMyConditionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyConditionsQuery, MyConditionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyConditionsQuery, MyConditionsQueryVariables>(MyConditionsDocument, options);
+        }
+export type MyConditionsQueryHookResult = ReturnType<typeof useMyConditionsQuery>;
+export type MyConditionsLazyQueryHookResult = ReturnType<typeof useMyConditionsLazyQuery>;
+export type MyConditionsQueryResult = Apollo.QueryResult<MyConditionsQuery, MyConditionsQueryVariables>;
 export const DetailConditionDocument = gql`
     query DetailCondition($id: ID, $provision: ID) {
   condition(id: $id, provision: $provision) {
@@ -3146,8 +3652,13 @@ export type WorkspaceQueryHookResult = ReturnType<typeof useWorkspaceQuery>;
 export type WorkspaceLazyQueryHookResult = ReturnType<typeof useWorkspaceLazyQuery>;
 export type WorkspaceQueryResult = Apollo.QueryResult<WorkspaceQuery, WorkspaceQueryVariables>;
 export const MyWorkspacesDocument = gql`
-    query MyWorkspaces {
-  myworkspaces {
+    query MyWorkspaces($limit: Int, $offset: Int, $order: String, $createdDay: DateTime) {
+  myworkspaces(
+    limit: $limit
+    offset: $offset
+    order: $order
+    createdDay: $createdDay
+  ) {
     ...ListWorkspace
   }
 }
@@ -3165,6 +3676,10 @@ export const MyWorkspacesDocument = gql`
  * @example
  * const { data, loading, error } = useMyWorkspacesQuery({
  *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *      order: // value for 'order'
+ *      createdDay: // value for 'createdDay'
  *   },
  * });
  */
@@ -3179,6 +3694,50 @@ export function useMyWorkspacesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptio
 export type MyWorkspacesQueryHookResult = ReturnType<typeof useMyWorkspacesQuery>;
 export type MyWorkspacesLazyQueryHookResult = ReturnType<typeof useMyWorkspacesLazyQuery>;
 export type MyWorkspacesQueryResult = Apollo.QueryResult<MyWorkspacesQuery, MyWorkspacesQueryVariables>;
+export const PinnedWorkspacesDocument = gql`
+    query PinnedWorkspaces($limit: Int, $offset: Int, $order: String, $createdDay: DateTime) {
+  workspaces(
+    limit: $limit
+    offset: $offset
+    order: $order
+    pinned: true
+    createdDay: $createdDay
+  ) {
+    ...ListWorkspace
+  }
+}
+    ${ListWorkspaceFragmentDoc}`;
+
+/**
+ * __usePinnedWorkspacesQuery__
+ *
+ * To run a query within a React component, call `usePinnedWorkspacesQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePinnedWorkspacesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePinnedWorkspacesQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *      order: // value for 'order'
+ *      createdDay: // value for 'createdDay'
+ *   },
+ * });
+ */
+export function usePinnedWorkspacesQuery(baseOptions?: Apollo.QueryHookOptions<PinnedWorkspacesQuery, PinnedWorkspacesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<PinnedWorkspacesQuery, PinnedWorkspacesQueryVariables>(PinnedWorkspacesDocument, options);
+      }
+export function usePinnedWorkspacesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PinnedWorkspacesQuery, PinnedWorkspacesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<PinnedWorkspacesQuery, PinnedWorkspacesQueryVariables>(PinnedWorkspacesDocument, options);
+        }
+export type PinnedWorkspacesQueryHookResult = ReturnType<typeof usePinnedWorkspacesQuery>;
+export type PinnedWorkspacesLazyQueryHookResult = ReturnType<typeof usePinnedWorkspacesLazyQuery>;
+export type PinnedWorkspacesQueryResult = Apollo.QueryResult<PinnedWorkspacesQuery, PinnedWorkspacesQueryVariables>;
 export const SearchWorkspacesDocument = gql`
     query SearchWorkspaces($name: String) {
   workspaces(name: $name) {
@@ -3353,6 +3912,88 @@ export function useRunsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<RunsQ
 export type RunsQueryHookResult = ReturnType<typeof useRunsQuery>;
 export type RunsLazyQueryHookResult = ReturnType<typeof useRunsLazyQuery>;
 export type RunsQueryResult = Apollo.QueryResult<RunsQuery, RunsQueryVariables>;
+export const MyRunsDocument = gql`
+    query MyRuns($limit: Int, $offset: Int, $order: String, $createdDay: DateTime) {
+  myruns(limit: $limit, offset: $offset, order: $order, createdDay: $createdDay) {
+    ...ListRun
+  }
+}
+    ${ListRunFragmentDoc}`;
+
+/**
+ * __useMyRunsQuery__
+ *
+ * To run a query within a React component, call `useMyRunsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyRunsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyRunsQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *      order: // value for 'order'
+ *      createdDay: // value for 'createdDay'
+ *   },
+ * });
+ */
+export function useMyRunsQuery(baseOptions?: Apollo.QueryHookOptions<MyRunsQuery, MyRunsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyRunsQuery, MyRunsQueryVariables>(MyRunsDocument, options);
+      }
+export function useMyRunsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyRunsQuery, MyRunsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyRunsQuery, MyRunsQueryVariables>(MyRunsDocument, options);
+        }
+export type MyRunsQueryHookResult = ReturnType<typeof useMyRunsQuery>;
+export type MyRunsLazyQueryHookResult = ReturnType<typeof useMyRunsLazyQuery>;
+export type MyRunsQueryResult = Apollo.QueryResult<MyRunsQuery, MyRunsQueryVariables>;
+export const PinnedRunsDocument = gql`
+    query PinnedRuns($limit: Int, $offset: Int, $order: String, $createdDay: DateTime) {
+  runs(
+    limit: $limit
+    offset: $offset
+    order: $order
+    pinned: true
+    createdDay: $createdDay
+  ) {
+    ...ListRun
+  }
+}
+    ${ListRunFragmentDoc}`;
+
+/**
+ * __usePinnedRunsQuery__
+ *
+ * To run a query within a React component, call `usePinnedRunsQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePinnedRunsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePinnedRunsQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *      order: // value for 'order'
+ *      createdDay: // value for 'createdDay'
+ *   },
+ * });
+ */
+export function usePinnedRunsQuery(baseOptions?: Apollo.QueryHookOptions<PinnedRunsQuery, PinnedRunsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<PinnedRunsQuery, PinnedRunsQueryVariables>(PinnedRunsDocument, options);
+      }
+export function usePinnedRunsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<PinnedRunsQuery, PinnedRunsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<PinnedRunsQuery, PinnedRunsQueryVariables>(PinnedRunsDocument, options);
+        }
+export type PinnedRunsQueryHookResult = ReturnType<typeof usePinnedRunsQuery>;
+export type PinnedRunsLazyQueryHookResult = ReturnType<typeof usePinnedRunsLazyQuery>;
+export type PinnedRunsQueryResult = Apollo.QueryResult<PinnedRunsQuery, PinnedRunsQueryVariables>;
 export const DetailRunDocument = gql`
     query DetailRun($id: ID, $assignation: ID) {
   run(id: $id, assignation: $assignation) {

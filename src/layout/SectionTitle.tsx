@@ -1,4 +1,5 @@
 import React, { ReactNode, useEffect, useState } from "react";
+import { BiRefresh } from "react-icons/bi";
 import { BsCaretLeft, BsCaretRight } from "react-icons/bs";
 import { ResponsiveContainerGrid } from "../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../floating/utils";
@@ -6,12 +7,32 @@ import { notEmpty } from "../floating/utils";
 export const SectionTitle = (props: {
   children: React.ReactNode;
   right?: React.ReactNode;
+  onClick?: () => void;
 }) => {
   return (
-    <div className="font-light text-xl dark:text-white justify-between flex flex-row">
+    <div className="font-light text-xl dark:text-white justify-between flex flex-row py-1">
       <div className="flex-grow my-auto">{props.children}</div>
       {props.right && <div className="my-auto">{props.right}</div>}
     </div>
+  );
+};
+
+export const Refetcher = (props: { onClick: () => Promise<void> }) => {
+  const [refetching, setRefetching] = useState(false);
+
+  const onClick = async () => {
+    setRefetching(true);
+    await props.onClick();
+    setRefetching(false);
+  };
+
+  return (
+    <BiRefresh
+      onClick={onClick}
+      className={`hover:text-gray-200 transition-all cursor-pointer ${
+        refetching ? "animate-spin" : ""
+      } `}
+    />
   );
 };
 
@@ -30,7 +51,7 @@ export const Offsetter = ({
     {offset != 0 && (
       <button
         type="button"
-        className="p-1 text-gray-600 rounded"
+        className="hover:text-gray-200 transition-all "
         onClick={() => setOffset(offset - step)}
       >
         {" "}
@@ -40,7 +61,7 @@ export const Offsetter = ({
     {array && array.length == step && (
       <button
         type="button"
-        className="p-1 text-gray-600 rounded"
+        className="hover:text-gray-200 transition-all "
         onClick={() => setOffset(offset + step)}
       >
         {" "}
@@ -91,16 +112,20 @@ export const ListRender = <T extends any>({
         <>
           <SectionTitle
             right={
-              <>
+              <div className="flex flex-row text-gray-700 my-auto">
                 <Offsetter
                   offset={offset}
                   setOffset={setOffset}
                   array={array}
                   step={limit}
                 />
+                <Refetcher
+                  onClick={() => refetch({ limit: limit, offset: offset })}
+                />
                 {actions}
-              </>
+              </div>
             }
+            onClick={() => refetch({ limit: limit, offset: offset })}
           >
             {title}
           </SectionTitle>
