@@ -1,4 +1,4 @@
-query RoisForRepresentation($representation: ID!, $type: [RoiTypeInput] ) {
+query RoisForRepresentation($representation: ID!, $type: [RoiTypeInput]) {
   rois(representation: $representation, type: $type) {
     ...RepRoi
   }

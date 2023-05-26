@@ -17,8 +17,8 @@ import { SaveParentSize } from "../../layout/SaveParentSize";
 import { Channel, Roi, Timepoint } from "../../linker";
 import { withMikro } from "../../mikro/MikroContext";
 import {
+  CanvasRepresentationFragment,
   DetailRepresentationDocument,
-  DetailRepresentationFragment,
   RepresentationVariety,
   RoiType,
   RoiTypeInput,
@@ -31,9 +31,10 @@ import { ImageView, useXarray } from "../provider/context";
 import { AvailableColormap, available_color_maps } from "../provider/provider";
 import { dtypeToMinMax } from "../provider/utils";
 export interface TwoDProps {
-  representation: DetailRepresentationFragment;
+  representation: CanvasRepresentationFragment;
   colormap?: AvailableColormap;
   withRois?: boolean;
+  highlightRois?: string[];
   follow?: "width" | "height";
 }
 
@@ -76,11 +77,21 @@ export const Canvas: React.FC<{
   width: number;
   height: number;
   path: string;
+  highlightRois?: string[];
   z: number;
   withRois?: boolean;
-  representation: DetailRepresentationFragment;
+  representation: CanvasRepresentationFragment;
   colormap: AvailableColormap;
-}> = ({ width, height, z, colormap, path, representation, withRois }) => {
+}> = ({
+  width,
+  height,
+  z,
+  colormap,
+  path,
+  representation,
+  withRois,
+  highlightRois,
+}) => {
   const [uploadImage] = withMikro(useCreate_ThumbnailMutation)({
     refetchQueries(result) {
       return [
@@ -456,6 +467,7 @@ export const Canvas: React.FC<{
           width={width}
           height={height}
           representation={representation}
+          highlightRois={highlightRois}
         />
       )}
       {views?.views && views.views.length > 0 && (
@@ -508,6 +520,7 @@ export const RoiCanvas = ({
   z,
   c,
   t,
+  highlightRois,
   labeling = false,
   label,
   representation,
@@ -517,9 +530,10 @@ export const RoiCanvas = ({
   z?: number;
   c?: number;
   t?: number;
+  highlightRois?: string[];
   labeling?: boolean;
   label?: string;
-  representation: DetailRepresentationFragment;
+  representation: CanvasRepresentationFragment;
 }) => {
   const [newAnnotation, setNewAnnotation] = useState<BoundingBox[]>([]);
   const [createRoi] = withMikro(useCreate_RoiMutation)({
@@ -678,17 +692,19 @@ export const RoiCanvas = ({
           let vectors = r?.vectors?.map((v) => translate(v?.x, v?.y)) ?? [
             [0, 0],
           ];
+          let highlight = highlightRois?.includes(r.id ?? "");
+
           return (
             <Line
               points={vectors.flat()}
               closed={true}
               key={index}
-              stroke="white"
+              stroke={highlight ? "red" : "white"}
               onMouseDown={(e) => {
                 console.log(e);
                 navigate(Roi.linkBuilder(r.id));
               }}
-              strokeWidth={4}
+              strokeWidth={highlight ? 4 : 2}
             />
           );
         })}
@@ -696,6 +712,8 @@ export const RoiCanvas = ({
           let vectors = r?.vectors?.map((v) => translate(v?.x, v?.y)) ?? [
             [0, 0],
           ];
+          let highlight = highlightRois?.includes(r.id ?? "");
+
           return (
             <Circle
               x={vectors[0][0]}
@@ -703,12 +721,12 @@ export const RoiCanvas = ({
               radius={5}
               closed={true}
               key={index}
-              stroke="white"
+              stroke={highlight ? "red" : "white"}
               onMouseDown={(e) => {
                 console.log(e);
                 navigate(Roi.linkBuilder(r.id));
               }}
-              strokeWidth={4}
+              strokeWidth={highlight ? 4 : 2}
             />
           );
         })}
@@ -734,6 +752,7 @@ export const TwoDOffcanvas = ({
   representation,
   colormap,
   withRois,
+  highlightRois,
   follow = "width",
 }: TwoDProps) => {
   const { s3resolve } = useDatalayer();
@@ -763,6 +782,7 @@ export const TwoDOffcanvas = ({
           <Canvas
             withRois={withRois}
             representation={representation}
+            highlightRois={highlightRois}
             z={z}
             width={bwidth}
             height={bheight}

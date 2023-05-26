@@ -9302,6 +9302,12 @@
         "interfaces": null,
         "enumValues": [
           {
+            "name": "ADD",
+            "description": "ADD (Add a number to the data)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "ALL",
             "description": "ALL (establish if all values are Trueish)",
             "isDeprecated": false,
@@ -9338,6 +9344,12 @@
             "deprecationReason": null
           },
           {
+            "name": "DIVIDE",
+            "description": "DIVIDE (Divide the data with a number)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "ENSURE",
             "description": "ENSURE (Ensure the data (discards None in the stream))",
             "isDeprecated": false,
@@ -9362,14 +9374,50 @@
             "deprecationReason": null
           },
           {
+            "name": "MODULO",
+            "description": "MODULO (Modulo the data with a number)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "MULTIPLY",
+            "description": "MULTIPLY (Multiply the data with a number)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "OMIT",
             "description": "OMIT (Omit the data)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
+            "name": "POWER",
+            "description": "POWER (Power the data with a number)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "PREFIX",
+            "description": "PREFIX (Prefix the data with a string)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "SPLIT",
             "description": "SPLIT (Split the data)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SUBTRACT",
+            "description": "SUBTRACT (Subtract a number from the data)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SUFFIX",
+            "description": "SUFFIX (Suffix the data with a string)",
             "isDeprecated": false,
             "deprecationReason": null
           },

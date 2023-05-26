@@ -43,7 +43,22 @@ fragment ListSharedRepresentation on Representation {
   createdWhile
 }
 
+fragment CanvasRepresentation on Representation {
+  id
+  shape
+  store
+  name
+  variety
+  rois {
+    ...RepRoi
+  }
+  omero {
+    ...Omero
+  }
+}
+
 fragment DetailRepresentation on Representation {
+  ...CanvasRepresentation
   id
   name
   shape
@@ -109,9 +124,6 @@ fragment DetailRepresentation on Representation {
   tables {
     id
     name
-  }
-  rois {
-    ...RepRoi
   }
 
   fileOrigins {

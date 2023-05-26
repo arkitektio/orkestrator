@@ -28,18 +28,7 @@ fragment DetailRoi on ROI {
   }
   tags
   representation {
-    id
-    name
-    variety
-    creator {
-      id
-    }
-    tags
-    latestThumbnail {
-      image
-      blurhash
-    }
-    shape
+    ...CanvasRepresentation
   }
   derivedRepresentations {
     ...ListRepresentation

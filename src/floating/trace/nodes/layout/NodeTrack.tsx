@@ -43,7 +43,6 @@ export const NodeTraceLayout: React.FC<NodeProps> = ({
         }
       >
         {children}
-        {latestEvent?.state}
       </div>
     </>
   );

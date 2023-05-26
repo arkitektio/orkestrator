@@ -57,11 +57,23 @@ fragment Widget on Widget {
   query
   hook
   ward
+  min
+  placeholder
+  max
+  choices {
+    value
+    label
+  }
+  asParagraph
 }
 
 fragment ReturnWidget on ReturnWidget {
   kind
   query
+  choices {
+    value
+    label
+  }
 }
 
 fragment PortChild on PortChild {

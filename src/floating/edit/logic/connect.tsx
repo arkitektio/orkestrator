@@ -52,6 +52,27 @@ export const handle_to_index: (handle: string | null | undefined) => number = (
   return parseInt(handle.split("_")[1]);
 };
 
+export const streamMatch = (
+  astream: ((PortFragment | null | undefined)[] | null) | null,
+  bstream: PortFragment[]
+): boolean => {
+  if (!astream || !bstream) {
+    return false;
+  }
+  if (astream.length != bstream.length) {
+    return false;
+  }
+  return astream.every((s, index) => {
+    if (!s || !bstream[index]) {
+      return false;
+    }
+    return (
+      s?.kind === bstream[index].kind &&
+      s?.identifier === bstream[index].identifier
+    );
+  });
+};
+
 export const calculateWrongEdges = (
   edges: FlowEdge[],
   node: { id: string },
@@ -276,6 +297,7 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
     [
       ReactiveImplementationModelInput.Combinelatest,
       ReactiveImplementationModelInput.Withlatest,
+      ReactiveImplementationModelInput.Zip,
     ].includes(targetNode.data.implementation)
   ) {
     new_instream = targetNode.data.instream
@@ -285,6 +307,26 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
     new_outstream = [
       new_instream.reduce((x, news) => (x && x.concat(news)) || x, []),
     ];
+  }
+
+  if (
+    [
+      ReactiveImplementationModelInput.Add,
+      ReactiveImplementationModelInput.Modulo,
+      ReactiveImplementationModelInput.Multiply,
+      ReactiveImplementationModelInput.Divide,
+      ReactiveImplementationModelInput.Subtract,
+    ].includes(targetNode.data.implementation)
+  ) {
+    let x = sourceStream.filter(
+      (x) => x.kind != StreamKind.Int && x.kind != StreamKind.Float
+    );
+    if (x.length > 0) {
+      return { errors: [{ message: "Only int and float streams allowed" }] };
+    }
+
+    new_instream = [sourceStream];
+    new_outstream = [sourceStream];
   }
 
   if (
@@ -651,6 +693,112 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
     edges
       .filter((e) => e.target === targetNode.id)
       .filter((e) => e.targetHandle === params.targetHandle).length > 0;
+
+  if (
+    [
+      ReactiveImplementationModelInput.Add,
+      ReactiveImplementationModelInput.Modulo,
+      ReactiveImplementationModelInput.Multiply,
+      ReactiveImplementationModelInput.Divide,
+      ReactiveImplementationModelInput.Subtract,
+    ].includes(sourceNode.data.implementation)
+  ) {
+    let x = targetStream.filter(
+      (x) => x.kind != StreamKind.Int && x.kind != StreamKind.Float
+    );
+    if (x.length > 0) {
+      return { errors: [{ message: "Only int and float streams allowed" }] };
+    }
+
+    let new_reak_instreams = [targetStream];
+    let new_reak_outstreams = [targetStream];
+    // check which edges are wrong now
+
+    let wrongEdges = calculateWrongEdges(
+      edges,
+      sourceNode,
+      new_reak_instreams,
+      new_reak_outstreams
+    );
+
+    return {
+      nodes: nodes.map((node) =>
+        node.id === sourceNode.id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                instream: new_reak_instreams,
+                oustream: new_reak_outstreams,
+              },
+            }
+          : node
+      ),
+      edges: addEdge(
+        {
+          ...params,
+          data: { stream: targetStream.map(flussPortToStreamItem) },
+          type: "LabeledEdge",
+        },
+        edges
+      ).filter((e) => !wrongEdges.includes(e.id)),
+    };
+  }
+
+  if (
+    [
+      ReactiveImplementationModelInput.Combinelatest,
+      ReactiveImplementationModelInput.Withlatest,
+      ReactiveImplementationModelInput.Zip,
+    ].includes(sourceNode.data.implementation)
+  ) {
+    if (streamMatch(sourceStream, targetStream)) {
+      return {
+        edges: addEdge(
+          {
+            ...params,
+            data: { stream: targetStream.map(flussPortToStreamItem) },
+            type: "LabeledEdge",
+          },
+          edges
+        ),
+      };
+    }
+
+    let new_reak_instreams = targetStream.map((s, index) => [s]);
+    let new_reak_outstreams = [targetStream];
+    // check which edges are wrong now
+
+    let wrongEdges = calculateWrongEdges(
+      edges,
+      sourceNode,
+      new_reak_instreams,
+      new_reak_outstreams
+    );
+
+    return {
+      nodes: nodes.map((node) =>
+        node.id === sourceNode.id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                instream: new_reak_instreams,
+                oustream: new_reak_outstreams,
+              },
+            }
+          : node
+      ),
+      edges: addEdge(
+        {
+          ...params,
+          data: { stream: targetStream.map(flussPortToStreamItem) },
+          type: "LabeledEdge",
+        },
+        edges
+      ).filter((e) => !wrongEdges.includes(e.id)),
+    };
+  }
 
   if (
     [
