@@ -1,47 +1,33 @@
-
-      export interface PossibleTypesResultData {
-        possibleTypes: {
-          [key: string]: string[]
-        }
-      }
-      const result: PossibleTypesResultData = {
-  "possibleTypes": {
-    "CommentNode": [
-      "MentionDescendent",
-      "ParagraphDescendent"
-    ],
-    "Descendent": [
-      "Leaf",
-      "MentionDescendent",
-      "ParagraphDescendent"
-    ],
-    "FlowEdge": [
-      "FancyEdge",
-      "LabeledEdge"
-    ],
-    "FlowEdgeCommons": [
-      "FancyEdge",
-      "LabeledEdge"
-    ],
-    "FlowNode": [
+export interface PossibleTypesResultData {
+  possibleTypes: {
+    [key: string]: string[];
+  };
+}
+const result: PossibleTypesResultData = {
+  possibleTypes: {
+    CommentNode: ["MentionDescendent", "ParagraphDescendent"],
+    Descendent: ["Leaf", "MentionDescendent", "ParagraphDescendent"],
+    FlowEdge: ["FancyEdge", "LabeledEdge"],
+    FlowEdgeCommons: ["FancyEdge", "LabeledEdge"],
+    FlowNode: [
       "ArgNode",
       "ArkitektNode",
       "GraphNode",
       "KwargNode",
       "LocalNode",
       "ReactiveNode",
-      "ReturnNode"
+      "ReturnNode",
     ],
-    "FlowNodeCommons": [
+    FlowNodeCommons: [
       "ArgNode",
       "ArkitektNode",
       "GraphNode",
       "KwargNode",
       "LocalNode",
       "ReactiveNode",
-      "ReturnNode"
-    ]
-  }
+      "ReturnNode",
+    ],
+    RetriableNode: ["ArkitektNode", "LocalNode"],
+  },
 };
-      export default result;
-    
+export default result;

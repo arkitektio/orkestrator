@@ -3,3 +3,15 @@ mutation DeleteAgent($id: ID!) {
     id
   }
 }
+
+mutation KickAgent($id: ID!) {
+  kickAgent(id: $id) {
+    id
+  }
+}
+
+mutation BounceAgent($id: ID!) {
+  bounceAgent(id: $id) {
+    id
+  }
+}

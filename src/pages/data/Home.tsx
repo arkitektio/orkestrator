@@ -23,13 +23,11 @@ import { useMikro } from "../../mikro/MikroContext";
 import {
   MyContextsDocument,
   MyDatasetsDocument,
-  MyPlotsDocument,
 } from "../../mikro/api/graphql";
 import { MyEras } from "../../mikro/components/MyEras";
 import { MyStages } from "../../mikro/components/MyStages";
 import { CreateContextModal } from "../../mikro/components/dialogs/CreateContextModal";
 import { CreateDatasetModal } from "../../mikro/components/dialogs/CreateDatasetModal";
-import { CreatePlotModal } from "../../mikro/components/dialogs/CreatePlotModal";
 import HomeSidebar from "./HomeSidebar";
 
 interface IDataHomeProps {}
@@ -107,20 +105,6 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
                 }}
               >
                 New Dataset
-              </ActionButton>
-              <ActionButton
-                label="Create new Plot"
-                description="Create a new Plot"
-                onAction={async () => {
-                  console.log("create plot");
-
-                  await ask(CreatePlotModal, {});
-                  client?.refetchQueries({
-                    include: [MyPlotsDocument],
-                  });
-                }}
-              >
-                New Plot
               </ActionButton>
             </>
           )}

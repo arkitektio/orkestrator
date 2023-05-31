@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { MyContexts } from "../../../components/MyContexts";
-import { MyExperiments } from "../../../components/MyExperiments";
 import { ActionButton } from "../../../layout/ActionButton";
 import { PageLayout } from "../../../layout/PageLayout";
-import { CreateExperimentModal } from "../../../mikro/components/dialogs/CreateExperimentModal";
 
 export interface DataExperimentsProps {}
 

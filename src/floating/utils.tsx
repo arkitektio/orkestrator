@@ -226,6 +226,8 @@ export const flownodes_to_nodes = (nodes: FlowNode[]): NodeInput[] => {
             defaults: (rest as any).defaults,
             mapStrategy: (rest as any).mapStrategy,
             allowLocal: (rest as any).allowLocal,
+            maxRetries: (rest as any).maxRetries,
+            retryDelay: (rest as any).retryDelay,
             binds: (rest as any).binds,
             parentNode: parentNode,
             interface: (rest as any).interface,

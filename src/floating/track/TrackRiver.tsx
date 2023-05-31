@@ -14,6 +14,7 @@ import { edges_to_flowedges, nodes_to_flownodes } from "../utils";
 import { DynamicSidebar } from "./DynamicSidebar";
 import { LiveTracker } from "./LiveTracker";
 import { RangeTracker } from "./RangeTracker";
+import { TrackActions } from "./TrackActions";
 import { RiverTrackContext } from "./context";
 import { FancyTrackEdge } from "./edges/FancyTrackEdge";
 import { LabeledTrackEdge } from "./edges/LabeledTrackEdge";
@@ -23,6 +24,7 @@ import { ReactiveTrackNodeWidget } from "./nodes/ReactiveTrackNodeWidget";
 import { ArgTrackNodeWidget } from "./nodes/generic/ArgTrackNodeWidget";
 import { KwargTrackNodeWidget } from "./nodes/generic/KwargTrackNodeWidget";
 import { ReturnTrackNodeWidget } from "./nodes/generic/ReturnTrackNodeWidget";
+import { ParamsSidebar } from "./sidebars/ParamsSidebar";
 import { TimelineSidebar } from "./sidebars/TimelineSidebar";
 
 const nodeTypes: NodeTypes = {
@@ -75,9 +77,10 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
       <PageLayout
         sidebars={[
           { key: "flow", label: "Flow", content: <DynamicSidebar /> },
-          ,
+          { key: "params", label: "Params", content: <ParamsSidebar /> },
           { key: "timeline", label: "Timeline", content: <TimelineSidebar /> },
         ]}
+        actions={<TrackActions />}
       >
         <div className="flex flex-col flex-grow h-full overflow-x-hidden">
           <div className="flex-grow">

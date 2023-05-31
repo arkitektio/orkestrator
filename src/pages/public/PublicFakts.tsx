@@ -36,7 +36,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 Server
               </span>
             </h1>
-            <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+            <div className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
               Arkitekt emphasises modularity, this means that you can choose to
               connect to different servers through this webinterface.
               <div className="mt-1 text-sm">
@@ -51,12 +51,13 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 </a>
                 .
               </div>
-            </p>
+            </div>
             <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start gap-2">
               {advertisedHosts.length > 0 ? (
                 <>
-                  {advertisedHosts.map((e) => (
+                  {advertisedHosts.map((e, index) => (
                     <button
+                      key={index}
                       type="button"
                       onClick={() =>
                         load({

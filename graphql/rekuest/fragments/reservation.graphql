@@ -92,6 +92,38 @@ fragment DetailReservation on Reservation {
   }
 }
 
+fragment NodeReservation on Reservation {
+  title
+  status
+  id
+  reference
+  statusmessage
+  node {
+    id
+    kind
+    name
+    scope
+    description
+    args {
+      ...Port
+    }
+    returns {
+      ...Port
+    }
+    interfaces
+  }
+  template {
+    id
+    interface
+    agent {
+      ...ListAgent
+    }
+  }
+  provisions {
+    ...ListProvision
+  }
+}
+
 fragment ListReservation on Reservation {
   title
   status

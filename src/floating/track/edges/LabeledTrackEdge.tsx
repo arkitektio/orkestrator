@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { EdgeLabelRenderer, getSmoothStepPath } from "reactflow";
 import { RunEventType, StreamKind } from "../../../fluss/api/graphql";
+import { Assignation } from "../../../linker";
+import { withRekuest } from "../../../rekuest";
+import { useReferencedAssignationLazyQuery } from "../../../rekuest/api/graphql";
 import { LabeledEdgeProps } from "../../types";
 import { useTrackRiver } from "../context";
 
@@ -19,9 +22,28 @@ export const colorForLatestStyle: { [key in RunEventType]: string } = {
 };
 
 export const LabeledTrackEdge: React.FC<LabeledEdgeProps> = (props) => {
-  const { runState } = useTrackRiver();
+  const { runState, run } = useTrackRiver();
 
   const latestEvent = runState?.events?.find((e) => e?.source === props.source);
+
+  const target = props.target;
+
+  const [query, { data: assignation }] = withRekuest(
+    useReferencedAssignationLazyQuery
+  )();
+
+  useEffect(() => {
+    if (run?.assignation && latestEvent?.t != undefined && target) {
+      console.log("OINOoinsofinsoifnsoienf", `${target}_${latestEvent.t}`);
+      query({
+        variables: {
+          parent: run?.assignation,
+          reference: `${target}_${latestEvent.t}`,
+        },
+      });
+    }
+  }, [latestEvent?.t, run]);
+
   const latestGlobalEvent = runState?.events
     ?.sort((a, b) => (b?.t || 0) - (a?.t || 0))
     .at(0);
@@ -98,6 +120,14 @@ export const LabeledTrackEdge: React.FC<LabeledEdgeProps> = (props) => {
                 : item?.identifier || item?.kind) + (item?.nullable ? "?" : "")}
             </div>
           ))}
+          {assignation?.assignation?.id && (
+            <Assignation.DetailLink
+              object={assignation.assignation.id}
+              className="text-xs text-gray-200"
+            >
+              Open
+            </Assignation.DetailLink>
+          )}
         </div>
       </EdgeLabelRenderer>
     </>

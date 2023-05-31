@@ -1,6 +1,4 @@
 import React, { useCallback, useRef, useState } from "react";
-import "react-contexify/dist/ReactContexify.css";
-import "react-toastify/dist/ReactToastify.css";
 import {
   Connection,
   Edge,

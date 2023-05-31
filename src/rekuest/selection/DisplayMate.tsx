@@ -26,7 +26,7 @@ export const DisplayMate: React.FC<MateProps> = ({
 }) => {
   const { selection } = useModelSelector();
 
-  const click = (e: Event) => {
+  const click = (e: any) => {
     console.log("click");
     if (clickable) {
       e.stopPropagation();

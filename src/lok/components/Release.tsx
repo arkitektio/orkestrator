@@ -1,6 +1,7 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { PageLayout } from "../../layout/PageLayout";
+import { SectionTitle } from "../../layout/SectionTitle";
 import { useDialog } from "../../layout/dialog/DialogProvider";
 import { Client } from "../../linker";
 import { useReleaseQuery } from "../api/graphql";
@@ -18,7 +19,7 @@ export const Release: React.FC<AppProps> = (props) => {
   const { ask } = useDialog();
   return (
     <PageLayout actions={<></>}>
-      <div className="dark:text-white grid grid-rows-6">
+      <div className="dark:text-white h-full">
         <div
           className=" font-light row-span-2 p-5 border rounded-lg"
           style={
@@ -40,20 +41,22 @@ export const Release: React.FC<AppProps> = (props) => {
           <div className="text-6xl">{data?.release?.app?.identifier}</div>
           <div className="text-2xl mt-1">{data?.release?.version}</div>
         </div>
+
+        <SectionTitle>Clients</SectionTitle>
+        <ResponsiveContainerGrid>
+          {data?.release?.clients.map((client, index) => (
+            <Client.Smart
+              object={client.id}
+              className="border-1 bg-slate-800 rounded-lg p-5"
+              key={index}
+            >
+              <Client.DetailLink object={client.id}>
+                {client?.id}
+              </Client.DetailLink>
+            </Client.Smart>
+          ))}
+        </ResponsiveContainerGrid>
       </div>
-      <ResponsiveContainerGrid>
-        {data?.release?.clients.map((client, index) => (
-          <Client.Smart
-            object={client.id}
-            className="border-1 bg-slate-200"
-            key={index}
-          >
-            <Client.DetailLink object={client.id}>
-              {client?.id}
-            </Client.DetailLink>
-          </Client.Smart>
-        ))}
-      </ResponsiveContainerGrid>
     </PageLayout>
   );
 };

@@ -23,7 +23,7 @@ export type Modifier = "list" | "item";
 export type Accept = `${Modifier}:${Identifier}`;
 
 export type Partner = {
-  identifier: Identifier;
+  identifier: string;
   object: string;
 };
 

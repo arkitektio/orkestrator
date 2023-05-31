@@ -1,19 +1,20 @@
 import { ParentSize } from "@visx/responsive";
 import { Form, Formik } from "formik";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { CreateableSearchSelectInput } from "../../components/forms/fields/search_select_input";
-import { TextInputField } from "../../components/forms/fields/text_input";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { PositionCanvas } from "../../components/PositionCanvas";
 import { SelfActions } from "../../components/SelfActions";
+import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { TextInputField } from "../../components/forms/fields/text_input";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Instrument } from "../../linker";
+import { useSettings } from "../../settings/settings-context";
+import { withMikro } from "../MikroContext";
 import {
   CommentableModels,
   DetailStageDocument,
@@ -24,7 +25,6 @@ import {
   useTagSearchLazyQuery,
   useUpdateStageMutation,
 } from "../api/graphql";
-import { withMikro } from "../MikroContext";
 import { PositionCard } from "./cards/PositionCard";
 
 export type IExperimentProps = {
@@ -32,9 +32,11 @@ export type IExperimentProps = {
 };
 
 const Stage: React.FC<IExperimentProps> = ({ id }) => {
-  const { data, error } = withMikro(useDetailStageQuery)({
+  const { data, error, refetch } = withMikro(useDetailStageQuery)({
     variables: { id: id },
   });
+
+  const { settings } = useSettings();
 
   const [searchTags, _t] = withMikro(useTagSearchLazyQuery)();
   const [show, setshow] = useState(false);
@@ -63,6 +65,11 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
       });
     },
   });
+
+  useEffect(() => {
+    let x = setInterval(() => refetch(), settings.pollInterval);
+    return () => clearInterval(x);
+  }, []);
 
   return (
     <PageLayout

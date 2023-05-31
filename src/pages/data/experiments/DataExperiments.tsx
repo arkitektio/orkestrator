@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { MyExperiments } from "../../../components/MyExperiments";
 import { ActionButton } from "../../../layout/ActionButton";
 import { PageLayout } from "../../../layout/PageLayout";
-import { CreateExperimentModal } from "../../../mikro/components/dialogs/CreateExperimentModal";
 
 export interface DataExperimentsProps {}
 
@@ -19,7 +18,6 @@ export const DataExperiments: React.FC<DataExperimentsProps> = (props) => {
       }
     >
       <MyExperiments limit={10} />
-      <CreateExperimentModal setShow={setShow} show={show} />
     </PageLayout>
   );
 };

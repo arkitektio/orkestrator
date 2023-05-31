@@ -112,6 +112,14 @@ export enum ClientKind {
   Website = 'WEBSITE'
 }
 
+export type Configuration = {
+  __typename?: 'Configuration';
+  body: Scalars['String'];
+  id: Scalars['ID'];
+  linkers: Array<Linker>;
+  name: Scalars['String'];
+};
+
 export type CreatedBackendApp = {
   __typename?: 'CreatedBackendApp';
   clientId?: Maybe<Scalars['String']>;
@@ -130,6 +138,16 @@ export type DeleteChannelResult = {
 
 export type DeleteClientResult = {
   __typename?: 'DeleteClientResult';
+  id?: Maybe<Scalars['ID']>;
+};
+
+export type DeleteConfigurationResult = {
+  __typename?: 'DeleteConfigurationResult';
+  id?: Maybe<Scalars['ID']>;
+};
+
+export type DeleteLinkerResult = {
+  __typename?: 'DeleteLinkerResult';
   id?: Maybe<Scalars['ID']>;
 };
 
@@ -154,6 +172,35 @@ export type Element = {
   name: Scalars['String'];
   values?: Maybe<Scalars['GenericScalar']>;
 };
+
+export type Filter = {
+  __typename?: 'Filter';
+  id: Scalars['ID'];
+  linker: Linker;
+  method: FilterMethod;
+  value: Scalars['String'];
+};
+
+export type FilterInput = {
+  method: FilterMethod;
+  value: Scalars['String'];
+};
+
+export enum FilterMethod {
+  HostIs = 'HOST_IS',
+  HostIsNot = 'HOST_IS_NOT',
+  HostRegex = 'HOST_REGEX',
+  IdentifierIs = 'IDENTIFIER_IS',
+  IdentifierIsNot = 'IDENTIFIER_IS_NOT',
+  IdentifierRegex = 'IDENTIFIER_REGEX',
+  PortIs = 'PORT_IS',
+  PortIsNot = 'PORT_IS_NOT',
+  UserIs = 'USER_IS',
+  UserIsDeveloper = 'USER_IS_DEVELOPER',
+  VersionIs = 'VERSION_IS',
+  VersionIsNot = 'VERSION_IS_NOT',
+  VersionRegex = 'VERSION_REGEX'
+}
 
 export enum GrantType {
   AuthorizationCode = 'AUTHORIZATION_CODE',
@@ -207,6 +254,15 @@ export type HerreUser = {
   username: Scalars['String'];
 };
 
+export type Linker = {
+  __typename?: 'Linker';
+  filters: Array<Filter>;
+  id: Scalars['ID'];
+  name: Scalars['String'];
+  priority: Scalars['Int'];
+  template: Configuration;
+};
+
 export type Member = {
   __typename?: 'Member';
   id: Scalars['ID'];
@@ -219,8 +275,10 @@ export type Mutation = {
   changeMe?: Maybe<HerreUser>;
   createApplication?: Maybe<Application>;
   createChannel?: Maybe<Channel>;
+  createConfiguration?: Maybe<Configuration>;
   createElement?: Maybe<Element>;
   createGraph?: Maybe<Graph>;
+  createLinker?: Maybe<Linker>;
   createPrivateClient?: Maybe<Client>;
   createPublicClient?: Maybe<Client>;
   createUserApp?: Maybe<CreatedBackendApp>;
@@ -228,6 +286,8 @@ export type Mutation = {
   deleteApplication?: Maybe<DeleteApplicationResult>;
   deleteChannel?: Maybe<DeleteChannelResult>;
   deleteClient?: Maybe<DeleteClientResult>;
+  deleteConfiguration?: Maybe<DeleteConfigurationResult>;
+  deleteLinker?: Maybe<DeleteLinkerResult>;
   notifyUser?: Maybe<Array<Maybe<PublishResult>>>;
   publishToChannel?: Maybe<PublishResult>;
   updateApp?: Maybe<App>;
@@ -260,6 +320,13 @@ export type MutationCreateChannelArgs = {
 
 
 /** The root Mutation */
+export type MutationCreateConfigurationArgs = {
+  body: Scalars['String'];
+  name: Scalars['String'];
+};
+
+
+/** The root Mutation */
 export type MutationCreateElementArgs = {
   graph: Scalars['ID'];
   name: Scalars['String'];
@@ -270,6 +337,15 @@ export type MutationCreateElementArgs = {
 /** The root Mutation */
 export type MutationCreateGraphArgs = {
   name: Scalars['String'];
+};
+
+
+/** The root Mutation */
+export type MutationCreateLinkerArgs = {
+  filters: Array<InputMaybe<FilterInput>>;
+  name: Scalars['String'];
+  priority: Scalars['Int'];
+  template: Scalars['ID'];
 };
 
 
@@ -323,6 +399,18 @@ export type MutationDeleteChannelArgs = {
 
 /** The root Mutation */
 export type MutationDeleteClientArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationDeleteConfigurationArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationDeleteLinkerArgs = {
   id: Scalars['ID'];
 };
 
@@ -401,12 +489,18 @@ export type Query = {
   channels?: Maybe<Array<Maybe<Channel>>>;
   client?: Maybe<Client>;
   clients?: Maybe<Array<Maybe<Client>>>;
+  configuration?: Maybe<Configuration>;
+  configurations?: Maybe<Array<Maybe<Configuration>>>;
+  filter?: Maybe<Filter>;
+  filters?: Maybe<Array<Maybe<Filter>>>;
   graphs?: Maybe<Array<Maybe<Graph>>>;
   /** Get a group */
   group?: Maybe<Group>;
   /** Get a list of users */
   groups?: Maybe<Array<Maybe<Group>>>;
   hello?: Maybe<Scalars['String']>;
+  linker?: Maybe<Linker>;
+  linkers?: Maybe<Array<Maybe<Linker>>>;
   me?: Maybe<HerreUser>;
   /** Get information on your Docker Template */
   member?: Maybe<Member>;
@@ -472,6 +566,33 @@ export type QueryClientArgs = {
 
 
 /** The root Query */
+export type QueryConfigurationArgs = {
+  id?: InputMaybe<Scalars['ID']>;
+  name?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
+export type QueryConfigurationsArgs = {
+  search?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
+export type QueryFilterArgs = {
+  id?: InputMaybe<Scalars['ID']>;
+  name?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
+export type QueryFiltersArgs = {
+  linker?: InputMaybe<Scalars['ID']>;
+  methods?: InputMaybe<Array<InputMaybe<FilterMethod>>>;
+};
+
+
+/** The root Query */
 export type QueryGroupArgs = {
   id?: InputMaybe<Scalars['ID']>;
   name?: InputMaybe<Scalars['String']>;
@@ -483,6 +604,20 @@ export type QueryGroupsArgs = {
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
   name?: InputMaybe<Scalars['String']>;
   search?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
+export type QueryLinkerArgs = {
+  id?: InputMaybe<Scalars['ID']>;
+  name?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
+export type QueryLinkersArgs = {
+  search?: InputMaybe<Scalars['String']>;
+  template?: InputMaybe<Scalars['ID']>;
 };
 
 
@@ -569,7 +704,7 @@ export type DetailAppFragment = { __typename?: 'App', id: string, identifier: st
 
 export type ListAppFragment = { __typename?: 'App', id: string, identifier: string, logo?: string | null };
 
-export type DetailClientFragment = { __typename?: 'Client', id: string, token: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } };
+export type DetailClientFragment = { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } };
 
 export type ListClientFragment = { __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null };
 
@@ -603,7 +738,7 @@ export type CreatePrivateClientMutationVariables = Exact<{
 }>;
 
 
-export type CreatePrivateClientMutation = { __typename?: 'Mutation', createPrivateClient?: { __typename?: 'Client', id: string, token: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
+export type CreatePrivateClientMutation = { __typename?: 'Mutation', createPrivateClient?: { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
 
 export type CreatePublicClientMutationVariables = Exact<{
   identifier: Scalars['String'];
@@ -615,7 +750,7 @@ export type CreatePublicClientMutationVariables = Exact<{
 }>;
 
 
-export type CreatePublicClientMutation = { __typename?: 'Mutation', createPublicClient?: { __typename?: 'Client', id: string, token: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
+export type CreatePublicClientMutation = { __typename?: 'Mutation', createPublicClient?: { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
 
 export type DeleteClientMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -679,7 +814,7 @@ export type DetailClientQueryVariables = Exact<{
 }>;
 
 
-export type DetailClientQuery = { __typename?: 'Query', client?: { __typename?: 'Client', id: string, token: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
+export type DetailClientQuery = { __typename?: 'Query', client?: { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
 
 export type MyPublicClientsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -822,6 +957,7 @@ export const DetailClientFragmentDoc = gql`
     authorizationGrantType
     redirectUris
   }
+  scopes
 }
     `;
 export const ListUserFragmentDoc = gql`

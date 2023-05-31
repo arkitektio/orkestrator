@@ -10,8 +10,8 @@ import { MyPinnedRuns } from "../../components/MyPinnedRuns";
 import { MyPinnedWorkspaces } from "../../components/MyPinnedWorkspaces";
 import { MyRuns } from "../../components/MyRuns";
 import { MyDiagrams as MyWorkspaces } from "../../components/MyWorkspaces";
+import { CreateFlowDialog } from "../../fluss/components/dialogs/CreateFlowDialog";
 import { ImportFlowDialog } from "../../fluss/components/dialogs/ImportFlowDialog";
-import { CreateFlowModal } from "../../fluss/components/modals/CreateFlowModal";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { useDialog } from "../../layout/dialog/DialogProvider";
@@ -50,7 +50,6 @@ const FlowHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
     limit: Number,
     pinned: Bool,
   });
-  const [showCreateFlow, setShowCreateFlow] = React.useState(false);
   const { ask } = useDialog();
 
   return (
@@ -70,13 +69,18 @@ const FlowHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
         <>
           <ActionButton
             label="Create new Workspace"
-            onAction={async () => setShowCreateFlow(true)}
+            onAction={async () => {
+              let x = await ask(CreateFlowDialog, {});
+              if (x.res.drawvanilla) {
+                navigate(Workspace.linkBuilder(x.res.drawvanilla?.id));
+              }
+            }}
           />
           <ActionButton
             label="Import Flow"
             onAction={async () => {
               let x = await ask(ImportFlowDialog, {});
-              if (x) {
+              if (x.res.importflow) {
                 navigate(Workspace.linkBuilder(x.res.importflow?.id));
               }
             }}
@@ -88,8 +92,6 @@ const FlowHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
       <MyPinnedWorkspaces limit={80} />
       <MyRuns {...filterParams} />
       <MyWorkspaces {...filterParams} />
-
-      <CreateFlowModal show={showCreateFlow} setShow={setShowCreateFlow} />
     </PageLayout>
   );
 };

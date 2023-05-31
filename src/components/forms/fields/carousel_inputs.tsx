@@ -29,13 +29,13 @@ export function CarouselInputFieldBuilder<T extends Option>({
 }: CarouselInputFieldProps<T> & FieldProps): ReactNode {
   return (
     <div>
-      <div className="flex flex-row flex-wrap gap-2 border border-gray-200 rounded-lg text-lg mt-2">
+      <div className="flex flex-row flex-wrap  border border-gray-200 overflow-hidden rounded-lg text-lg mt-2">
         {options.map((option, index) => (
           <div
-            className={`flex-1 px-1 py-1 ${
+            className={`flex-1 px-1 py-1 cursor-pointer ${
               field.value == option.value
-                ? "bg-blue-300 text-white  rounded"
-                : "text-gray-700 rounded hover:bg-blue-500 hover:text-white "
+                ? "bg-blue-300 text-white "
+                : "text-gray-700 hover:bg-blue-500 hover:text-white "
             }`}
             onClick={() => form.setFieldValue(field.name, option.value)}
           >

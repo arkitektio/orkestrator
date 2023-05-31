@@ -6,12 +6,11 @@ import {
   AgentsEventDocument,
   AgentsEventSubscriptionResult,
   AgentsQuery,
-  AgentStatusInput,
   AssignationStatus,
   useAcknowledgeMutation,
-  useAgentsQuery,
   useAssignMutation,
   useDetailNodeQuery,
+  useMyAgentsQuery,
   useProvideMutation,
   useProvisionsQuery,
   useRequestsQuery,
@@ -83,11 +82,9 @@ export const TruePostmanProvider: React.FC<PostmanProviderProps> = ({
     });
 
   const { data: agents, subscribeToMore: subscribeToMoreAgents } = withRekuest(
-    useAgentsQuery
+    useMyAgentsQuery
   )({
-    variables: {
-      status: [AgentStatusInput.Active],
-    },
+    variables: {},
   });
 
   const [reserve] = withRekuest(useReserveMutation)();
@@ -145,7 +142,7 @@ export const TruePostmanProvider: React.FC<PostmanProviderProps> = ({
       },
     });
     return () => unsubscribe();
-  }, [subscribeToMoreReservations]);
+  }, []);
 
   useEffect(() => {
     console.log("Subscribing to MyProvisions");
@@ -192,7 +189,7 @@ export const TruePostmanProvider: React.FC<PostmanProviderProps> = ({
       },
     });
     return () => unsubscribe();
-  }, [subscribteToMoreProvisions]);
+  }, []);
 
   useEffect(() => {
     console.log("Subscribing to MyAssignations");
@@ -244,7 +241,7 @@ export const TruePostmanProvider: React.FC<PostmanProviderProps> = ({
       },
     });
     return () => unsubscribe();
-  }, [subscribeToMoreRequests]);
+  }, []);
 
   useEffect(() => {
     console.log("Subscribings to AgentsEvent");
@@ -252,26 +249,27 @@ export const TruePostmanProvider: React.FC<PostmanProviderProps> = ({
       document: AgentsEventDocument,
       variables: {},
       updateQuery: (prev, { subscriptionData }) => {
+        console.log(subscriptionData);
         var data = subscriptionData as AgentsEventSubscriptionResult;
         let action = data.data?.agentsEvent;
         let newelements;
 
         if (action?.deleted) {
           let ended_ass = action.deleted;
-          newelements = prev.agents
+          newelements = prev.myagents
             ?.map((item: any) => (item.id === ended_ass ? null : item))
             .filter((item) => item != null);
         }
 
         if (action?.updated) {
           let updated_ass = action.updated;
-          let objIndex = prev.agents?.findIndex(
+          let objIndex = prev.myagents?.findIndex(
             (obj) => obj?.id == updated_ass.id
           );
           if (objIndex == -1) {
-            newelements = prev.agents?.concat(updated_ass);
+            newelements = prev.myagents?.concat(updated_ass);
           } else {
-            newelements = prev.agents
+            newelements = prev.myagents
               ?.map((item: any) =>
                 item.id === updated_ass ? updated_ass : item
               )
@@ -283,7 +281,7 @@ export const TruePostmanProvider: React.FC<PostmanProviderProps> = ({
       },
     });
     return () => unsubscribe();
-  }, [subscribeToMoreAgents]);
+  }, []);
 
   return (
     <PostmanContext.Provider

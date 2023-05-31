@@ -4,6 +4,12 @@ query DetailAssignation($id: ID!) {
   }
 }
 
+query ReferencedAssignation($reference: String!, $parent: ID) {
+  assignation(reference: $reference, parent: $parent) {
+    ...DetailAssignation
+  }
+}
+
 query Requests {
   requests(exclude: [DONE, CRITICAL]) {
     ...ListAssignation

@@ -1,7 +1,10 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { PageLayout } from "../../layout/PageLayout";
 import { useDialog } from "../../layout/dialog/DialogProvider";
-import { useDetailClientQuery } from "../api/graphql";
+import {
+  ApplicationAuthorizationGrantType,
+  useDetailClientQuery,
+} from "../api/graphql";
 import { withMan } from "../man";
 
 export type AppProps = {
@@ -41,6 +44,22 @@ export const Client: React.FC<AppProps> = (props) => {
             {data?.client?.release?.app?.identifier}
           </div>
           <div className="text-2xl mt-1">{data?.client?.release?.version}</div>
+          <div className="text-1xl font-light mt-1">
+            {data?.client?.oauth2Client.authorizationGrantType ==
+              ApplicationAuthorizationGrantType.AuthorizationCode &&
+              "Public Client"}
+            {data?.client?.oauth2Client.authorizationGrantType ==
+              ApplicationAuthorizationGrantType.ClientCredentials &&
+              "Confidential Client"}
+          </div>
+          <div className="text-1xl font-light mt-1">
+            <div className="font-bold mb-2">Scopes</div>
+            <ul className="">
+              {data?.client?.scopes.map((scope) => (
+                <li className="font-light text-sm">{scope}</li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     </PageLayout>

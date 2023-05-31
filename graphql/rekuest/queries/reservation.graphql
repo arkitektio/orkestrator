@@ -24,7 +24,7 @@ query DetailReservation($id: ID!) {
 
 query ProvisionReferenceReservation($provision: ID!, $reference: String!) {
   reservation(provision: $provision, reference: $reference) {
-    ...DetailReservation
+    ...NodeReservation
   }
 }
 

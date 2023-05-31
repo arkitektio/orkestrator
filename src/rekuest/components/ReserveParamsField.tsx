@@ -1,6 +1,6 @@
 import { useField } from "formik";
 import React from "react";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import { FittingResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { useDetailClientQuery, useUserQuery } from "../../lok/api/graphql";
 import { withMan } from "../../lok/man";
 import { useMikro } from "../../mikro/MikroContext";
@@ -128,7 +128,7 @@ export const ReserveParamsField = ({
           </button>
         )}
       </div>
-      <ResponsiveContainerGrid>
+      <FittingResponsiveContainerGrid fitLength={restructuredData?.length}>
         {restructuredData?.map((app) => (
           <div
             key={app.clientId}
@@ -153,7 +153,7 @@ export const ReserveParamsField = ({
           >
             <App clientId={app.clientId} />
 
-            <ResponsiveContainerGrid fitLength={app.templates?.length}>
+            <FittingResponsiveContainerGrid fitLength={app.templates?.length}>
               {app.templates.map((template) => (
                 <div
                   key={template.id}
@@ -195,10 +195,10 @@ export const ReserveParamsField = ({
                   </label>
                 </div>
               ))}
-            </ResponsiveContainerGrid>
+            </FittingResponsiveContainerGrid>
           </div>
         ))}
-      </ResponsiveContainerGrid>
+      </FittingResponsiveContainerGrid>
     </div>
   );
 };

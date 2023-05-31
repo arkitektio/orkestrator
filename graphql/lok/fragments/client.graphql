@@ -17,6 +17,7 @@ fragment DetailClient on Client {
     authorizationGrantType
     redirectUris
   }
+  scopes
 }
 
 fragment ListClient on Client {

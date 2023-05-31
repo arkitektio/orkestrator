@@ -1,35 +1,21 @@
-import { Dialog } from "@headlessui/react";
 import { Field, Form, Formik, FormikHelpers } from "formik";
 import { Maybe } from "graphql/jsutils/Maybe";
-import React, { useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import React, { useEffect } from "react";
 import {
-  DetailNodeDocument,
-  DetailNodeQuery,
-  NodeListItemFragment,
-  NodeKind,
-  useNodesQuery,
-  Scope,
-  NodeScope,
-} from "../../../rekuest/api/graphql";
-import { useRekuest, withRekuest } from "../../../rekuest/RekuestContext";
-import { SmartModel } from "../../../rekuest/selection/SmartModel";
-import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
-import { useModal } from "../../../components/modals/modal-context";
-import {
-  ArkitektNodeFragment,
-  ReactiveNodeFragment,
-  ReactiveTemplateFragment,
-  StreamKind,
-  useReactiveTemplateQuery,
   FlowFragment,
+  ReactiveTemplateFragment,
   useReactiveTemplatesQuery,
 } from "../../../fluss/api/graphql";
 import { withFluss } from "../../../fluss/fluss";
-import { FlowNode } from "../../types";
-import { notEmpty, port_to_stream } from "../../utils";
-import { useEditRiver } from "../context";
-import { Graph } from "../../base/Graph";
+import { withRekuest } from "../../../rekuest/RekuestContext";
+import {
+  NodeListItemFragment,
+  NodeScope,
+  useNodesQuery,
+} from "../../../rekuest/api/graphql";
+import { SmartModel } from "../../../rekuest/selection/SmartModel";
+import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
+import { notEmpty } from "../../utils";
 
 interface NodeListProps {
   nodes: Maybe<NodeListItemFragment>[];

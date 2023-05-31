@@ -11,8 +11,14 @@ fragment FlowNodeCommons on FlowNodeCommons {
   constants
 }
 
+fragment RetriableNode on RetriableNode {
+  maxRetries
+  retryDelay
+}
+
 fragment ArkitektNode on ArkitektNode {
   ...FlowNodeCommons
+  ...RetriableNode
   __typename
   name
   description
@@ -28,10 +34,12 @@ fragment ArkitektNode on ArkitektNode {
   assignTimeout
   yieldTimeout
   reserveTimeout
+  maxRetries
 }
 
 fragment LocalNode on LocalNode {
   ...FlowNodeCommons
+  ...RetriableNode
   __typename
   name
   description
@@ -43,6 +51,7 @@ fragment LocalNode on LocalNode {
   allowLocal
   assignTimeout
   yieldTimeout
+  maxRetries
 }
 
 fragment ReactiveNode on ReactiveNode {

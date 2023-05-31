@@ -48,6 +48,22 @@ export const MaterProvider: React.FC<MaterProviderProps> = ({ children }) => {
 
     console.log(self, partners, res, isBatch, isSelf);
 
+    let selfInside = partners.find(
+      (el) => el.identifier === self.identifier && el.object === self.object
+    );
+
+    if (isBatch || selfInside) {
+      partners.map((el) =>
+        assign({
+          reservation: res,
+          defaults: {
+            [selfArg.key]: el.object,
+          },
+        })
+      );
+      return;
+    }
+
     if (partners.length > 1) {
       if (isSelf) {
         if (isBatch) {

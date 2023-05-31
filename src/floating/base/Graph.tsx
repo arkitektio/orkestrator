@@ -1,14 +1,11 @@
 import React from "react";
-import "react-contexify/dist/ReactContexify.css";
 import ReactFlow, {
   EdgeTypes,
   ReactFlowProps,
   ReactFlowProvider,
 } from "reactflow";
-import "react-toastify/dist/ReactToastify.css";
-import { FlowEdge, FlowNode, NodeTypes } from "../types";
-import { ColouredMiniMap } from "./ColouredMiniMap";
 import "reactflow/dist/style.css";
+import { FlowEdge, FlowNode, NodeTypes } from "../types";
 import "./styles.css";
 
 type Props = {

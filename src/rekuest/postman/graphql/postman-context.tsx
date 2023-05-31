@@ -1,11 +1,8 @@
 import React, { useContext } from "react";
 import {
   AcknowledgeMutationFn,
-  AgentsQuery,
   AssignMutationFn,
-  AssignMutationVariables,
-  ListReservationFragment,
-  MyReservationsQuery,
+  MyAgentsQuery,
   ProvideMutationFn,
   ProvisionsQuery,
   RequestsQuery,
@@ -20,7 +17,7 @@ export type ArkitektContextType = {
   reservations?: ReservationsQuery;
   requests?: RequestsQuery;
   provisions?: ProvisionsQuery;
-  agents?: AgentsQuery;
+  agents?: MyAgentsQuery;
   reserve: ReserveMutationFn;
   unreserve: UnreserveMutationFn;
   provide: ProvideMutationFn;

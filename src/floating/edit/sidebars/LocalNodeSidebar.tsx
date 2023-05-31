@@ -1,7 +1,7 @@
 import { Form, Formik } from "formik";
 import { useEffect, useState } from "react";
 import { NumberInputField } from "../../../components/forms/fields/number_input";
-import { LocalNodeFragment, MapStrategy } from "../../../fluss/api/graphql";
+import { LocalNodeFragment } from "../../../fluss/api/graphql";
 import { withRekuest } from "../../../rekuest";
 import { useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
@@ -74,6 +74,8 @@ export const LocalNodeSidebar = (
               mapStrategy: props.node.data.mapStrategy,
               assignTimeout: props.node.data.assignTimeout,
               yieldTimeout: props.node.data.yieldTimeout,
+              maxRetries: props.node.data.maxRetries,
+              retryDelay: props.node.data.retryDelay,
             }}
           >
             {(formikProps) => (
@@ -99,6 +101,18 @@ export const LocalNodeSidebar = (
                       name="yieldTimeout"
                       labelClassName="text-white"
                       description="How long to wait for a Task to yield to succeed before giving up."
+                    />
+                    <NumberInputField
+                      label="maxRetries"
+                      name="maxRetries"
+                      labelClassName="text-white"
+                      description="How many times to retry a Task before giving up."
+                    />
+                    <NumberInputField
+                      label="retryDelay"
+                      name="retryDelay"
+                      labelClassName="text-white"
+                      description="How long to wait between retries"
                     />
                   </div>
                 )}

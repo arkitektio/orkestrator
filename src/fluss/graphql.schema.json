@@ -420,6 +420,22 @@
             "deprecationReason": null
           },
           {
+            "name": "maxRetries",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "name",
             "description": null,
             "args": [],
@@ -500,6 +516,22 @@
             "deprecationReason": null
           },
           {
+            "name": "retryDelay",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "typename",
             "description": null,
             "args": [],
@@ -542,6 +574,11 @@
           {
             "kind": "INTERFACE",
             "name": "FlowNodeCommons",
+            "ofType": null
+          },
+          {
+            "kind": "INTERFACE",
+            "name": "RetriableNode",
             "ofType": null
           }
         ],
@@ -4540,6 +4577,22 @@
             "deprecationReason": null
           },
           {
+            "name": "maxRetries",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "name",
             "description": null,
             "args": [],
@@ -4604,6 +4657,38 @@
             "deprecationReason": null
           },
           {
+            "name": "retryDelay",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "retrySleepMs",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "typename",
             "description": null,
             "args": [],
@@ -4646,6 +4731,11 @@
           {
             "kind": "INTERFACE",
             "name": "FlowNodeCommons",
+            "ofType": null
+          },
+          {
+            "kind": "INTERFACE",
+            "name": "RetriableNode",
             "ofType": null
           }
         ],
@@ -6256,6 +6346,18 @@
             "deprecationReason": null
           },
           {
+            "name": "maxRetries",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "defaultValue": "0",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "name",
             "description": null,
             "type": {
@@ -6328,6 +6430,18 @@
               "ofType": null
             },
             "defaultValue": "2000",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "retryDelay",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "defaultValue": "0",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -9818,6 +9932,60 @@
         "interfaces": [],
         "enumValues": null,
         "possibleTypes": null
+      },
+      {
+        "kind": "INTERFACE",
+        "name": "RetriableNode",
+        "description": null,
+        "fields": [
+          {
+            "name": "maxRetries",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "retryDelay",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": [
+          {
+            "kind": "OBJECT",
+            "name": "ArkitektNode",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "LocalNode",
+            "ofType": null
+          }
+        ]
       },
       {
         "kind": "OBJECT",

@@ -77,7 +77,7 @@ export const ArkitektNodeSidebar = (
             />
           )}
         </div>
-        <div className="flex flex-grow" />
+        <div className="flex flex-grow @container" />
 
         {node_data?.node?.id && (
           <Formik<Partial<ArkitektNodeFragment>>
@@ -95,6 +95,8 @@ export const ArkitektNodeSidebar = (
               reserveTimeout: props.node.data.reserveTimeout,
               assignTimeout: props.node.data.assignTimeout,
               yieldTimeout: props.node.data.yieldTimeout,
+              maxRetries: props.node.data.maxRetries,
+              retryDelay: props.node.data.retryDelay,
             }}
           >
             {(formikProps) => (
@@ -129,9 +131,9 @@ export const ArkitektNodeSidebar = (
                       name="mapStrategy"
                       labelClassName="text-white"
                       optionBuilder={(option) => (
-                        <div className="flex-1"> {option.label}</div>
+                        <div className="flex-shrink"> {option.label}</div>
                       )}
-                      description="How long to wait for a reservation to succeed before giving up."
+                      description="How should we call the functionality?"
                     />
                     <NumberInputField
                       label="reserveTimeout"
@@ -150,6 +152,18 @@ export const ArkitektNodeSidebar = (
                       name="yieldTimeout"
                       labelClassName="text-white"
                       description="How long to wait for a Task to yield to succeed before giving up."
+                    />
+                    <NumberInputField
+                      label="maxRetries"
+                      name="maxRetries"
+                      labelClassName="text-white"
+                      description="How many times to retry a Task before giving up."
+                    />
+                    <NumberInputField
+                      label="retryDelay"
+                      name="retryDelay"
+                      labelClassName="text-white"
+                      description="How long to wait between retries"
                     />
                   </div>
                 )}

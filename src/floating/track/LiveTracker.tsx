@@ -32,6 +32,7 @@ export const LiveTracker = ({
         if (prev_node) {
           if (prev_node.t <= event.t) {
             highest_t = Math.max(highest_t, event.t);
+
             return prev.map((i) => (i.source === event.source ? event : i));
           }
           return prev;

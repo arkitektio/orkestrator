@@ -39,7 +39,8 @@
       "QueryWidget",
       "SearchWidget",
       "SliderWidget",
-      "StringWidget"
+      "StringWidget",
+      "TemplateWidget"
     ]
   }
 };

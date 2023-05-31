@@ -50,6 +50,12 @@ query DetailRun($id: ID, $assignation: ID) {
   }
 }
 
+query ExportRun($id: ID) {
+  run(id: $id) {
+    ...ExportRun
+  }
+}
+
 query EventsBetween($id: ID!, $min: Int, $max: Int) {
   eventsBetween(run: $id, min: $min, max: $max) {
     ...RunEvent

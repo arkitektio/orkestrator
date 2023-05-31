@@ -1,7 +1,5 @@
-import { Transition } from "@headlessui/react";
-import React, { useEffect, useState } from "react";
 import { Allotment } from "allotment";
-import { RiArrowLeftSFill, RiArrowRightSFill } from "react-icons/ri";
+import React, { useEffect, useState } from "react";
 
 export type Sidebar = {
   label: string;
@@ -69,6 +67,7 @@ export const ModuleLayout: React.FC<ModuleLayoutProps> = (props) => {
           <div className="absolute bottom-[1rem] left-0 flex flex-col gap-2">
             {props.sidebars?.map((s, index) => (
               <div
+                key={index}
                 className={`cursor-pointer  text-white bg-primary-300 rounded-r-md py-1 cursor-pointer ${
                   isOpen[index] ? "bg-primary-300" : "bg-back-800"
                 }`}

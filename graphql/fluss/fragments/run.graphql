@@ -43,6 +43,25 @@ fragment Run on Run {
   }
 }
 
+fragment ExportRun on Run {
+  id
+  status
+  assignation
+  snapshots {
+    id
+    status
+    t
+    createdAt
+  }
+  createdAt
+  events {
+    ...RunEvent
+  }
+  flow {
+    ...Flow
+  }
+}
+
 fragment ListRun on Run {
   id
   status
