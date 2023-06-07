@@ -52,7 +52,7 @@ export const MaterProvider: React.FC<MaterProviderProps> = ({ children }) => {
       (el) => el.identifier === self.identifier && el.object === self.object
     );
 
-    if (isBatch || selfInside) {
+    if (isBatch) {
       partners.map((el) =>
         assign({
           reservation: res,

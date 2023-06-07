@@ -13,13 +13,6 @@ export const EnhancedStringWidget: React.FC<
     return (
       <ParagraphInputField
         name={port.key}
-        validate={(value) =>
-          value
-            ? undefined
-            : port.nullable
-            ? undefined
-            : "Please select a valid test"
-        }
         label={port.label || port.key}
         description={port.description || ""}
         placeholder={widget.placeholder || ""}
@@ -29,13 +22,6 @@ export const EnhancedStringWidget: React.FC<
   return (
     <TextInputField
       name={port.key}
-      validate={(value) =>
-        value
-          ? undefined
-          : port.nullable
-          ? undefined
-          : "Please select a valid test"
-      }
       label={port.label || port.key}
       description={port.description || ""}
       placeholder={widget?.placeholder || ""}

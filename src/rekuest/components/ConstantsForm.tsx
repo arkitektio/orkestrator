@@ -49,6 +49,15 @@ export const portToWidget = (
   );
 };
 
+// helper for yup transform function
+function emptyStringToNull(value: any, originalValue: any) {
+  console.log(value, originalValue);
+  if (typeof originalValue === "string" && originalValue === "") {
+    return null;
+  }
+  return value;
+}
+
 export const port_to_validation = (port: PortFragment): Yup.AnySchema => {
   let baseType;
   switch (port?.kind) {
@@ -57,20 +66,17 @@ export const port_to_validation = (port: PortFragment): Yup.AnySchema => {
       break;
     case PortKind.Int:
       baseType = Yup.number()
-        .integer()
-        .typeError(`Please enter a valid integer`);
+        .integer("Please enter a valid integer")
+        .typeError(`Please enter a valid integer`)
+        .transform((v) => (v === "" || Number.isNaN(v) ? null : v));
       break;
     case PortKind.Float:
-      baseType = Yup.number().typeError(`Please enter a valid number`);
+      baseType = Yup.number()
+        .transform((v) => (v === "" || Number.isNaN(v) ? null : v))
+        .typeError(`Please enter a valid number`);
       break;
     case PortKind.Structure:
-      baseType = Yup.string()
-        .typeError(`Please select a ${port.identifier}`)
-        .test({
-          name: "structure",
-          test: (value) => !value?.includes(","),
-          message: "Please select a valid structure identifier",
-        });
+      baseType = Yup.string().typeError(`Please select a ${port.identifier}`);
       break;
     case PortKind.Bool:
       baseType = Yup.boolean().typeError("Please select true or false");
@@ -89,12 +95,11 @@ export const port_to_validation = (port: PortFragment): Yup.AnySchema => {
       baseType = Yup.string();
       break;
   }
-  console.log(port, baseType);
-  let modified =
-    port?.nullable || port?.default
-      ? baseType.nullable(true)
-      : baseType?.required("This port cannot be null");
-  return modified;
+  if (port.nullable) {
+    baseType = baseType.nullable("Please provide a value");
+  }
+
+  return baseType;
 };
 
 export const validationSchemaBuilder = (
@@ -223,16 +228,22 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
     ...mappedPortGroups,
   ];
 
+  const schema = validationSchemaBuilder(unsetArgs);
+
   return (
     <Formik<{ [key: string]: any }>
       enableReinitialize
       initialValues={initialValues}
       onSubmit={async (values, formikHelpers) => {
+        values = schema.cast(values);
         let set_values = unsetArgs.map((arg) => values[arg?.key || "test"]);
+        console.log(values, set_values);
         onSubmit && (await onSubmit(set_values, values, formikHelpers));
       }}
-      validateOnMount={unsetArgs.length == 0}
+      validationSchema={schema}
+      validateOnBlur
       validateOnChange
+      validateOnMount
     >
       {(formikProps) => (
         <Form>

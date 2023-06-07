@@ -66,13 +66,6 @@ export const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
   return (
     <SearchInput
       name={port.key || "fake"}
-      validate={(value) =>
-        value
-          ? undefined
-          : port.nullable
-          ? undefined
-          : "Please select a valid choice"
-      }
       searchFunction={searchFunction}
       label={port.label || port.key}
       description={port.description || ""}
@@ -130,13 +123,6 @@ export const ListSearchWidget: React.FC<
   return (
     <ListSearchInput
       name={port.key || "fake"}
-      validate={(value) =>
-        value
-          ? undefined
-          : port.nullable
-          ? undefined
-          : "Please select a valid choice"
-      }
       searchFunction={searchFunction}
       label={port.label || port.key}
       description={port.description || ""}

@@ -1,5 +1,8 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { useConfirm } from "../../../components/confirmer/confirmer-context";
 import { Container } from "../../../linker";
+import { useReleaseQuery } from "../../../lok/api/graphql";
+import { withMan } from "../../../lok/man";
 import { MateFinder } from "../../../mates/types";
 import { ContainerStatus, ListContainerFragment } from "../../api/graphql";
 
@@ -34,6 +37,15 @@ export const containerStateToStyle = (
 export const ContainerCard = ({ container, mates }: UserCardProps) => {
   const { confirm } = useConfirm();
 
+  const { data } = withMan(useReleaseQuery)({
+    variables: {
+      identifier: container?.whale?.deployment?.identifier,
+      version: container?.whale?.deployment?.version,
+    },
+  });
+
+  const { s3resolve } = useDatalayer();
+
   return (
     <Container.Smart
       object={container.id}
@@ -43,6 +55,17 @@ export const ContainerCard = ({ container, mates }: UserCardProps) => {
       mates={mates}
     >
       <div className="p-2 ">
+        {data?.release && (
+          <img
+            className="h-10 w-10 rounded-md"
+            src={
+              data?.release?.logo
+                ? s3resolve(data?.release?.logo)
+                : `https://eu.ui-avatars.com/api/?name=${data?.release?.app?.identifier}&background=random`
+            }
+            alt=""
+          />
+        )}
         <div className="flex">
           <span className="flex-grow font-semibold text-xs">
             {container.status}

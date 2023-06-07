@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import "react-contexify/dist/ReactContexify.css";
 import ReactTooltip from "react-tooltip";
 import { Handle, Position } from "reactflow";
-import { RunEventFragment } from "../../../fluss/api/graphql";
+import { ContractPulse } from "../../../fluss/components/ContractPulse";
 import { withRekuest } from "../../../rekuest";
 import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
@@ -18,12 +18,7 @@ export const ArkitektTraceNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
     });
     const { isExpanded, toggleExpanded } = useNodeLayout();
 
-    const [frozenevent, setFrozenEvent] = useState<
-      RunEventFragment | null | undefined
-    >();
-
-    const latestEvent =
-      frozenevent || conditionState?.events?.find((e) => e?.source === id);
+    const latestEvent = conditionState?.events?.find((e) => e?.source === id);
 
     const border =
       data.kind === NodeKind.Generator
@@ -75,7 +70,8 @@ export const ArkitektTraceNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           className="flex-initial font-light text-xl mb-1 custom-drag-handle cursor-pointer truncate"
           onDoubleClick={() => toggleExpanded()}
         >
-          <div className="w-full flex flex-row justify-between">
+          <div className="w-full flex flex-row  gap-2">
+            <ContractPulse status={latestEvent?.state} />{" "}
             {node_data?.node?.name || data.name}{" "}
           </div>
         </div>

@@ -22,7 +22,6 @@ export const IntField = (props: NumberInputFieldProps) => {
             type="number"
             placeholder={props.placeholder}
             className="w-full border h-10 border-grey-light rounded px-3 relative focus:border-blue focus:shadow text-black"
-            value={field.value}
             {...field}
           />
           {meta && meta.touched && meta.error && (

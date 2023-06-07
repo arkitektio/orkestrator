@@ -1,5 +1,6 @@
 import { addEdge } from "reactflow";
 import {
+  PortChildFragment,
   PortFragment,
   ReactiveImplementationModelInput,
   Scope,
@@ -31,6 +32,11 @@ export const unsetPort: PortFragment = {
   identifier: "unset",
   nullable: false,
   scope: Scope.Global,
+};
+
+export const cleanToChild = (port: PortFragment): PortChildFragment => {
+  const { key, label, description, ...rest } = port;
+  return { ...rest, __typename: "PortChild" };
 };
 
 export const error_updater: Connector = ({ params, nodes, edges }) => {
@@ -158,7 +164,7 @@ export const arg_to_ark: Connector<ArgNodeData, ArkitektNodeData> = ({
   };
 };
 
-export const ark_to_return: Connector<ArkitektNodeData, ReturnNodeData> = ({
+export const to_return: Connector<ArkitektNodeData, ReturnNodeData> = ({
   params,
   nodes,
   sourceNode,
@@ -359,7 +365,7 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
     new_instream = [sourceStream];
     new_outstream = [
       sourceStream.map((x) => ({ ...x, nullable: false })),
-      targetNode.data.outstream.at(1),
+      targetNode.data.outstream.at(1) || [unsetPort],
     ];
   }
 
@@ -422,12 +428,11 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
     }
     new_instream = [sourceStream];
 
-    let { key, label, description, __typename, ...clean_child } = x;
     new_outstream = [
       [
         {
           key: "buffer",
-          child: { ...clean_child, __typename: "PortChild" },
+          child: cleanToChild(x),
           scope: Scope.Global,
           nullable: false,
           kind: StreamKind.List,
@@ -524,13 +529,7 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
     new_outstream = [
       [
         {
-          child: {
-            scope: sourceStream[0].scope,
-            kind: sourceStream[0].kind,
-            identifier: sourceStream[0].identifier,
-            child: sourceStream[0].child,
-            nullable: false,
-          },
+          child: cleanToChild(sourceStream.at(0)),
           scope: Scope.Global,
           key: "list",
           kind: StreamKind.List,
@@ -576,102 +575,6 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
         message: "nOt implemented yet",
       },
     ],
-  };
-};
-
-export const reak_to_return: Connector = ({
-  params,
-  nodes,
-  sourceNode,
-  targetNode,
-  sourceStream,
-  edges,
-  sourceTypes,
-  targetTypes,
-}) => {
-  let source_index = handle_to_index(params.sourceHandle);
-  let target_index = handle_to_index(params.targetHandle);
-
-  let outtypes = sourceTypes;
-  let intypes = targetTypes;
-
-  let hasConnectedEdges =
-    edges
-      .filter((e) => e.target === targetNode.id)
-      .filter((e) => e.targetHandle === params.targetHandle).length > 0;
-
-  if (!outtypes || !intypes) {
-    return { errors: [{ message: "No types" }] };
-  }
-
-  if (intypes.length === 0 || !hasConnectedEdges) {
-    // Vanilla Return Node
-
-    let new_instream = targetNode.data.instream.map((s, index) =>
-      index === target_index ? sourceNode.data.outstream[0] : s
-    );
-
-    console.log(new_instream);
-
-    let new_outstream = new_instream.reduce(
-      (x, news) => x && x.concat(news),
-      []
-    );
-
-    console.log(new_outstream);
-
-    return {
-      nodes: nodes.map((node) =>
-        node.id === targetNode.id
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                instream: new_instream,
-                outstream: [new_outstream],
-              },
-            }
-          : node
-      ),
-      edges: addEdge(
-        {
-          ...params,
-          data: { stream: sourceStream.map(flussPortToStreamItem) },
-          type: "LabeledEdge",
-        },
-        edges
-      ),
-      returns: sourceStream,
-    };
-  }
-
-  if (outtypes.length !== intypes.length) {
-    return { errors: [{ message: "Stream length is different" }] };
-  }
-
-  if (outtypes.join() !== intypes.join()) {
-    return {
-      errors: [
-        {
-          message:
-            "Types don't match " +
-            outtypes.join(",") +
-            "vs " +
-            intypes.join(","),
-        },
-      ],
-    };
-  }
-
-  return {
-    edges: addEdge(
-      {
-        ...params,
-        data: { stream: sourceStream.map(flussPortToStreamItem) },
-        type: "LabeledEdge",
-      },
-      edges
-    ),
   };
 };
 
@@ -886,7 +789,18 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
       sourceNode.data.implementation
     )
   ) {
-    let new_reak_instreams = sourceNode.data.instream;
+    let new_reak_instreams = [
+      targetStream.map((s, index) => {
+        return {
+          child: cleanToChild(s),
+          key: `list${index}`,
+          label: "List of " + s.label,
+          nullable: false,
+          scope: Scope.Global,
+          kind: StreamKind.List,
+        };
+      }),
+    ];
     let new_reak_outstreams = [targetStream];
     // check which edges are wrong now
 
@@ -927,7 +841,10 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
     )
   ) {
     let new_reak_outstreams = [targetStream];
-    let new_reak_instreams = [targetStream, sourceNode.data.instream.at(1)];
+    let new_reak_instreams = [
+      targetStream,
+      sourceNode.data.instream.at(1) || [],
+    ];
 
     // check which edges are wrong now
 
@@ -1171,13 +1088,12 @@ export const reak_to_reak: Connector<ReactiveNodeData, ReactiveNodeData> = ({
 
   if (sourceUnset && targetUnset) {
     return {
-      errors:
-        "both source and target are unset, this should not happen, please report this as a bug",
+      errors: [{ message: "not implemented yet" }],
     };
   }
 
   return {
-    errors: "Not implemented yet,....",
+    errors: [{ message: "not implemented yet" }],
   };
 };
 
@@ -1230,7 +1146,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     LocalNode: ark_to_ark,
     KwargNode: error_builder("Cannot connect to a Kwarg Node as an output"),
     ReactiveNode: to_reactive,
-    ReturnNode: ark_to_return,
+    ReturnNode: to_return,
     GraphNode: arg_to_ark,
   },
   LocalNode: {
@@ -1239,7 +1155,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     LocalNode: ark_to_ark,
     KwargNode: error_builder("Cannot connect to a Kwarg Node as an output"),
     ReactiveNode: to_reactive,
-    ReturnNode: ark_to_return,
+    ReturnNode: to_return,
     GraphNode: ark_to_ark,
   },
   ArgNode: {
@@ -1284,7 +1200,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     LocalNode: reak_to_ark,
     KwargNode: void_updater,
     ReactiveNode: to_reactive,
-    ReturnNode: reak_to_return,
+    ReturnNode: to_return,
     GraphNode: reak_to_ark,
   },
 };

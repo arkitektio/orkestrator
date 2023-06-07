@@ -164,7 +164,6 @@ const getLayoutedElements = (
 export const port_to_input = (port: PortFragment): PortInput => {
   return {
     key: port.key,
-    name: port.name,
     kind: port.kind,
     label: port.label,
     scope: port.scope,
@@ -469,9 +468,11 @@ export const EditRiver: React.FC<Props> = ({
                             ],
                             mapStrategy: MapStrategy.Map,
                             allowLocal: false,
-                            assignTimeout: 2000,
-                            yieldTimeout: 2000,
-                            reserveTimeout: 2000,
+                            assignTimeout: 100000,
+                            yieldTimeout: 100000,
+                            reserveTimeout: 100000,
+                            maxRetries: 3,
+                            retryDelay: 2000,
                             outstream: [
                               event?.data?.node?.returns
                                 ?.filter(notEmpty)
@@ -518,8 +519,10 @@ export const EditRiver: React.FC<Props> = ({
                           ],
                           mapStrategy: MapStrategy.Map,
                           allowLocal: false,
-                          assignTimeout: 2000,
-                          yieldTimeout: 2000,
+                          assignTimeout: 100000,
+                          yieldTimeout: 100000,
+                          maxRetries: 3,
+                          retryDelay: 2000,
                           outstream: [
                             event?.data?.template.node?.returns
                               ?.filter(notEmpty)

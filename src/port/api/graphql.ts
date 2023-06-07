@@ -224,9 +224,8 @@ export type PullEvent = {
 
 /** Docker pull progress status. */
 export enum PullProgressStatus {
-  Downloading = 'DOWNLOADING',
-  Extracting = 'EXTRACTING',
-  Pulled = 'PULLED'
+  Pulled = 'PULLED',
+  Pulling = 'PULLING'
 }
 
 export type PullWhaleReturn = {
@@ -324,6 +323,14 @@ export type QueryDeploymentArgs = {
 
 
 /** The root Query */
+export type QueryDeploymentsArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  search?: InputMaybe<Scalars['String']>;
+};
+
+
+/** The root Query */
 export type QueryGithubRepoArgs = {
   id: Scalars['ID'];
 };
@@ -331,7 +338,9 @@ export type QueryGithubRepoArgs = {
 
 /** The root Query */
 export type QueryGithubReposArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
 };
 
 
@@ -350,6 +359,8 @@ export type QueryWhaleArgs = {
 
 /** The root Query */
 export type QueryWhalesArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
   search?: InputMaybe<Scalars['String']>;
 };
 
@@ -398,9 +409,9 @@ export type WhaleEvent = {
   whale?: Maybe<Scalars['ID']>;
 };
 
-export type DetailContainerFragment = { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type DetailContainerFragment = { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
-export type ListContainerFragment = { __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type ListContainerFragment = { __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
 export type DetailDeploymentFragment = { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null };
 
@@ -414,9 +425,9 @@ export type DetailGithubRepoFragment = { __typename?: 'GithubRepo', id: string, 
 
 export type ListGithubRepoFragment = { __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string };
 
-export type DetailWhaleFragment = { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null };
+export type DetailWhaleFragment = { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null };
 
-export type ListWhaleFragment = { __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, command?: string | null, logo?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }, latestEvent?: { __typename?: 'WhaleEvent', whale?: string | null, pull?: { __typename?: 'PullEvent', status?: PullProgressStatus | null, progress?: number | null } | null } | null };
+export type ListWhaleFragment = { __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, token?: string | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, command?: string | null, logo?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }, latestEvent?: { __typename?: 'WhaleEvent', whale?: string | null, pull?: { __typename?: 'PullEvent', status?: PullProgressStatus | null, progress?: number | null } | null } | null };
 
 export type StopContainerMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -468,7 +479,7 @@ export type RunWhaleMutationVariables = Exact<{
 }>;
 
 
-export type RunWhaleMutation = { __typename?: 'Mutation', runWhale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type RunWhaleMutation = { __typename?: 'Mutation', runWhale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
 export type DeleteWhaleMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -489,7 +500,7 @@ export type PurgeWhaleMutationVariables = Exact<{
 }>;
 
 
-export type PurgeWhaleMutation = { __typename?: 'Mutation', purgeWhale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type PurgeWhaleMutation = { __typename?: 'Mutation', purgeWhale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
 export type CreateWhaleMutationVariables = Exact<{
   deployment: Scalars['ID'];
@@ -498,23 +509,26 @@ export type CreateWhaleMutationVariables = Exact<{
 }>;
 
 
-export type CreateWhaleMutation = { __typename?: 'Mutation', createWhale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type CreateWhaleMutation = { __typename?: 'Mutation', createWhale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
 export type ContainersQueryVariables = Exact<{
   status?: InputMaybe<Array<InputMaybe<ContainerStatus>> | InputMaybe<ContainerStatus>>;
 }>;
 
 
-export type ContainersQuery = { __typename?: 'Query', containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null> | null };
+export type ContainersQuery = { __typename?: 'Query', containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null> | null };
 
 export type DetailContainerQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailContainerQuery = { __typename?: 'Query', container?: { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null };
+export type DetailContainerQuery = { __typename?: 'Query', container?: { __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null };
 
-export type DeploymentsQueryVariables = Exact<{ [key: string]: never; }>;
+export type DeploymentsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+}>;
 
 
 export type DeploymentsQuery = { __typename?: 'Query', deployments?: Array<{ __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, command?: string | null, logo?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> } | null> | null };
@@ -526,7 +540,10 @@ export type DetailDeploymentQueryVariables = Exact<{
 
 export type DetailDeploymentQuery = { __typename?: 'Query', deployment?: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null } | null };
 
-export type GithubReposQueryVariables = Exact<{ [key: string]: never; }>;
+export type GithubReposQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+}>;
 
 
 export type GithubReposQuery = { __typename?: 'Query', githubRepos?: Array<{ __typename?: 'GithubRepo', id: string, user: string, repo: string, branch: string } | null> | null };
@@ -543,19 +560,22 @@ export type PortGlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type PortGlobalSearchQuery = { __typename?: 'Query', containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null> | null, whales?: Array<{ __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, command?: string | null, logo?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }, latestEvent?: { __typename?: 'WhaleEvent', whale?: string | null, pull?: { __typename?: 'PullEvent', status?: PullProgressStatus | null, progress?: number | null } | null } | null } | null> | null };
+export type PortGlobalSearchQuery = { __typename?: 'Query', containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null, whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null } | null> | null, whales?: Array<{ __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, token?: string | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, command?: string | null, logo?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }, latestEvent?: { __typename?: 'WhaleEvent', whale?: string | null, pull?: { __typename?: 'PullEvent', status?: PullProgressStatus | null, progress?: number | null } | null } | null } | null> | null };
 
 export type DetailWhaleQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailWhaleQuery = { __typename?: 'Query', whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
+export type DetailWhaleQuery = { __typename?: 'Query', whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, token?: string | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, requirements?: any | null, command?: string | null, logo?: string | null, originalLogo?: string | null }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
-export type WhalesQueryVariables = Exact<{ [key: string]: never; }>;
+export type WhalesQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+}>;
 
 
-export type WhalesQuery = { __typename?: 'Query', whales?: Array<{ __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, command?: string | null, logo?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }, latestEvent?: { __typename?: 'WhaleEvent', whale?: string | null, pull?: { __typename?: 'PullEvent', status?: PullProgressStatus | null, progress?: number | null } | null } | null } | null> | null };
+export type WhalesQuery = { __typename?: 'Query', whales?: Array<{ __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, token?: string | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, identifier: string, version: string, scopes: Array<string | null>, image: string, command?: string | null, logo?: string | null, whales: Array<{ __typename?: 'Whale', id: string }> }, latestEvent?: { __typename?: 'WhaleEvent', whale?: string | null, pull?: { __typename?: 'PullEvent', status?: PullProgressStatus | null, progress?: number | null } | null } | null } | null> | null };
 
 export type MyWhalesUpdateSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -588,6 +608,7 @@ export const DetailWhaleFragmentDoc = gql`
   }
   pulled
   latestPull
+  token
   containers {
     id
     name
@@ -681,6 +702,7 @@ export const ListWhaleFragmentDoc = gql`
   }
   clientId
   pulled
+  token
   latestPull
   latestEvent {
     whale
@@ -1138,8 +1160,8 @@ export type DetailContainerQueryHookResult = ReturnType<typeof useDetailContaine
 export type DetailContainerLazyQueryHookResult = ReturnType<typeof useDetailContainerLazyQuery>;
 export type DetailContainerQueryResult = Apollo.QueryResult<DetailContainerQuery, DetailContainerQueryVariables>;
 export const DeploymentsDocument = gql`
-    query Deployments {
-  deployments {
+    query Deployments($limit: Int, $offset: Int) {
+  deployments(limit: $limit, offset: $offset) {
     ...ListDeployment
   }
 }
@@ -1157,6 +1179,8 @@ export const DeploymentsDocument = gql`
  * @example
  * const { data, loading, error } = useDeploymentsQuery({
  *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
  *   },
  * });
  */
@@ -1207,8 +1231,8 @@ export type DetailDeploymentQueryHookResult = ReturnType<typeof useDetailDeploym
 export type DetailDeploymentLazyQueryHookResult = ReturnType<typeof useDetailDeploymentLazyQuery>;
 export type DetailDeploymentQueryResult = Apollo.QueryResult<DetailDeploymentQuery, DetailDeploymentQueryVariables>;
 export const GithubReposDocument = gql`
-    query GithubRepos {
-  githubRepos {
+    query GithubRepos($limit: Int, $offset: Int) {
+  githubRepos(limit: $limit, offset: $offset) {
     ...ListGithubRepo
   }
 }
@@ -1226,6 +1250,8 @@ export const GithubReposDocument = gql`
  * @example
  * const { data, loading, error } = useGithubReposQuery({
  *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
  *   },
  * });
  */
@@ -1350,8 +1376,8 @@ export type DetailWhaleQueryHookResult = ReturnType<typeof useDetailWhaleQuery>;
 export type DetailWhaleLazyQueryHookResult = ReturnType<typeof useDetailWhaleLazyQuery>;
 export type DetailWhaleQueryResult = Apollo.QueryResult<DetailWhaleQuery, DetailWhaleQueryVariables>;
 export const WhalesDocument = gql`
-    query Whales {
-  whales {
+    query Whales($limit: Int, $offset: Int) {
+  whales(limit: $limit, offset: $offset) {
     ...ListWhale
   }
 }
@@ -1369,6 +1395,8 @@ export const WhalesDocument = gql`
  * @example
  * const { data, loading, error } = useWhalesQuery({
  *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
  *   },
  * });
  */

@@ -66,10 +66,10 @@ export const AgentCard = ({ agent, mates }: TemplateCardProps) => {
 
               <div className="my-auto ml-2">
                 <div className="font-semibold text-md">
-                  {data?.client?.release?.app.identifier}:
+                  {data?.client?.release?.app.identifier}
                 </div>
                 <div className="font-light text-md">
-                  {data?.client?.release?.version}: on {agent?.instanceId}
+                  {data?.client?.release?.version} on {agent?.instanceId}
                 </div>
               </div>
             </Agent.DetailLink>

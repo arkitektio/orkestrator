@@ -4,8 +4,8 @@ query DetailAssignation($id: ID!) {
   }
 }
 
-query ReferencedAssignation($reference: String!, $parent: ID) {
-  assignation(reference: $reference, parent: $parent) {
+query ReferencedAssignations($reference: String!, $parent: ID) {
+  assignations(reference: $reference, parent: $parent) {
     ...DetailAssignation
   }
 }

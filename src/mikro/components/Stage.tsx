@@ -7,11 +7,9 @@ import { PositionCanvas } from "../../components/PositionCanvas";
 import { SelfActions } from "../../components/SelfActions";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { TextInputField } from "../../components/forms/fields/text_input";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
-import { SectionTitle } from "../../layout/SectionTitle";
+import { ListRender, SectionTitle } from "../../layout/SectionTitle";
 import { Instrument } from "../../linker";
 import { useSettings } from "../../settings/settings-context";
 import { withMikro } from "../MikroContext";
@@ -118,7 +116,6 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
                       {data.stage?.positions && (
                         <PositionCanvas
                           positions={data.stage?.positions}
-                          highlight={[]}
                           height={400}
                           width={400}
                         />
@@ -178,14 +175,7 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
                     <Form>
                       <div className="border-t border-gray-300 pt-2">
                         <TextInputField name="name" label="Name" />
-                        <div className="flex-grow">
-                          <CreateableSearchSelect
-                            name="tags"
-                            isMulti={true}
-                            label="Tags"
-                            lazySearch={searchTags}
-                          />
-                        </div>
+                        <div className="flex-grow"></div>
                         <button
                           type="submit"
                           className="border border-gray-600 rounded w-fit p-1 focus:border-green-300"
@@ -201,12 +191,9 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
             </div>
           </div>
 
-          <SectionTitle> Positions </SectionTitle>
-          <ResponsiveContainerGrid>
-            {data?.stage?.positions?.filter(notEmpty).map((pos) => (
-              <PositionCard position={pos} />
-            ))}
-          </ResponsiveContainerGrid>
+          <ListRender title="Positions" array={data?.stage?.positions}>
+            {(pos) => <PositionCard position={pos} mates={[]} />}
+          </ListRender>
         </div>
       )}
     </PageLayout>

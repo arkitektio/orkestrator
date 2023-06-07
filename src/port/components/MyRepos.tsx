@@ -1,51 +1,32 @@
 import React from "react";
-import {
-  BsArrowDownCircleFill,
-  BsCaretLeft,
-  BsCaretRight,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { useNavigate } from "react-router";
-import { IconButton } from "../../components/buttons/IconButton";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
-import { Modal } from "../../components/modals/Modal";
-import { notEmpty } from "../../floating/utils";
-import { GithubRepo } from "../../linker";
+import { ListRender } from "../../layout/SectionTitle";
 import { useDeleteGithubRepoMate } from "../../mates/repo/useDeleteGithubRepoMate";
 import { useGithubRepoLifecycleMate } from "../../mates/repo/useGithubRepoLifecycleMate";
-import {
-  useScanRepoMutation,
-  GithubReposDocument,
-  useDeleteGithubRepoMutation,
-  useGithubReposQuery,
-} from "../api/graphql";
 import { withPort } from "../PortContext";
+import { useGithubReposQuery } from "../api/graphql";
 import { RepoCard } from "./cards/RepoCard";
 
 export type IMyWhalesProps = {};
 
 const MyRepos: React.FC<IMyWhalesProps> = ({}) => {
-  const { data } = withPort(useGithubReposQuery)();
+  const { data, refetch } = withPort(useGithubReposQuery)({
+    variables: { limit: 20 },
+  });
 
   const deleteRepoMate = useDeleteGithubRepoMate();
   const repoLF = useGithubRepoLifecycleMate();
 
   return (
     <div>
-      <span className="font-light text-xl text-white">My Repos</span>
-      <br />
-      <ResponsiveContainerGrid>
-        {data?.githubRepos?.filter(notEmpty).map((repo, index) => (
+      <ListRender title="My Repos" array={data?.githubRepos} refetch={refetch}>
+        {(repo, index) => (
           <RepoCard
             repo={repo}
             key={index}
             mates={[repoLF, deleteRepoMate(repo)]}
           />
-        ))}
-      </ResponsiveContainerGrid>
+        )}
+      </ListRender>
     </div>
   );
 };

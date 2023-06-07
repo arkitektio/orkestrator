@@ -168,7 +168,9 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
               {data?.node?.args && data?.node.args.length > 0 && (
                 <div className="font-light mb-1"> Arguments </div>
               )}
-              {data?.node?.args?.map(portMapper)}
+              <div className="flex flex-col gap-2">
+                {data?.node?.args?.map(portMapper)}
+              </div>
               {data?.node?.returns && data?.node.returns.length > 0 && (
                 <div className="font-light mt-3 mb-1">
                   {" "}
@@ -177,7 +179,9 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
                     : "Streams"}{" "}
                 </div>
               )}
-              {data?.node?.returns?.map(portMapper)}
+              <div className="flex flex-col gap-2">
+                {data?.node?.returns?.map(portMapper)}
+              </div>
             </div>
           </div>
         </div>

@@ -98,12 +98,14 @@ export const ListRender = <T extends any>({
   array: (T | null | undefined)[] | null | undefined;
   limit?: number;
   actions?: React.ReactNode;
-  refetch: (values: { limit: number; offset: number }) => Promise<any>;
+  refetch?: (values: { limit: number; offset: number }) => Promise<any>;
 }) => {
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
-    refetch({ limit: limit, offset: offset });
+    if (refetch) {
+      refetch({ limit: limit, offset: offset });
+    }
   }, [offset, limit]);
 
   return (
@@ -119,13 +121,14 @@ export const ListRender = <T extends any>({
                   array={array}
                   step={limit}
                 />
-                <Refetcher
-                  onClick={() => refetch({ limit: limit, offset: offset })}
-                />
+                {refetch && (
+                  <Refetcher
+                    onClick={() => refetch({ limit: limit, offset: offset })}
+                  />
+                )}
                 {actions}
               </div>
             }
-            onClick={() => refetch({ limit: limit, offset: offset })}
           >
             {title}
           </SectionTitle>

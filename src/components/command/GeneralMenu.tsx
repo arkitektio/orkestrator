@@ -122,14 +122,17 @@ export const GeneralMenu = () => {
         setOpen((open) => !open);
       }
       if (e.key === "," && e.ctrlKey) {
-        setOpen((open) => !open);
-        setModifiers((modifiers) => []);
+        if (modifiers.length > 0) {
+          setModifiers((modifiers) => modifiers.slice(0, -1));
+        } else {
+          setOpen((open) => !open);
+        }
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []);
+  }, [modifiers]);
 
   return (
     <Transition

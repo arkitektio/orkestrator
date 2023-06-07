@@ -1,26 +1,17 @@
 import * as React from "react";
-import { useNavigate } from "react-router-dom";
+import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import { notEmpty } from "../../floating/utils";
+import { useNodeActionMate } from "../../mates/nodes/useNodeActionMate";
+import { withRekuest } from "../../rekuest";
 import {
-  NodeListItemFragment,
   NodesEventDocument,
   NodesEventSubscriptionHookResult,
   NodesQuery,
   NodesQueryVariables,
   useNodesQuery,
 } from "../../rekuest/api/graphql";
-import {
-  AdditionalMate,
-  Mate,
-} from "../../rekuest/postman/mater/mater-context";
-import { useReserver } from "../../rekuest/postman/reserver/reserver-context";
-import { ResponsiveList } from "../../components/layout/ResponsiveList";
-import { notEmpty } from "../../floating/utils";
-import { Flow, Node } from "../../linker";
-import { DashboardSearchFilter } from "./DashboardSearch";
-import { withRekuest } from "../../rekuest";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { NodeCard } from "../../rekuest/components/cards/NodeCard";
-import { useNodeActionMate } from "../../mates/nodes/useNodeActionMate";
+import { DashboardSearchFilter } from "./DashboardSearch";
 
 interface IDashBoardSidebarProps {}
 
@@ -89,9 +80,6 @@ const DashBoardSidebar: React.FunctionComponent<IDashBoardSidebarProps> = (
       <div className="flex-grow overflow-y-scroll p-2 overflow-x-hidden">
         {data?.allnodes && data?.allnodes.length > 0 && (
           <>
-            <div className="font-semibold text-center text-xs dark:text-slate-50 mb-1">
-              Nodes
-            </div>
             <ResponsiveContainerGrid>
               {data?.allnodes?.filter(notEmpty).map((node, index) => (
                 <NodeCard key={index} node={node} mates={[assignMate(node)]} />

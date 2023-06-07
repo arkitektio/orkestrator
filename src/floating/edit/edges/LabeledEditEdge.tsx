@@ -1,11 +1,32 @@
 import React from "react";
 import { AiOutlineClose } from "react-icons/ai";
-import { getSmoothStepPath, useNodes, EdgeLabelRenderer } from "reactflow";
-import { StreamKind } from "../../../fluss/api/graphql";
+import { EdgeLabelRenderer, getSmoothStepPath } from "reactflow";
+import {
+  StreamItemChild,
+  StreamItemFragment,
+  StreamKind,
+} from "../../../fluss/api/graphql";
 import { LabeledEdgeProps } from "../../types";
+import { notEmpty } from "../../utils";
 import { useEditRiver } from "../context";
 
 const foreignObjectSize = 200;
+
+const to_child_name = (stream: StreamItemChild): string => {
+  return (
+    (stream?.kind == StreamKind.List && stream.child
+      ? "[ " + to_child_name(stream.child) + " ]"
+      : stream?.identifier || stream?.kind) + (stream?.nullable ? "?" : "")
+  );
+};
+
+const to_stream_name = (item: StreamItemFragment) => {
+  return (
+    (item?.kind == StreamKind.List && item.child
+      ? "[ " + to_child_name(item.child) + " ]"
+      : item?.identifier || item?.kind) + (item?.nullable ? "?" : "")
+  );
+};
 
 export const LabeledEditEdge: React.FC<LabeledEdgeProps> = (props) => {
   const { removeEdge } = useEditRiver();
@@ -50,11 +71,9 @@ export const LabeledEditEdge: React.FC<LabeledEdgeProps> = (props) => {
           }}
           className="flex flex-row group m-auto hover:bg-gray-500 bg-gray-800 border-[#555] border rounded-lg shadow-lg p-1 cursor-pointer select-none text-gray-400 left[-75px] hover:text-gray-200 "
         >
-          {data?.stream.map((item, index) => (
+          {data?.stream.filter(notEmpty).map((item, index) => (
             <div className="text-xs " key={index}>
-              {(item?.kind == StreamKind.List
-                ? "[ " + (item?.child?.identifier || item?.child?.kind) + " ]"
-                : item?.identifier || item?.kind) + (item?.nullable ? "?" : "")}
+              {to_stream_name(item)}
             </div>
           ))}
 

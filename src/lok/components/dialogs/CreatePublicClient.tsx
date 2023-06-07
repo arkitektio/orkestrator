@@ -48,7 +48,7 @@ export const CreatePublicClientDialog = (
     >
       <Form>
         <TwDialog
-          title="Create Public Fakt"
+          title="Create a Public Client"
           buttons={
             <>
               <button
@@ -64,50 +64,56 @@ export const CreatePublicClientDialog = (
             </>
           }
         >
-          <span className="font-light text-xl text-black">
-            <div className="font-light text-sm mb-2">
-              This repo would like to create an App on your behalf
-            </div>
-            <TextInputField
-              name="identifier"
-              label="Identifier"
-              placeholder="Identifier"
-              description="The identifier of the App"
-            />
-            <TextInputField
-              name="version"
-              label="Version"
-              placeholder="Version"
-              description="The version of the App"
-            />
-            <SwitchInputField
-              name="confidential"
-              label="Confidential"
-              description="In this setting you need to provide a secret to authenticate your app. This is useful for apps that run on your own server. If you are unsure, leave this on."
-              falseDescription="The client secret will be public. And every website will be able to claim the rights of this client. Your only security is to
+          <div className="font-semibold text-lg mb-2">
+            This is an advanced feature
+          </div>
+          <div className="font-normal text-sm mb-2">
+            Public Clients are a necessary Proxy in arkitekt to enable
+            Applications, that seek to authenticate Users, and gain access to
+            their data. Instead of being bound to only one users, these apps can
+            ask the user to login . As there is no real way to identify the
+            application itself make sure that the redirect uris are correct and
+            only redirect to domains that you control.
+          </div>
+          <TextInputField
+            name="identifier"
+            label="Identifier"
+            placeholder="Identifier"
+            description="The identifier of the App"
+          />
+          <TextInputField
+            name="version"
+            label="Version"
+            placeholder="Version"
+            description="The version of the App"
+          />
+          <SwitchInputField
+            name="confidential"
+            label="Confidential"
+            description="In this setting you need to provide a secret to authenticate your app. This is useful for apps that run on your own server. If you are unsure, leave this on."
+            falseDescription="The client secret will be public. And every website will be able to claim the rights of this client. Your only security is to
                 make sure the redirect uri is correct and only is able to redirect to domains that you control."
-            />
+          />
 
-            <CreateableListSearchInput
-              name="redirectUris"
-              label="Redirect uris"
-              createFunction={async (uri) => {
-                return {
-                  label: uri,
-                  value: uri,
-                };
-              }}
-              searchFunction={async () => []}
-              description="Specify the redirect uris for this fakt"
-            />
+          <CreateableListSearchInput
+            name="redirectUris"
+            label="Redirect uris"
+            createFunction={async (uri) => {
+              return {
+                label: uri,
+                value: uri,
+              };
+            }}
+            searchFunction={async () => []}
+            description="Specify the redirect uris for this fakt"
+          />
 
-            <GraphQLListSearchInput
-              name="scopes"
-              label="Scopes"
-              searchFunction={searchScopes}
-              description="Specify the scopes you want the app to be able to claim. These are not the scopes the app will eventually claim, but the scopes you want it to be able to claim."
-            />
-          </span>
+          <GraphQLListSearchInput
+            name="scopes"
+            label="Scopes"
+            searchFunction={searchScopes}
+            description="Specify the scopes you want the app to be able to claim. These are not the scopes the app will eventually claim, but the scopes you want it to be able to claim."
+          />
         </TwDialog>
       </Form>
     </Formik>

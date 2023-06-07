@@ -3,8 +3,9 @@ import { EdgeLabelRenderer, getSmoothStepPath } from "reactflow";
 import { RunEventType, StreamKind } from "../../../fluss/api/graphql";
 import { Assignation } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
-import { useReferencedAssignationLazyQuery } from "../../../rekuest/api/graphql";
+import { useReferencedAssignationsLazyQuery } from "../../../rekuest/api/graphql";
 import { LabeledEdgeProps } from "../../types";
+import { notEmpty } from "../../utils";
 import { useTrackRiver } from "../context";
 
 export const colorForStyle: { [key in RunEventType]: string } = {
@@ -29,7 +30,7 @@ export const LabeledTrackEdge: React.FC<LabeledEdgeProps> = (props) => {
   const target = props.target;
 
   const [query, { data: assignation }] = withRekuest(
-    useReferencedAssignationLazyQuery
+    useReferencedAssignationsLazyQuery
   )();
 
   useEffect(() => {
@@ -120,14 +121,14 @@ export const LabeledTrackEdge: React.FC<LabeledEdgeProps> = (props) => {
                 : item?.identifier || item?.kind) + (item?.nullable ? "?" : "")}
             </div>
           ))}
-          {assignation?.assignation?.id && (
+          {assignation?.assignations?.filter(notEmpty).map((assignation) => (
             <Assignation.DetailLink
-              object={assignation.assignation.id}
+              object={assignation.id}
               className="text-xs text-gray-200"
             >
               Open
             </Assignation.DetailLink>
-          )}
+          ))}
         </div>
       </EdgeLabelRenderer>
     </>

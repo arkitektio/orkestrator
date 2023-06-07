@@ -11,7 +11,6 @@ import {
   getDefaultSmartModel,
   getIdentifierForCommentableModel,
 } from "../../linker";
-import { MyClients } from "../../lok/components/MyPrivateFakts";
 import { UserTag } from "../../lok/components/UserTag";
 import { CreatePublicClientDialog } from "../../lok/components/dialogs/CreatePublicClient";
 import { withMikro } from "../../mikro/MikroContext";
@@ -121,12 +120,11 @@ const TeamHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
       }
     >
       <div className="flex-initial flex flex-row mb-2">
-        <div className="text-xl dark:text-white">My Feed</div>
+        <div className="text-xl dark:text-white">My Mentions</div>
       </div>
       {data?.mymentions?.filter(notEmpty).map((x, index) => (
         <MentionedComment key={index} comment={x} />
       ))}
-      <MyClients />
     </PageLayout>
   );
 };

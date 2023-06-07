@@ -1,14 +1,9 @@
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { withRekuest } from "../../rekuest";
-import {
-  ListReservationFragment,
-  useUnlinkMutation,
-} from "../../rekuest/api/graphql";
+import { useUnlinkMutation } from "../../rekuest/api/graphql";
 import { MateFinder } from "../types";
 
-export const useUnlinkProvisionMate = (
-  res: ListReservationFragment
-): MateFinder => {
+export const useUnlinkProvisionMate = (res: { id: string }): MateFinder => {
   const { confirm } = useConfirm();
 
   const [unlink] = withRekuest(useUnlinkMutation)();

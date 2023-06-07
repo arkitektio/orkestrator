@@ -10,40 +10,14 @@ fragment ListAgent on Agent {
 fragment DetailAgent on Agent {
   id
   templates {
-    id
-    node {
-      name
-      scope
-    }
-    policy
-    creator {
-      username
-    }
+    ...ListTemplate
   }
   registry {
     ...Registry
   }
   instanceId
   provisions {
-    id
-    template {
-      node {
-        name
-      }
-    }
-    reservations {
-      id
-      waiter {
-        registry {
-          ...Registry
-        }
-      }
-    }
-    status
-    creator {
-      username
-      sub
-    }
+    ...ListProvision
   }
   status
   name

@@ -6,13 +6,6 @@ const StructureWidget: React.FC<InputWidgetProps> = ({ port, widget }) => {
   return (
     <Field
       name={port.key}
-      validate={(value: any) =>
-        value
-          ? undefined
-          : port.nullable
-          ? undefined
-          : "Please select a valid choice"
-      }
     >
       {({
         field, // { name, value, onChange, onBlur }// also values, setXXXX, handleXXXX, dirty, isValid, status, etc.

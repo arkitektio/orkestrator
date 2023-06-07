@@ -16,13 +16,15 @@ const ListWidget: React.FC<InputWidgetProps> = ({ port, widget }) => {
   return (
     <Field
       name={port.key}
-      validate={(value: any) =>
-        value
-          ? undefined
-          : port.nullable
-          ? undefined
-          : "Please select a valid choice"
-      }
+      validate={(value: any) => {
+        if (value == undefined) {
+          if (port.nullable) return "This port cant be empty"
+          return undefined;
+        }
+        if (!Array.isArray(value)) return "Please enter a list";
+        return undefined;
+
+      }}
     >
       {({
         field, // { name, value, onChange, onBlur }// also values, setXXXX, handleXXXX, dirty, isValid, status, etc.

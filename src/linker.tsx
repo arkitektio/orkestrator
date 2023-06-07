@@ -483,9 +483,9 @@ export const GithubRepo = buildSmart("@port/githubrepo", "githubrepos", [
   "item:@port/githubrepo",
 ]);
 
-export const RepoScan = buildSmart("@port/reposcan", "reposcans", [
-  "list:@port/reposcan",
-  "item:@port/reposcan",
+export const Deployment = buildSmart("@port/deployment", "deployments", [
+  "list:@port/deployment",
+  "item:@port/deployment",
 ]);
 
 export const RekuestLink = buildModuleLink("rekuest");
@@ -529,8 +529,8 @@ export const getDefaultSmartModel = (ident: Identifier) => {
       return Roi;
     case "@mikro/position":
       return Position;
-    case "@mikro/acquisition":
-      return Acquisition;
+    case "@mikro/stage":
+      return Stage;
     case "@mikro/omerofile":
       return MikroFile;
     case "@mikro/label":
@@ -547,12 +547,12 @@ export const getDefaultSmartModel = (ident: Identifier) => {
       return Run;
     case "@fluss/snapshot":
       return Snapshot;
-    case "@man/user":
+    case "@lok/user":
       return User;
-    case "@man/team":
+    case "@lok/team":
       return Team;
-    case "@man/application":
-      return Application;
+    case "@lok/client":
+      return Client;
   }
 
   return null;

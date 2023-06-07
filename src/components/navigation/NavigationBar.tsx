@@ -66,7 +66,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               to={"mikro"}
               className={({ isActive }) =>
                 ` dark:hover:text-back-500 px-2 py-2 hidden md:block
-                } ${isActive ? "dark:text-back-500" : "text-back-400"}`
+                } ${isActive ? "dark:text-back-400" : "text-back-500"}`
               }
             >
               <BiData />
@@ -89,8 +89,8 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               key={"Dashboard"}
               to={"rekuest"}
               className={({ isActive }) =>
-                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
-                } ${isActive ? "dark:text-back-500" : "text-back-400"}`
+                ` dark:hover:text-back-400 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-400" : "text-back-500"}`
               }
             >
               <TbLayoutDashboard />
@@ -101,8 +101,8 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               key={"History"}
               to={"rekuest/history"}
               className={({ isActive }) =>
-                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
-                } ${isActive ? "dark:text-back-500" : "text-back-400"}`
+                ` dark:hover:text-back-400 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-400" : "text-back-500"}`
               }
             >
               <TbHistory />
@@ -114,8 +114,8 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               key={"Flows"}
               to={"fluss"}
               className={({ isActive }) =>
-                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
-                 ${isActive ? "dark:text-back-500" : "text-back-400"}`
+                ` dark:hover:text-back-400 px-2 py-2 hidden md:block
+                ${isActive ? "dark:text-back-400" : "text-back-500"}`
               }
             >
               <TiFlowSwitch />
@@ -126,8 +126,8 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               key={"Port"}
               to={"port"}
               className={({ isActive }) =>
-                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
-                 ${isActive ? "dark:text-back-500" : "text-back-400"}`
+                ` dark:hover:text-back-400 px-2 py-2 hidden md:block
+                ${isActive ? "dark:text-back-400" : "text-back-500"}`
               }
             >
               <GrDocker />
@@ -138,8 +138,8 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               key={"Teams"}
               to={"lok"}
               className={({ isActive }) =>
-                ` dark:hover:text-back-500 px-2 py-2 hidden md:block
-                 ${isActive ? "dark:text-back-500" : "text-back-400"}`
+                ` dark:hover:text-back-400 px-2 py-2 hidden md:block
+                ${isActive ? "dark:text-back-400" : "text-back-500"}`
               }
             >
               <AiOutlineTeam />
@@ -148,8 +148,8 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
           <NavLink
             to={"/user/settings"}
             className={({ isActive }) =>
-              ` dark:hover:text-back-500 px-2 py-2 
-            ${isActive ? " dark:text-back-500" : " text-back-400"}`
+              ` dark:hover:text-back-400 px-2 py-2 
+              ${isActive ? "dark:text-back-400" : "text-back-500"}`
             }
           >
             <FiSettings size={"2.6em"} style={{ stroke: "1px" }} />

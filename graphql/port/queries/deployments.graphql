@@ -1,5 +1,5 @@
-query Deployments {
-  deployments {
+query Deployments($limit: Int, $offset: Int) {
+  deployments(limit: $limit, offset: $offset) {
     ...ListDeployment
   }
 }

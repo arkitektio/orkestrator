@@ -24,5 +24,6 @@ fragment ListStage on Stage {
   }
   tags
   name
+  createdAt
   kind
 }

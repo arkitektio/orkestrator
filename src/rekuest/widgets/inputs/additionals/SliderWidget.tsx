@@ -12,13 +12,6 @@ const SliderWidget: React.FC<InputWidgetProps<SliderWidgetFragment>> = ({
       name={port.key || "fake"}
       min={widget?.min || 0}
       max={widget?.max || 100}
-      validate={(value) =>
-        value != undefined
-          ? undefined
-          : port.nullable
-          ? undefined
-          : "Please select a integer choice"
-      }
       label={port.label || port.key}
       description={port.description || ""}
     />

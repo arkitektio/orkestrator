@@ -1,22 +1,19 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { RepoScan } from "../../linker";
-import {
-  useDetailContainerQuery,
-  useStopContainerMutation,
-  useRestartContainerMutation,
-  useRemoveContainerMutation,
-  useDetailWhaleQuery,
-  useDetailGithubRepoQuery,
-} from "../api/graphql";
-import { withPort } from "../PortContext";
-import { RepoScanCard } from "./cards/RepoScanCard";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { useDeployScanMate } from "../../mates/scan/useDeployScanMate";
+import { withPort } from "../PortContext";
+import {
+  useDetailGithubRepoQuery,
+  useRemoveContainerMutation,
+  useRestartContainerMutation,
+  useStopContainerMutation,
+} from "../api/graphql";
+import { RepoScanCard } from "./cards/DeploymentCard";
 
 export type GithubRepoProps = {
   id: string;

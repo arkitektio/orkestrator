@@ -1,9 +1,5 @@
-import { useEffect } from "react";
 import { withRekuest } from "../../../rekuest";
-import {
-  useDetailNodeQuery,
-  useReferencedAssignationLazyQuery,
-} from "../../../rekuest/api/graphql";
+import { useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { ArkitektNodeData, FlowNode } from "../../types";
 import { useTrackRiver } from "../context";
 import { SidebarProps } from "./types";
@@ -16,24 +12,9 @@ export const ArkitektTrackNodeSidebar = (
     variables: { hash: props.node.data.hash },
   });
 
-  const [query, { data: assignation }] = withRekuest(
-    useReferencedAssignationLazyQuery
-  )();
-
   const latestEvent = runState?.events?.find(
     (e) => e?.source === props.node.id
   );
-
-  useEffect(() => {
-    if (run?.assignation && latestEvent?.t) {
-      query({
-        variables: {
-          parent: run?.assignation,
-          reference: `${props.node.id}_${latestEvent.t}`,
-        },
-      });
-    }
-  }, [latestEvent, run]);
 
   return (
     <>
@@ -43,7 +24,6 @@ export const ArkitektTrackNodeSidebar = (
         <div className="text-white text-cl mt-4">
           {" "}
           {node_data?.node?.description}
-          {assignation?.assignation?.id}
         </div>
 
         {latestEvent?.type == "NEXT" && <>{JSON.stringify(latestEvent.t)}</>}

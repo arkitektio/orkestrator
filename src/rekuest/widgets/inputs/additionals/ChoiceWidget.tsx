@@ -41,17 +41,6 @@ const ChoiceWidget: React.FC<InputWidgetProps<ChoiceWidgetFragment>> = ({
         <ListSearchInput
           searchFunction={searchFunction}
           name={port.key || "fake"}
-          validate={(value) =>
-            value
-              ? value.every((sv) =>
-                  widget?.choices?.map((v) => v?.value).includes(sv)
-                )
-                ? undefined
-                : "Please select a valid choice"
-              : port.nullable
-              ? undefined
-              : "Please select a valid choice"
-          }
           label={port.label || port.key}
           description={port.description || ""}
         />
@@ -59,15 +48,6 @@ const ChoiceWidget: React.FC<InputWidgetProps<ChoiceWidgetFragment>> = ({
         <SearchInput
           searchFunction={searchFunction}
           name={port.key || "fake"}
-          validate={(value) =>
-            value
-              ? widget?.choices?.map((v) => v?.value).includes(value)
-                ? undefined
-                : "Item not in choices"
-              : port.nullable
-              ? undefined
-              : "Please select a valid choice"
-          }
           label={port.label || port.key}
           description={port.description || ""}
         />

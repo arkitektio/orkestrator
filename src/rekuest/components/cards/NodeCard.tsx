@@ -13,7 +13,7 @@ export const NodeCard = ({
     <Node.Smart
       object={node?.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `rounded shadow-xl group text-white bg-slate-700 p-3 ${
+        `rounded shadow-xl group text-white bg-slate-900 p-3 hover:bg-slate-700 hover:border-slate-600 border-slate-700 border-1 border transition-all ${
           isOver && !isDragging && "border-primary-200 border"
         } ${isDragging && "border-primary-200 border"} ${
           isSelected && "ring-1 ring-primary-200 "

@@ -5,6 +5,7 @@ fragment DetailWhale on Whale {
   }
   pulled
   latestPull
+  token
   containers {
     id
     name
@@ -25,6 +26,7 @@ fragment ListWhale on Whale {
   }
   clientId
   pulled
+  token
   latestPull
   latestEvent {
     whale

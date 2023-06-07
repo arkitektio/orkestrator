@@ -1,9 +1,7 @@
 import React, { useEffect } from "react";
 import Timestamp from "react-timestamp";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { notEmpty } from "../../floating/utils";
-import { SectionTitle } from "../../layout/SectionTitle";
+import { ListRender } from "../../layout/SectionTitle";
 import { Whale } from "../../linker";
 import { useDeleteWhaleMate } from "../../mates/whale/useDeleteWhaleMate";
 import { useWhaleLifecycleMate } from "../../mates/whale/useWhaleLifecycleMate";
@@ -20,9 +18,13 @@ export type IMyGraphsProps = {};
 export type DisplayWhale = ListWhaleFragment & { latestEvent?: WhaleEvent };
 
 const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
-  const { data, error, loading, subscribeToMore } = withPort(useWhalesQuery)(
-    {}
-  );
+  const { data, error, loading, subscribeToMore, refetch } = withPort(
+    useWhalesQuery
+  )({
+    variables: {
+      limit: 20,
+    },
+  });
 
   const deleteWhaleMate = useDeleteWhaleMate();
   const whaleLifecyleMate = useWhaleLifecycleMate();
@@ -50,12 +52,12 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
 
   return (
     <div>
-      <Whale.ListLink>
-        <SectionTitle>My Whales</SectionTitle>
-      </Whale.ListLink>
-      <br />
-      <ResponsiveContainerGrid>
-        {data?.whales?.filter(notEmpty).map((whale, index) => (
+      <ListRender
+        title={<Whale.ListLink>My Whales</Whale.ListLink>}
+        array={data?.whales}
+        refetch={refetch}
+      >
+        {(whale, index) => (
           <Whale.Smart
             key={index}
             object={whale.id}
@@ -99,8 +101,8 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
               </div>
             </div>
           </Whale.Smart>
-        ))}
-      </ResponsiveContainerGrid>
+        )}
+      </ListRender>
     </div>
   );
 };

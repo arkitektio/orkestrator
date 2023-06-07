@@ -8,13 +8,13 @@ const StringWidget: React.FC<InputWidgetProps> = ({ port, widget }) => {
   return (
     <TextInputField
       name={port.key}
-      validate={(value) =>
-        value
-          ? undefined
-          : port.nullable
-          ? undefined
-          : "Please select a valid choice"
-      }
+      validate={(value) => {
+        if (value == undefined) {
+          if (port.nullable) return "This port cant be empty"
+          return undefined;
+        }
+        return undefined;
+      }}
       label={port.label || port.key}
       description={port.description || ""}
     />
