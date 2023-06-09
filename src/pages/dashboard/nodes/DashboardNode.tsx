@@ -5,6 +5,7 @@ import { NodeActions } from "../../../actions/NodeActions";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../../floating/utils";
 import { PageLayout } from "../../../layout/PageLayout";
+import { Node } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
 import {
   ChildPortFragment,
@@ -136,13 +137,22 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
     return () => unsubscribe();
   }, [id, subscribeToMore]);
 
+  const copyHashToClipboard = () => {
+    navigator.clipboard.writeText(data?.node?.hash || "");
+  };
+
   return (
     <PageLayout actions={<NodeActions node={data?.node} />}>
       <div className="flex-initial text-white">
         <div className="flex flex-row">
           <div className="flex-initial">
             <div className="flex flex-row">
-              <div className="font-light text-2xl">{data?.node?.name}</div>
+              <div
+                className="font-light text-2xl"
+                onClick={copyHashToClipboard}
+              >
+                {data?.node?.name}
+              </div>
             </div>
           </div>
           <div className="flex-grow"></div>
@@ -156,6 +166,40 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
               ))}
             </div>
           </div>
+          {data?.node?.isTestFor && (
+            <div className="flex-none">
+              {data?.node?.isTestFor.filter(notEmpty).map((n) => {
+                return (
+                  <Node.DetailLink
+                    className="flex flex-row gap-2"
+                    object={n.id}
+                  >
+                    <div className="border-primary-300 p-1 border rounded-md bg-primary-300 text-white">
+                      {" "}
+                      Tests: {n.name}{" "}
+                    </div>
+                  </Node.DetailLink>
+                );
+              })}
+            </div>
+          )}
+          {data?.node?.tests && (
+            <div className="flex-none">
+              {data?.node?.tests.filter(notEmpty).map((n) => {
+                return (
+                  <Node.DetailLink
+                    className="flex flex-row gap-2"
+                    object={n.id}
+                  >
+                    <div className="border-primary-300 p-1 border rounded-md bg-primary-300 text-white">
+                      {" "}
+                      Tested by: {n.name}{" "}
+                    </div>
+                  </Node.DetailLink>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
       <div className="flex-grow mt-2 max-w-md">

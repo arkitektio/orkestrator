@@ -28,14 +28,19 @@ export const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
     );
   const ward = useWidgetRegistry().registry?.ward_registry.getWard(widget.ward);
 
-  if (!ward?.search)
+  if (!ward)
     return (
       <div>
         {" "}
-        No ward specified for this {widget.ward}. Please register a Ward that
-        supports "search"
+        No ward specified for rekuest ward: {widget.ward}. Please register a
+        Ward that supports "search"
       </div>
     );
+
+  if (!ward.search) {
+    console.log("ward", ward);
+    return <div> Ward found but does not support search</div>;
+  }
 
   if (!widget?.query)
     return (

@@ -1,13 +1,11 @@
-import { Maybe } from "graphql/jsutils/Maybe";
 import React from "react";
-import { PortFragment, PortKind } from "../api/graphql";
+import { PortKind } from "../api/graphql";
 import {
   InputWidgetProps,
   InputWidgetTypes,
   Port,
   ReturnWidgetProps,
   ReturnWidgetTypes,
-  RunQueryFunc,
   Ward,
 } from "./types";
 
@@ -45,7 +43,11 @@ export class WardRegistry {
   }
 
   public getWard(ward_key: string): Ward {
-    return this.ward_registry[ward_key] || {};
+    return this.ward_registry[ward_key];
+  }
+
+  public printWards(): void {
+    console.log("Wards", this.ward_registry);
   }
 }
 

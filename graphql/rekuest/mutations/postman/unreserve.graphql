@@ -1,5 +1,5 @@
 mutation Unreserve($reservation: ID!) {
-	unreserve(id: $reservation) {
-		reference
-	}
+  unreserve(id: $reservation) {
+    id
+  }
 }

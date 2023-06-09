@@ -39,6 +39,7 @@ import { MikroAutoConfigure } from "./bridges/MikroAutoConfigure";
 import { MikroWard } from "./bridges/MikroWard";
 import { PortAutoConfigure } from "./bridges/PortAutoConfigure";
 import { RekuestAutoConfigure } from "./bridges/RekuestAutoConfigure";
+import { RekuestWard } from "./bridges/RekuestWard";
 import { XArrayProvider } from "./experimental/provider/provider";
 import { DialogProvider } from "./layout/dialog/DialogProvider";
 import { PublicLogin } from "./pages/public/PublicLogin";
@@ -118,85 +119,87 @@ export const ProtectedApp: React.FC<Props> = () => {
         <RekuestProvider>
           <RekuestAutoConfigure />
           <WidgetRegistryProvider>
-            <ManProvider>
-              <LokAutoConfigure />
-              <ManGuard>
-                <DatalayerProvider>
-                  <FlussProvider>
-                    <FlussAutoConfigure />
-                    <FlussWard>
-                      <PortProvider>
-                        <PortAutoConfigure />
-                        <MikroProvider>
-                          <MikroAutoConfigure />
+            <RekuestWard>
+              <ManProvider>
+                <LokAutoConfigure />
+                <ManGuard>
+                  <DatalayerProvider>
+                    <FlussProvider>
+                      <FlussAutoConfigure />
+                      <FlussWard>
+                        <PortProvider>
+                          <PortAutoConfigure />
+                          <MikroProvider>
+                            <MikroAutoConfigure />
 
-                          <DatalayerAutoConfigure />
-                          <SettingsProvider>
-                            <MikroWard>
-                              <GeneralMenuProvider>
-                                <PostmanProvider>
-                                  <ReserverProvider>
-                                    <RequesterProvider>
-                                      <MaterProvider>
-                                        <AgentProvider>
-                                          <XArrayProvider>
-                                            <ExperimentalFeature>
-                                              <Actors />
-                                            </ExperimentalFeature>
+                            <DatalayerAutoConfigure />
+                            <SettingsProvider>
+                              <MikroWard>
+                                <GeneralMenuProvider>
+                                  <PostmanProvider>
+                                    <ReserverProvider>
+                                      <RequesterProvider>
+                                        <MaterProvider>
+                                          <AgentProvider>
+                                            <XArrayProvider>
+                                              <ExperimentalFeature>
+                                                <Actors />
+                                              </ExperimentalFeature>
 
-                                            <SelectionProvider>
-                                              <DialogProvider>
-                                                {" "}
-                                                <ToastContainer
-                                                  position="bottom-right"
-                                                  theme="dark"
-                                                  pauseOnFocusLoss={false}
-                                                />
-                                                <ComponentPreview
-                                                  text={"sdfsdf"}
-                                                />
-                                                <GeneralMenu />
-                                                <NavigationActions />
-                                                <MikroGuard>
-                                                  <SearchActions />
-                                                </MikroGuard>
-                                                <RekuestGuard>
-                                                  <NodesExtension />
-                                                </RekuestGuard>
-                                                <SelectionActions />
-                                                <MikroGuard>
-                                                  <MentionListener />
-                                                </MikroGuard>
-                                                <div className="flex flex-col h-screen sm:flex-row-reverse">
-                                                  <div className="flex-grow flex bg-gradient-to-b from-back-900 via-back-900 via-back-850 via-back-850 to-back-800 overflow-y-auto">
-                                                    <React.Suspense
-                                                      fallback={<>Loading</>}
-                                                    >
-                                                      <Outlet />
-                                                    </React.Suspense>{" "}
+                                              <SelectionProvider>
+                                                <DialogProvider>
+                                                  {" "}
+                                                  <ToastContainer
+                                                    position="bottom-right"
+                                                    theme="dark"
+                                                    pauseOnFocusLoss={false}
+                                                  />
+                                                  <ComponentPreview
+                                                    text={"sdfsdf"}
+                                                  />
+                                                  <GeneralMenu />
+                                                  <NavigationActions />
+                                                  <MikroGuard>
+                                                    <SearchActions />
+                                                  </MikroGuard>
+                                                  <RekuestGuard>
+                                                    <NodesExtension />
+                                                  </RekuestGuard>
+                                                  <SelectionActions />
+                                                  <MikroGuard>
+                                                    <MentionListener />
+                                                  </MikroGuard>
+                                                  <div className="flex flex-col h-screen sm:flex-row-reverse">
+                                                    <div className="flex-grow flex bg-gradient-to-b from-back-900 via-back-900 via-back-850 via-back-850 to-back-800 overflow-y-auto">
+                                                      <React.Suspense
+                                                        fallback={<>Loading</>}
+                                                      >
+                                                        <Outlet />
+                                                      </React.Suspense>{" "}
+                                                    </div>
+                                                    <div className="flex-initial sm:flex-initial sm:static sm:w-20">
+                                                      <NavigationBar />
+                                                    </div>
                                                   </div>
-                                                  <div className="flex-initial sm:flex-initial sm:static sm:w-20">
-                                                    <NavigationBar />
-                                                  </div>
-                                                </div>
-                                              </DialogProvider>
-                                            </SelectionProvider>
-                                          </XArrayProvider>
-                                        </AgentProvider>
-                                      </MaterProvider>
-                                    </RequesterProvider>
-                                  </ReserverProvider>
-                                </PostmanProvider>
-                              </GeneralMenuProvider>
-                            </MikroWard>
-                          </SettingsProvider>
-                        </MikroProvider>
-                      </PortProvider>
-                    </FlussWard>
-                  </FlussProvider>
-                </DatalayerProvider>
-              </ManGuard>
-            </ManProvider>
+                                                </DialogProvider>
+                                              </SelectionProvider>
+                                            </XArrayProvider>
+                                          </AgentProvider>
+                                        </MaterProvider>
+                                      </RequesterProvider>
+                                    </ReserverProvider>
+                                  </PostmanProvider>
+                                </GeneralMenuProvider>
+                              </MikroWard>
+                            </SettingsProvider>
+                          </MikroProvider>
+                        </PortProvider>
+                      </FlussWard>
+                    </FlussProvider>
+                  </DatalayerProvider>
+                </ManGuard>
+              </ManProvider>
+            </RekuestWard>
           </WidgetRegistryProvider>
         </RekuestProvider>
       </DndProvider>

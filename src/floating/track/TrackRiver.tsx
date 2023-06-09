@@ -52,7 +52,7 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
   });
 
   const [state, setState] = useState<RunState>({ t: 0 });
-  const [live, setLive] = useState<boolean>(false);
+  const [live, setLive] = useState<boolean>(true);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -72,12 +72,18 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
         selectedNode,
         setRunState: setState,
         run: data?.run,
+        live,
+        setLive,
       }}
     >
       <PageLayout
         sidebars={[
           { key: "flow", label: "Flow", content: <DynamicSidebar /> },
-          { key: "params", label: "Params", content: <ParamsSidebar /> },
+          {
+            key: "assignation",
+            label: "Assignation",
+            content: <ParamsSidebar />,
+          },
           { key: "timeline", label: "Timeline", content: <TimelineSidebar /> },
         ]}
         actions={<TrackActions />}

@@ -11,6 +11,14 @@ fragment DetailNode on Node {
     ...ListTemplate
   }
   scope
+  isTestFor {
+    id
+    name
+  }
+  tests {
+    id
+    name
+  }
 }
 
 fragment NodeListItem on Node {
@@ -46,4 +54,12 @@ fragment CompleteNode on Node {
     hidden
   }
   scope
+  isTestFor {
+    id
+    name
+  }
+  tests {
+    id
+    name
+  }
 }

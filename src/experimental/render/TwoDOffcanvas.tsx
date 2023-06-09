@@ -14,7 +14,7 @@ import ReactSlider from "react-slider";
 import { useDebounce } from "use-debounce";
 import { notEmpty } from "../../floating/utils";
 import { SaveParentSize } from "../../layout/SaveParentSize";
-import { Channel, Roi, Timepoint } from "../../linker";
+import { Channel, Position, Roi, Timepoint } from "../../linker";
 import { withMikro } from "../../mikro/MikroContext";
 import {
   CanvasRepresentationFragment,
@@ -492,9 +492,9 @@ export const Canvas: React.FC<{
                       </Timepoint.DetailLink>
                     )}
                     {view.position && (
-                      <Timepoint.DetailLink object={view.position.id}>
+                      <Position.DetailLink object={view.position.id}>
                         P: {view.position.name}
-                      </Timepoint.DetailLink>
+                      </Position.DetailLink>
                     )}
                   </div>
                 </div>

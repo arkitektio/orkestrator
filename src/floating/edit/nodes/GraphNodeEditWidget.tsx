@@ -23,7 +23,7 @@ import { notEmpty, rekuestPortToFluss } from "../../utils";
 import { useEditRiver } from "../context";
 
 export const GraphNodeEditWidget = ({ data, ...props }: GraphNodeProps) => {
-  const { addReactive, addArkitekt } = useEditRiver();
+  const { addReactive, addArkitekt, setGlobals, updateNodeIn } = useEditRiver();
 
   const debouncedNodes = useNodes();
   //const [debouncedNodes] = useDebounce(nodes, 100);
@@ -74,6 +74,46 @@ export const GraphNodeEditWidget = ({ data, ...props }: GraphNodeProps) => {
       }));
     }
   }, []);
+
+  const setArg = (arg: PortFragment) => {
+    if (data?.instream[0]) {
+      console.log("Stream", data.instream[0]);
+      if (data?.instream[0]?.find((s) => s?.key === arg.key)) {
+        updateNodeIn(id, [data.instream[0].filter((s) => s?.key !== arg.key)]);
+      }
+
+      if (globals?.find((s) => s?.toKeys.includes(globalArgKey(id, arg.key)))) {
+        setGlobals(
+          globals
+            .map((s) =>
+              s?.toKeys.includes(globalArgKey(id, arg.key))
+                ? s.toKeys.length == 1
+                  ? undefined
+                  : {
+                      ...s,
+                      toKeys: s.toKeys.filter(
+                        (k) => k !== globalArgKey(id, arg.key)
+                      ),
+                    }
+                : s
+            )
+            .filter(notEmpty)
+        );
+      } else {
+        setGlobals(
+          globals?.concat({
+            toKeys: [globalArgKey(id, arg.key)],
+            port: rekuestPortToFluss({
+              ...arg,
+              description:
+                (arg.description || "") +
+                ` (maps to ${globalArgKey(id, arg.key)})`,
+            }),
+          }) || []
+        );
+      }
+    }
+  };
 
   const { client: flussapi } = useFluss();
   const { client: rekuestapi } = useRekuest();

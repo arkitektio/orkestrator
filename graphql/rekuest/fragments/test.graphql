@@ -1,0 +1,14 @@
+fragment ListTestResult on TestResult {
+  id
+  case {
+    id
+    node {
+      name
+    }
+    description
+    key
+    name
+  }
+  result
+  passed
+}

@@ -4,13 +4,12 @@ import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { withPort } from "../../PortContext";
 import {
   CreateGithubRepoMutation,
   CreateGithubRepoMutationVariables,
-  GithubReposDocument,
   useCreateGithubRepoMutation,
 } from "../../api/graphql";
-import { withPort } from "../../PortContext";
 import github from "./github.png";
 
 type Overrides = Partial<CreateGithubRepoMutationVariables>;
@@ -19,19 +18,7 @@ export const CreateRepoDialog = (
   props: Submit<CreateGithubRepoMutation> & Overrides
 ) => {
   const [createRepo, data] = withPort(useCreateGithubRepoMutation)({
-    update(cache, result) {
-      const existing: any = cache.readQuery({
-        query: GithubReposDocument,
-      });
-      cache.writeQuery({
-        query: GithubReposDocument,
-        data: {
-          githubRepos: existing.githubRepos.concat(
-            result.data?.createGithubRepo
-          ),
-        },
-      });
-    },
+    refetchQueries: ["GithubRepos"],
   });
 
   const { alert } = useAlert();

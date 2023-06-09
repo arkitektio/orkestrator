@@ -1,18 +1,15 @@
+import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 import { useParams } from "react-router";
+import { SelfActions } from "../../../components/SelfActions";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
-import { RekuestShare } from "../../../components/social/RekuestShare";
 import { notEmpty } from "../../../floating/utils";
 import { FlussTemplate } from "../../../fluss/components/FlussTemplate";
 import { ActionButton } from "../../../layout/ActionButton";
-import { useDialog } from "../../../layout/dialog/DialogProvider";
 import { PageLayout } from "../../../layout/PageLayout";
-import { Node, Provision } from "../../../linker";
+import { useDialog } from "../../../layout/dialog/DialogProvider";
+import { Node, TestCase } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
-import {
-  SharableModels,
-  useDetailTemplateQuery,
-  useProvideMutation,
-} from "../../../rekuest/api/graphql";
+import { useDetailTemplateQuery } from "../../../rekuest/api/graphql";
 import { ProvisionCard } from "../../../rekuest/components/cards/ProvisionCard";
 import { ProvideDialog } from "../../../rekuest/components/dialogs/ProvideDialog";
 
@@ -43,17 +40,13 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = (props) => {
             }}
             description="Provide this Template"
           />
-        </>
-      }
-      sidebar={
-        <div className="p-2">
           {data?.template?.id && (
-            <RekuestShare
-              type={SharableModels.FacadeTemplate}
+            <SelfActions
               object={data?.template?.id}
+              type={"@rekuest/template"}
             />
           )}
-        </div>
+        </>
       }
     >
       <div className="flex h-full flex-col">
@@ -90,13 +83,38 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = (props) => {
             </div>
           </div>
         </div>
+        {data?.template?.testresults &&
+          data?.template.testresults.length > 0 && (
+            <div className="flex-initial flex">
+              <div className="bg-gray-800 p-2 text-white rounded rounded-md border-gray-700 border">
+                <div className="font-light mb-1 text-md"> Tests </div>
+                {data?.template?.testresults
+                  ?.filter(notEmpty)
+                  .map((test, index) => (
+                    <div className="flex flex-row text-white">
+                      <TestCase.DetailLink object={test.case.id}>
+                        {test.case.name}
+                      </TestCase.DetailLink>
+                      <div className="flex flex-row ml-1">
+                        {test.passed ? (
+                          <AiOutlineCheck className="text-green-600 my-auto" />
+                        ) : (
+                          <AiOutlineExclamation className="text-red-600 my-auto" />
+                        )}
+                        <div className="text-red-600">{test.result}</div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         <div className="flex-grow">
-          {JSON.stringify(data?.template?.params.flow)}
           {data?.template?.extensions?.includes("flow") &&
             data?.template?.params?.flow && (
               <FlussTemplate flow={data?.template.params.flow} />
             )}
         </div>
+
         <div className="flex-initial text-white">
           <div className="font-light mt-3 mb-1 text-xl"> Provided on </div>
           <ResponsiveGrid>

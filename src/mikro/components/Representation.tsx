@@ -571,6 +571,26 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                               </div>
                             </Channel.DetailLink>
                           )}
+                          {map.position && (
+                            <Position.DetailLink
+                              className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer"
+                              object={map.position.id}
+                            >
+                              <div className="flex flex-row">
+                                <div>{map.position?.name || "Position "}</div>
+                                <div
+                                  className="text-xs w-2 h-2 rounded-full ml-2 my-auto"
+                                  style={{
+                                    background: `${
+                                      map.channel?.color
+                                        ? map.channel.color
+                                        : "rbg(0,0,0)"
+                                    }`,
+                                  }}
+                                ></div>
+                              </div>
+                            </Position.DetailLink>
+                          )}
                         </DimensionMap.DetailLink>
                       </DimensionMap.Smart>
                     ))}

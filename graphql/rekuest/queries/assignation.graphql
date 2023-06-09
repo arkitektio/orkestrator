@@ -10,6 +10,26 @@ query ReferencedAssignations($reference: String!, $parent: ID) {
   }
 }
 
+query NodeAssignations(
+  $reference: String!
+  $parent: ID!
+  $filter: [AssignationStatusInput]
+  $order: String
+  $limit: Int
+  $offset: Int
+) {
+  assignations(
+    reservationReference: $reference
+    parent: $parent
+    status: $filter
+    o: $order
+    limit: $limit
+    offset: $offset
+  ) {
+    ...ListAssignation
+  }
+}
+
 query Requests {
   requests(exclude: [DONE, CRITICAL]) {
     ...ListAssignation

@@ -5,6 +5,17 @@ fragment DetailAssignation on Assignation {
   kwargs
   reference
   progress
+  parent {
+    id
+    reservation {
+      id
+      node {
+        id
+        name
+      }
+    }
+  }
+
   statusmessage
   provision {
     status
@@ -50,6 +61,7 @@ fragment DetailAssignation on Assignation {
       interfaces
       meta
       ...Ports
+      kind
     }
     app {
       version

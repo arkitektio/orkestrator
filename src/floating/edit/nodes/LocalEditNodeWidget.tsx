@@ -1,5 +1,10 @@
 import React, { useEffect } from "react";
 import "react-contexify/dist/ReactContexify.css";
+import {
+  AiOutlineArrowRight,
+  AiOutlineArrowUp,
+  AiOutlineGlobal,
+} from "react-icons/ai";
 import { Handle, Position } from "reactflow";
 import { withRekuest } from "../../../rekuest";
 import {
@@ -9,15 +14,21 @@ import {
 } from "../../../rekuest/api/graphql";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { LocalNodeProps } from "../../types";
-import { notEmpty, rekuestPortToFluss } from "../../utils";
+import { globalArgKey, notEmpty, rekuestPortToFluss } from "../../utils";
 import { useEditRiver } from "../context";
 import { useArkitektConnState } from "../hooks/useArkitektConnState";
 import { NodeEditLayout } from "./layout/NodeEdit";
 
 export const LocalEditNodeWidget: React.FC<LocalNodeProps> = withLayout(
   ({ data, id, isConnectable }) => {
-    const { updateNodeIn, updateNodeOut, updateNodeExtras, nodes } =
-      useEditRiver();
+    const {
+      updateNodeIn,
+      updateNodeOut,
+      updateNodeExtras,
+      nodes,
+      setGlobals,
+      globals,
+    } = useEditRiver();
 
     const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
       variables: { hash: data.hash },
@@ -67,6 +78,50 @@ export const LocalEditNodeWidget: React.FC<LocalNodeProps> = withLayout(
           updateNodeOut(id, [
             data?.outstream[0]?.concat(rekuestPortToFluss(arg)),
           ]);
+        }
+      }
+    };
+
+    const setArg = (arg: PortFragment) => {
+      if (data?.instream[0]) {
+        console.log("Stream", data.instream[0]);
+        if (data?.instream[0]?.find((s) => s?.key === arg.key)) {
+          updateNodeIn(id, [
+            data.instream[0].filter((s) => s?.key !== arg.key),
+          ]);
+        }
+
+        if (
+          globals?.find((s) => s?.toKeys.includes(globalArgKey(id, arg.key)))
+        ) {
+          setGlobals(
+            globals
+              .map((s) =>
+                s?.toKeys.includes(globalArgKey(id, arg.key))
+                  ? s.toKeys.length == 1
+                    ? undefined
+                    : {
+                        ...s,
+                        toKeys: s.toKeys.filter(
+                          (k) => k !== globalArgKey(id, arg.key)
+                        ),
+                      }
+                  : s
+              )
+              .filter(notEmpty)
+          );
+        } else {
+          setGlobals(
+            globals?.concat({
+              toKeys: [globalArgKey(id, arg.key)],
+              port: rekuestPortToFluss({
+                ...arg,
+                description:
+                  (arg.description || "") +
+                  ` (maps to ${globalArgKey(id, arg.key)})`,
+              }),
+            }) || []
+          );
         }
       }
     };
@@ -160,32 +215,47 @@ export const LocalEditNodeWidget: React.FC<LocalNodeProps> = withLayout(
                           (s) => s?.key === arg?.key
                         );
 
-                        let con = data?.defaults && data.defaults[arg?.key];
+                        let inarg = globals?.find((s) =>
+                          s?.toKeys.includes(globalArgKey(id, arg?.key))
+                        );
 
                         return (
                           <div
                             key={index}
                             className={`border m-1 py-0 px-1 rounded  ${
-                              instream
+                              instream && !inarg
                                 ? "text-gray-800 bg-gray-200 border-gray-200"
                                 : "text-gray-200 bg-gray-800 border-gray-900"
-                            } `}
+                            } ${inarg ? "bg-pink-500" : "bg-gray-800"}`}
                             data-tip={`${arg?.description}`}
                             data-for={"tooltip_special" + id}
-                            onClick={() => rotateArg(arg)}
                           >
                             {" "}
                             <div className="flex flex-inline">
-                              <span className="flex text-xs my-auto">
-                                {arg?.key}
+                              <span
+                                className="flex text-xs my-auto mr-1"
+                                onClick={() => rotateArg(arg)}
+                              >
+                                {instream ? <AiOutlineArrowRight /> : " "}
                               </span>{" "}
-                              <div className="flex-grow"></div>
-                              <div className="text-xs">
-                                {arg?.label}
-                                {con != undefined && (
-                                  <div>{JSON.stringify(con)}</div>
-                                )}
+                              <div
+                                className="flex-grow"
+                                onClick={() => rotateArg(arg)}
+                              >
+                                {arg?.key}
                               </div>
+                              {!instream && (
+                                <div
+                                  className="text-xs my-auto ml-1"
+                                  onClick={() => setArg(arg)}
+                                >
+                                  {inarg ? (
+                                    <AiOutlineGlobal />
+                                  ) : (
+                                    <AiOutlineArrowUp />
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         );

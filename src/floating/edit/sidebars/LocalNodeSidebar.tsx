@@ -7,17 +7,30 @@ import { useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { FlowNode, LocalNodeData } from "../../types";
+import { notEmpty } from "../../utils";
 import { useEditRiver } from "../context";
 import { SidebarProps } from "./types";
 
 export const LocalNodeSidebar = (
   props: SidebarProps<FlowNode<LocalNodeData>>
 ) => {
-  const { updateNodeIn, updateNodeOut, updateNodeExtras } = useEditRiver();
+  const { updateNodeIn, updateNodeOut, updateNodeExtras, globals } =
+    useEditRiver();
   const { data: node_data, error } = withRekuest(useDetailNodeQuery)({
     variables: { hash: props.node.data.hash },
   });
   const [advanced, setAdvanced] = useState(false);
+
+  const omitKeys = props.node.data.instream.at(0)?.map((s) => s?.key) || [];
+  const omitKeys2 =
+    globals
+      ?.reduce(
+        (a, b) => a.concat(b?.toKeys.filter(notEmpty) || []),
+        [] as string[]
+      )
+      .filter((x) => x.startsWith(props.node.id))
+      .map((x) => x.split(".").at(1)) || [];
+  const omitKeys3 = omitKeys.concat(omitKeys2).filter(notEmpty);
 
   useEffect(() => {
     if (node_data) {
@@ -42,13 +55,7 @@ export const LocalNodeSidebar = (
         {node_data?.node?.id && (
           <ConstantsForm
             node={node_data?.node.id}
-            omit={
-              (props.node.data.instream[0] &&
-                props.node.data.instream[0].map(
-                  (s) => s?.key || "oisnosins"
-                )) ||
-              []
-            }
+            omit={omitKeys3}
             autoSubmit={true}
             onSubmit={async (values, values_as_dict) => {
               updateNodeExtras(props.node.id, {

@@ -1,12 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { notEmpty } from "../floating/utils";
-import { SectionTitle } from "../layout/SectionTitle";
+import { ListRender } from "../layout/SectionTitle";
 import { Assignation } from "../linker";
 import { useAssignationMate } from "../mates/assignation/useAssignationMates";
 import { AssignationStatus } from "../rekuest/api/graphql";
 import { usePostman } from "../rekuest/postman/graphql/postman-context";
-import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 export type IMyReservationsProps = {};
 
 const colorFromStatus = (status: AssignationStatus | undefined) => {
@@ -40,111 +38,89 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
 
   return (
     <>
-      <SectionTitle>Ongoing Tasks</SectionTitle>
-      <div className="mt-2 mb-4">
-        <ResponsiveContainerGrid>
-          {!requests && (
+      <ListRender
+        array={requests?.requests?.filter(
+          (ass) =>
+            ![
+              AssignationStatus.Returned,
+              AssignationStatus.Cancelled,
+              AssignationStatus.Acknowledged,
+              AssignationStatus.Done,
+            ].includes(ass?.status || AssignationStatus.Cancelled)
+        )}
+        title="On Going Tasks"
+      >
+        {(ass, index) => (
+          <Assignation.Smart
+            object={ass.id}
+            dropClassName={() =>
+              `relative rounded shadow-xl border  shadow-md bg-center bg-cover group text-white ${colorFromStatus(
+                ass?.status
+              )}`
+            }
+            key={index}
+            mates={[assignationMate(ass)]}
+            dropStyle={() => ({
+              background: `center bottom linear-gradient(to right, var(--color-primary-300) ${
+                ass.progress ? Math.floor(ass.progress) : 0
+              }%, rgba(0,0,0,0.95) ${
+                ass.progress ? Math.floor(ass.progress) : 0
+              }% ${ass.progress ? Math.floor(100 - ass.progress) : 100}%)`,
+            })}
+          >
             <div
-              key={1}
-              className={`max-w-sm rounded overflow-hidden p-2 font-light shadow-md blink animate-pulse bg-gray-400`}
-            >
-              Loading...
-            </div>
-          )}
-          {requests?.requests
-            ?.filter(
-              (ass) =>
-                ![
-                  AssignationStatus.Returned,
-                  AssignationStatus.Cancelled,
-                  AssignationStatus.Acknowledged,
-                  AssignationStatus.Done,
-                ].includes(ass?.status || AssignationStatus.Cancelled)
-            )
-            .filter(notEmpty)
-            .map((ass, index) => (
-              <Assignation.Smart
+              className={`absolute top-0 left-0 h-full bg-orange-300 border-orange-300 rounded transition-width duration-100 ease-in-out`}
+              style={{
+                zIndex: -100,
+                width: `${ass.progress ? Math.floor(ass.progress) : 0}%`,
+              }}
+            ></div>
+            <div className="p-2">
+              <Assignation.DetailLink
                 object={ass.id}
-                dropClassName={() =>
-                  `relative rounded shadow-xl border  shadow-md bg-center bg-cover group text-white ${colorFromStatus(
-                    ass?.status
-                  )}`
-                }
-                key={index}
-                mates={[assignationMate(ass)]}
-                dropStyle={() => ({
-                  background: `center bottom linear-gradient(to right, var(--color-primary-300) ${
-                    ass.progress ? Math.floor(ass.progress) : 0
-                  }%, rgba(0,0,0,0.95) ${
-                    ass.progress ? Math.floor(ass.progress) : 0
-                  }% ${ass.progress ? Math.floor(100 - ass.progress) : 100}%)`,
-                })}
+                className="text-xl font-light mb-2 cursor-pointer"
               >
-                <div
-                  className={`absolute top-0 left-0 h-full bg-orange-300 border-orange-300 rounded transition-width duration-100 ease-in-out`}
-                  style={{
-                    zIndex: -100,
-                    width: `${ass.progress ? Math.floor(ass.progress) : 0}%`,
-                  }}
-                ></div>
-                <div className="p-2">
-                  <Assignation.DetailLink
-                    object={ass.id}
-                    className="text-xl font-light mb-2 cursor-pointer"
-                  >
-                    {ass?.reservation?.title || ass?.reservation?.node?.name}{" "}
-                  </Assignation.DetailLink>
-                </div>
-                <div className="ml-2 pb-2 text-sm"></div>
-              </Assignation.Smart>
-            ))}
-        </ResponsiveContainerGrid>
-      </div>
-      <SectionTitle>Done Tasks</SectionTitle>
-      <div className="mt-2 mb-4">
-        <ResponsiveContainerGrid>
-          {!requests && (
-            <div
-              key={1}
-              className={`relative rounded overflow-hidden p-2 font-light shadow-md blink animate-pulse bg-gray-400`}
-            >
-              Loading...
+                {ass?.reservation?.title || ass?.reservation?.node?.name}{" "}
+              </Assignation.DetailLink>
             </div>
-          )}
-          {requests?.requests
-            ?.filter((ass) =>
-              [
-                AssignationStatus.Returned,
-                AssignationStatus.Cancelled,
-                AssignationStatus.Done,
-              ].includes(ass?.status || AssignationStatus.Cancelled)
-            )
-            .filter(notEmpty)
-            .map((ass, index) => (
-              <Assignation.Smart
+            <div className="ml-2 pb-2 text-sm"></div>
+          </Assignation.Smart>
+        )}
+      </ListRender>
+      <ListRender
+        array={requests?.requests?.filter((ass) =>
+          [
+            AssignationStatus.Returned,
+            AssignationStatus.Cancelled,
+            AssignationStatus.Done,
+          ].includes(ass?.status || AssignationStatus.Cancelled)
+        )}
+        title="Done Tasks"
+      >
+        {(ass, index) => (
+          <Assignation.Smart
+            object={ass.id}
+            key={index}
+            dropClassName={() =>
+              `rounded shadow-md border text-white ${colorFromStatus(
+                ass?.status
+              )}`
+            }
+            mates={[assignationMate(ass)]}
+          >
+            <div className="p-2 z-100">
+              <Assignation.DetailLink
+                className="text-xl font-light mb-2 cursor-pointer"
                 object={ass.id}
-                key={index}
-                dropClassName={() =>
-                  `rounded shadow-md border text-white ${colorFromStatus(
-                    ass?.status
-                  )}`
-                }
-                mates={[assignationMate(ass)]}
               >
-                <div className="p-2 z-100">
-                  <Assignation.DetailLink
-                    className="text-xl font-light mb-2 cursor-pointer"
-                    object={ass.id}
-                  >
-                    {ass?.reservation?.title || ass?.reservation?.node?.name}{" "}
-                  </Assignation.DetailLink>
-                  {ass.statusmessage}
-                </div>
-                <div className="ml-2 pb-2 text-sm"></div>
-              </Assignation.Smart>
-            ))}
-        </ResponsiveContainerGrid>
-      </div>
+                {ass?.reservation?.title || ass?.reservation?.node?.name}{" "}
+              </Assignation.DetailLink>
+              {ass.statusmessage}
+            </div>
+            <div className="ml-2 pb-2 text-sm"></div>
+          </Assignation.Smart>
+        )}
+      </ListRender>
     </>
   );
 };

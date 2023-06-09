@@ -19,6 +19,9 @@ fragment DetailTemplate on Template {
   node {
     ...DetailNode
   }
+  testresults {
+    ...ListTestResult
+  }
   agent {
     id
     instanceId

@@ -404,6 +404,16 @@ export const Provision = buildSmart("@rekuest/provision", "provisions", [
   "list:@rekuest/provision",
   "item:@rekuest/provision",
 ]);
+
+export const TestResult = buildSmart("@rekuest/testresult", "testresults", [
+  "list:@rekuest/testresult",
+  "item:@rekuest/testresult",
+]);
+
+export const TestCase = buildSmart("@rekuest/testcase", "testcases", [
+  "list:@rekuest/testcase",
+  "item:@rekuest/testcase",
+]);
 export const Agent = buildSmart("@rekuest/agent", "agents", [
   "list:@rekuest/agent",
   "item:@rekuest/agent",

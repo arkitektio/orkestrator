@@ -52,7 +52,7 @@ export const Offsetter = ({
       <button
         type="button"
         className="hover:text-gray-200 transition-all "
-        onClick={() => setOffset(offset - step)}
+        onClick={() => setOffset(offset - step > 0 ? offset - step : 0)}
       >
         {" "}
         <BsCaretLeft />{" "}
@@ -110,7 +110,7 @@ export const ListRender = <T extends any>({
 
   return (
     <>
-      {array && array.length > 0 && (
+      {array && (array.length > 0 || offset > 0) && (
         <>
           <SectionTitle
             right={
