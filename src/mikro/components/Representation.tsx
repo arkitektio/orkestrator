@@ -30,6 +30,7 @@ import {
   Roi,
   Sample,
   Table,
+  Timepoint,
 } from "../../linker";
 import { UserEmblem } from "../../lok/components/UserEmblem";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
@@ -492,6 +493,19 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                         <p className="text-sm inline">z [µm] </p>
                       </div>
                     </Position.DetailLink>
+                  ))}
+                {data?.representation?.omero?.timepoints
+                  ?.filter(notEmpty)
+                  .map((t) => (
+                    <Timepoint.DetailLink
+                      object={t.id}
+                      className="flex flex-col "
+                    >
+                      <div className="font-semibold mr-2">
+                        Timepoint on {t.era.name}
+                      </div>
+                      <div className="text-md text-black ">{t.deltaT}</div>
+                    </Timepoint.DetailLink>
                   ))}
                 <div className="font-light my-1">Channels</div>
                 <ResponsiveContainerGrid>

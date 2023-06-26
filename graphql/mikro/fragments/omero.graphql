@@ -81,6 +81,14 @@ fragment Omero on Omero {
     name
     magnification
   }
+  timepoints {
+    id
+    deltaT
+    era {
+      id
+      name
+    }
+  }
   affineTransformation
   imagingEnvironment {
     airPressure

@@ -1,23 +1,74 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
-import { first } from "rxjs";
 import { ResponsiveContainerGrid } from "../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../floating/utils";
 import { OptimizedImage } from "../layout/OptimizedImage";
 import { PageLayout } from "../layout/PageLayout";
 import { Representation } from "../linker";
-import { useDashboardQueryQuery } from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
+import {
+  DashboardQueryQuery,
+  useDashboardQueryQuery,
+} from "../mikro/api/graphql";
+
+export const Delayed = ({
+  delay,
+  children,
+}: {
+  delay: number;
+  children: React.ReactNode;
+}) => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    setTimeout(() => {
+      setShow(true);
+    }, delay);
+  }, []);
+
+  return show ? <>{children}</> : <></>;
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const Live = ({ id }: { id: string }) => {
-  const { data } = withMikro(useDashboardQueryQuery)({
+  const { data: rd } = withMikro(useDashboardQueryQuery)({
     variables: { id, limit: 1, order: "-acquired" },
     pollInterval: 2000,
   });
 
   const navigate = useNavigate();
   const { s3resolve } = useDatalayer();
+
+  const [data, setData] = useState<DashboardQueryQuery | undefined>(undefined);
+
+  const fillData = async (rd: DashboardQueryQuery) => {
+    setData({ ...rd, stage: { ...rd.stage, positions: [] } });
+
+    let x = rd.stage.positions.length;
+    for (let x = 0; x < rd.stage.positions.length; x++) {
+      setData({
+        ...rd,
+        stage: {
+          ...rd.stage,
+          positions: rd?.stage?.positions.slice(0, x + 1).filter(notEmpty),
+        },
+      });
+
+      await sleep(20000);
+    }
+  };
+
+  let relativeTo = data?.stage?.positions
+    ?.at(0)
+    ?.omeros?.at(0)?.acquisitionDate;
+
+  useEffect(() => {
+    if (rd) {
+      fillData(rd);
+    }
+  }, [rd]);
 
   return (
     <PageLayout>
@@ -64,26 +115,29 @@ export const Live = ({ id }: { id: string }) => {
                         <Timestamp
                           date={firstOmero?.acquisitionDate}
                           relative
+                          relativeTo={relativeTo}
                         />
                       )}
                     </Representation.DetailLink>
                   </div>
                   <div className="absolute bottom-0 ">
-                    {firstOmero?.representation?.metrics?.map(
-                      (metric, index) => (
-                        <div
-                          key={index}
-                          className="ml-2 mb-2 flex flex-row gap-1"
-                        >
-                          <div className="font-light text-sm  my-auto cursor-pointer text-slate-200">
-                            {metric?.key}
+                    <Delayed delay={30000 + index * 1000}>
+                      {firstOmero?.representation?.metrics?.map(
+                        (metric, index) => (
+                          <div
+                            key={index}
+                            className="ml-2 mb-2 flex flex-row gap-1"
+                          >
+                            <div className="font-light text-sm  my-auto cursor-pointer text-slate-200">
+                              Cell Count
+                            </div>
+                            <div className="font-bold text-md  my-auto cursor-pointer text-slate-200">
+                              {metric?.value}
+                            </div>
                           </div>
-                          <div className="font-bold text-md  my-auto cursor-pointer text-slate-200">
-                            {metric?.value}
-                          </div>
-                        </div>
-                      )
-                    )}
+                        )
+                      )}
+                    </Delayed>
                   </div>
                 </div>
               </Representation.Smart>

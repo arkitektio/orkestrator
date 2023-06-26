@@ -1,13 +1,16 @@
 import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { useDialog } from "../../layout/dialog/DialogProvider";
 import { withPort } from "../../port/PortContext";
 import {
   usePullWhaleMutation,
   usePurgeWhaleMutation,
   useRunWhaleMutation,
 } from "../../port/api/graphql";
+import { RunWhaleDialog } from "../../port/components/dialogs/RunDialog";
 import { MateFinder } from "../types";
 
 export const useWhaleLifecycleMate = (): MateFinder => {
+  const { ask } = useDialog();
   const { confirm } = useConfirm();
 
   const [deploy] = withPort(useRunWhaleMutation)();
@@ -22,12 +25,9 @@ export const useWhaleLifecycleMate = (): MateFinder => {
       return [
         {
           action: async (self, drops) => {
-            await confirm({
-              message: "Do you really want to deploy this whale?",
-              confirmLabel: "Yes deploy!",
-            });
+            let x = await ask(RunWhaleDialog, { whale: self.object });
 
-            await deploy({ variables: { id: self.object } });
+            await deploy({ variables: x });
           },
           label: "Deploy",
           description: "Deploy Whale",

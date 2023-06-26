@@ -37,7 +37,7 @@ const ReservationInfo = ({
     <>
       <div className="text-white text-xl font-light"> Mapping To</div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-col gap-2">
         {reservation?.provisions?.filter(notEmpty).map((p, index) => {
           return (
             <ProvisionCard key={index} provision={p} mates={[unlinkMate]} />
@@ -49,7 +49,7 @@ const ReservationInfo = ({
         <div className="font-light mb-2 text-black text-xl dark:text-white">
           Linkable Provisions
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-2">
           {provisions &&
             provisions.linkableprovisions
               ?.filter(notEmpty)

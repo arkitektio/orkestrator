@@ -168,6 +168,7 @@ export const Timeline = ({ id }: { id: string }) => {
   const [relativeEvent, setRelativeEvent] = useState<
     RunEventFragment | undefined
   >();
+  const [showReactive, setShowReactive] = useState(true);
 
   useEffect(() => {
     if (runState?.t) {
@@ -254,16 +255,31 @@ export const Timeline = ({ id }: { id: string }) => {
       className="flex flex-grow flex-col text-white @container"
       onClick={() => setHighlighted([])}
     >
+      <div className="flex justify-between items-center">
+        <div className="text-2xl font-bold mb-1">Timeline</div>
+        <div className="flex items-center">
+          <button onClick={() => setShowReactive(!showReactive)}>
+            {showReactive ? ">" : "<"}
+          </button>
+        </div>
+      </div>
+
       <div>
         <div className="grid grid-cols-12 gap-2">
           {timeline.map((node) => (
-            <TimelineRender
-              key={node.id}
-              node={node}
-              highlighted={highlighted}
-              highlightEvent={highlightEvent}
-              relativeEvent={relativeEvent}
-            />
+            <>
+              {node.typename == "ReactiveNode" && !showReactive ? (
+                <></>
+              ) : (
+                <TimelineRender
+                  key={node.id}
+                  node={node}
+                  highlighted={highlighted}
+                  highlightEvent={highlightEvent}
+                  relativeEvent={relativeEvent}
+                />
+              )}
+            </>
           ))}
         </div>
       </div>

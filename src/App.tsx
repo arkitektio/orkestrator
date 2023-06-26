@@ -56,6 +56,7 @@ import { TauriFaktsFallback } from "./bridges/TauriFaktsFallback";
 import { TauriHerreCallback } from "./bridges/TauriHerreCallback";
 import { AlerterProvider } from "./components/alerter/alerter-provider";
 import { ConfirmerProvider } from "./components/confirmer/confirmer-provider";
+import { Live } from "./dashboard/Dashboard";
 import { HealthzProvider } from "./healthz/provider";
 import { Fluss } from "./pages/Fluss";
 import { Local } from "./pages/Local";
@@ -116,7 +117,6 @@ import { PublicHealthz } from "./pages/public/PublicHealthz";
 import { PublicLogin } from "./pages/public/PublicLogin";
 import { SettingsHome } from "./pages/settings/SettingsHome";
 import { TauriProvider } from "./tauri/provider";
-
 export const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 export const Data = React.lazy(() => import("./pages/Data"));
 export const DataHome = React.lazy(() => import("./pages/data/Home"));
@@ -228,6 +228,10 @@ export const MainApp: React.FC<Props> = (props) => {
                                   <Route
                                     path="experiments"
                                     element={<DataExperiments />}
+                                  />
+                                  <Route
+                                    path="live"
+                                    element={<Live id={"47"} />}
                                   />
                                   <Route
                                     path="datasets/:dataset"
