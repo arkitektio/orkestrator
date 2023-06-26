@@ -30,7 +30,7 @@ export const AgentCard = ({ agent, mates }: TemplateCardProps) => {
       placement="bottom"
       object={agent.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `flex-1 rounded border  backdrop-blur-lg rounded-md h-20 overflow-hidden ${
+        `flex-1 rounded border  backdrop-blur-lg  rounded-md h-20 overflow-hidden ${
           agent.status == AgentStatus.Active
             ? "text-white border-white bg-slate-800 "
             : "text-gray-700 border-gray-700 bg-slate-900"
