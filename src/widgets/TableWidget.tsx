@@ -1,24 +1,15 @@
-import ParentSize from "@visx/responsive/lib/components/ParentSizeModern";
-import { PositionCanvas } from "../components/PositionCanvas";
-import { RoiCanvas } from "../components/RoiCanvas";
-import { TwoDOffcanvas } from "../experimental/render/TwoDOffcanvas";
-import {
-  ColumnFragment,
-  useDetailPositionQuery,
-  useDetailRepresentationQuery,
-  useDetailRoiQuery,
-  useDetailTableQuery,
-} from "../mikro/api/graphql";
-import { withMikro } from "../mikro/MikroContext";
+
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { off } from "process";
-import useScrollPercentage from "react-scroll-percentage-hook";
+import { useCallback, useState } from "react";
+import { withMikro } from "../mikro/MikroContext";
+import {
+  ColumnFragment, useDetailTableQuery
+} from "../mikro/api/graphql";
 import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 
 type TableData = { [key: string]: any };
@@ -46,7 +37,6 @@ export const TableWidget: React.FC<StructureDisplayProps> = ({ value }) => {
   const [offset, setOffset] = useState(0);
   const [fetching, setFetching] = useState(false);
 
-  const { ref, percentage } = useScrollPercentage();
 
   const fetchi = useCallback(() => {
     console.log("fetching more", offset, limit);
@@ -68,12 +58,6 @@ export const TableWidget: React.FC<StructureDisplayProps> = ({ value }) => {
     }).then(() => setOffset(offset + limit));
   }, [offset, limit]);
 
-  useEffect(() => {
-    if (percentage.vertical > 90 && !loading) {
-      setFetching(true);
-      fetchi();
-    }
-  }, [percentage, loading]);
 
   const table = useReactTable({
     data: data?.table?.query || [],
@@ -84,7 +68,6 @@ export const TableWidget: React.FC<StructureDisplayProps> = ({ value }) => {
   return (
     <div
       className="flex-grow bg-white-800 flex flex-col overflow-y-auto"
-      ref={ref}
     >
       {loading && <div>Loading...</div>}
       <table className="flex-grow table-auto text-white">

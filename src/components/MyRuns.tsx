@@ -10,7 +10,7 @@ import { FlowHomeFilterParams } from "../pages/flows/FlowHome";
 import { useConfirm } from "./confirmer/confirmer-context";
 export type IMyGraphsProps = {} & FlowHomeFilterParams;
 
-const MyRuns: React.FC<IMyGraphsProps> = ({ limit, offset, createdDay }) => {
+const MyRuns: React.FC<IMyGraphsProps> = ({ limit, createdDay }) => {
   const { data, error, loading, refetch } = withFluss(useMyRunsQuery)({
     variables: { limit: limit, offset: 0, createdDay: createdDay },
   });

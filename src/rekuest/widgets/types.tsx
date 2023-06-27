@@ -1,9 +1,8 @@
 import {
-  PortFragment,
   InputWidgetFragment,
-  ReturnWidgetFragment,
+  PortFragment,
+  ReturnWidgetFragment
 } from "../api/graphql";
-import { WardRegistry } from "./registry";
 
 export interface InputWidgetProps<
   W extends InputWidgetFragment = InputWidgetFragment

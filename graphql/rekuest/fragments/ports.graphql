@@ -1,25 +1,21 @@
 fragment IntWidget on IntWidget {
   kind
-  dependencies
 }
 
 fragment StringWidget on StringWidget {
   __typename
   kind
-  dependencies
   placeholder
   asParagraph
 }
 
 fragment BoolWidget on BoolWidget {
   kind
-  dependencies
 }
 
 fragment SliderWidget on SliderWidget {
   __typename
   kind
-  dependencies
   min
   max
 }
@@ -29,14 +25,12 @@ fragment SearchWidget on SearchWidget {
   kind
   query
   ward
-  dependencies
 }
 
 fragment CustomWidget on CustomWidget {
   __typename
   kind
   hook
-  dependencies
 }
 
 fragment ChoiceWidget on ChoiceWidget {
@@ -91,6 +85,22 @@ fragment ChildPort on ChildPort {
   nullable
 }
 
+fragment Dependency on Dependency {
+  key
+  condition
+  value
+
+}
+
+fragment Effect on Effect {
+  __typename
+  kind
+  message
+  dependencies {
+    ...Dependency
+  }
+}
+
 fragment InputWidget on Widget {
   __typename
   kind
@@ -109,6 +119,9 @@ fragment Port on Port {
   nullable
   description
   scope
+  effects {
+    ...Effect
+  }
   assignWidget {
     ...InputWidget
   }

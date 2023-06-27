@@ -80,7 +80,7 @@ export const ExportActor: React.FC<Props> = (props) => {
                 dataset: id,
               },
             });
-            let data = query.data.dataset?.omerofiles?.filter(notEmpty) || [];
+            let data = query.data.dataset?.omerofiles?.filter(notEmpty).filter(x => x.file != undefined) || [];
 
             let homedir = await homeDir();
             let path = await join(homedir, "orkestrator", `Dataset ${id}`);

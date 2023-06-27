@@ -1,10 +1,10 @@
-import { Form, Formik, FormikHelpers } from "formik";
+import { Form, Formik, FormikHelpers, useFormikContext } from "formik";
 import { Maybe } from "graphql/jsutils/Maybe";
-import { useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import * as Yup from "yup";
 import { notEmpty } from "../../floating/utils";
 import { withRekuest } from "../RekuestContext";
-import { PortFragment, PortKind, useAssignNodeQuery } from "../api/graphql";
+import { DependencyFragment, EffectFragment, EffectKind, LogicalCondition, PortFragment, PortKind, useAssignNodeQuery } from "../api/graphql";
 import { ChangeSubmitHelper } from "../ui/helpers/ChangeSubmitter";
 import { WidgetRegistry } from "../widgets/registry";
 import { PortOptions } from "../widgets/types";
@@ -25,6 +25,75 @@ export type ConstantsFormProps = {
   ) => Promise<void>;
 };
 
+
+const checkDependency = (effect: DependencyFragment, values: {[key: string]: any}) => {
+  console.log("Checking dependency", effect, values, effect.key, effect.value)
+  if (effect.condition == LogicalCondition.Is) {
+    return values[effect.key] === effect.value
+  }
+  if (effect.condition == LogicalCondition.IsNot) {
+    return values[effect.key] !== effect.value
+  }
+  if (effect.condition == LogicalCondition.In) {
+    return effect.value.includes(values[effect.key])
+  }
+  return false
+}
+
+
+
+export const HiddenWrapper = ({effect, children}: {effect: EffectFragment, children: ReactNode}) => {
+
+  const {values} = useFormikContext<{[key: string]: any}>()
+  const [hidden, setHidden] = useState(false)
+
+  useEffect(() => {
+  
+    let effective = effect.dependencies?.filter(notEmpty).map(d => checkDependency(d, values)).every(predicate => predicate === true)
+    if (effective) {
+      setHidden(true)
+    }
+    else {
+      setHidden(false)
+    }
+  }, [values, effect])
+
+
+
+
+
+  return (
+    <>{hidden ? null : children}</>
+  );
+}
+  
+
+
+
+
+export const EffectWrapper = ({effects, children}: {effects: EffectFragment[], children: ReactNode}) =>  {
+  
+  let [effect, ...resteffect] = effects
+  console.log(effect)
+
+  if (effect) {
+    if (effect.kind == EffectKind.Hidden) {
+      return <HiddenWrapper effect={effect}><EffectWrapper effects={resteffect}>{children}</EffectWrapper></HiddenWrapper>
+    }
+
+    return <>{children}</>
+  }
+
+  return <>{children}</>
+  
+
+}
+
+
+
+
+
+
 export const portToWidget = (
   port: Maybe<PortFragment>,
   widgetRegistry?: WidgetRegistry,
@@ -39,13 +108,16 @@ export const portToWidget = (
 
   let Widget = widgetRegistry.getInputWidgetForPort(port);
 
+
+
   return (
-    <Widget
-      port={port}
-      widget={port?.assignWidget}
-      ward_registry={widgetRegistry.ward_registry}
-      options={portOptions}
-    />
+    <EffectWrapper effects={port?.effects?.filter(notEmpty) || []}>
+      <Widget
+        port={port}
+        widget={port?.assignWidget}
+        options={portOptions}
+      />
+    </EffectWrapper>
   );
 };
 
@@ -250,7 +322,7 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
           {autoSubmit && <ChangeSubmitHelper debounce={500} />}
           <div className="grid grid-cols-1 @xl:grid-cols-2 @2xl:grid-cols-3 gap-4 w-full">
             {mappedPortGroupsWithUngrouped.map((group, index) => (
-              <GroupRender key={index} group={group} disable={disable} />
+              <GroupRender key={index} group={group}  disable={disable} />
             ))}
           </div>
           {children && children}
