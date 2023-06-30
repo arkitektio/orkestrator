@@ -193,6 +193,15 @@ export const Roi = buildSmart("@mikro/roi", "rois", [
   "item:@mikro/representation",
 ]);
 
+export const Thumbnail = buildSmart("@mikro/thumbnail", "thumbnails", [
+  "list:@mikro/thumbnail",
+  "item:@mikro/thumbnail",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
 export const Context = buildSmart("@mikro/context", "contexts", [
   "list:@mikro/link",
   "item:@mikro/link",
@@ -232,6 +241,15 @@ export const Stage = buildSmart("@mikro/stage", "stages", [
 export const Position = buildSmart("@mikro/position", "positions", [
   "list:@mikro/position",
   "item:@mikro/position",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const Video = buildSmart("@mikro/video", "videos", [
+  "list:@mikro/video",
+  "item:@mikro/video",
   "list:@mikro/experiment",
   "item:@mikro/experiment",
   "list:@mikro/representation",
@@ -383,6 +401,11 @@ export const Node = buildSmart("@rekuest/node", "nodes", [
   "item:@rekuest/node",
   "list:@rekuest/assignation",
   "item:@rekuest/assignation",
+]);
+
+export const Collection = buildSmart("@rekuest/collection", "collections", [
+  "list:@rekuest/collection",
+  "item:@rekuest/collection",
 ]);
 export const Reservation = buildSmart("@rekuest/reservation", "reservations", [
   "list:@rekuest/reservation",

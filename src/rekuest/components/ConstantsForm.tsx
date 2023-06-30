@@ -2,14 +2,23 @@ import { Form, Formik, FormikHelpers, useFormikContext } from "formik";
 import { Maybe } from "graphql/jsutils/Maybe";
 import { ReactNode, useEffect, useState } from "react";
 import * as Yup from "yup";
+import { FittingResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import horse from "../../easter/horse.gif";
 import { notEmpty } from "../../floating/utils";
 import { withRekuest } from "../RekuestContext";
-import { DependencyFragment, EffectFragment, EffectKind, LogicalCondition, PortFragment, PortKind, useAssignNodeQuery } from "../api/graphql";
+import {
+  DependencyFragment,
+  EffectFragment,
+  EffectKind,
+  LogicalCondition,
+  PortFragment,
+  PortKind,
+  useAssignNodeQuery,
+} from "../api/graphql";
 import { ChangeSubmitHelper } from "../ui/helpers/ChangeSubmitter";
 import { WidgetRegistry } from "../widgets/registry";
 import { PortOptions } from "../widgets/types";
 import { useWidgetRegistry } from "../widgets/widget-context";
-
 export type ConstantsFormProps = {
   node: string;
   omit?: string[];
@@ -25,74 +34,127 @@ export type ConstantsFormProps = {
   ) => Promise<void>;
 };
 
-
-const checkDependency = (effect: DependencyFragment, values: {[key: string]: any}) => {
-  console.log("Checking dependency", effect, values, effect.key, effect.value)
+const checkDependency = (
+  effect: DependencyFragment,
+  port: PortFragment,
+  values: { [key: string]: any }
+) => {
+  console.log("Checking dependency", effect, values, effect.key, effect.value);
   if (effect.condition == LogicalCondition.Is) {
-    return values[effect.key] === effect.value
+    return values[effect.key || port.key] === effect.value;
   }
   if (effect.condition == LogicalCondition.IsNot) {
-    return values[effect.key] !== effect.value
+    return values[effect.key || port.key] !== effect.value;
   }
   if (effect.condition == LogicalCondition.In) {
-    return effect.value.includes(values[effect.key])
+    return effect.value.includes(values[effect.key || port.key]);
   }
-  return false
-}
+  return false;
+};
 
-
-
-export const HiddenWrapper = ({effect, children}: {effect: EffectFragment, children: ReactNode}) => {
-
-  const {values} = useFormikContext<{[key: string]: any}>()
-  const [hidden, setHidden] = useState(false)
+const useIsEffectActive = (effect: EffectFragment, port: PortFragment) => {
+  const { values } = useFormikContext<{ [key: string]: any }>();
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-  
-    let effective = effect.dependencies?.filter(notEmpty).map(d => checkDependency(d, values)).every(predicate => predicate === true)
+    let effective = effect.dependencies
+      ?.filter(notEmpty)
+      .map((d) => checkDependency(d, port, values))
+      .every((predicate) => predicate === true);
     if (effective) {
-      setHidden(true)
+      setHidden(true);
+    } else {
+      setHidden(false);
     }
-    else {
-      setHidden(false)
-    }
-  }, [values, effect])
+  }, [values, effect]);
 
+  return hidden;
+};
 
+export const HiddenWrapper = ({
+  effect,
+  children,
+  port,
+}: {
+  effect: EffectFragment;
+  children: ReactNode;
+  port: PortFragment;
+}) => {
+  const hidden = useIsEffectActive(effect, port);
 
+  return <>{hidden ? null : children}</>;
+};
 
+export const CrazyWrapper = ({
+  effect,
+  children,
+  port,
+}: {
+  effect: EffectFragment;
+  children: ReactNode;
+  port: PortFragment;
+}) => {
+  const iscrazy = useIsEffectActive(effect, port);
 
   return (
-    <>{hidden ? null : children}</>
+    <>
+      {iscrazy ? (
+        <div>
+          <img
+            src={horse}
+            className="animate-pulse cursor-pointer w-full"
+            onClick={() => {
+              window.open(
+                "https://www.youtube.com/watch?v=b3_lVSrPB6w&ab_channel=IsaiahS"
+              );
+            }}
+          />
+          {children}
+        </div>
+      ) : (
+        children
+      )}
+    </>
   );
-}
-  
+};
 
-
-
-
-export const EffectWrapper = ({effects, children}: {effects: EffectFragment[], children: ReactNode}) =>  {
-  
-  let [effect, ...resteffect] = effects
-  console.log(effect)
+export const EffectWrapper = ({
+  effects,
+  children,
+  port,
+}: {
+  effects: EffectFragment[];
+  children: ReactNode;
+  port: PortFragment;
+}) => {
+  let [effect, ...resteffect] = effects;
+  console.log(effect);
 
   if (effect) {
     if (effect.kind == EffectKind.Hidden) {
-      return <HiddenWrapper effect={effect}><EffectWrapper effects={resteffect}>{children}</EffectWrapper></HiddenWrapper>
+      return (
+        <HiddenWrapper effect={effect} port={port}>
+          <EffectWrapper effects={resteffect} port={port}>
+            {children}
+          </EffectWrapper>
+        </HiddenWrapper>
+      );
+    }
+    if (effect.kind == EffectKind.Crazy) {
+      return (
+        <CrazyWrapper effect={effect} port={port}>
+          <EffectWrapper effects={resteffect} port={port}>
+            {children}
+          </EffectWrapper>
+        </CrazyWrapper>
+      );
     }
 
-    return <>{children}</>
+    return <>{children}</>;
   }
 
-  return <>{children}</>
-  
-
-}
-
-
-
-
-
+  return <>{children}</>;
+};
 
 export const portToWidget = (
   port: Maybe<PortFragment>,
@@ -108,15 +170,9 @@ export const portToWidget = (
 
   let Widget = widgetRegistry.getInputWidgetForPort(port);
 
-
-
   return (
-    <EffectWrapper effects={port?.effects?.filter(notEmpty) || []}>
-      <Widget
-        port={port}
-        widget={port?.assignWidget}
-        options={portOptions}
-      />
+    <EffectWrapper effects={port?.effects?.filter(notEmpty) || []} port={port}>
+      <Widget port={port} widget={port?.assignWidget} options={portOptions} />
     </EffectWrapper>
   );
 };
@@ -205,9 +261,10 @@ export const GroupRender = ({
       {group.ports && group.ports.length > 0 && (
         <div
           className={
-            group.key != "ungrouped"
+            "@container " +
+            (group.key != "ungrouped"
               ? "border border-1 border-slate-600 p-2 rounded gap-2 flex-1"
-              : "gap-2"
+              : "gap-2")
           }
         >
           {group.key != "ungrouped" && (
@@ -218,17 +275,22 @@ export const GroupRender = ({
               {group?.key}
             </div>
           )}
-          {!hidden &&
-            group?.ports?.map((port, index) => (
-              <div key={index}>
-                {portToWidget(port, registry, {
-                  disable:
-                    disable && disable.includes(port?.key || "fakekey")
-                      ? true
-                      : false,
-                })}
-              </div>
-            ))}
+          {!hidden && (
+            <>
+              <FittingResponsiveContainerGrid fitLength={group.ports.length}>
+                {group?.ports?.map((port, index) => (
+                  <div key={index}>
+                    {portToWidget(port, registry, {
+                      disable:
+                        disable && disable.includes(port?.key || "fakekey")
+                          ? true
+                          : false,
+                    })}
+                  </div>
+                ))}
+              </FittingResponsiveContainerGrid>
+            </>
+          )}
         </div>
       )}
     </>
@@ -320,11 +382,13 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
       {(formikProps) => (
         <Form>
           {autoSubmit && <ChangeSubmitHelper debounce={500} />}
-          <div className="grid grid-cols-1 @xl:grid-cols-2 @2xl:grid-cols-3 gap-4 w-full">
+          <FittingResponsiveContainerGrid
+            fitLength={mappedPortGroupsWithUngrouped?.length || 0}
+          >
             {mappedPortGroupsWithUngrouped.map((group, index) => (
-              <GroupRender key={index} group={group}  disable={disable} />
+              <GroupRender key={index} group={group} disable={disable} />
             ))}
-          </div>
+          </FittingResponsiveContainerGrid>
           {children && children}
         </Form>
       )}

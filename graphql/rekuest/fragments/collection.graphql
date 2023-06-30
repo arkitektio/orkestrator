@@ -1,0 +1,14 @@
+fragment ListCollection on Collection {
+  __typename
+  id
+  name
+  description
+}
+
+fragment Collection on Collection {
+  name
+  description
+  nodes {
+    ...NodeListItem
+  }
+}

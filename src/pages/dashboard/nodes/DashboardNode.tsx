@@ -5,7 +5,8 @@ import { NodeActions } from "../../../actions/NodeActions";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../../floating/utils";
 import { PageLayout } from "../../../layout/PageLayout";
-import { Node } from "../../../linker";
+import { Collection, Node } from "../../../linker";
+import { ExperimentalFeature } from "../../../providers/experimental/Experimental";
 import { withRekuest } from "../../../rekuest";
 import {
   ChildPortFragment,
@@ -100,12 +101,15 @@ export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
             {port?.label || port?.key}
           </div>
           <div className="ml-2 my-auto">{port?.description}</div>
+
+          <ExperimentalFeature>
           {port?.assignWidget?.__typename && (
             <div className="ml-2 my-auto">{port.assignWidget?.__typename}</div>
           )}
           {port?.returnWidget?.__typename && (
             <div className="ml-2 my-auto">{port?.returnWidget?.__typename}</div>
           )}
+          </ExperimentalFeature>
         </div>
       );
   }
@@ -163,6 +167,16 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
                   {" "}
                   {i}{" "}
                 </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex-none">
+            <div className="flex flex-row gap-2">
+              {data?.node?.collections?.map((i) => (
+                <Collection.DetailLink object={i.id} className="border-primary-300 p-1 border rounded-md bg-primary-300 text-white">
+                  {" "}
+                  {i.name}{" "}
+                </Collection.DetailLink>
               ))}
             </div>
           </div>

@@ -9,7 +9,7 @@ const BreadCrumbs: React.FunctionComponent<IBreadCrumbsProps> = (props) => {
 
   return (
     <>
-      <div className="flex-initial sm:px-6 px-2 sm:py-3 py-2">
+      <div className="flex-initial sm:px-6  sm:py-3 py-2">
         {" "}
         {breadcrumbs.map(({ match, breadcrumb }) => (
           <span key={match.pathname}>

@@ -108,12 +108,12 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
             {props.actions && <Actionbar>{props.actions}</Actionbar>}
             {props.help && <HelpButton help={props.help} />}
             <div
-              className="flex-grow p-2 sm:p-4 overflow-y-auto w-full @container flex flex-col"
+              className="flex-grow  sm:p-4 overflow-y-auto w-full @container flex flex-col"
               data-enableselect="true"
             >
               {props.children}
             </div>
-            <div className="absolute top-[1rem] right-0 flex flex-col gap-2">
+            <div className="absolute top-[1rem] right-0 flex flex-col gap-2 bg-gradient-to-r from-transparent to-black">
               {props.sidebars?.map((s, index) => (
                 <div
                   key={index}

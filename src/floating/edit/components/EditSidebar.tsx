@@ -7,6 +7,7 @@ import {
   useReactiveTemplatesQuery,
 } from "../../../fluss/api/graphql";
 import { withFluss } from "../../../fluss/fluss";
+import { DashboardSearchFilter } from "../../../pages/dashboard/DashboardSearch";
 import { withRekuest } from "../../../rekuest/RekuestContext";
 import {
   NodeListItemFragment,
@@ -200,8 +201,8 @@ export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
   return (
     <>
       <div className="flex-none p-5 dark:text-slate-50 overflow-hidden">
-        <NodeFilterBox
-          onFilterChanged={async (filter) => setFilter(filter)}
+        <DashboardSearchFilter
+          onFilterChanged={setFilter}
           className="w-full p-3 rounded-md shadow-lg dark:bg-slate-200 dark:text-black"
         />
       </div>

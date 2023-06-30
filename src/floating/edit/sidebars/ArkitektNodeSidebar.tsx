@@ -121,12 +121,23 @@ export const ArkitektNodeSidebar = (
                     <CarouselInputField
                       label="Map Strategy"
                       options={[
-                        { value: MapStrategy.Map, label: "Map" },
+                        {
+                          value: MapStrategy.Map,
+                          label: "Map",
+                          description: "Sequential executing each request",
+                        },
                         {
                           value: MapStrategy.AsCompleted,
                           label: "As Completed",
+                          description:
+                            "Immediately start executing each request, fowarding as they complete",
                         },
-                        { value: MapStrategy.Ordered, label: "Ordered" },
+                        {
+                          value: MapStrategy.Ordered,
+                          label: "Ordered",
+                          description:
+                            "Immediately start executing each request, but forward them according to the original order",
+                        },
                       ]}
                       name="mapStrategy"
                       labelClassName="text-white"

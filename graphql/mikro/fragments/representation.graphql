@@ -72,7 +72,7 @@ fragment DetailRepresentation on Representation {
       ...Thumbnail
     }
     ... on Video {
-      ...DetailVideo
+      ...Video
     }
   }
 

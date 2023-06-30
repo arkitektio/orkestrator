@@ -13,6 +13,7 @@ query MiniNodeByID($id: ID!) {
 query Nodes(
   $search: String
   $interfaces: [String]
+  $collections: [ID]
   $restrict: [String]
   $templated: Boolean
   $scopes: [NodeScope]
@@ -22,6 +23,7 @@ query Nodes(
     interfaces: $interfaces
     restrict: $restrict
     templated: $templated
+    collections: $collections
     scopes: $scopes
   ) {
     ...NodeListItem

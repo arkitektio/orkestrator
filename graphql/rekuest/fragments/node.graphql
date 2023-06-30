@@ -5,6 +5,10 @@ fragment DetailNode on Node {
   hash
   id
   interfaces
+  collections {
+    id
+    name
+  }
   meta
   ...Ports
   templates {

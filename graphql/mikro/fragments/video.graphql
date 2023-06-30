@@ -1,4 +1,10 @@
-fragment DetailVideo on Video {
+fragment Video on Video {
+  id
+  data
+  frontImage
+}
+
+fragment ListVideo on Video {
   id
   data
   frontImage

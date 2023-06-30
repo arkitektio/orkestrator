@@ -4,20 +4,16 @@ import { useState } from "react";
 import { BiSearch } from "react-icons/bi";
 import { FiArrowDown } from "react-icons/fi";
 import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
-import {
-  GlobalSearchQueryVariables,
-  useTagSearchLazyQuery,
-  useUserOptionsLazyQuery,
-} from "../../mikro/api/graphql";
 
 import "react-datepicker/dist/react-datepicker.css";
-import { DateInputField } from "../../components/forms/fields/date_input";
-import { withMikro } from "../../mikro/MikroContext";
-import { NodesQueryVariables } from "../../rekuest/api/graphql";
+import { GraphQLListSearchInput } from "../../components/forms/fields/SearchInput";
+import { useUserOptionsLazyQuery } from "../../lok/api/graphql";
+import { withMan } from "../../lok/context";
+import { withRekuest } from "../../rekuest";
 import {
-  CreateableSearchInput,
-  GraphQLSearchInput,
-} from "../../components/forms/fields/SearchInput";
+  NodesQueryVariables,
+  useSearchCollectionsLazyQuery,
+} from "../../rekuest/api/graphql";
 
 interface NodeFilterBoxProps {
   onFilterChanged: (values: NodesQueryVariables) => any;
@@ -30,8 +26,8 @@ export const DashboardSearchFilter: React.FC<NodeFilterBoxProps> = ({
   className,
   placeholder,
 }) => {
-  const [searchUser] = withMikro(useUserOptionsLazyQuery)();
-  const [searchTags, _t] = withMikro(useTagSearchLazyQuery)();
+  const [searchUser] = withMan(useUserOptionsLazyQuery)();
+  const [searchCollection] = withRekuest(useSearchCollectionsLazyQuery)();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -81,10 +77,10 @@ export const DashboardSearchFilter: React.FC<NodeFilterBoxProps> = ({
               <>
                 <div className="grid grid-cols-1 mt-2 dark:border-t-slate-800">
                   <div className="flex flex-col">
-                    <GraphQLSearchInput
-                      name="creator"
-                      searchFunction={searchUser}
-                      label="Created by"
+                    <GraphQLListSearchInput
+                      name="collections"
+                      searchFunction={searchCollection}
+                      label="Collections"
                     />
                   </div>
                 </div>

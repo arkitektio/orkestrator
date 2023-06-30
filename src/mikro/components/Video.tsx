@@ -1,27 +1,25 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import React from "react";
+import ReactPlayer from "react-player";
 import { SelfActions } from "../../components/SelfActions";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
-import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { useDeleteLinkMate } from "../../mates/link/useDeleteFileMate";
 import { useDeleteModelMate } from "../../mates/model/useDeleteModelMate";
 import { withMikro } from "../MikroContext";
-import { CommentableModels, useDetailContextQuery } from "../api/graphql";
-import { LinkCard } from "./cards/LinkCard";
-import { ModelCard } from "./cards/ModelCard";
+import { CommentableModels, useDetailVideoQuery } from "../api/graphql";
 
 export type IExperimentProps = {
   id: string;
 };
 
-const Context: React.FC<IExperimentProps> = ({ id }) => {
-  const { data, error } = withMikro(useDetailContextQuery)({
+const Video: React.FC<IExperimentProps> = ({ id }) => {
+  const { data, error } = withMikro(useDetailVideoQuery)({
     variables: { id: id },
   });
-
+  const { s3resolve } = useDatalayer();
   const deleteLinkMate = useDeleteLinkMate();
   const deleteModelMate = useDeleteModelMate();
 
@@ -51,30 +49,22 @@ const Context: React.FC<IExperimentProps> = ({ id }) => {
       {!error && data && (
         <div className="p-3 flex-grow flex flex-col">
           <div className="flex mb-4">
-            <SectionTitle>{data?.context?.name}</SectionTitle>
+            <SectionTitle>{data?.video?.id}</SectionTitle>
           </div>
           <div className="flex-initial text-slate-200"></div>
-          <SectionTitle> Relates </SectionTitle>
-          <div className="grid grid-cols-1">
-            {data.context?.links.filter(notEmpty).map((link) => (
-              <LinkCard
-                key={link.id}
-                link={link}
-                minimal
-                mates={[deleteLinkMate(link)]}
-              />
-            ))}
-          </div>
-          <SectionTitle> Created Models </SectionTitle>
-          <ResponsiveGrid>
-            {data.context?.models.filter(notEmpty).map((m) => (
-              <ModelCard model={m} mates={[deleteModelMate(m)]} />
-            ))}
-          </ResponsiveGrid>
+          {data?.video?.data && (
+            <ReactPlayer
+              url={s3resolve(data?.video?.data)}
+              playing={true}
+              loop={true}
+              className="border border-1 border-slate-200"
+              controls={true}
+            />
+          )}
         </div>
       )}
     </PageLayout>
   );
 };
 
-export { Context };
+export { Video };

@@ -51,6 +51,7 @@ export const ArkitektTrackNodeSidebar = (
             AssignationStatusInput.Pending,
             AssignationStatusInput.Done,
             AssignationStatusInput.Returned,
+            AssignationStatusInput.Progress,
           ]
         : undefined,
       limit: limit,
@@ -72,6 +73,7 @@ export const ArkitektTrackNodeSidebar = (
                 AssignationStatusInput.Pending,
                 AssignationStatusInput.Done,
                 AssignationStatusInput.Returned,
+                AssignationStatusInput.Progress,
               ]
             : undefined,
 
@@ -103,7 +105,7 @@ export const ArkitektTrackNodeSidebar = (
             {(a) => (
               <Assignation.Smart
                 object={a?.id}
-                className={`bg-slate-800 rounded p-2 rounded-md relative border border-slate-700 ${
+                className={`relative bg-slate-800 rounded p-2 rounded-md relative border border-slate-700 ${
                   [
                     AssignationStatus.Yield,
                     AssignationStatus.Assigned,
@@ -113,12 +115,16 @@ export const ArkitektTrackNodeSidebar = (
                     ? "bg-blue-800 border-blue-700 border "
                     : ""
                 }
-                
-                
-                
                 `}
                 mates={[assMate(a)]}
               >
+                <div
+                  className={`absolute top-0 left-0 h-full bg-orange-300 border-orange-300 rounded transition-width duration-100 ease-in-out`}
+                  style={{
+                    zIndex: -100,
+                    width: `${a.progress ? Math.floor(a.progress) : 0}%`,
+                  }}
+                ></div>
                 <div className="flex flex-col">
                   <div className="font-light">
                     <Assignation.DetailLink object={a?.id}>

@@ -63,11 +63,15 @@ import { Local } from "./pages/Local";
 import { Settings } from "./pages/Settings";
 import { DashboardAgent } from "./pages/dashboard/agents/DashboardAgent";
 import { DashboardAgents } from "./pages/dashboard/agents/DashboardAgents";
+import { DashboardCollection } from "./pages/dashboard/collections/DashboardCollection";
+import { DashboardCollections } from "./pages/dashboard/collections/DashboardCollections";
 import { DashboardHistory } from "./pages/dashboard/history/DashboardHistory";
 import { DashboardRepositories } from "./pages/dashboard/repositories/DashboardRepositories";
 import { DashboardRepository } from "./pages/dashboard/repositories/DashboardRepository";
 import { DataEra } from "./pages/data/eras/DataEra";
 import { DataEras } from "./pages/data/eras/DataEras";
+import DataGraph from "./pages/data/graphs/DataGraph";
+import DataGraphs from "./pages/data/graphs/DataGraphs";
 import { DataInstrument } from "./pages/data/instruments/DataInstrument";
 import { DataInstruments } from "./pages/data/instruments/DataInstruments";
 import { DataLabel } from "./pages/data/labels/DataLabel";
@@ -87,8 +91,12 @@ import { DataPositions } from "./pages/data/positions/DataPositions";
 import { DataRoi } from "./pages/data/rois/DataRoi";
 import { DataStage } from "./pages/data/stages/DataStage";
 import { DataStages } from "./pages/data/stages/DataStages";
+import DataThumbnail from "./pages/data/thumbnails/DataThumbnail";
+import DataThumbnails from "./pages/data/thumbnails/DataThumbnails";
 import { DataTimepoint } from "./pages/data/timepoints/DataTimepoint";
 import { DataTimepoints } from "./pages/data/timepoints/DataTimepoints";
+import DataVideo from "./pages/data/videos/DataVideo";
+import DataVideos from "./pages/data/videos/DataVideos";
 import { FlowTimeline } from "./pages/flows/timelines/FlowTimeline";
 import { FlowDiagram } from "./pages/flows/workspace/FlowDiagram";
 import { FlowDiagramFlow } from "./pages/flows/workspace/FlowDiagramFlow";
@@ -261,6 +269,42 @@ export const MainApp: React.FC<Props> = (props) => {
                                   <Route
                                     path="models"
                                     element={<DataModels />}
+                                  />
+
+                                  <Route
+                                    path="graphs/:graph"
+                                    element={<DataGraph />}
+                                  />
+                                  <Route
+                                    path="graphs"
+                                    element={<DataGraphs />}
+                                  />
+
+                                  <Route
+                                    path="graphs/:graph"
+                                    element={<DataGraph />}
+                                  />
+                                  <Route
+                                    path="graphs"
+                                    element={<DataGraphs />}
+                                  />
+
+                                  <Route
+                                    path="thumbnails/:thumbnail"
+                                    element={<DataThumbnail />}
+                                  />
+                                  <Route
+                                    path="thumbnails"
+                                    element={<DataThumbnails />}
+                                  />
+
+                                  <Route
+                                    path="videos/:video"
+                                    element={<DataVideo />}
+                                  />
+                                  <Route
+                                    path="videos"
+                                    element={<DataVideos />}
                                   />
 
                                   <Route
@@ -493,6 +537,14 @@ export const MainApp: React.FC<Props> = (props) => {
                                   <Route
                                     path="repositories"
                                     element={<DashboardRepositories />}
+                                  />
+                                  <Route
+                                    path="collections/:id"
+                                    element={<DashboardCollection />}
+                                  />
+                                  <Route
+                                    path="collections"
+                                    element={<DashboardCollections />}
                                   />
                                   <Route
                                     path="provisions"

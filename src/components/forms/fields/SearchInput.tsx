@@ -1,8 +1,9 @@
-import { Combobox } from "@headlessui/react";
+import { Combobox, Transition } from "@headlessui/react";
 import { useField } from "formik";
 import Fuse from "fuse.js";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useDrop } from "react-dnd";
+import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 import { notEmpty } from "../../../floating/utils";
 import { Partner } from "../../../rekuest/postman/mater/mater-context";
 import { Alert } from "../Alert";
@@ -70,6 +71,112 @@ type GraphQlSearchResult<T extends Option> = Promise<{
 export type CreateableProps<T extends Option> = {
   createFunction: (value: string) => Promise<T | null | undefined>;
 };
+
+export const SearchContainer = ({ children, ...props }: any) => (
+  <div
+    className="relative w-full cursor-default overflow-hidden h-10 flex gap-1 flex-wrap flex-row rounded-lg bg-white text-left px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-300 sm:text-sm"
+    {...props}
+  >
+    {children}
+  </div>
+);
+
+export const Wrapper = ({ children, ...props }: any) => (
+  <div className="relative w-full h-10">{children}</div>
+);
+
+export const SearchContainerButton = ({ children, ...props }: any) => (
+  <button
+    type="button"
+    className="flex-1 border-1 border rounded rounded-md border-gray-800 py-1 px-2  text-sm  text-gray-900 focus:ring-0 truncate overflow-hidden"
+    {...props}
+  >
+    {children}
+  </button>
+);
+
+export const NoResultsFound = () => (
+  <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+    No results found
+  </div>
+);
+
+export const OptionItem = ({ option }: { option: Option }) => (
+  <Combobox.Option
+    key={option.value}
+    value={option.value}
+    className={({ active, selected }) =>
+      `relative cursor-pointer select-none py-2 px-4  ${
+        active ? "bg-primary-400 text-black" : "text-gray-900"
+      } ${selected ? "bg-primary-400 font-semibold" : "font-normal"}`
+    }
+  >
+    {option.label}
+  </Combobox.Option>
+);
+
+export const MultiItem = ({ option }: { option: Option }) => (
+  <Combobox.Option
+    key={option.value}
+    value={option.value}
+    className={({ active, selected }) =>
+      `relative cursor-default select-none py-2 pl-10 pr-4 ${
+        active ? "bg-primary-400 text-black" : "text-gray-900"
+      } ${selected ? "font-semibold" : "font-normal"}`
+    }
+  >
+    {({ selected, active }) => (
+      <>
+        <span
+          className={`block truncate ${
+            selected ? "font-medium" : "font-normal"
+          }`}
+        >
+          {option.label}
+        </span>
+        {selected ? (
+          <span
+            className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+              active ? "text-white" : "text-teal-600"
+            }`}
+          >
+            <IoMdCheckmarkCircleOutline
+              className="h-5 w-5"
+              aria-hidden="true"
+            />
+          </span>
+        ) : null}
+      </>
+    )}
+  </Combobox.Option>
+);
+
+export const SearchContainerInput = ({ ...props }: any) => (
+  <Combobox.Input
+    className="flex-grow focus:outline-none text-black h-full"
+    displayValue={(value) => ""}
+    {...props}
+  />
+);
+
+export const DropDown = ({ children, ...props }: any) => (
+  <Transition
+    as={Fragment}
+    leave="transition ease-in duration-100"
+    leaveFrom="opacity-100"
+    leaveTo="opacity-0"
+  >
+    <Combobox.Options
+      {...props}
+      static
+      className={
+        "absolute mt-1 max-h-60 z-10  w-full overflow-auto rounded-md bg-white text-black py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+      }
+    >
+      {children}
+    </Combobox.Options>
+  </Transition>
+);
 
 export const ListSearchField = <T extends Option>({
   name,
@@ -143,9 +250,8 @@ export const ListSearchField = <T extends Option>({
   const setValues = async (value: T["value"]) => {
     console.log("setting", value);
     helpers.setValue(value);
-    displayValue(value).then(() => {
-      setQuery("");
-    });
+    setQuery("");
+    displayValue(value).then(() => {});
   };
 
   return (
@@ -155,56 +261,42 @@ export const ListSearchField = <T extends Option>({
         multiple
         value={field.value || []}
       >
-        <div
-          className="flex flex-row bg-white text-black focus-within:ring-5 focus-within:ring ring-primary-400 rounded ring-offset-1 gap-1 p-1"
-          ref={drop}
-        >
-          {displayOptions &&
-            displayOptions.filter(notEmpty).map((option) => (
-              <button
-                type="button"
-                className="p-1 flex-grow border-1 border-gray-300 rounded-md border"
-                onDoubleClick={() =>
-                  setValues(
-                    field.value
-                      ? field.value.filter((p) => p != option.value)
-                      : []
-                  )
-                }
-              >
-                {option.label}
-              </button>
-            ))}
-          <Combobox.Input
-            onChange={(event) => setQuery(event.target.value)}
-            className="flex-grow focus:outline-none"
-          />
-          {isOver && <>Drop here</>}
-        </div>
-        <Combobox.Options
-          className={"bg-white text-black p-1 rounded rounded-md"}
-        >
-          {filteredOptions && filteredOptions.length === 0 && query != "" && (
-            <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-              No results found
-            </div>
-          )}
+        <Wrapper>
+          <SearchContainer ref={drop}>
+            {displayOptions &&
+              displayOptions
+                .filter(notEmpty)
+                .map((option) => (
+                  <SearchContainerButton
+                    onDoubleClick={() =>
+                      setValues(
+                        field.value
+                          ? field.value.filter((p) => p != option.value)
+                          : []
+                      )
+                    }
+                  >
+                    {option.label}
+                  </SearchContainerButton>
+                ))}
+            <SearchContainerInput
+              onChange={(event: any) => setQuery(event.target.value)}
+            />
+            {isOver && <>Drop here</>}
+          </SearchContainer>
+          <DropDown>
+            {filteredOptions && filteredOptions.length === 0 && query != "" && (
+              <NoResultsFound />
+            )}
 
-          {filteredOptions &&
-            filteredOptions.filter(notEmpty).map((option) => (
-              <Combobox.Option
-                key={option.value}
-                value={option.value}
-                className={({ active, selected }) =>
-                  `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                    active ? "bg-primary-400 text-white" : "text-gray-900"
-                  } ${selected ? "font-semibold" : "font-normal"}`
-                }
-              >
-                {option.label}
-              </Combobox.Option>
-            ))}
-        </Combobox.Options>
+            {filteredOptions &&
+              filteredOptions
+                .filter(notEmpty)
+                .map((option, index) => (
+                  <OptionItem option={option} key={index} />
+                ))}
+          </DropDown>
+        </Wrapper>
       </Combobox>
       {meta && meta.touched && meta.error && (
         <Alert prepend="Error" message={meta.error} />
@@ -273,47 +365,30 @@ export const SearchField = <T extends Option>({
         onChange={setValues}
         value={displayOptions?.at(0)?.value}
       >
-        <div className="flex flex-row bg-white text-black focus-within:ring-5 focus-within:ring ring-primary-400 rounded ring-offset-1 gap-1 p-1">
-          {displayOptions && displayOptions.at(0) ? (
-            <div className="flex-grow text-center flex flex-row border-gray-400 border border-1 rounded-md">
-              <button
-                type="button"
-                className="p-1 flex-grow"
-                onDoubleClick={() => setValues(undefined)}
-              >
+        <Wrapper>
+          <SearchContainer>
+            {displayOptions && displayOptions.at(0) ? (
+              <SearchContainerButton onDoubleClick={() => setValues(undefined)}>
                 {displayOptions.at(0)?.label}
-              </button>
-            </div>
-          ) : (
-            <Combobox.Input
-              onChange={(event) => setQuery(event.target.value)}
-              className="flex-grow focus:outline-none"
-            />
-          )}
-        </div>
-        <Combobox.Options
-          className={"bg-white text-black p-1 rounded rounded-md"}
-        >
-          {filteredOptions && filteredOptions.length === 0 && query != "" && (
-            <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-              No results found
-            </div>
-          )}
-          {filteredOptions &&
-            filteredOptions.filter(notEmpty).map((option) => (
-              <Combobox.Option
-                key={option.value}
-                value={option.value}
-                className={({ active }) =>
-                  `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                    active ? "bg-primary-400 text-white" : "text-gray-900"
-                  }`
-                }
-              >
-                {option.label}
-              </Combobox.Option>
-            ))}
-        </Combobox.Options>
+              </SearchContainerButton>
+            ) : (
+              <SearchContainerInput
+                onChange={(event: any) => setQuery(event.target.value)}
+              />
+            )}
+          </SearchContainer>
+          <DropDown>
+            {filteredOptions && filteredOptions.length === 0 && query != "" && (
+              <NoResultsFound />
+            )}
+            {filteredOptions &&
+              filteredOptions
+                .filter(notEmpty)
+                .map((option, index) => (
+                  <OptionItem option={option} key={index} />
+                ))}
+          </DropDown>
+        </Wrapper>
       </Combobox>
       {meta && meta.touched && meta.error && (
         <Alert prepend="Error" message={meta.error} />
@@ -368,47 +443,36 @@ export const FuseSearchField = <T extends Option>({
   return (
     <>
       <Combobox<T["value"]> onChange={setValues} value={query}>
-        <div className="flex flex-row bg-white text-black focus-within:ring-5 focus-within:ring ring-primary-400 rounded ring-offset-1 gap-1 p-1">
-          {displayOptions && displayOptions.at(0) ? (
-            <div className="flex-grow text-center flex flex-row border-gray-400 border border-1 rounded-md">
-              <button
-                type="button"
-                className="p-1 flex-grow"
-                onDoubleClick={() => setValues(undefined)}
-              >
-                {displayOptions.at(0)?.label}
-              </button>
-            </div>
-          ) : (
-            <Combobox.Input
-              onChange={(event) => setQuery(event.target.value)}
-              className="flex-grow focus:outline-none"
-            />
-          )}
-        </div>
-        <Combobox.Options
-          className={"bg-white text-black p-1 rounded rounded-md"}
-        >
-          {filteredOptions && filteredOptions.length === 0 && query != "" && (
-            <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-              No results found
-            </div>
-          )}
-          {filteredOptions &&
-            filteredOptions.filter(notEmpty).map((option) => (
-              <Combobox.Option
-                key={option.value}
-                value={option.value}
-                className={({ active }) =>
-                  `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                    active ? "bg-primary-400 text-white" : "text-gray-900"
-                  }`
-                }
-              >
-                {option.label}
-              </Combobox.Option>
-            ))}
-        </Combobox.Options>
+        <Wrapper>
+          <SearchContainer>
+            {displayOptions && displayOptions.at(0) ? (
+              <div className="flex-grow text-center flex flex-row border-gray-400 border border-1 rounded-md">
+                <button
+                  type="button"
+                  className="p-1 flex-grow"
+                  onDoubleClick={() => setValues(undefined)}
+                >
+                  {displayOptions.at(0)?.label}
+                </button>
+              </div>
+            ) : (
+              <SearchContainerInput
+                onChange={(event: any) => setQuery(event.target.value)}
+              />
+            )}
+          </SearchContainer>
+          <DropDown>
+            {filteredOptions && filteredOptions.length === 0 && query != "" && (
+              <NoResultsFound />
+            )}
+            {filteredOptions &&
+              filteredOptions
+                .filter(notEmpty)
+                .map((option, index) => (
+                  <OptionItem option={option} key={index} />
+                ))}
+          </DropDown>
+        </Wrapper>
       </Combobox>
       {meta && meta.touched && meta.error && (
         <Alert prepend="Error" message={meta.error} />
@@ -467,63 +531,44 @@ export const CreateableSearchField = <T extends Option>({
   return (
     <>
       <Combobox<T["value"]> onChange={setValue} value={query}>
-        <div className="flex w-full bg-white text-black focus-within:ring-5 focus-within:ring ring-primary-400 rounded ring-offset-1 gap-1 p-1">
-          {displayOptions && displayOptions.length > 0 ? (
-            <div className="flex-grow text-center flex flex-row border-gray-400 border border-1 rounded-md">
-              <button
-                type="button"
-                className="p-1 flex-grow"
-                onDoubleClick={() => setValue(undefined)}
-              >
+        <Wrapper>
+          <SearchContainer>
+            {displayOptions && displayOptions.length > 0 ? (
+              <SearchContainerButton onDoubleClick={() => setValue(undefined)}>
                 {displayOptions.at(0)?.label}
-              </button>
-            </div>
-          ) : (
-            <Combobox.Input
-              onChange={(event) => setQuery(event.target.value)}
-              className="flex-grow focus:outline-none"
-            />
-          )}
-        </div>
-        <Combobox.Options
-          className={
-            "bg-white text-black p-1 rounded rounded-md border-gray-300 border drop-shadow drop-shadow-lg z-10"
-          }
-        >
-          {filteredOptions && filteredOptions.length === 0 && query == "" && (
-            <div className="relative cursor-default select-none py-2 px-4 text-gray-700 font-light">
-              No results found
-            </div>
-          )}
-          {query.length > 0 &&
-            filteredOptions &&
-            filteredOptions.length === 0 && (
-              <Combobox.Button
-                className="relative cursor-default select-none py-2 px-4 text-gray-700 font-semibold"
-                onClick={async () => {
-                  let result = await createFunction(query);
-                  console.log(result);
-                  setValue(result?.value);
-                }}
-              >
-                Create "{query}"
-              </Combobox.Button>
+              </SearchContainerButton>
+            ) : (
+              <SearchContainerInput
+                onChange={(event: any) => setQuery(event.target.value)}
+              />
             )}
-          {filteredOptions &&
-            filteredOptions.filter(notEmpty).map((option) => (
-              <Combobox.Option
-                key={option.value}
-                value={option.value}
-                className={({ active }) =>
-                  `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                    active ? "bg-primary-400 text-white" : "text-gray-900"
-                  }`
-                }
-              >
-                {option.label}
-              </Combobox.Option>
-            ))}
-        </Combobox.Options>
+          </SearchContainer>
+          <DropDown>
+            {filteredOptions && filteredOptions.length === 0 && query == "" && (
+              <NoResultsFound />
+            )}
+            {query.length > 0 &&
+              filteredOptions &&
+              filteredOptions.length === 0 && (
+                <Combobox.Button
+                  className="relative cursor-default select-none py-2 px-4 text-gray-700 font-semibold"
+                  onClick={async () => {
+                    let result = await createFunction(query);
+                    console.log(result);
+                    setValue(result?.value);
+                  }}
+                >
+                  Create "{query}"
+                </Combobox.Button>
+              )}
+            {filteredOptions &&
+              filteredOptions
+                .filter(notEmpty)
+                .map((option, index) => (
+                  <OptionItem option={option} key={index} />
+                ))}
+          </DropDown>
+        </Wrapper>
       </Combobox>
       {meta && meta.touched && meta.error && (
         <Alert prepend="Error" message={meta.error} />
@@ -582,33 +627,25 @@ export const CreateableListSearchField = <T extends Option>({
   return (
     <>
       <Combobox<T["value"]> onChange={setValue} value={query}>
-        <div className="flex w-full bg-white text-black focus-within:ring-5 focus-within:ring ring-primary-400 rounded ring-offset-1 gap-1 p-1">
+        <SearchContainer>
           {displayOptions && displayOptions.length > 0 ? (
-            <div className="flex-grow text-center flex flex-row border-gray-400 border border-1 rounded-md">
-              <button
-                type="button"
-                className="p-1 flex-grow"
-                onClick={() => setValue(undefined)}
-              >
-                {displayOptions.at(0)?.label}
-              </button>
-            </div>
+            <SearchContainerButton onClick={() => setValue(undefined)}>
+              {displayOptions.at(0)?.label}
+            </SearchContainerButton>
           ) : (
             <Combobox.Input
               onChange={(event) => setQuery(event.target.value)}
               className="flex-grow focus:outline-none"
             />
           )}
-        </div>
+        </SearchContainer>
         <Combobox.Options
           className={
             "bg-white text-black p-1 rounded rounded-md border-gray-300 border drop-shadow drop-shadow-lg z-10"
           }
         >
           {filteredOptions && filteredOptions.length === 0 && query == "" && (
-            <div className="relative cursor-default select-none py-2 px-4 text-gray-700 font-light">
-              No results found
-            </div>
+            <NoResultsFound />
           )}
           {query.length > 0 &&
             filteredOptions &&
@@ -625,19 +662,11 @@ export const CreateableListSearchField = <T extends Option>({
               </Combobox.Button>
             )}
           {filteredOptions &&
-            filteredOptions.filter(notEmpty).map((option) => (
-              <Combobox.Option
-                key={option.value}
-                value={option.value}
-                className={({ active }) =>
-                  `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                    active ? "bg-primary-400 text-white" : "text-gray-900"
-                  }`
-                }
-              >
-                {option.label}
-              </Combobox.Option>
-            ))}
+            filteredOptions
+              .filter(notEmpty)
+              .map((option, index) => (
+                <OptionItem option={option} key={index} />
+              ))}
         </Combobox.Options>
       </Combobox>
       {meta && meta.touched && meta.error && (

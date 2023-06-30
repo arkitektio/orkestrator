@@ -1,0 +1,11 @@
+query DetailVideo($id: ID!) {
+  video(id: $id) {
+    ...Video
+  }
+}
+
+query Videos($limit: Int, $offset: Int) {
+  videos(limit: $limit, offset: $offset) {
+    ...ListVideo
+  }
+}

@@ -52,18 +52,6 @@ export const MaterProvider: React.FC<MaterProviderProps> = ({ children }) => {
       (el) => el.identifier === self.identifier && el.object === self.object
     );
 
-    if (isBatch) {
-      partners.map((el) =>
-        assign({
-          reservation: res,
-          defaults: {
-            [selfArg.key]: el.object,
-          },
-        })
-      );
-      return;
-    }
-
     if (partners.length > 1) {
       if (isSelf) {
         if (isBatch) {
@@ -122,23 +110,14 @@ export const MaterProvider: React.FC<MaterProviderProps> = ({ children }) => {
 
     if (partners.length == 1) {
       if (isSelf) {
-        if (isBatch) {
-          partners.map((el) =>
-            assign({
-              reservation: res,
-              defaults: {
-                [selfArg.key]: el.object,
-              },
-            })
-          );
-        } else {
+        partners.map((el) =>
           assign({
             reservation: res,
             defaults: {
-              [selfArg.key]: partners.map((el) => el.object),
+              [selfArg.key]: el.object,
             },
-          });
-        }
+          })
+        );
       } else {
         const mateArg = res.node?.args?.at(1);
         if (mateArg?.identifier && itemIdentifiers.has(mateArg?.identifier)) {

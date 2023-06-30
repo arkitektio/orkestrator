@@ -3,3 +3,9 @@ query DetailThumbnail($id: ID!) {
     ...Thumbnail
   }
 }
+
+query Thumbnails($limit: Int, $offset: Int) {
+  thumbnails(limit: $limit, offset: $offset) {
+    ...ListThumbnail
+  }
+}

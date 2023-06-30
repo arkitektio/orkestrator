@@ -1,4 +1,15 @@
 fragment Thumbnail on Thumbnail {
+  id
+  representation {
+    id
+    name
+  }
+  image
+  blurhash
+}
+
+fragment ListThumbnail on Thumbnail {
+  id
   representation {
     id
     name

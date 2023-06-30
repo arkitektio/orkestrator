@@ -73,6 +73,7 @@ export type CameraOmerosArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
+  timepoints?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 export type ChangePermissionsResult = {
@@ -817,6 +818,7 @@ export type InstrumentOmerosArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
+  timepoints?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 /**
@@ -2388,6 +2390,7 @@ export type ObjectiveOmerosArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
+  timepoints?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 /**
@@ -2854,6 +2857,7 @@ export type PositionOmerosArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
+  timepoints?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 export type Presigned = {
@@ -3605,8 +3609,9 @@ export type QueryChannelsArgs = {
 /** The root Query */
 export type QueryColumnsofArgs = {
   dtype?: InputMaybe<Array<InputMaybe<PandasDType>>>;
-  id: Scalars['ID'];
-  name?: InputMaybe<Scalars['String']>;
+  search?: InputMaybe<Scalars['String']>;
+  table: Scalars['ID'];
+  values?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 
@@ -3872,6 +3877,7 @@ export type QueryMetasArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
+  timepoints?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 
@@ -4018,6 +4024,7 @@ export type QueryMymetasArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
+  timepoints?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 
@@ -5572,6 +5579,7 @@ export type TimepointOmerosArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   order?: InputMaybe<Scalars['String']>;
+  timepoints?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
 };
 
 /**
@@ -5827,7 +5835,7 @@ export type ListSharedRepresentationFragment = { __typename?: 'Representation', 
 
 export type CanvasRepresentationFragment = { __typename?: 'Representation', id: string, shape?: Array<number> | null, store?: any | null, name?: string | null, variety: RepresentationVariety, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, timepoints?: Array<{ __typename?: 'Timepoint', id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string } } | null> | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null };
 
-export type DetailRepresentationFragment = { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, timepoints?: Array<{ __typename?: 'Timepoint', id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string } } | null> | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, tableOrigins: Array<{ __typename?: 'Table', id: string, name: string }>, roiOrigins?: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null };
+export type DetailRepresentationFragment = { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, timepoints?: Array<{ __typename?: 'Timepoint', id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string } } | null> | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, tableOrigins: Array<{ __typename?: 'Table', id: string, name: string }>, roiOrigins?: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null };
 
 export type RepRoiFragment = { __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null };
 
@@ -5847,13 +5855,17 @@ export type DetailTableFragment = { __typename?: 'Table', id: string, name: stri
 
 export type ListTableFragment = { __typename?: 'Table', id: string, name: string, columns?: Array<{ __typename?: 'Column', name?: string | null, fieldName: string, pandasType?: PandasDType | null, numpyType?: string | null, metadata?: any | null } | null> | null, repOrigins?: Array<{ __typename?: 'Representation', id: string } | null> | null, sample?: { __typename?: 'Sample', id: string } | null, experiment?: { __typename?: 'Experiment', id: string } | null };
 
-export type ThumbnailFragment = { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } };
+export type ThumbnailFragment = { __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } };
+
+export type ListThumbnailFragment = { __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } };
 
 export type TimepointFragment = { __typename?: 'Timepoint', name?: string | null, id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string }, omeros?: Array<{ __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, views: Array<{ __typename?: 'View', id: string, accessors?: Array<string | null> | null, omero: { __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } } }> };
 
 export type ListTimepointFragment = { __typename?: 'Timepoint', id: string, name?: string | null, deltaT?: number | null, omeros?: Array<{ __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null> | null };
 
-export type DetailVideoFragment = { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null };
+export type VideoFragment = { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null };
+
+export type ListVideoFragment = { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null };
 
 export type ListViewFragment = { __typename?: 'View', id: string, accessors?: Array<string | null> | null, omero: { __typename?: 'Omero', id: string, representation: { __typename?: 'Representation', id: string, name?: string | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null } | null } } };
 
@@ -6212,7 +6224,7 @@ export type UpdateRepresentationMutationVariables = Exact<{
 }>;
 
 
-export type UpdateRepresentationMutation = { __typename?: 'Mutation', updateRepresentation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, timepoints?: Array<{ __typename?: 'Timepoint', id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string } } | null> | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, tableOrigins: Array<{ __typename?: 'Table', id: string, name: string }>, roiOrigins?: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null } | null };
+export type UpdateRepresentationMutation = { __typename?: 'Mutation', updateRepresentation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, timepoints?: Array<{ __typename?: 'Timepoint', id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string } } | null> | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, tableOrigins: Array<{ __typename?: 'Table', id: string, name: string }>, roiOrigins?: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null } | null };
 
 export type PinRepresentationMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -6318,7 +6330,7 @@ export type Create_ThumbnailMutationVariables = Exact<{
 }>;
 
 
-export type Create_ThumbnailMutation = { __typename?: 'Mutation', uploadThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null };
+export type Create_ThumbnailMutation = { __typename?: 'Mutation', uploadThumbnail?: { __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null };
 
 export type GetChannelQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -6698,7 +6710,7 @@ export type DetailRepresentationQueryVariables = Exact<{
 }>;
 
 
-export type DetailRepresentationQuery = { __typename?: 'Query', representation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, timepoints?: Array<{ __typename?: 'Timepoint', id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string } } | null> | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, tableOrigins: Array<{ __typename?: 'Table', id: string, name: string }>, roiOrigins?: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null } | null };
+export type DetailRepresentationQuery = { __typename?: 'Query', representation?: { __typename?: 'Representation', id: string, name?: string | null, shape?: Array<number> | null, dims?: Array<string> | null, tags?: Array<string | null> | null, store?: any | null, createdAt: any, variety: RepresentationVariety, createdWhile?: string | null, pinned?: boolean | null, renders?: Array<{ __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, datasets: Array<{ __typename?: 'Dataset', id: string, name: string }>, sample?: { __typename?: 'Sample', id: string, name: string } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null, comments?: Array<{ __typename?: 'Comment', user: { __typename?: 'User', sub?: string | null } } | null> | null } | null> | null, omero?: { __typename?: 'Omero', id: string, acquisitionDate?: any | null, affineTransformation?: any | null, scale?: Array<number | null> | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null, t?: number | null } | null, planes?: Array<{ __typename?: 'Plane', z?: number | null, t?: number | null, exposureTime?: number | null, deltaT?: number | null } | null> | null, channels?: Array<{ __typename?: 'OmeroChannel', name?: string | null, emmissionWavelength?: number | null, excitationWavelength?: number | null, color?: string | null } | null> | null, objectiveSettings?: { __typename?: 'ObjectiveSettings', correctionCollar?: number | null, medium?: Medium | null } | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, name: string } }>, views?: Array<{ __typename?: 'View', id: string, xMin?: number | null, xMax?: number | null, yMin?: number | null, yMax?: number | null, zMin?: number | null, zMax?: number | null, tMin?: number | null, tMax?: number | null, cMin?: number | null, cMax?: number | null, channel?: { __typename?: 'Channel', id: string, name: string, color?: string | null } | null, position?: { __typename?: 'Position', id: string, name: string, x: number } | null } | null> | null, dimensionMaps?: Array<{ __typename?: 'DimensionMap', id: string, index: number, dimension: string, channel: { __typename?: 'Channel', id: string, name: string, color?: string | null, emissionWavelength?: number | null, excitationWavelength?: number | null } } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string, model?: string | null } | null, objective?: { __typename?: 'Objective', id: string, name: string, magnification?: number | null } | null, timepoints?: Array<{ __typename?: 'Timepoint', id: string, deltaT?: number | null, era: { __typename?: 'Era', id: string, name: string } } | null> | null, imagingEnvironment?: { __typename?: 'ImagingEnvironment', airPressure?: number | null, co2Percent?: number | null, humidity?: number | null, temperature?: number | null } | null } | null, origins: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null }>, derived?: Array<{ __typename?: 'Representation', id: string, name?: string | null, tags?: Array<string | null> | null, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null } | null } | null> | null, tables?: Array<{ __typename?: 'Table', id: string, name: string } | null> | null, fileOrigins: Array<{ __typename?: 'OmeroFile', id: string, name: string, type: OmeroFileType }>, tableOrigins: Array<{ __typename?: 'Table', id: string, name: string }>, roiOrigins?: Array<{ __typename?: 'ROI', id: string, label?: string | null, type: RoiType } | null> | null, creator?: { __typename?: 'User', id: string, email: string } | null, pinnedBy: Array<{ __typename?: 'User', id: string, email: string }>, rois?: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null } | null> | null } | null };
 
 export type MyRepresentationsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -6928,7 +6940,15 @@ export type DetailThumbnailQueryVariables = Exact<{
 }>;
 
 
-export type DetailThumbnailQuery = { __typename?: 'Query', thumbnail?: { __typename?: 'Thumbnail', image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null };
+export type DetailThumbnailQuery = { __typename?: 'Query', thumbnail?: { __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null };
+
+export type ThumbnailsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+}>;
+
+
+export type ThumbnailsQuery = { __typename?: 'Query', thumbnails?: Array<{ __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null, representation: { __typename?: 'Representation', id: string, name?: string | null } } | null> | null };
 
 export type DetailTimepointQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -6966,6 +6986,21 @@ export type MikroUserQueryVariables = Exact<{
 
 
 export type MikroUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', sub?: string | null, id: string, firstName: string } | null };
+
+export type DetailVideoQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailVideoQuery = { __typename?: 'Query', video?: { __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null };
+
+export type VideosQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+}>;
+
+
+export type VideosQuery = { __typename?: 'Query', videos?: Array<{ __typename?: 'Video', id: string, data?: string | null, frontImage?: string | null } | null> | null };
 
 export type ActivesViewForRepresentationQueryVariables = Exact<{
   representation: Scalars['ID'];
@@ -7869,6 +7904,7 @@ export const CanvasRepresentationFragmentDoc = gql`
 ${OmeroFragmentDoc}`;
 export const ThumbnailFragmentDoc = gql`
     fragment Thumbnail on Thumbnail {
+  id
   representation {
     id
     name
@@ -7877,8 +7913,8 @@ export const ThumbnailFragmentDoc = gql`
   blurhash
 }
     `;
-export const DetailVideoFragmentDoc = gql`
-    fragment DetailVideo on Video {
+export const VideoFragmentDoc = gql`
+    fragment Video on Video {
   id
   data
   frontImage
@@ -7900,7 +7936,7 @@ export const DetailRepresentationFragmentDoc = gql`
       ...Thumbnail
     }
     ... on Video {
-      ...DetailVideo
+      ...Video
     }
   }
   latestThumbnail {
@@ -7978,7 +8014,7 @@ export const DetailRepresentationFragmentDoc = gql`
 }
     ${CanvasRepresentationFragmentDoc}
 ${ThumbnailFragmentDoc}
-${DetailVideoFragmentDoc}
+${VideoFragmentDoc}
 ${OmeroFragmentDoc}`;
 export const DetailRoiFragmentDoc = gql`
     fragment DetailRoi on ROI {
@@ -8118,6 +8154,17 @@ export const ListTableFragmentDoc = gql`
   }
 }
     ${ColumnFragmentDoc}`;
+export const ListThumbnailFragmentDoc = gql`
+    fragment ListThumbnail on Thumbnail {
+  id
+  representation {
+    id
+    name
+  }
+  image
+  blurhash
+}
+    `;
 export const ListViewFragmentDoc = gql`
     fragment ListView on View {
   id
@@ -8155,6 +8202,13 @@ export const TimepointFragmentDoc = gql`
 }
     ${ListRepresentationFragmentDoc}
 ${ListViewFragmentDoc}`;
+export const ListVideoFragmentDoc = gql`
+    fragment ListVideo on Video {
+  id
+  data
+  frontImage
+}
+    `;
 export const CreateCommentDocument = gql`
     mutation CreateComment($id: ID!, $model: CommentableModels!, $descendents: [DescendendInput]!, $parent: ID) {
   createComment(
@@ -13271,6 +13325,42 @@ export function useDetailThumbnailLazyQuery(baseOptions?: Apollo.LazyQueryHookOp
 export type DetailThumbnailQueryHookResult = ReturnType<typeof useDetailThumbnailQuery>;
 export type DetailThumbnailLazyQueryHookResult = ReturnType<typeof useDetailThumbnailLazyQuery>;
 export type DetailThumbnailQueryResult = Apollo.QueryResult<DetailThumbnailQuery, DetailThumbnailQueryVariables>;
+export const ThumbnailsDocument = gql`
+    query Thumbnails($limit: Int, $offset: Int) {
+  thumbnails(limit: $limit, offset: $offset) {
+    ...ListThumbnail
+  }
+}
+    ${ListThumbnailFragmentDoc}`;
+
+/**
+ * __useThumbnailsQuery__
+ *
+ * To run a query within a React component, call `useThumbnailsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useThumbnailsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useThumbnailsQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *   },
+ * });
+ */
+export function useThumbnailsQuery(baseOptions?: Apollo.QueryHookOptions<ThumbnailsQuery, ThumbnailsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ThumbnailsQuery, ThumbnailsQueryVariables>(ThumbnailsDocument, options);
+      }
+export function useThumbnailsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ThumbnailsQuery, ThumbnailsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ThumbnailsQuery, ThumbnailsQueryVariables>(ThumbnailsDocument, options);
+        }
+export type ThumbnailsQueryHookResult = ReturnType<typeof useThumbnailsQuery>;
+export type ThumbnailsLazyQueryHookResult = ReturnType<typeof useThumbnailsLazyQuery>;
+export type ThumbnailsQueryResult = Apollo.QueryResult<ThumbnailsQuery, ThumbnailsQueryVariables>;
 export const DetailTimepointDocument = gql`
     query DetailTimepoint($id: ID!) {
   timepoint(id: $id) {
@@ -13452,6 +13542,77 @@ export function useMikroUserLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<
 export type MikroUserQueryHookResult = ReturnType<typeof useMikroUserQuery>;
 export type MikroUserLazyQueryHookResult = ReturnType<typeof useMikroUserLazyQuery>;
 export type MikroUserQueryResult = Apollo.QueryResult<MikroUserQuery, MikroUserQueryVariables>;
+export const DetailVideoDocument = gql`
+    query DetailVideo($id: ID!) {
+  video(id: $id) {
+    ...Video
+  }
+}
+    ${VideoFragmentDoc}`;
+
+/**
+ * __useDetailVideoQuery__
+ *
+ * To run a query within a React component, call `useDetailVideoQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailVideoQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailVideoQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailVideoQuery(baseOptions: Apollo.QueryHookOptions<DetailVideoQuery, DetailVideoQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailVideoQuery, DetailVideoQueryVariables>(DetailVideoDocument, options);
+      }
+export function useDetailVideoLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailVideoQuery, DetailVideoQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailVideoQuery, DetailVideoQueryVariables>(DetailVideoDocument, options);
+        }
+export type DetailVideoQueryHookResult = ReturnType<typeof useDetailVideoQuery>;
+export type DetailVideoLazyQueryHookResult = ReturnType<typeof useDetailVideoLazyQuery>;
+export type DetailVideoQueryResult = Apollo.QueryResult<DetailVideoQuery, DetailVideoQueryVariables>;
+export const VideosDocument = gql`
+    query Videos($limit: Int, $offset: Int) {
+  videos(limit: $limit, offset: $offset) {
+    ...ListVideo
+  }
+}
+    ${ListVideoFragmentDoc}`;
+
+/**
+ * __useVideosQuery__
+ *
+ * To run a query within a React component, call `useVideosQuery` and pass it any options that fit your needs.
+ * When your component renders, `useVideosQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useVideosQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *   },
+ * });
+ */
+export function useVideosQuery(baseOptions?: Apollo.QueryHookOptions<VideosQuery, VideosQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<VideosQuery, VideosQueryVariables>(VideosDocument, options);
+      }
+export function useVideosLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<VideosQuery, VideosQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<VideosQuery, VideosQueryVariables>(VideosDocument, options);
+        }
+export type VideosQueryHookResult = ReturnType<typeof useVideosQuery>;
+export type VideosLazyQueryHookResult = ReturnType<typeof useVideosLazyQuery>;
+export type VideosQueryResult = Apollo.QueryResult<VideosQuery, VideosQueryVariables>;
 export const ActivesViewForRepresentationDocument = gql`
     query ActivesViewForRepresentation($representation: ID!, $z: Float, $t: Float, $c: Float, $x: Float, $y: Float) {
   views(

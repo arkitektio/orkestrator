@@ -27,13 +27,13 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="dark:text-white flex sm:flex-col h-full flex-row bg-slate-900 sm:pt-0 shadow-element overflow-hidden border-r-2  border-r-gray-700 ">
+    <div className="dark:text-white flex sm:flex-col h-full flex-row bg-slate-900 sm:pt-0 shadow-element overflow-hidden border-r-1 border-r-gray-800 ">
       <div className="flex flex-grow sm:flex-col flex-row gap-8 mt-2 items-center">
         <div className="hidden flex-initial  font-light text-xl md:block text-slate-400 dark:text-slate-500 border-b-gray-600 ">
           {window.__TAURI__ && location.pathname != "/" ? (
             <Back
-              width={"4rem"}
-              height={"4rem"}
+              width={"3.6rem"}
+              height={"3.6rem"}
               cubeColor={"rgb(var(--color-primary-400))"}
               aColor={"rgb(var(--color-back-200))"}
               strokeColor={"rgb(var(--color-back-200))"}
@@ -43,8 +43,8 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             <>
               <NavLink to={"/"}>
                 <Logo
-                  width={"4rem"}
-                  height={"4rem"}
+                  width={"3.6rem"}
+                  height={"3.6rem"}
                   cubeColor={"rgb(var(--color-primary-400))"}
                   aColor={"rgb(var(--color-back-200))"}
                   strokeColor={"rgb(var(--color-back-200))"}
@@ -56,7 +56,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
 
         <IconContext.Provider
           value={{
-            size: "2.6em",
+            size: "2.3em",
             style: { stroke: "1px" },
           }}
         >
