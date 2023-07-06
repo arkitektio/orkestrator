@@ -66,6 +66,12 @@ export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = ({
               />
             </svg>
           )}
+          {implementation &&
+          [ReactiveImplementationModelInput.Filter].includes(implementation) && (
+            <div className="px-2 py-2 z-50 shadow-xl bg-white rounded-md dark:bg-gray-800 text-green-500 dark:text-green-200 text-black border w-full h-full border-green-500 shadow-green-500/50 dark:border-green-200 dark:shadow-green-200/10">
+              <h1>{implementation}</h1>
+            </div>
+          )}
         {implementation &&
           [
             ReactiveImplementationModelInput.Chunk,

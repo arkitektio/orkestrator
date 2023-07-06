@@ -36,6 +36,7 @@ export const flussPortChildToStreamItem = (
     identifier: port.identifier,
     nullable: port.nullable,
     scope: port.scope,
+    variants: port?.variants?.filter(notEmpty).map(x => flussPortChildToStreamItem(x)),
     child: port.child && flussPortChildToStreamItem(port.child),
   };
 };
@@ -47,6 +48,7 @@ export const flussPortToStreamItem = (port: PortFragment): StreamItem => {
     identifier: port.identifier,
     nullable: port.nullable,
     scope: port.scope,
+    variants: port?.variants?.filter(notEmpty).map(x => flussPortChildToStreamItem(x)),
     child: port.child && flussPortChildToStreamItem(port.child),
   };
 };
@@ -79,7 +81,10 @@ export const rekuestChildPortToFluss = (
     nullable: port?.nullable || false,
     child:
       port?.child &&
-      rekuestChildPortToFluss(port?.child as RekuestChildPortFragment), //TODO: manage this
+      rekuestChildPortToFluss(port?.child as RekuestChildPortFragment), 
+    variants:
+      port?.variants?.filter(notEmpty).map( p => 
+      rekuestChildPortToFluss(p as RekuestChildPortFragment)), //TODO: manage this//TODO: manage this
   };
 };
 
@@ -106,6 +111,7 @@ export const rekuestPortToFluss = (port: RekuestPortFragment): PortFragment => {
     label: port.label,
     assignWidget: cleanedAssign,
     returnWidget: cleanedReturn,
+    variants: port?.variants?.filter(notEmpty).map((x) => rekuestChildPortToFluss(x)),
     child: port?.child && rekuestChildPortToFluss(port?.child),
   };
 };

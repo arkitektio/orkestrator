@@ -85,18 +85,7 @@ fragment ReturnWidget on ReturnWidget {
   }
 }
 
-fragment PortChild on PortChild {
-  identifier
-  kind
-  scope
-  nullable
-  assignWidget {
-    ...Widget
-  }
-  returnWidget {
-    ...ReturnWidget
-  }
-  child {
+fragment PortChildNested on PortChild {
     scope
     identifier
     kind
@@ -119,6 +108,36 @@ fragment PortChild on PortChild {
         ...ReturnWidget
       }
     }
+    variants {
+      identifier
+      scope
+      kind
+      nullable
+      assignWidget {
+        ...Widget
+      }
+      returnWidget {
+        ...ReturnWidget
+      }
+    }
+}
+
+fragment PortChild on PortChild {
+  identifier
+  kind
+  scope
+  nullable
+  assignWidget {
+    ...Widget
+  }
+  returnWidget {
+    ...ReturnWidget
+  }
+  child {
+    ...PortChildNested
+  }
+  variants {
+    ...PortChildNested
   }
 }
 
@@ -136,6 +155,9 @@ fragment Port on Port {
     ...ReturnWidget
   }
   child {
+    ...PortChild
+  }
+  variants {
     ...PortChild
   }
   nullable
@@ -223,6 +245,12 @@ fragment StreamItemChild on StreamItemChild {
     nullable
     identifier
   }
+  variants {
+    scope
+    kind
+    nullable
+    identifier
+  }
 }
 
 fragment StreamItem on StreamItem {
@@ -232,6 +260,9 @@ fragment StreamItem on StreamItem {
   scope
   nullable
   child {
+    ...StreamItemChild
+  }
+  variants {
     ...StreamItemChild
   }
 }

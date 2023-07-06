@@ -1,5 +1,4 @@
-import React, { Ref, RefObject, useContext, useEffect, useRef } from "react";
-import { ConnectDropTarget } from "react-dnd";
+import React, { useContext, useEffect } from "react";
 import { Identifier } from "../api/scalars";
 
 export type SelectionItem = {
@@ -29,27 +28,20 @@ export type SelectionContextType = {
 export const SelectionContext = React.createContext<SelectionContextType>({
   selection: [],
   setSelection: () => {
-    console.error("Not implemented");
   },
   bselection: [],
   setBSelection: () => {
-    console.error("Not implemented");
   },
   autoSelect: () => {
-    console.error("Not implemented");
   },
   unselect: () => {
-    console.error("Not implemented");
   },
   isMultiSelecting: false,
   setIsMultiSelecting: () => {
-    console.error("Not implemented");
   },
   registerSelectables: () => {
-    console.error("Not implemented");
   },
   unregisterSelectables: () => {
-    console.error("Not implemented");
   },
 });
 

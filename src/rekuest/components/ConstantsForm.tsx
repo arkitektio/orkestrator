@@ -128,7 +128,6 @@ export const EffectWrapper = ({
   port: PortFragment;
 }) => {
   let [effect, ...resteffect] = effects;
-  console.log(effect);
 
   if (effect) {
     if (effect.kind == EffectKind.Hidden) {
@@ -206,6 +205,12 @@ export const port_to_validation = (port: PortFragment): Yup.AnySchema => {
     case PortKind.Structure:
       baseType = Yup.string().typeError(`Please select a ${port.identifier}`);
       break;
+    case PortKind.Union:
+      baseType = Yup.object({
+        use: Yup.number().typeError(`Please select a valid choice`),
+        value: Yup.mixed().typeError(`Please select a valid union`),
+  }).typeError(`Please select a valid union`);
+      break;
     case PortKind.Bool:
       baseType = Yup.boolean().typeError("Please select true or false");
       break;
@@ -234,7 +239,6 @@ export const validationSchemaBuilder = (
   args: (PortFragment | undefined | null)[]
 ) => {
   const schema: { [key: string]: any } = {};
-  console.log(args);
   args.reduce((prev, curr) => {
     if (curr) {
       prev[curr?.key] = port_to_validation(curr);
@@ -369,6 +373,7 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
       enableReinitialize
       initialValues={initialValues}
       onSubmit={async (values, formikHelpers) => {
+        console.log("Submiitin in as constants", values)
         values = schema.cast(values);
         let set_values = unsetArgs.map((arg) => values[arg?.key || "test"]);
         console.log(values, set_values);

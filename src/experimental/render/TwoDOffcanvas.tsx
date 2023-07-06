@@ -144,6 +144,7 @@ export const Canvas: React.FC<{
       setImageView((image) => imageView);
       setLoading(false);
     } catch (e) {
+      console.error(e)
       setError((e as Error).message);
     }
   };
@@ -161,6 +162,8 @@ export const Canvas: React.FC<{
       setImageData((image) => bitmap);
       setLoading(false);
     } catch (e) {
+
+      console.error(e)
       setError((e as Error).message);
     }
   };

@@ -510,6 +510,40 @@ export const to_reactive: Connector<CommonNode, ReactiveNodeData> = ({
   }
 
   if (
+    [ReactiveImplementationModelInput.Filter].includes(
+      targetNode.data.implementation
+    )
+  ) {
+
+
+    if (sourceStream.length != 1) {
+      return {
+        errors: [
+          {
+            message: "Can only filter a stream with exactly one item",
+          },
+        ],
+      };
+    }
+
+
+    let union = sourceStream.at(0);
+    if (union?.kind != StreamKind.Union) {
+      return {
+        errors: [
+          {
+            message: "Can only filter a union",
+          },
+        ],
+      };
+    }
+
+
+    new_instream = [sourceStream];
+    new_outstream = union?.variants?.filter(notEmpty).map((s, index) => [{ ...s, nullable: false, key: `variant_${index}`, __typename: "Port"  }]) || [];
+  }
+
+  if (
     [ReactiveImplementationModelInput.ToList].includes(
       targetNode.data.implementation
     )
@@ -646,6 +680,35 @@ export const reak_to_ark: Connector<ReactiveNodeData, ArkitektNodeData> = ({
         edges
       ).filter((e) => !wrongEdges.includes(e.id)),
     };
+  }
+
+  if (
+    [
+      ReactiveImplementationModelInput.Filter,
+    ].includes(sourceNode.data.implementation)
+  ) {
+    if (streamMatch(sourceStream, targetStream)) {
+      return {
+        edges: addEdge(
+          {
+            ...params,
+            data: { stream: targetStream.map(flussPortToStreamItem) },
+            type: "LabeledEdge",
+          },
+          edges
+        ),
+      };
+    }
+    else {
+      return {
+        errors: [
+          {
+            message: "Filter can only be connected to the same stream",
+          },
+        ],
+    };
+  };
+
   }
 
   if (

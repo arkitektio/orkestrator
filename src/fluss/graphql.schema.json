@@ -813,6 +813,22 @@
             "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "variants",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "ChildPortInput",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "interfaces": null,
@@ -6157,7 +6173,7 @@
               "name": "Float",
               "ofType": null
             },
-            "defaultValue": "2000",
+            "defaultValue": "100000",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -6353,7 +6369,7 @@
               "name": "Int",
               "ofType": null
             },
-            "defaultValue": "0",
+            "defaultValue": "3",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -6429,7 +6445,7 @@
               "name": "Float",
               "ofType": null
             },
-            "defaultValue": "2000",
+            "defaultValue": "100000",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -6441,7 +6457,7 @@
               "name": "Int",
               "ofType": null
             },
-            "defaultValue": "0",
+            "defaultValue": "5000",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -6469,7 +6485,7 @@
               "name": "Float",
               "ofType": null
             },
-            "defaultValue": "2000",
+            "defaultValue": "100000",
             "isDeprecated": false,
             "deprecationReason": null
           }
@@ -6886,6 +6902,22 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "variants",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "PortChild",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -6988,6 +7020,22 @@
               "ofType": {
                 "kind": "ENUM",
                 "name": "Scope",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "variants",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "PortChild",
                 "ofType": null
               }
             },
@@ -7159,6 +7207,22 @@
               "ofType": {
                 "kind": "ENUM",
                 "name": "Scope",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "variants",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "ChildPortInput",
                 "ofType": null
               }
             },
@@ -9470,6 +9534,12 @@
             "deprecationReason": null
           },
           {
+            "name": "FILTER",
+            "description": "FILTER (Filter the data of a union)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "FOREACH",
             "description": "FOREACH (Foreach element in list)",
             "isDeprecated": false,
@@ -11112,6 +11182,22 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "variants",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "StreamItemChild",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -11195,6 +11281,22 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "variants",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "StreamItemChild",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -11273,6 +11375,22 @@
               "ofType": {
                 "kind": "ENUM",
                 "name": "Scope",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "variants",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "StreamItemChildInput",
                 "ofType": null
               }
             },
@@ -11378,6 +11496,22 @@
             "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "variants",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "StreamItemChildInput",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "interfaces": null,
@@ -11436,6 +11570,12 @@
           },
           {
             "name": "STRUCTURE",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "UNION",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null

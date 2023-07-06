@@ -10,6 +10,7 @@ import { IntWidget } from "./inputs/fallbacks/IntWidget";
 import { ListWidget } from "./inputs/fallbacks/ListWidget";
 import { StringWidget } from "./inputs/fallbacks/StringWidget";
 import { StructureWidget } from "./inputs/fallbacks/StructureWidget";
+import { UnionWidget } from "./inputs/fallbacks/UnionWidget";
 import { WidgetRegistry } from "./registry";
 import { ChoiceReturnWidget } from "./returns/additionals/ChoiceReturnWidget";
 import { CustomReturnWidget } from "./returns/additionals/CustomReturnWidget";
@@ -20,6 +21,7 @@ import { IntReturnWidget } from "./returns/fallbacks/IntReturnWidget";
 import { ListReturnWidget } from "./returns/fallbacks/ListReturnWidget";
 import { StringReturnWidget } from "./returns/fallbacks/StringReturnWidget";
 import { StructureReturnWidget } from "./returns/fallbacks/StructureReturnWidget";
+import { UnionReturnWidget } from "./returns/fallbacks/UnionReturnWidget";
 import { WidgetRegistryContext } from "./widget-context";
 
 export type WidgetRegistryProviderProps = { children: React.ReactNode };
@@ -39,6 +41,7 @@ export const WidgetRegistryProvider: React.FC<WidgetRegistryProviderProps> = ({
     x.registerInputWidgetFallback(PortKind.Float, FloatWidget);
     x.registerInputWidgetFallback(PortKind.Bool, BoolWidget);
     x.registerInputWidgetFallback(PortKind.Structure, StructureWidget);
+    x.registerInputWidgetFallback(PortKind.Union, UnionWidget);
     x.registerInputWidgetFallback(PortKind.List, ListWidget);
 
     x.registerInputWidget("SearchWidget", SearchWidget);
@@ -52,6 +55,7 @@ export const WidgetRegistryProvider: React.FC<WidgetRegistryProviderProps> = ({
     x.registerReturnWidgetFallback(PortKind.Structure, StructureReturnWidget);
     x.registerReturnWidgetFallback(PortKind.List, ListReturnWidget);
     x.registerReturnWidgetFallback(PortKind.Float, FloatReturnWidget);
+    x.registerReturnWidgetFallback(PortKind.Union, UnionReturnWidget);
 
     x.registerReturnWidget("ImageReturnWidget", ImageReturnWidget);
     x.registerReturnWidget("CustomReturnWidget", CustomReturnWidget);
