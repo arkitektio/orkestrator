@@ -5,7 +5,7 @@ import { NodeActions } from "../../../actions/NodeActions";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../../floating/utils";
 import { PageLayout } from "../../../layout/PageLayout";
-import { Collection, Node } from "../../../linker";
+import { Collection, Node, Protocol } from "../../../linker";
 import { ExperimentalFeature } from "../../../providers/experimental/Experimental";
 import { withRekuest } from "../../../rekuest";
 import {
@@ -195,6 +195,7 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
                   </Node.DetailLink>
                 );
               })}
+
             </div>
           )}
           {data?.node?.tests && (
@@ -210,6 +211,23 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
                       Tested by: {n.name}{" "}
                     </div>
                   </Node.DetailLink>
+                );
+              })}
+            </div>
+          )}
+          {data?.node?.protocols && (
+            <div className="flex-none">
+              {data?.node?.protocols?.filter(notEmpty).map((n) => {
+                return (
+                  <Protocol.DetailLink
+                    className="flex flex-row gap-2"
+                    object={n.id}
+                  >
+                    <div className="border-primary-300 p-1 border rounded-md bg-primary-300 text-white">
+                      {" "}
+                      Fulfills {n.name}{" "}
+                    </div>
+                  </Protocol.DetailLink>
                 );
               })}
             </div>

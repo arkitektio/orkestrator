@@ -25,6 +25,7 @@
     ],
     "FlowNode": [
       "ArgNode",
+      "ArkitektFilterNode",
       "ArkitektNode",
       "GraphNode",
       "KwargNode",
@@ -34,6 +35,7 @@
     ],
     "FlowNodeCommons": [
       "ArgNode",
+      "ArkitektFilterNode",
       "ArkitektNode",
       "GraphNode",
       "KwargNode",
@@ -42,6 +44,7 @@
       "ReturnNode"
     ],
     "RetriableNode": [
+      "ArkitektFilterNode",
       "ArkitektNode",
       "LocalNode"
     ]

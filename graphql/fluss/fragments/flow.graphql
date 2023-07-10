@@ -37,6 +37,27 @@ fragment ArkitektNode on ArkitektNode {
   maxRetries
 }
 
+fragment ArkitektFilterNode on ArkitektFilterNode {
+  ...FlowNodeCommons
+  ...RetriableNode
+  __typename
+  name
+  description
+  hash
+  kind
+  defaults
+  mapStrategy
+  allowLocal
+  binds {
+    clients
+    templates
+  }
+  assignTimeout
+  yieldTimeout
+  reserveTimeout
+  maxRetries
+}
+
 fragment LocalNode on LocalNode {
   ...FlowNodeCommons
   ...RetriableNode
@@ -192,6 +213,7 @@ fragment FlowNode on FlowNode {
   typename
   parentNode
   ...ArkitektNode
+  ...ArkitektFilterNode
   ...ReactiveNode
   ...ArgNode
   ...KwargNode

@@ -14,6 +14,7 @@ import { DynamicSidebar } from "./DynamicSidebar";
 import { LiveTracer } from "./LiveTracer";
 import { RiverTraceContext } from "./context";
 import { LabeledTraceEdge } from "./edges/LabeledTraceEdge";
+import { ArkitektFilterTraceNodeWidget } from "./nodes/ArkitektFilterTraceNodeWidget";
 import { ArkitektTraceNodeWidget } from "./nodes/ArkitektTraceNodeWidget";
 import { LocalTraceNodeWidget } from "./nodes/LocalTraceNodeWidget";
 import { ReactiveTraceNodeWidget } from "./nodes/ReactiveTraceNodeWidget";
@@ -23,6 +24,7 @@ import { ReturnTraceNodeWidget } from "./nodes/generic/ReturnTraceNodeWidget";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektTraceNodeWidget,
+  ArkitektFilterNode: ArkitektFilterTraceNodeWidget,
   ReactiveNode: ReactiveTraceNodeWidget,
   ArgNode: ArgTraceNodeWidget,
   ReturnNode: ReturnTraceNodeWidget,

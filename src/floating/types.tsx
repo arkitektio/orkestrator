@@ -32,6 +32,11 @@ export type ArkitektNodeData = LoadingEnhanced<
   DetailNodeFragment
 >;
 
+export type ArkitektFilterNodeData = LoadingEnhanced<
+  ArkitektNodeFragment,
+  DetailNodeFragment
+>;
+
 export type LocalNodeData = LoadingEnhanced<
   LocalNodeFragment,
   DetailNodeFragment

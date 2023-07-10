@@ -13,6 +13,7 @@ export const additional = {
 type NodeProps = {
   children: React.ReactNode;
   color?: keyof typeof additional;
+  type?: "map" | "filter";
   id: string;
   connState?: ConnState;
 };
@@ -32,6 +33,7 @@ export const ErrorOverlay = (props: any) => {
 export const NodeEditLayout: React.FC<NodeProps> = ({
   children,
   id,
+  type= "map",
   color = "pink",
   connState = { isConnectable: true, isConnecting: false },
 }) => {
@@ -48,6 +50,11 @@ export const NodeEditLayout: React.FC<NodeProps> = ({
       {connState.isConnecting && !connState.isConnectable && (
         <div className="absolute top-[-20px] bg-gray-900 text-white bg-gray-800 p-1 border-gray-800 border-1 border">
           {connState.error}
+        </div>
+      )}
+      {type == "filter" && (
+        <div className="absolute top-[-20px] bg-gray-900 text-white bg-gray-800 p-1 border-gray-800 border-1 border my-auto">
+          Filter
         </div>
       )}
       {children}

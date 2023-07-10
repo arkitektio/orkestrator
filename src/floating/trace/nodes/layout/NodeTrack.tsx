@@ -13,6 +13,7 @@ type NodeProps = {
   children: React.ReactNode;
   color?: keyof typeof additional;
   id: string;
+  type?: "filter" | "map";
 };
 
 export const additionalForState: { [x: string]: string } = {
@@ -26,6 +27,7 @@ export const NodeTraceLayout: React.FC<NodeProps> = ({
   children,
   id,
   color = "pink",
+  type = "map",
 }) => {
   const { conditionState } = useTraceRiver();
   const { isExpanded } = useNodeLayout();
@@ -43,6 +45,11 @@ export const NodeTraceLayout: React.FC<NodeProps> = ({
         }
       >
         {children}
+        {type == "filter" && (
+        <div className="absolute top-[-20px] bg-gray-900 text-white bg-gray-800 p-1 border-gray-800 border-1 border my-auto">
+          Filter
+        </div>
+      )}
       </div>
     </>
   );

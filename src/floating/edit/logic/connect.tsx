@@ -4,7 +4,7 @@ import {
   PortFragment,
   ReactiveImplementationModelInput,
   Scope,
-  StreamKind,
+  StreamKind
 } from "../../../fluss/api/graphql";
 import {
   ArgNodeData,
@@ -14,7 +14,7 @@ import {
   Connector,
   FlowEdge,
   ReactiveNodeData,
-  ReturnNodeData,
+  ReturnNodeData
 } from "../../types";
 import { flussPortToStreamItem, notEmpty } from "../../utils";
 
@@ -239,6 +239,51 @@ export const to_return: Connector<ArkitektNodeData, ReturnNodeData> = ({
 };
 
 export const ark_to_ark: Connector = ({
+  params,
+  nodes,
+  sourceNode,
+  targetNode,
+  edges,
+  sourceStream,
+  targetStream,
+  sourceTypes,
+  targetTypes,
+}) => {
+  if (!sourceTypes || !targetTypes) {
+    return { errors: [{ message: "No types" }] };
+  }
+
+  if (sourceTypes.length !== targetTypes.length) {
+    return { errors: [{ message: "Stream length is different" }] };
+  }
+
+  if (sourceTypes.join() !== targetTypes.join()) {
+    return {
+      errors: [
+        {
+          message:
+            "Types don't match " +
+            sourceTypes.join(",") +
+            "vs " +
+            targetTypes.join(","),
+        },
+      ],
+    };
+  }
+
+  return {
+    edges: addEdge(
+      {
+        ...params,
+        data: { stream: sourceStream.map(flussPortToStreamItem) },
+        type: "LabeledEdge",
+      },
+      edges
+    ),
+  };
+};
+
+export const to_filter: Connector = ({
   params,
   nodes,
   sourceNode,
@@ -1211,6 +1256,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     ReactiveNode: to_reactive,
     ReturnNode: to_return,
     GraphNode: arg_to_ark,
+    ArkitektFilterNode: to_filter,
   },
   LocalNode: {
     ArgNode: error_builder("Cannot connect to an Arg Node as an output"),
@@ -1220,6 +1266,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     ReactiveNode: to_reactive,
     ReturnNode: to_return,
     GraphNode: ark_to_ark,
+    ArkitektFilterNode: to_filter,
   },
   ArgNode: {
     ArgNode: void_updater,
@@ -1229,6 +1276,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     ReactiveNode: arg_to_reak,
     ReturnNode: void_updater,
     GraphNode: arg_to_ark,
+    ArkitektFilterNode: to_filter,
   },
   KwargNode: {
     ArgNode: void_updater,
@@ -1237,7 +1285,8 @@ export const defaultConnectionHandler: ConnectionMap = {
     KwargNode: void_updater,
     ReactiveNode: void_updater,
     ReturnNode: void_updater,
-    GraphNode: arg_to_ark,
+    GraphNode: void_updater,
+    ArkitektFilterNode: void_updater,
   },
   GraphNode: {
     ArgNode: void_updater,
@@ -1247,6 +1296,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     ReactiveNode: void_updater,
     ReturnNode: void_updater,
     GraphNode: void_updater,
+    ArkitektFilterNode: to_filter,
   },
   ReturnNode: {
     ArgNode: void_updater,
@@ -1256,6 +1306,7 @@ export const defaultConnectionHandler: ConnectionMap = {
     ReactiveNode: void_updater,
     ReturnNode: void_updater,
     GraphNode: void_updater,
+    ArkitektFilterNode: to_filter,
   },
   ReactiveNode: {
     ArgNode: void_updater,
@@ -1265,5 +1316,16 @@ export const defaultConnectionHandler: ConnectionMap = {
     ReactiveNode: to_reactive,
     ReturnNode: to_return,
     GraphNode: reak_to_ark,
+    ArkitektFilterNode: to_filter,
   },
+  ArkitektFilterNode: {
+    ArgNode: error_builder("Cannot connect to an Arg Node as an output"),
+    ArkitektNode: ark_to_ark,
+    LocalNode: ark_to_ark,
+    KwargNode: error_builder("Cannot connect to a Kwarg Node as an output"),
+    ReactiveNode: to_reactive,
+    ReturnNode: to_return,
+    GraphNode: arg_to_ark,
+    ArkitektFilterNode: to_filter,
+  }
 };

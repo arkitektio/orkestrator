@@ -12,6 +12,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { useAlert } from "../../components/alerter/alerter-context";
 import {
+  ArkitektFilterNodeFragment,
   ArkitektNodeFragment,
   CommentableModels,
   FlowFragment,
@@ -66,14 +67,18 @@ import { useDrop } from "react-dnd";
 import { FlussKomments } from "../../komment/FlussKomments";
 import { ModuleLayout } from "../../layout/ModuleLayout";
 import { PageLayout } from "../../layout/PageLayout";
+import { useDialog } from "../../layout/dialog/DialogProvider";
 import FlowDiagramSidebar from "../../pages/flows/workspace/FlowDiagramSidebar";
 import { DynamicSidebar } from "./DynamicSidebar";
 import { ExperimentalSidebar } from "./components/ExperimentalSidebar";
+import { AskTypeDialog } from "./dialogs/AskTypeDialog";
+import { ArkitektFilterNodeWidget } from "./nodes/ArkitektFilterNodeWidget";
 import { GraphNodeEditWidget } from "./nodes/GraphNodeEditWidget";
 import { LocalEditNodeWidget } from "./nodes/LocalEditNodeWidget";
 
 const nodeTypes: NodeTypes = {
   ArkitektNode: ArkitektEditNodeWidget,
+  ArkitektFilterNode: ArkitektFilterNodeWidget,
   ReactiveNode: ReactiveEditNodeWidget,
   LocalNode: LocalEditNodeWidget,
   ArgNode: ArgEditNodeWidget,
@@ -193,6 +198,7 @@ export const EditRiver: React.FC<Props> = ({
   );
   const [args, setArgs] = useState(flow?.graph.args);
   const [returns, setReturns] = useState(flow?.graph.returns);
+  const {ask} = useDialog();
 
   const [edges, setEdges, onEdgesChange] = useEdgesState(
     edges_to_flowedges(flow.graph?.edges)
@@ -445,10 +451,62 @@ export const EditRiver: React.FC<Props> = ({
                     query: DetailNodeDocument,
                     variables: { id: id },
                   })
-                  .then((event) => {
+                  .then(async (event) => {
                     console.log(event);
 
+
+                    
+
+
+
                     if (event.data?.node) {
+                      if (event.data.node.protocols?.find(p => p?.name == "predicate")) {
+                        const answer = await ask(AskTypeDialog, {filter: ["filter", "map"]})
+                        if (answer.type == "filter") {
+                          let id = "arkid-" + uuidv4();
+                          let node: FlowNode<ArkitektFilterNodeFragment> = {
+                            id: id,
+                            type: "ArkitektFilterNode",
+                            dragHandle: ".custom-drag-handle",
+                            data: {
+                              __typename: "ArkitektFilterNode",
+                              instream: [
+                                event?.data?.node?.args
+                                  ?.filter(
+                                    (x) => !x?.nullable && x?.default == undefined
+                                  ) // by default, all nullable and default values are optional so not part of stream
+                                  .filter(notEmpty)
+                                  .map(rekuestPortToFluss) || [],
+                              ],
+                              mapStrategy: MapStrategy.Map,
+                              allowLocal: false,
+                              assignTimeout: 100000,
+                              yieldTimeout: 100000,
+                              reserveTimeout: 100000,
+                              maxRetries: 3,
+                              retryDelay: 2000,
+                              outstream: [
+                                event?.data?.node?.args
+                                  ?.filter(
+                                    (x) => !x?.nullable && x?.default == undefined
+                                  ) // by default, all nullable and default values are optional so not part of stream
+                                  .filter(notEmpty)
+                                  .map(rekuestPortToFluss) || [],
+                              ],
+                              constream: [],
+                              name: event.data?.node?.name || "no-name",
+                              hash: event.data?.node?.hash || "",
+                              kind: event.data?.node?.kind || NodeKind.Generator,
+                            },
+                            position: position,
+                          };
+                          addArkitekt(node);
+                          return;
+                        }
+
+                      }
+
+
                       // two paths according to node scope
                       if (event.data.node.scope == NodeScope.Global) {
                         let id = "arkid-" + uuidv4();

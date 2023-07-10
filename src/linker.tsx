@@ -403,6 +403,13 @@ export const Node = buildSmart("@rekuest/node", "nodes", [
   "item:@rekuest/assignation",
 ]);
 
+export const Protocol = buildSmart("@rekuest/protocol", "protocols", [
+  "list:@rekuest/protocol",
+  "item:@rekuest/protocol",
+  "list:@rekuest/assignation",
+  "item:@rekuest/assignation",
+]);
+
 export const Collection = buildSmart("@rekuest/collection", "collections", [
   "list:@rekuest/collection",
   "item:@rekuest/collection",
