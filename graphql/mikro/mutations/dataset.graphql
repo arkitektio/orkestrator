@@ -1,23 +1,23 @@
 mutation CreateDataset($name: String!) {
-  createDataset(name: $name) {
+  createDataset(input: { name: $name }) {
     ...DetailDataset
   }
 }
 
 mutation DeleteDataset($id: ID!) {
-  deleteDataset(id: $id) {
+  deleteDataset(input: { id: $id }) {
     id
   }
 }
 
 mutation UpdateDataset($id: ID!, $parent: ID, $tags: [String], $name: String!) {
-  updateDataset(id: $id, parent: $parent, tags: $tags, name: $name) {
+  updateDataset(input: { id: $id, parent: $parent, tags: $tags, name: $name }) {
     ...DetailDataset
   }
 }
 
 mutation PinDataset($id: ID!, $pin: Boolean!) {
-  pinDataset(id: $id, pin: $pin) {
+  pinDataset(input: { id: $id, pin: $pin }) {
     id
     pinnedBy {
       id
@@ -28,49 +28,53 @@ mutation PinDataset($id: ID!, $pin: Boolean!) {
 }
 
 mutation PutSamples($dataset: ID!, $samples: [ID!]!) {
-  putSamples(dataset: $dataset, samples: $samples) {
+  putSamples(input: { dataset: $dataset, samples: $samples }) {
     ...DetailDataset
   }
 }
 
 mutation ReleaseFiles($dataset: ID!, $files: [ID!]!) {
-  releaseFiles(dataset: $dataset, files: $files) {
+  releaseFiles(input: { dataset: $dataset, files: $files }) {
     ...DetailDataset
   }
 }
 
 mutation PutDatasets($dataset: ID!, $datasets: [ID!]!) {
-  putDatasets(dataset: $dataset, datasets: $datasets) {
+  putDatasets(input: { dataset: $dataset, datasets: $datasets }) {
     ...DetailDataset
   }
 }
 
 mutation ReleaseDatasets($dataset: ID!, $datasets: [ID!]!) {
-  releaseDatasets(dataset: $dataset, datasets: $datasets) {
+  releaseDatasets(input: { dataset: $dataset, datasets: $datasets }) {
     ...DetailDataset
   }
 }
 
 mutation PutRepresentations($dataset: ID!, $representations: [ID!]!) {
-  putRepresentations(dataset: $dataset, representations: $representations) {
+  putRepresentations(
+    input: { dataset: $dataset, representations: $representations }
+  ) {
     ...DetailDataset
   }
 }
 
 mutation ReleaseRepresentations($dataset: ID!, $representations: [ID!]!) {
-  releaseRepresentations(dataset: $dataset, representations: $representations) {
+  releaseRepresentations(
+    input: { dataset: $dataset, representations: $representations }
+  ) {
     ...DetailDataset
   }
 }
 
 mutation ReleaseSamples($dataset: ID!, $samples: [ID!]!) {
-  releaseSamples(dataset: $dataset, samples: $samples) {
+  releaseSamples(input: { dataset: $dataset, samples: $samples }) {
     ...DetailDataset
   }
 }
 
 mutation PutFiles($dataset: ID!, $files: [ID!]!) {
-  putFiles(dataset: $dataset, files: $files) {
+  putFiles(input: { dataset: $dataset, files: $files }) {
     ...DetailDataset
   }
 }

@@ -10,8 +10,11 @@ query MyTimepoints($limit: Int, $offset: Int, $createdDay: DateTime) {
   }
 }
 
-query TimepointSearch($search: String) {
-  options: timepoints(name: $search, limit: 30) {
+query TimepointViewSearch($search: String, $values: [ID]) {
+  options: timepointsView(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     value: id
     label: name
   }

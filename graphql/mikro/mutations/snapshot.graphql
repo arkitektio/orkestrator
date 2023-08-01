@@ -1,0 +1,5 @@
+mutation create_snapshot($image: ID!, $file: ImageFile!) {
+  createSnapshot(input: { image: $image, file: $file }) {
+    ...Snapshot
+  }
+}

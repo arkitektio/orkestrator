@@ -5,7 +5,7 @@ fragment DetailDataset on Dataset {
     id
     name
   }
-  createdBy {
+  creator {
     id
     email
   }
@@ -16,12 +16,12 @@ fragment DetailDataset on Dataset {
     id
     email
   }
-  omerofiles {
+  files {
     id
     name
     file
   }
-  representations {
+  images {
     id
     name
   }

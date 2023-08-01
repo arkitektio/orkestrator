@@ -11,7 +11,10 @@ query DetailExperiment($id: ID!) {
 }
 
 query SearchExperiments($search: String, $values: [ID]) {
-  options: experiments(name: $search, limit: 10, ids: $values) {
+  options: experiments(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     label: name
     value: id
   }

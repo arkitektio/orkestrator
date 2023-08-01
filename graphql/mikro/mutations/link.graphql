@@ -7,19 +7,21 @@ mutation Link(
   $context: ID
 ) {
   link(
-    relation: $relation
-    leftType: $leftType
-    leftId: $leftId
-    rightType: $rightType
-    rightId: $rightId
-    context: $context
+    input: {
+      relation: $relation
+      leftType: $leftType
+      leftId: $leftId
+      rightType: $rightType
+      rightId: $rightId
+      context: $context
+    }
   ) {
     ...ListLink
   }
 }
 
 mutation DeleteLink($id: ID!) {
-  deleteLink(id: $id) {
+  deleteLink(input: { id: $id }) {
     id
   }
 }

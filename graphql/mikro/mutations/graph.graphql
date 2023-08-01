@@ -1,5 +1,5 @@
 mutation DeleteGraph($id: ID!) {
-  deleteGraph(id: $id) {
+  deleteGraph(input: { id: $id }) {
     id
   }
 }

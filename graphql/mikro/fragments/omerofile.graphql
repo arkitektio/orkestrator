@@ -5,13 +5,9 @@ fragment DetailOmeroFile on OmeroFile {
   createdAt
   file
   tags
-  derivedRepresentations {
-    ...ListRepresentation
+  derivedImages {
+    ...ListImage
   }
-  experiments {
-    ...ListExperiment
-  }
-  createdWhile
 }
 
 fragment ListOmeroFile on OmeroFile {

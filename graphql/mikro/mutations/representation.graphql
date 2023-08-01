@@ -1,5 +1,5 @@
 mutation DeleteRepresentation($id: ID!) {
-  deleteRepresentation(id: $id) {
+  deleteRepresentation(input: { id: $id }) {
     id
   }
 }
@@ -12,18 +12,20 @@ mutation UpdateRepresentation(
   $origins: [ID]
 ) {
   updateRepresentation(
-    rep: $id
-    tags: $tags
-    sample: $sample
-    variety: $variety
-    origins: $origins
+    input: {
+      rep: $id
+      tags: $tags
+      sample: $sample
+      variety: $variety
+      origins: $origins
+    }
   ) {
     ...DetailRepresentation
   }
 }
 
 mutation PinRepresentation($id: ID!, $pin: Boolean!) {
-  pinRepresentation(id: $id, pin: $pin) {
+  pinRepresentation(input: { id: $id, pin: $pin }) {
     id
     pinnedBy {
       id

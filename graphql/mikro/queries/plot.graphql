@@ -5,7 +5,10 @@ query DetailPlot($id: ID!) {
 }
 
 query MyPlots($limit: Int, $offset: Int, $createdDay: DateTime) {
-  myplots(limit: $limit, offset: $offset, createdDay: $createdDay) {
+  myplots(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     ...ListPlot
   }
 }

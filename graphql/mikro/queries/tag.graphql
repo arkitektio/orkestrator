@@ -1,5 +1,8 @@
 query TagSearch($search: String, $values: [String]) {
-  options: tags(name: $search, values: $values, limit: 20) {
+  options: tags(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     value: name
     label: slug
   }

@@ -11,7 +11,10 @@ query DetailLink($id: ID!) {
 }
 
 query SearchLinks($search: String) {
-  options: links(relation: $search, limit: 10) {
+  options: links(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     label: id
     value: id
   }

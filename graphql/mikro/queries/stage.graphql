@@ -5,7 +5,10 @@ query DetailStage($id: ID!) {
 }
 
 query MyStages($limit: Int, $offset: Int, $createdDay: DateTime) {
-  mystages(limit: $limit, offset: $offset, createdDay: $createdDay) {
+  mystages(
+    filters: { search: $search, ids: $values, createdDay: $createdDay }
+    pagination: { limit: 30 }
+  ) {
     ...ListStage
   }
 }
@@ -27,7 +30,10 @@ query SearchableStages(
 }
 
 query StageSearch($search: String, $values: [ID!]) {
-  options: stages(name: $search, ids: $values, limit: 30) {
+  options: stages(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     value: id
     label: name
   }

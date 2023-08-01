@@ -11,7 +11,10 @@ query Objectives {
 }
 
 query SearchObjectives($search: String) {
-  options: objectives(search: $search) {
+  options: objectives(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     value: id
     label: name
   }

@@ -1,17 +1,17 @@
 mutation CreatePlot($name: String!) {
-  createPlot(name: $name) {
+  createPlot(input: { name: $name }) {
     ...Plot
   }
 }
 
 mutation UpdatePlot($id: ID!, $name: String, $query: String!) {
-  updatePlot(id: $id, name: $name, query: $query) {
+  updatePlot(input: { id: $id, name: $name, query: $query }) {
     ...Plot
   }
 }
 
 mutation DeletePlot($id: ID!) {
-  deletePlot(id: $id) {
+  deletePlot(input: { id: $id }) {
     id
   }
 }

@@ -1,5 +1,5 @@
-mutation Presign($file: String!) {
-  presign(file: $file) {
+mutation Presign(input: {$file: String!}) {
+  presign(input: {file: $file}) {
     bucket
     fields {
       xAmzDate

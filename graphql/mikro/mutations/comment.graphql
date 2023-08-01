@@ -5,23 +5,25 @@ mutation CreateComment(
   $parent: ID
 ) {
   createComment(
-    object: $id
-    type: $model
-    descendents: $descendents
-    parent: $parent
+    input: {
+      object: $id
+      type: $model
+      descendents: $descendents
+      parent: $parent
+    }
   ) {
     ...ListComment
   }
 }
 
 mutation ReplyTo($descendents: [DescendendInput]!, $parent: ID!) {
-  replyTo(descendents: $descendents, parent: $parent) {
+  replyTo(input: { descendents: $descendents, parent: $parent }) {
     ...ListComment
   }
 }
 
 mutation ResolveComment($id: ID!) {
-  resolveComment(id: $id) {
+  resolveComment(input: { id: $id }) {
     ...ListComment
   }
 }

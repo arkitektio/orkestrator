@@ -1,0 +1,11 @@
+query DetailSnapshot($id: ID!) {
+  snapshot(id: $id) {
+    ...Snapshot
+  }
+}
+
+query Snapshots($limit: Int, $offset: Int) {
+  snapshots(pagination: { limit: $limit, offset: $offset }) {
+    ...ListSnapshot
+  }
+}

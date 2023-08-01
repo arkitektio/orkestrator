@@ -1,4 +1,4 @@
-fragment ListRepresentation on Representation {
+fragment ListImage on Image {
   name
   id
   origins {
@@ -20,30 +20,7 @@ fragment ListRepresentation on Representation {
   createdWhile
 }
 
-fragment ListSharedRepresentation on Representation {
-  name
-  id
-  origins {
-    name
-  }
-  latestThumbnail {
-    image
-    blurhash
-  }
-  sample {
-    name
-    experiments {
-      name
-    }
-  }
-  variety
-  creator {
-    email
-  }
-  createdWhile
-}
-
-fragment CanvasRepresentation on Representation {
+fragment CanvasImage on Image {
   id
   shape
   store
@@ -57,7 +34,7 @@ fragment CanvasRepresentation on Representation {
   }
 }
 
-fragment DetailRepresentation on Representation {
+fragment DetailImage on IMage {
   ...CanvasRepresentation
   id
   name

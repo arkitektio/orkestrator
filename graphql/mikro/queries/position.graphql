@@ -4,8 +4,11 @@ query DetailPosition($id: ID!) {
   }
 }
 
-query PositionSearch($search: String, $stage: ID) {
-  options: positions(name: $search, limit: 30, stage: $stage) {
+query PositionSearch($search: String, $values: [ID!]) {
+  options: positions(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     value: id
     label: name
   }

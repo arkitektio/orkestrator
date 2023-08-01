@@ -1,5 +1,8 @@
 query MyDatasets($limit: Int, $offset: Int, $createdDay: DateTime) {
-  mydatasets(limit: $limit, offset: $offset, createdDay: $createdDay) {
+  mydatasets(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     ...ListDataset
   }
 }
@@ -11,7 +14,10 @@ query DetailDataset($id: ID!) {
 }
 
 query SearchDatasets($search: String) {
-  options: datasets(name: $search, limit: 10) {
+  options: datasets(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     label: name
     value: id
   }

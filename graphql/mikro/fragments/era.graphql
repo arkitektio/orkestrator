@@ -1,8 +1,8 @@
 fragment Era on Era {
   name
   id
-  timepoints(order: "delta_t") {
-    ...ListTimepoint
+  timepointViews {
+    ...ListTimepointView
   }
   start
   end

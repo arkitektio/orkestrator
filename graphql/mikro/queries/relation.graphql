@@ -11,7 +11,10 @@ query DetailRelation($id: ID!) {
 }
 
 query SearchRelations($search: String, $values: [ID]) {
-  options: relations(name: $search, limit: 10, ids: $values) {
+  options: relations(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     label: name
     value: id
   }

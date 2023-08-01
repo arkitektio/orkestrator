@@ -1,5 +1,5 @@
 mutation PinRoi($id: ID!, $pin: Boolean!) {
-  pinROI(id: $id, pin: $pin) {
+  pinROI(input: { id: $id, pin: $pin }) {
     id
     pinnedBy {
       id
@@ -10,24 +10,26 @@ mutation PinRoi($id: ID!, $pin: Boolean!) {
 }
 
 mutation DeleteRoi($id: ID!) {
-  deleteROI(id: $id) {
+  deleteROI(input: { id: $id }) {
     id
   }
 }
 
 mutation create_roi(
   $representation: ID!
-  $vectors: [InputVector]!
+  $vectors: [FiveDVector]!
   $creator: ID
   $type: RoiTypeInput!
   $label: String
 ) {
   createROI(
-    representation: $representation
-    vectors: $vectors
-    type: $type
-    creator: $creator
-    label: $label
+    input: {
+      representation: $representation
+      vectors: $vectors
+      type: $type
+      creator: $creator
+      label: $label
+    }
   ) {
     ...RepRoi
   }

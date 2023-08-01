@@ -1,5 +1,5 @@
 mutation DeleteModel($id: ID!) {
-  deleteModel(id: $id) {
+  deleteModel(input: { id: $id }) {
     id
   }
 }

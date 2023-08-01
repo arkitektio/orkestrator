@@ -10,8 +10,11 @@ query MyEras($limit: Int, $offset: Int, $createdDay: DateTime) {
   }
 }
 
-query EraSearch($search: String) {
-  options: eras(name: $search, limit: 30) {
+query EraSearch($search: String, $values: [ID]) {
+  options: eras(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     value: id
     label: name
   }

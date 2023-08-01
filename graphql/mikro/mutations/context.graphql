@@ -1,11 +1,11 @@
 mutation CreateContext($name: String!) {
-  createContext(name: $name) {
+  createContext(input: { name: $name }) {
     ...DetailContext
   }
 }
 
 mutation DeleteContext($id: ID!) {
-  deleteContext(id: $id) {
+  deleteContext(input: { id: $id }) {
     id
   }
 }

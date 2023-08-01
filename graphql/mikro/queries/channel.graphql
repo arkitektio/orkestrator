@@ -5,7 +5,10 @@ query GetChannel($id: ID!) {
 }
 
 query SearchChannels($search: String, $values: [ID]) {
-  options: channels(name: $search, limit: 30, ids: $values) {
+  options: channels(
+    filters: { name: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
     value: id
     label: name
   }
