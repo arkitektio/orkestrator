@@ -57,7 +57,7 @@ export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
               port.scope == Scope.Global ? "bg-primary-300" : "bg-primary-400"
             } rounded shadow-md text-xs text-white p-2 mr-2 my-auto flex-row`}
           >
-            <div className="my-auto mr-3">List of</div>{" "}
+            {port.nullable && "?"}<div className="my-auto mr-3">List of</div>{" "}
             {childMapper((port as any).child)}
           </div>
           <div className="font-semibold my-auto">{port?.label || port.key}</div>
@@ -69,6 +69,26 @@ export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
           )}
         </div>
       );
+      case PortKind.Union:
+        return (
+          <div className="flex flex-row">
+            <div
+              className={` ${
+                port.scope == Scope.Global ? "bg-primary-300" : "bg-primary-400"
+              } rounded shadow-md text-xs text-white p-2 mr-2 my-auto flex-row`}
+            >
+              {port.nullable && "?"}<div className="my-auto mr-3">Union of</div>{" "}
+              {port.variants?.map((v) => childMapper(v))}
+            </div>
+            <div className="font-semibold my-auto">{port?.label || port.key}</div>
+            {port.assignWidget?.__typename && (
+              <div className="ml-2 my-auto">{port.assignWidget?.__typename}</div>
+            )}
+            {port.returnWidget?.__typename && (
+              <div className="ml-2 my-auto">{port.returnWidget?.__typename}</div>
+            )}
+          </div>
+        );
     case PortKind.Dict:
       return (
         <div className="flex flex-row">
@@ -77,7 +97,7 @@ export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
               port.scope == Scope.Global ? "bg-primary-300" : "bg-primary-400"
             } rounded shadow-md text-xs text-white p-2 mr-2 my-auto flex-row`}
           >
-            <div className="my-auto mr-3">Map of</div>{" "}
+            {port.nullable && "?"}<div className="my-auto mr-3">Map of</div>{" "}
             {childMapper((port as any).child)}
           </div>
           <div className="font-semibold my-auto">{port?.label || port.key}</div>
@@ -95,7 +115,7 @@ export const portMapper = (port: Maybe<PortFragment>): React.ReactNode => {
               port?.scope == Scope.Global ? "bg-primary-300" : "bg-primary-400"
             } rounded shadow-md text-xs text-white p-2 mr-2 my-auto flex-row`}
           >
-            {port?.identifier || port?.kind}
+            {port?.nullable && "?"}{port?.identifier || port?.kind}
           </div>
           <div className="font-semibold my-auto">
             {port?.label || port?.key}
