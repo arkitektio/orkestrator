@@ -1,27 +1,17 @@
-mutation UploadOmeroFile(
-  $file: ImageFile!
-  $experiments: [ID]
-  $datasets: [ID]
-) {
-  uploadOmeroFile(file: $file, experiments: $experiments, datasets: $datasets) {
+mutation UploadFile($file: FileLike!, $datasets: [ID]) {
+  uploadFile(input: { file: $file, datasets: $datasets }) {
     ...DetailOmeroFile
   }
 }
 
-mutation UploadBigFile($file: BigFile!, $datasets: [ID]) {
-  uploadBigFile(file: $file, datasets: $datasets) {
-    ...DetailOmeroFile
-  }
-}
-
-mutation DeleteOmeroFile($id: ID!) {
-  deleteOmeroFile(id: $id) {
+mutation DeleteFile($id: ID!) {
+  deleteFile(input: { id: $id }) {
     id
   }
 }
 
-mutation UpdateOmeroFile($id: ID!, $tags: [String]) {
-  updateOmeroFile(id: $id, tags: $tags) {
+mutation UpdateFile($id: ID!, $tags: [String]) {
+  updateFile(input: { id: $id, tags: $tags }) {
     ...DetailOmeroFile
   }
 }
