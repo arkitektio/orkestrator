@@ -1,0 +1,43 @@
+mutation from_array_like(
+  $array: ArrayLike!
+  $name: String!
+  $origins: [ID!]
+  $channelViews: [PartialChannelViewInput!]
+  $transformationViews: [PartialTransformationViewInput!]
+  $labelViews: [PartialLabelViewInput!]
+  $timepointViews: [PartialTimepointViewInput!]
+  $opticsViews: [PartialOpticsViewInput!]
+) {
+  fromArrayLike(
+    input: {
+      array: $array
+      name: $name
+      origins: $origins
+      channelViews: $channelViews
+      transformationViews: $transformationViews
+      labelViews: $labelViews
+      timepointViews: $timepointViews
+      opticsViews: $opticsViews
+    }
+  ) {
+    ...Image
+  }
+}
+
+mutation RequestUpload($key: String!, $datalayer: String!) {
+  requestUpload(input: { key: $key, datalayer: $datalayer }) {
+    ...Credentials
+  }
+}
+
+mutation RequestAccess($store: ID!, $duration: Int) {
+  requestAccess(input: { store: $store, duration: $duration }) {
+    ...AccessCredentials
+  }
+}
+
+mutation PinImage($id: ID!, $pin: Boolean!) {
+  pinImage(input: { id: $id, pin: $pin }) {
+    ...Image
+  }
+}

@@ -1,0 +1,16 @@
+mutation CreateChannel($name: String!) {
+  createChannel(input: {name: $name}) {
+    id
+    name
+  }
+}
+
+mutation EnsureChannel($name: String!){
+  ensureChannel(input: {
+    name: $name
+  }) {
+    id
+    name
+    
+  }
+}

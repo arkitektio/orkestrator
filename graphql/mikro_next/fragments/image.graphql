@@ -1,0 +1,55 @@
+fragment Image on Image {
+  origins {
+    id
+  }
+  id
+  name
+  store {
+    ...ZarrStore
+  }
+  views {
+    ...ChannelView
+    ...TransformationView
+    ...LabelView
+    ...TimepointView
+    ...OpticsView
+  }
+  pinned
+  renders {
+    ...Snapshot
+    ...Video
+  }
+  dataset {
+    name
+    id
+  }
+  createdAt
+  history(pagination: { limit: 3 }) {
+    ...History
+  }
+  creator {
+    sub
+  }
+  tags
+  metrics {
+    ...ImageMetric
+  }
+  roiOrigins {
+    ...ListROI
+  }
+  fileOrigins {
+    ...ListFile
+  }
+}
+
+fragment ListImage on Image {
+  latestSnapshot {
+    id
+    store {
+      key
+      presignedUrl
+    }
+  }
+  id
+  name
+}

@@ -25,6 +25,7 @@ query Nodes(
     templated: $templated
     collections: $collections
     scopes: $scopes
+    limit: 20
   ) {
     ...NodeListItem
   }

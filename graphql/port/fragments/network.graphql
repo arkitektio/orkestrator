@@ -1,4 +1,0 @@
-fragment DetailNetwork on Network {
-  name
-  id
-}

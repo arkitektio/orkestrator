@@ -159,6 +159,91 @@ export const Representation = buildSmart(
   ]
 );
 
+export const Image = buildSmart("@mikronext/image", "images", [
+  "list:@mikro/sample",
+  "item:@mikro/sample",
+  "list:@mikro/model",
+  "item:@mikro/model",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const History = buildSmart("@mikronext/history", "history", [
+  "list:@mikro/sample",
+  "item:@mikro/sample",
+  "list:@mikro/model",
+  "item:@mikro/model",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const TransformationView = buildSmart(
+  "@mikronext/transformationview",
+  "transformationviews",
+  [
+    "list:@mikro/sample",
+    "item:@mikro/sample",
+    "list:@mikro/model",
+    "item:@mikro/model",
+    "list:@mikro/experiment",
+    "item:@mikro/experiment",
+    "list:@mikro/representation",
+    "item:@mikro/representation",
+  ]
+);
+
+export const LabelView = buildSmart("@mikronext/labelview", "labelviews", [
+  "list:@mikro/sample",
+  "item:@mikro/sample",
+  "list:@mikro/model",
+  "item:@mikro/model",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const File = buildSmart("@mikronext/file", "files", [
+  "list:@mikro/sample",
+  "item:@mikro/sample",
+  "list:@mikro/model",
+  "item:@mikro/model",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
+export const ChannelView = buildSmart(
+  "@mikronext/channelview",
+  "channelviews",
+  [
+    "list:@mikro/sample",
+    "item:@mikro/sample",
+    "list:@mikro/model",
+    "item:@mikro/model",
+    "list:@mikro/experiment",
+    "item:@mikro/experiment",
+    "list:@mikro/representation",
+    "item:@mikro/representation",
+  ]
+);
+
+export const OpticsView = buildSmart("@mikronext/opticsview", "opticsviews", [
+  "list:@mikro/sample",
+  "item:@mikro/sample",
+  "list:@mikro/model",
+  "item:@mikro/model",
+  "list:@mikro/experiment",
+  "item:@mikro/experiment",
+  "list:@mikro/representation",
+  "item:@mikro/representation",
+]);
+
 export const Graph = buildSmart("@mikro/graph", "graphs", [
   "list:@mikro/graph",
   "item:@mikro/graph",

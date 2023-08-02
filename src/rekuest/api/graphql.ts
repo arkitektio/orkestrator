@@ -1402,7 +1402,7 @@ export type Protocol = {
   id: Scalars['ID'];
   /** The name of this Protocol */
   name: Scalars['String'];
-  /** The protocols this Node implements */
+  /** The protocols this Node implements (e.g. Predicate) */
   nodes: Array<Node>;
 };
 
@@ -6708,6 +6708,7 @@ export const NodesDocument = gql`
     templated: $templated
     collections: $collections
     scopes: $scopes
+    limit: 20
   ) {
     ...NodeListItem
   }

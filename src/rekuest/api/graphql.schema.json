@@ -8214,7 +8214,7 @@
           },
           {
             "name": "nodes",
-            "description": "The protocols this Node implements",
+            "description": "The protocols this Node implements (e.g. Predicate)",
             "args": [],
             "type": {
               "kind": "NON_NULL",

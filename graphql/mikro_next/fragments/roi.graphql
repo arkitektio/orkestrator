@@ -1,0 +1,7 @@
+fragment ListROI on ROI {
+  id
+  image {
+    id
+    name
+  }
+}

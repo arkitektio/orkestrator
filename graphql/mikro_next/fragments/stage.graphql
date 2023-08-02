@@ -1,0 +1,13 @@
+fragment Stage on Stage {
+  id
+  views {
+    ...TransformationView
+  }
+  pinned
+  name
+}
+
+fragment ListStage on Stage {
+  id
+  name
+}

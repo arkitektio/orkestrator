@@ -58,6 +58,7 @@ import { AlerterProvider } from "./components/alerter/alerter-provider";
 import { ConfirmerProvider } from "./components/confirmer/confirmer-provider";
 import { Live } from "./dashboard/Dashboard";
 import { HealthzProvider } from "./healthz/provider";
+import MikroNextModule from "./mikro_next/MikroNextModule";
 import { Fluss } from "./pages/Fluss";
 import { Local } from "./pages/Local";
 import { Settings } from "./pages/Settings";
@@ -227,7 +228,13 @@ export const MainApp: React.FC<Props> = (props) => {
                               <Route path="/user" element={<ProtectedApp />}>
                                 <Route index element={<Home />} />
 
-                                {/* Mikro */}
+                                {/* Mikro Next*/}
+                                <Route
+                                  path="mikronext/*"
+                                  element={<MikroNextModule />}
+                                />
+
+                                {/* Mikro*/}
                                 <Route path="mikro" element={<Data />}>
                                   <Route
                                     path="experiments/:experiment"

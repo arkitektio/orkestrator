@@ -1,0 +1,20 @@
+overwrite: true
+schema: "http://localhost:8030/graphql"
+documents: "graphql/mikro_next/**/*.graphql"
+generates:
+  src/mikro_next/api/fragments.ts:
+    plugins:
+      - "fragment-matcher"
+  src/mikro_next/api/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      withHooks: true
+      reactApolloVersion: 3
+      arrayInputCoercion: false
+
+  src/mikro_next/graphql.schema.json:
+    plugins:
+      - "introspection"

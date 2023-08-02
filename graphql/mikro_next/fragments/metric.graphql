@@ -1,0 +1,8 @@
+fragment ImageIntMetric on ImageIntMetric {
+  id
+  value
+}
+
+fragment ImageMetric on ImageMetric {
+  ...ImageIntMetric
+}

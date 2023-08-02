@@ -1,0 +1,4 @@
+fragment Antibody on Antibody {
+    name
+    epitope
+}
