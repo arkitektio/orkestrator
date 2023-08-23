@@ -35,7 +35,7 @@ import {
 import { UserEmblem } from "../../lok/components/UserEmblem";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import { useDeleteRoiMate } from "../../mates/roi/useDeleteRoiMate";
-import { useMikro, withMikro } from "../MikroContext";
+import { withMikro } from "../MikroContext";
 import {
   CommentableModels,
   DetailRepresentationFragment,
@@ -222,7 +222,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
     return () => unsubscribe();
   }, []);
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   const [show, setshow] = useState(false);
 

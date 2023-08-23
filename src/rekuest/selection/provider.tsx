@@ -1,10 +1,9 @@
 import {
   Box,
-  useSelectionContainer,
   boxesIntersect,
+  useSelectionContainer,
 } from "@air/react-drag-to-select";
-import React, { Ref, useCallback, useEffect, useState } from "react";
-import { useDragDropManager } from "react-dnd";
+import React, { useEffect, useState } from "react";
 import { Selectable, SelectionContext, SelectionItem } from "./context";
 export type ArkitektProps = { children: React.ReactNode };
 
@@ -18,18 +17,15 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
   const [isMultiSelecting, setIsMultiSelecting] = useState<boolean>(false);
 
   const autoSelect = (autoSelection: SelectionItem[]) => {
-    console.log("autoselect", autoSelection);
     setSelection((selection) => selection.concat(autoSelection));
   };
 
   const unselect = (unselected: SelectionItem[]) => {
-    console.log("unselect", unselected);
     setSelection((selection) =>
       selection.filter(
         (item) =>
           !unselected.some(
-            (uns) =>
-              item.identifier == uns.identifier && uns.object == item.object
+            (uns) => item.identifier == uns.identifier && uns.id == item.id
           )
       )
     );
@@ -39,7 +35,6 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
     if (focusIndex !== undefined) {
       const focus = selectables[focusIndex];
       if (focus) {
-        console.log("focus", focus);
         setFocus(focus.selectable);
       }
     } else {
@@ -107,8 +102,6 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
       left: box.left + window.scrollX,
     };
 
-    
-
     if (box.width > 56 && box.height > 65) {
       const indexesToSelect: number[] = [];
       console.log(selectables);
@@ -135,8 +128,6 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
        * In this example, we're preventing users from selecting in elements
        * that have a data-disableselect attribute on them or one of their parents
        */
-
-      
 
       if (target instanceof HTMLElement) {
         let el = target;
@@ -179,7 +170,7 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
                 !unselectables.some(
                   (s2) =>
                     s2.selectable.identifier == s.selectable.identifier &&
-                    s2.selectable.object == s.selectable.object
+                    s2.selectable.id == s.selectable.id
                 )
             )
           );

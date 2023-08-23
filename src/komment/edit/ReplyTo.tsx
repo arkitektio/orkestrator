@@ -1,18 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  BaseRange,
-  createEditor,
-  Editor,
-  Node,
-  Range,
-  Transforms,
-} from "slate";
-import { Editable, ReactEditor, Slate, withReact } from "slate-react";
-import { useUserOptionsLazyQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/context";
 import ReactDOM from "react-dom";
+import { Editor, Range, Transforms, createEditor } from "slate";
+import { Editable, ReactEditor, Slate, withReact } from "slate-react";
+import { withLok } from "../../lok/LokContext";
+import { useUserOptionsLazyQuery } from "../../lok/api/graphql";
 import {
-  CreateCommentFunc,
   DescendendInput,
   ElementRenderProps,
   KommentEditor,
@@ -20,7 +12,6 @@ import {
   ReplyToFunc,
 } from "../types";
 import { MentionEdit } from "./MentionEdit";
-import { DOMRange } from "slate-react/dist/utils/dom";
 
 const Element = (props: ElementRenderProps) => {
   const { element, ...restprops } = props;
@@ -88,7 +79,7 @@ export const ReplyTo = <T extends any>({
 }: CommentEditProps<T>) => {
   const [editor] = useState(() => withMentions(withReact(createEditor())));
 
-  const [searchUser, data] = withMan(useUserOptionsLazyQuery)();
+  const [searchUser, data] = withLok(useUserOptionsLazyQuery)();
 
   const ref = useRef<HTMLDivElement>(null);
   const [target, setTarget] = useState<Range | undefined>();

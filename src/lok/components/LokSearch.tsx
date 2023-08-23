@@ -1,12 +1,11 @@
 import { Transition } from "@headlessui/react";
 import { Field, Form, Formik } from "formik";
-import React, { useState } from "react";
+import { useState } from "react";
 import { BiSearch } from "react-icons/bi";
 import { FiArrowDown } from "react-icons/fi";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 import { LokGlobalSearchQueryVariables } from "../api/graphql";
-import { withMan } from "../context";
 
 interface LokSearchProps {
   onSearch: (variables: LokGlobalSearchQueryVariables) => void;

@@ -1,6 +1,5 @@
-import React from "react";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { App } from "../../../linker";
-import { useMikro } from "../../../mikro/MikroContext";
 import { ListAppFragment } from "../../api/graphql";
 
 interface AppCardProps {
@@ -8,7 +7,7 @@ interface AppCardProps {
 }
 
 export const AppCard = ({ app }: AppCardProps) => {
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   return (
     <App.Smart

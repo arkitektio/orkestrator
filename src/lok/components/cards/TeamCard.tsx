@@ -1,6 +1,5 @@
-import React from "react";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { Team } from "../../../linker";
-import { useMikro } from "../../../mikro/MikroContext";
 import { ListGroupFragment } from "../../api/graphql";
 
 interface TeamCardProps {
@@ -8,7 +7,7 @@ interface TeamCardProps {
 }
 
 export const TeamCard = ({ group }: TeamCardProps) => {
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   return (
     <Team.Smart

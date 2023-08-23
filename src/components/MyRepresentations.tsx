@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
 import { Representation } from "../linker";
 import { useMikroLinkMate } from "../mates/generics/useLinkMate";
+import { usePostmanMate } from "../mates/postman/usePostmanMates";
 import { withMikro } from "../mikro/MikroContext";
 import {
   MyRepresentationsEventDocument,
@@ -22,6 +23,7 @@ const MyRepresentations: React.FC<
   const [offset, setOffset] = useState(0);
 
   const mikroLinkMate = useMikroLinkMate();
+  const postmanMate = usePostmanMate();
 
   const { data, loading, subscribeToMore, refetch } = withMikro(
     useMyRepresentationsQuery
@@ -92,13 +94,17 @@ const MyRepresentations: React.FC<
         loading={loading}
         title={
           <Representation.ListLink className="flex-0">
-            Images
+            Imagesssss
           </Representation.ListLink>
         }
         refetch={refetch}
       >
         {(rep, index) => (
-          <RepresentationCard rep={rep} key={rep?.id} mates={[mikroLinkMate]} />
+          <RepresentationCard
+            rep={rep}
+            key={rep?.id}
+            mates={[mikroLinkMate, postmanMate]}
+          />
         )}
       </ListRender>
     </>

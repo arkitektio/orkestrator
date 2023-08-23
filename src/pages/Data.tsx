@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import { Outlet } from "react-router";
-import BreadCrumbs from "../components/navigation/Breadcrumbs";
-import DataSidebar from "./data/DataSidebar";
-import { Disclosure, Transition } from "@headlessui/react";
 import { ModuleLayout } from "../layout/ModuleLayout";
 import { MikroGuard } from "../mikro/MikroGuard";
+import DataSidebar from "./data/DataSidebar";
 interface Props {}
 
 export const Data: React.FC<Props> = (props) => {

@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import React, { useEffect } from "react";
-import { useDetailMetricQuery } from "../mikro/api/graphql";
 import { useMikro, withMikro } from "../mikro/MikroContext";
-import { useRekuest } from "../rekuest/RekuestContext";
+import { useDetailMetricQuery } from "../mikro/api/graphql";
 import { useWidgetRegistry } from "../rekuest/widgets/widget-context";
 
 export const MetricWidget = (props: any) => {
@@ -23,10 +23,10 @@ export const MetricWidget = (props: any) => {
 export const MikroWard: React.FC<{
   key?: string;
   fallback?: React.ReactNode;
-  children: React.ReactNode;
-}> = ({ key, children, fallback }) => {
-  const { client, s3resolve } = useMikro();
+}> = ({ key, fallback }) => {
+  const { client } = useMikro();
   const { registry } = useWidgetRegistry();
+  const { s3resolve } = useDatalayer();
 
   useEffect(() => {
     if (client) {
@@ -65,5 +65,5 @@ export const MikroWard: React.FC<{
     }
   }, [client, registry]);
 
-  return <>{children}</>;
+  return <></>;
 };

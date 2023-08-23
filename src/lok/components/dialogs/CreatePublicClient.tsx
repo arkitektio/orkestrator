@@ -8,6 +8,7 @@ import { SwitchInputField } from "../../../components/forms/fields/switch_input"
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { withLok } from "../../LokContext";
 import {
   CreatePublicClientMutation,
   CreatePublicClientMutationVariables,
@@ -15,14 +16,13 @@ import {
   useCreatePublicClientMutation,
   useScopesOptionsLazyQuery,
 } from "../../api/graphql";
-import { withMan } from "../../man";
 
 export const CreatePublicClientDialog = (
   props: Submit<CreatePublicClientMutation>
 ) => {
-  const [createPublicFakt] = withMan(useCreatePublicClientMutation)();
+  const [createPublicFakt] = withLok(useCreatePublicClientMutation)();
 
-  const [searchScopes] = withMan(useScopesOptionsLazyQuery)();
+  const [searchScopes] = withLok(useScopesOptionsLazyQuery)();
 
   return (
     <Formik<CreatePublicClientMutationVariables>

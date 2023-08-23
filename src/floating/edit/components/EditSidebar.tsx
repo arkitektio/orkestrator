@@ -7,13 +7,14 @@ import {
   useReactiveTemplatesQuery,
 } from "../../../fluss/api/graphql";
 import { withFluss } from "../../../fluss/fluss";
-import { DashboardSearchFilter } from "../../../pages/dashboard/DashboardSearch";
 import { withRekuest } from "../../../rekuest/RekuestContext";
 import {
   NodeListItemFragment,
   NodeScope,
+  NodesQueryVariables,
   useNodesQuery,
 } from "../../../rekuest/api/graphql";
+import { NodeSearchFilter } from "../../../rekuest/components/searches/NodeSearchFilter";
 import { SmartModel } from "../../../rekuest/selection/SmartModel";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { notEmpty } from "../../utils";
@@ -169,19 +170,11 @@ export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
     useNodesQuery
   )({
     variables: {
-      scopes: [NodeScope.Global],
-    },
-  });
-
-  const { data: localNodes, refetch: refetchLocalNodes } = withRekuest(
-    useNodesQuery
-  )({
-    variables: {
-      restrict: props.flow.restrict,
       scopes: [
         NodeScope.BridgeGlobalToLocal,
         NodeScope.Local,
         NodeScope.BridgeLocalToGlobal,
+        NodeScope.Global,
       ],
     },
   });
@@ -190,18 +183,19 @@ export const EditSidebar: React.FC<EditSidebarProps> = (props) => {
     useReactiveTemplatesQuery
   )();
 
-  const [filter, setFilter] = React.useState<NodeFilterValues>({ search: "" });
+  const [filter, setFilter] = React.useState<NodesQueryVariables>({
+    search: "",
+  });
 
   useEffect(() => {
     refetchArkiNodes(filter);
-    refetchLocalNodes(filter);
     refetchReactiveNodes(filter);
   }, [filter]);
 
   return (
     <>
       <div className="flex-none p-5 dark:text-slate-50 overflow-hidden">
-        <DashboardSearchFilter
+        <NodeSearchFilter
           onFilterChanged={setFilter}
           className="w-full p-3 rounded-md shadow-lg dark:bg-slate-200 dark:text-black"
         />

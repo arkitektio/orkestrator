@@ -11,42 +11,46 @@ export const useMikroLinkMate = (): MateFinder => {
   const { alert } = useAlert();
   const [link] = withMikro(useLinkMutation)({});
 
-  return (type: string, isSelf: boolean) =>
-    isSelf
+  return async (options) => {
+    return options.partnersIncludeSelf
       ? undefined
       : [
           {
-            action: async (self, drops) => {
-              let leftType = identifierToLinkableModel(self.identifier);
-              let rightType = identifierToLinkableModel(drops[0].identifier);
+            action: async (event) => {
+              for (const partner of event.partners) {
+                let leftType = identifierToLinkableModel(event.self.identifier);
+                let rightType = identifierToLinkableModel(partner.identifier);
 
-              if (!leftType || !rightType) {
-                await alert({
-                  message: "Cannot relate these two objects",
-                  confirmLabel: "Ok, the developer should really fix this",
+                if (!leftType || !rightType) {
+                  await alert({
+                    message: "Cannot relate these two objects",
+                    confirmLabel: "Ok, the developer should really fix this",
+                  });
+                  return;
+                }
+
+                console.log(leftType, rightType);
+                let x = await ask(AskRelationModal, {
+                  leftIdentifier: event.self.identifier,
+                  leftObject: event.self.id,
+                  rightIdentifier: partner.identifier,
+                  rightObject: partner.id,
                 });
-                return;
+
+                await link({
+                  variables: {
+                    leftType: leftType,
+                    rightType: rightType,
+                    leftId: event.self.id,
+                    rightId: partner.id,
+                    ...x,
+                  },
+                });
               }
-
-              let x = await ask(AskRelationModal, {
-                leftIdentifier: self.identifier,
-                leftObject: self.object,
-                rightIdentifier: drops[0].identifier,
-                rightObject: drops[0].object,
-              });
-
-              await link({
-                variables: {
-                  leftType: leftType,
-                  rightType: rightType,
-                  leftId: self.object,
-                  rightId: drops[0].object,
-                  ...x,
-                },
-              });
             },
             label: "Relate",
             description: "Relate to other",
           },
         ];
+  };
 };

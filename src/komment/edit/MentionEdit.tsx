@@ -1,7 +1,6 @@
 import { useFocused, useSelected } from "slate-react";
-import { User } from "../../linker";
+import { withLok } from "../../lok/LokContext";
 import { useUserQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/man";
 import { ElementRenderProps } from "../types";
 
 export const MentionEdit = ({
@@ -16,7 +15,7 @@ export const MentionEdit = ({
   const focused = useFocused();
   console.log(element);
 
-  const { data, error } = withMan(useUserQuery)({
+  const { data, error } = withLok(useUserQuery)({
     variables: { id: element.user },
   });
 

@@ -1,27 +1,17 @@
-import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
-import {
-  MyOmeroFilesDocument,
-  MyOmeroFilesQuery,
-  MyOmeroFilesQueryVariables,
-  useDeleteOmeroFileMutation,
-  usePutDatasetsMutation,
-  useReleaseDatasetsMutation,
-  useReleaseFilesMutation,
-} from "../../mikro/api/graphql";
 import { withMikro } from "../../mikro/MikroContext";
-import { Mate } from "../../rekuest/postman/mater/mater-context";
+import { usePutDatasetsMutation } from "../../mikro/api/graphql";
 import { MateFinder } from "../types";
 
 export const usePutDatasetsMate = (datasetID: string): MateFinder => {
   const { confirm } = useConfirm();
   const [put] = withMikro(usePutDatasetsMutation)();
 
-  return (type, isSelf) => {
-    if (isSelf || type == "list:@mikro/dataset") {
+  return async (options) => {
+    if (options.partnersIncludeSelf) {
       return [
         {
-          action: async (self, partner) => {
+          action: async (event) => {
             await confirm({
               message:
                 "Are you sure you want to puth these datasets in this dataset",
@@ -29,7 +19,7 @@ export const usePutDatasetsMate = (datasetID: string): MateFinder => {
 
             put({
               variables: {
-                datasets: partner.map((p) => p.object),
+                datasets: event.partners.map((p) => p.id),
                 dataset: datasetID,
               },
             });

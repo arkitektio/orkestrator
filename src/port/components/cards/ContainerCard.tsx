@@ -1,8 +1,8 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { useConfirm } from "../../../components/confirmer/confirmer-context";
 import { Container } from "../../../linker";
+import { withLok } from "../../../lok/LokContext";
 import { useReleaseQuery } from "../../../lok/api/graphql";
-import { withMan } from "../../../lok/man";
 import { MateFinder } from "../../../mates/types";
 import { ContainerStatus, ListContainerFragment } from "../../api/graphql";
 
@@ -37,7 +37,7 @@ export const containerStateToStyle = (
 export const ContainerCard = ({ container, mates }: UserCardProps) => {
   const { confirm } = useConfirm();
 
-  const { data } = withMan(useReleaseQuery)({
+  const { data } = withLok(useReleaseQuery)({
     variables: {
       identifier: container?.whale?.deployment?.identifier,
       version: container?.whale?.deployment?.version,

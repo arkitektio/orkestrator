@@ -8,12 +8,12 @@ import { TbHistory, TbLayoutDashboard } from "react-icons/tb";
 import { TiArrowUp, TiFlowSwitch } from "react-icons/ti";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { FlussGuard } from "../../fluss/guard";
-import { ManGuard } from "../../lok/guard";
+import { LokGuard } from "../../lok/LokGuard";
 import { MikroGuard } from "../../mikro/MikroGuard";
 import { MikroNextGuard } from "../../mikro_next/MikroNextGuard";
 import { PortGuard } from "../../port/PortGuard";
-import { ExperimentalFeature } from "../../providers/experimental/Experimental";
 import { RekuestGuard } from "../../rekuest/RekuestGuard";
+import { ExperimentalFeature } from "../../settings/Experimental";
 import { TauriGuard } from "../../tauri/guard";
 import { Back } from "./Back";
 import { Logo } from "./Logo";
@@ -146,7 +146,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               <GrDocker />
             </NavLink>
           </PortGuard>
-          <ManGuard>
+          <LokGuard>
             <NavLink
               key={"Teams"}
               to={"lok"}
@@ -157,7 +157,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             >
               <AiOutlineTeam />
             </NavLink>
-          </ManGuard>
+          </LokGuard>
           <NavLink
             to={"/user/settings"}
             className={({ isActive }) =>
@@ -191,7 +191,9 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             </IconContext.Provider>
           </TauriGuard>
         </ExperimentalFeature>
-        <UserIcon />
+        <LokGuard>
+          <UserIcon />
+        </LokGuard>
       </div>
     </div>
   );

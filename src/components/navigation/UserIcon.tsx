@@ -1,4 +1,5 @@
 import { Popover } from "@headlessui/react";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "@jhnnsrs/herre";
 import React, { useState } from "react";
@@ -8,9 +9,8 @@ import {
   NotificationCenterItem,
   useNotificationCenter,
 } from "react-toastify/addons/use-notification-center";
+import { withLok } from "../../lok/LokContext";
 import { useProfileQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/context";
-import { useMikro } from "../../mikro/MikroContext";
 import { useAgent } from "../../rekuest/agent/AgentContext";
 import { useAlert } from "../alerter/alerter-context";
 
@@ -55,7 +55,7 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
     unreadCount,
   } = useNotificationCenter();
 
-  const { data } = withMan(useProfileQuery)();
+  const { data } = withLok(useProfileQuery)();
   const [referenceElement, setReferenceElement] =
     useState<HTMLButtonElement | null>(null);
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(
@@ -66,7 +66,7 @@ export const UserIcon: React.FC<Props> = (props: Props) => {
     placement: "right-end",
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   const { alert } = useAlert();
 
   return (

@@ -7,8 +7,8 @@ import { useDialog } from "../../layout/dialog/DialogProvider";
 import { Node } from "../../linker";
 import { withRekuest } from "../../rekuest";
 import { ReservationStatus, useNodesQuery } from "../../rekuest/api/graphql";
-import { useRequester } from "../../rekuest/postman/requester/requester-context";
-import { useReserver } from "../../rekuest/postman/reserver/reserver-context";
+import { useRequester } from "../../rekuest/providers/requester/requester-context";
+import { useReserver } from "../../rekuest/providers/reserver/reserver-context";
 import { useEditRiver } from "./context";
 
 export interface EditActionsProps {

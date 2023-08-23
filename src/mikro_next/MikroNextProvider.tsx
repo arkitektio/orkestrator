@@ -8,23 +8,34 @@ export type MikroProps = {
   children: React.ReactNode;
 };
 
-export const MikroNextProvider: React.FC<MikroProps> = ({ children }) => {
-  const [client, setClient] = useState<
-    ApolloClient<NormalizedCacheObject> | undefined
-  >();
-  const [config, setConfig] = useState<MikroConfig>();
+export type ConfigState = {
+  config?: MikroConfig;
+  client?: ApolloClient<NormalizedCacheObject>;
+};
 
-  const configure = (config: MikroConfig) => {
-    setConfig(config);
-    setClient(createMikroNextClient(config));
+export const MikroNextProvider: React.FC<MikroProps> = ({ children }) => {
+  const [config, setConfig] = useState<ConfigState>({
+    config: undefined,
+    client: undefined,
+  });
+
+  const configure = (config?: MikroConfig) => {
+    if (!config) {
+      setConfig({
+        config: undefined,
+        client: undefined,
+      });
+      return;
+    }
+
+    setConfig({ config: config, client: createMikroNextClient(config) });
   };
 
   return (
     <MikroNextContext.Provider
       value={{
-        client: client,
         configure: configure,
-        config: config,
+        ...config,
       }}
     >
       {children}

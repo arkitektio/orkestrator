@@ -1,12 +1,12 @@
 import { Release } from "../../linker";
 import { useReleaseQuery } from "../api/graphql";
-import { withMan } from "../man";
+import { withLok } from "../LokContext";
 
 export const ReleaseEmblem: React.FC<{
   version: string;
   identifier: string;
 }> = ({ version, identifier }) => {
-  const { data, error } = withMan(useReleaseQuery)({
+  const { data, error } = withLok(useReleaseQuery)({
     variables: { identifier, version },
   });
 

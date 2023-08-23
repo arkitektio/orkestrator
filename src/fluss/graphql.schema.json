@@ -9907,6 +9907,18 @@
             "deprecationReason": null
           },
           {
+            "name": "DELAY",
+            "description": "DELAY (Delay the data)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "DELAY_UNTIL",
+            "description": "DELAY_UNTIL (Delay the data until signal is send)",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "DIVIDE",
             "description": "DIVIDE (Divide the data with a number)",
             "isDeprecated": false,

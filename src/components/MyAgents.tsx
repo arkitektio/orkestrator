@@ -5,9 +5,9 @@ import { SectionTitle } from "../layout/SectionTitle";
 import { useBounceAgentMate } from "../mates/agent/useBounceAgentMate";
 import { useDeleteAgentMate } from "../mates/agent/useDeleteAgentMate";
 import { useKickAgentMate } from "../mates/agent/useKickAgentMate";
-import { ListAgentFragment } from "../rekuest/api/graphql";
+import { withRekuest } from "../rekuest";
+import { ListAgentFragment, useMyAgentsQuery } from "../rekuest/api/graphql";
 import { AgentCard } from "../rekuest/components/cards/AgentCard";
-import { usePostman } from "../rekuest/postman/graphql/postman-context";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 
 export type IActiveClientsProps = {};
@@ -15,8 +15,11 @@ export type IActiveClientsProps = {};
 export const AgentItem = ({ agent }: { agent: ListAgentFragment }) => {};
 
 const MyAgents: React.FC<IActiveClientsProps> = ({}) => {
-  const { agents: data } = usePostman();
   const navigate = useNavigate();
+
+  const { data } = withRekuest(useMyAgentsQuery)({
+    fetchPolicy: "cache-and-network",
+  });
 
   const kickagent = useKickAgentMate();
   const bounceagent = useBounceAgentMate();

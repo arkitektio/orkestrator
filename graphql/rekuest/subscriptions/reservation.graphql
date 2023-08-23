@@ -7,14 +7,14 @@ subscription WatchReservation($id: ID!) {
   }
 }
 
-subscription WatchReservations($identifier: String!) {
-  reservations(identifier: $identifier) {
+subscription WatchReservations($instanceId: String!) {
+  reservations(instanceId: $instanceId) {
     create {
-      ...ListReservation
+      ...PostmanReservation
     }
     delete
     update {
-      ...ListReservation
+      ...PostmanReservation
     }
   }
 }
@@ -32,10 +32,10 @@ subscription WatchMyReservations {
 }
 
 subscription WatchReservationsOnProvision(
-  $identifier: String!
+  $instanceId: String!
   $provision: String!
 ) {
-  reservations(identifier: $identifier, provision: $provision) {
+  reservations(instanceId: $instanceId, provision: $provision) {
     create {
       ...ListReservation
     }

@@ -1,8 +1,8 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import React, { useState } from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import { withLok } from "../../lok/LokContext";
 import { useAppQuery, useUserQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/man";
-import { useMikro } from "../../mikro/MikroContext";
 import { ReservableTemplateFragment } from "../api/graphql";
 import { StatusPulse } from "./generic/StatusPulse";
 
@@ -11,11 +11,11 @@ interface TemplatesDisplayProps {
 }
 
 export const UserImage: React.FC<{ sub: string }> = ({ sub }) => {
-  const { data, error } = withMan(useUserQuery)({
+  const { data, error } = withLok(useUserQuery)({
     variables: { id: sub },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   return (
     <>
       {data?.user?.id && (
@@ -34,11 +34,11 @@ export const UserImage: React.FC<{ sub: string }> = ({ sub }) => {
 };
 
 export const App: React.FC<{ clientId: string }> = ({ clientId }) => {
-  const { data, error } = withMan(useAppQuery)({
+  const { data, error } = withLok(useAppQuery)({
     variables: { clientId: clientId },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   return (
     <div>
       {data?.app?.logo && (

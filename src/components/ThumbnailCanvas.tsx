@@ -1,17 +1,17 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { decode } from "blurhash";
 import React from "react";
 import { Layer, Line, Stage, Text } from "react-konva";
 import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
 import { Roi } from "../linker";
+import { withLok } from "../lok/LokContext";
 import { useUserQuery } from "../lok/api/graphql";
-import { withMan } from "../lok/man";
 import {
   DetailRepresentationFragment,
   RepRoiFragment,
   RoiType,
 } from "../mikro/api/graphql";
-import { useMikro } from "../mikro/MikroContext";
 
 interface ThumbnailCanvasProps {
   rep: DetailRepresentationFragment;
@@ -32,7 +32,7 @@ export const RoiLabel = ({
   roi: RepRoiFragment;
   translate: any;
 }) => {
-  const { data, error } = withMan(useUserQuery)({
+  const { data, error } = withLok(useUserQuery)({
     variables: { id: roi.creator?.sub },
   });
 
@@ -64,7 +64,7 @@ export const ThumbnailCanvas = ({
   const [highlight, setHighlight] = React.useState<RepRoiFragment | undefined>(
     undefined
   );
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   const translate = (
     x: number | null | undefined,

@@ -4,7 +4,7 @@ import { MikroClient, MikroConfig } from "./types";
 
 export type MikroContextType = {
   client?: MikroClient;
-  configure: (config: MikroConfig) => void;
+  configure: (config: MikroConfig | undefined) => void;
   config?: MikroConfig;
 };
 

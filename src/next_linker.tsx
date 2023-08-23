@@ -1,15 +1,15 @@
 import React from "react";
 import { NavLink, NavLinkProps } from "react-router-dom";
+import { Identifier } from "./mates/types";
 import { LinkableModels } from "./mikro/api/graphql";
-import { Accept, Identifier } from "./rekuest/postman/mater/mater-context";
 import {
   ClassNameOptions,
   SmartModel,
   SmartModelProps,
 } from "./rekuest/selection/SmartModel";
 
-export interface CreatedSmartSmartProps<T extends Accept>
-  extends Omit<SmartModelProps<T>, "accepts" | "identifier"> {
+export interface CreatedSmartSmartProps
+  extends Omit<SmartModelProps, "accepts" | "identifier"> {
   object: string;
   dropClassName?: (props: ClassNameOptions) => string;
   dragClassName?: (props: ClassNameOptions) => string;
@@ -18,18 +18,14 @@ export interface CreatedSmartSmartProps<T extends Accept>
   children: React.ReactNode;
 }
 
-export type CreatedSmartProps<T extends Accept> = Omit<
-  SmartModelProps<T>,
-  "accepts" | "identifier"
->;
+export type CreatedSmartProps = Omit<SmartModelProps, "accepts" | "identifier">;
 
-export const buildSmartModel = <T extends Accept>(
-  identifier: Identifier,
-  accepts: T[]
-): React.FC<CreatedSmartProps<T>> => {
+export const buildSmartModel = (
+  identifier: Identifier
+): React.FC<CreatedSmartProps> => {
   return ({ children, ...props }) => {
     return (
-      <SmartModel accepts={accepts} identifier={identifier} {...props}>
+      <SmartModel identifier={identifier} {...props}>
         {children}
       </SmartModel>
     );
@@ -64,40 +60,28 @@ export type OmitedNavLinkProps = Omit<NavLinkProps, "to">;
 export type BaseLinkProps = OmitedNavLinkProps;
 export type ModelLinkProps = OmitedNavLinkProps & { object: string };
 
-const buildBaseLink = (model: Identifier, to: string) => {
+const buildBaseLink = (to: string) => {
   return ({ children, ...props }: BaseLinkProps) => {
     return (
-      <NavLink {...props} to={`/user/${getModelBase(model)}/${to}`}>
+      <NavLink {...props} to={`/user/${to}`}>
         {children}
       </NavLink>
     );
   };
 };
 
-const buildModelLink = (model: Identifier, to: string) => {
+const buildModelLink = (to: string) => {
   return ({ children, ...props }: ModelLinkProps) => {
     return (
-      <NavLink
-        {...props}
-        to={`/user/${getModelBase(model)}/${to}/${props.object}`}
-        title="Open"
-      >
+      <NavLink {...props} to={`/user/${to}/${props.object}`} title="Open">
         {children}
       </NavLink>
     );
   };
 };
 
-const linkBuilder = (model: Identifier, to: string) => (object: string) => {
-  return `/user/${getModelBase(model)}/${to}/${object}`;
-};
-
-const buildLinks = (model: Identifier, to: string) => {
-  return [
-    buildBaseLink(model, to),
-    buildModelLink(model, to),
-    linkBuilder(model, to),
-  ];
+const linkBuilder = (to: string) => (object: string) => {
+  return `/user/${to}/${object}`;
 };
 
 export const buildModuleLink = (module: string) => {
@@ -129,150 +113,50 @@ export const GlobalLink = ({
   );
 };
 
-export const buildSmart = <T extends Accept>(
-  model: Identifier,
-  to: string,
-  accepts: T[]
-) => {
-  x[model] = linkBuilder(model, to);
+export const buildSmart = (model: Identifier, to: string) => {
+  x[model] = linkBuilder(to);
 
   return {
-    DetailLink: buildModelLink(model, to),
-    ListLink: buildBaseLink(model, to),
-    linkBuilder: linkBuilder(model, to),
-    Smart: buildSmartModel<T>(model, accepts),
+    DetailLink: buildModelLink(to),
+    ListLink: buildBaseLink(to),
+    linkBuilder: linkBuilder(to),
+    Smart: buildSmartModel(model),
   };
 };
 
 export const Assignation = buildSmart(
   "@rekuestnext/assignation",
-  "assignation",
-  [
-    "list:@mikro/sample",
-    "item:@mikro/sample",
-    "list:@mikro/model",
-    "item:@mikro/model",
-    "list:@mikro/experiment",
-    "item:@mikro/experiment",
-    "list:@mikro/representation",
-    "item:@mikro/representation",
-  ]
+  "assignation"
 );
 
-export const Image = buildSmart("@mikronext/image", "images", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Image = buildSmart("@mikronext/image", "mikronext/images");
 
-export const Metric = buildSmart("@mikronext/metric", "images", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Metric = buildSmart("@mikronext/metric", "mikronext/metrics");
 
-export const Dataset = buildSmart("@mikronext/dataset", "datasets", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Dataset = buildSmart("@mikronext/dataset", "mikronext/datasets");
 
-export const History = buildSmart("@mikronext/history", "history", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const History = buildSmart("@mikronext/history", "mikronext/history");
 
 export const TransformationView = buildSmart(
   "@mikronext/transformationview",
-  "transformationviews",
-  [
-    "list:@mikro/sample",
-    "item:@mikro/sample",
-    "list:@mikro/model",
-    "item:@mikro/model",
-    "list:@mikro/experiment",
-    "item:@mikro/experiment",
-    "list:@mikro/representation",
-    "item:@mikro/representation",
-  ]
+  "transformationviews"
 );
 
-export const LabelView = buildSmart("@mikronext/labelview", "labelviews", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const LabelView = buildSmart(
+  "@mikronext/labelview",
+  "mikronext/labelviews"
+);
 
-export const File = buildSmart("@mikronext/file", "files", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const File = buildSmart("@mikronext/file", "mikronext/files");
 
-export const Stage = buildSmart("@mikronext/stage", "stages", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Stage = buildSmart("@mikronext/stage", "mikronext/stages");
 
 export const ChannelView = buildSmart(
   "@mikronext/channelview",
-  "channelviews",
-  [
-    "list:@mikro/sample",
-    "item:@mikro/sample",
-    "list:@mikro/model",
-    "item:@mikro/model",
-    "list:@mikro/experiment",
-    "item:@mikro/experiment",
-    "list:@mikro/representation",
-    "item:@mikro/representation",
-  ]
+  "mikronext/channelviews"
 );
 
-export const OpticsView = buildSmart("@mikronext/opticsview", "opticsviews", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const OpticsView = buildSmart(
+  "@mikronext/opticsview",
+  "mikronext/opticsviews"
+);

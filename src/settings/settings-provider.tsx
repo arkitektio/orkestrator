@@ -18,6 +18,7 @@ const settingsValidator = yup.object().shape({
   defaultColormap: yup.string().required(),
   defaultMaskColormap: yup.string().required(),
   pollInterval: yup.number().required(),
+  instanceId: yup.string().required(),
 });
 
 export const SettingsProvider: React.FC<SettingsProps> = ({
@@ -32,6 +33,7 @@ export const SettingsProvider: React.FC<SettingsProps> = ({
     defaultColormap: "viridis",
     defaultMaskColormap: "viridis",
     pollInterval: 3000,
+    instanceId: "main",
   },
 }) => {
   const [settings, setSettings] = useState<Settings | undefined>(undefined);
@@ -93,11 +95,7 @@ export const SettingsProvider: React.FC<SettingsProps> = ({
       } else {
         console.log("Could not load settings from local storage");
         // settings the defaults if no settings are found in local storage
-        if (fakts.wasser) {
-          setSettings(fakts.wasser);
-        } else {
-          setSettings(defaultSettings);
-        }
+        setSettings(defaultSettings);
       }
     };
 

@@ -1,36 +1,21 @@
 import React, { useEffect, useState } from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsDownload,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { ImCancelCircle } from "react-icons/im";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
-import { Mate } from "../rekuest/postman/mater/mater-context";
+import { BsCaretLeft, BsCaretRight } from "react-icons/bs";
+import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { MikroFile } from "../linker";
+import { useDeleteFileMate } from "../mates/file/useDeleteFileMate";
+import { useDownloadFileMate } from "../mates/file/useDownloadFileMate";
+import { withMikro } from "../mikro/MikroContext";
 import {
   MyOmeroFilesDocument,
-  MyOmeroFilesQuery,
-  MyOmeroFilesQueryVariables,
-  useDeleteOmeroFileMutation,
   useMyOmeroFilesQuery,
   useUploadOmeroFileMutation,
 } from "../mikro/api/graphql";
-import { useMikro, withMikro } from "../mikro/MikroContext";
-import { useConfirm } from "./confirmer/confirmer-context";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { preventOverflow } from "@popperjs/core";
-import { Icons } from "react-toastify";
-import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
-import { DataHomeFilterParams } from "../pages/data/Home";
-import { notEmpty } from "../floating/utils";
 import { FileCard } from "../mikro/components/cards/FileCard";
-import { useDownloadFileMate } from "../mates/file/useDownloadFileMate";
-import { useDeleteFileMate } from "../mates/file/useDeleteFileMate";
+import { DataHomeFilterParams } from "../pages/data/Home";
+import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 export type IMyRepresentationsProps = {};
 
 const limit = 20;
@@ -57,7 +42,7 @@ const MyFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
   const [uploadFutures, setUploadFutures] = useState<UploadFuture[]>([]);
   const [pendingFutures, setPendingFutures] = useState<UploadFuture[]>([]);
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   const variables = { limit: limit, offset: 0, createdDay: createdDay };
 

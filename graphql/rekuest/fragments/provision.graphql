@@ -1,8 +1,12 @@
-fragment DetailProvision on Provision {
+fragment PostmanProvision on Provision {
   statusmessage
   status
   id
   reference
+}
+
+fragment DetailProvision on Provision {
+  ...PostmanProvision
   params {
     autoUnprovide
   }
@@ -74,9 +78,7 @@ fragment DetailProvision on Provision {
 }
 
 fragment ListProvision on Provision {
-  status
-  id
-  reference
+  ...PostmanProvision
   template {
     id
     interface

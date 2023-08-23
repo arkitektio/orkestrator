@@ -1,15 +1,14 @@
-import { Link } from "react-router-dom";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { User } from "../../linker";
-import { useMikro, withMikro } from "../../mikro/MikroContext";
+import { withLok } from "../LokContext";
 import { useUserQuery } from "../api/graphql";
-import { withMan } from "../man";
 
 export const UserEmblem: React.FC<{ sub: string }> = ({ sub }) => {
-  const { data, error } = withMan(useUserQuery)({
+  const { data, error } = withLok(useUserQuery)({
     variables: { id: sub },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   return (
     <div className=" text-sm absolute right-0 bottom-0 translate-x-2 translate-y-2">
       {data?.user?.id && (

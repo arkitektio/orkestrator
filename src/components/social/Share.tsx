@@ -1,30 +1,30 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { FieldArray, Form, Formik } from "formik";
 import React from "react";
 import { Link } from "react-router-dom";
 import { notEmpty } from "../../floating/utils";
+import { withLok } from "../../lok/LokContext";
 import {
   useDetailGroupQuery,
   useGroupOptionsLazyQuery,
   useUserOptionsLazyQuery,
   useUserQuery,
 } from "../../lok/api/graphql";
-import { withMan } from "../../lok/context";
+import { useMikro, withMikro } from "../../mikro/MikroContext";
 import {
-  CommentableModels,
   ChangePermissionsMutationVariables,
+  SharableModels,
   useChangePermissionsMutation,
   usePermissionsOfQuery,
-  SharableModels,
 } from "../../mikro/api/graphql";
-import { useMikro, withMikro } from "../../mikro/MikroContext";
-import { GraphQLSearchInput, SearchInput } from "../forms/fields/SearchInput";
+import { GraphQLSearchInput } from "../forms/fields/SearchInput";
+import { SubmitButton } from "../forms/fields/SubmitButton";
 import { SearchSelectInput } from "../forms/fields/search_select_input";
 import { SelectInputField } from "../forms/fields/select_input";
-import { SubmitButton } from "../forms/fields/SubmitButton";
 
 export const PermissionUserInfo = (props: { id: string }) => {
-  const { data } = withMan(useUserQuery)({ variables: { id: props.id } });
-  const { s3resolve } = useMikro();
+  const { data } = withLok(useUserQuery)({ variables: { id: props.id } });
+  const { s3resolve } = useDatalayer();
 
   return (
     <div className="flex-row flex ">
@@ -53,7 +53,7 @@ export const PermissionUserInfo = (props: { id: string }) => {
 };
 
 export const PermisionGroupInfo = (props: { id: string }) => {
-  const { data } = withMan(useDetailGroupQuery)({
+  const { data } = withLok(useDetailGroupQuery)({
     variables: { id: props.id },
   });
   const { s3resolve } = useMikro();
@@ -86,8 +86,8 @@ export const Share: React.FC<{
   title?: string;
   object: string;
 }> = ({ type, object, title }) => {
-  const [searchGroups] = withMan(useGroupOptionsLazyQuery)();
-  const [searchUsers] = withMan(useUserOptionsLazyQuery)();
+  const [searchGroups] = withLok(useGroupOptionsLazyQuery)();
+  const [searchUsers] = withLok(useUserOptionsLazyQuery)();
 
   const [changePermissions] = withMikro(useChangePermissionsMutation)();
 

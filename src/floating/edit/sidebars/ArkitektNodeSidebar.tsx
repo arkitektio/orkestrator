@@ -9,6 +9,7 @@ import {
   useHashReservableTemplatesQuery,
 } from "../../../rekuest/api/graphql";
 import { ConstantsForm } from "../../../rekuest/components/ConstantsForm";
+import { NodeDescription } from "../../../rekuest/components/NodeDescription";
 import { ReserveParamsField } from "../../../rekuest/components/ReserveParamsField";
 import { ChangeSubmitHelper } from "../../../rekuest/ui/helpers/ChangeSubmitter";
 import { ArkitektNodeData, FlowNode } from "../../types";
@@ -56,10 +57,6 @@ export const ArkitektNodeSidebar = (
       <div className="px-5 py-5 flex flex-col h-full">
         <div className="text-white text-xl"> {node_data?.node?.name}</div>
 
-        <div className="text-white text-cl mt-4">
-          {" "}
-          {node_data?.node?.description}
-        </div>
         <div className="text-white mt-5">Constants</div>
         <div className="text-white text-cl mt-4">
           {node_data?.node?.id && (
@@ -74,6 +71,20 @@ export const ArkitektNodeSidebar = (
                 });
               }}
               initial={props.node.data.defaults}
+              prependChildren={(formikProps) => {
+                return (
+                  <>
+                    <div className="text-sm mb-2">
+                      {node_data?.node?.description != undefined && (
+                        <NodeDescription
+                          description={node_data?.node?.description}
+                          variables={formikProps.values}
+                        />
+                      )}
+                    </div>
+                  </>
+                );
+              }}
             />
           )}
         </div>

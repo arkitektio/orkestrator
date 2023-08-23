@@ -1,14 +1,13 @@
-import { getDefaultSmartModel, User } from "../../linker";
+import { User } from "../../linker";
 import { useUserQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/man";
-import { AdditionalMate } from "../../rekuest/postman/mater/mater-context";
+import { withLok } from "../../lok/LokContext";
 import { MentionType } from "../types";
 
 export const Mention = (props: { element: MentionType }) => {
   if (!props.element.user.sub) {
     return <>Illl configured</>;
   }
-  const { data, error } = withMan(useUserQuery)({
+  const { data, error } = withLok(useUserQuery)({
     variables: { id: props.element.user.sub },
   });
 

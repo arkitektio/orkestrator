@@ -6,7 +6,7 @@ import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Provision } from "../../linker";
 import { useReleaseQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/context";
+import { withLok } from "../../lok/LokContext";
 import { withRekuest } from "../../rekuest";
 import {
   useClientProvisionsQuery,
@@ -63,7 +63,7 @@ export const AgentInformation = (props: {
 };
 
 export const AppInformation = (props: { clientId: string }) => {
-  const { data, error } = withMan(useReleaseQuery)({
+  const { data, error } = withLok(useReleaseQuery)({
     variables: { clientId: props.clientId },
   });
 

@@ -7,11 +7,11 @@ export const useDownloadFileMate = (): ((
 ) => MateFinder) => {
   const { s3resolve } = useDatalayer();
 
-  return (filepath: string | undefined) => (type, isSelf) =>
-    isSelf
+  return (filepath: string | undefined) => async (options) =>
+    options.partnersIncludeSelf
       ? [
           {
-            action: async (self, partner) => {
+            action: async (event) => {
               filepath && window.open(s3resolve(filepath));
             },
             label: <BsDownload />,

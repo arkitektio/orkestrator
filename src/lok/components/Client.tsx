@@ -1,18 +1,18 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { PageLayout } from "../../layout/PageLayout";
 import { useDialog } from "../../layout/dialog/DialogProvider";
+import { withLok } from "../LokContext";
 import {
   ApplicationAuthorizationGrantType,
   useDetailClientQuery,
 } from "../api/graphql";
-import { withMan } from "../man";
 
 export type AppProps = {
   id: string;
 };
 
 export const Client: React.FC<AppProps> = (props) => {
-  const { data } = withMan(useDetailClientQuery)({
+  const { data } = withLok(useDetailClientQuery)({
     variables: { id: props.id },
   });
 

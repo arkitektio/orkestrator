@@ -37,6 +37,7 @@ fragment DetailTemplate on Template {
 fragment ReservableTemplate on Template {
   id
   name
+  interface
   node {
     scope
     id

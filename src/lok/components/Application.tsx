@@ -5,7 +5,7 @@ import {
 } from "../../lok/api/graphql";
 import { withRekuest } from "../../rekuest";
 import { AgentStatus, useAgentsQuery } from "../../rekuest/api/graphql";
-import { withMan } from "../man";
+import { withLok } from "../LokContext";
 
 export type IAppProps = {
   clientId: string;
@@ -18,7 +18,7 @@ const isBackendApp = (
 };
 
 const Application: React.FC<IAppProps> = ({ clientId }) => {
-  const { data } = withMan(useDetailClientQuery)({
+  const { data } = withLok(useDetailClientQuery)({
     variables: { clientId: clientId },
   });
 

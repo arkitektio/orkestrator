@@ -1,22 +1,14 @@
 import React from "react";
-import {
-  SharableModels,
-  useUserQuery as useArkitektUserQuery,
-} from "../../rekuest/api/graphql";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
-import { Modal } from "../../components/modals/Modal";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
-import { Team } from "../../linker";
-import { useRepresentationsForUserQuery } from "../../mikro/api/graphql";
-import { useMikro, withMikro } from "../../mikro/MikroContext";
-import { useDetailUserQuery } from "../api/graphql";
-import { withMan } from "../man";
-import { withRekuest } from "../../rekuest";
 import { useDialog } from "../../layout/dialog/DialogProvider";
-import { ChangeUserDialog } from "../components/dialogs/ChangeUserDialog";
-import { userInfo } from "os";
+import { useMikro, withMikro } from "../../mikro/MikroContext";
+import { useRepresentationsForUserQuery } from "../../mikro/api/graphql";
+import { withLok } from "../LokContext";
+import { useDetailUserQuery } from "../api/graphql";
 import { TeamCard } from "../components/cards/TeamCard";
+import { ChangeUserDialog } from "../components/dialogs/ChangeUserDialog";
 
 export type UserProps = {
   id: string;
@@ -46,7 +38,7 @@ export const ManageMikro = ({ email }: { email: string }) => {
 };
 
 const User: React.FC<UserProps> = ({ id }) => {
-  const { data } = withMan(useDetailUserQuery)({
+  const { data } = withLok(useDetailUserQuery)({
     variables: { id: id },
   });
   const { s3resolve } = useMikro();

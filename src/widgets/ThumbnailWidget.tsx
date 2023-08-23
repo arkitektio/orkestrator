@@ -2,8 +2,8 @@ import { useDatalayer } from "@jhnnsrs/datalayer";
 import { OptimizedImage } from "../layout/OptimizedImage";
 import { withMikro } from "../mikro/MikroContext";
 import { useDetailThumbnailQuery } from "../mikro/api/graphql";
-import { ExperimentalFeature } from "../providers/experimental/Experimental";
 import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
+import { ExperimentalFeature } from "../settings/Experimental";
 
 export const ThumbnailWidget: React.FC<StructureDisplayProps> = ({
   value,

@@ -1,32 +1,26 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { App, Container } from "../../linker";
+import { withLok } from "../../lok/LokContext";
 import { useAppQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/man";
-import { useMikro } from "../../mikro/MikroContext";
-import {
-  useDetailContainerQuery,
-  useStopContainerMutation,
-  useRestartContainerMutation,
-  useRemoveContainerMutation,
-  useDetailWhaleQuery,
-} from "../api/graphql";
 import { withPort } from "../PortContext";
+import { useDetailWhaleQuery } from "../api/graphql";
 
 export type WhaleProps = {
   id: string;
 };
 
 export const AppInfo = (props: { clientId: string }) => {
-  const { data: appdata } = withMan(useAppQuery)({
+  const { data: appdata } = withLok(useAppQuery)({
     variables: {
       clientId: props.clientId,
     },
     fetchPolicy: "cache-first",
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   return (
     <>

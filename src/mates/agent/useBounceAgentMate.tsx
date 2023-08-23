@@ -12,11 +12,11 @@ export const useBounceAgentMate = (): AgentKickeMater => {
   const { confirm } = useConfirm();
 
   const [bounce] = withRekuest(useBounceAgentMutation)();
-  return (agent: { id: string; __typename?: "Agent" }) => (type, isSelf) => {
-    if (isSelf) {
+  return (agent: { id: string; __typename?: "Agent" }) => async (options) => {
+    if (options.partnersIncludeSelf) {
       return [
         {
-          action: async (self, drops) => {
+          action: async (event) => {
             await confirm({
               message: "Bounce agent",
               subtitle:

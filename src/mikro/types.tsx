@@ -17,7 +17,6 @@ export type MikroConfig = {
   secure: boolean;
   datalayer: S3Config;
   retrieveToken: () => string;
-  s3resolve: (path?: string | null) => string;
   possibleTypes?: PossibleTypesMap;
 };
 

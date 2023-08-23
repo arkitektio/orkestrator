@@ -4,7 +4,7 @@ import { ActionButton } from "../layout/ActionButton";
 import { Reservation } from "../linker";
 import { withRekuest } from "../rekuest";
 import { useDeleteNodeMutation } from "../rekuest/api/graphql";
-import { useReserver } from "../rekuest/postman/reserver/reserver-context";
+import { useReserver } from "../rekuest/providers/reserver/reserver-context";
 
 export interface NodeActionsProps {
   node?: { id?: string } | null;

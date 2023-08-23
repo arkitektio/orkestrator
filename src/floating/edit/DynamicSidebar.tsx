@@ -16,10 +16,10 @@ export const DynamicSidebar = () => {
 
   useEffect(() => {
     if (selectedNode) {
-      console.warn(selectedNode, internalSignal);
-      const n = nodes.find((n) => n.id === selectedNode);
-      if (!n) return;
-      setNode(n);
+      if (selectedNode != node?.id) {
+        let node = nodes.find((s) => s?.id == selectedNode);
+        if (node) setNode(node);
+      }
     } else {
       setNode(null);
     }

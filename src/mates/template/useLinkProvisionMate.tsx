@@ -8,14 +8,14 @@ export const useProvideMate = () => {
 
   const [link] = withRekuest(useProvideMutation)();
   return (res: { id: string }): MateFinder =>
-    (type, isSelf) => {
-      if (isSelf) {
+    async (options) => {
+      if (options.justSelf) {
         return [
           {
-            action: async (self, drops) => {
+            action: async (event) => {
               await link({
                 variables: {
-                  template: self?.object,
+                  template: event.self.id,
                 },
               });
             },

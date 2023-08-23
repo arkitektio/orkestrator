@@ -1,5 +1,5 @@
 import { useDrop } from "react-dnd";
-import { Accept } from "../../rekuest/postman/mater/mater-context";
+import { Accept } from "../../rekuest/providers/mater/mater-context";
 import { DropObject } from "../../rekuest/selection/SmartModel";
 
 export type DropZoneProps = {

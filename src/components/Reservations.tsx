@@ -2,14 +2,22 @@ import React from "react";
 import { notEmpty } from "../floating/utils";
 import { Reservation } from "../linker";
 import { useRequesterMate } from "../mates/reservation/useRequesterMate";
+import { withRekuest } from "../rekuest";
+import { useReservationsQuery } from "../rekuest/api/graphql";
 import { ReservationCard } from "../rekuest/components/cards/ReservationCard";
-import { useReserver } from "../rekuest/postman/reserver/reserver-context";
+import { useSettings } from "../settings/settings-context";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 
 export type IMyReservationsProps = {};
 
 const Reservations: React.FC<IMyReservationsProps> = () => {
-  const { reservations } = useReserver();
+  const { settings } = useSettings();
+  const { data } = withRekuest(useReservationsQuery)({
+    fetchPolicy: "cache-and-network",
+    variables: {
+      instanceId: settings.instanceId,
+    },
+  });
   const requesterMate = useRequesterMate();
 
   return (
@@ -19,7 +27,7 @@ const Reservations: React.FC<IMyReservationsProps> = () => {
       </Reservation.ListLink>
       <div className="mt-2 mb-4">
         <ResponsiveContainerGrid>
-          {reservations?.reservations?.filter(notEmpty).map((res, index) => (
+          {data?.reservations?.filter(notEmpty).map((res, index) => (
             <ReservationCard
               key={index}
               reservation={res}

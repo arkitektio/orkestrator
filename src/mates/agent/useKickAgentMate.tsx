@@ -12,11 +12,11 @@ export const useKickAgentMate = (): AgentKickeMater => {
   const { confirm } = useConfirm();
 
   const [kick] = withRekuest(useKickAgentMutation)();
-  return (agent: { id: string; __typename?: "Agent" }) => (type, isSelf) => {
-    if (isSelf) {
+  return (agent: { id: string; __typename?: "Agent" }) => async (options) => {
+    if (options.partnersIncludeSelf) {
       return [
         {
-          action: async (self, drops) => {
+          action: async (event) => {
             await confirm({
               message: "Kick agent",
               subtitle: "Are you sure you want to kick this agent?",

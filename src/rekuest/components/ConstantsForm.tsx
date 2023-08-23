@@ -1,4 +1,10 @@
-import { Form, Formik, FormikHelpers, useFormikContext } from "formik";
+import {
+  Form,
+  Formik,
+  FormikHelpers,
+  FormikProps,
+  useFormikContext,
+} from "formik";
 import { Maybe } from "graphql/jsutils/Maybe";
 import { ReactNode, useEffect, useState } from "react";
 import * as Yup from "yup";
@@ -25,7 +31,12 @@ export type ConstantsFormProps = {
   hide?: string[];
   disable?: string[];
   autoSubmit: boolean;
-  children?: React.ReactNode;
+  prependChildren?:
+    | React.ReactNode
+    | ((formikProps: FormikProps<any>) => React.ReactNode);
+  children?:
+    | React.ReactNode
+    | ((formikProps: FormikProps<any>) => React.ReactNode);
   initial?: { [key: string]: any };
   onSubmit?: (
     values_as_array: any[],
@@ -209,7 +220,7 @@ export const port_to_validation = (port: PortFragment): Yup.AnySchema => {
       baseType = Yup.object({
         use: Yup.number().typeError(`Please select a valid choice`),
         value: Yup.mixed().typeError(`Please select a valid union`),
-  }).typeError(`Please select a valid union`);
+      }).typeError(`Please select a valid union`);
       break;
     case PortKind.Bool:
       baseType = Yup.boolean().typeError("Please select true or false");
@@ -307,6 +318,7 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
   onSubmit,
   autoSubmit,
   children,
+  prependChildren,
   hide,
   disable,
   omit,
@@ -315,6 +327,8 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
     variables: { id: node },
     fetchPolicy: "cache-and-network",
   });
+
+  // Check if the children are a render function
 
   console.log("NODE", data);
   let initialValues = {
@@ -373,7 +387,7 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
       enableReinitialize
       initialValues={initialValues}
       onSubmit={async (values, formikHelpers) => {
-        console.log("Submiitin in as constants", values)
+        console.log("Submiitin in as constants", values);
         values = schema.cast(values);
         let set_values = unsetArgs.map((arg) => values[arg?.key || "test"]);
         console.log(values, set_values);
@@ -387,6 +401,8 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
       {(formikProps) => (
         <Form>
           {autoSubmit && <ChangeSubmitHelper debounce={500} />}
+          {typeof prependChildren == "function" && prependChildren(formikProps)}
+          {typeof prependChildren != "function" && prependChildren}
           <FittingResponsiveContainerGrid
             fitLength={mappedPortGroupsWithUngrouped?.length || 0}
           >
@@ -394,7 +410,8 @@ const ConstantsForm: React.FC<ConstantsFormProps> = ({
               <GroupRender key={index} group={group} disable={disable} />
             ))}
           </FittingResponsiveContainerGrid>
-          {children && children}
+          {typeof children == "function" && children(formikProps)}
+          {typeof children != "function" && children}
         </Form>
       )}
     </Formik>

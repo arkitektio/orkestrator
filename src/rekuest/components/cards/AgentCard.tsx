@@ -1,7 +1,7 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { Agent } from "../../../linker";
+import { withLok } from "../../../lok/LokContext";
 import { useDetailClientQuery } from "../../../lok/api/graphql";
-import { withMan } from "../../../lok/context";
 import { MateFinder } from "../../../mates/types";
 import { withRekuest } from "../../RekuestContext";
 import {
@@ -17,7 +17,7 @@ interface TemplateCardProps {
 
 export const AgentCard = ({ agent, mates }: TemplateCardProps) => {
   const [deleteAgent] = withRekuest(useDeleteAgentMutation)();
-  const { data, loading } = withMan(useDetailClientQuery)({
+  const { data, loading } = withLok(useDetailClientQuery)({
     variables: {
       clientId: agent.registry?.client.clientId,
     },

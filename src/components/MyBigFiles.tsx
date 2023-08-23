@@ -3,7 +3,7 @@ import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
 import { Offsetter, SectionTitle } from "../layout/SectionTitle";
 import { MikroFile } from "../linker";
-import { useMikro, withMikro } from "../mikro/MikroContext";
+import { withMikro } from "../mikro/MikroContext";
 import {
   MyOmeroFilesDocument,
   MyOmeroFilesQuery,
@@ -49,7 +49,7 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
   const [pendingFutures, setPendingFutures] = useState<UploadFuture[]>([]);
   const { upload } = useDatalayer();
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   const deleteFileMate = useDeleteFileMate();
   const downloadFileMate = useDownloadFileMate();

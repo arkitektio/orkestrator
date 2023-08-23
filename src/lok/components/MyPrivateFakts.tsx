@@ -2,23 +2,23 @@ import React from "react";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { notEmpty } from "../../floating/utils";
 import { Client } from "../../linker";
+import { withLok } from "../LokContext";
 import {
   MyPrivateClientsDocument,
   MyPrivateClientsQuery,
   useDeleteClientMutation,
   useMyPrivateClientsQuery,
 } from "../api/graphql";
-import { withMan } from "../man";
 export type IAppProps = {
   onAppClicked?: (clientID: string) => void;
 };
 
 const MyClients: React.FC<IAppProps> = ({ onAppClicked }) => {
-  const { data } = withMan(useMyPrivateClientsQuery)();
+  const { data } = withLok(useMyPrivateClientsQuery)();
 
   const { confirm } = useConfirm();
 
-  const [deletePrivateFakt] = withMan(useDeleteClientMutation)({
+  const [deletePrivateFakt] = withLok(useDeleteClientMutation)({
     update(cache, result) {
       const query = cache.readQuery<MyPrivateClientsQuery>({
         query: MyPrivateClientsDocument,

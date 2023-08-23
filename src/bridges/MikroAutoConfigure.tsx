@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
 import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "@jhnnsrs/herre";
+import React, { useEffect } from "react";
 import { useMikro } from "../mikro/MikroContext";
 import result from "../mikro/api/fragments";
 
@@ -18,13 +18,9 @@ export const MikroAutoConfigure: React.FC<{}> = (props) => {
         endpointUrl: fakts.mikro.endpoint_url,
         possibleTypes: result.possibleTypes,
         retrieveToken: () => token,
-        s3resolve: (path?: string | null) => {
-          if (path) {
-            return `${fakts.minio?.endpoint_url}${path}`;
-          }
-          return "fallback";
-        },
       });
+    } else {
+      configure(undefined);
     }
   }, [token, fakts]);
 

@@ -1,11 +1,11 @@
-import React, { useEffect } from "react";
 import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "@jhnnsrs/herre";
-import { useMan } from "../lok/context";
+import React, { useEffect } from "react";
+import { useLok } from "../lok/LokContext";
 import result from "../lok/api/fragments";
 
 export const LokAutoConfigure: React.FC<{}> = (props) => {
-  const { configure } = useMan();
+  const { configure } = useLok();
   const { token } = useHerre();
   const { fakts } = useFakts();
 

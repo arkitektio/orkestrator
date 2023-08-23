@@ -2,9 +2,9 @@ import { Dialog } from "@headlessui/react";
 import { Form, Formik } from "formik";
 import React from "react";
 import { Alert } from "../../../components/forms/Alert";
+import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { CarouselInputField } from "../../../components/forms/fields/carousel_inputs";
 import { ParagraphInputField } from "../../../components/forms/fields/paragraph_input";
-import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { useModal } from "../../../components/modals/modal-context";
 import {
@@ -13,7 +13,7 @@ import {
   GrantType,
   useCreateApplicationMutation,
 } from "../../../lok/api/graphql";
-import { withMan } from "../../man";
+import { withLok } from "../../LokContext";
 
 export type ICreateApplicationModalProps = {
   onApplicationCreated?: (app: CreateApplicationMutation) => void;
@@ -33,7 +33,7 @@ export type CreateApplicationFormValues = {
 const CreateApplicationModal: React.FC<ICreateApplicationModalProps> = ({
   onApplicationCreated,
 }) => {
-  const [createApplication, data] = withMan(useCreateApplicationMutation)({
+  const [createApplication, data] = withLok(useCreateApplicationMutation)({
     update(cache, result) {
       const existingApps: any = cache.readQuery({
         query: ApplicationsDocument,

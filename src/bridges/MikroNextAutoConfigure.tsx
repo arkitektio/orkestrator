@@ -20,6 +20,9 @@ export const MikroNextAutoConfigure: React.FC<{}> = (props) => {
         retrieveToken: () => token,
       });
     }
+    else {
+      configure(undefined);
+    }
   }, [token, fakts]);
 
   return <> </>;

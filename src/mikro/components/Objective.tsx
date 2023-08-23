@@ -1,13 +1,14 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import React from "react";
-import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SelfActions } from "../../components/SelfActions";
+import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
 import { MikroKomments } from "../../komment/MikroKomments";
 import { OptimizedImage } from "../../layout/OptimizedImage";
 import { PageLayout } from "../../layout/PageLayout";
 import { Representation } from "../../linker";
+import { withMikro } from "../MikroContext";
 import { CommentableModels, useDetailObjectiveQuery } from "../api/graphql";
-import { useMikro, withMikro } from "../MikroContext";
 
 export type ObjectiveProps = {
   id: string;
@@ -18,7 +19,7 @@ const Objective: React.FC<ObjectiveProps> = ({ id }) => {
     variables: { id: id },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   return (
     <PageLayout

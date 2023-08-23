@@ -42,8 +42,18 @@ query AssignableTemplates($node: ID) {
   }
 }
 
-query ReservableTemplates($node: ID!) {
-  reservableTemplates(node: $node) {
+query ReservableTemplates(
+  $node: ID
+  $templateParams: [TemplateParamInput]
+  $hash: String
+  $template: ID
+) {
+  reservableTemplates(
+    node: $node
+    template: $template
+    hash: $hash
+    templateParams: $templateParams
+  ) {
     ...ReservableTemplate
   }
 }

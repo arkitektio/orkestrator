@@ -6,7 +6,7 @@ import { SectionTitle } from "../../layout/SectionTitle";
 import { Release } from "../../linker";
 import { useMikro } from "../../mikro/MikroContext";
 import { useAppQuery } from "../api/graphql";
-import { withMan } from "../man";
+import { withLok } from "../LokContext";
 import { ChangeAppDialog } from "./dialogs/ChangeAppDialog";
 
 export type AppProps = {
@@ -14,7 +14,7 @@ export type AppProps = {
 };
 
 export const App: React.FC<AppProps> = (props) => {
-  const { data } = withMan(useAppQuery)({ variables: { id: props.id } });
+  const { data } = withLok(useAppQuery)({ variables: { id: props.id } });
 
   const { s3resolve } = useMikro();
 

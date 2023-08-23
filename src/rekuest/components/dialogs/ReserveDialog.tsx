@@ -1,18 +1,20 @@
 import { Form, Formik } from "formik";
-import { GraphQLSearchInput } from "../../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { SwitchInputField } from "../../../components/forms/fields/switch_input";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { notEmpty } from "../../../floating/utils";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { withLok } from "../../../lok/LokContext";
+import { useUserOptionsLazyQuery } from "../../../lok/api/graphql";
 import { useSettings } from "../../../settings/settings-context";
 import { withRekuest } from "../../RekuestContext";
 import {
   ReserveMutationVariables,
+  useDetailNodeQuery,
   useReservableTemplatesQuery,
-  useUserOptionsLazyQuery,
 } from "../../api/graphql";
+import { NodeDescription } from "../NodeDescription";
 import { ReserveParamsField } from "../ReserveParamsField";
 
 export type IMyWhalesProps = {};
@@ -22,12 +24,16 @@ export const ReserveDialog = (
     initial: ReserveMutationVariables;
   }
 ) => {
+  const { data: nodedata } = withRekuest(useDetailNodeQuery)({
+    variables: { id: props.initial.node, template: props.initial.template },
+  });
+
   const { data, error } = withRekuest(useReservableTemplatesQuery)({
     variables: { node: props.initial.node },
     fetchPolicy: "network-only",
   });
 
-  const [searchUsers] = withRekuest(useUserOptionsLazyQuery)();
+  const [searchUsers] = withLok(useUserOptionsLazyQuery)();
 
   const {
     settings: { allowAutoRequest },
@@ -68,25 +74,31 @@ export const ReserveDialog = (
             </>
           }
         >
-          {data?.reservableTemplates && (
-            <ReserveParamsField
-              name="binds"
-              templates={data?.reservableTemplates.filter(notEmpty)}
-            />
-          )}
-
+          <div className="text-2xl mb-2">{nodedata?.node?.name}</div>
+          <div className="text-sm mb-2">
+            {nodedata?.node?.description && (
+              <NodeDescription description={nodedata.node.description} />
+            )}
+          </div>
           <div className="mt-2">
             <TextInputField
               name="title"
               label="Title"
               description="Give this reservation a title"
             />
-            <GraphQLSearchInput
-              label="Imitate"
-              searchFunction={searchUsers}
-              name={`imitate`}
-              description="Should we imitate a specific user doing this request?"
-            />
+            <div className="font-light">Choose connecting apps</div>
+            <div className="p-2">
+              {data?.reservableTemplates && (
+                <ReserveParamsField
+                  name="binds"
+                  templates={data?.reservableTemplates.filter(notEmpty)}
+                />
+              )}
+            </div>
+            <div className="font-light text-xs mb-2">
+              This will give us the instruction of how you want to use this
+              functionality
+            </div>
             <SwitchInputField
               name="allowAutoRequest"
               label="Auto Request"

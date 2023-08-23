@@ -7,14 +7,14 @@ export const useLinkProvisionMate = (res: { id: string }): MateFinder => {
   const { confirm } = useConfirm();
 
   const [link] = withRekuest(useLinkMutation)();
-  return (type, isSelf) => {
-    if (isSelf) {
+  return async (options) => {
+    if (options.justSelf) {
       return [
         {
-          action: async (self, drops) => {
+          action: async (event) => {
             await link({
               variables: {
-                provision: self?.object,
+                provision: event.self.id,
                 reservation: res.id,
               },
             });
