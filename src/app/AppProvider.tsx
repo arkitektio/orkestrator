@@ -1,6 +1,8 @@
 import { DatalayerProvider } from "@jhnnsrs/datalayer";
 import { FaktsProvider } from "@jhnnsrs/fakts";
-import { HerreProvider } from "@jhnnsrs/herre";
+import { HerreProvider, windowRedirect } from "@jhnnsrs/herre";
+import { listen } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/api/shell";
 import React from "react";
 import { FlussProvider } from "../fluss/fluss-provider";
 import { LokProvider } from "../lok/LokProvider";
@@ -14,17 +16,33 @@ import { RequesterProvider } from "../rekuest/providers/requester/requester-prov
 import { ReserverProvider } from "../rekuest/providers/reserver/reserver-provider";
 import { WidgetRegistryProvider } from "../rekuest/widgets/widget-provider";
 
+const doRedirect = async (url: string, abortController: AbortController) => {
+  console.log("Redirecting to", url);
+  if (window.__TAURI__) {
+    console.log("Tauri detected");
+    open(url);
+
+    return new Promise<string>((resolve, reject) => {
+      console.log("Listening for code");
+      const unlisten = listen("oauth://url", async (event) => {
+        let url = event.payload as string;
+        let code = url.split("code=")[1];
+        console.log("Got code", code);
+        resolve(code);
+      });
+
+      const unlistend = listen("oauth://invalid-url", async (event) => {
+        console.log("Got invalid-rl", event);
+        reject(event);
+      });
+    });
+  } else {
+    return await windowRedirect(url, abortController);
+  }
+};
+
 //TODO: Mater provider needs to be seperate
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
-  const doRedirect = (url: string) => {
-    console.log("Redirecting to", url);
-    if (window.__TAURI__) {
-      open(url);
-    } else {
-      window.open(url, "_blank", "noreferrer, popup");
-    }
-  };
-
   return (
     <FaktsProvider>
       <HerreProvider doRedirect={doRedirect}>

@@ -9,6 +9,7 @@ import { MikroWard } from "../bridges/MikroWard";
 import { PortAutoConfigure } from "../bridges/PortAutoConfigure";
 import { RekuestAutoConfigure } from "../bridges/RekuestAutoConfigure";
 import { RekuestWard } from "../bridges/RekuestWard";
+import { TauriHerreCallback } from "../bridges/TauriHerreCallback";
 import { GeneralMenu } from "../components/command/GeneralMenu";
 import { NavigationActions } from "../components/command/NavigationActions";
 import { NodesExtension } from "../components/command/NodesExtension";
@@ -30,6 +31,7 @@ import { GraphQLPostman } from "../rekuest/providers/postman/GraphQLPostman";
 import { RequestResolver } from "../rekuest/providers/requester/RequestResolver";
 import { ReserveResolver } from "../rekuest/providers/reserver/ReserveResolver";
 import { WidgetsContainer } from "../rekuest/widgets/containers/ReturnWidgetsContainer";
+import { TauriGuard } from "../tauri/guard";
 import { DndPreview } from "../universal/components/DndPreview";
 
 const Internal = (props: { assignation: PostmanAssignationFragment }) => {
@@ -134,6 +136,9 @@ export const AutoConfiguration = () => {
         <NodesExtension />
         <GraphQLPostman onAssignUpdate={onAssignUpdate} />
       </RekuestGuard>
+      <TauriGuard>
+        <TauriHerreCallback />
+      </TauriGuard>
       <SelectionActions />
     </>
   );

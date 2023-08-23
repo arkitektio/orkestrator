@@ -1129,13 +1129,13 @@
   dependencies:
     cancelable-promise "^4.3.0"
 
-"@jhnnsrs/herre@0.0.4":
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/@jhnnsrs/herre/-/herre-0.0.4.tgz#3b58575013aba9b2200a873d648cbada01cea067"
-  integrity sha512-BkcnJqzJ4Jm1ygd2OWg00Q2vB6Yeac4MekQ2pLR38f6LKYS5Fsjq0MNUejttvIOBOV79bhgr2hcBNzXgUL/1kQ==
+"@jhnnsrs/herre@0.0.11":
+  version "0.0.11"
+  resolved "https://registry.yarnpkg.com/@jhnnsrs/herre/-/herre-0.0.11.tgz#5a10ce5c0d006ad50cda56feef299e9cc8d0aefd"
+  integrity sha512-GxMiBAOngBxOlLdT95nyq8hGo3BILPy8WyFkW5u/Pqy19Kd2YgDskRq9EkJlLe5TEGb1r1T8HWQPdrjRBe1qVg==
   dependencies:
     cancelable-promise "^4.3.1"
-    pkce-challenge "^3.0.0"
+    crypto-js "^4.1.1"
 
 "@jridgewell/gen-mapping@^0.1.0":
   version "0.1.1"
