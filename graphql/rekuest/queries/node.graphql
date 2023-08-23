@@ -1,5 +1,17 @@
-query DetailNode($id: ID, $hash: String) {
-  node(id: $id, hash: $hash) {
+query DetailNode(
+  $id: ID
+  $hash: String
+  $reservation: ID
+  $template: ID
+  $assignation: ID
+) {
+  node(
+    id: $id
+    hash: $hash
+    reservation: $reservation
+    template: $template
+    assignation: $assignation
+  ) {
     ...DetailNode
   }
 }
@@ -25,6 +37,7 @@ query Nodes(
     templated: $templated
     collections: $collections
     scopes: $scopes
+    limit: 20
   ) {
     ...NodeListItem
   }

@@ -1,13 +1,11 @@
 import { gql } from "@apollo/client";
 import React, { useEffect } from "react";
-import { useRekuest } from "../rekuest/RekuestContext";
 import { useWidgetRegistry } from "../rekuest/widgets/widget-context";
 import { useFluss } from "./fluss-context";
 
 export const FlussWard: React.FC<{
   key?: string;
   fallback?: React.ReactNode;
-  children: React.ReactNode;
 }> = ({ key, children, fallback }) => {
   const { client } = useFluss();
   const { registry } = useWidgetRegistry();
@@ -33,5 +31,5 @@ export const FlussWard: React.FC<{
     }
   }, [client, registry]);
 
-  return <>{children}</>;
+  return <></>;
 };

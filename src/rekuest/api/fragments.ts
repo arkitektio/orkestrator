@@ -33,7 +33,9 @@
     "Widget": [
       "BoolWidget",
       "ChoiceWidget",
+      "ColorWidget",
       "CustomWidget",
+      "DateWidget",
       "IntWidget",
       "LinkWidget",
       "QueryWidget",

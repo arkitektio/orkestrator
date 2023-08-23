@@ -34,14 +34,14 @@ query MyReservations {
   }
 }
 
-query Reservations {
-  reservations(exclude: [ENDED, CRITICAL, CANCELLED]) {
+query Reservations($instanceId: String!) {
+  reservations(exclude: [ENDED, CRITICAL, CANCELLED], instanceId: $instanceId) {
     ...ListReservation
   }
 }
 
-query DeployReservations {
-  reservations(nodeInterfaces: ["fluss:deploy"]) {
+query DeployReservations($instanceId: String!) {
+  reservations(nodeInterfaces: ["fluss:deploy"], instanceId: $instanceId) {
     id
     waiter {
       clientId
@@ -58,6 +58,26 @@ query DeployReservations {
         clientId
       }
     }
+  }
+}
+
+query ThisFilteredReservations(
+  $exclude: [ReservationStatusInput]
+  $filter: [ReservationStatusInput]
+  $nodeInterfaces: [String]
+  $templateParams: [TemplateParamInput]
+  $inputPortDemands: [PortDemandInput]
+  $instanceId: String!
+) {
+  reservations(
+    inputPortDemands: $inputPortDemands
+    nodeInterfaces: $nodeInterfaces
+    templateParams: $templateParams
+    exclude: $exclude
+    filter: $filter
+    instanceId: $instanceId
+  ) {
+    ...ListReservation
   }
 }
 

@@ -1,33 +1,28 @@
-import { BsTrash } from "react-icons/bs";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
-import {
-  MyOmeroFilesDocument,
-  MyOmeroFilesQuery,
-  MyOmeroFilesQueryVariables,
-  useDeleteOmeroFileMutation,
-  useReleaseFilesMutation,
-} from "../../mikro/api/graphql";
 import { withMikro } from "../../mikro/MikroContext";
-import { Mate } from "../../rekuest/postman/mater/mater-context";
+import { useReleaseFilesMutation } from "../../mikro/api/graphql";
 import { MateFinder } from "../types";
 
 export const useReleaseFileMate = (datasetID: string): MateFinder => {
   const { confirm } = useConfirm();
   const [releaseFiles] = withMikro(useReleaseFilesMutation)();
 
-  return (type, isSelf) => {
-    if (isSelf || type == "list:@mikro/omerofile") {
+  return async (options) => {
+    if (
+      options.partnersIncludeSelf ||
+      options.partners == "list:@mikro/omerofile"
+    ) {
       return [
         {
-          action: async (self, partner) => {
+          action: async (event) => {
             await confirm({
               message:
-                "Are you sure you want to release this file from this dataset",
+                "Are you sure you want to release these file from this dataset",
             });
 
             releaseFiles({
               variables: {
-                files: partner.map((p) => p.object),
+                files: event.partners.map((p) => p.id),
                 dataset: datasetID,
               },
             });

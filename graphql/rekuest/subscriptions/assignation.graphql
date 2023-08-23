@@ -10,23 +10,23 @@ subscription WatchAssignation($id: ID!) {
 subscription WatchMyRequests {
   myrequests {
     create {
-      ...ListAssignation
+      ...PostmanAssignation
     }
     delete
     update {
-      ...ListAssignation
+      ...PostmanAssignation
     }
   }
 }
 
-subscription WatchRequests($identifier: String!) {
-  requests(identifier: $identifier) {
+subscription WatchRequests($instanceId: String!) {
+  requests(instanceId: $instanceId) {
     create {
-      ...ListAssignation
+      ...PostmanAssignation
     }
     delete
     update {
-      ...ListAssignation
+      ...PostmanAssignation
     }
   }
 }
@@ -43,8 +43,8 @@ subscription WatchMyTodos {
   }
 }
 
-subscription WatchTodos($identifier: String!) {
-  todos(identifier: $identifier) {
+subscription WatchTodos($instanceId: String!) {
+  todos(instanceId: $instanceId) {
     create {
       ...ListAssignation
     }

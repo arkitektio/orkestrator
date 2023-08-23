@@ -85,7 +85,6 @@ export const GeneralMenu = () => {
 
   useEffect(() => {
     if (query || query.length > 0) {
-      console.log("nanan", query.length);
       let x = extensions.map((handler) =>
         handler
           .filter({ query: query, modifiers: modifiers, open: open })
@@ -93,19 +92,20 @@ export const GeneralMenu = () => {
       );
 
       Promise.all(x)
-        .then((results) =>
-          results.reduce((prev, curr) => ({ ...prev, ...curr }), {
+        .then((results) => {
+          console.log(results);
+          return results.reduce((prev, curr) => ({ ...prev, ...curr }), {
             modify: modifyingActions.filter((a) =>
               a.label.toLowerCase().includes(query.toLowerCase())
             ),
             actions: actions.filter((a) =>
               a.label.toLowerCase().includes(query.toLowerCase())
             ),
-          })
-        )
-        .then(setOrderedActions);
+          });
+        })
+        .then(setOrderedActions)
+        .catch((e) => console.error(e));
     } else {
-      console.log("Setting actions", actions);
       setOrderedActions({
         actions: actions,
       });

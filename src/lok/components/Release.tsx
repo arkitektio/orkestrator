@@ -4,15 +4,15 @@ import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { useDialog } from "../../layout/dialog/DialogProvider";
 import { Client } from "../../linker";
+import { withLok } from "../LokContext";
 import { useReleaseQuery } from "../api/graphql";
-import { withMan } from "../man";
 
 export type AppProps = {
   id: string;
 };
 
 export const Release: React.FC<AppProps> = (props) => {
-  const { data } = withMan(useReleaseQuery)({ variables: { id: props.id } });
+  const { data } = withLok(useReleaseQuery)({ variables: { id: props.id } });
 
   const { s3resolve } = useDatalayer();
 

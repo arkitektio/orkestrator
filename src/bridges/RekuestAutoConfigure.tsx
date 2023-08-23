@@ -21,6 +21,8 @@ export const RekuestAutoConfigure: React.FC<{}> = (props) => {
         possibleTypes: result.possibleTypes,
         retrieveToken: () => token,
       });
+    } else {
+      configure(undefined);
     }
   }, [token, fakts]);
 

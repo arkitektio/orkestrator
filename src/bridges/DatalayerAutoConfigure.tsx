@@ -1,14 +1,13 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { useFakts } from "@jhnnsrs/fakts";
 import React, { useEffect } from "react";
-import { useDatalayer } from "@jhnnsrs/datalayer";
-import result from "../mikro/api/fragments";
+import { useMikro } from "../mikro/MikroContext";
 import {
   PresignDocument,
   PresignMutation,
   RequestDocument,
   RequestQuery,
 } from "../mikro/api/graphql";
-import { useMikro } from "../mikro/MikroContext";
 
 export const DatalayerAutoConfigure: React.FC<{}> = (props) => {
   const { client } = useMikro();

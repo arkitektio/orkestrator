@@ -3,39 +3,32 @@ import { useDialog } from "../../layout/dialog/DialogProvider";
 import { Flow } from "../../linker";
 import { NodeListItemFragment } from "../../rekuest/api/graphql";
 import { ReserveDialog } from "../../rekuest/components/dialogs/ReserveDialog";
-import { AdditionalMate } from "../../rekuest/postman/mater/mater-context";
-import { useRequester } from "../../rekuest/postman/requester/requester-context";
-import { useReserver } from "../../rekuest/postman/reserver/reserver-context";
-import { MateFinder } from "../types";
+import { usePostman } from "../../rekuest/providers/postman/postman-context";
+import { useSettings } from "../../settings/settings-context";
+import { Mate, MateFinder } from "../types";
 
 export const useNodeActionMate = (): ((
   node: NodeListItemFragment
 ) => MateFinder) => {
-  const { assign, unassign } = useRequester();
-
   const { ask } = useDialog();
-  const { reserve } = useReserver();
+  const { reserve } = usePostman();
+  const { settings } = useSettings();
   const navigate = useNavigate();
 
-  return (node) => (type, isSelf) => {
-    let mates: AdditionalMate[] = [];
-    if (!isSelf) {
+  return (node) => async (options) => {
+    let mates: Mate[] = [];
+    if (!options.partnersIncludeSelf) {
       return mates;
     }
 
     mates.push({
       action: async () => {
-        await reserve({ node: node.id });
+        let res = await ask(ReserveDialog, {
+          initial: { node: node.id, instanceId: settings.instanceId },
+        });
+        await reserve(res);
       },
       label: "Reserve",
-    });
-
-    mates.push({
-      action: async () => {
-        let res = await ask(ReserveDialog, { initial: { node: node.id } });
-        console.log(res);
-      },
-      label: "Reserve New",
     });
 
     if (node.interfaces?.includes("workflow") && node.meta?.flow) {

@@ -18,7 +18,11 @@ const ChoiceWidget: React.FC<InputWidgetProps<ChoiceWidgetFragment>> = ({
         widget?.choices
           ?.filter((v) => initialValue.includes(v?.value))
           .filter(notEmpty)
-          .map((v) => ({ label: v?.label || "", value: v?.value })) || []
+          .map((v) => ({
+            label: v?.label || "",
+            value: v?.value,
+            description: v.description,
+          })) || []
       );
     }
     if (search) {
@@ -30,7 +34,11 @@ const ChoiceWidget: React.FC<InputWidgetProps<ChoiceWidgetFragment>> = ({
               v?.value.toUpperCase().includes(search.toUpperCase())
           )
           .filter(notEmpty)
-          .map((v) => ({ label: v?.label, value: v?.value })) || []
+          .map((v) => ({
+            label: v?.label,
+            value: v?.value,
+            description: v.description,
+          })) || []
       );
     } else return widget?.choices?.filter(notEmpty) || [];
   };

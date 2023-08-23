@@ -1,9 +1,8 @@
 import { useNavigate } from "react-router";
 import { Assignation, Node } from "../../linker";
 import { ListAssignationFragment } from "../../rekuest/api/graphql";
-import { usePostman } from "../../rekuest/postman/graphql/postman-context";
-import { AdditionalMate } from "../../rekuest/postman/mater/mater-context";
-import { MateFinder } from "../types";
+import { usePostman } from "../../rekuest/providers/postman/postman-context";
+import { Mate, MateFinder } from "../types";
 
 export const useAssignationMate = (): ((
   ass: ListAssignationFragment
@@ -11,10 +10,10 @@ export const useAssignationMate = (): ((
   const navigate = useNavigate();
   const { ack, unassign } = usePostman();
 
-  return (ass) => (type, isSelf) => {
-    let mates: AdditionalMate[] = [];
+  return (ass) => async (options) => {
+    let mates: Mate[] = [];
 
-    if (!isSelf) {
+    if (!options.partnersIncludeSelf) {
       return mates;
     }
 
@@ -28,14 +27,14 @@ export const useAssignationMate = (): ((
 
     mates.push({
       action: async () => {
-        await unassign({ variables: { assignation: ass?.id } });
+        await unassign({ assignation: ass?.id });
       },
       label: "Cancel",
     });
 
     mates.push({
       action: async () => {
-        await ack({ variables: { assignation: ass?.id } });
+        await ack({ assignation: ass?.id });
       },
       label: "Ack",
     });

@@ -1,9 +1,13 @@
-fragment DetailReservation on Reservation {
+fragment PostmanReservation on Reservation {
   title
   status
   id
   reference
   statusmessage
+}
+
+fragment DetailReservation on Reservation {
+  ...PostmanReservation
   params {
     autoProvide
     autoUnprovide
@@ -125,6 +129,7 @@ fragment NodeReservation on Reservation {
 }
 
 fragment ListReservation on Reservation {
+  ...PostmanReservation
   title
   status
   statusmessage

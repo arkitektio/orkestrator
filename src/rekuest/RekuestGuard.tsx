@@ -8,7 +8,7 @@ export const RekuestGuard: React.FC<{
 }> = ({ key, children, fallback }) => {
   const { client } = useRekuest();
 
-  if (client) return <>{children}</>;
+  if (client && client != undefined) return <>{children}</>;
 
   return <>{fallback}</>;
 };

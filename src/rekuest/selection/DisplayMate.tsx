@@ -1,12 +1,13 @@
 import React, { useEffect } from "react";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
-import { Mate, MateOptions, Partner } from "../postman/mater/mater-context";
+import { SMART_MODEL_DROP_TYPE } from "../../constants";
+import { Drop, Mate, MateOptions } from "../../mates/types";
 import { useModelSelector } from "./context";
 
 export interface MateProps {
   mate: Mate;
-  self: Partner;
+  self: Drop;
   options?: MateOptions;
   focus?: boolean;
   clickable?: boolean;
@@ -32,11 +33,11 @@ export const DisplayMate: React.FC<MateProps> = ({
       e.stopPropagation();
       console.log("clickable");
       mate
-        .action(
-          self,
-          selection && selection.length > 0 ? selection : [self],
-          prog
-        )
+        .action({
+          self: self,
+          partners: selection && selection.length > 0 ? selection : [self],
+          progress: prog,
+        })
         .then(() => {
           prog(undefined);
           onDone && onDone();
@@ -51,14 +52,19 @@ export const DisplayMate: React.FC<MateProps> = ({
 
   const [{ isOver, canDrop }, drop] = useDrop(() => {
     return {
-      accept: mate.accepts || [NativeTypes.HTML],
-      drop: (partners: Partner[], monitor) => {
+      accept: [SMART_MODEL_DROP_TYPE],
+      drop: (partners: Drop[], monitor) => {
         if (monitor.getItemType() == NativeTypes.HTML) {
           return;
         }
+        let item = monitor.getItem();
         console.log(partners);
         mate
-          .action(self, partners, prog)
+          .action({
+            self: self,
+            partners: item,
+            progress: prog,
+          })
           .then(() => {
             prog(undefined);
             onDone && onDone();
@@ -84,7 +90,12 @@ export const DisplayMate: React.FC<MateProps> = ({
           if (e.key === " ") {
             e.stopPropagation();
             mate
-              .action(self, [self], prog)
+              .action({
+                self: self,
+                partners:
+                  selection && selection.length > 0 ? selection : [self],
+                progress: prog,
+              })
               .then(() => {
                 console.log("done");
                 onDone && onDone();

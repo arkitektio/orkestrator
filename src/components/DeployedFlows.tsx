@@ -1,11 +1,10 @@
 import React from "react";
-import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Reservation } from "../linker";
 import { useRequesterMate } from "../mates/reservation/useRequesterMate";
 import { ReservationStatus } from "../rekuest/api/graphql";
-import { useReserver } from "../rekuest/postman/reserver/reserver-context";
+import { useReserver } from "../rekuest/providers/reserver/reserver-context";
 import { colorFromReservationStatus } from "../rekuest/utils";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 

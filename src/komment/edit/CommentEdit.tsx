@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createEditor, Editor, Node, Range, Transforms } from "slate";
+import { BiBold, BiCode, BiItalic, BiUnderline } from "react-icons/bi";
+import { TiTick } from "react-icons/ti";
+import { Editor, Node, Range, Transforms, createEditor } from "slate";
 import { Editable, ReactEditor, Slate, useSlate, withReact } from "slate-react";
+import { withLok } from "../../lok/LokContext";
 import { useUserOptionsLazyQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/context";
 import { CreateCommentFunc, KommentEditor } from "../types";
 import {
-  insertMention,
   KommentElement,
   KommentLeaf,
   Portal,
+  insertMention,
   withMentions,
 } from "./shared";
-import { BiBold, BiItalic, BiUnderline, BiCode } from "react-icons/bi";
-import { TiTick } from "react-icons/ti";
 
 export type ICommentEditProps<T> = {
   id: string;
@@ -35,7 +35,7 @@ export type CommentEditProps<T extends any> = {
 };
 
 const marks = ["bold", "italic", "underline", "code"] as const;
-type Mark = typeof marks[number];
+type Mark = (typeof marks)[number];
 
 const toggleMark = (editor: KommentEditor, format: Mark) => {
   const isActive = isMarkActive(editor, format);
@@ -82,7 +82,7 @@ export const CommentEdit = <T extends any>({
 }: CommentEditProps<T>) => {
   const [editor] = useState(() => withMentions(withReact(createEditor())));
 
-  const [searchUser, data] = withMan(useUserOptionsLazyQuery)();
+  const [searchUser, data] = withLok(useUserOptionsLazyQuery)();
 
   const ref = useRef<HTMLDivElement>(null);
   const [target, setTarget] = useState<Range | undefined>();

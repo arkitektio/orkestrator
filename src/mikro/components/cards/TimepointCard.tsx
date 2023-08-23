@@ -1,7 +1,8 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { useConfirm } from "../../../components/confirmer/confirmer-context";
 import { Timepoint } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
-import { useMikro, withMikro } from "../../MikroContext";
+import { withMikro } from "../../MikroContext";
 import {
   ListTimepointFragment,
   useDeleteRepresentationMutation,
@@ -13,7 +14,7 @@ interface PositionCardProps {
 }
 
 export const TimepointCard = ({ timepoint, mates }: PositionCardProps) => {
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   const [deletePosition] = withMikro(useDeleteRepresentationMutation)();
   const { confirm } = useConfirm();
 

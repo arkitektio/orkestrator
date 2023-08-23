@@ -1,0 +1,5 @@
+query GetFile($id: ID!) {
+  file(id: $id) {
+    ...File
+  }
+}

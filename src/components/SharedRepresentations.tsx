@@ -1,19 +1,13 @@
 import React, { useState } from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
+import { BsCaretLeft, BsCaretRight, BsTrash } from "react-icons/bs";
 import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
 import { Representation } from "../linker";
-import { UserEmblem } from "../lok/components/UserEmblem";
+import { withMikro } from "../mikro/MikroContext";
 import {
   useDeleteRepresentationMutation,
   useSharedRepresentationsQuery,
 } from "../mikro/api/graphql";
-import { useMikro, withMikro } from "../mikro/MikroContext";
 import { useConfirm } from "./confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMyRepresentationsProps = {};
@@ -23,7 +17,7 @@ const limit = 20;
 const SharedRepresentations: React.FC<IMyRepresentationsProps> = () => {
   const [offset, setOffset] = useState(0);
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   const {
     data: reps,
     subscribeToMore,

@@ -4,6 +4,7 @@ import React from "react";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { useModal } from "../../../components/modals/modal-context";
+import { withLok } from "../../LokContext";
 import {
   ChangeMeMutationVariables,
   MeUserFragment,
@@ -11,10 +12,9 @@ import {
   ProfileQuery,
   useChangeMeMutation,
 } from "../../api/graphql";
-import { withMan } from "../../man";
 
 const ChangeMeModal: React.FC<{ me: MeUserFragment }> = ({ me }) => {
-  const [changeMe] = withMan(useChangeMeMutation)({
+  const [changeMe] = withLok(useChangeMeMutation)({
     update(cache, result) {
       cache.updateQuery<ProfileQuery>(
         {

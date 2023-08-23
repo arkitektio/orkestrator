@@ -1,6 +1,6 @@
 import { Provision, Release, User } from "../../../linker";
 import { useReleaseQuery, useUserQuery } from "../../../lok/api/graphql";
-import { withMan } from "../../../lok/man";
+import { withLok } from "../../../lok/LokContext";
 import { MateFinder } from "../../../mates/types";
 import { useMikro } from "../../../mikro/MikroContext";
 import { ListProvisionFragment } from "../../api/graphql";
@@ -11,14 +11,14 @@ interface ProvisionCardProps {
 }
 
 export const ProvisionCard = ({ provision, mates }: ProvisionCardProps) => {
-  const { data: appdata } = withMan(useReleaseQuery)({
+  const { data: appdata } = withLok(useReleaseQuery)({
     variables: {
       clientId: provision.agent?.registry?.client?.clientId,
     },
     fetchPolicy: "cache-first",
   });
 
-  const { data: userdata } = withMan(useUserQuery)({
+  const { data: userdata } = withLok(useUserQuery)({
     variables: { id: provision.agent?.registry?.user?.sub },
     fetchPolicy: "cache-first",
   });

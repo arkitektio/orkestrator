@@ -17,17 +17,19 @@ export function buildPinMate(xfunction: PinFunction): () => DeleteObjectFinder {
 
     const [pinFunction] = xfunction({} as any);
 
-    return (object: PinnableObject) => (type, isSelf) => {
-      if (isSelf) {
+    return (object: PinnableObject) => async (options) => {
+      if (options.partnersIncludeSelf) {
         return [
           {
-            action: async (self, partner) => {
-              pinFunction({
-                variables: {
-                  id: partner[0].object,
-                  pin: object.pinned == undefined ? true : !object.pinned,
-                },
-              });
+            action: async (event) => {
+              for (const partner of event.partners) {
+                pinFunction({
+                  variables: {
+                    id: partner.id,
+                    pin: object.pinned == undefined ? true : !object.pinned,
+                  },
+                });
+              }
             },
             label: <>{object.pinned != false ? <TiPin /> : <TiPinOutline />}</>,
             description: `Pin this ${object.__typename}`,

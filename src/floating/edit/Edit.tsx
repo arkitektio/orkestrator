@@ -37,7 +37,6 @@ import {
   DetailTemplateDocument,
   DetailTemplateQuery,
   NodeKind,
-  NodeScope,
 } from "../../rekuest/api/graphql";
 import { Graph } from "../base/Graph";
 import { ConnectionMap, FlowNode, NodeTypes } from "../types";
@@ -64,13 +63,11 @@ import { ReturnEditNodeWidget } from "./nodes/generic/ReturnEditNodeWidget";
 
 import dagre from "dagre";
 import { useDrop } from "react-dnd";
+import { SMART_MODEL_DROP_TYPE } from "../../constants";
 import { FlussKomments } from "../../komment/FlussKomments";
-import { ModuleLayout } from "../../layout/ModuleLayout";
 import { PageLayout } from "../../layout/PageLayout";
 import { useDialog } from "../../layout/dialog/DialogProvider";
-import FlowDiagramSidebar from "../../pages/flows/workspace/FlowDiagramSidebar";
 import { DynamicSidebar } from "./DynamicSidebar";
-import { ExperimentalSidebar } from "./components/ExperimentalSidebar";
 import { AskTypeDialog } from "./dialogs/AskTypeDialog";
 import { ArkitektFilterNodeWidget } from "./nodes/ArkitektFilterNodeWidget";
 import { GraphNodeEditWidget } from "./nodes/GraphNodeEditWidget";
@@ -198,7 +195,7 @@ export const EditRiver: React.FC<Props> = ({
   );
   const [args, setArgs] = useState(flow?.graph.args);
   const [returns, setReturns] = useState(flow?.graph.returns);
-  const {ask} = useDialog();
+  const { ask } = useDialog();
 
   const [edges, setEdges, onEdgesChange] = useEdgesState(
     edges_to_flowedges(flow.graph?.edges)
@@ -406,18 +403,9 @@ export const EditRiver: React.FC<Props> = ({
 
   const [{ isOver, canDrop, type }, dropref] = useDrop(() => {
     return {
-      accept: [
-        "item:@arkitekt/node",
-        "list:@arkitekt/node",
-        "item:@arkitekt/template",
-        "list:@arkitekt/template",
-        "item:@arkitekt/graphnode",
-        "list:@arkitekt/graphnode",
-        "item:@fluss/reactivetemplate",
-        "list:@fluss/reactivetemplate",
-      ],
+      accept: [SMART_MODEL_DROP_TYPE],
 
-      drop: (items: { object: string; identifier: string }[], monitor) => {
+      drop: (items: { id: string; identifier: string }[], monitor) => {
         if (!monitor.didDrop()) {
           console.log("Ommitting Parent Drop");
         }
@@ -433,7 +421,7 @@ export const EditRiver: React.FC<Props> = ({
         const flowInstance = reactFlowInstance;
 
         items.map((i, index) => {
-          const id = i.object;
+          const id = i.id;
           const type = i.identifier;
 
           console.log(id, flowInstance, reactFlowBounds, x, y);
@@ -454,14 +442,15 @@ export const EditRiver: React.FC<Props> = ({
                   .then(async (event) => {
                     console.log(event);
 
-
-                    
-
-
-
                     if (event.data?.node) {
-                      if (event.data.node.protocols?.find(p => p?.name == "predicate")) {
-                        const answer = await ask(AskTypeDialog, {filter: ["filter", "map"]})
+                      if (
+                        event.data.node.protocols?.find(
+                          (p) => p?.name == "predicate"
+                        )
+                      ) {
+                        const answer = await ask(AskTypeDialog, {
+                          filter: ["filter", "map"],
+                        });
                         if (answer.type == "filter") {
                           let id = "arkid-" + uuidv4();
                           let node: FlowNode<ArkitektFilterNodeFragment> = {
@@ -473,7 +462,8 @@ export const EditRiver: React.FC<Props> = ({
                               instream: [
                                 event?.data?.node?.args
                                   ?.filter(
-                                    (x) => !x?.nullable && x?.default == undefined
+                                    (x) =>
+                                      !x?.nullable && x?.default == undefined
                                   ) // by default, all nullable and default values are optional so not part of stream
                                   .filter(notEmpty)
                                   .map(rekuestPortToFluss) || [],
@@ -488,7 +478,8 @@ export const EditRiver: React.FC<Props> = ({
                               outstream: [
                                 event?.data?.node?.args
                                   ?.filter(
-                                    (x) => !x?.nullable && x?.default == undefined
+                                    (x) =>
+                                      !x?.nullable && x?.default == undefined
                                   ) // by default, all nullable and default values are optional so not part of stream
                                   .filter(notEmpty)
                                   .map(rekuestPortToFluss) || [],
@@ -496,55 +487,52 @@ export const EditRiver: React.FC<Props> = ({
                               constream: [],
                               name: event.data?.node?.name || "no-name",
                               hash: event.data?.node?.hash || "",
-                              kind: event.data?.node?.kind || NodeKind.Generator,
+                              kind:
+                                event.data?.node?.kind || NodeKind.Generator,
                             },
                             position: position,
                           };
                           addArkitekt(node);
                           return;
                         }
-
                       }
 
+                      let id = "arkid-" + uuidv4();
+                      let node: FlowNode<ArkitektNodeFragment> = {
+                        id: id,
+                        type: "ArkitektNode",
+                        dragHandle: ".custom-drag-handle",
+                        data: {
+                          __typename: "ArkitektNode",
+                          instream: [
+                            event?.data?.node?.args
+                              ?.filter(
+                                (x) => !x?.nullable && x?.default == undefined
+                              ) // by default, all nullable and default values are optional so not part of stream
+                              .filter(notEmpty)
+                              .map(rekuestPortToFluss) || [],
+                          ],
+                          mapStrategy: MapStrategy.Map,
+                          allowLocal: false,
+                          assignTimeout: 100000,
+                          yieldTimeout: 100000,
+                          reserveTimeout: 100000,
+                          maxRetries: 3,
+                          retryDelay: 2000,
+                          outstream: [
+                            event?.data?.node?.returns
+                              ?.filter(notEmpty)
+                              .map(rekuestPortToFluss) || [],
+                          ],
+                          constream: [],
+                          name: event.data?.node?.name || "no-name",
+                          hash: event.data?.node?.hash || "",
+                          kind: event.data?.node?.kind || NodeKind.Generator,
+                        },
+                        position: position,
+                      };
 
-                      // two paths according to node scope
-                      if (event.data.node.scope == NodeScope.Global) {
-                        let id = "arkid-" + uuidv4();
-                        let node: FlowNode<ArkitektNodeFragment> = {
-                          id: id,
-                          type: "ArkitektNode",
-                          dragHandle: ".custom-drag-handle",
-                          data: {
-                            __typename: "ArkitektNode",
-                            instream: [
-                              event?.data?.node?.args
-                                ?.filter(
-                                  (x) => !x?.nullable && x?.default == undefined
-                                ) // by default, all nullable and default values are optional so not part of stream
-                                .filter(notEmpty)
-                                .map(rekuestPortToFluss) || [],
-                            ],
-                            mapStrategy: MapStrategy.Map,
-                            allowLocal: false,
-                            assignTimeout: 100000,
-                            yieldTimeout: 100000,
-                            reserveTimeout: 100000,
-                            maxRetries: 3,
-                            retryDelay: 2000,
-                            outstream: [
-                              event?.data?.node?.returns
-                                ?.filter(notEmpty)
-                                .map(rekuestPortToFluss) || [],
-                            ],
-                            constream: [],
-                            name: event.data?.node?.name || "no-name",
-                            hash: event.data?.node?.hash || "",
-                            kind: event.data?.node?.kind || NodeKind.Generator,
-                          },
-                          position: position,
-                        };
-                        addArkitekt(node);
-                      }
+                      addArkitekt(node);
                     }
                   });
             }
@@ -713,83 +701,60 @@ export const EditRiver: React.FC<Props> = ({
         flow,
       }}
     >
-      <ModuleLayout
+      <PageLayout
         sidebars={[
+          {
+            label: "Flow",
+            key: "Flow",
+            content: <DynamicSidebar />,
+          },
           {
             label: "Nodes",
             key: "nodes",
             content: <EditSidebar flow={flow} />,
           },
           {
-            label: "Versions",
-            key: "versions",
+            label: "Social",
+            key: "social",
             content: (
-              <>
-                {flow?.workspace?.id && (
-                  <FlowDiagramSidebar workspace={flow.workspace.id} />
+              <div className="p-3">
+                {flow.workspace?.id && (
+                  <FlussKomments
+                    model={CommentableModels.FlowWorkspace}
+                    id={flow.workspace?.id}
+                  />
                 )}
-              </>
-            ),
-          },
-          {
-            label: "Experimental",
-            key: "experimental",
-            content: (
-              <>{flow?.workspace?.id && <ExperimentalSidebar flow={flow} />}</>
+              </div>
             ),
           },
         ]}
+        actions={<EditActions flow={flow} />}
       >
-        <PageLayout
-          sidebars={[
-            {
-              label: "Node",
-              key: "node",
-              content: <DynamicSidebar />,
-            },
-            {
-              label: "Social",
-              key: "social",
-              content: (
-                <div className="p-3">
-                  {flow.workspace?.id && (
-                    <FlussKomments
-                      model={CommentableModels.FlowWorkspace}
-                      id={flow.workspace?.id}
-                    />
-                  )}
-                </div>
-              ),
-            },
-          ]}
-          actions={<EditActions flow={flow} />}
+        <div
+          ref={reactFlowWrapper}
+          className="flex flex-grow h-full w-full"
+          data-disableselect
         >
-          <div
-            ref={reactFlowWrapper}
-            className="flex flex-grow h-full w-full"
-            data-disableselect
-          >
-            <div ref={dropref} className="flex flex-grow h-full w-full">
-              <Graph
-                onPaneClick={(e) => setSelectedNode(undefined)}
-                onDragOver={onDragOver}
-                nodes={nodes}
-                edges={edges}
-                elementsSelectable={true}
-                onConnect={onConnect}
-                nodeTypes={nodeTypes}
-                edgeTypes={edgeTypes}
-                onNodeClick={(e, n) => setSelectedNode(n.id)}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onInit={(e) => setReactFlowInstance(e)}
-                fitView
-                attributionPosition="top-right"
-              ></Graph>
-            </div>
+          <div ref={dropref} className="flex flex-grow h-full w-full">
+            <Graph
+              onPaneClick={(e) => setSelectedNode(undefined)}
+              onDragOver={onDragOver}
+              nodes={nodes}
+              edges={edges}
+              elementsSelectable={true}
+              onConnect={onConnect}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              onNodeClick={(e, n) => setSelectedNode(n.id)}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onInit={(e) => setReactFlowInstance(e)}
+              fitView
+              attributionPosition="top-right"
+            ></Graph>
           </div>
-        </PageLayout>
-      </ModuleLayout>
+        </div>
+      </PageLayout>
     </EditRiverContext.Provider>
   );
 };

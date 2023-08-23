@@ -1,6 +1,5 @@
 mutation Provide($template: ID!) {
   provide(template: $template) {
-    id
-    status
+    ...PostmanProvision
   }
 }

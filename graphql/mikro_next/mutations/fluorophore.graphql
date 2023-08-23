@@ -1,0 +1,18 @@
+mutation CreateFluorophore($name: String!, $excitationWavelength: Micrometers, $emissionWavelength: Micrometers) {
+  createFluorophore(input: {name: $name, excitationWavelength: $excitationWavelength, emissionWavelength: $emissionWavelength}) {
+    id
+    name
+  }
+}
+
+mutation EnsureFluorophore($name: String!, $excitationWavelength: Micrometers, $emissionWavelength: Micrometers){
+  ensureFluorophore(input: {
+    name: $name
+    excitationWavelength: $excitationWavelength
+    emissionWavelength: $emissionWavelength
+  }) {
+    id
+    name
+    
+  }
+}

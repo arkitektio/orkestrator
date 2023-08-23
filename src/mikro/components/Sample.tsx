@@ -1,19 +1,11 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { Form, Formik } from "formik";
 import React, { useState } from "react";
 import { BsTrash } from "react-icons/bs";
 import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
 import { useConfirm } from "../../components/confirmer/confirmer-context";
-import {
-  CreateableListSearchInput,
-  CreateableSearchInput,
-  ListSearchInput,
-  SearchInput,
-} from "../../components/forms/fields/SearchInput";
-import {
-  CreateableSearchSelectInput,
-  SearchSelectInput,
-} from "../../components/forms/fields/search_select_input";
+import { ListSearchInput } from "../../components/forms/fields/SearchInput";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
@@ -22,6 +14,7 @@ import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { Experiment, Representation } from "../../linker";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
+import { withMikro } from "../MikroContext";
 import {
   CommentableModels,
   DetailSampleDocument,
@@ -32,7 +25,6 @@ import {
   useTagSearchLazyQuery,
   useUpdateSampleMutation,
 } from "../api/graphql";
-import { useMikro, withMikro } from "../MikroContext";
 import { RepresentationCard } from "./cards/RepresentationCard";
 
 export type ISampleProps = {
@@ -103,7 +95,7 @@ const Sample: React.FC<ISampleProps> = ({ id }) => {
 
   const { confirm } = useConfirm();
   const navigate = useNavigate();
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   const deleteRepresentationMate = useDeleteRepresentationMate();
 

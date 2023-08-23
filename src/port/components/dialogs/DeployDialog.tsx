@@ -2,7 +2,7 @@ import { notEmpty } from "../../../floating/utils";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
 import { useCreatePrivateClientMutation } from "../../../lok/api/graphql";
-import { withMan } from "../../../lok/context";
+import { withLok } from "../../../lok/LokContext";
 import {
   DetailWhaleFragment,
   useCreateWhaleMutation,
@@ -20,7 +20,7 @@ export const DeployDialog = (
     variables: { id: props.scan },
   });
 
-  const [createClient] = withMan(useCreatePrivateClientMutation)({});
+  const [createClient] = withLok(useCreatePrivateClientMutation)({});
   const [createWhale] = withPort(useCreateWhaleMutation)({
     refetchQueries: [WhalesDocument],
   });

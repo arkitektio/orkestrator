@@ -36,7 +36,9 @@ export const flussPortChildToStreamItem = (
     identifier: port.identifier,
     nullable: port.nullable,
     scope: port.scope,
-    variants: port?.variants?.filter(notEmpty).map(x => flussPortChildToStreamItem(x)),
+    variants: port?.variants
+      ?.filter(notEmpty)
+      .map((x) => flussPortChildToStreamItem(x)),
     child: port.child && flussPortChildToStreamItem(port.child),
   };
 };
@@ -48,7 +50,9 @@ export const flussPortToStreamItem = (port: PortFragment): StreamItem => {
     identifier: port.identifier,
     nullable: port.nullable,
     scope: port.scope,
-    variants: port?.variants?.filter(notEmpty).map(x => flussPortChildToStreamItem(x)),
+    variants: port?.variants
+      ?.filter(notEmpty)
+      .map((x) => flussPortChildToStreamItem(x)),
     child: port.child && flussPortChildToStreamItem(port.child),
   };
 };
@@ -81,10 +85,10 @@ export const rekuestChildPortToFluss = (
     nullable: port?.nullable || false,
     child:
       port?.child &&
-      rekuestChildPortToFluss(port?.child as RekuestChildPortFragment), 
-    variants:
-      port?.variants?.filter(notEmpty).map( p => 
-      rekuestChildPortToFluss(p as RekuestChildPortFragment)), //TODO: manage this//TODO: manage this
+      rekuestChildPortToFluss(port?.child as RekuestChildPortFragment),
+    variants: port?.variants
+      ?.filter(notEmpty)
+      .map((p) => rekuestChildPortToFluss(p as RekuestChildPortFragment)), //TODO: manage this//TODO: manage this
   };
 };
 
@@ -111,7 +115,9 @@ export const rekuestPortToFluss = (port: RekuestPortFragment): PortFragment => {
     label: port.label,
     assignWidget: cleanedAssign,
     returnWidget: cleanedReturn,
-    variants: port?.variants?.filter(notEmpty).map((x) => rekuestChildPortToFluss(x)),
+    variants: port?.variants
+      ?.filter(notEmpty)
+      .map((x) => rekuestChildPortToFluss(x)),
     child: port?.child && rekuestChildPortToFluss(port?.child),
   };
 };
@@ -133,6 +139,15 @@ export function noTypename<T extends { [key: string]: any }>(obj: T): T {
   let z = JSON.parse(str);
   console.log(z);
   return z;
+}
+
+export function keyInObject(
+  key: string,
+  obj: any
+): obj is {
+  [key: string]: any;
+} {
+  return obj && key in obj;
 }
 
 export const nodes_to_flownodes = (

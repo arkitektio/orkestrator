@@ -5,12 +5,12 @@ import { MateFinder } from "../types";
 export const useDeployScanMate = (): MateFinder => {
   const { ask } = useDialog();
 
-  return (type, isSelf) => {
-    if (isSelf) {
+  return async (options) => {
+    if (options.justSelf) {
       return [
         {
-          action: async (self, drops) => {
-            let d = await ask(DeployDialog, { scan: self.object });
+          action: async (event) => {
+            let d = await ask(DeployDialog, { scan: event.self.id });
           },
           label: "Appify",
           description: "Apiffy this scan",

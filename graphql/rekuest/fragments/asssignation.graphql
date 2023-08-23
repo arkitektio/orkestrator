@@ -1,10 +1,16 @@
-fragment DetailAssignation on Assignation {
-  status
+fragment PostmanAssignation on Assignation {
   id
+  status
+  statusmessage
   args
   kwargs
   reference
   progress
+  returns
+}
+
+fragment DetailAssignation on Assignation {
+  ...PostmanAssignation
   parent {
     id
     reservation {
@@ -15,8 +21,6 @@ fragment DetailAssignation on Assignation {
       }
     }
   }
-
-  statusmessage
   provision {
     status
     id
@@ -88,13 +92,7 @@ fragment DetailAssignation on Assignation {
 }
 
 fragment ListAssignation on Assignation {
-  status
-  id
-  args
-  kwargs
-  reference
-  createdAt
-  progress
+  ...PostmanAssignation
   reservation {
     id
     title

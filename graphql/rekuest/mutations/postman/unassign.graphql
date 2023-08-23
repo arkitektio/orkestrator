@@ -1,5 +1,5 @@
 mutation Unassign($assignation: ID!) {
-	unassign(assignation: $assignation) {
-		reference
-	}
+  unassign(assignation: $assignation) {
+    id
+  }
 }

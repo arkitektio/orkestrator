@@ -19,46 +19,18 @@ export function buildDeleteMate(
 
     const [deleteItem] = xfunction({} as any);
 
-    return (object: DeletableObject) => (type, isSelf) => {
-      if (isSelf) {
+    return (object: DeletableObject) => async (options) => {
+      if (options.partnersIncludeSelf) {
         return [
           {
-            action: async (self, partner) => {
-              await confirm({
-                message: `Are you sure you want to delete this ${object.__typename}?`,
-              });
+            action: async (event) => {
+              for (const partner of event.partners) {
+                await confirm({
+                  message: `Are you sure you want to delete this ${object.__typename}?`,
+                });
 
-              deleteItem({
-                variables: { id: partner[0].object },
-                update(cache: any, result: any, options: any) {
-                  if (object.__typename) {
-                    const normalizedId = cache.identify(object);
-                    cache.evict({ id: normalizedId });
-                    cache.gc();
-                  }
-                },
-              });
-            },
-            label: (
-              <>
-                <BsTrash />
-              </>
-            ),
-            description: `Delete this ${object.__typename}`,
-          },
-        ];
-      }
-      if (type == "list:@mikro/omerofile") {
-        return [
-          {
-            action: async (self, partners) => {
-              await confirm({
-                message: "Are you sure you want to delete all these contexts?",
-              });
-
-              for (let partner of partners) {
-                await deleteItem({
-                  variables: { id: partner.object },
+                deleteItem({
+                  variables: { id: partner.id },
                   update(cache: any, result: any, options: any) {
                     if (object.__typename) {
                       const normalizedId = cache.identify(object);
@@ -71,10 +43,10 @@ export function buildDeleteMate(
             },
             label: (
               <>
-                <BsTrash /> Delete All
+                <BsTrash />
               </>
             ),
-            description: "Delete all contexts",
+            description: `Delete this ${object.__typename}`,
           },
         ];
       }

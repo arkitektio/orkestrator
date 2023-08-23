@@ -1295,6 +1295,12 @@
             "deprecationReason": null
           },
           {
+            "name": "BOUND",
+            "description": "Bound",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "CANCEL",
             "description": "Assinment is beeing cancelled",
             "isDeprecated": false,
@@ -1386,6 +1392,12 @@
           {
             "name": "ASSIGNED",
             "description": "Was able to assign to a pod",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "BOUND",
+            "description": "Bound",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -1997,6 +2009,18 @@
         "description": null,
         "fields": [
           {
+            "name": "description",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "label",
             "description": null,
             "args": [],
@@ -2040,6 +2064,18 @@
         "description": null,
         "fields": null,
         "inputFields": [
+          {
+            "name": "description",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "label",
             "description": null,
@@ -2292,6 +2328,51 @@
         ],
         "inputFields": null,
         "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "ColorWidget",
+        "description": null,
+        "fields": [
+          {
+            "name": "kind",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "startDate",
+            "description": "A start date",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [
+          {
+            "kind": "INTERFACE",
+            "name": "Widget",
+            "ofType": null
+          }
+        ],
         "enumValues": null,
         "possibleTypes": null
       },
@@ -2907,6 +2988,51 @@
         "fields": null,
         "inputFields": null,
         "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "DateWidget",
+        "description": null,
+        "fields": [
+          {
+            "name": "kind",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "startDate",
+            "description": "A start date",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [
+          {
+            "kind": "INTERFACE",
+            "name": "Widget",
+            "ofType": null
+          }
+        ],
         "enumValues": null,
         "possibleTypes": null
       },
@@ -5401,7 +5527,7 @@
               },
               {
                 "name": "extensions",
-                "description": "Desired Extensions",
+                "description": "Desired Extensions (e.g reaktion)",
                 "type": {
                   "kind": "LIST",
                   "name": null,
@@ -5972,18 +6098,6 @@
                 "deprecationReason": null
               },
               {
-                "name": "appGroup",
-                "description": "A unique identifier",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "ID",
-                  "ofType": null
-                },
-                "defaultValue": "\"default\"",
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
                 "name": "binds",
                 "description": "bindings",
                 "type": {
@@ -6014,6 +6128,22 @@
                   "kind": "SCALAR",
                   "name": "ID",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "instanceId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -6073,6 +6203,18 @@
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "template",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -7729,6 +7871,105 @@
         "possibleTypes": null
       },
       {
+        "kind": "INPUT_OBJECT",
+        "name": "PortDemandInput",
+        "description": null,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "at",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "child",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "PortDemandInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "identifier",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "key",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "kind",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "PortKindInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "nullable",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "variants",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "PortDemandInput",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "PortGroup",
         "description": null,
@@ -8214,7 +8455,7 @@
           },
           {
             "name": "nodes",
-            "description": "The protocols this Node implements",
+            "description": "The protocols this Node implements (e.g. Predicate)",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -10138,6 +10379,55 @@
             "deprecationReason": null
           },
           {
+            "name": "demandednodes",
+            "description": null,
+            "args": [
+              {
+                "name": "inputPortDemands",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "PortDemandInput",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "outputPortDemands",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "PortDemandInput",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Node",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "hello",
             "description": null,
             "args": [],
@@ -10471,6 +10761,59 @@
             "deprecationReason": null
           },
           {
+            "name": "mytemplatefor",
+            "description": "Asss\n\n    Is A query for all of these specials in the world\n    ",
+            "args": [
+              {
+                "name": "hash",
+                "description": "The query node",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "id",
+                "description": "The query node",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "instanceId",
+                "description": "The instance id",
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Template",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "mytodos",
             "description": null,
             "args": [
@@ -10536,6 +10879,18 @@
             "description": "Asss\n\n    Is A query for all of these specials in the world\n    ",
             "args": [
               {
+                "name": "assignation",
+                "description": "The reservation that is linked to this node",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "hash",
                 "description": "The query node",
                 "type": {
@@ -10565,6 +10920,18 @@
                 "type": {
                   "kind": "SCALAR",
                   "name": "QString",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "reservation",
+                "description": "The reservation that is linked to this node",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -10904,14 +11271,18 @@
                 "deprecationReason": null
               },
               {
-                "name": "identifier",
+                "name": "instanceId",
                 "description": null,
                 "type": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 },
-                "defaultValue": "\"default\"",
+                "defaultValue": null,
                 "isDeprecated": false,
                 "deprecationReason": null
               }
@@ -10951,6 +11322,34 @@
                   "kind": "SCALAR",
                   "name": "ID",
                   "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "template",
+                "description": "The template to reserve (This will assert if the template is truly reservable)",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "templateParams",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "TemplateParamInput",
+                    "ofType": null
+                  }
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -11055,14 +11454,34 @@
                 "deprecationReason": null
               },
               {
-                "name": "identifier",
+                "name": "inputPortDemands",
                 "description": null,
                 "type": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "PortDemandInput",
+                    "ofType": null
+                  }
                 },
-                "defaultValue": "\"default\"",
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "instanceId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
                 "isDeprecated": false,
                 "deprecationReason": null
               },
@@ -11075,6 +11494,38 @@
                   "ofType": {
                     "kind": "SCALAR",
                     "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "outputPortDemands",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "PortDemandInput",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "templateParams",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "TemplateParamInput",
                     "ofType": null
                   }
                 },
@@ -14234,7 +14685,7 @@
             "description": null,
             "args": [
               {
-                "name": "identifier",
+                "name": "instanceId",
                 "description": "The log level for alterations",
                 "type": {
                   "kind": "NON_NULL",
@@ -14304,7 +14755,7 @@
             "description": null,
             "args": [
               {
-                "name": "identifier",
+                "name": "instanceId",
                 "description": "The reference of this waiter",
                 "type": {
                   "kind": "NON_NULL",
@@ -14345,7 +14796,7 @@
             "description": null,
             "args": [
               {
-                "name": "identifier",
+                "name": "instanceId",
                 "description": "The reference of this todos",
                 "type": {
                   "kind": "NON_NULL",
@@ -14870,6 +15321,45 @@
         "possibleTypes": null
       },
       {
+        "kind": "INPUT_OBJECT",
+        "name": "TemplateParamInput",
+        "description": null,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "key",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "value",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "GenericScalar",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "TemplateWidget",
         "description": null,
@@ -15227,9 +15717,13 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "SCALAR",
-              "name": "ID",
-              "ofType": null
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "ID",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -15250,9 +15744,13 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "SCALAR",
-              "name": "ID",
-              "ofType": null
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "ID",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -16209,7 +16707,17 @@
           },
           {
             "kind": "OBJECT",
+            "name": "ColorWidget",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
             "name": "CustomWidget",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "DateWidget",
             "ofType": null
           },
           {
@@ -16413,7 +16921,19 @@
             "deprecationReason": null
           },
           {
+            "name": "ColorWidget",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "CustomWidget",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "DateWidget",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null

@@ -1,22 +1,22 @@
 import { Form, Formik } from "formik";
-import { FileInputField } from "../../../components/forms/fields/file_input";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
+import { FileInputField } from "../../../components/forms/fields/file_input";
 import { SwitchInputField } from "../../../components/forms/fields/switch_input";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { withLok } from "../../LokContext";
 import {
   DetailUserFragment,
   UpdateUserMutation,
   UpdateUserMutationVariables,
   useUpdateUserMutation,
 } from "../../api/graphql";
-import { withMan } from "../../man";
 
 export const ChangeUserDialog = (
   props: Submit<UpdateUserMutation> & { user: DetailUserFragment }
 ) => {
-  const [updateUser] = withMan(useUpdateUserMutation)({
+  const [updateUser] = withLok(useUpdateUserMutation)({
     update: (cache, { data }) => {
       if (data?.updateUser) {
         cache.modify({

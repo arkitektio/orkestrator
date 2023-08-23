@@ -1,8 +1,8 @@
 import React from "react";
-import { ProvisionStatus } from "../rekuest/api/graphql";
-import { usePostman } from "../rekuest/postman/graphql/postman-context";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Flow } from "../linker";
+import { ProvisionStatus } from "../rekuest/api/graphql";
+import { usePostman } from "../rekuest/providers/legacy/postman-context";
 
 export type IGeneratorsProps = {};
 

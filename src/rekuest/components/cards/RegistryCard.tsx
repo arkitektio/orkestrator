@@ -1,8 +1,7 @@
-import React from "react";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { App, User } from "../../../linker";
+import { withLok } from "../../../lok/LokContext";
 import { useAppQuery, useUserQuery } from "../../../lok/api/graphql";
-import { withMan } from "../../../lok/man";
-import { useMikro } from "../../../mikro/MikroContext";
 import { RegistryFragment } from "../../api/graphql";
 
 interface RegistryCardProps {
@@ -10,19 +9,19 @@ interface RegistryCardProps {
 }
 
 export const RegistryCard = ({ registry }: RegistryCardProps) => {
-  const { data: appdata } = withMan(useAppQuery)({
+  const { data: appdata } = withLok(useAppQuery)({
     variables: {
       identifier: registry.app?.identifier,
       version: registry.app?.version,
     },
     fetchPolicy: "cache-first",
   });
-  const { data: userdata } = withMan(useUserQuery)({
+  const { data: userdata } = withLok(useUserQuery)({
     variables: { id: registry.user?.sub },
     fetchPolicy: "cache-first",
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   return (
     <div className="flex flex-row rounded">

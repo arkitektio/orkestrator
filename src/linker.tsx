@@ -1,15 +1,15 @@
 import React from "react";
 import { NavLink, NavLinkProps } from "react-router-dom";
+import { Identifier } from "./mates/types";
 import { CommentableModels, LinkableModels } from "./mikro/api/graphql";
-import { Accept, Identifier } from "./rekuest/postman/mater/mater-context";
 import {
   ClassNameOptions,
   SmartModel,
   SmartModelProps,
 } from "./rekuest/selection/SmartModel";
 
-export interface CreatedSmartSmartProps<T extends Accept>
-  extends Omit<SmartModelProps<T>, "accepts" | "identifier"> {
+export interface CreatedSmartSmartProps
+  extends Omit<SmartModelProps, "identifier"> {
   object: string;
   dropClassName?: (props: ClassNameOptions) => string;
   dragClassName?: (props: ClassNameOptions) => string;
@@ -18,18 +18,14 @@ export interface CreatedSmartSmartProps<T extends Accept>
   children: React.ReactNode;
 }
 
-export type CreatedSmartProps<T extends Accept> = Omit<
-  SmartModelProps<T>,
-  "accepts" | "identifier"
->;
+export type CreatedSmartProps = Omit<SmartModelProps, "identifier">;
 
-export const buildSmartModel = <T extends Accept>(
-  identifier: Identifier,
-  accepts: T[]
-): React.FC<CreatedSmartProps<T>> => {
+export const buildSmartModel = (
+  identifier: Identifier
+): React.FC<CreatedSmartProps> => {
   return ({ children, ...props }) => {
     return (
-      <SmartModel accepts={accepts} identifier={identifier} {...props}>
+      <SmartModel identifier={identifier} {...props}>
         {children}
       </SmartModel>
     );
@@ -92,14 +88,6 @@ const linkBuilder = (model: Identifier, to: string) => (object: string) => {
   return `/user/${getModelBase(model)}/${to}/${object}`;
 };
 
-const buildLinks = (model: Identifier, to: string) => {
-  return [
-    buildBaseLink(model, to),
-    buildModelLink(model, to),
-    linkBuilder(model, to),
-  ];
-};
-
 export const buildModuleLink = (module: string) => {
   return ({ children, ...props }: OmitedNavLinkProps) => {
     return (
@@ -129,404 +117,131 @@ export const GlobalLink = ({
   );
 };
 
-export const buildSmart = <T extends Accept>(
-  model: Identifier,
-  to: string,
-  accepts: T[]
-) => {
+export const buildSmart = (model: Identifier, to: string) => {
   x[model] = linkBuilder(model, to);
 
   return {
     DetailLink: buildModelLink(model, to),
     ListLink: buildBaseLink(model, to),
     linkBuilder: linkBuilder(model, to),
-    Smart: buildSmartModel<T>(model, accepts),
+    Smart: buildSmartModel(model),
   };
 };
 
 export const Representation = buildSmart(
   "@mikro/representation",
-  "representations",
-  [
-    "list:@mikro/sample",
-    "item:@mikro/sample",
-    "list:@mikro/model",
-    "item:@mikro/model",
-    "list:@mikro/experiment",
-    "item:@mikro/experiment",
-    "list:@mikro/representation",
-    "item:@mikro/representation",
-  ]
+  "representations"
 );
 
-export const Graph = buildSmart("@mikro/graph", "graphs", [
-  "list:@mikro/graph",
-  "item:@mikro/graph",
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Image = buildSmart("@mikronext/image", "images");
 
-export const Label = buildSmart("@mikro/label", "labels", []);
-export const Feature = buildSmart("@mikro/feature", "features", []);
+export const History = buildSmart("@mikronext/history", "history");
 
-export const Sample = buildSmart("@mikro/sample", "samples", [
-  "list:@mikro/roi",
-  "item:@mikro/roi",
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const TransformationView = buildSmart(
+  "@mikronext/transformationview",
+  "transformationviews"
+);
 
-export const Roi = buildSmart("@mikro/roi", "rois", [
-  "list:@mikro/roi",
-  "item:@mikro/roi",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const LabelView = buildSmart("@mikronext/labelview", "labelviews");
 
-export const Thumbnail = buildSmart("@mikro/thumbnail", "thumbnails", [
-  "list:@mikro/thumbnail",
-  "item:@mikro/thumbnail",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const File = buildSmart("@mikronext/file", "files");
 
-export const Context = buildSmart("@mikro/context", "contexts", [
-  "list:@mikro/link",
-  "item:@mikro/link",
-  "list:@mikro/context",
-  "item:@mikro/context",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const ChannelView = buildSmart("@mikronext/channelview", "channelviews");
 
-export const Link = buildSmart("@mikro/link", "links", [
-  "list:@mikro/link",
-  "item:@mikro/link",
-  "list:@mikro/context",
-  "item:@mikro/context",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const OpticsView = buildSmart("@mikronext/opticsview", "opticsviews");
 
-export const Model = buildSmart("@mikro/model", "models", [
-  "list:@mikro/model",
-  "item:@mikro/model",
-  "list:@mikro/context",
-  "item:@mikro/context",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Graph = buildSmart("@mikro/graph", "graphs");
 
-export const Stage = buildSmart("@mikro/stage", "stages", [
-  "list:@mikro/stage",
-  "item:@mikro/stage",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Label = buildSmart("@mikro/label", "labels");
+export const Feature = buildSmart("@mikro/feature", "features");
 
-export const Position = buildSmart("@mikro/position", "positions", [
-  "list:@mikro/position",
-  "item:@mikro/position",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Sample = buildSmart("@mikro/sample", "samples");
 
-export const Video = buildSmart("@mikro/video", "videos", [
-  "list:@mikro/video",
-  "item:@mikro/video",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Roi = buildSmart("@mikro/roi", "rois");
 
-export const DimensionMap = buildSmart("@mikro/dimensionmap", "dimensionmaps", [
-  "list:@mikro/dimensionmap",
-  "item:@mikro/dimensionmap",
-  "list:@mikro/position",
-  "item:@mikro/position",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Thumbnail = buildSmart("@mikro/thumbnail", "thumbnails");
 
-export const Channel = buildSmart("@mikro/channel", "channels", [
-  "list:@mikro/channel",
-  "item:@mikro/channel",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Context = buildSmart("@mikro/context", "contexts");
 
-export const Objective = buildSmart("@mikro/objective", "objectives", [
-  "list:@mikro/objective",
-  "item:@mikro/objective",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Link = buildSmart("@mikro/link", "links");
 
-export const Instrument = buildSmart("@mikro/instrument", "instruments", [
-  "list:@mikro/instrument",
-  "item:@mikro/instrument",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Model = buildSmart("@mikro/model", "models");
 
-export const MikroFile = buildSmart("@mikro/omerofile", "files", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/omerofile",
-  "item:@mikro/omerofile",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Stage = buildSmart("@mikro/stage", "stages");
 
-export const View = buildSmart("@mikro/view", "views", [
-  "list:@mikro/view",
-  "item:@mikro/view",
-  "list:@mikro/omerofile",
-  "item:@mikro/omerofile",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Position = buildSmart("@mikro/position", "positions");
 
-export const Era = buildSmart("@mikro/era", "eras", [
-  "list:@mikro/era",
-  "item:@mikro/era",
-  "list:@mikro/omerofile",
-  "item:@mikro/omerofile",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Video = buildSmart("@mikro/video", "videos");
 
-export const Timepoint = buildSmart("@mikro/timepoint", "timepoints", [
-  "list:@mikro/timepoint",
-  "item:@mikro/timepoint",
-  "list:@mikro/omerofile",
-  "item:@mikro/omerofile",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const DimensionMap = buildSmart("@mikro/dimensionmap", "dimensionmaps");
 
-export const Metric = buildSmart("@mikro/metric", "metrics", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/metric",
-  "item:@mikro/metric",
-  "list:@mikro/omerofile",
-  "item:@mikro/omerofile",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Channel = buildSmart("@mikro/channel", "channels");
 
-export const Table = buildSmart("@mikro/table", "tables", [
-  "list:@mikro/roi",
-  "item:@mikro/roi",
-  "list:@mikro/table",
-  "item:@mikro/table",
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Objective = buildSmart("@mikro/objective", "objectives");
 
-export const Plot = buildSmart("@mikro/plot", "plots", [
-  "list:@mikro/plot",
-  "item:@mikro/plot",
-  "list:@mikro/table",
-  "item:@mikro/table",
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const Instrument = buildSmart("@mikro/instrument", "instruments");
 
-export const Experiment = buildSmart("@mikro/experiment", "experiments", [
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
+export const MikroFile = buildSmart("@mikro/omerofile", "files");
 
-export const Dataset = buildSmart("@mikro/dataset", "datasets", [
-  "list:@mikro/dataset",
-  "item:@mikro/dataset",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
-export const Node = buildSmart("@rekuest/node", "nodes", [
-  "list:@rekuest/node",
-  "item:@rekuest/node",
-  "list:@rekuest/assignation",
-  "item:@rekuest/assignation",
-]);
+export const View = buildSmart("@mikro/view", "views");
 
-export const Protocol = buildSmart("@rekuest/protocol", "protocols", [
-  "list:@rekuest/protocol",
-  "item:@rekuest/protocol",
-  "list:@rekuest/assignation",
-  "item:@rekuest/assignation",
-]);
+export const Era = buildSmart("@mikro/era", "eras");
 
-export const Collection = buildSmart("@rekuest/collection", "collections", [
-  "list:@rekuest/collection",
-  "item:@rekuest/collection",
-]);
-export const Reservation = buildSmart("@rekuest/reservation", "reservations", [
-  "list:@rekuest/reservation",
-  "item:@rekuest/reservation",
-  "list:@rekuest/node",
-  "item:@rekuest/node",
-]);
+export const Timepoint = buildSmart("@mikro/timepoint", "timepoints");
+
+export const Metric = buildSmart("@mikro/metric", "metrics");
+
+export const Table = buildSmart("@mikro/table", "tables");
+
+export const Plot = buildSmart("@mikro/plot", "plots");
+
+export const Experiment = buildSmart("@mikro/experiment", "experiments");
+
+export const Dataset = buildSmart("@mikro/dataset", "datasets");
+export const Node = buildSmart("@rekuest/node", "nodes");
+
+export const Protocol = buildSmart("@rekuest/protocol", "protocols");
+
+export const Collection = buildSmart("@rekuest/collection", "collections");
+export const Reservation = buildSmart("@rekuest/reservation", "reservations");
 export const MirrorRepository = buildSmart(
   "@rekuest/mirrorrepository",
-  "repositories",
-  ["list:@rekuest/mirrorrepository", "item:@rekuest/mirrorrepository"]
+  "repositories"
 );
 export const AppRepository = buildSmart(
   "@rekuest/apprepository",
-  "repositories",
-  ["list:@rekuest/apprepository", "item:@rekuest/apprepository"]
+  "repositories"
 );
-export const Provision = buildSmart("@rekuest/provision", "provisions", [
-  "list:@rekuest/provision",
-  "item:@rekuest/provision",
-]);
+export const Provision = buildSmart("@rekuest/provision", "provisions");
 
-export const TestResult = buildSmart("@rekuest/testresult", "testresults", [
-  "list:@rekuest/testresult",
-  "item:@rekuest/testresult",
-]);
+export const TestResult = buildSmart("@rekuest/testresult", "testresults");
 
-export const TestCase = buildSmart("@rekuest/testcase", "testcases", [
-  "list:@rekuest/testcase",
-  "item:@rekuest/testcase",
-]);
-export const Agent = buildSmart("@rekuest/agent", "agents", [
-  "list:@rekuest/agent",
-  "item:@rekuest/agent",
-  "item:@rekuest/assignation",
-]);
-export const Assignation = buildSmart("@rekuest/assignation", "assignations", [
-  "list:@rekuest/assignation",
-  "item:@rekuest/assignation",
-]);
-export const Template = buildSmart("@rekuest/template", "templates", [
-  "list:@rekuest/template",
-  "item:@rekuest/template",
-]);
+export const TestCase = buildSmart("@rekuest/testcase", "testcases");
+export const Agent = buildSmart("@rekuest/agent", "agents");
+export const Assignation = buildSmart("@rekuest/assignation", "assignations");
+export const Template = buildSmart("@rekuest/template", "templates");
 
-export const Workspace = buildSmart("@fluss/workspace", "workspaces", [
-  "list:@fluss/workspace",
-  "item:@fluss/workspace",
-]);
-export const Flow = buildSmart("@fluss/flow", "flows", [
-  "list:@fluss/run",
-  "item:@fluss/run",
-]);
-export const Run = buildSmart("@fluss/run", "runs", [
-  "list:@fluss/run",
-  "item:@fluss/run",
-]);
-export const Snapshot = buildSmart("@fluss/snapshot", "snapshots", [
-  "list:@fluss/run",
-  "item:@fluss/run",
-]);
+export const Workspace = buildSmart("@fluss/workspace", "workspaces");
+export const Flow = buildSmart("@fluss/flow", "flows");
+export const Run = buildSmart("@fluss/run", "runs");
+export const Snapshot = buildSmart("@fluss/snapshot", "snapshots");
 
-export const User = buildSmart("@lok/user", "users", [
-  "list:@lok/user",
-  "item:@lok/user",
-  "list:@mikro/sample",
-  "item:@mikro/sample",
-  "list:@mikro/experiment",
-  "item:@mikro/experiment",
-  "item:@mikro/experiment",
-  "list:@mikro/representation",
-  "item:@mikro/representation",
-]);
-export const Team = buildSmart("@lok/team", "teams", [
-  "list:@lok/user",
-  "item:@lok/user",
-  "list:@lok/team",
-  "item:@lok/team",
-]);
+export const User = buildSmart("@lok/user", "users");
+export const Team = buildSmart("@lok/team", "teams");
 
-export const Client = buildSmart("@lok/client", "clients", [
-  "list:@lok/client",
-  "item:@lok/client",
-]);
+export const Client = buildSmart("@lok/client", "clients");
 
-export const App = buildSmart("@lok/app", "apps", [
-  "list:@lok/app",
-  "item:@lok/app",
-]);
+export const App = buildSmart("@lok/app", "apps");
 
-export const Release = buildSmart("@lok/c", "releases", [
-  "list:@lok/release",
-  "item:@lok/release",
-]);
+export const Release = buildSmart("@lok/c", "releases");
 
-export const Container = buildSmart("@port/container", "containers", [
-  "list:@port/container",
-  "item:@port/container",
-]);
+export const Container = buildSmart("@port/container", "containers");
 
-export const Whale = buildSmart("@port/whale", "whales", [
-  "list:@port/whale",
-  "item:@port/whale",
-]);
+export const Whale = buildSmart("@port/whale", "whales");
 
-export const GithubRepo = buildSmart("@port/githubrepo", "githubrepos", [
-  "list:@port/githubrepo",
-  "item:@port/githubrepo",
-]);
+export const GithubRepo = buildSmart("@port/githubrepo", "githubrepos");
 
-export const Deployment = buildSmart("@port/deployment", "deployments", [
-  "list:@port/deployment",
-  "item:@port/deployment",
-]);
+export const Deployment = buildSmart("@port/deployment", "deployments");
 
 export const RekuestLink = buildModuleLink("rekuest");
 export const FlussLink = buildModuleLink("fluss");
@@ -538,7 +253,7 @@ export const FakeSmartModel = {
   DetailLink: buildModelLink("fake/fake", "fake"),
   ListLink: buildBaseLink("fake/fake", "fake"),
   linkBuilder: (object: string) => "fakelink",
-  Smart: (props: CreatedSmartProps<any>) => <div>{props.children}</div>,
+  Smart: (props: CreatedSmartProps) => <div>{props.children}</div>,
 };
 
 export const getDefaultSmartModel = (ident: Identifier) => {

@@ -1,0 +1,14 @@
+mutation CreateAntibody($name: String!, $epitope: String ) {
+  createAntibody(input: {name: $name, epitope: $epitope}) {
+    id
+    name
+  }
+}
+
+mutation EnsureAntibody($name: String!, $epitope: String ) {
+  ensureAntibody(input: {name: $name, epitope: $epitope}) {
+    id
+    name
+  }
+}
+

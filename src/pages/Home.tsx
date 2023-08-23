@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router";
 import { useHerre } from "@jhnnsrs/herre";
+import { useNavigate } from "react-router";
 import { MikroLink, RekuestLink } from "../linker";
 
 interface Props {}
@@ -12,7 +12,9 @@ export const Home = (props: Props) => {
     <main className="mt-10 mx-auto px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
       <div className="sm:text-center lg:text-left">
         <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-          <span className="block xl:inline dark:text-white">Hey </span>{" "}
+          <span className="block xl:inline dark:text-white text-white">
+            Hey{" "}
+          </span>{" "}
           <span className="block text-primary-300 xl:inline drop-shadow-2xl ">
             {user?.preferred_username}
           </span>

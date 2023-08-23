@@ -1,5 +1,5 @@
 mutation Acknowledge($assignation: ID!) {
   ack(assignation: $assignation) {
-    reference
+    ...PostmanAssignation
   }
 }

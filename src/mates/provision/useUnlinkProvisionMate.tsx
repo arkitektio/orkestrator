@@ -7,14 +7,14 @@ export const useUnlinkProvisionMate = (res: { id: string }): MateFinder => {
   const { confirm } = useConfirm();
 
   const [unlink] = withRekuest(useUnlinkMutation)();
-  return (type, isSelf) => {
-    if (isSelf) {
+  return async (options) => {
+    if (options.justSelf) {
       return [
         {
-          action: async (self, drops) => {
+          action: async (event) => {
             await unlink({
               variables: {
-                provision: self?.object,
+                provision: event.self.id,
                 reservation: res.id,
               },
             });

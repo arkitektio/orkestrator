@@ -1,11 +1,9 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
 import { Team } from "../linker";
+import { withLok } from "../lok/LokContext";
 import { useMyGroupsQuery } from "../lok/api/graphql";
-import { withMan } from "../lok/context";
-import { useConfirm } from "./confirmer/confirmer-context";
 export type IMyRepresentationsProps = {};
 
 const limit = 20;
@@ -13,7 +11,7 @@ const limit = 20;
 const MyTeams: React.FC<IMyRepresentationsProps> = () => {
   const [offset, setOffset] = useState(0);
 
-  const { data } = withMan(useMyGroupsQuery)({
+  const { data } = withLok(useMyGroupsQuery)({
     //pollInterval: 1000,
   });
 

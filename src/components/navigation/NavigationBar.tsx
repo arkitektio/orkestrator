@@ -5,14 +5,15 @@ import { FiSettings } from "react-icons/fi";
 import { GrDocker } from "react-icons/gr";
 import { IconContext } from "react-icons/lib";
 import { TbHistory, TbLayoutDashboard } from "react-icons/tb";
-import { TiFlowSwitch } from "react-icons/ti";
+import { TiArrowUp, TiFlowSwitch } from "react-icons/ti";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { FlussGuard } from "../../fluss/guard";
-import { ManGuard } from "../../lok/guard";
+import { LokGuard } from "../../lok/LokGuard";
 import { MikroGuard } from "../../mikro/MikroGuard";
+import { MikroNextGuard } from "../../mikro_next/MikroNextGuard";
 import { PortGuard } from "../../port/PortGuard";
-import { ExperimentalFeature } from "../../providers/experimental/Experimental";
 import { RekuestGuard } from "../../rekuest/RekuestGuard";
+import { ExperimentalFeature } from "../../settings/Experimental";
 import { TauriGuard } from "../../tauri/guard";
 import { Back } from "./Back";
 import { Logo } from "./Logo";
@@ -108,6 +109,18 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               <TbHistory />
             </NavLink>
           </RekuestGuard>
+          <MikroNextGuard>
+            <NavLink
+              key={"MikroNext"}
+              to={"mikronext"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-400 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-400" : "text-back-500"}`
+              }
+            >
+              <TiArrowUp />
+            </NavLink>
+          </MikroNextGuard>
 
           <FlussGuard>
             <NavLink
@@ -133,7 +146,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               <GrDocker />
             </NavLink>
           </PortGuard>
-          <ManGuard>
+          <LokGuard>
             <NavLink
               key={"Teams"}
               to={"lok"}
@@ -144,7 +157,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             >
               <AiOutlineTeam />
             </NavLink>
-          </ManGuard>
+          </LokGuard>
           <NavLink
             to={"/user/settings"}
             className={({ isActive }) =>
@@ -178,7 +191,9 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             </IconContext.Provider>
           </TauriGuard>
         </ExperimentalFeature>
-        <UserIcon />
+        <LokGuard>
+          <UserIcon />
+        </LokGuard>
       </div>
     </div>
   );

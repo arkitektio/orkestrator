@@ -1,6 +1,6 @@
 import { PossibleTypesMap } from "@apollo/client";
 
-export type ManConfig = {
+export type LokConfig = {
   endpointUrl: string;
   wsEndpointUrl: string;
   secure: boolean;

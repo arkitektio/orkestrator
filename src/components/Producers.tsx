@@ -1,8 +1,8 @@
 import React from "react";
 import { ActionButton } from "../layout/ActionButton";
 import { NodeKind, ReservationStatus } from "../rekuest/api/graphql";
-import { useRequester } from "../rekuest/postman/requester/requester-context";
-import { useReserver } from "../rekuest/postman/reserver/reserver-context";
+import { useRequester } from "../rekuest/providers/requester/requester-context";
+import { useReserver } from "../rekuest/providers/reserver/reserver-context";
 
 export type IProducersProps = {};
 

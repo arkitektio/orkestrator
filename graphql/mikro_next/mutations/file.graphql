@@ -1,0 +1,24 @@
+mutation from_file_like(
+  $file: FileLike!
+  $name: String!
+  $origins: [ID!]
+  $dataset: ID
+) {
+  fromFileLike(
+    input: { file: $file, name: $name, origins: $origins, dataset: $dataset }
+  ) {
+    ...File
+  }
+}
+
+mutation RequestFileUpload($key: String!, $datalayer: String!) {
+  requestFileUpload(input: { key: $key, datalayer: $datalayer }) {
+    ...Credentials
+  }
+}
+
+mutation RequestFileAccess($store: ID!, $duration: Int) {
+  requestFileAccess(input: { store: $store, duration: $duration }) {
+    ...AccessCredentials
+  }
+}

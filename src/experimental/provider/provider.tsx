@@ -4,8 +4,8 @@ import React from "react";
 import { NestedArray, ZarrArray, openGroup } from "zarr";
 import { ArraySelection } from "zarr/types/core/types";
 import { withMikro } from "../../mikro/MikroContext";
-import { useRequestQuery } from "../../mikro/api/graphql";
-import { RekuestGuard } from "../../rekuest/RekuestGuard";
+import { useRequestLazyQuery } from "../../mikro/api/graphql";
+import { MikroGuard } from "../../rekuest";
 import { ImageView, XArrayContext } from "./context";
 import { BasicIndexer } from "./indexing";
 import { S3Store } from "./store";
@@ -61,12 +61,15 @@ export type AvailableColormap = (typeof available_color_maps)[number];
 export const TrueXArrayProvider: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
-  const { data, loading, error } = withMikro(useRequestQuery)({});
+  const [request] = withMikro(useRequestLazyQuery)({});
 
   const getSelectionAsImageView = async (
     path: string,
     selection: ArraySelection
   ) => {
+    let x = await request({});
+    let data = x.data;
+
     if (!data?.request) {
       throw Error("No credentials loaded");
     }
@@ -234,8 +237,8 @@ export const NoXArrayProvider = ({
 
 export const XArrayProvider = ({ children }: { children: React.ReactNode }) => {
   return (
-    <RekuestGuard fallback={<NoXArrayProvider>{children}</NoXArrayProvider>}>
+    <MikroGuard fallback={<NoXArrayProvider>{children}</NoXArrayProvider>}>
       <TrueXArrayProvider>{children}</TrueXArrayProvider>
-    </RekuestGuard>
+    </MikroGuard>
   );
 };

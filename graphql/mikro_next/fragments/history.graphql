@@ -1,0 +1,6 @@
+fragment History on History {
+  id
+  during
+  kind
+  date
+}

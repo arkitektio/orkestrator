@@ -30,8 +30,8 @@ query NodeAssignations(
   }
 }
 
-query Requests {
-  requests(exclude: [DONE, CRITICAL]) {
+query Requests($instanceId: String!) {
+  requests(exclude: [DONE, CRITICAL], instanceId: $instanceId) {
     ...ListAssignation
   }
 }

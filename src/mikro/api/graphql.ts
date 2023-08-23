@@ -175,7 +175,8 @@ export type Comment = {
   parent?: Maybe<Comment>;
   resolved?: Maybe<Scalars['DateTime']>;
   resolvedBy?: Maybe<User>;
-  text: Scalars['String'];
+  /** The text of the comment (without any formatting) */
+  text?: Maybe<Scalars['String']>;
   user: User;
 };
 
@@ -2519,6 +2520,7 @@ export type OmeroViewsArgs = {
   activeForY?: InputMaybe<Scalars['Float']>;
   activeForZ?: InputMaybe<Scalars['Float']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  isGlobal?: InputMaybe<Scalars['Boolean']>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -3074,6 +3076,14 @@ export type Query = {
   /** My samples return all of the users samples attached to the current user */
   graphs?: Maybe<Array<Maybe<Graph>>>;
   hello?: Maybe<Scalars['String']>;
+  /**
+   * Get a single Image by ID
+   *
+   *     Returns a single Representation by ID. If the user does not have access
+   *     to the Representation, an error will be raised.
+   *
+   */
+  image?: Maybe<Representation>;
   /**
    * Get a single instrumes by ID
    *
@@ -3780,6 +3790,12 @@ export type QueryGraphsArgs = {
   offset?: InputMaybe<Scalars['Int']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/** The root Query */
+export type QueryImageArgs = {
+  id: Scalars['ID'];
 };
 
 
@@ -4535,6 +4551,7 @@ export type QueryViewsArgs = {
   activeForY?: InputMaybe<Scalars['Float']>;
   activeForZ?: InputMaybe<Scalars['Float']>;
   ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  isGlobal?: InputMaybe<Scalars['Boolean']>;
   limit?: InputMaybe<Scalars['Int']>;
   name?: InputMaybe<Scalars['String']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -4723,6 +4740,8 @@ export type Representation = {
   variety: RepresentationVariety;
   /** The rendered bioimages */
   videos: Array<Video>;
+  /** Associated views */
+  views?: Maybe<Array<Maybe<View>>>;
 };
 
 
@@ -5072,6 +5091,56 @@ export type RepresentationTablesArgs = {
   offset?: InputMaybe<Scalars['Int']>;
   pinned?: InputMaybe<Scalars['Boolean']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+};
+
+
+/**
+ * A Representation is 5-dimensional representation of an image
+ *
+ *     Mikro stores each image as sa 5-dimensional representation. The dimensions are:
+ *     - t: time
+ *     - c: channel
+ *     - z: z-stack
+ *     - x: x-dimension
+ *     - y: y-dimension
+ *
+ *     This ensures a unified api for all images, regardless of their original dimensions. Another main
+ *     determining factor for a representation is its variety:
+ *     A representation can be a raw image representating voxels (VOXEL)
+ *     or a segmentation mask representing instances of a class. (MASK)
+ *     It can also representate a human perception of the image (RGB) or a human perception of the mask (RGBMASK)
+ *
+ *     # Meta
+ *
+ *     Meta information is stored in the omero field which gives access to the omero-meta data. Refer to the omero documentation for more information.
+ *
+ *
+ *     #Origins and Derivations
+ *
+ *     Images can be filtered, which means that a new representation is created from the other (original) representations. This new representation is then linked to the original representations. This way, we can always trace back to the original representation.
+ *     Both are encapsulaed in the origins and derived fields.
+ *
+ *     Representations belong to *one* sample. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
+ *     Each iamge has also a name, which is used to identify the image. The name is unique within a sample.
+ *     File and Rois that are used to create images are saved in the file origins and roi origins repectively.
+ *
+ *
+ *
+ */
+export type RepresentationViewsArgs = {
+  activeForC?: InputMaybe<Scalars['Float']>;
+  activeForT?: InputMaybe<Scalars['Float']>;
+  activeForX?: InputMaybe<Scalars['Float']>;
+  activeForY?: InputMaybe<Scalars['Float']>;
+  activeForZ?: InputMaybe<Scalars['Float']>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  isGlobal?: InputMaybe<Scalars['Boolean']>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  omero?: InputMaybe<Scalars['ID']>;
+  representation?: InputMaybe<Scalars['ID']>;
+  z?: InputMaybe<Scalars['String']>;
 };
 
 export type RepresentationEvent = {

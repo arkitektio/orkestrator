@@ -5,7 +5,7 @@ import { Fragment, useEffect, useState } from "react";
 import { useDrop } from "react-dnd";
 import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 import { notEmpty } from "../../../floating/utils";
-import { Partner } from "../../../rekuest/postman/mater/mater-context";
+import { Partner } from "../../../rekuest/providers/mater/mater-context";
 import { Alert } from "../Alert";
 import { wrapped } from "./Wrapper";
 import { CommonFieldProps } from "./types";
@@ -13,7 +13,7 @@ import { CommonFieldProps } from "./types";
 export type Option = {
   label: string;
   value: any;
-  description?: string;
+  description?: string | null | undefined;
 };
 export type CommonProps = {
   name: string;
@@ -112,6 +112,7 @@ export const OptionItem = ({ option }: { option: Option }) => (
     }
   >
     {option.label}
+    {option.description && <span> ({option.description})</span>}
   </Combobox.Option>
 );
 
@@ -133,6 +134,7 @@ export const MultiItem = ({ option }: { option: Option }) => (
           }`}
         >
           {option.label}
+          {option.description && <span> ({option.description})</span>}
         </span>
         {selected ? (
           <span

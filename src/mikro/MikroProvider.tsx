@@ -1,41 +1,41 @@
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import React, { useState } from "react";
-import { createMikroClient } from "./client";
 import { MikroContext } from "./MikroContext";
+import { createMikroClient } from "./client";
 import { MikroConfig } from "./types";
 
 export type MikroProps = {
   children: React.ReactNode;
 };
 
+export type ConfigState = {
+  config?: MikroConfig;
+  client?: ApolloClient<NormalizedCacheObject>;
+};
+
 export const MikroProvider: React.FC<MikroProps> = ({ children }) => {
-  const [client, setClient] = useState<
-    ApolloClient<NormalizedCacheObject> | undefined
-  >();
-  const [config, setConfig] = useState<MikroConfig>();
+  const [config, setConfig] = useState<ConfigState>({
+    config: undefined,
+    client: undefined,
+  });
 
-  const configure = (config: MikroConfig) => {
-    setConfig(config);
-    setClient(createMikroClient(config));
-  };
-
-  const s3resolve = (path?: string | null) => {
-    if (config) {
-      return config.s3resolve(path);
+  const configure = (config?: MikroConfig) => {
+    if (!config) {
+      setConfig({
+        config: undefined,
+        client: undefined,
+      });
+      return;
     }
-    return "fallback";
+
+    setConfig({ config: config, client: createMikroClient(config) });
   };
-
-
-  
 
   return (
     <MikroContext.Provider
       value={{
-        client: client,
-        s3resolve: s3resolve,
         configure: configure,
-        config: config,
+        ...config,
       }}
     >
       {children}

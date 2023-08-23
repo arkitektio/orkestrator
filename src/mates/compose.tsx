@@ -1,5 +1,4 @@
-import { AdditionalMate, Mate } from "../rekuest/postman/mater/mater-context";
-import { MateFinder } from "./types";
+import { Mate, MateFinder } from "./types";
 
 export type SingleMateFinder<T> = (
   type: T,
@@ -7,13 +6,20 @@ export type SingleMateFinder<T> = (
 ) => Mate[] | undefined;
 
 export function composeMates(mateFunctions: MateFinder[]): MateFinder {
-  console.log("Reducing mates", mateFunctions);
-  return (type: string, isSelf: boolean) =>
-    mateFunctions.reduce((acc, f) => {
-      const mates = f(type, isSelf);
+  return async (options) => {
+    let allmates: Mate[] = [];
+    console.log("Reducing mates", mateFunctions);
+
+    for (const f of mateFunctions) {
+      const mates = await f(options);
+      console.log("Got mates", mates);
       if (mates) {
-        acc.push(...mates);
+        allmates.push(...mates);
       }
-      return acc;
-    }, [] as AdditionalMate[]);
+    }
+
+    console.log("Returning mates", allmates);
+
+    return allmates;
+  };
 }

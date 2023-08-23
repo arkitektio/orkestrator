@@ -1,10 +1,10 @@
 import React from "react";
-import { useNavigate } from "react-router";
 import { ListRender } from "../layout/SectionTitle";
 import { Assignation } from "../linker";
 import { useAssignationMate } from "../mates/assignation/useAssignationMates";
-import { AssignationStatus } from "../rekuest/api/graphql";
-import { usePostman } from "../rekuest/postman/graphql/postman-context";
+import { withRekuest } from "../rekuest";
+import { AssignationStatus, useRequestsQuery } from "../rekuest/api/graphql";
+import { useSettings } from "../settings/settings-context";
 export type IMyReservationsProps = {};
 
 const colorFromStatus = (status: AssignationStatus | undefined) => {
@@ -31,15 +31,19 @@ const colorFromStatus = (status: AssignationStatus | undefined) => {
 };
 
 const MyAssignations: React.FC<IMyReservationsProps> = () => {
-  const { requests, unassign, ack } = usePostman();
+  const { settings } = useSettings();
+  const { data } = withRekuest(useRequestsQuery)({
+    variables: {
+      instanceId: settings.instanceId,
+    },
+  });
 
-  const navigate = useNavigate();
   const assignationMate = useAssignationMate();
 
   return (
     <>
       <ListRender
-        array={requests?.requests?.filter(
+        array={data?.requests?.filter(
           (ass) =>
             ![
               AssignationStatus.Returned,
@@ -88,7 +92,7 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
         )}
       </ListRender>
       <ListRender
-        array={requests?.requests?.filter((ass) =>
+        array={data?.requests?.filter((ass) =>
           [
             AssignationStatus.Returned,
             AssignationStatus.Cancelled,

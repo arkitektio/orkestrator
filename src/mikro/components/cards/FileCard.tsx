@@ -1,25 +1,6 @@
-import { BsDownload, BsTrash } from "react-icons/bs";
-import { useConfirm } from "../../../components/confirmer/confirmer-context";
-import { useDatalayer } from "@jhnnsrs/datalayer";
 import { MikroFile } from "../../../linker";
-import {
-  AdditionalMate,
-  Mate,
-} from "../../../rekuest/postman/mater/mater-context";
-import {
-  LinkableModels,
-  ListOmeroFileFragment,
-  MyOmeroFilesDocument,
-  MyOmeroFilesQuery,
-  MyOmeroFilesQueryVariables,
-  useDeleteOmeroFileMutation,
-  useLinkMutation,
-} from "../../api/graphql";
-import { withMikro } from "../../MikroContext";
-import { AskRelationModal } from "../dialogs/AskRelationModal";
-import { useDialog } from "../../../layout/dialog/DialogProvider";
-import { composeMates } from "../../../mates/compose";
 import { MateFinder } from "../../../mates/types";
+import { ListOmeroFileFragment } from "../../api/graphql";
 
 interface FileCardProps {
   file: ListOmeroFileFragment;

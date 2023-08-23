@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { Circle, Layer, Line, Rect, Stage } from "react-konva";
 import { useNavigate } from "react-router";
 import { Position } from "../linker";
-import { useMikro } from "../mikro/MikroContext";
 import { ListPositionFragment } from "../mikro/api/graphql";
 import { useModelSelector } from "../rekuest/selection/context";
 
@@ -34,7 +33,7 @@ export const PositionCanvas = ({
     setIsMultiSelecting,
   } = useModelSelector();
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   let calculateXSize = (pos: ListPositionFragment) => {
     return (

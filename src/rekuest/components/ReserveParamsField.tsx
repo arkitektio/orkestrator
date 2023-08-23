@@ -1,9 +1,10 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { useField } from "formik";
 import React from "react";
 import { FittingResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import { withLok } from "../../lok/LokContext";
+import { LokGuard } from "../../lok/LokGuard";
 import { useDetailClientQuery, useUserQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/man";
-import { useMikro } from "../../mikro/MikroContext";
 import { ReservableTemplateFragment, ReserveBindsInput } from "../api/graphql";
 import { StatusPulse } from "./generic/StatusPulse";
 
@@ -13,11 +14,11 @@ interface TemplatesDisplayProps {
 }
 
 export const UserImage: React.FC<{ sub: string }> = ({ sub }) => {
-  const { data, error } = withMan(useUserQuery)({
+  const { data, error } = withLok(useUserQuery)({
     variables: { id: sub },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   return (
     <>
       {data?.user?.id && (
@@ -36,11 +37,11 @@ export const UserImage: React.FC<{ sub: string }> = ({ sub }) => {
 };
 
 export const App: React.FC<{ clientId: string }> = ({ clientId }) => {
-  const { data, error } = withMan(useDetailClientQuery)({
+  const { data, error } = withLok(useDetailClientQuery)({
     variables: { clientId: clientId },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   return (
     <div>
       {data?.client?.release?.logo && (
@@ -151,8 +152,9 @@ export const ReserveParamsField = ({
               }
             }}
           >
-            <App clientId={app.clientId} />
-
+            <LokGuard>
+              <App clientId={app.clientId} />
+            </LokGuard>
             <FittingResponsiveContainerGrid fitLength={app.templates?.length}>
               {app.templates.map((template) => (
                 <div
@@ -182,9 +184,11 @@ export const ReserveParamsField = ({
                     e.stopPropagation();
                   }}
                 >
-                  {template?.agent?.registry?.user?.sub && (
-                    <UserImage sub={template?.agent?.registry?.user?.sub} />
-                  )}
+                  <LokGuard>
+                    {template?.agent?.registry?.user?.sub && (
+                      <UserImage sub={template?.agent?.registry?.user?.sub} />
+                    )}
+                  </LokGuard>
                   <label className="my-auto text-sm font-medium text-gray-700">
                     {template.agent.instanceId}
                   </label>

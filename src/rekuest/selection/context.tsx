@@ -3,7 +3,7 @@ import { Identifier } from "../api/scalars";
 
 export type SelectionItem = {
   identifier: Identifier;
-  object: any;
+  id: any;
 };
 
 export type Selectable = {
@@ -27,22 +27,15 @@ export type SelectionContextType = {
 
 export const SelectionContext = React.createContext<SelectionContextType>({
   selection: [],
-  setSelection: () => {
-  },
+  setSelection: () => {},
   bselection: [],
-  setBSelection: () => {
-  },
-  autoSelect: () => {
-  },
-  unselect: () => {
-  },
+  setBSelection: () => {},
+  autoSelect: () => {},
+  unselect: () => {},
   isMultiSelecting: false,
-  setIsMultiSelecting: () => {
-  },
-  registerSelectables: () => {
-  },
-  unregisterSelectables: () => {
-  },
+  setIsMultiSelecting: () => {},
+  registerSelectables: () => {},
+  unregisterSelectables: () => {},
 });
 
 export const useModelSelector = () => useContext(SelectionContext);
@@ -82,24 +75,24 @@ export const useModelSelect = (
   const me = selection.find(
     (item) =>
       item.identifier === proposedSelection.identifier &&
-      item.object === proposedSelection.object
+      item.id === proposedSelection.id
   );
 
   const mefocus =
     focus?.identifier === proposedSelection.identifier &&
-    focus?.object === proposedSelection.object;
+    focus?.id === proposedSelection.id;
 
   const selectionIndex = me && selection.indexOf(me);
 
   const bme = bselection.find(
     (item) =>
       item.identifier === proposedSelection.identifier &&
-      item.object === proposedSelection.object
+      item.id === proposedSelection.id
   );
 
   const bmefocus =
     focus?.identifier === proposedSelection.identifier &&
-    focus?.object === proposedSelection.object;
+    focus?.id === proposedSelection.id;
 
   const bselectionIndex = bme && bselection.indexOf(bme);
 

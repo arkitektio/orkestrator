@@ -1,41 +1,38 @@
 import { useAlert } from "../../../components/alerter/alerter-context";
+import { FittingResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../../floating/utils";
 import { Submit } from "../../../layout/dialog/DialogProvider";
 import { TwDialog } from "../../../layout/dialog/TwDialog";
 import { useDetailClientQuery } from "../../../lok/api/graphql";
 import { ClientCard } from "../../../lok/components/cards/ClientCard";
-import { withMan } from "../../../lok/man";
+import { withLok } from "../../../lok/LokContext";
 import { withRekuest } from "../../../rekuest";
 import {
   ListProvisionFragment,
   useDeployReservationsQuery,
 } from "../../../rekuest/api/graphql";
 import { ReservationPulse } from "../../../rekuest/components/generic/StatusPulse";
-import { useRequester } from "../../../rekuest/postman/requester/requester-context";
-import { useReserver } from "../../../rekuest/postman/reserver/reserver-context";
+import { useRequester } from "../../../rekuest/providers/requester/requester-context";
+import { useReserver } from "../../../rekuest/providers/reserver/reserver-context";
 
 export const ClientX = (props: { id: string }) => {
-  const { data } = withMan(useDetailClientQuery)({
+  const { data } = withLok(useDetailClientQuery)({
     variables: { clientId: props.id },
   });
 
-  return (
-    <div className="flex flex-row">
-      {data?.client && <ClientCard client={data?.client} />}
-    </div>
-  );
+  return data?.client ? <ClientCard client={data?.client} /> : <>....</>;
 };
 
 export const ResCard = ({ res, flow }: { res: any; flow: string }) => {
   const { assign } = useRequester();
 
-  const { data } = withMan(useDetailClientQuery)({
+  const { data } = withLok(useDetailClientQuery)({
     variables: { id: res.waiter?.clientId },
   });
 
   return (
     <div
-      className={`border-1 border-back-999 border p-3 rounded rounded-md  cursor-pointer`}
+      className={`border-1 border-back-800 border p-3 rounded rounded-md  cursor-pointer bg-back-800 hover:bg-back-900 @container flex w-full flex-col`}
       onClick={() => {
         assign({
           reservation: res,
@@ -47,13 +44,11 @@ export const ResCard = ({ res, flow }: { res: any; flow: string }) => {
         <div className="text-sm font-bold">{res?.node?.name || res?.title}</div>
         <ReservationPulse status={res.status} />
       </div>
-      <div className="flex flex-row justify-start mt-2">
+      <FittingResponsiveContainerGrid fitLength={res.provisions.length}>
         {res.provisions.map((provision: ListProvisionFragment) => (
-          <div className="flex flex-row">
-            <ClientX id={provision?.agent?.clientId} />
-          </div>
+          <ClientX id={provision?.agent?.clientId} />
         ))}
-      </div>
+      </FittingResponsiveContainerGrid>
     </div>
   );
 };
@@ -94,13 +89,13 @@ export const DeployFlowDialog = (props: Submit<{}> & { flow: string }) => {
             used to run your worfklow.
           </div>
           {data?.reservations && data?.reservations.length > 0 ? (
-            <div className="mt-2 text-sm mb-3">
-              {data?.reservations?.filter(notEmpty).map((res) => (
-                <div>
-                  <ResCard res={res} flow={props.flow} />
-                </div>
+            <FittingResponsiveContainerGrid
+              fitLength={data.reservations.length}
+            >
+              {data?.reservations?.filter(notEmpty).map((res, index) => (
+                <ResCard res={res} flow={props.flow} key={index} />
               ))}
-            </div>
+            </FittingResponsiveContainerGrid>
           ) : (
             <div className="mt-2 text-sm mb-3 border-red-600 border rounded text-red-800 border-1 p-2">
               You have not registered any apps that can be used to run your

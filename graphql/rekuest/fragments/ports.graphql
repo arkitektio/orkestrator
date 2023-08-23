@@ -39,6 +39,7 @@ fragment ChoiceWidget on ChoiceWidget {
   choices {
     value
     label
+    description
   }
 }
 
@@ -104,7 +105,6 @@ fragment Dependency on Dependency {
   key
   condition
   value
-
 }
 
 fragment Effect on Effect {
@@ -181,6 +181,7 @@ fragment ChoiceReturnWidget on ChoiceReturnWidget {
   choices {
     label
     value
+    description
   }
 }
 

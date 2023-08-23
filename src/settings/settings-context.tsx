@@ -11,6 +11,7 @@ export type Settings = {
   defaultColormap: AvailableColormap;
   defaultMaskColormap: AvailableColormap;
   pollInterval: number;
+  instanceId: string;
 };
 
 export type SettingsContextType = {
@@ -29,6 +30,7 @@ export const SettingsContext = React.createContext<SettingsContextType>({
     defaultColormap: "viridis",
     defaultMaskColormap: "viridis",
     pollInterval: 1000,
+    instanceId: "main",
   },
   setSettings: () => {},
 });

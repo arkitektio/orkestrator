@@ -1,0 +1,6 @@
+
+query Images{
+    images {
+    id
+    }
+}

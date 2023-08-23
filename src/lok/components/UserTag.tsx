@@ -1,18 +1,17 @@
-import { Link } from "react-router-dom";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { User } from "../../linker";
-import { useMikro, withMikro } from "../../mikro/MikroContext";
+import { withLok } from "../LokContext";
 import { useUserQuery } from "../api/graphql";
-import { withMan } from "../man";
 
 export const UserTag: React.FC<{ sub: string; className?: string }> = ({
   sub,
   className,
 }) => {
-  const { data, error } = withMan(useUserQuery)({
+  const { data, error } = withLok(useUserQuery)({
     variables: { id: sub },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   return (
     <div className={className}>
       {data?.user?.id ? (

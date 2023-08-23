@@ -28,7 +28,11 @@ import {
 } from "../../mikro/api/graphql";
 import { useSettings } from "../../settings/settings-context";
 import { ImageView, useXarray } from "../provider/context";
-import { AvailableColormap, available_color_maps } from "../provider/provider";
+import {
+  AvailableColormap,
+  XArrayProvider,
+  available_color_maps,
+} from "../provider/provider";
 import { dtypeToMinMax } from "../provider/utils";
 export interface TwoDProps {
   representation: CanvasRepresentationFragment;
@@ -144,7 +148,7 @@ export const Canvas: React.FC<{
       setImageView((image) => imageView);
       setLoading(false);
     } catch (e) {
-      console.error(e)
+      console.error(e);
       setError((e as Error).message);
     }
   };
@@ -162,8 +166,7 @@ export const Canvas: React.FC<{
       setImageData((image) => bitmap);
       setLoading(false);
     } catch (e) {
-
-      console.error(e)
+      console.error(e);
       setError((e as Error).message);
     }
   };
@@ -776,24 +779,26 @@ export const TwoDOffcanvas = ({
     1;
 
   return (
-    <SaveParentSize debounceTime={800}>
-      {({ width, height }) => {
-        let bwidth = follow == "width" ? width : height * aspectRatio;
-        let bheight = follow == "width" ? width / aspectRatio : height;
+    <XArrayProvider>
+      <SaveParentSize debounceTime={800}>
+        {({ width, height }) => {
+          let bwidth = follow == "width" ? width : height * aspectRatio;
+          let bheight = follow == "width" ? width / aspectRatio : height;
 
-        return (
-          <Canvas
-            withRois={withRois}
-            representation={representation}
-            highlightRois={highlightRois}
-            z={z}
-            width={bwidth}
-            height={bheight}
-            colormap={colorm}
-            path={s3resolve("/" + representation.store)}
-          />
-        );
-      }}
-    </SaveParentSize>
+          return (
+            <Canvas
+              withRois={withRois}
+              representation={representation}
+              highlightRois={highlightRois}
+              z={z}
+              width={bwidth}
+              height={bheight}
+              colormap={colorm}
+              path={s3resolve("/" + representation.store)}
+            />
+          );
+        }}
+      </SaveParentSize>
+    </XArrayProvider>
   );
 };

@@ -1,15 +1,6 @@
 import { Dialog, Transition } from "@headlessui/react";
 import CancelablePromise from "cancelable-promise";
-import React, {
-  ComponentType,
-  Fragment,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { useSearchParams } from "react-router-dom";
-import { ConfirmModalState } from "../../components/confirmer/ConfirmModal";
+import React, { ComponentType, useContext, useRef } from "react";
 
 export type Submit<T extends {} | undefined = undefined> = {
   submit: (endState: T) => void;
@@ -22,6 +13,7 @@ export type ConfirmContextType = {
     component: ComponentType<Submit<T> & P>,
     props: Partial<P>
   ) => CancelablePromise<T>;
+  component?: React.ReactNode | undefined;
 };
 
 export const DialogContext = React.createContext<ConfirmContextType>({
@@ -94,9 +86,7 @@ export const DialogProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <DialogContext.Provider value={{ ask }}>
-      {Component && Component}
-
+    <DialogContext.Provider value={{ ask, component: Component }}>
       {children}
     </DialogContext.Provider>
   );

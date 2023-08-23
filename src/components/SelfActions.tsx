@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useNavigate } from "react-router";
+import { notEmpty } from "../floating/utils";
+import { ActionButton } from "../layout/ActionButton";
 import {
   ListReservationFragment,
   ReservationStatus,
 } from "../rekuest/api/graphql";
-import { usePostman } from "../rekuest/postman/graphql/postman-context";
-import { useRequester } from "../rekuest/postman/requester/requester-context";
-import { useReserver } from "../rekuest/postman/reserver/reserver-context";
-import { notEmpty } from "../floating/utils";
-import { ActionButton } from "../layout/ActionButton";
-import { useNavigate } from "react-router";
+import { useRequester } from "../rekuest/providers/requester/requester-context";
+import { useReserver } from "../rekuest/providers/reserver/reserver-context";
 
 export interface SelfActionsProps {
   type: `${string}/${string}`;

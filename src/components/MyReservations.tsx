@@ -1,21 +1,22 @@
 import React from "react";
-import {
-  ListReservationFragment,
-  ReservationStatus,
-  useMyReservationsQuery,
-} from "../rekuest/api/graphql";
-import { AdditionalMate, Mate } from "../rekuest/postman/mater/mater-context";
-import { useRequester } from "../rekuest/postman/requester/requester-context";
-import { useReserver } from "../rekuest/postman/reserver/reserver-context";
 import { notEmpty } from "../floating/utils";
 import { Reservation } from "../linker";
-import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { withRekuest } from "../rekuest";
 import { useRequesterMate } from "../mates/reservation/useRequesterMate";
+import { withRekuest } from "../rekuest";
+import { useReservationsQuery } from "../rekuest/api/graphql";
 import { ReservationCard } from "../rekuest/components/cards/ReservationCard";
+import { useSettings } from "../settings/settings-context";
+import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
 const MyReservations: React.FC<{}> = () => {
-  const { data } = withRekuest(useMyReservationsQuery)();
+  const { settings } = useSettings();
+
+  const { data } = withRekuest(useReservationsQuery)({
+    fetchPolicy: "cache-and-network",
+    variables: {
+      instanceId: settings.instanceId,
+    },
+  });
   const requesterMate = useRequesterMate();
 
   return (
@@ -26,7 +27,7 @@ const MyReservations: React.FC<{}> = () => {
         </span>
       </Reservation.ListLink>
       <ResponsiveGrid>
-        {data?.myreservations?.filter(notEmpty).map((res, index) => (
+        {data?.reservations?.filter(notEmpty).map((res, index) => (
           <ReservationCard
             key={index}
             reservation={res}

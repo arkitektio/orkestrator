@@ -1,12 +1,12 @@
 import { useMikro } from "../../mikro/MikroContext";
 import { useAppQuery } from "../api/graphql";
-import { withMan } from "../man";
+import { withLok } from "../LokContext";
 
 export const AppImage: React.FC<{
   identifier: string;
   className?: string;
 }> = ({ identifier, ...props }) => {
-  const { data, error } = withMan(useAppQuery)({
+  const { data, error } = withLok(useAppQuery)({
     variables: { identifier },
   });
 

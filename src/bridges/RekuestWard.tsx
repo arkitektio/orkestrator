@@ -6,8 +6,7 @@ import { useWidgetRegistry } from "../rekuest/widgets/widget-context";
 export const RekuestWard: React.FC<{
   key?: string;
   fallback?: React.ReactNode;
-  children?: React.ReactNode;
-}> = ({ key, children, fallback }) => {
+}> = ({ key, fallback }) => {
   const { client } = useRekuest();
   const { registry } = useWidgetRegistry();
 
@@ -38,5 +37,5 @@ export const RekuestWard: React.FC<{
     }
   }, [client, registry]);
 
-  return <>{children}</>;
+  return <></>;
 };

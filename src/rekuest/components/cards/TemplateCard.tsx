@@ -1,8 +1,8 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { Release, Template, User } from "../../../linker";
+import { withLok } from "../../../lok/LokContext";
 import { useReleaseQuery, useUserQuery } from "../../../lok/api/graphql";
-import { withMan } from "../../../lok/man";
 import { MateFinder } from "../../../mates/types";
-import { useMikro } from "../../../mikro/MikroContext";
 import { ListTemplateFragment } from "../../api/graphql";
 
 interface TemplateCardProps {
@@ -11,18 +11,18 @@ interface TemplateCardProps {
 }
 
 export const TemplateCard = ({ template, mates }: TemplateCardProps) => {
-  const { data: appdata } = withMan(useReleaseQuery)({
+  const { data: appdata } = withLok(useReleaseQuery)({
     variables: {
       clientId: template?.agent?.registry?.client?.clientId,
     },
     fetchPolicy: "cache-first",
   });
-  const { data: userdata } = withMan(useUserQuery)({
+  const { data: userdata } = withLok(useUserQuery)({
     variables: { id: template?.agent?.registry?.user?.sub },
     fetchPolicy: "cache-first",
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   return (
     <Template.Smart

@@ -1,19 +1,17 @@
 import React from "react";
 import { DropZone } from "../../components/layout/DropZone";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
-import { Modal } from "../../components/modals/Modal";
 import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { PageLayout } from "../../layout/PageLayout";
-import { Representation, Team, User } from "../../linker";
-import { useRepresentationsForQuery } from "../../mikro/api/graphql";
+import { useDialog } from "../../layout/dialog/DialogProvider";
+import { Representation } from "../../linker";
 import { useMikro, withMikro } from "../../mikro/MikroContext";
+import { useRepresentationsForQuery } from "../../mikro/api/graphql";
 import { useDetailGroupQuery } from "../api/graphql";
 import { UserCard } from "../components/cards/UserCard";
 import { ChangeGroupDialog } from "../components/dialogs/ChangeGroupDialog";
-import { UserEmblem } from "../components/UserEmblem";
-import { withMan } from "../man";
+import { withLok } from "../LokContext";
 
 export type GroupProps = {
   id: string;
@@ -45,7 +43,7 @@ export const RepresentationsForGroup = ({ name }: { name: string }) => {
 };
 
 const Group: React.FC<GroupProps> = ({ id }) => {
-  const { data } = withMan(useDetailGroupQuery)({
+  const { data } = withLok(useDetailGroupQuery)({
     variables: { id: id },
   });
 

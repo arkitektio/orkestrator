@@ -1,12 +1,12 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { Form, Formik, FormikHelpers } from "formik";
 import { GraphQLSearchInput } from "../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { notEmpty } from "../../floating/utils";
+import { withLok } from "../../lok/LokContext";
 import { useDetailClientQuery, useUserQuery } from "../../lok/api/graphql";
-import { withMan } from "../../lok/context";
-import { useMikro } from "../../mikro/MikroContext";
 import { useSettings } from "../../settings/settings-context";
 import { withRekuest } from "../RekuestContext";
 import {
@@ -26,11 +26,11 @@ export type ReserveFormProps = {
 };
 
 export const UserImage: React.FC<{ sub: string }> = ({ sub }) => {
-  const { data, error } = withMan(useUserQuery)({
+  const { data, error } = withLok(useUserQuery)({
     variables: { id: sub },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   return (
     <>
       {data?.user?.id && (
@@ -49,11 +49,11 @@ export const UserImage: React.FC<{ sub: string }> = ({ sub }) => {
 };
 
 export const App: React.FC<{ clientId: string }> = ({ clientId }) => {
-  const { data, error } = withMan(useDetailClientQuery)({
+  const { data, error } = withLok(useDetailClientQuery)({
     variables: { clientId: clientId },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
   return (
     <div>
       {data?.client?.release?.logo && (
@@ -78,7 +78,11 @@ const ReserveForm: React.FC<ReserveFormProps> = ({ initial, onSubmit }) => {
   const { registry } = useWidgetRegistry();
 
   const { data, error } = withRekuest(useReservableTemplatesQuery)({
-    variables: { node: initial.node },
+    variables: {
+      node: initial.node,
+      hash: initial.hash,
+      template: initial.template,
+    },
     fetchPolicy: "network-only",
   });
 
@@ -86,7 +90,7 @@ const ReserveForm: React.FC<ReserveFormProps> = ({ initial, onSubmit }) => {
     settings: { allowAutoRequest },
   } = useSettings();
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   const [searchUsers] = withRekuest(useUserOptionsLazyQuery)();
 

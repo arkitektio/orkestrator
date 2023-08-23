@@ -2,9 +2,9 @@ import { Dialog } from "@headlessui/react";
 import { FieldArray, Form, Formik } from "formik";
 import React from "react";
 import { Link } from "react-router-dom";
+import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { SearchSelectInput } from "../../../components/forms/fields/search_select_input";
 import { SelectInputField } from "../../../components/forms/fields/select_input";
-import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { useModal } from "../../../components/modals/modal-context";
 import { notEmpty } from "../../../floating/utils";
 import {
@@ -13,17 +13,17 @@ import {
   useUserOptionsLazyQuery,
   useUserQuery,
 } from "../../../man/api/graphql";
-import { withMan } from "../../../man/context";
+import { withLok } from "../../../man/context";
+import { withMikro } from "../../MikroContext";
 import {
   ChangePermissionsMutationVariables,
   SharableModels,
   useChangePermissionsMutation,
   usePermissionsOfQuery,
 } from "../../api/graphql";
-import { withMikro } from "../../MikroContext";
 
 export const PermissionUserInfo = (props: { email: string }) => {
-  const { data } = withMan(useUserQuery)({ variables: { email: props.email } });
+  const { data } = withLok(useUserQuery)({ variables: { email: props.email } });
 
   return (
     <div className="flex-row flex ">
@@ -52,7 +52,7 @@ export const PermissionUserInfo = (props: { email: string }) => {
 };
 
 export const PermisionGroupInfo = (props: { id: string }) => {
-  const { data } = withMan(useDetailGroupQuery)({
+  const { data } = withLok(useDetailGroupQuery)({
     variables: { id: props.id },
   });
 
@@ -86,8 +86,8 @@ export const ShareModal: React.FC<{
 }> = ({ type, object, title }) => {
   const { close, show } = useModal();
 
-  const [searchGroups] = withMan(useGroupOptionsLazyQuery)();
-  const [searchUsers] = withMan(useUserOptionsLazyQuery)();
+  const [searchGroups] = withLok(useGroupOptionsLazyQuery)();
+  const [searchUsers] = withLok(useUserOptionsLazyQuery)();
 
   const [changePermissions] = withMikro(useChangePermissionsMutation)();
 

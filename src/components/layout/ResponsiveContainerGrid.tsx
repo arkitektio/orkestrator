@@ -1,7 +1,7 @@
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import React, { useEffect } from "react";
 import { notEmpty } from "../../floating/utils";
-import { Identifier } from "../../rekuest/postman/mater/mater-context";
+import { Identifier } from "../../rekuest/providers/mater/mater-context";
 import { useModelSelector } from "../../rekuest/selection/context";
 
 export type FittingResponsiveGridProps = {
