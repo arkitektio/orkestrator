@@ -1,6 +1,6 @@
-import { useMikro } from "../../mikro/MikroContext";
-import { useAppQuery } from "../api/graphql";
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { withLok } from "../LokContext";
+import { useAppQuery } from "../api/graphql";
 
 export const AppImage: React.FC<{
   identifier: string;
@@ -10,7 +10,7 @@ export const AppImage: React.FC<{
     variables: { identifier },
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   return (
     <img

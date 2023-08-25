@@ -1,6 +1,6 @@
 import React from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { Assignation } from "../linker";
+import { RekuestAssignation } from "../linker";
 import { useAssignationMate } from "../mates/assignation/useAssignationMates";
 import { withRekuest } from "../rekuest";
 import { AssignationStatus, useRequestsQuery } from "../rekuest/api/graphql";
@@ -55,7 +55,7 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
         title="On Going Tasks"
       >
         {(ass, index) => (
-          <Assignation.Smart
+          <RekuestAssignation.Smart
             object={ass.id}
             dropClassName={() =>
               `relative rounded shadow-xl border  shadow-md bg-center bg-cover group text-white ${colorFromStatus(
@@ -80,15 +80,15 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
               }}
             ></div>
             <div className="p-2">
-              <Assignation.DetailLink
+              <RekuestAssignation.DetailLink
                 object={ass.id}
                 className="text-xl font-light mb-2 cursor-pointer"
               >
                 {ass?.reservation?.title || ass?.reservation?.node?.name}{" "}
-              </Assignation.DetailLink>
+              </RekuestAssignation.DetailLink>
             </div>
             <div className="ml-2 pb-2 text-sm"></div>
-          </Assignation.Smart>
+          </RekuestAssignation.Smart>
         )}
       </ListRender>
       <ListRender
@@ -102,7 +102,7 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
         title="Done Tasks"
       >
         {(ass, index) => (
-          <Assignation.Smart
+          <RekuestAssignation.Smart
             object={ass.id}
             key={index}
             dropClassName={() =>
@@ -113,16 +113,16 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
             mates={[assignationMate(ass)]}
           >
             <div className="p-2 z-100">
-              <Assignation.DetailLink
+              <RekuestAssignation.DetailLink
                 className="text-xl font-light mb-2 cursor-pointer"
                 object={ass.id}
               >
                 {ass?.reservation?.title || ass?.reservation?.node?.name}{" "}
-              </Assignation.DetailLink>
+              </RekuestAssignation.DetailLink>
               {ass.statusmessage}
             </div>
             <div className="ml-2 pb-2 text-sm"></div>
-          </Assignation.Smart>
+          </RekuestAssignation.Smart>
         )}
       </ListRender>
     </>

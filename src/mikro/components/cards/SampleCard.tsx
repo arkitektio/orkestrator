@@ -1,4 +1,4 @@
-import { Sample } from "../../../linker";
+import { MikroSample } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
 import { ListSampleFragment } from "../../api/graphql";
 
@@ -7,7 +7,7 @@ export const SampleCard: React.FC<{
   mates: MateFinder[];
 }> = ({ sample, mates }) => {
   return (
-    <Sample.Smart
+    <MikroSample.Smart
       object={sample?.id}
       dragClassName={() =>
         "bg-slate-700 text-white rounded shadow-md pl-3 truncate group"
@@ -15,13 +15,13 @@ export const SampleCard: React.FC<{
       mates={mates}
     >
       <div className="my-2">
-        <Sample.DetailLink
+        <MikroSample.DetailLink
           className="cursor-pointer font-semibold"
           object={sample.id}
         >
           {sample?.name}
-        </Sample.DetailLink>
+        </MikroSample.DetailLink>
       </div>
-    </Sample.Smart>
+    </MikroSample.Smart>
   );
 };

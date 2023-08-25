@@ -3,7 +3,7 @@ import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveConta
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Assignation } from "../../linker";
+import { RekuestAssignation } from "../../linker";
 import { useAssignationMate } from "../../mates/assignation/useAssignationMates";
 import { withRekuest } from "../RekuestContext";
 import {
@@ -40,7 +40,7 @@ export const History = () => {
             </div>
           )}
           {data?.myrequests?.filter(notEmpty).map((ass, index) => (
-            <Assignation.Smart
+            <RekuestAssignation.Smart
               object={ass.id}
               dragClassName={() =>
                 `relative rounded shadow-xl border  shadow-md bg-center bg-cover group text-white ${colorFromAssignationStatus(
@@ -58,12 +58,12 @@ export const History = () => {
                 }}
               ></div>
               <div className="p-2 justify-between flex">
-                <Assignation.DetailLink
+                <RekuestAssignation.DetailLink
                   object={ass.id}
                   className="text-xl font-light mb-2 cursor-pointer"
                 >
                   {ass?.reservation?.title || ass?.reservation?.node?.name}{" "}
-                </Assignation.DetailLink>
+                </RekuestAssignation.DetailLink>
                 <Link
                   to={`/user/mikro/provenances/${ass.id}`}
                   className="text-xl font-light mb-2 cursor-pointer"
@@ -72,7 +72,7 @@ export const History = () => {
                 </Link>
               </div>
               <div className="ml-2 pb-2 text-sm"></div>
-            </Assignation.Smart>
+            </RekuestAssignation.Smart>
           ))}
         </ResponsiveContainerGrid>
       </div>

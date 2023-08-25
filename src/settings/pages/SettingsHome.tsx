@@ -7,9 +7,9 @@ import {
 } from "../../components/forms/fields/SearchInput";
 import { IntInputField } from "../../components/forms/fields/int_input";
 import { SwitchInputField } from "../../components/forms/fields/switch_input";
-import { available_color_maps } from "../../experimental/provider/provider";
 import { PageLayout } from "../../layout/PageLayout";
 import { DebugScreen } from "../../pages/admin/DebugScreen";
+import { available_color_maps } from "../../providers/xarray/provider";
 import { RekuestGuard } from "../../rekuest/RekuestGuard";
 import { ChangeSubmitHelper } from "../../rekuest/ui/helpers/ChangeSubmitter";
 import { useSettings } from "../settings-context";

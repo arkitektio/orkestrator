@@ -1,6 +1,6 @@
 import { TiPin, TiPinOutline } from "react-icons/ti";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { usePinSampleMutation } from "../../mikro/api/graphql";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { MateFinder } from "../types";
 
 export type PinFunction = typeof usePinSampleMutation;

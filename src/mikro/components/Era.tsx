@@ -2,15 +2,14 @@ import React, { useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
 import { SelfActions } from "../../components/SelfActions";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
+import { MikroEra } from "../../linker";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { withMikro } from "../MikroContext";
 import {
-  CommentableModels,
   DetailStageDocument,
   useDeletePositionMutation,
   useDetailEraQuery,
@@ -62,9 +61,7 @@ export const Era: React.FC<IExperimentProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagStage} />
-          ),
+          content: <MikroEra.Komments object={id} />,
           key: "comments",
         },
       ]}

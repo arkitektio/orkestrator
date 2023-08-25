@@ -3,7 +3,7 @@ import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveConta
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { useDialog } from "../../layout/dialog/DialogProvider";
-import { Client } from "../../linker";
+import { LokClient } from "../../linker";
 import { withLok } from "../LokContext";
 import { useReleaseQuery } from "../api/graphql";
 
@@ -45,15 +45,15 @@ export const Release: React.FC<AppProps> = (props) => {
         <SectionTitle>Clients</SectionTitle>
         <ResponsiveContainerGrid>
           {data?.release?.clients.map((client, index) => (
-            <Client.Smart
+            <LokClient.Smart
               object={client.id}
               className="border-1 bg-slate-800 rounded-lg p-5"
               key={index}
             >
-              <Client.DetailLink object={client.id}>
+              <LokClient.DetailLink object={client.id}>
                 {client?.id}
-              </Client.DetailLink>
-            </Client.Smart>
+              </LokClient.DetailLink>
+            </LokClient.Smart>
           ))}
         </ResponsiveContainerGrid>
       </div>

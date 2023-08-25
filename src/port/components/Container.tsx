@@ -1,24 +1,24 @@
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Provision } from "../../linker";
-import { useReleaseQuery } from "../../lok/api/graphql";
+import { RekuestProvision } from "../../linker";
 import { withLok } from "../../lok/LokContext";
+import { useReleaseQuery } from "../../lok/api/graphql";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { withRekuest } from "../../rekuest";
 import {
   useClientProvisionsQuery,
   usePortAgentQuery,
 } from "../../rekuest/api/graphql";
+import { withPort } from "../PortContext";
 import {
   useDetailContainerQuery,
   useRemoveContainerMutation,
   useRestartContainerMutation,
   useStopContainerMutation,
 } from "../api/graphql";
-import { withPort } from "../PortContext";
 
 export type ContainerProps = {
   id: string;
@@ -35,11 +35,14 @@ export const ContainerProvisions = (props: { clientId: string }) => {
       <SectionTitle>Provisions on this container</SectionTitle>
       <ResponsiveContainerGrid>
         {data?.allprovisions?.filter(notEmpty).map((prov) => (
-          <Provision.Smart object={prov.id} className="bg-black rounded p-3">
+          <RekuestProvision.Smart
+            object={prov.id}
+            className="bg-black rounded p-3"
+          >
             <Provision.DetailLink object={prov.id}>
               {prov.id}
             </Provision.DetailLink>
-          </Provision.Smart>
+          </RekuestProvision.Smart>
         ))}
       </ResponsiveContainerGrid>
     </>

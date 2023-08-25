@@ -1,8 +1,6 @@
 import { DatalayerProvider } from "@jhnnsrs/datalayer";
 import { FaktsProvider } from "@jhnnsrs/fakts";
 import { HerreProvider, windowRedirect } from "@jhnnsrs/herre";
-import { listen } from "@tauri-apps/api/event";
-import { open } from "@tauri-apps/api/shell";
 import React from "react";
 import { FlussProvider } from "../fluss/fluss-provider";
 import { LokProvider } from "../lok/LokProvider";
@@ -15,27 +13,12 @@ import { PostmanProvider } from "../rekuest/providers/postman/postman-provider";
 import { RequesterProvider } from "../rekuest/providers/requester/requester-provider";
 import { ReserverProvider } from "../rekuest/providers/reserver/reserver-provider";
 import { WidgetRegistryProvider } from "../rekuest/widgets/widget-provider";
+import { tauriRedirect } from "../tauri/funcs";
 
 const doRedirect = async (url: string, abortController: AbortController) => {
   console.log("Redirecting to", url);
   if (window.__TAURI__) {
-    console.log("Tauri detected");
-    open(url);
-
-    return new Promise<string>((resolve, reject) => {
-      console.log("Listening for code");
-      const unlisten = listen("oauth://url", async (event) => {
-        let url = event.payload as string;
-        let code = url.split("code=")[1];
-        console.log("Got code", code);
-        resolve(code);
-      });
-
-      const unlistend = listen("oauth://invalid-url", async (event) => {
-        console.log("Got invalid-rl", event);
-        reject(event);
-      });
-    });
+    return await tauriRedirect(url, abortController);
   } else {
     return await windowRedirect(url, abortController);
   }

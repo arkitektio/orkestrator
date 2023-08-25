@@ -1,6 +1,6 @@
 import { useHerre } from "@jhnnsrs/herre";
 import { useNavigate } from "react-router";
-import { MikroLink, RekuestLink } from "../linker";
+import { MikroModuleLink, RekuestModuleLink } from "../linker";
 
 interface Props {}
 
@@ -24,14 +24,14 @@ export const Home = (props: Props) => {
         </p>
         <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
           <div className="rounded-md shadow">
-            <MikroLink className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10">
+            <MikroModuleLink className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10">
               Open Data
-            </MikroLink>
+            </MikroModuleLink>
           </div>
           <div className="mt-3 sm:mt-0 sm:ml-3">
-            <RekuestLink className="w-full flex items-center justify-center  border-gray-500  border-dotted shadow-lg shadow-white/30 px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-600 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10">
+            <RekuestModuleLink className="w-full flex items-center justify-center  border-gray-500  border-dotted shadow-lg shadow-white/30 px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-600 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10">
               Dashboard
-            </RekuestLink>
+            </RekuestModuleLink>
           </div>
         </div>
       </div>

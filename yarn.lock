@@ -1122,10 +1122,10 @@
     "@jhnnsrs/datalayer" "0.0.6"
     cancelable-promise "^4.3.0"
 
-"@jhnnsrs/fakts@0.1.10":
-  version "0.1.10"
-  resolved "https://registry.yarnpkg.com/@jhnnsrs/fakts/-/fakts-0.1.10.tgz#38670e0e51ad85e489e22a8caa49d0f4df03e400"
-  integrity sha512-2rnpWRlRl1Yzehdw3yPh8GJ+LB6DBQkuHd+mo4zgeyPuTuDRIq0o0lfGVFpa0EsAIU5iu1IkVmepx5KIs+QKUw==
+"@jhnnsrs/fakts@0.1.15":
+  version "0.1.15"
+  resolved "https://registry.yarnpkg.com/@jhnnsrs/fakts/-/fakts-0.1.15.tgz#636548ced1554941cac01c7bbc7db8907d192a31"
+  integrity sha512-l/d3l0PdrKbfeb1nzFOnsVjpfH89RPI65t+xP05jf+C1e0zwVSamjhPkpVNkW9ripni4KI+5T/y6K2DQ2moCkw==
   dependencies:
     cancelable-promise "^4.3.0"
 
@@ -7252,6 +7252,13 @@ rxjs@^7.5.5:
   version "7.5.7"
   resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.5.7.tgz#2ec0d57fdc89ece220d2e702730ae8f1e49def39"
   integrity sha512-z9MzKh/UcOqB3i20H6rtrlaE/CgjLOvheWK/9ILrbhROGTweAi1BaFsTT9FbwZi5Trr1qNRs+MXkhmR06awzQA==
+  dependencies:
+    tslib "^2.1.0"
+
+rxjs@^7.8.1:
+  version "7.8.1"
+  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.8.1.tgz#6f6f3d99ea8044291efd92e7c7fcf562c4057543"
+  integrity sha512-AA3TVj+0A2iuIoQkWEK/tqFjBq2j+6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==
   dependencies:
     tslib "^2.1.0"
 

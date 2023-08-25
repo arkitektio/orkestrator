@@ -1,4 +1,4 @@
-import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { withRekuest } from "../../rekuest";
 import { useKickAgentMutation } from "../../rekuest/api/graphql";
 import { MateFinder } from "../types";

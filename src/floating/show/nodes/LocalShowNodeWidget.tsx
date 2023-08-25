@@ -1,11 +1,11 @@
 import React from "react";
 import "react-contexify/dist/ReactContexify.css";
 import { Handle, Position } from "reactflow";
-import { Node } from "../../../linker";
+import { RekuestNode } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
 import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
-import { ArkitektNodeProps, LocalNodeProps } from "../../types";
+import { LocalNodeProps } from "../../types";
 import { NodeShowLayout } from "./layout/NodeTrack";
 
 export const LocalShowNodeWIdget: React.FC<LocalNodeProps> = withLayout(
@@ -68,12 +68,12 @@ export const LocalShowNodeWIdget: React.FC<LocalNodeProps> = withLayout(
         ))}
         {node_data?.node?.id && (
           <>
-            <Node.DetailLink
+            <RekuestNode.DetailLink
               className="flex-initial font-light text-xl mb-1 custom-drag-handle cursor-pointer truncate"
               object={node_data?.node?.id}
             >
               {node_data?.node?.name}{" "}
-            </Node.DetailLink>
+            </RekuestNode.DetailLink>
             <p className="flex-initial text-xs font-extralight truncate">
               {node_data?.node?.description}
             </p>

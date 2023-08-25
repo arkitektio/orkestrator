@@ -1,4 +1,4 @@
-import { Release } from "../../linker";
+import { LokRelease } from "../../linker";
 import { useReleaseQuery } from "../api/graphql";
 import { withLok } from "../LokContext";
 
@@ -13,11 +13,11 @@ export const ReleaseTag: React.FC<{ version: string; identifier: string }> = ({
   return (
     <div>
       {data?.release?.id ? (
-        <Release.DetailLink object={data?.release?.id}>
+        <LokRelease.DetailLink object={data?.release?.id}>
           <div className="my-auto mr-2">
             {data.release.app?.identifier}:{data.release.version}
           </div>
-        </Release.DetailLink>
+        </LokRelease.DetailLink>
       ) : (
         "Unknown"
       )}

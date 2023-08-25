@@ -1,23 +1,8 @@
-import { link } from "fs";
-import React from "react";
-import { BsTrash } from "react-icons/bs";
-import { useConfirm } from "../../../components/confirmer/confirmer-context";
-import {
-  Dataset,
-  Experiment,
-  Link,
-  linkableModelToIdentifier,
-} from "../../../linker";
+import { MikroLink, linkableModelToIdentifier } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
-import { Data } from "../../../pages/Data";
+import { useConfirm } from "../../../providers/confirmer/confirmer-context";
 import { structure_to_widget } from "../../../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
-import {
-  ListDatasetFragment,
-  ListLinkFragment,
-  useDeleteDatasetMutation,
-  useDeleteLinkMutation,
-} from "../../api/graphql";
-import { withMikro } from "../../MikroContext";
+import { ListLinkFragment } from "../../api/graphql";
 
 interface LinkCardProps {
   link: ListLinkFragment;
@@ -36,13 +21,13 @@ export const LinkCard = ({ link, minimal, mates }: LinkCardProps) => {
     link.rightType && linkableModelToIdentifier(link.rightType);
 
   return (
-    <Link.Smart
+    <MikroLink.Smart
       object={link?.id}
       className={`bg-slate-700 text-white rounded shadow-md pl-3  group`}
       mates={mates}
     >
       <div className="px-1 py-2">
-        <Link.DetailLink
+        <MikroLink.DetailLink.DetailLink
           className="flex-grow cursor-pointer font-semibold"
           object={link.id}
         >
@@ -67,8 +52,8 @@ export const LinkCard = ({ link, minimal, mates }: LinkCardProps) => {
               </div>
             )}
           </div>
-        </Link.DetailLink>
+        </MikroLink.DetailLink.DetailLink>
       </div>
-    </Link.Smart>
+    </MikroLink.Smart>
   );
 };

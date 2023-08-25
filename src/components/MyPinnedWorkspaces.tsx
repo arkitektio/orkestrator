@@ -3,10 +3,9 @@ import { usePinnedWorkspacesQuery } from "../fluss/api/graphql";
 import { WorkspaceCard } from "../fluss/components/cards/WorkspaceCard";
 import { withFluss } from "../fluss/fluss";
 import { ListRender } from "../layout/SectionTitle";
-import { Workspace } from "../linker";
+import { FlussWorkspace } from "../linker";
 import { useDeleteWorkspaceMate } from "../mates/workspace/useDeleteWorkspaceMate";
 import { usePinWorkspaceMate } from "../mates/workspace/usePinWorkspaceMate";
-import { FlowHomeFilterParams } from "../pages/flows/FlowHome";
 export type IMyGraphsProps = {} & FlowHomeFilterParams;
 
 const MyPinnedWorkspaces: React.FC<IMyGraphsProps> = ({
@@ -28,9 +27,9 @@ const MyPinnedWorkspaces: React.FC<IMyGraphsProps> = ({
       array={data?.workspaces}
       loading={loading}
       title={
-        <Workspace.ListLink className="flex-0">
+        <FlussWorkspace.ListLink className="flex-0">
           Pinned Workspaces
-        </Workspace.ListLink>
+        </FlussWorkspace.ListLink>
       }
       refetch={refetch}
     >

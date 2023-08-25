@@ -1,6 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { BaseAction, Extension, useExtension } from "./GeneralMenuContext";
+import {
+  BaseAction,
+  Extension,
+  useExtension,
+} from "../../providers/command/GeneralMenuContext";
 
 export interface NavigationActionsProps {
   navigationActions?: BaseAction[];

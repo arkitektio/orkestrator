@@ -1,8 +1,7 @@
 import React, { useEffect } from "react";
 import Timestamp from "react-timestamp";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ListRender } from "../../layout/SectionTitle";
-import { Whale } from "../../linker";
+import { PortWhale } from "../../linker";
 import { useDeleteWhaleMate } from "../../mates/whale/useDeleteWhaleMate";
 import { useWhaleLifecycleMate } from "../../mates/whale/useWhaleLifecycleMate";
 import { withPort } from "../PortContext";
@@ -29,8 +28,6 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
   const deleteWhaleMate = useDeleteWhaleMate();
   const whaleLifecyleMate = useWhaleLifecycleMate();
 
-  const { confirm } = useConfirm();
-
   useEffect(() => {
     if (!subscribeToMore) return;
     let x = subscribeToMore<MyWhalesUpdateSubscription>({
@@ -53,12 +50,12 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
   return (
     <div>
       <ListRender
-        title={<Whale.ListLink>My Whales</Whale.ListLink>}
+        title={<PortWhale.ListLink>My Whales</PortWhale.ListLink>}
         array={data?.whales}
         refetch={refetch}
       >
         {(whale, index) => (
-          <Whale.Smart
+          <PortWhale.Smart
             key={index}
             object={whale.id}
             className="max-w-sm rounded  shadow-md bg-slate-800 text-white group relative"
@@ -87,12 +84,12 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
                   {whale?.deployment.image}
                 </span>
               </div>
-              <Whale.DetailLink
+              <PortWhale.DetailLink
                 className="text-xl font-light cursor-pointer mb-1"
                 object={whale?.id}
               >
                 {whale?.deployment.version}
-              </Whale.DetailLink>
+              </PortWhale.DetailLink>
               <div className="text-xs pb-2">
                 Build:{" "}
                 {whale.latestPull && (
@@ -100,7 +97,7 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
                 )}
               </div>
             </div>
-          </Whale.Smart>
+          </PortWhale.Smart>
         )}
       </ListRender>
     </div>

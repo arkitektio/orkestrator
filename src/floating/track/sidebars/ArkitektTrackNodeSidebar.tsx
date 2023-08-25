@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import Timestamp from "react-timestamp";
 import { ListRender } from "../../../layout/SectionTitle";
-import { Assignation } from "../../../linker";
+import { RekuestAssignation } from "../../../linker";
 import { useAssignationMate } from "../../../mates/assignation/useAssignationMates";
 import { withRekuest } from "../../../rekuest";
 import {
@@ -103,7 +103,7 @@ export const ArkitektTrackNodeSidebar = (
             limit={limit}
           >
             {(a) => (
-              <Assignation.Smart
+              <RekuestAssignation.Smart
                 object={a?.id}
                 className={`relative bg-slate-800 rounded p-2 rounded-md relative border border-slate-700 ${
                   [
@@ -137,7 +137,7 @@ export const ArkitektTrackNodeSidebar = (
                 <div className="absolute bottom-0 right-0 text-xs">
                   {tFromReference(a?.reference)}
                 </div>
-              </Assignation.Smart>
+              </RekuestAssignation.Smart>
             )}
           </ListRender>
         </div>

@@ -1,10 +1,5 @@
-import { PositionCanvas } from "../components/PositionCanvas";
-import { SaveParentSize } from "../layout/SaveParentSize";
-import {
-  useDetailMetricQuery,
-  useDetailPositionQuery,
-} from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
+import { useDetailMetricQuery } from "../mikro/api/graphql";
 import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 
 export const MetricWidget: React.FC<StructureDisplayProps> = ({ value }) => {

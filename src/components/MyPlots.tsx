@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { Plot } from "../linker";
+import { MikroPlot } from "../linker";
 import { useDeletePlotMate } from "../mates/plot/useDeletePlotMate";
 import { withMikro } from "../mikro/MikroContext";
 import { useMyPlotsQuery } from "../mikro/api/graphql";
 import { PlotCard } from "../mikro/components/cards/PlotCard";
-import { DataHomeFilterParams } from "../pages/data/Home";
+import { DataHomeFilterParams } from "../mikro/pages/Home";
 export type IMySamplesProps = {};
 
 export const SampleType = "Sample";
@@ -36,7 +36,7 @@ export const MyPlots: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
     <ListRender
       array={data?.myplots}
       loading={loading}
-      title={<Plot.ListLink className="flex-0">Plots</Plot.ListLink>}
+      title={<MikroPlot.ListLink className="flex-0">Plots</MikroPlot.ListLink>}
       refetch={refetch}
     >
       {(plot, index) => (

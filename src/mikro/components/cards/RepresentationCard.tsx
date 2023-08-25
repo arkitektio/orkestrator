@@ -1,6 +1,6 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { OptimizedImage } from "../../../layout/OptimizedImage";
-import { Representation } from "../../../linker";
+import { MikroRepresentation } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
 import { ListRepresentationFragment } from "../../api/graphql";
 
@@ -13,7 +13,7 @@ export const RepresentationCard = ({ rep, mates }: RepresentationCardProps) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Representation.Smart
+    <MikroRepresentation.Smart
       object={rep?.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
         `relative rounded group text-white bg-center bg-back-999 shadow-lg h-20  hover:bg-back-800 transition-all ease-in-out duration-200 group ${
@@ -33,7 +33,7 @@ export const RepresentationCard = ({ rep, mates }: RepresentationCardProps) => {
         />
       )}
       <div className="px-2 py-2 h-full w-full absolute top-0 left-0 bg-opacity-20 bg-back-999 hover:bg-opacity-10 transition-all ease-in-out duration-200 truncate">
-        <Representation.DetailLink
+        <MikroRepresentation.DetailLink
           className={({ isActive } /*  */) =>
             "z-10 font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -41,8 +41,8 @@ export const RepresentationCard = ({ rep, mates }: RepresentationCardProps) => {
           object={rep.id}
         >
           {rep?.name}
-        </Representation.DetailLink>
+        </MikroRepresentation.DetailLink>
       </div>
-    </Representation.Smart>
+    </MikroRepresentation.Smart>
   );
 };

@@ -1,0 +1,10 @@
+subscription WatchMentions {
+  mymentions {
+    create {
+      ...MentionComment
+    }
+    update {
+      ...MentionComment
+    }
+  }
+}

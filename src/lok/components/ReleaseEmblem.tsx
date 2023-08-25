@@ -1,4 +1,4 @@
-import { Release } from "../../linker";
+import { LokRelease } from "../../linker";
 import { useReleaseQuery } from "../api/graphql";
 import { withLok } from "../LokContext";
 
@@ -13,7 +13,7 @@ export const ReleaseEmblem: React.FC<{
   return (
     <div className=" text-sm absolute right-0 bottom-0 translate-x-2 translate-y-2">
       {data?.release?.id && (
-        <Release.DetailLink object={data?.release?.id}>
+        <LokRelease.DetailLink object={data?.release?.id}>
           <img
             className="h-8 w-8 rounded-full hover:ring-pink-500 hover:ring-2 cursor-pointer"
             src={
@@ -23,7 +23,7 @@ export const ReleaseEmblem: React.FC<{
             }
             alt=""
           />
-        </Release.DetailLink>
+        </LokRelease.DetailLink>
       )}
     </div>
   );

@@ -7,7 +7,7 @@ import { SelfActions } from "../../components/SelfActions";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { PageLayout } from "../../layout/PageLayout";
 import { Refetcher } from "../../layout/page/Refetcher";
-import { Dataset } from "../../linker";
+import { MikroDataset } from "../../linker";
 import { withMikroNext } from "../MikroNextContext";
 import { useGetImageQuery, usePinImageMutation } from "../api/graphql";
 import ChannelViewCard from "../components/cards/ChannelViewCard";
@@ -106,12 +106,12 @@ const ImagePage: React.FC<IRepresentationScreenProps> = () => {
               <>
                 <div className="font-light">In Dataset</div>
                 <div className="flex flex-row mb-2">
-                  <Dataset.DetailLink
+                  <MikroDataset.DetailLink
                     className="text-xl cursor-pointer p-1 border rounded mr-2 border-gray-300"
                     object={data?.image?.dataset?.id}
                   >
                     {data?.image?.dataset.name}
-                  </Dataset.DetailLink>
+                  </MikroDataset.DetailLink>
                 </div>
               </>
             )}

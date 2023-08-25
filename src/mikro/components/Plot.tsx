@@ -5,17 +5,13 @@ import { RiArrowDownFill, RiPlayFill, RiStopFill } from "react-icons/ri";
 import { useAlert } from "../../components/alerter/alerter-context";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../components/forms/fields/text_input";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
-import {
-  CommentableModels,
-  useDetailPlotQuery,
-  useUpdatePlotMutation,
-} from "../api/graphql";
+import { MikroPlot } from "../../linker";
 import { useMikro, withMikro } from "../MikroContext";
+import { useDetailPlotQuery, useUpdatePlotMutation } from "../api/graphql";
 import { MikroIQLField } from "./iql/MikroIQLField";
-import { parseQueryData } from "./plot/parser";
 import { Tree } from "./plot/Tree";
+import { parseQueryData } from "./plot/parser";
 import { PlotTree } from "./plot/types";
 
 export interface PlotProps {
@@ -193,12 +189,7 @@ export const Plot: React.FC<PlotProps> = (props) => {
         },
         {
           label: "Comments",
-          content: (
-            <MikroKomments
-              id={props.id}
-              model={CommentableModels.GrunnlagContext}
-            />
-          ),
+          content: <MikroPlot.Komments object={id} />,
           key: "comments",
         },
       ]}

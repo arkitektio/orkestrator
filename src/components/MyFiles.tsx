@@ -14,7 +14,7 @@ import {
   useUploadOmeroFileMutation,
 } from "../mikro/api/graphql";
 import { FileCard } from "../mikro/components/cards/FileCard";
-import { DataHomeFilterParams } from "../pages/data/Home";
+import { DataHomeFilterParams } from "../mikro/pages/Home";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 export type IMyRepresentationsProps = {};
 
@@ -37,12 +37,8 @@ const MyFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
   limit,
 }) => {
   const [offset, setOffset] = useState(0);
-  const [progress, setProgress] = useState(undefined);
 
   const [uploadFutures, setUploadFutures] = useState<UploadFuture[]>([]);
-  const [pendingFutures, setPendingFutures] = useState<UploadFuture[]>([]);
-
-  const { s3resolve } = useDatalayer();
 
   const variables = { limit: limit, offset: 0, createdDay: createdDay };
 

@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { Table } from "../linker";
+import { MikroTable } from "../linker";
 import { useDeleteTableMate } from "../mates/table/useDeleteTableMate";
 import { withMikro } from "../mikro/MikroContext";
 import {
@@ -10,8 +10,8 @@ import {
   useMyTablesQuery,
 } from "../mikro/api/graphql";
 import { TableCard } from "../mikro/components/cards/TableCard";
-import { DataHomeFilterParams } from "../pages/data/Home";
-import { useConfirm } from "./confirmer/confirmer-context";
+import { DataHomeFilterParams } from "../mikro/pages/Home";
+import { useConfirm } from "../providers/confirmer/confirmer-context";
 export type IMyRepresentationsProps = {};
 
 const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
@@ -74,7 +74,9 @@ const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
     <ListRender
       array={data?.mytables}
       loading={loading}
-      title={<Table.ListLink className="flex-0">Stages</Table.ListLink>}
+      title={
+        <MikroTable.ListLink className="flex-0">Stages</MikroTable.ListLink>
+      }
       refetch={refetch}
     >
       {(table, index) => (

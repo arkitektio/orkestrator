@@ -1,5 +1,5 @@
-import { TwoDOffcanvas } from "../experimental/render/TwoDOffcanvas";
 import { useDetailRepresentationQuery } from "../mikro/api/graphql";
+import { TwoDOffcanvas } from "../mikro/components/canvases/TwoDOffcanvas";
 import { withMikro } from "../mikro/MikroContext";
 import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 

@@ -1,11 +1,6 @@
-import { useConfirm } from "../../../components/confirmer/confirmer-context";
-import { Roi } from "../../../linker";
+import { MikroRoi } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
-import { useMikro, withMikro } from "../../MikroContext";
-import {
-  RepRoiFragment,
-  useDeleteRepresentationMutation,
-} from "../../api/graphql";
+import { RepRoiFragment } from "../../api/graphql";
 
 interface PositionCardProps {
   roi: RepRoiFragment;
@@ -13,12 +8,8 @@ interface PositionCardProps {
 }
 
 export const RoiCard = ({ roi, mates }: PositionCardProps) => {
-  const { s3resolve } = useMikro();
-  const [deletePosition] = withMikro(useDeleteRepresentationMutation)();
-  const { confirm } = useConfirm();
-
   return (
-    <Roi.Smart
+    <MikroRoi.Smart
       showSelfMates={true}
       placement="bottom"
       object={roi.id}
@@ -32,7 +23,7 @@ export const RoiCard = ({ roi, mates }: PositionCardProps) => {
       mates={mates}
     >
       <div className="px-6 py-4 truncate relative">
-        <Roi.DetailLink
+        <MikroRoi.DetailLink
           className={({ isActive } /*  */) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -40,8 +31,8 @@ export const RoiCard = ({ roi, mates }: PositionCardProps) => {
           object={roi.id}
         >
           <span className="truncate">{roi?.label}</span>
-        </Roi.DetailLink>
+        </MikroRoi.DetailLink>
       </div>
-    </Roi.Smart>
+    </MikroRoi.Smart>
   );
 };

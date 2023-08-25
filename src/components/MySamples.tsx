@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
 import { useDialog } from "../layout/dialog/DialogProvider";
-import { Sample } from "../linker";
+import { MikroSample } from "../linker";
 import { useDeleteSampleMate } from "../mates/sample/useDeleteSampleMutation";
 import { withMikro } from "../mikro/MikroContext";
 import {
@@ -11,7 +11,7 @@ import {
   useMySamplesQuery,
 } from "../mikro/api/graphql";
 import { SampleCard } from "../mikro/components/cards/SampleCard";
-import { DataHomeFilterParams } from "../pages/data/Home";
+import { DataHomeFilterParams } from "../mikro/pages/Home";
 export type IMySamplesProps = {};
 
 export const SampleType = "Sample";
@@ -83,7 +83,9 @@ const MySamples: React.FC<IMySamplesProps & DataHomeFilterParams> = ({
       <ListRender
         array={data?.mysamples}
         loading={loading}
-        title={<Sample.ListLink className="flex-0">Stages</Sample.ListLink>}
+        title={
+          <MikroSample.ListLink className="flex-0">Stages</MikroSample.ListLink>
+        }
         refetch={refetch}
       >
         {(s, index) => (

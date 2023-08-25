@@ -1,5 +1,5 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
-import { User } from "../../../linker";
+import { LokUser } from "../../../linker";
 import { ListUserFragment } from "../../api/graphql";
 
 interface UserCardProps {
@@ -10,11 +10,11 @@ export const UserCard = ({ user }: UserCardProps) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <User.Smart
+    <LokUser.Smart
       object={user.id}
       className="bg-back-800 p-3 text-white rounded-md rounded @container cursor-pointer"
     >
-      <User.DetailLink object={user.id} className="flex flex-row">
+      <LokUser.DetailLink object={user.id} className="flex flex-row">
         <img
           height={64}
           width={64}
@@ -25,7 +25,7 @@ export const UserCard = ({ user }: UserCardProps) => {
           }
           className="h-10 w-10 object-fit flex-initial aspect-h-1 aspect-w-1 rounded-md mr-2"
         />
-        <User.DetailLink
+        <LokUser.DetailLink
           object={user.id}
           className="flex-grow flex-col truncate"
         >
@@ -37,8 +37,8 @@ export const UserCard = ({ user }: UserCardProps) => {
           <div className="text-sm font-extralight hidden @sm:block">
             {user.username}
           </div>
-        </User.DetailLink>
-      </User.DetailLink>
-    </User.Smart>
+        </LokUser.DetailLink>
+      </LokUser.DetailLink>
+    </LokUser.Smart>
   );
 };

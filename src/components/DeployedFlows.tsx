@@ -1,7 +1,7 @@
 import React from "react";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
-import { Reservation } from "../linker";
+import { RekuestReservation } from "../linker";
 import { useRequesterMate } from "../mates/reservation/useRequesterMate";
 import { ReservationStatus } from "../rekuest/api/graphql";
 import { useReserver } from "../rekuest/providers/reserver/reserver-context";
@@ -24,7 +24,7 @@ const DeployedFlows: React.FC<IMyNodesProps> = ({}) => {
           ?.filter((res) => res?.node?.interfaces?.includes("workflow"))
           ?.filter(notEmpty)
           .map((r, index) => (
-            <Reservation.Smart
+            <RekuestReservation.Smart
               showSelfMates={true}
               placement="bottom"
               object={r.id}
@@ -37,14 +37,14 @@ const DeployedFlows: React.FC<IMyNodesProps> = ({}) => {
               }
               mates={[requesterMate(r)]}
             >
-              <Reservation.DetailLink
+              <RekuestReservation.DetailLink
                 className={({ isActive }) =>
                   "cursor-pointer " + (isActive ? "text-primary-300" : "")
                 }
                 object={r?.id}
               >
                 <span className="truncate">{r?.title || r.node?.name}</span>
-              </Reservation.DetailLink>
+              </RekuestReservation.DetailLink>
               {r?.title && (
                 <p className="font-semibold text-xs">{r?.node?.name}</p>
               )}
@@ -62,7 +62,7 @@ const DeployedFlows: React.FC<IMyNodesProps> = ({}) => {
               {r?.status == ReservationStatus.Rerouting && (
                 <div className="text-xs">Reservation requires rerouting...</div>
               )}
-            </Reservation.Smart>
+            </RekuestReservation.Smart>
           ))}
       </ResponsiveGrid>
     </div>

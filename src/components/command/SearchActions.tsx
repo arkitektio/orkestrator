@@ -1,13 +1,16 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { Representation, Stage } from "../../linker";
+import { MikroRepresentation, MikroStage } from "../../linker";
 import { withMikro } from "../../mikro/MikroContext";
 import {
   useSearchableRepresentationsLazyQuery,
   useSearchableStagesLazyQuery,
 } from "../../mikro/api/graphql";
+import {
+  Extension,
+  useExtension,
+} from "../../providers/command/GeneralMenuContext";
 import { queryfiltered } from "./GeneralMenu";
-import { Extension, useExtension } from "./GeneralMenuContext";
 
 export interface NavigationActionsProps {}
 
@@ -97,11 +100,13 @@ export const SearchActions: React.FC<NavigationActionsProps> = ({}) => {
     do: async (action) => {
       switch (action.params?.type) {
         case "images":
-          navigate(Representation.linkBuilder(action.params?.representation));
+          navigate(
+            MikroRepresentation.linkBuilder(action.params?.representation)
+          );
 
           break;
         case "stage":
-          navigate(Stage.linkBuilder(action.params?.stage));
+          navigate(MikroStage.linkBuilder(action.params?.stage));
       }
     },
   };

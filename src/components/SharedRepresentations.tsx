@@ -8,7 +8,7 @@ import {
   useDeleteRepresentationMutation,
   useSharedRepresentationsQuery,
 } from "../mikro/api/graphql";
-import { useConfirm } from "./confirmer/confirmer-context";
+import { useConfirm } from "../providers/confirmer/confirmer-context";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 export type IMyRepresentationsProps = {};
 

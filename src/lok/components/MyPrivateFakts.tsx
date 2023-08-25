@@ -1,7 +1,7 @@
 import React from "react";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { notEmpty } from "../../floating/utils";
-import { Client } from "../../linker";
+import { LokClient } from "../../linker";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { withLok } from "../LokContext";
 import {
   MyPrivateClientsDocument,
@@ -42,13 +42,13 @@ const MyClients: React.FC<IAppProps> = ({ onAppClicked }) => {
       </span>
       <div className="grid grid-cols-6 gap-3 mt-2 ">
         {data?.myPrivateClients?.filter(notEmpty).map((client, index) => (
-          <Client.Smart
+          <LokClient.Smart
             object={client.id}
             key={index}
             className="bg-white rounded shadow-md pl-3 pr-2 py-2 flex group"
             mates={[]}
           >
-            <Client.DetailLink
+            <LokClient.DetailLink
               object={client.id}
               className="flex-none cursor-pointer"
               onClick={() =>
@@ -56,8 +56,8 @@ const MyClients: React.FC<IAppProps> = ({ onAppClicked }) => {
               }
             >
               {client?.release?.app?.identifier}/{client?.release?.version}
-            </Client.DetailLink>
-          </Client.Smart>
+            </LokClient.DetailLink>
+          </LokClient.Smart>
         ))}
       </div>
     </>

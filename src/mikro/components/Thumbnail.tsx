@@ -1,14 +1,11 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import React from "react";
 import { SelfActions } from "../../components/SelfActions";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { useDeleteLinkMate } from "../../mates/link/useDeleteFileMate";
-import { useDeleteModelMate } from "../../mates/model/useDeleteModelMate";
+import { MikroTimepoint } from "../../linker";
 import { withMikro } from "../MikroContext";
-import { CommentableModels, useDetailThumbnailQuery } from "../api/graphql";
+import { useDetailThumbnailQuery } from "../api/graphql";
 
 export type IExperimentProps = {
   id: string;
@@ -19,19 +16,13 @@ const Thumbnail: React.FC<IExperimentProps> = ({ id }) => {
     variables: { id: id },
   });
   const { s3resolve } = useDatalayer();
-  const deleteLinkMate = useDeleteLinkMate();
-  const deleteModelMate = useDeleteModelMate();
-
-  const { confirm } = useConfirm();
 
   return (
     <PageLayout
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagContext} />
-          ),
+          content: <MikroTimepoint.Komments object={id} />,
           key: "comments",
         },
       ]}

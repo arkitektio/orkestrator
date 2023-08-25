@@ -1,14 +1,6 @@
-import React from "react";
-import { BsTrash } from "react-icons/bs";
-import { useConfirm } from "../../../components/confirmer/confirmer-context";
-import { Stage } from "../../../linker";
+import { MikroStage } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
-import {
-  ListStageFragment,
-  ListExperimentFragment,
-  useDeleteStageMutation,
-} from "../../api/graphql";
-import { withMikro } from "../../MikroContext";
+import { ListStageFragment } from "../../api/graphql";
 
 interface StageCardProps {
   stage: ListStageFragment;
@@ -17,12 +9,14 @@ interface StageCardProps {
 
 export const StageCard = ({ stage, mates }: StageCardProps) => {
   return (
-    <Stage.Smart
+    <MikroStage.Smart
       object={stage.id}
       className="bg-back-800 p-4 text-white rounded shadow-lg"
       mates={mates}
     >
-      <Stage.DetailLink object={stage.id}>{stage.name}</Stage.DetailLink>
-    </Stage.Smart>
+      <MikroStage.DetailLink object={stage.id}>
+        {stage.name}
+      </MikroStage.DetailLink>
+    </MikroStage.Smart>
   );
 };

@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Whale } from "../../linker";
+import { PortWhale } from "../../linker";
 import { useContainerLifecycleMate } from "../../mates/container/useContainerLifecycleMate";
 import { useSettings } from "../../settings/settings-context";
 import { withPort } from "../PortContext";
@@ -41,9 +41,9 @@ const MyContainers: React.FC<IMyGraphsProps> = ({}) => {
 
   return (
     <div>
-      <Whale.ListLink>
+      <PortWhale.ListLink>
         <SectionTitle>My Contained Apps</SectionTitle>
-      </Whale.ListLink>
+      </PortWhale.ListLink>
       <button onClick={() => refetch()}>Hallo</button>
       <br />
       {JSON.stringify(error)}

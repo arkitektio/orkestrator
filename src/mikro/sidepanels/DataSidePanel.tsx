@@ -3,12 +3,12 @@ import * as React from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { OptimizedImage } from "../../layout/OptimizedImage";
 import {
-  Dataset,
-  Experiment,
+  MikroDataset,
+  MikroExperiment,
   MikroFile,
-  Representation,
-  Sample,
-  Table,
+  MikroRepresentation,
+  MikroSample,
+  MikroTable,
 } from "../../linker";
 import { withMikro } from "../MikroContext";
 import {
@@ -23,7 +23,7 @@ export const RepresentationItem = ({ re }: any) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Representation.Smart
+    <MikroRepresentation.Smart
       placement="bottom"
       object={re.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
@@ -43,7 +43,7 @@ export const RepresentationItem = ({ re }: any) => {
         />
       )}
       <div className="px-6 py-4 truncate relative">
-        <Representation.DetailLink
+        <MikroRepresentation.DetailLink
           className={({ isActive } /*  */) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -51,12 +51,12 @@ export const RepresentationItem = ({ re }: any) => {
           object={re.id}
         >
           <span className="truncate">{re?.name}</span>
-        </Representation.DetailLink>
+        </MikroRepresentation.DetailLink>
         <p className="text-white-700 text-base group-hover:block hidden">
           {re?.sample?.name}
         </p>
       </div>
-    </Representation.Smart>
+    </MikroRepresentation.Smart>
   );
 };
 
@@ -64,7 +64,7 @@ export const SampleItem = ({ sa }: any) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Sample.Smart
+    <MikroSample.Smart
       showSelfMates={true}
       placement="bottom"
       object={sa.id}
@@ -77,7 +77,7 @@ export const SampleItem = ({ sa }: any) => {
       }
     >
       <div className="px-6 py-4 truncate">
-        <Sample.DetailLink
+        <MikroSample.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -85,10 +85,10 @@ export const SampleItem = ({ sa }: any) => {
           object={sa.id}
         >
           <span className="truncate">{sa?.name}</span>
-        </Sample.DetailLink>
+        </MikroSample.DetailLink>
         <p className="text-white-700 text-base"></p>
       </div>
-    </Sample.Smart>
+    </MikroSample.Smart>
   );
 };
 
@@ -96,7 +96,7 @@ export const ExperimentItem = ({ experiment }: any) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Experiment.Smart
+    <MikroExperiment.Smart
       showSelfMates={true}
       placement="bottom"
       object={experiment.id}
@@ -109,7 +109,7 @@ export const ExperimentItem = ({ experiment }: any) => {
       }
     >
       <div className="px-6 py-4 truncate">
-        <Experiment.DetailLink
+        <MikroExperiment.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -117,10 +117,10 @@ export const ExperimentItem = ({ experiment }: any) => {
           object={experiment.id}
         >
           <span className="truncate">{experiment?.name}</span>
-        </Experiment.DetailLink>
+        </MikroExperiment.DetailLink>
         <p className="text-white-700 text-base"></p>
       </div>
-    </Experiment.Smart>
+    </MikroExperiment.Smart>
   );
 };
 
@@ -128,7 +128,7 @@ export const DatasetItem = ({ dataset }: any) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Dataset.Smart
+    <MikroDataset.Smart
       showSelfMates={true}
       placement="bottom"
       object={dataset.id}
@@ -141,7 +141,7 @@ export const DatasetItem = ({ dataset }: any) => {
       }
     >
       <div className="px-6 py-4 truncate">
-        <Dataset.DetailLink
+        <MikroDataset.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -149,10 +149,10 @@ export const DatasetItem = ({ dataset }: any) => {
           object={dataset.id}
         >
           <span className="truncate">{dataset?.name}</span>
-        </Dataset.DetailLink>
+        </MikroDataset.DetailLink>
         <p className="text-white-700 text-base"></p>
       </div>
-    </Dataset.Smart>
+    </MikroDataset.Smart>
   );
 };
 
@@ -160,7 +160,7 @@ export const TableItem = ({ table }: any) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Table.Smart
+    <MikroTable.Smart
       showSelfMates={true}
       placement="bottom"
       object={table.id}
@@ -173,7 +173,7 @@ export const TableItem = ({ table }: any) => {
       }
     >
       <div className="px-6 py-4 truncate">
-        <Table.DetailLink
+        <MikroTable.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -181,10 +181,10 @@ export const TableItem = ({ table }: any) => {
           object={table.id}
         >
           <span className="truncate">{table?.name}</span>
-        </Table.DetailLink>
+        </MikroTable.DetailLink>
         <p className="text-white-700 text-base"></p>
       </div>
-    </Table.Smart>
+    </MikroTable.Smart>
   );
 };
 

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Assignation } from "../../../linker";
+import { RekuestAssignation } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
 import {
   AssignationStatus,
@@ -41,13 +41,13 @@ export const ParamsSidebar = (props: {}) => {
   return (
     <div className="h-full flex flex-col text-white p-3 overflow-y-auto">
       {run?.assignation && (
-        <Assignation.DetailLink
+        <RekuestAssignation.DetailLink
           object={run.assignation}
           className="text-white flex-initial flex flex-row text-xl"
         >
           <AssignationPuls status={data?.assignation?.status} />
           <div className="ml-2">{data?.assignation?.status}</div>
-        </Assignation.DetailLink>
+        </RekuestAssignation.DetailLink>
       )}
 
       {data?.assignation?.statusmessage &&
@@ -97,9 +97,11 @@ export const ParamsSidebar = (props: {}) => {
             <div className="text-white  my-auto">
               Assigned in the context of
             </div>
-            <Assignation.DetailLink object={data?.assignation?.parent.id}>
+            <RekuestAssignation.DetailLink
+              object={data?.assignation?.parent.id}
+            >
               {data?.assignation?.parent?.reservation?.node?.name}
-            </Assignation.DetailLink>
+            </RekuestAssignation.DetailLink>
           </div>
         )}
       </div>

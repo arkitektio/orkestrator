@@ -3,18 +3,14 @@ import { Form, Formik } from "formik";
 import React, { useEffect, useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
-import { PositionCanvas } from "../../components/PositionCanvas";
-import { SelfActions } from "../../components/SelfActions";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { TextInputField } from "../../components/forms/fields/text_input";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { ListRender, SectionTitle } from "../../layout/SectionTitle";
-import { Instrument } from "../../linker";
+import { MikroInstrument, MikroStage } from "../../linker";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { useSettings } from "../../settings/settings-context";
 import { withMikro } from "../MikroContext";
 import {
-  CommentableModels,
   DetailStageDocument,
   UpdateStageMutationVariables,
   useDeletePositionMutation,
@@ -23,6 +19,7 @@ import {
   useTagSearchLazyQuery,
   useUpdateStageMutation,
 } from "../api/graphql";
+import { PositionCanvas } from "./canvases/PositionCanvas";
 import { PositionCard } from "./cards/PositionCard";
 
 export type IExperimentProps = {
@@ -74,13 +71,11 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagStage} />
-          ),
+          content: <MikroStage.Komments object={id} />,
           key: "comments",
         },
       ]}
-      actions={<SelfActions type={"@mikro/stage"} object={id} />}
+      actions={<MikroStage.Actions object={id} />}
     >
       {!error && data && (
         <div className="p-3 flex-grow flex flex-col">
@@ -133,9 +128,11 @@ const Stage: React.FC<IExperimentProps> = ({ id }) => {
               <div className="font-light mt-2 ">Stage in</div>
               <div className="text-md mt-2 ">
                 {data?.stage?.instrument && (
-                  <Instrument.DetailLink object={data?.stage?.instrument?.id}>
+                  <MikroInstrument.DetailLink
+                    object={data?.stage?.instrument?.id}
+                  >
                     {data?.stage?.instrument?.name}
-                  </Instrument.DetailLink>
+                  </MikroInstrument.DetailLink>
                 )}
               </div>
               <div className="font-light mt-2 ">Created by</div>

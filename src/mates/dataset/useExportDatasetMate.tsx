@@ -1,4 +1,4 @@
-import { useConfirm } from "../../components/confirmer/confirmer-context";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { MateFinder } from "../types";
 
 export const useExportDatasetMate = (): MateFinder => {

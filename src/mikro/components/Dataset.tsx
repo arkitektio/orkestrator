@@ -3,22 +3,21 @@ import React, { useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
 import { SelfActions } from "../../components/SelfActions";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { DropZone } from "../../components/layout/DropZone";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
+import { MikroDataset } from "../../linker";
 import { usePutDatasetsMate } from "../../mates/dataset/usePutDatasetsMate";
 import { useDeleteFileMate } from "../../mates/file/useDeleteFileMate";
 import { useDownloadFileMate } from "../../mates/file/useDownloadFileMate";
 import { useReleaseFileMate } from "../../mates/file/useReleaseFileMate";
 import { useReleaseRepresentationMate } from "../../mates/representation/useReleaseRepresentationMate";
 import { useReleaseSampleMate } from "../../mates/sample/useReleaseSampleMate";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { withMikro } from "../MikroContext";
 import {
-  CommentableModels,
   DetailDatasetDocument,
   DetailDatasetQuery,
   useDetailDatasetQuery,
@@ -100,9 +99,7 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
         {
           key: "comments",
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagDataset} />
-          ),
+          content: <MikroDataset.Komments object={id} />,
         },
       ]}
       actions={<SelfActions type="@mikro/dataset" object={id} />}
@@ -166,13 +163,14 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
               <DatasetCard dataset={sample} mates={[releaseDatasetsMate]} />
             ))}
             <DropZone
-              accepts={["item:@mikro/dataset", "list:@mikro/dataset"]}
+              accepts={["@mikro/dataset"]}
+              compareWithList={data?.dataset?.children}
               className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg truncate"
               onDrop={async (item) => {
                 await putDatasets({
                   variables: {
                     dataset: id,
-                    datasets: item.map((i) => i.object),
+                    datasets: item.map((i) => i.id),
                   },
                 });
               }}
@@ -188,13 +186,13 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
               <SampleCard sample={sample} mates={[releaseSampleMate]} />
             ))}
             <DropZone
-              accepts={["item:@mikro/sample", "list:@mikro/sample"]}
+              accepts={["@mikro/sample"]}
               className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg truncate"
               onDrop={async (item) => {
                 await putSamples({
                   variables: {
                     dataset: id,
-                    samples: item.map((i) => i.object),
+                    samples: item.map((i) => i.id),
                   },
                 });
               }}
@@ -213,16 +211,13 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
               />
             ))}
             <DropZone
-              accepts={[
-                "item:@mikro/representation",
-                "list:@mikro/representation",
-              ]}
+              accepts={["@mikro/representation"]}
               className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg truncate"
               onDrop={async (item) => {
                 await putRepresentations({
                   variables: {
                     dataset: id,
-                    representations: item.map((i) => i.object),
+                    representations: item.map((i) => i.id),
                   },
                 });
               }}
@@ -253,13 +248,13 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
             />
 
             <DropZone
-              accepts={["item:@mikro/omerofile", "list:@mikro/omerofile"]}
+              accepts={["@mikro/omerofile"]}
               className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg truncate"
               onDrop={async (item) => {
                 await putFiles({
                   variables: {
                     dataset: id,
-                    files: item.map((i) => i.object),
+                    files: item.map((i) => i.id),
                   },
                 });
               }}

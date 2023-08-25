@@ -1,5 +1,5 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
-import { Team } from "../../../linker";
+import { LokTeam } from "../../../linker";
 import { ListGroupFragment } from "../../api/graphql";
 
 interface TeamCardProps {
@@ -10,7 +10,7 @@ export const TeamCard = ({ group }: TeamCardProps) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Team.Smart
+    <LokTeam.Smart
       object={group.id}
       className="bg-back-800 p-3 text-white rounded-md rounded @container"
     >
@@ -25,7 +25,7 @@ export const TeamCard = ({ group }: TeamCardProps) => {
           }
           className="h-10 w-10 object-fit flex-initial aspect-h-1 aspect-w-1 rounded-md mr-2"
         />
-        <Team.DetailLink
+        <LokTeam.DetailLink
           object={group.id}
           className="flex-grow flex-col truncate"
         >
@@ -33,8 +33,8 @@ export const TeamCard = ({ group }: TeamCardProps) => {
             {group?.profile?.name || group.name}
           </div>
           <div className="text-sm font-extralight">{group.name}</div>
-        </Team.DetailLink>
+        </LokTeam.DetailLink>
       </div>
-    </Team.Smart>
+    </LokTeam.Smart>
   );
 };

@@ -1,15 +1,15 @@
 import React from "react";
 import { SelfActions } from "../../components/SelfActions";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
+import { MikroContext } from "../../linker";
 import { useDeleteLinkMate } from "../../mates/link/useDeleteFileMate";
 import { useDeleteModelMate } from "../../mates/model/useDeleteModelMate";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { withMikro } from "../MikroContext";
-import { CommentableModels, useDetailContextQuery } from "../api/graphql";
+import { useDetailContextQuery } from "../api/graphql";
 import { LinkCard } from "./cards/LinkCard";
 import { ModelCard } from "./cards/ModelCard";
 
@@ -32,9 +32,7 @@ const Context: React.FC<IExperimentProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagContext} />
-          ),
+          content: <MikroContext.Komments object={id} />,
           key: "comments",
         },
       ]}

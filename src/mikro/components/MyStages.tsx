@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { ListRender } from "../../layout/SectionTitle";
-import { Stage } from "../../linker";
+import { MikroStage } from "../../linker";
 import { useDeleteStageMate } from "../../mates/stage/useDeleteStageMate";
-import { DataHomeFilterParams } from "../../pages/data/Home";
 import { withMikro } from "../MikroContext";
 import { useMyStagesQuery } from "../api/graphql";
+import { DataHomeFilterParams } from "../pages/Home";
 import { StageCard } from "./cards/StageCard";
 
 export type MyAcquisitionsProps = {};
@@ -35,7 +35,9 @@ const MyStages: React.FC<MyAcquisitionsProps & DataHomeFilterParams> = ({
     <ListRender
       array={data?.mystages}
       loading={loading}
-      title={<Stage.ListLink className="flex-0">Stages</Stage.ListLink>}
+      title={
+        <MikroStage.ListLink className="flex-0">Stages</MikroStage.ListLink>
+      }
       refetch={refetch}
     >
       {(s, index) => (

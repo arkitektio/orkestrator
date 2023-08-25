@@ -4,7 +4,7 @@ import { FlowFragment } from "../../fluss/api/graphql";
 import { DeployFlowDialog } from "../../fluss/components/dialogs/DeployFlowDialog";
 import { ActionButton } from "../../layout/ActionButton";
 import { useDialog } from "../../layout/dialog/DialogProvider";
-import { Node } from "../../linker";
+import { RekuestNode } from "../../linker";
 import { withRekuest } from "../../rekuest";
 import { ReservationStatus, useNodesQuery } from "../../rekuest/api/graphql";
 import { useRequester } from "../../rekuest/providers/requester/requester-context";
@@ -99,7 +99,7 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
           label={"Open"}
           description="Undeploy this flow"
           onAction={async () => {
-            navigate(Node.linkBuilder(deployed.id));
+            navigate(RekuestNode.linkBuilder(deployed.id));
           }}
         />
       )}

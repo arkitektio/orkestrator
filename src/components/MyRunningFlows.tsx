@@ -1,6 +1,6 @@
 import React from "react";
 import { SectionTitle } from "../layout/SectionTitle";
-import { Flow } from "../linker";
+import { FlussFlow } from "../linker";
 import { ProvisionStatus } from "../rekuest/api/graphql";
 import { usePostman } from "../rekuest/providers/legacy/postman-context";
 
@@ -17,9 +17,9 @@ const MyRunningFlows: React.FC<IGeneratorsProps> = ({}) => {
 
   return (
     <>
-      <Flow.ListLink>
+      <FlussFlow.ListLink>
         <SectionTitle>Running Flows</SectionTitle>
-      </Flow.ListLink>
+      </FlussFlow.ListLink>
       <div className="pt-2 pb-2 grid grid-flow-col grid-cols-6 grid-rows-1 gap-4">
         {flowProvisions?.map((prov, index) => (
           <div

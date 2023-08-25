@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { useDialog } from "../layout/dialog/DialogProvider";
-import { Model } from "../linker";
+import { MikroModel } from "../linker";
 import { useDeleteModelMate } from "../mates/model/useDeleteModelMate";
 import { withMikro } from "../mikro/MikroContext";
 import { useMyModelsQuery } from "../mikro/api/graphql";
@@ -21,16 +20,7 @@ const MyModels: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
     variables: { limit: 20, offset: 0, createdDay: createdDay },
   });
 
-  const { ask } = useDialog();
-  const [show, setShow] = useState(false);
-
-  const [offset, setOffset] = useState(0);
-
   const deleteModelMate = useDeleteModelMate();
-
-  useEffect(() => {
-    refetch({ limit: 20, offset: offset });
-  }, [offset, limit]);
 
   if (error) return <div>{error.message}</div>;
 
@@ -38,7 +28,9 @@ const MyModels: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
     <ListRender
       array={data?.mymodels}
       loading={loading}
-      title={<Model.ListLink className="flex-0">Models</Model.ListLink>}
+      title={
+        <MikroModel.ListLink className="flex-0">Models</MikroModel.ListLink>
+      }
       refetch={refetch}
     >
       {(m, index) => (

@@ -1,15 +1,6 @@
-import React from "react";
-import { BsTrash } from "react-icons/bs";
-import { useConfirm } from "../../../components/confirmer/confirmer-context";
-import { OptimizedImage } from "../../../layout/OptimizedImage";
-import { Experiment, Position, Representation } from "../../../linker";
+import { MikroPosition } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
-import {
-  ListPositionFragment,
-  ListRepresentationFragment,
-  useDeleteRepresentationMutation,
-} from "../../api/graphql";
-import { useMikro, withMikro } from "../../MikroContext";
+import { ListPositionFragment } from "../../api/graphql";
 
 interface PositionCardProps {
   position: ListPositionFragment;
@@ -17,12 +8,8 @@ interface PositionCardProps {
 }
 
 export const PositionCard = ({ position, mates }: PositionCardProps) => {
-  const { s3resolve } = useMikro();
-  const [deletePosition] = withMikro(useDeleteRepresentationMutation)();
-  const { confirm } = useConfirm();
-
   return (
-    <Position.Smart
+    <MikroPosition.Smart
       showSelfMates={true}
       placement="bottom"
       object={position.id}
@@ -36,7 +23,7 @@ export const PositionCard = ({ position, mates }: PositionCardProps) => {
       mates={mates}
     >
       <div className="px-6 py-4 truncate relative">
-        <Position.DetailLink
+        <MikroPosition.DetailLink
           className={({ isActive } /*  */) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -44,8 +31,8 @@ export const PositionCard = ({ position, mates }: PositionCardProps) => {
           object={position.id}
         >
           <span className="truncate">{position?.name}</span>
-        </Position.DetailLink>
+        </MikroPosition.DetailLink>
       </div>
-    </Position.Smart>
+    </MikroPosition.Smart>
   );
 };

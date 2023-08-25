@@ -1,7 +1,10 @@
 import { Combobox, Dialog, Transition } from "@headlessui/react";
 import React, { useEffect, useState } from "react";
 import { BiSearch } from "react-icons/bi";
-import { BaseAction, useGeneralMenu } from "./GeneralMenuContext";
+import {
+  BaseAction,
+  useGeneralMenu,
+} from "../../providers/command/GeneralMenuContext";
 
 const modifyingActions: BaseAction[] = [
   {

@@ -13,13 +13,13 @@ export const LokGuard: React.FC<{
   return <>{fallback}</>;
 };
 
-export const manGuarded = (
-  Child: React.ComponentClass,
+export const lokGuarded = <T extends (props: any) => JSX.Element>(
+  Child: T,
   fallback?: React.ReactNode
-) => {
-  return (props: any) => (
+): T => {
+  return ((props: any) => (
     <LokGuard fallback={fallback}>
       <Child {...props} />
     </LokGuard>
-  );
+  )) as unknown as T;
 };

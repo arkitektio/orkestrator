@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router";
 import { ActionButton } from "../layout/ActionButton";
-import { Reservation } from "../linker";
+import { RekuestReservation } from "../linker";
 import { withRekuest } from "../rekuest";
 import { useDeleteNodeMutation } from "../rekuest/api/graphql";
 import { useReserver } from "../rekuest/providers/reserver/reserver-context";
@@ -21,7 +21,7 @@ export const NodeActions: React.FC<NodeActionsProps> = (props) => {
   const handlereserve = async () => {
     if (props.node?.id) {
       let x = await reserve({ node: props.node.id });
-      x?.id && (await navigate(Reservation.linkBuilder(x.id)));
+      x?.id && (await navigate(RekuestReservation.linkBuilder(x.id)));
     }
   };
 

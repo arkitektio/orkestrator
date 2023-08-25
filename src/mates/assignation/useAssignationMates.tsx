@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { Assignation, Node } from "../../linker";
+import { RekuestAssignation, RekuestNode } from "../../linker";
 import { ListAssignationFragment } from "../../rekuest/api/graphql";
 import { usePostman } from "../../rekuest/providers/postman/postman-context";
 import { Mate, MateFinder } from "../types";
@@ -20,7 +20,7 @@ export const useAssignationMate = (): ((
     mates.push({
       action: async () => {
         ass?.reservation?.node?.id &&
-          navigate(Node.linkBuilder(ass?.reservation?.node?.id));
+          navigate(RekuestNode.linkBuilder(ass?.reservation?.node?.id));
       },
       label: "Open Node",
     });
@@ -42,7 +42,7 @@ export const useAssignationMate = (): ((
     return mates.concat([
       {
         action: async () => {
-          ass?.id && navigate(Assignation.linkBuilder(ass?.id));
+          ass?.id && navigate(RekuestAssignation.linkBuilder(ass?.id));
         },
         label: "Open",
       },

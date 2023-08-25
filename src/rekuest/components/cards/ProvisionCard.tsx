@@ -1,8 +1,8 @@
-import { Provision, Release, User } from "../../../linker";
-import { useReleaseQuery, useUserQuery } from "../../../lok/api/graphql";
+import { useDatalayer } from "@jhnnsrs/datalayer";
+import { LokRelease, LokUser, RekuestProvision } from "../../../linker";
 import { withLok } from "../../../lok/LokContext";
+import { useReleaseQuery, useUserQuery } from "../../../lok/api/graphql";
 import { MateFinder } from "../../../mates/types";
-import { useMikro } from "../../../mikro/MikroContext";
 import { ListProvisionFragment } from "../../api/graphql";
 
 interface ProvisionCardProps {
@@ -23,10 +23,10 @@ export const ProvisionCard = ({ provision, mates }: ProvisionCardProps) => {
     fetchPolicy: "cache-first",
   });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   return (
-    <Provision.Smart
+    <RekuestProvision.Smart
       object={provision.id}
       className="rounded-md rounded bg-back-500 border-gray-800 border-1 relative p-2"
       mates={mates}
@@ -43,24 +43,24 @@ export const ProvisionCard = ({ provision, mates }: ProvisionCardProps) => {
         />
         <div className="flex flex-col ml-2">
           {provision.agent && (
-            <Provision.DetailLink
+            <RekuestProvision.DetailLink
               object={provision.id}
               className="text-slate-800 "
             >
               {provision.id} on {provision.agent?.instanceId}
-            </Provision.DetailLink>
+            </RekuestProvision.DetailLink>
           )}
           {appdata?.release && (
-            <Release.DetailLink
+            <LokRelease.DetailLink
               object={appdata?.release?.id}
               className="text-slate-900"
             >
               {appdata.release.app?.identifier}:{appdata.release.version}
-            </Release.DetailLink>
+            </LokRelease.DetailLink>
           )}
         </div>
         {userdata?.user?.id && (
-          <User.DetailLink
+          <LokUser.DetailLink
             object={userdata?.user?.id}
             className="absolute bottom-0 right-0 p-1 transform translate-x-1/2 translate-y-1/2"
           >
@@ -73,9 +73,9 @@ export const ProvisionCard = ({ provision, mates }: ProvisionCardProps) => {
               }
               alt=""
             />
-          </User.DetailLink>
+          </LokUser.DetailLink>
         )}
       </div>
-    </Provision.Smart>
+    </RekuestProvision.Smart>
   );
 };

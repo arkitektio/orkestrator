@@ -1,15 +1,15 @@
 import { ApolloClient, NormalizedCacheObject, useQuery } from "@apollo/client";
 import React, { useContext } from "react";
-import { ManConfig } from "./types";
+import { LokConfig } from "./types";
 
 export type LokContextType = {
   client?: ApolloClient<NormalizedCacheObject>;
-  configure: (config?: ManConfig) => void;
-  config?: ManConfig;
+  configure: (config?: LokConfig) => void;
+  config?: LokConfig;
 };
 
 export const LokContext = React.createContext<LokContextType>({
-  config: {} as ManConfig,
+  config: {} as LokConfig,
   configure: () => {
     throw Error("No Provider in context not configured");
   },

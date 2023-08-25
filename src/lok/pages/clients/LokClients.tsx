@@ -3,7 +3,7 @@ import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../../floating/utils";
 import { PageLayout } from "../../../layout/PageLayout";
 import { SectionTitle } from "../../../layout/SectionTitle";
-import { App } from "../../../linker";
+import { LokApp } from "../../../linker";
 import { withLok } from "../../../lok/LokContext";
 import { useMyPrivateClientsQuery } from "../../../lok/api/graphql";
 
@@ -17,11 +17,11 @@ export const LokClients: React.FC<ManUserProps> = (props) => {
       #<SectionTitle>My Apps</SectionTitle>
       <ResponsiveGrid>
         {data?.myPrivateClients?.filter(notEmpty).map((c) => (
-          <App.Smart object={c.id} className="bg-primary-200 p-3 rounded">
-            <App.DetailLink object={c.id}>
+          <LokApp.Smart object={c.id} className="bg-primary-200 p-3 rounded">
+            <LokApp.DetailLink object={c.id}>
               {c?.release?.app?.identifier}:{c?.release?.version}
-            </App.DetailLink>
-          </App.Smart>
+            </LokApp.DetailLink>
+          </LokApp.Smart>
         ))}
       </ResponsiveGrid>
     </PageLayout>

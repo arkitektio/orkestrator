@@ -1,21 +1,14 @@
 import React from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsCheckCircle,
-  BsExclamationTriangle,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
+import { BsCheckCircle, BsExclamationTriangle } from "react-icons/bs";
 import { useNavigate } from "react-router";
+import { notEmpty } from "../floating/utils";
+import { RekuestProvision } from "../linker";
+import { UserEmblem } from "../lok/components/UserEmblem";
+import { withRekuest } from "../rekuest";
 import { ProvisionStatus, useMyProvisionsQuery } from "../rekuest/api/graphql";
 import { UnprovideButton } from "../rekuest/components/UnprovideButton";
 import { colorFromProvisionStatus } from "../rekuest/ui/utils";
-import { notEmpty } from "../floating/utils";
-import { Provision } from "../linker";
-import { UserEmblem } from "../lok/components/UserEmblem";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
-import { withRekuest } from "../rekuest";
 
 export type IMyProvisionsProps = {};
 
@@ -25,21 +18,21 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
 
   return (
     <>
-      <Provision.ListLink>
+      <RekuestProvision.ListLink>
         <span className="font-light text-xl dark:text-white">
           My Provisions
         </span>
-      </Provision.ListLink>
+      </RekuestProvision.ListLink>
       <ResponsiveGrid>
         {data?.myprovisions?.filter(notEmpty).map((prov, index) => (
-          <Provision.Smart
+          <RekuestProvision.Smart
             key={index}
             className={`max-w-sm rounded border relative p-2 shadow-md ${colorFromProvisionStatus(
               prov?.status
             )}`}
             object={prov.id}
           >
-            <Provision.DetailLink className="" object={prov.id}>
+            <RekuestProvision.DetailLink className="" object={prov.id}>
               <div className="text-xl font-light mb-2 flex">
                 <div className="text-xl font-light flex-initial">
                   {prov?.template?.interface}
@@ -100,7 +93,7 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
                   </div>
                 </div>
               )}
-            </Provision.DetailLink>
+            </RekuestProvision.DetailLink>
             <div className=" text-sm">
               {prov?.id && (
                 <UnprovideButton
@@ -114,7 +107,7 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
             {prov?.agent?.registry?.user?.sub && (
               <UserEmblem sub={prov?.agent?.registry?.user?.sub} />
             )}
-          </Provision.Smart>
+          </RekuestProvision.Smart>
         ))}
       </ResponsiveGrid>
     </>

@@ -1,9 +1,6 @@
 import React, { useState } from "react";
 import { ThreeDots } from "react-loader-spinner";
-import {
-  BaseAction,
-  useAction,
-} from "../components/command/GeneralMenuContext";
+import { BaseAction, useAction } from "../providers/command/GeneralMenuContext";
 
 export interface ActionButtonProps {
   children?: React.ReactNode;

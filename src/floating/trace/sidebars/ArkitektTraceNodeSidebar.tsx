@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ContractPulse } from "../../../fluss/components/ContractPulse";
 import { SectionTitle } from "../../../layout/SectionTitle";
-import { Reservation } from "../../../linker";
+import { RekuestReservation } from "../../../linker";
 import { useLinkProvisionMate } from "../../../mates/provision/useLinkProvisionMate";
 import { useUnlinkProvisionMate } from "../../../mates/provision/useUnlinkProvisionMate";
 import { withRekuest } from "../../../rekuest";
@@ -108,9 +108,9 @@ export const ArkitektTraceNodeSidebar = (
         <div className="text-white text-xl mb-2">
           <div className="flex flex-row my-auto gap-2">
             {data?.reservation?.id && (
-              <Reservation.DetailLink object={data?.reservation?.id}>
+              <RekuestReservation.DetailLink object={data?.reservation?.id}>
                 {data?.reservation?.node?.name}
-              </Reservation.DetailLink>
+              </RekuestReservation.DetailLink>
             )}
             <ContractPulse status={latestEvent?.state} />{" "}
           </div>

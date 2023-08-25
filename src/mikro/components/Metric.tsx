@@ -1,9 +1,9 @@
 import React from "react";
 import { SelfActions } from "../../components/SelfActions";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
-import { CommentableModels, useDetailMetricQuery } from "../api/graphql";
+import { MikroMetric } from "../../linker";
 import { withMikro } from "../MikroContext";
+import { useDetailMetricQuery } from "../api/graphql";
 
 export type MetricProps = {
   id: string;
@@ -20,9 +20,7 @@ const Metric: React.FC<MetricProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagMetric} />
-          ),
+          content: <MikroMetric.Komments object={id} />,
           key: "comments",
         },
       ]}

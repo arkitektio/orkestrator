@@ -1,17 +1,12 @@
 import React from "react";
 import { useParams } from "react-router";
 import Timestamp from "react-timestamp";
-import { SelfActions } from "../../../components/SelfActions";
 import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../../floating/utils";
-import { MikroKomments } from "../../../komment/MikroKomments";
 import { PageLayout } from "../../../layout/PageLayout";
-import { Assignation } from "../../../linker";
+import { MikroFile, RekuestAssignation } from "../../../linker";
 import { useMikro, withMikro } from "../../../mikro/MikroContext";
-import {
-  CommentableModels,
-  useDetailOmeroFileQuery,
-} from "../../../mikro/api/graphql";
+import { useDetailOmeroFileQuery } from "../../../mikro/api/graphql";
 import { ExperimentCard } from "../../../mikro/components/cards/ExperimentCard";
 import { RepresentationCard } from "../../../mikro/components/cards/RepresentationCard";
 
@@ -36,18 +31,13 @@ export const OmeroFile: React.FC<{ id: string }> = ({ id }) => {
               Download
             </a>
           )}
-          <SelfActions type={"@mikro/omerofile"} object={id} />
+          <MikroFile.Actions object={id} />
         </>
       }
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments
-              id={id}
-              model={CommentableModels.GrunnlagOmerofile}
-            />
-          ),
+          content: <MikroFile.Komments object={id} />,
           key: "comments",
         },
       ]}
@@ -65,9 +55,11 @@ export const OmeroFile: React.FC<{ id: string }> = ({ id }) => {
           </div>
           {data?.omerofile?.createdWhile && (
             <div className="text-md mt-2 ">
-              <Assignation.DetailLink object={data?.omerofile?.createdWhile}>
+              <RekuestAssignation.DetailLink
+                object={data?.omerofile?.createdWhile}
+              >
                 Provenance
-              </Assignation.DetailLink>
+              </RekuestAssignation.DetailLink>
             </div>
           )}
 

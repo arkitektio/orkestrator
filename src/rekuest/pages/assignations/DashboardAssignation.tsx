@@ -1,15 +1,12 @@
 import { useParams } from "react-router";
-import { RekuestShare } from "../../../components/social/RekuestShare";
 import { notEmpty } from "../../../floating/utils";
 import { FlussAssignation } from "../../../fluss/components/FlussAssignation";
-import { RekuestKomments } from "../../../komment/RekuestKomments";
 import { PageLayout } from "../../../layout/PageLayout";
 import { SectionTitle } from "../../../layout/SectionTitle";
+import { RekuestAssignation } from "../../../linker";
 import { withRekuest } from "../../RekuestContext";
 import {
   AssignationLogLevel,
-  CommentableModels,
-  SharableModels,
   useDetailAssignationQuery,
 } from "../../api/graphql";
 import { UserImage } from "../../components/TemplatesDisplay";
@@ -37,26 +34,7 @@ export const DashboardAssignation: React.FC = ({}) => {
         {
           label: "Assignation",
           key: "assignation",
-          content: (
-            <div className="p-2 flex h-full">
-              {data?.assignation?.id && (
-                <div className="flex flex-grow flex-col">
-                  <div className="flex-1">
-                    <RekuestKomments
-                      model={CommentableModels.FacadeAssignation}
-                      id={data?.assignation?.id}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <RekuestShare
-                      type={SharableModels.FacadeAssignation}
-                      object={data?.assignation?.id}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          ),
+          content: <RekuestAssignation.Komments object={id} />,
         },
       ]}
     >

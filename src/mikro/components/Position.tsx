@@ -1,15 +1,14 @@
 import React from "react";
-import { PositionCanvas } from "../../components/PositionCanvas";
 import { SelfActions } from "../../components/SelfActions";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SaveParentSize } from "../../layout/SaveParentSize";
-import { Stage } from "../../linker";
+import { MikroPosition, MikroStage } from "../../linker";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import { withMikro } from "../MikroContext";
-import { CommentableModels, useDetailPositionQuery } from "../api/graphql";
+import { useDetailPositionQuery } from "../api/graphql";
+import { PositionCanvas } from "./canvases/PositionCanvas";
 import { RepresentationCard } from "./cards/RepresentationCard";
 import { RoiCard } from "./cards/RoiCard";
 
@@ -30,9 +29,7 @@ const Position: React.FC<PositionProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagPosition} />
-          ),
+          content: <MikroPosition.Komments object={id} />,
           key: "comments",
         },
       ]}
@@ -41,9 +38,9 @@ const Position: React.FC<PositionProps> = ({ id }) => {
         <div className="text-xl font-light text-white">
           {data?.position?.name}{" "}
           {data?.position?.stage?.id && (
-            <Stage.DetailLink object={data?.position?.stage?.id}>
+            <MikroStage.DetailLink object={data?.position?.stage?.id}>
               on {data?.position?.stage?.name}
-            </Stage.DetailLink>
+            </MikroStage.DetailLink>
           )}
         </div>
         <div className="flex  @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">

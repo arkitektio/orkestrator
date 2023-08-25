@@ -1,5 +1,5 @@
 import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
-import { TestCase, TestResult } from "../../../linker";
+import { RekuestTestCase, RekuestTestResult } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
 import { ListTestResultFragment } from "../../api/graphql";
 
@@ -10,12 +10,15 @@ interface TestResultCardPOrops {
 
 export const TestResultCard = ({ result, mates }: TestResultCardPOrops) => {
   return (
-    <TestResult.Smart
+    <RekuestTestResult.Smart
       object={result.id}
       className="rounded-md rounded bg-back-500 border-gray-800 border-1 relative p-2"
       mates={mates}
     >
-      <TestCase.DetailLink object={result.case.id} className="flex flex-row">
+      <RekuestTestCase.DetailLink
+        object={result.case.id}
+        className="flex flex-row"
+      >
         {result.case.name}:
         <div className="flex flex-row ml-2">
           {result.passed ? (
@@ -25,7 +28,7 @@ export const TestResultCard = ({ result, mates }: TestResultCardPOrops) => {
           )}
           <div className="text-red-600">{result.result}</div>
         </div>
-      </TestCase.DetailLink>
-    </TestResult.Smart>
+      </RekuestTestCase.DetailLink>
+    </RekuestTestResult.Smart>
   );
 };

@@ -1,10 +1,9 @@
 import React from "react";
 import { SelfActions } from "../../components/SelfActions";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
+import { MikroChannel } from "../../linker";
 import { withMikro } from "../MikroContext";
-import { CommentableModels, useGetChannelQuery } from "../api/graphql";
-
+import { useGetChannelQuery } from "../api/graphql";
 export type MetricProps = {
   id: string;
 };
@@ -20,9 +19,7 @@ const Channel: React.FC<MetricProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagChannel} />
-          ),
+          content: <MikroChannel.Komments object={id} />,
           key: "comments",
         },
       ]}

@@ -12,7 +12,7 @@ import {
   useMyOmeroFilesQuery,
   useUploadBigFileMutation,
 } from "../mikro/api/graphql";
-import { useConfirm } from "./confirmer/confirmer-context";
+import { useConfirm } from "../providers/confirmer/confirmer-context";
 
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { notEmpty } from "../floating/utils";

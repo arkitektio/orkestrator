@@ -45,7 +45,7 @@ export type Application = {
   redirectUris?: Maybe<Array<Maybe<Scalars['String']>>>;
   skipAuthorization: Scalars['Boolean'];
   updated: Scalars['DateTime'];
-  user?: Maybe<HerreUser>;
+  user?: Maybe<User>;
 };
 
 /** An enumeration. */
@@ -85,21 +85,21 @@ export type Channel = {
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
   token?: Maybe<Scalars['String']>;
-  user: HerreUser;
+  user: User;
 };
 
 export type Client = {
   __typename?: 'Client';
   clientId: Scalars['String'];
   clientSecret: Scalars['String'];
-  creator: HerreUser;
+  creator: User;
   id: Scalars['ID'];
   kind?: Maybe<ClientKind>;
   oauth2Client: Application;
   release?: Maybe<Release>;
   scopes: Array<Maybe<Scalars['String']>>;
   token: Scalars['String'];
-  user?: Maybe<HerreUser>;
+  user?: Maybe<User>;
 };
 
 /** An enumeration. */
@@ -111,6 +111,50 @@ export enum ClientKind {
   /** Website */
   Website = 'WEBSITE'
 }
+
+/**
+ * A comment
+ *
+ * A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+ * Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+ */
+export type Comment = {
+  __typename?: 'Comment';
+  /** Comments that are replies to this comment */
+  children?: Maybe<Array<Maybe<Comment>>>;
+  createdAt: Scalars['DateTime'];
+  /** The descendents of the comment (this referes to the Comment Tree) */
+  descendents?: Maybe<Array<Maybe<Descendent>>>;
+  id: Scalars['ID'];
+  /** The identifier of the object that this comment is on */
+  identifier?: Maybe<Scalars['String']>;
+  mentions: Array<User>;
+  /** The Object this comment is on */
+  object: Scalars['ID'];
+  parent?: Maybe<Comment>;
+  resolved?: Maybe<Scalars['DateTime']>;
+  resolvedBy?: Maybe<User>;
+  text: Scalars['String'];
+  user: User;
+};
+
+
+/**
+ * A comment
+ *
+ * A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+ * Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+ */
+export type CommentChildrenArgs = {
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+};
+
+/** A node in the comment tree */
+export type CommentNode = {
+  children?: Maybe<Array<Maybe<Descendent>>>;
+  untypedChildren?: Maybe<Scalars['GenericScalar']>;
+};
 
 export type Configuration = {
   __typename?: 'Configuration';
@@ -151,6 +195,34 @@ export type DeleteLinkerResult = {
   id?: Maybe<Scalars['ID']>;
 };
 
+export type DescendendInput = {
+  /** Is this a bold leaf? */
+  bold?: InputMaybe<Scalars['Boolean']>;
+  children?: InputMaybe<Array<InputMaybe<DescendendInput>>>;
+  /** Is this a code leaf? */
+  code?: InputMaybe<Scalars['Boolean']>;
+  /** Is this a italic leaf? */
+  italic?: InputMaybe<Scalars['Boolean']>;
+  /** The type of the descendent */
+  kind?: InputMaybe<DescendendKind>;
+  /** The text of the leaf */
+  text?: InputMaybe<Scalars['String']>;
+  /** The user that is mentioned */
+  user?: InputMaybe<Scalars['String']>;
+};
+
+/** The kind of the comment */
+export enum DescendendKind {
+  Leaf = 'LEAF',
+  Mention = 'MENTION',
+  Paragraph = 'PARAGRAPH'
+}
+
+/** A descendent of a node in the comment tree */
+export type Descendent = {
+  typename?: Maybe<Scalars['String']>;
+};
+
 export type DeviceCode = {
   __typename?: 'DeviceCode';
   code: Scalars['String'];
@@ -161,7 +233,7 @@ export type DeviceCode = {
   logo?: Maybe<Scalars['String']>;
   name?: Maybe<Scalars['String']>;
   scopes?: Maybe<Scalars['GenericScalar']>;
-  user?: Maybe<HerreUser>;
+  user?: Maybe<User>;
   version?: Maybe<Scalars['String']>;
 };
 
@@ -226,7 +298,7 @@ export type Group = {
   name: Scalars['String'];
   profile?: Maybe<GroupProfile>;
   /** The groups this user belongs to. A user will get all permissions granted to each of their groups. */
-  userSet: Array<HerreUser>;
+  userSet: Array<User>;
 };
 
 export type GroupProfile = {
@@ -237,21 +309,18 @@ export type GroupProfile = {
   name?: Maybe<Scalars['String']>;
 };
 
-export type HerreUser = {
-  __typename?: 'HerreUser';
-  email: Scalars['String'];
-  firstName: Scalars['String'];
-  /** The groups this user belongs to. A user will get all permissions granted to each of their groups. */
-  groups: Array<Group>;
-  id: Scalars['ID'];
-  /** Designates whether this user should be treated as active. Unselect this instead of deleting accounts. */
-  isActive: Scalars['Boolean'];
-  lastName: Scalars['String'];
-  profile?: Maybe<Profile>;
-  /** The associated rules of this  */
-  roles?: Maybe<Array<Maybe<Scalars['String']>>>;
-  /** Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
-  username: Scalars['String'];
+/** A leaf in the comment tree. Representations some sort of text */
+export type Leaf = Descendent & {
+  __typename?: 'Leaf';
+  /** Is this a bold leaf? */
+  bold?: Maybe<Scalars['Boolean']>;
+  /** Is this a code leaf? */
+  code?: Maybe<Scalars['Boolean']>;
+  /** Is this a italic leaf? */
+  italic?: Maybe<Scalars['Boolean']>;
+  /** The text of the leaf */
+  text?: Maybe<Scalars['String']>;
+  typename?: Maybe<Scalars['String']>;
 };
 
 export type Linker = {
@@ -269,12 +338,49 @@ export type Member = {
   name: Scalars['String'];
 };
 
+/** A mention in the comment tree. This  is a reference to another user on the platform */
+export type MentionDescendent = CommentNode & Descendent & {
+  __typename?: 'MentionDescendent';
+  children?: Maybe<Array<Maybe<Descendent>>>;
+  typename?: Maybe<Scalars['String']>;
+  untypedChildren?: Maybe<Scalars['GenericScalar']>;
+  /** The user that is mentioned */
+  user: User;
+};
+
+export type MentionEvent = {
+  __typename?: 'MentionEvent';
+  create?: Maybe<Comment>;
+  deleted?: Maybe<Scalars['ID']>;
+  update?: Maybe<Comment>;
+};
+
 /** The root Mutation */
 export type Mutation = {
   __typename?: 'Mutation';
-  changeMe?: Maybe<HerreUser>;
+  changeMe?: Maybe<User>;
   createApplication?: Maybe<Application>;
   createChannel?: Maybe<Channel>;
+  /**
+   * Create an Comment
+   *
+   *     This mutation creates a comment. It takes a commentable_id and a commentable_type.
+   *     If this is the first comment on the commentable, it will create a new comment thread.
+   *     If there is already a comment thread, it will add the comment to the thread (by setting
+   *     it's parent to the last parent comment in the thread).
+   *
+   *     CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+   *     are a recursive structure, where each Descendent can have a list of Descendents as children.
+   *     The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+   *     reference to another user on the platform.
+   *
+   *     Please convert your comment tree to a list of Descendents before sending it to the server.
+   *     TODO: Add a converter from a comment tree to a list of Descendents.
+   *
+   *
+   *     (only signed in users)
+   */
+  createComment?: Maybe<Comment>;
   createConfiguration?: Maybe<Configuration>;
   createElement?: Maybe<Element>;
   createGraph?: Maybe<Graph>;
@@ -290,9 +396,38 @@ export type Mutation = {
   deleteLinker?: Maybe<DeleteLinkerResult>;
   notifyUser?: Maybe<Array<Maybe<PublishResult>>>;
   publishToChannel?: Maybe<PublishResult>;
+  /**
+   * Reply to an Comment
+   *
+   *     This mutation creates a comment. It takes a commentable_id and a commentable_type.
+   *     If this is the first comment on the commentable, it will create a new comment thread.
+   *     If there is already a comment thread, it will add the comment to the thread (by setting
+   *     it's parent to the last parent comment in the thread).
+   *
+   *     CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+   *     are a recursive structure, where each Descendent can have a list of Descendents as children.
+   *     The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+   *     reference to another user on the platform.
+   *
+   *     Please convert your comment tree to a list of Descendents before sending it to the server.
+   *     TODO: Add a converter from a comment tree to a list of Descendents.
+   *
+   *
+   *     (only signed in users)
+   */
+  replyTo?: Maybe<Comment>;
+  /**
+   * Create an Comment
+   *
+   *     This mutation resolves a comment. By resolving a comment, it will be marked as resolved,
+   *     and the user that resolved it will be set as the resolver.
+   *
+   *     (only signed in users)
+   */
+  resolveComment?: Maybe<Comment>;
   updateApp?: Maybe<App>;
   updateGroup?: Maybe<Group>;
-  updateUser?: Maybe<HerreUser>;
+  updateUser?: Maybe<User>;
 };
 
 
@@ -316,6 +451,16 @@ export type MutationCreateApplicationArgs = {
 export type MutationCreateChannelArgs = {
   name?: InputMaybe<Scalars['String']>;
   token: Scalars['String'];
+};
+
+
+/** The root Mutation */
+export type MutationCreateCommentArgs = {
+  descendents: Array<InputMaybe<DescendendInput>>;
+  identifier: Scalars['String'];
+  notifyMentions?: InputMaybe<Scalars['Boolean']>;
+  object: Scalars['ID'];
+  parent?: InputMaybe<Scalars['ID']>;
 };
 
 
@@ -433,6 +578,20 @@ export type MutationPublishToChannelArgs = {
 
 
 /** The root Mutation */
+export type MutationReplyToArgs = {
+  descendents: Array<InputMaybe<DescendendInput>>;
+  parent: Scalars['ID'];
+};
+
+
+/** The root Mutation */
+export type MutationResolveCommentArgs = {
+  id: Scalars['ID'];
+  imitate?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Mutation */
 export type MutationUpdateAppArgs = {
   id: Scalars['ID'];
   logo?: InputMaybe<Scalars['Upload']>;
@@ -457,12 +616,22 @@ export type MutationUpdateUserArgs = {
   lastName?: InputMaybe<Scalars['String']>;
 };
 
+/** A paragraph in the comment tree. This paragraph contains other nodes (list nodes) */
+export type ParagraphDescendent = CommentNode & Descendent & {
+  __typename?: 'ParagraphDescendent';
+  children?: Maybe<Array<Maybe<Descendent>>>;
+  /** The size of the paragraph */
+  size?: Maybe<Scalars['String']>;
+  typename?: Maybe<Scalars['String']>;
+  untypedChildren?: Maybe<Scalars['GenericScalar']>;
+};
+
 export type Profile = {
   __typename?: 'Profile';
   avatar?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
-  user: HerreUser;
+  user: User;
 };
 
 export enum PublicFaktType {
@@ -489,6 +658,20 @@ export type Query = {
   channels?: Maybe<Array<Maybe<Channel>>>;
   client?: Maybe<Client>;
   clients?: Maybe<Array<Maybe<Client>>>;
+  comment?: Maybe<Comment>;
+  /**
+   * Comments for a specific object
+   *
+   *     This query returns all comments for a specific object. The object is
+   *     specified by the `model` and `id` arguments. The `model` argument is
+   *     a string that is the name of the model. The `id` argument is the id of
+   *     the object.
+   *
+   *     You can only query for comments for objects that you have access to.
+   *
+   *
+   */
+  commentsfor?: Maybe<Array<Maybe<Comment>>>;
   configuration?: Maybe<Configuration>;
   configurations?: Maybe<Array<Maybe<Configuration>>>;
   filter?: Maybe<Filter>;
@@ -501,7 +684,7 @@ export type Query = {
   hello?: Maybe<Scalars['String']>;
   linker?: Maybe<Linker>;
   linkers?: Maybe<Array<Maybe<Linker>>>;
-  me?: Maybe<HerreUser>;
+  me?: Maybe<User>;
   /** Get information on your Docker Template */
   member?: Maybe<Member>;
   myPrivateClients?: Maybe<Array<Maybe<Client>>>;
@@ -510,13 +693,14 @@ export type Query = {
   myclients?: Maybe<Array<Maybe<Application>>>;
   /** Get a list of users */
   mygroups?: Maybe<Array<Maybe<Group>>>;
+  mymentions?: Maybe<Array<Maybe<Comment>>>;
   release?: Maybe<Release>;
   releases?: Maybe<Array<Maybe<Release>>>;
   scope?: Maybe<Scope>;
   scopes?: Maybe<Array<Maybe<Scope>>>;
-  user?: Maybe<HerreUser>;
+  user?: Maybe<User>;
   userapp?: Maybe<Application>;
-  users?: Maybe<Array<Maybe<HerreUser>>>;
+  users?: Maybe<Array<Maybe<User>>>;
   void?: Maybe<Scalars['String']>;
 };
 
@@ -562,6 +746,20 @@ export type QueryClientArgs = {
   clientId?: InputMaybe<Scalars['ID']>;
   id?: InputMaybe<Scalars['ID']>;
   token?: InputMaybe<Scalars['ID']>;
+};
+
+
+/** The root Query */
+export type QueryCommentArgs = {
+  id: Scalars['ID'];
+};
+
+
+/** The root Query */
+export type QueryCommentsforArgs = {
+  deep?: InputMaybe<Scalars['Boolean']>;
+  identifier: Scalars['String'];
+  object: Scalars['ID'];
 };
 
 
@@ -700,27 +898,105 @@ export type Scope = {
   value: Scalars['String'];
 };
 
+/** The root Subscriptions */
+export type Subscription = {
+  __typename?: 'Subscription';
+  /**
+   * My Mentions
+   *
+   *     Returns an event of a new mention for the user if the user
+   *     was mentioned in a comment.
+   *
+   */
+  mymentions?: Maybe<MentionEvent>;
+};
+
+
+/** The root Subscriptions */
+export type SubscriptionMymentionsArgs = {
+  identifier?: InputMaybe<Scalars['String']>;
+};
+
+export type User = {
+  __typename?: 'User';
+  email: Scalars['String'];
+  firstName: Scalars['String'];
+  /** The groups this user belongs to. A user will get all permissions granted to each of their groups. */
+  groups: Array<Group>;
+  id: Scalars['ID'];
+  /** Designates whether this user should be treated as active. Unselect this instead of deleting accounts. */
+  isActive: Scalars['Boolean'];
+  lastName: Scalars['String'];
+  profile?: Maybe<Profile>;
+  /** The associated rules of this  */
+  roles?: Maybe<Array<Maybe<Scalars['String']>>>;
+  /** Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
+  username: Scalars['String'];
+};
+
 export type DetailAppFragment = { __typename?: 'App', id: string, identifier: string, logo?: string | null, releases: Array<{ __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } }> };
 
 export type ListAppFragment = { __typename?: 'App', id: string, identifier: string, logo?: string | null };
 
-export type DetailClientFragment = { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } };
+export type DetailClientFragment = { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } };
 
-export type ListClientFragment = { __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null };
+export type ListClientFragment = { __typename?: 'Client', id: string, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null };
 
-export type DetailGroupFragment = { __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null };
+export type LeafFragment = { __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' };
+
+type Node_MentionDescendent_Fragment = { __typename?: 'MentionDescendent', typename: 'MentionDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+type Node_ParagraphDescendent_Fragment = { __typename?: 'ParagraphDescendent', typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+export type NodeFragment = Node_MentionDescendent_Fragment | Node_ParagraphDescendent_Fragment;
+
+export type LevelDownParagraphFragment = { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null };
+
+export type LevelDownMentionFragment = { __typename?: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } };
+
+type LevelDownDescendent_Leaf_Fragment = { __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' };
+
+type LevelDownDescendent_MentionDescendent_Fragment = { __typename?: 'MentionDescendent', typename: 'MentionDescendent' };
+
+type LevelDownDescendent_ParagraphDescendent_Fragment = { __typename?: 'ParagraphDescendent', typename: 'ParagraphDescendent' };
+
+export type LevelDownDescendentFragment = LevelDownDescendent_Leaf_Fragment | LevelDownDescendent_MentionDescendent_Fragment | LevelDownDescendent_ParagraphDescendent_Fragment;
+
+export type MentionFragment = { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+export type CommentUserFragment = { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null };
+
+export type ParagraphFragment = { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+type Descendent_Leaf_Fragment = { __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' };
+
+type Descendent_MentionDescendent_Fragment = { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+type Descendent_ParagraphDescendent_Fragment = { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null };
+
+export type DescendentFragment = Descendent_Leaf_Fragment | Descendent_MentionDescendent_Fragment | Descendent_ParagraphDescendent_Fragment;
+
+export type SubthreadCommentFragment = { __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null };
+
+export type ListCommentFragment = { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null };
+
+export type MentionCommentFragment = { __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, object: string, identifier?: string | null, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null };
+
+export type DetailCommentFragment = { __typename?: 'Comment', id: string, resolved?: any | null, createdAt: any, object: string, identifier?: string | null, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }> };
+
+export type DetailGroupFragment = { __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'User', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null };
 
 export type ListGroupFragment = { __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null };
 
-export type DetailReleaseFragment = { __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null }, clients: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null }> };
+export type DetailReleaseFragment = { __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null }, clients: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null }> };
 
 export type ListReleaseFragment = { __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } };
 
-export type ListUserFragment = { __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null };
+export type ListUserFragment = { __typename?: 'User', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null };
 
-export type DetailUserFragment = { __typename?: 'HerreUser', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> };
+export type DetailUserFragment = { __typename?: 'User', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> };
 
-export type MeUserFragment = { __typename?: 'HerreUser', id: string, username: string, roles?: Array<string | null> | null, email: string, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null };
+export type MeUserFragment = { __typename?: 'User', id: string, username: string, roles?: Array<string | null> | null, email: string, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null };
 
 export type UpdateAppMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -738,7 +1014,7 @@ export type CreatePrivateClientMutationVariables = Exact<{
 }>;
 
 
-export type CreatePrivateClientMutation = { __typename?: 'Mutation', createPrivateClient?: { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
+export type CreatePrivateClientMutation = { __typename?: 'Mutation', createPrivateClient?: { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
 
 export type CreatePublicClientMutationVariables = Exact<{
   identifier: Scalars['String'];
@@ -750,7 +1026,7 @@ export type CreatePublicClientMutationVariables = Exact<{
 }>;
 
 
-export type CreatePublicClientMutation = { __typename?: 'Mutation', createPublicClient?: { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
+export type CreatePublicClientMutation = { __typename?: 'Mutation', createPublicClient?: { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
 
 export type DeleteClientMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -759,6 +1035,31 @@ export type DeleteClientMutationVariables = Exact<{
 
 export type DeleteClientMutation = { __typename?: 'Mutation', deleteClient?: { __typename?: 'DeleteClientResult', id?: string | null } | null };
 
+export type CreateCommentMutationVariables = Exact<{
+  object: Scalars['ID'];
+  identifier: Scalars['String'];
+  descendents: Array<InputMaybe<DescendendInput>>;
+  parent?: InputMaybe<Scalars['ID']>;
+}>;
+
+
+export type CreateCommentMutation = { __typename?: 'Mutation', createComment?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
+
+export type ReplyToMutationVariables = Exact<{
+  descendents: Array<InputMaybe<DescendendInput>>;
+  parent: Scalars['ID'];
+}>;
+
+
+export type ReplyToMutation = { __typename?: 'Mutation', replyTo?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
+
+export type ResolveCommentMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type ResolveCommentMutation = { __typename?: 'Mutation', resolveComment?: { __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null };
+
 export type UpdateGroupMutationVariables = Exact<{
   id: Scalars['ID'];
   avatar?: InputMaybe<Scalars['Upload']>;
@@ -766,7 +1067,7 @@ export type UpdateGroupMutationVariables = Exact<{
 }>;
 
 
-export type UpdateGroupMutation = { __typename?: 'Mutation', updateGroup?: { __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null } | null };
+export type UpdateGroupMutation = { __typename?: 'Mutation', updateGroup?: { __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'User', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null } | null };
 
 export type ChangeMeMutationVariables = Exact<{
   firstName?: InputMaybe<Scalars['String']>;
@@ -775,7 +1076,7 @@ export type ChangeMeMutationVariables = Exact<{
 }>;
 
 
-export type ChangeMeMutation = { __typename?: 'Mutation', changeMe?: { __typename?: 'HerreUser', id: string, username: string, roles?: Array<string | null> | null, email: string, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null };
+export type ChangeMeMutation = { __typename?: 'Mutation', changeMe?: { __typename?: 'User', id: string, username: string, roles?: Array<string | null> | null, email: string, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null };
 
 export type UpdateUserMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -787,7 +1088,7 @@ export type UpdateUserMutationVariables = Exact<{
 }>;
 
 
-export type UpdateUserMutation = { __typename?: 'Mutation', updateUser?: { __typename?: 'HerreUser', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> } | null };
+export type UpdateUserMutation = { __typename?: 'Mutation', updateUser?: { __typename?: 'User', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> } | null };
 
 export type AppsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -806,7 +1107,7 @@ export type AppQuery = { __typename?: 'Query', app?: { __typename?: 'App', id: s
 export type ClientsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ClientsQuery = { __typename?: 'Query', clients?: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null } | null> | null };
+export type ClientsQuery = { __typename?: 'Query', clients?: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null } | null> | null };
 
 export type DetailClientQueryVariables = Exact<{
   clientId?: InputMaybe<Scalars['ID']>;
@@ -814,17 +1115,37 @@ export type DetailClientQueryVariables = Exact<{
 }>;
 
 
-export type DetailClientQuery = { __typename?: 'Query', client?: { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
+export type DetailClientQuery = { __typename?: 'Query', client?: { __typename?: 'Client', id: string, token: string, scopes: Array<string | null>, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null, oauth2Client: { __typename?: 'Application', authorizationGrantType: ApplicationAuthorizationGrantType, redirectUris?: Array<string | null> | null } } | null };
 
 export type MyPublicClientsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyPublicClientsQuery = { __typename?: 'Query', myPublicClients?: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null } | null> | null };
+export type MyPublicClientsQuery = { __typename?: 'Query', myPublicClients?: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null } | null> | null };
 
 export type MyPrivateClientsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyPrivateClientsQuery = { __typename?: 'Query', myPrivateClients?: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null } | null> | null };
+export type MyPrivateClientsQuery = { __typename?: 'Query', myPrivateClients?: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null } | null> | null };
+
+export type CommentsForQueryVariables = Exact<{
+  object: Scalars['ID'];
+  identifier: Scalars['String'];
+}>;
+
+
+export type CommentsForQuery = { __typename?: 'Query', commentsfor?: Array<{ __typename?: 'Comment', resolved?: any | null, id: string, createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null } | null> | null };
+
+export type MyMentionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyMentionsQuery = { __typename?: 'Query', mymentions?: Array<{ __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, object: string, identifier?: string | null, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null } | null> | null };
+
+export type DetailCommentQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type DetailCommentQuery = { __typename?: 'Query', comment?: { __typename?: 'Comment', id: string, resolved?: any | null, createdAt: any, object: string, identifier?: string | null, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }> } | null };
 
 export type GroupOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -838,14 +1159,14 @@ export type MyGroupsQueryVariables = Exact<{
 }>;
 
 
-export type MyGroupsQuery = { __typename?: 'Query', mygroups?: Array<{ __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'HerreUser', id: string, username: string, email: string }> } | null> | null };
+export type MyGroupsQuery = { __typename?: 'Query', mygroups?: Array<{ __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'User', id: string, username: string, email: string }> } | null> | null };
 
 export type DetailGroupQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailGroupQuery = { __typename?: 'Query', group?: { __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null } | null };
+export type DetailGroupQuery = { __typename?: 'Query', group?: { __typename?: 'Group', id: string, name: string, userSet: Array<{ __typename?: 'User', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null } | null };
 
 export type ReleasesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -860,7 +1181,7 @@ export type ReleaseQueryVariables = Exact<{
 }>;
 
 
-export type ReleaseQuery = { __typename?: 'Query', release?: { __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null }, clients: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'HerreUser', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null }> } | null };
+export type ReleaseQuery = { __typename?: 'Query', release?: { __typename?: 'Release', id: string, version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null }, clients: Array<{ __typename?: 'Client', id: string, user?: { __typename?: 'User', username: string } | null, release?: { __typename?: 'Release', version: string, logo?: string | null, app: { __typename?: 'App', id: string, identifier: string, logo?: string | null } } | null }> } | null };
 
 export type ScopesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -877,38 +1198,43 @@ export type LokGlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type LokGlobalSearchQuery = { __typename?: 'Query', apps?: Array<{ __typename?: 'App', id: string, identifier: string, logo?: string | null } | null> | null, users?: Array<{ __typename?: 'HerreUser', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null> | null, groups?: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null } | null> | null };
+export type LokGlobalSearchQuery = { __typename?: 'Query', apps?: Array<{ __typename?: 'App', id: string, identifier: string, logo?: string | null } | null> | null, users?: Array<{ __typename?: 'User', username: string, firstName: string, lastName: string, email: string, id: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null> | null, groups?: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', avatar?: string | null, name?: string | null } | null } | null> | null };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { __typename?: 'Query', me?: { __typename?: 'HerreUser', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> } | null };
+export type MeQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> } | null };
 
 export type UserQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type UserQuery = { __typename?: 'Query', user?: { __typename?: 'HerreUser', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> } | null };
+export type UserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> } | null };
 
 export type DetailUserQueryVariables = Exact<{
   id?: InputMaybe<Scalars['ID']>;
 }>;
 
 
-export type DetailUserQuery = { __typename?: 'Query', user?: { __typename?: 'HerreUser', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> } | null };
+export type DetailUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, username: string, email: string, roles?: Array<string | null> | null, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null, groups: Array<{ __typename?: 'Group', id: string, name: string }> } | null };
 
 export type UserOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
 }>;
 
 
-export type UserOptionsQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'HerreUser', value: string, label: string } | null> | null };
+export type UserOptionsQuery = { __typename?: 'Query', options?: Array<{ __typename?: 'User', value: string, label: string } | null> | null };
 
 export type ProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfileQuery = { __typename?: 'Query', me?: { __typename?: 'HerreUser', id: string, username: string, roles?: Array<string | null> | null, email: string, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null };
+export type ProfileQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, username: string, roles?: Array<string | null> | null, email: string, firstName: string, lastName: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null };
+
+export type WatchMentionsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchMentionsSubscription = { __typename?: 'Subscription', mymentions?: { __typename?: 'MentionEvent', create?: { __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, object: string, identifier?: string | null, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null } | null, update?: { __typename?: 'Comment', id: string, createdAt: any, resolved?: any | null, object: string, identifier?: string | null, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null, children?: Array<{ __typename?: 'Comment', createdAt: any, user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, parent?: { __typename?: 'Comment', id: string } | null, descendents?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }, children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | { __typename?: 'ParagraphDescendent', size?: string | null, typename: 'ParagraphDescendent', children?: Array<{ __typename?: 'Leaf', bold?: boolean | null, italic?: boolean | null, code?: boolean | null, text?: string | null, typename: 'Leaf' } | { __typename?: 'MentionDescendent', typename: 'MentionDescendent', user: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } } | { __typename?: 'ParagraphDescendent', size?: string | null, untypedChildren?: any | null, typename: 'ParagraphDescendent' } | null> | null } | null> | null } | null> | null, mentions: Array<{ __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null }>, resolvedBy?: { __typename?: 'User', id: string, username: string, profile?: { __typename?: 'Profile', avatar?: string | null } | null } | null } | null } | null };
 
 export const ListAppFragmentDoc = gql`
     fragment ListApp on App {
@@ -960,8 +1286,180 @@ export const DetailClientFragmentDoc = gql`
   scopes
 }
     `;
+export const LeafFragmentDoc = gql`
+    fragment Leaf on Leaf {
+  typename: __typename
+  bold
+  italic
+  code
+  text
+}
+    `;
+export const LevelDownDescendentFragmentDoc = gql`
+    fragment LevelDownDescendent on Descendent {
+  typename: __typename
+  ...Leaf
+}
+    ${LeafFragmentDoc}`;
+export const CommentUserFragmentDoc = gql`
+    fragment CommentUser on User {
+  id
+  username
+  profile {
+    avatar
+  }
+}
+    `;
+export const LevelDownParagraphFragmentDoc = gql`
+    fragment LevelDownParagraph on ParagraphDescendent {
+  size
+  untypedChildren
+}
+    `;
+export const LevelDownMentionFragmentDoc = gql`
+    fragment LevelDownMention on MentionDescendent {
+  user {
+    ...CommentUser
+  }
+}
+    ${CommentUserFragmentDoc}`;
+export const NodeFragmentDoc = gql`
+    fragment Node on CommentNode {
+  typename: __typename
+  children {
+    typename: __typename
+    ...Leaf
+    ...LevelDownParagraph
+    ...LevelDownMention
+  }
+}
+    ${LeafFragmentDoc}
+${LevelDownParagraphFragmentDoc}
+${LevelDownMentionFragmentDoc}`;
+export const MentionFragmentDoc = gql`
+    fragment Mention on MentionDescendent {
+  user {
+    ...CommentUser
+  }
+  ...Node
+}
+    ${CommentUserFragmentDoc}
+${NodeFragmentDoc}`;
+export const ParagraphFragmentDoc = gql`
+    fragment Paragraph on ParagraphDescendent {
+  size
+  ...Node
+}
+    ${NodeFragmentDoc}`;
+export const DescendentFragmentDoc = gql`
+    fragment Descendent on Descendent {
+  typename: __typename
+  ...Mention
+  ...Paragraph
+  ...Leaf
+}
+    ${MentionFragmentDoc}
+${ParagraphFragmentDoc}
+${LeafFragmentDoc}`;
+export const SubthreadCommentFragmentDoc = gql`
+    fragment SubthreadComment on Comment {
+  user {
+    ...CommentUser
+  }
+  parent {
+    id
+  }
+  createdAt
+  descendents {
+    ...Descendent
+  }
+}
+    ${CommentUserFragmentDoc}
+${DescendentFragmentDoc}`;
+export const ListCommentFragmentDoc = gql`
+    fragment ListComment on Comment {
+  user {
+    ...CommentUser
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  resolved
+  resolvedBy {
+    ...CommentUser
+  }
+  id
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+}
+    ${CommentUserFragmentDoc}
+${DescendentFragmentDoc}
+${SubthreadCommentFragmentDoc}`;
+export const MentionCommentFragmentDoc = gql`
+    fragment MentionComment on Comment {
+  user {
+    ...CommentUser
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  id
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+  mentions {
+    ...CommentUser
+  }
+  resolved
+  resolvedBy {
+    ...CommentUser
+  }
+  object
+  identifier
+}
+    ${CommentUserFragmentDoc}
+${DescendentFragmentDoc}
+${SubthreadCommentFragmentDoc}`;
+export const DetailCommentFragmentDoc = gql`
+    fragment DetailComment on Comment {
+  user {
+    ...CommentUser
+  }
+  parent {
+    id
+  }
+  descendents {
+    ...Descendent
+  }
+  id
+  resolved
+  resolvedBy {
+    ...CommentUser
+  }
+  createdAt
+  children {
+    ...SubthreadComment
+  }
+  mentions {
+    ...CommentUser
+  }
+  object
+  identifier
+}
+    ${CommentUserFragmentDoc}
+${DescendentFragmentDoc}
+${SubthreadCommentFragmentDoc}`;
 export const ListUserFragmentDoc = gql`
-    fragment ListUser on HerreUser {
+    fragment ListUser on User {
   username
   firstName
   lastName
@@ -1027,7 +1525,7 @@ export const DetailReleaseFragmentDoc = gql`
     ${ListAppFragmentDoc}
 ${ListClientFragmentDoc}`;
 export const DetailUserFragmentDoc = gql`
-    fragment DetailUser on HerreUser {
+    fragment DetailUser on User {
   id
   username
   email
@@ -1044,7 +1542,7 @@ export const DetailUserFragmentDoc = gql`
 }
     `;
 export const MeUserFragmentDoc = gql`
-    fragment MeUser on HerreUser {
+    fragment MeUser on User {
   id
   username
   roles
@@ -1209,6 +1707,114 @@ export function useDeleteClientMutation(baseOptions?: Apollo.MutationHookOptions
 export type DeleteClientMutationHookResult = ReturnType<typeof useDeleteClientMutation>;
 export type DeleteClientMutationResult = Apollo.MutationResult<DeleteClientMutation>;
 export type DeleteClientMutationOptions = Apollo.BaseMutationOptions<DeleteClientMutation, DeleteClientMutationVariables>;
+export const CreateCommentDocument = gql`
+    mutation CreateComment($object: ID!, $identifier: String!, $descendents: [DescendendInput]!, $parent: ID) {
+  createComment(
+    object: $object
+    identifier: $identifier
+    descendents: $descendents
+    parent: $parent
+  ) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+export type CreateCommentMutationFn = Apollo.MutationFunction<CreateCommentMutation, CreateCommentMutationVariables>;
+
+/**
+ * __useCreateCommentMutation__
+ *
+ * To run a mutation, you first call `useCreateCommentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateCommentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createCommentMutation, { data, loading, error }] = useCreateCommentMutation({
+ *   variables: {
+ *      object: // value for 'object'
+ *      identifier: // value for 'identifier'
+ *      descendents: // value for 'descendents'
+ *      parent: // value for 'parent'
+ *   },
+ * });
+ */
+export function useCreateCommentMutation(baseOptions?: Apollo.MutationHookOptions<CreateCommentMutation, CreateCommentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateCommentMutation, CreateCommentMutationVariables>(CreateCommentDocument, options);
+      }
+export type CreateCommentMutationHookResult = ReturnType<typeof useCreateCommentMutation>;
+export type CreateCommentMutationResult = Apollo.MutationResult<CreateCommentMutation>;
+export type CreateCommentMutationOptions = Apollo.BaseMutationOptions<CreateCommentMutation, CreateCommentMutationVariables>;
+export const ReplyToDocument = gql`
+    mutation ReplyTo($descendents: [DescendendInput]!, $parent: ID!) {
+  replyTo(descendents: $descendents, parent: $parent) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+export type ReplyToMutationFn = Apollo.MutationFunction<ReplyToMutation, ReplyToMutationVariables>;
+
+/**
+ * __useReplyToMutation__
+ *
+ * To run a mutation, you first call `useReplyToMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useReplyToMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [replyToMutation, { data, loading, error }] = useReplyToMutation({
+ *   variables: {
+ *      descendents: // value for 'descendents'
+ *      parent: // value for 'parent'
+ *   },
+ * });
+ */
+export function useReplyToMutation(baseOptions?: Apollo.MutationHookOptions<ReplyToMutation, ReplyToMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ReplyToMutation, ReplyToMutationVariables>(ReplyToDocument, options);
+      }
+export type ReplyToMutationHookResult = ReturnType<typeof useReplyToMutation>;
+export type ReplyToMutationResult = Apollo.MutationResult<ReplyToMutation>;
+export type ReplyToMutationOptions = Apollo.BaseMutationOptions<ReplyToMutation, ReplyToMutationVariables>;
+export const ResolveCommentDocument = gql`
+    mutation ResolveComment($id: ID!) {
+  resolveComment(id: $id) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+export type ResolveCommentMutationFn = Apollo.MutationFunction<ResolveCommentMutation, ResolveCommentMutationVariables>;
+
+/**
+ * __useResolveCommentMutation__
+ *
+ * To run a mutation, you first call `useResolveCommentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useResolveCommentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [resolveCommentMutation, { data, loading, error }] = useResolveCommentMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useResolveCommentMutation(baseOptions?: Apollo.MutationHookOptions<ResolveCommentMutation, ResolveCommentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ResolveCommentMutation, ResolveCommentMutationVariables>(ResolveCommentDocument, options);
+      }
+export type ResolveCommentMutationHookResult = ReturnType<typeof useResolveCommentMutation>;
+export type ResolveCommentMutationResult = Apollo.MutationResult<ResolveCommentMutation>;
+export type ResolveCommentMutationOptions = Apollo.BaseMutationOptions<ResolveCommentMutation, ResolveCommentMutationVariables>;
 export const UpdateGroupDocument = gql`
     mutation UpdateGroup($id: ID!, $avatar: Upload, $name: String) {
   updateGroup(id: $id, avatar: $avatar, name: $name) {
@@ -1533,6 +2139,111 @@ export function useMyPrivateClientsLazyQuery(baseOptions?: Apollo.LazyQueryHookO
 export type MyPrivateClientsQueryHookResult = ReturnType<typeof useMyPrivateClientsQuery>;
 export type MyPrivateClientsLazyQueryHookResult = ReturnType<typeof useMyPrivateClientsLazyQuery>;
 export type MyPrivateClientsQueryResult = Apollo.QueryResult<MyPrivateClientsQuery, MyPrivateClientsQueryVariables>;
+export const CommentsForDocument = gql`
+    query CommentsFor($object: ID!, $identifier: String!) {
+  commentsfor(identifier: $identifier, object: $object) {
+    ...ListComment
+  }
+}
+    ${ListCommentFragmentDoc}`;
+
+/**
+ * __useCommentsForQuery__
+ *
+ * To run a query within a React component, call `useCommentsForQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCommentsForQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCommentsForQuery({
+ *   variables: {
+ *      object: // value for 'object'
+ *      identifier: // value for 'identifier'
+ *   },
+ * });
+ */
+export function useCommentsForQuery(baseOptions: Apollo.QueryHookOptions<CommentsForQuery, CommentsForQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<CommentsForQuery, CommentsForQueryVariables>(CommentsForDocument, options);
+      }
+export function useCommentsForLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<CommentsForQuery, CommentsForQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<CommentsForQuery, CommentsForQueryVariables>(CommentsForDocument, options);
+        }
+export type CommentsForQueryHookResult = ReturnType<typeof useCommentsForQuery>;
+export type CommentsForLazyQueryHookResult = ReturnType<typeof useCommentsForLazyQuery>;
+export type CommentsForQueryResult = Apollo.QueryResult<CommentsForQuery, CommentsForQueryVariables>;
+export const MyMentionsDocument = gql`
+    query MyMentions {
+  mymentions {
+    ...MentionComment
+  }
+}
+    ${MentionCommentFragmentDoc}`;
+
+/**
+ * __useMyMentionsQuery__
+ *
+ * To run a query within a React component, call `useMyMentionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyMentionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyMentionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMyMentionsQuery(baseOptions?: Apollo.QueryHookOptions<MyMentionsQuery, MyMentionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyMentionsQuery, MyMentionsQueryVariables>(MyMentionsDocument, options);
+      }
+export function useMyMentionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyMentionsQuery, MyMentionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyMentionsQuery, MyMentionsQueryVariables>(MyMentionsDocument, options);
+        }
+export type MyMentionsQueryHookResult = ReturnType<typeof useMyMentionsQuery>;
+export type MyMentionsLazyQueryHookResult = ReturnType<typeof useMyMentionsLazyQuery>;
+export type MyMentionsQueryResult = Apollo.QueryResult<MyMentionsQuery, MyMentionsQueryVariables>;
+export const DetailCommentDocument = gql`
+    query DetailComment($id: ID!) {
+  comment(id: $id) {
+    ...DetailComment
+  }
+}
+    ${DetailCommentFragmentDoc}`;
+
+/**
+ * __useDetailCommentQuery__
+ *
+ * To run a query within a React component, call `useDetailCommentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailCommentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailCommentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailCommentQuery(baseOptions: Apollo.QueryHookOptions<DetailCommentQuery, DetailCommentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<DetailCommentQuery, DetailCommentQueryVariables>(DetailCommentDocument, options);
+      }
+export function useDetailCommentLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<DetailCommentQuery, DetailCommentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<DetailCommentQuery, DetailCommentQueryVariables>(DetailCommentDocument, options);
+        }
+export type DetailCommentQueryHookResult = ReturnType<typeof useDetailCommentQuery>;
+export type DetailCommentLazyQueryHookResult = ReturnType<typeof useDetailCommentLazyQuery>;
+export type DetailCommentQueryResult = Apollo.QueryResult<DetailCommentQuery, DetailCommentQueryVariables>;
 export const GroupOptionsDocument = gql`
     query GroupOptions($search: String) {
   options: groups(name: $search) {
@@ -2010,3 +2721,37 @@ export function useProfileLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<Pr
 export type ProfileQueryHookResult = ReturnType<typeof useProfileQuery>;
 export type ProfileLazyQueryHookResult = ReturnType<typeof useProfileLazyQuery>;
 export type ProfileQueryResult = Apollo.QueryResult<ProfileQuery, ProfileQueryVariables>;
+export const WatchMentionsDocument = gql`
+    subscription WatchMentions {
+  mymentions {
+    create {
+      ...MentionComment
+    }
+    update {
+      ...MentionComment
+    }
+  }
+}
+    ${MentionCommentFragmentDoc}`;
+
+/**
+ * __useWatchMentionsSubscription__
+ *
+ * To run a query within a React component, call `useWatchMentionsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchMentionsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchMentionsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchMentionsSubscription(baseOptions?: Apollo.SubscriptionHookOptions<WatchMentionsSubscription, WatchMentionsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useSubscription<WatchMentionsSubscription, WatchMentionsSubscriptionVariables>(WatchMentionsDocument, options);
+      }
+export type WatchMentionsSubscriptionHookResult = ReturnType<typeof useWatchMentionsSubscription>;
+export type WatchMentionsSubscriptionResult = Apollo.SubscriptionResult<WatchMentionsSubscription>;

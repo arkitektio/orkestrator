@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { useDialog } from "../layout/dialog/DialogProvider";
-import { Graph } from "../linker";
+import { MikroGraph } from "../linker";
 import { useDeleteGraphMate } from "../mates/graph/useDeleteGraphMate";
 import { withMikro } from "../mikro/MikroContext";
 import { useMyGraphsQuery } from "../mikro/api/graphql";
@@ -26,21 +25,14 @@ const MyGraphs: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
 
   const deleteGraphMate = useDeleteGraphMate();
 
-  const { ask } = useDialog();
-  const [show, setShow] = useState(false);
-
-  const [offset, setOffset] = useState(0);
-
-  useEffect(() => {
-    refetch({ limit: 20, offset: offset });
-  }, [offset, limit]);
-
   if (error) return <div>{error.message}</div>;
 
   return (
     <ListRender
       array={data?.mygraphs}
-      title={<Graph.ListLink className="flex-0">Contexts</Graph.ListLink>}
+      title={
+        <MikroGraph.ListLink className="flex-0">Contexts</MikroGraph.ListLink>
+      }
       refetch={refetch}
     >
       {(ex, index) => (

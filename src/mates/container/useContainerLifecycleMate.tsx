@@ -1,5 +1,4 @@
 import { BsTrash } from "react-icons/bs";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { withPort } from "../../port/PortContext";
 import {
   ContainerStatus,
@@ -8,6 +7,7 @@ import {
   useRestartContainerMutation,
   useStopContainerMutation,
 } from "../../port/api/graphql";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { Mate, MateFinder } from "../types";
 
 export const useContainerLifecycleMate = (): ((

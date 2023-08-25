@@ -1,5 +1,5 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
-import { Client } from "../../../linker";
+import { LokClient } from "../../../linker";
 import { DetailClientFragment } from "../../api/graphql";
 
 interface AppCardProps {
@@ -10,7 +10,7 @@ export const ClientCard = ({ client }: AppCardProps) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Client.Smart
+    <LokClient.Smart
       object={client?.id}
       className="bg-back-800 p-3 text-white rounded-md rounded cursor-pointer"
     >
@@ -25,7 +25,7 @@ export const ClientCard = ({ client }: AppCardProps) => {
           }
           className="h-15 object-fit flex-initial aspect-h-1 aspect-w-1 rounded-md mr-2"
         />
-        <Client.DetailLink
+        <LokClient.DetailLink
           object={client?.id}
           className="flex-grow flex-col truncate"
         >
@@ -36,8 +36,8 @@ export const ClientCard = ({ client }: AppCardProps) => {
             {" "}
             {client.user?.username}
           </div>
-        </Client.DetailLink>
+        </LokClient.DetailLink>
       </div>
-    </Client.Smart>
+    </LokClient.Smart>
   );
 };

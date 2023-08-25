@@ -1,12 +1,12 @@
+import { useDatalayer } from "@jhnnsrs/datalayer";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { ActionButton } from "../../layout/ActionButton";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Release } from "../../linker";
-import { useMikro } from "../../mikro/MikroContext";
-import { useAppQuery } from "../api/graphql";
+import { useDialog } from "../../layout/dialog/DialogProvider";
+import { LokRelease } from "../../linker";
 import { withLok } from "../LokContext";
+import { useAppQuery } from "../api/graphql";
 import { ChangeAppDialog } from "./dialogs/ChangeAppDialog";
 
 export type AppProps = {
@@ -16,7 +16,7 @@ export type AppProps = {
 export const App: React.FC<AppProps> = (props) => {
   const { data } = withLok(useAppQuery)({ variables: { id: props.id } });
 
-  const { s3resolve } = useMikro();
+  const { s3resolve } = useDatalayer();
 
   const { ask } = useDialog();
   return (
@@ -58,7 +58,7 @@ export const App: React.FC<AppProps> = (props) => {
         <SectionTitle>Releases</SectionTitle>
         <ResponsiveContainerGrid>
           {data?.app?.releases?.map((release, index) => (
-            <Release.Smart
+            <LokRelease.Smart
               object={release.id}
               className="border-1 bg-slate-600 rounded-lg p-2"
               key={index}
@@ -66,7 +66,7 @@ export const App: React.FC<AppProps> = (props) => {
               <Release.DetailLink object={release.id}>
                 {release?.version}
               </Release.DetailLink>
-            </Release.Smart>
+            </LokRelease.Smart>
           ))}
         </ResponsiveContainerGrid>
       </div>

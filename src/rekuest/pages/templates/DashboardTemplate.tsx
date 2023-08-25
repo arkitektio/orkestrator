@@ -7,7 +7,7 @@ import { FlussTemplate } from "../../../fluss/components/FlussTemplate";
 import { ActionButton } from "../../../layout/ActionButton";
 import { PageLayout } from "../../../layout/PageLayout";
 import { useDialog } from "../../../layout/dialog/DialogProvider";
-import { Node, TestCase } from "../../../linker";
+import { RekuestNode, RekuestTestCase } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
 import { useDetailTemplateQuery } from "../../../rekuest/api/graphql";
 import { ProvisionCard } from "../../../rekuest/components/cards/ProvisionCard";
@@ -60,12 +60,12 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = (props) => {
                 {data?.template?.node && (
                   <div className="flex-initial text-md text-white mt-auto">
                     implements{" "}
-                    <Node.DetailLink
+                    <RekuestNode.DetailLink
                       object={data?.template?.node.id}
                       className="text-xl"
                     >
                       {data?.template?.node.name}
-                    </Node.DetailLink>
+                    </RekuestNode.DetailLink>
                   </div>
                 )}
               </div>
@@ -92,9 +92,9 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = (props) => {
                   ?.filter(notEmpty)
                   .map((test, index) => (
                     <div className="flex flex-row text-white">
-                      <TestCase.DetailLink object={test.case.id}>
+                      <RekuestTestCase.DetailLink object={test.case.id}>
                         {test.case.name}
-                      </TestCase.DetailLink>
+                      </RekuestTestCase.DetailLink>
                       <div className="flex flex-row ml-1">
                         {test.passed ? (
                           <AiOutlineCheck className="text-green-600 my-auto" />
