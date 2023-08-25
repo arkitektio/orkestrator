@@ -18,11 +18,16 @@ const ConfirmerProvider: React.FC<IConfirmerProviderProps> = ({ children }) => {
     var promise = new Promise<boolean>((resolve, reject) => {
       defered.resolver = resolve;
       defered.rejecter = reject;
-    }).then((result) => {
-      console.log("Confirming", state);
-      setState(undefined);
-      return result;
-    });
+    })
+      .then((result) => {
+        console.log("Confirming", state);
+        setState(undefined);
+        return result;
+      })
+      .catch((err) => {
+        setState(undefined);
+        throw err;
+      });
     console.log("Confirming", state);
     setState({ ...state, defered: defered });
 
