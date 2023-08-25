@@ -14,7 +14,6 @@ import { useAlert } from "../../components/alerter/alerter-context";
 import {
   ArkitektFilterNodeFragment,
   ArkitektNodeFragment,
-  CommentableModels,
   FlowFragment,
   GlobalFragment,
   GraphInput,
@@ -64,9 +63,9 @@ import { ReturnEditNodeWidget } from "./nodes/generic/ReturnEditNodeWidget";
 import dagre from "dagre";
 import { useDrop } from "react-dnd";
 import { SMART_MODEL_DROP_TYPE } from "../../constants";
-import { FlussKomments } from "../../komment/FlussKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { useDialog } from "../../layout/dialog/DialogProvider";
+import { Komments } from "../../lok/komment/Komments";
 import { DynamicSidebar } from "./DynamicSidebar";
 import { AskTypeDialog } from "./dialogs/AskTypeDialog";
 import { ArkitektFilterNodeWidget } from "./nodes/ArkitektFilterNodeWidget";
@@ -719,9 +718,9 @@ export const EditRiver: React.FC<Props> = ({
             content: (
               <div className="p-3">
                 {flow.workspace?.id && (
-                  <FlussKomments
-                    model={CommentableModels.FlowWorkspace}
-                    id={flow.workspace?.id}
+                  <Komments
+                    model={"@fluss/workspace"}
+                    object={flow.workspace?.id}
                   />
                 )}
               </div>

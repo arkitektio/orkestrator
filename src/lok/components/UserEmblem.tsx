@@ -1,5 +1,5 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
-import { User } from "../../linker";
+import { LokUser } from "../../linker";
 import { withLok } from "../LokContext";
 import { useUserQuery } from "../api/graphql";
 
@@ -12,7 +12,7 @@ export const UserEmblem: React.FC<{ sub: string }> = ({ sub }) => {
   return (
     <div className=" text-sm absolute right-0 bottom-0 translate-x-2 translate-y-2">
       {data?.user?.id && (
-        <User.DetailLink object={data?.user?.id}>
+        <LokUser.DetailLink object={data?.user?.id}>
           <img
             className="h-8 w-8 rounded-full ring-pink-200 ring-2 hover:ring-pink-500 hover:ring-2 cursor-pointer"
             src={
@@ -22,7 +22,7 @@ export const UserEmblem: React.FC<{ sub: string }> = ({ sub }) => {
             }
             alt=""
           />
-        </User.DetailLink>
+        </LokUser.DetailLink>
       )}
     </div>
   );

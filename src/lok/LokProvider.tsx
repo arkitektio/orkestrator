@@ -1,7 +1,7 @@
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import React, { useState } from "react";
 import { LokContext } from "./LokContext";
-import { createManClient } from "./client";
+import { createLokClient } from "./client";
 import { LokConfig } from "./types";
 
 export type LokProviderProps = {
@@ -9,10 +9,7 @@ export type LokProviderProps = {
   children: React.ReactNode;
 };
 
-export const LokProvider: React.FC<LokProviderProps> = ({
-  register = true,
-  children,
-}) => {
+export const LokProvider: React.FC<LokProviderProps> = ({ children }) => {
   const [client, setClient] = useState<
     ApolloClient<NormalizedCacheObject> | undefined
   >();
@@ -25,12 +22,13 @@ export const LokProvider: React.FC<LokProviderProps> = ({
       return;
     }
 
-    setClient(createManClient(config));
+    setClient(createLokClient(config));
   };
 
   return (
     <LokContext.Provider
       value={{
+        config: config,
         client: client,
         configure: configure,
       }}

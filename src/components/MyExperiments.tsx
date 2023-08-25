@@ -1,7 +1,7 @@
 import { Maybe } from "graphql/jsutils/Maybe";
 import React, { useEffect, useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { Experiment } from "../linker";
+import { MikroExperiment } from "../linker";
 import { useDeleteExperimentMate } from "../mates/experiment/useDeleteExperimentMate";
 import { withMikro } from "../mikro/MikroContext";
 import {
@@ -11,7 +11,7 @@ import {
   useMyExperimentsQuery,
 } from "../mikro/api/graphql";
 import { ExperimentCard } from "../mikro/components/cards/ExperimentCard";
-import { DataHomeFilterParams } from "../pages/data/Home";
+import { DataHomeFilterParams } from "../mikro/pages/Home";
 
 export type IMyExperimentsProps = {
   subscribe?: Maybe<boolean>;
@@ -93,9 +93,9 @@ const MyExperiments: React.FC<IMyExperimentsProps> = ({
     <ListRender
       array={experiments?.myexperiments}
       title={
-        <Experiment.ListLink className="flex-0">
+        <MikroExperiment.ListLink className="flex-0">
           Experiments
-        </Experiment.ListLink>
+        </MikroExperiment.ListLink>
       }
       refetch={refetch}
     >

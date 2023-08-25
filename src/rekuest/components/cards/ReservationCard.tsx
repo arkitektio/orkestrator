@@ -1,4 +1,4 @@
-import { Reservation } from "../../../linker";
+import { RekuestReservation } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
 import { ListReservationFragment, ReservationStatus } from "../../api/graphql";
 
@@ -37,7 +37,7 @@ export const ReservationCard = ({
   mates: MateFinder[];
 }) => {
   return (
-    <Reservation.Smart
+    <RekuestReservation.Smart
       showSelfMates={true}
       placement="bottom"
       object={reservation.id}
@@ -50,7 +50,7 @@ export const ReservationCard = ({
       }
       mates={mates}
     >
-      <Reservation.DetailLink
+      <RekuestReservation.DetailLink
         className={({ isActive }) =>
           "cursor-pointer " + (isActive ? "text-primary-300" : "")
         }
@@ -59,7 +59,7 @@ export const ReservationCard = ({
         <span className="truncate">
           {reservation?.title || reservation.node?.name}
         </span>
-      </Reservation.DetailLink>
+      </RekuestReservation.DetailLink>
       {reservation?.title && (
         <p className="font-semibold text-xs">{reservation?.node?.name}</p>
       )}
@@ -76,6 +76,6 @@ export const ReservationCard = ({
       {reservation?.status == ReservationStatus.Rerouting && (
         <div className="text-xs">Reservation requires rerouting...</div>
       )}
-    </Reservation.Smart>
+    </RekuestReservation.Smart>
   );
 };

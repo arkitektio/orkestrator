@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { keyInObject } from "../../floating/utils";
 import { useDialog } from "../../layout/dialog/DialogProvider";
-import { Flow } from "../../linker";
+import { FlussFlow } from "../../linker";
 import { ReserveDialog } from "../../rekuest/components/dialogs/ReserveDialog";
 import { useReserver } from "../../rekuest/providers/reserver/reserver-context";
 import { Mate, MateFinder } from "../types";
@@ -38,7 +38,7 @@ export const useTemplateActionMate = (): ((template: {
     if (keyInObject("params", template)) {
       mates.push({
         action: async () => {
-          await navigate(Flow.linkBuilder(template.params?.flow));
+          await navigate(FlussFlow.linkBuilder(template.params?.flow));
         },
         label: "Show Flow",
       });

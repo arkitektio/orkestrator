@@ -1,9 +1,9 @@
-import { Flow } from "../../../linker";
+import { FlussFlow } from "../../../linker";
 import { ListFlowFragment } from "../../api/graphql";
 
 export const FlowCard = ({ flow }: { flow: ListFlowFragment }) => {
   return (
-    <Flow.Smart
+    <FlussFlow.Smart
       showSelfMates={true}
       placement="right"
       object={flow.id}
@@ -16,7 +16,7 @@ export const FlowCard = ({ flow }: { flow: ListFlowFragment }) => {
       }
     >
       <div className="px-6 py-4">
-        <Flow.DetailLink
+        <FlussFlow.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -24,9 +24,9 @@ export const FlowCard = ({ flow }: { flow: ListFlowFragment }) => {
           object={flow.id}
         >
           <span className="truncate">{flow?.name}</span>
-        </Flow.DetailLink>
+        </FlussFlow.DetailLink>
         <p className="text-white-700 text-base"></p>
       </div>
-    </Flow.Smart>
+    </FlussFlow.Smart>
   );
 };

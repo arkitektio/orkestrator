@@ -3,12 +3,11 @@ import React from "react";
 import { SelfActions } from "../../components/SelfActions";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { OptimizedImage } from "../../layout/OptimizedImage";
 import { PageLayout } from "../../layout/PageLayout";
-import { Representation } from "../../linker";
+import { MikroObjective, MikroRepresentation } from "../../linker";
 import { withMikro } from "../MikroContext";
-import { CommentableModels, useDetailObjectiveQuery } from "../api/graphql";
+import { useDetailObjectiveQuery } from "../api/graphql";
 
 export type ObjectiveProps = {
   id: string;
@@ -27,12 +26,7 @@ const Objective: React.FC<ObjectiveProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments
-              id={id}
-              model={CommentableModels.GrunnlagObjective}
-            />
-          ),
+          content: <MikroObjective.Komments object={id} />,
           key: "comments",
         },
       ]}
@@ -47,7 +41,7 @@ const Objective: React.FC<ObjectiveProps> = ({ id }) => {
             <div className="">Latest images acquired with this objective </div>
             <ResponsiveGrid>
               {data?.objective?.omeros?.filter(notEmpty).map((omero, index) => (
-                <Representation.Smart
+                <MikroRepresentation.Smart
                   object={omero.representation.id}
                   className="rounded shadow-md border-gray-200 h-20 group text-black relative"
                 >
@@ -62,14 +56,14 @@ const Objective: React.FC<ObjectiveProps> = ({ id }) => {
                     />
                   )}
                   <div className="h-20 p-2 absolute">
-                    <Representation.DetailLink
+                    <MikroRepresentation.DetailLink
                       object={omero.representation.id}
                       className="flex-grow  text-white cursor-pointer font-semibold"
                     >
                       {omero.representation.name}
-                    </Representation.DetailLink>
+                    </MikroRepresentation.DetailLink>
                   </div>
-                </Representation.Smart>
+                </MikroRepresentation.Smart>
               ))}
             </ResponsiveGrid>
           </div>

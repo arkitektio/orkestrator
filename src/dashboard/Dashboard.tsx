@@ -6,7 +6,7 @@ import { ResponsiveContainerGrid } from "../components/layout/ResponsiveContaine
 import { notEmpty } from "../floating/utils";
 import { OptimizedImage } from "../layout/OptimizedImage";
 import { PageLayout } from "../layout/PageLayout";
-import { Representation } from "../linker";
+import { MikroRepresentation } from "../linker";
 import { withMikro } from "../mikro/MikroContext";
 import {
   DashboardQueryQuery,
@@ -86,7 +86,7 @@ export const Live = ({ id }: { id: string }) => {
             }
 
             return (
-              <Representation.Smart
+              <MikroRepresentation.Smart
                 key={index}
                 object={firstOmero.representation.id}
                 dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
@@ -107,7 +107,7 @@ export const Live = ({ id }: { id: string }) => {
                     />
                   )}
                   <div className="px-2 py-2 h-full w-full absolute top-0 left-0 hover:bg-opacity-20 bg-opacity-10 bg-back-999 transition-all ease-in-out duration-200 relative">
-                    <Representation.DetailLink
+                    <MikroRepresentation.DetailLink
                       object={firstOmero.representation.id}
                       className="z-10 font-bold text-md mb-2 cursor-pointer text-slate-200"
                     >
@@ -118,7 +118,7 @@ export const Live = ({ id }: { id: string }) => {
                           relativeTo={relativeTo}
                         />
                       )}
-                    </Representation.DetailLink>
+                    </MikroRepresentation.DetailLink>
                   </div>
                   <div className="absolute bottom-0 ">
                     <Delayed delay={30000 + index * 1000}>
@@ -140,7 +140,7 @@ export const Live = ({ id }: { id: string }) => {
                     </Delayed>
                   </div>
                 </div>
-              </Representation.Smart>
+              </MikroRepresentation.Smart>
             );
           })}
         </ResponsiveContainerGrid>

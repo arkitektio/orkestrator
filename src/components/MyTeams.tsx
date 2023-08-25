@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
-import { Team } from "../linker";
+import { LokTeam } from "../linker";
 import { withLok } from "../lok/LokContext";
 import { useMyGroupsQuery } from "../lok/api/graphql";
 export type IMyRepresentationsProps = {};
@@ -17,11 +17,11 @@ const MyTeams: React.FC<IMyRepresentationsProps> = () => {
 
   return (
     <>
-      <Team.ListLink>
+      <LokTeam.ListLink>
         <SectionTitle>My Teams</SectionTitle>
-      </Team.ListLink>
+      </LokTeam.ListLink>
       {data?.mygroups?.filter(notEmpty).map((group, index) => (
-        <Team.Smart
+        <LokTeam.Smart
           object={group.id}
           key={index}
           className="rounded shadow-xl group border border-gray-500 mt-2 text-white"
@@ -32,15 +32,15 @@ const MyTeams: React.FC<IMyRepresentationsProps> = () => {
                 {group?.name || "No Sample"}
               </span>
             </div>
-            <Team.DetailLink
+            <LokTeam.DetailLink
               className={"font-bold text-md mb-2 cursor-pointer "}
               object={group?.id}
             >
               <span className="truncate">{group?.name}</span>
-            </Team.DetailLink>
+            </LokTeam.DetailLink>
             <p className="text-white-700 text-base"></p>
           </div>
-        </Team.Smart>
+        </LokTeam.Smart>
       ))}
     </>
   );

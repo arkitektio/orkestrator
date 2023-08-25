@@ -18,8 +18,6 @@ import { DataLabel } from "./pages/labels/DataLabel";
 import { DataLabels } from "./pages/labels/DataLabels";
 import { DataLive } from "./pages/live/DataLive";
 import { DataLives } from "./pages/live/DataLives";
-import { DataMeta } from "./pages/metas/DataMeta";
-import { DataMetas } from "./pages/metas/DataMetas";
 import { DataMetric } from "./pages/metrics/DataMetric";
 import { DataMetrics } from "./pages/metrics/DataMetrics";
 import { DataObjective } from "./pages/objectives/DataObjective";
@@ -127,8 +125,6 @@ export const MikroModule: React.FC<Props> = (props) => {
           <Route path="objectives" element={<DataObjectives />} />
           <Route path="positions/:position" element={<DataPosition />} />
           <Route path="positions" element={<DataPositions />} />
-          <Route path="metas/:id" element={<DataMeta />} />
-          <Route path="metas" element={<DataMetas />} />
           <Route path="lives/:id" element={<DataLive />} />
           <Route path="lives" element={<DataLives />} />
           <Route path="tables/:table" element={<DataTable />} />

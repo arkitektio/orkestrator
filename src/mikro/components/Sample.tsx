@@ -4,19 +4,17 @@ import React, { useState } from "react";
 import { BsTrash } from "react-icons/bs";
 import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { ListSearchInput } from "../../components/forms/fields/SearchInput";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Experiment, Representation } from "../../linker";
+import { MikroSample } from "../../linker";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { withMikro } from "../MikroContext";
 import {
-  CommentableModels,
   DetailSampleDocument,
   UpdateSampleMutationVariables,
   useDeleteRepresentationMutation,
@@ -25,6 +23,7 @@ import {
   useTagSearchLazyQuery,
   useUpdateSampleMutation,
 } from "../api/graphql";
+import { ExperimentCard } from "./cards/ExperimentCard";
 import { RepresentationCard } from "./cards/RepresentationCard";
 
 export type ISampleProps = {
@@ -124,9 +123,7 @@ const Sample: React.FC<ISampleProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagSample} />
-          ),
+          content: <MikroSample.Komments object={id} />,
           key: "comments",
         },
       ]}
@@ -153,15 +150,8 @@ const Sample: React.FC<ISampleProps> = ({ id }) => {
             <>
               <div className="font-light">Experiments</div>
               <ResponsiveGrid>
-                {data?.sample?.experiments.map((exp) => (
-                  <Experiment.Smart
-                    object={exp.id}
-                    className="border border-gray-800  cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
-                  >
-                    <Experiment.DetailLink object={exp.id}>
-                      {exp.name}
-                    </Experiment.DetailLink>
-                  </Experiment.Smart>
+                {data?.sample?.experiments.map((exp, i) => (
+                  <ExperimentCard experiment={exp} key={i} mates={[]} />
                 ))}
               </ResponsiveGrid>
             </>

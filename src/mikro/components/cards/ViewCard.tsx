@@ -1,6 +1,6 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { OptimizedImage } from "../../../layout/OptimizedImage";
-import { Representation, View } from "../../../linker";
+import { MikroRepresentation, MikroView } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
 import { ListViewFragment } from "../../api/graphql";
 
@@ -13,7 +13,7 @@ export const ViewCard = ({ view, mates }: RepresentationCardProps) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <View.Smart
+    <MikroView.Smart
       object={view?.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
         `relative rounded group text-white bg-center bg-back-999 bg-opacity-20 shadow-lg h-20 border-1 border hover:bg-back-800 transition-all ease-in-out duration-200 group ${
@@ -34,7 +34,7 @@ export const ViewCard = ({ view, mates }: RepresentationCardProps) => {
       <div className="px-2 py-2 h-full w-full absolute top-0 left-0 hover:bg-opacity-20 bg-opacity-10 bg-back-999 transition-all ease-in-out duration-200">
         {view?.accessors?.join(",")} on{" "}
         {view.omero.representation && (
-          <Representation.DetailLink
+          <MikroRepresentation.DetailLink
             className={({ isActive } /*  */) =>
               "z-10 font-bold text-md mb-2 cursor-pointer " +
               (isActive ? "text-primary-300" : "")
@@ -42,9 +42,9 @@ export const ViewCard = ({ view, mates }: RepresentationCardProps) => {
             object={view.omero.representation?.id}
           >
             {view.omero.representation?.name}
-          </Representation.DetailLink>
+          </MikroRepresentation.DetailLink>
         )}
       </div>
-    </View.Smart>
+    </MikroView.Smart>
   );
 };

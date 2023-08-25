@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { SelfActions } from "../../components/SelfActions";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { CommentableModels, useDetailModelQuery } from "../api/graphql";
+import { MikroModel } from "../../linker";
 import { withMikro } from "../MikroContext";
+import { useDetailModelQuery } from "../api/graphql";
 
 export type IExperimentProps = {
   id: string;
@@ -20,9 +20,7 @@ const Model: React.FC<IExperimentProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagModel} />
-          ),
+          content: <MikroModel.Komments object={id} />,
           key: "comments",
         },
       ]}

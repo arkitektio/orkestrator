@@ -2,19 +2,18 @@ import { Form, Formik } from "formik";
 import React, { useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import Timestamp from "react-timestamp";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { ParagraphInputField } from "../../components/forms/fields/paragraph_input";
 import { GraphQLCreatableListSearchInput } from "../../components/forms/fields/SearchInput";
+import { ParagraphInputField } from "../../components/forms/fields/paragraph_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { DropZone } from "../../components/layout/DropZone";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { MikroFile, Sample } from "../../linker";
+import { MikroExperiment, MikroFile, MikroSample } from "../../linker";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
+import { withMikro } from "../MikroContext";
 import {
-  CommentableModels,
   DetailExperimentDocument,
   DetailExperimentQuery,
   UpdateExperimentMutationVariables,
@@ -29,7 +28,6 @@ import {
   useUpdateExperimentMutation,
   useUploadOmeroFileMutation,
 } from "../api/graphql";
-import { withMikro } from "../MikroContext";
 import { UploadZone } from "./UploadZone";
 
 export type IExperimentProps = {
@@ -102,12 +100,7 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments
-              id={id}
-              model={CommentableModels.GrunnlagExperiment}
-            />
-          ),
+          content: <MikroExperiment.Komments object={id} />,
           key: "comments",
         },
       ]}
@@ -215,7 +208,7 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
           <SectionTitle> Samples </SectionTitle>
           <ResponsiveContainerGrid>
             {data?.experiment?.samples?.filter(notEmpty).map((sample) => (
-              <Sample.Smart
+              <MikroSample.Smart
                 object={sample.id}
                 className="border border-gray-800 cursor-pointer rounded p-5 text-white bg-gray-900 hover:shadow-lg"
                 additionalMates={(partner, self) => {
@@ -242,14 +235,14 @@ const Experiment: React.FC<IExperimentProps> = ({ id }) => {
                 }}
               >
                 <div className="flex truncate">
-                  <Sample.DetailLink
+                  <MikroSample.DetailLink
                     className="flex-grow cursor-pointer font-semibold"
                     object={sample.id}
                   >
                     {sample?.name}
-                  </Sample.DetailLink>
+                  </MikroSample.DetailLink>
                 </div>
-              </Sample.Smart>
+              </MikroSample.Smart>
             ))}
             <DropZone
               accepts={["item:@mikro/sample", "list:@mikro/sample"]}

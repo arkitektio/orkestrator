@@ -9,17 +9,20 @@ import { MikroWard } from "../bridges/MikroWard";
 import { PortAutoConfigure } from "../bridges/PortAutoConfigure";
 import { RekuestAutoConfigure } from "../bridges/RekuestAutoConfigure";
 import { RekuestWard } from "../bridges/RekuestWard";
-import { TauriHerreCallback } from "../bridges/TauriHerreCallback";
+import { StaticEndpoints } from "../bridges/StaticEndpoints";
+import { TauriFaktsSearcher } from "../bridges/TauriFaktsSearcher";
 import { GeneralMenu } from "../components/command/GeneralMenu";
 import { NavigationActions } from "../components/command/NavigationActions";
 import { NodesExtension } from "../components/command/NodesExtension";
 import { SearchActions } from "../components/command/SearchActions";
 import { SelectionActions } from "../components/command/SelectionActions";
+import { ConfirmModal } from "../components/confirmer/ConfirmModal";
 import { notEmpty } from "../floating/utils";
 import { FlussWard } from "../fluss/ward";
 import { DialogDisplay } from "../layout/dialog/Dialog";
+import { LokGuard } from "../lok/LokGuard";
+import { MentionListener } from "../lok/komment/listeners/MentionListener";
 import { MikroGuard } from "../mikro/MikroGuard";
-import { MentionListener } from "../mikro/listeners/MentionListener";
 import { withRekuest } from "../rekuest";
 import { RekuestGuard } from "../rekuest/RekuestGuard";
 import {
@@ -115,6 +118,7 @@ export const AutoConfiguration = () => {
       <DatalayerAutoConfigure />
       <LokAutoConfigure />
       <FlussAutoConfigure />
+      <ConfirmModal />
 
       <FlussWard />
       <MikroNextWard />
@@ -126,19 +130,22 @@ export const AutoConfiguration = () => {
       <DndPreview />
       <GeneralMenu />
       <NavigationActions />
+      <LokGuard>
+        <MentionListener />
+      </LokGuard>
       <MikroGuard>
         <MikroWard />
         <SearchActions />
-        <MentionListener />
       </MikroGuard>
+      <TauriGuard>
+        <TauriFaktsSearcher />
+      </TauriGuard>
+      <StaticEndpoints endpoints={["http://localhost:8000"]} />
       <RekuestGuard>
         <RekuestWard />
         <NodesExtension />
         <GraphQLPostman onAssignUpdate={onAssignUpdate} />
       </RekuestGuard>
-      <TauriGuard>
-        <TauriHerreCallback />
-      </TauriGuard>
       <SelectionActions />
     </>
   );

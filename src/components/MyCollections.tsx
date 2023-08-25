@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { Collection } from "../linker";
+import { RekuestCollection } from "../linker";
 import { withRekuest } from "../rekuest";
 import { useCollectionsQuery } from "../rekuest/api/graphql";
 import { CollectionCard } from "../rekuest/components/cards/CollectionCard";
@@ -28,9 +28,9 @@ const MyCollections: React.FC<IMyRepresentationsProps> = () => {
         array={data?.collections}
         loading={loading}
         title={
-          <Collection.ListLink className="flex-0">
+          <RekuestCollection.ListLink className="flex-0">
             Collections
-          </Collection.ListLink>
+          </RekuestCollection.ListLink>
         }
         refetch={refetch}
       >

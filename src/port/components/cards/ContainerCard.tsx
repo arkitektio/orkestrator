@@ -1,9 +1,9 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
-import { useConfirm } from "../../../components/confirmer/confirmer-context";
-import { Container } from "../../../linker";
+import { PortContainer } from "../../../linker";
 import { withLok } from "../../../lok/LokContext";
 import { useReleaseQuery } from "../../../lok/api/graphql";
 import { MateFinder } from "../../../mates/types";
+import { useConfirm } from "../../../providers/confirmer/confirmer-context";
 import { ContainerStatus, ListContainerFragment } from "../../api/graphql";
 
 interface UserCardProps {
@@ -47,7 +47,7 @@ export const ContainerCard = ({ container, mates }: UserCardProps) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Container.Smart
+    <PortContainer.Smart
       object={container.id}
       className={`max-w-sm rounded bg-slate-800 shadow-md border border-1 text-white group ${containerStateToStyle(
         container.status
@@ -71,7 +71,7 @@ export const ContainerCard = ({ container, mates }: UserCardProps) => {
             {container.status}
           </span>
         </div>
-        <Container.DetailLink
+        <PortContainer.DetailLink
           className="text-xl font-light cursor-pointer mb-1"
           object={container?.id}
         >
@@ -79,9 +79,9 @@ export const ContainerCard = ({ container, mates }: UserCardProps) => {
             {container?.whale?.deployment.identifier}:
             {container?.whale?.deployment.version}
           </div>
-        </Container.DetailLink>
+        </PortContainer.DetailLink>
       </div>
       <div className="pl-2 pb-2"></div>
-    </Container.Smart>
+    </PortContainer.Smart>
   );
 };

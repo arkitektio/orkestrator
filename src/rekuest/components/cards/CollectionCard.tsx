@@ -1,4 +1,4 @@
-import { Collection } from "../../../linker";
+import { RekuestCollection } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
 import { ListCollectionFragment } from "../../api/graphql";
 
@@ -10,7 +10,7 @@ export const CollectionCard = ({
   mates: MateFinder[];
 }) => {
   return (
-    <Collection.Smart
+    <RekuestCollection.Smart
       object={collection?.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
         `rounded shadow-xl group text-white bg-slate-900 p-3 hover:bg-slate-700 hover:border-slate-600 rounded rounded-md border-slate-700 border-1 border transition-all ${
@@ -21,10 +21,13 @@ export const CollectionCard = ({
       }
       mates={mates}
     >
-      <Collection.DetailLink className="cursor-pointer" object={collection?.id}>
+      <RekuestCollection.DetailLink
+        className="cursor-pointer"
+        object={collection?.id}
+      >
         <div className="text-xl font-medium mb-2">{collection?.name}</div>
         <div className="text-sm mb-2">{collection?.description}</div>
-      </Collection.DetailLink>
-    </Collection.Smart>
+      </RekuestCollection.DetailLink>
+    </RekuestCollection.Smart>
   );
 };

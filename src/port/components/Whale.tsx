@@ -2,7 +2,7 @@ import { useDatalayer } from "@jhnnsrs/datalayer";
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { App, Container } from "../../linker";
+import { LokApp, PortContainer } from "../../linker";
 import { withLok } from "../../lok/LokContext";
 import { useAppQuery } from "../../lok/api/graphql";
 import { withPort } from "../PortContext";
@@ -26,7 +26,7 @@ export const AppInfo = (props: { clientId: string }) => {
     <>
       <div className="">
         {appdata?.app?.id && (
-          <App.DetailLink object={appdata?.app?.id}>
+          <LokApp.DetailLink object={appdata?.app?.id}>
             <img
               className="h-8 w-8 rounded-full hover:ring-pink-500 hover:ring-2 cursor-pointer"
               src={
@@ -36,7 +36,7 @@ export const AppInfo = (props: { clientId: string }) => {
               }
               alt=""
             />
-          </App.DetailLink>
+          </LokApp.DetailLink>
         )}
       </div>
     </>
@@ -58,19 +58,19 @@ export const Whale = (props: WhaleProps) => {
         <div className="text-2xl">Container hosting</div>
 
         {data?.whale?.containers?.filter(notEmpty).map((container) => (
-          <Container.Smart
+          <PortContainer.Smart
             key={container.id}
             object={container.id}
             className="bg-gray-800 rounded "
           >
             <div className="p-2">
-              <Container.DetailLink object={container.id}>
+              <PortContainer.DetailLink object={container.id}>
                 <div className="text-2xl">
                   {container.image?.tags} {container.status}
                 </div>
-              </Container.DetailLink>
+              </PortContainer.DetailLink>
             </div>
-          </Container.Smart>
+          </PortContainer.Smart>
         ))}
       </div>
     </PageLayout>

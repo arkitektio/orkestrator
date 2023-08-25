@@ -2,18 +2,13 @@ import React from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 import { SelfActions } from "../../components/SelfActions";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { TwoDOffcanvas } from "../../experimental/render/TwoDOffcanvas";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
-import { Representation } from "../../linker";
+import { MikroRepresentation, MikroRoi } from "../../linker";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import { withMikro } from "../MikroContext";
-import {
-  CommentableModels,
-  useDetailRoiQuery,
-  usePinRoiMutation,
-} from "../api/graphql";
+import { useDetailRoiQuery, usePinRoiMutation } from "../api/graphql";
+import { TwoDOffcanvas } from "./canvases/TwoDOffcanvas";
 import { PositionCard } from "./cards/PositionCard";
 import { RepresentationCard } from "./cards/RepresentationCard";
 
@@ -36,9 +31,7 @@ const Roi: React.FC<ISampleProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.GrunnlagRoi} />
-          ),
+          content: <MikroRoi.Komments object={id} />,
           key: "comments",
         },
       ]}
@@ -81,12 +74,12 @@ const Roi: React.FC<ISampleProps> = ({ id }) => {
               <div className="text-md mt-2 font-bold">{data?.roi?.type}</div>
               <div className="">Marked on on </div>
               {data?.roi?.representation?.id && (
-                <Representation.DetailLink
+                <MikroRepresentation.DetailLink
                   className="text-md mt-2 font-bold"
                   object={data?.roi?.representation?.id}
                 >
                   {data?.roi?.representation?.name}
-                </Representation.DetailLink>
+                </MikroRepresentation.DetailLink>
               )}
               <div className="mt-2">Derived images </div>
               <ResponsiveContainerGrid>

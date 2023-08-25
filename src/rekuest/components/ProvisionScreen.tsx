@@ -3,10 +3,10 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router";
 import Timestamp from "react-timestamp";
 import { withRekuest } from "..";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { FlussProvision } from "../../fluss/components/FlussProvision";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import {
   DetailProvisionFragment,
   DetailProvisionQuery,

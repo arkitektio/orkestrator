@@ -1,12 +1,6 @@
-import { useDatalayer } from "@jhnnsrs/datalayer";
-import { useConfirm } from "../../../components/confirmer/confirmer-context";
-import { Timepoint } from "../../../linker";
+import { MikroTimepoint } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
-import { withMikro } from "../../MikroContext";
-import {
-  ListTimepointFragment,
-  useDeleteRepresentationMutation,
-} from "../../api/graphql";
+import { ListTimepointFragment } from "../../api/graphql";
 
 interface PositionCardProps {
   timepoint: ListTimepointFragment;
@@ -14,12 +8,8 @@ interface PositionCardProps {
 }
 
 export const TimepointCard = ({ timepoint, mates }: PositionCardProps) => {
-  const { s3resolve } = useDatalayer();
-  const [deletePosition] = withMikro(useDeleteRepresentationMutation)();
-  const { confirm } = useConfirm();
-
   return (
-    <Timepoint.Smart
+    <MikroTimepoint.Smart
       showSelfMates={true}
       placement="bottom"
       object={timepoint.id}
@@ -33,7 +23,7 @@ export const TimepointCard = ({ timepoint, mates }: PositionCardProps) => {
       mates={mates}
     >
       <div className="px-6 py-4 truncate relative">
-        <Timepoint.DetailLink
+        <MikroTimepoint.DetailLink
           className={({ isActive } /*  */) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -42,8 +32,8 @@ export const TimepointCard = ({ timepoint, mates }: PositionCardProps) => {
         >
           <span className="truncate">{timepoint?.name}</span> {" - "}
           <span className="truncate">{timepoint?.deltaT}</span>
-        </Timepoint.DetailLink>
+        </MikroTimepoint.DetailLink>
       </div>
-    </Timepoint.Smart>
+    </MikroTimepoint.Smart>
   );
 };

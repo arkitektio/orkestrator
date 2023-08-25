@@ -1,5 +1,5 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
-import { Agent } from "../../../linker";
+import { RekuestAgent } from "../../../linker";
 import { withLok } from "../../../lok/LokContext";
 import { useDetailClientQuery } from "../../../lok/api/graphql";
 import { MateFinder } from "../../../mates/types";
@@ -25,7 +25,7 @@ export const AgentCard = ({ agent, mates }: TemplateCardProps) => {
   const { s3resolve } = useDatalayer();
 
   return (
-    <Agent.Smart
+    <RekuestAgent.Smart
       showSelfMates={true}
       placement="bottom"
       object={agent.id}
@@ -45,7 +45,7 @@ export const AgentCard = ({ agent, mates }: TemplateCardProps) => {
           <div className="h-10 w-10 rounded-md animate-pulse bg-gray-200 " />
         </div>
       ) : (
-        <Agent.DetailLink
+        <RekuestAgent.DetailLink
           className={({ isActive }) =>
             "flex flex-row h-full" +
             (isActive ? "text-primary-300" : "") +
@@ -73,8 +73,8 @@ export const AgentCard = ({ agent, mates }: TemplateCardProps) => {
               {data?.client?.release?.version} on {agent?.instanceId}
             </div>
           </div>
-        </Agent.DetailLink>
+        </RekuestAgent.DetailLink>
       )}
-    </Agent.Smart>
+    </RekuestAgent.Smart>
   );
 };

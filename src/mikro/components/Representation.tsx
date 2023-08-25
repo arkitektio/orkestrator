@@ -3,7 +3,6 @@ import { useDatalayer } from "@jhnnsrs/datalayer";
 import { Form, Formik } from "formik";
 import React, { useEffect, useState } from "react";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
-import ReactPlayer from "react-player";
 import Timestamp from "react-timestamp";
 import { SelfActions } from "../../components/SelfActions";
 import {
@@ -11,36 +10,31 @@ import {
   GraphQLSearchInput,
 } from "../../components/forms/fields/SearchInput";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { TwoDOffcanvas } from "../../experimental/render/TwoDOffcanvas";
-import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import {
-  Assignation,
-  Channel,
-  Dataset,
-  DimensionMap,
-  Instrument,
-  Metric,
+  MikroChannel,
+  MikroDataset,
   MikroFile,
-  Objective,
-  Position,
-  Representation,
-  Roi,
-  Sample,
-  Table,
-  Timepoint,
+  MikroInstrument,
+  MikroMetric,
+  MikroObjective,
+  MikroPosition,
+  MikroRepresentation,
+  MikroRoi,
+  MikroSample,
+  MikroTable,
+  MikroTimepoint,
+  MikroView,
+  RekuestAssignation,
 } from "../../linker";
-import { UserEmblem } from "../../lok/components/UserEmblem";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import { useDeleteRoiMate } from "../../mates/roi/useDeleteRoiMate";
+import { notEmpty } from "../../utils";
 import { withMikro } from "../MikroContext";
 import {
-  CommentableModels,
   DetailRepresentationFragment,
   DetailRepresentationQuery,
-  DetailVideoFragment,
   MyRepresentationsOriginDocument,
   MyRepresentationsOriginSubscription,
   MyRepresentationsOriginSubscriptionVariables,
@@ -48,34 +42,16 @@ import {
   UpdateRepresentationMutationVariables,
   WatchRoisDocument,
   WatchRoisSubscriptionResult,
-  useDeleteRoiMutation,
   useDetailRepresentationQuery,
   usePinRepresentationMutation,
   useSearchSampleLazyQuery,
   useTagSearchLazyQuery,
   useUpdateRepresentationMutation,
 } from "../api/graphql";
+import { TwoDOffcanvas } from "./canvases/TwoDOffcanvas";
 
 export type ISampleProps = {
   id: string;
-};
-
-const VideoPanel = ({ video }: { video: DetailVideoFragment }) => {
-  const { s3resolve } = useDatalayer();
-
-  return (
-    <>
-      {video?.data && (
-        <ReactPlayer
-          url={s3resolve(video.data)}
-          onError={(e) => {
-            console.log(e);
-          }}
-          controls
-        />
-      )}
-    </>
-  );
 };
 
 const ThumbnailPanel = ({ image }: { image: ThumbnailFragment }) => {
@@ -111,8 +87,6 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
   )();
 
   const deleteRepresentationMate = useDeleteRepresentationMate();
-
-  const [deleteRoi] = withMikro(useDeleteRoiMutation)();
 
   const aspectRatio =
     data?.representation?.shape &&
@@ -240,12 +214,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments
-              id={id}
-              model={CommentableModels.GrunnlagRepresentation}
-            />
-          ),
+          content: <MikroRepresentation.Komments object={id} />,
           key: "comments",
         },
       ]}
@@ -304,9 +273,6 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                       {render.__typename == "Thumbnail" && (
                         <ThumbnailPanel image={render} />
                       )}
-                      {render.__typename == "Video" && (
-                        <VideoPanel video={render} />
-                      )}
                     </Tab.Panel>
                   ))}
                 <Tab.List className="text-slate-300 flex flex-row gap-2">
@@ -338,12 +304,12 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
             {data?.representation?.sample && (
               <>
                 <div className="font-light">Sample</div>
-                <Sample.DetailLink
+                <MikroSample.DetailLink
                   className="text-xl mb-2 cursor-pointer"
                   object={data?.representation?.sample?.id}
                 >
                   {data?.representation?.sample?.name}
-                </Sample.DetailLink>
+                </MikroSample.DetailLink>
               </>
             )}
 
@@ -352,12 +318,12 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                 <div className="font-light">In Datasets</div>
                 <div className="flex flex-row mb-2">
                   {data?.representation?.datasets?.map((dataset) => (
-                    <Dataset.DetailLink
+                    <MikroDataset.DetailLink
                       className="text-xl cursor-pointer p-1 border rounded mr-2 border-gray-300"
                       object={dataset.id}
                     >
                       {dataset.name}
-                    </Dataset.DetailLink>
+                    </MikroDataset.DetailLink>
                   ))}
                 </div>
               </>
@@ -368,11 +334,11 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
             </div>
             {data?.representation?.createdWhile && (
               <div className="text-md mt-2 ">
-                <Assignation.DetailLink
+                <RekuestAssignation.DetailLink
                   object={data?.representation?.createdWhile}
                 >
                   Provenance
-                </Assignation.DetailLink>
+                </RekuestAssignation.DetailLink>
               </div>
             )}
             <div className="font-light mt-2 ">Created by</div>
@@ -477,7 +443,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                 {data?.representation?.omero?.positions
                   .filter(notEmpty)
                   .map((pos) => (
-                    <Position.DetailLink
+                    <MikroPosition.DetailLink
                       object={pos.id}
                       className="flex flex-col "
                     >
@@ -492,12 +458,12 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                         {pos.z}
                         <p className="text-sm inline">z [µm] </p>
                       </div>
-                    </Position.DetailLink>
+                    </MikroPosition.DetailLink>
                   ))}
                 {data?.representation?.omero?.timepoints
                   ?.filter(notEmpty)
                   .map((t) => (
-                    <Timepoint.DetailLink
+                    <MikroTimepoint.DetailLink
                       object={t.id}
                       className="flex flex-col "
                     >
@@ -505,68 +471,23 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                         Timepoint on {t.era.name}
                       </div>
                       <div className="text-md text-black ">{t.deltaT}</div>
-                    </Timepoint.DetailLink>
+                    </MikroTimepoint.DetailLink>
                   ))}
-                <div className="font-light my-1">Channels</div>
-                <ResponsiveContainerGrid>
-                  {data?.representation?.omero?.dimensionMaps
-                    ?.filter(notEmpty)
-                    .map((map) => (
-                      <DimensionMap.Smart
-                        object={map.id}
-                        className="flex flex-col "
-                      >
-                        <DimensionMap.DetailLink
-                          object={map.id}
-                          className="flex flex-col "
-                        >
-                          {map.channel && (
-                            <Channel.DetailLink
-                              className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer"
-                              object={map.channel.id}
-                            >
-                              <div className="flex flex-row">
-                                <div>{map.channel?.name || "Channel "}</div>
-                                <div
-                                  className="text-xs w-2 h-2 rounded-full ml-2 my-auto"
-                                  style={{
-                                    background: `${
-                                      map.channel?.color
-                                        ? map.channel.color
-                                        : "rbg(0,0,0)"
-                                    }`,
-                                  }}
-                                ></div>
-                                {map.channel?.emissionWavelength && (
-                                  <div className="text-sm">
-                                    {map.channel.emissionWavelength.toPrecision(
-                                      5
-                                    )}{" "}
-                                    nm
-                                  </div>
-                                )}
-                              </div>
-                            </Channel.DetailLink>
-                          )}
-                        </DimensionMap.DetailLink>
-                      </DimensionMap.Smart>
-                    ))}
-                </ResponsiveContainerGrid>
                 <div className="font-light my-1">Views</div>
                 <ResponsiveContainerGrid>
                   {data?.representation?.omero?.views
                     ?.filter(notEmpty)
                     .map((map) => (
-                      <DimensionMap.Smart
+                      <MikroView.Smart
                         object={map.id}
                         className="flex flex-col "
                       >
-                        <DimensionMap.DetailLink
+                        <MikroView.DetailLink
                           object={map.id}
                           className="flex flex-col "
                         >
                           {map.channel && (
-                            <Channel.DetailLink
+                            <MikroChannel.DetailLink
                               className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer"
                               object={map.channel.id}
                             >
@@ -583,10 +504,10 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                                   }}
                                 ></div>
                               </div>
-                            </Channel.DetailLink>
+                            </MikroChannel.DetailLink>
                           )}
                           {map.position && (
-                            <Position.DetailLink
+                            <MikroPosition.DetailLink
                               className="px-2 py-2  rounded shadow-lg border border-gray-300 flex flex-col cursor-pointer"
                               object={map.position.id}
                             >
@@ -603,14 +524,14 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                                   }}
                                 ></div>
                               </div>
-                            </Position.DetailLink>
+                            </MikroPosition.DetailLink>
                           )}
-                        </DimensionMap.DetailLink>
-                      </DimensionMap.Smart>
+                        </MikroView.DetailLink>
+                      </MikroView.Smart>
                     ))}
                 </ResponsiveContainerGrid>
                 {data?.representation?.omero?.objective && (
-                  <Objective.DetailLink
+                  <MikroObjective.DetailLink
                     object={data?.representation?.omero?.objective.id}
                     className="flex flex-col "
                   >
@@ -625,10 +546,10 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                         </div>
                       </div>
                     </div>
-                  </Objective.DetailLink>
+                  </MikroObjective.DetailLink>
                 )}
                 {data?.representation?.omero?.instrument && (
-                  <Instrument.DetailLink
+                  <MikroInstrument.DetailLink
                     object={data?.representation?.omero?.instrument.id}
                     className="flex flex-col "
                   >
@@ -636,7 +557,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     <div className="text-md text-black ">
                       {data?.representation?.omero?.instrument?.name}
                     </div>
-                  </Instrument.DetailLink>
+                  </MikroInstrument.DetailLink>
                 )}
                 <div className="text-light">
                   {data?.representation?.omero?.physicalSize && (
@@ -701,25 +622,19 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     {data?.representation?.metrics
                       ?.filter(notEmpty)
                       .map((met) => (
-                        <Metric.Smart
+                        <MikroMetric.Smart
                           object={met.id}
                           className="border rounded border-gray-800 relative"
                         >
                           <div className="relative p-3 ">
-                            <Metric.DetailLink
+                            <MikroMetric.DetailLink
                               object={met.id}
                               className="font-light"
                             >
                               {met?.key}
-                            </Metric.DetailLink>
-                            <div className="font-xs">{met?.value}</div>
-                            {met.comments?.at(0)?.user?.sub && (
-                              <UserEmblem
-                                sub={met.comments?.at(0)?.user?.sub}
-                              />
-                            )}
+                            </MikroMetric.DetailLink>
                           </div>
-                        </Metric.Smart>
+                        </MikroMetric.Smart>
                       ))}
                   </div>
                 </>
@@ -754,16 +669,16 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     {data?.representation?.tableOrigins
                       ?.filter(notEmpty)
                       .map((table) => (
-                        <Table.Smart
+                        <MikroTable.Smart
                           object={table.id}
                           dragClassName={(options) =>
                             "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
                           }
                         >
-                          <Table.DetailLink object={table.id}>
+                          <MikroTable.DetailLink object={table.id}>
                             {table.name}
-                          </Table.DetailLink>
-                        </Table.Smart>
+                          </MikroTable.DetailLink>
+                        </MikroTable.Smart>
                       ))}
                   </ResponsiveContainerGrid>
                 </>
@@ -777,16 +692,16 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     {data?.representation?.roiOrigins
                       ?.filter(notEmpty)
                       .map((roi) => (
-                        <Roi.Smart
+                        <MikroRoi.Smart
                           object={roi.id}
                           dragClassName={(options) =>
                             "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow text-white"
                           }
                         >
-                          <Roi.DetailLink object={roi.id}>
+                          <MikroRoi.DetailLink object={roi.id}>
                             {roi.label || roi.id}
-                          </Roi.DetailLink>
-                        </Roi.Smart>
+                          </MikroRoi.DetailLink>
+                        </MikroRoi.Smart>
                       ))}
                   </ResponsiveContainerGrid>
                 </>

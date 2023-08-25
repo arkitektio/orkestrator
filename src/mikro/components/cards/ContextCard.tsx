@@ -1,15 +1,11 @@
-import React from "react";
-import { BsTrash } from "react-icons/bs";
-import { useConfirm } from "../../../components/confirmer/confirmer-context";
-import { Context, Dataset, Experiment } from "../../../linker";
+import { MikroContext } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
-import { Data } from "../../../pages/Data";
+import { useConfirm } from "../../../providers/confirmer/confirmer-context";
+import { withMikro } from "../../MikroContext";
 import {
   ListContextFragment,
-  ListDatasetFragment,
   useDeleteDatasetMutation,
 } from "../../api/graphql";
-import { withMikro } from "../../MikroContext";
 
 interface ContextCardProps {
   context: ListContextFragment;
@@ -28,19 +24,19 @@ export const ContextCard = ({ context, mates }: ContextCardProps) => {
   if (!context?.id) return <></>;
 
   return (
-    <Context.Smart
+    <MikroContext.Smart
       object={context?.id}
       className={`bg-slate-700 text-white rounded shadow-md px-3  group`}
       mates={mates}
     >
       <div className="px-1 py-2 truncate">
-        <Context.DetailLink
+        <MikroContext.DetailLink
           className="flex-grow cursor-pointer font-semibold"
           object={context.id}
         >
           {context?.name}
-        </Context.DetailLink>
+        </MikroContext.DetailLink>
       </div>
-    </Context.Smart>
+    </MikroContext.Smart>
   );
 };

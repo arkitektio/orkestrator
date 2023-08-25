@@ -1,14 +1,11 @@
-import React from "react";
-import { BsTrash } from "react-icons/bs";
-import { useConfirm } from "../../../components/confirmer/confirmer-context";
-import { Dataset, Experiment } from "../../../linker";
+import { MikroDataset } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
-import { Data } from "../../../pages/Data";
+import { useConfirm } from "../../../providers/confirmer/confirmer-context";
+import { withMikro } from "../../MikroContext";
 import {
   ListDatasetFragment,
   useDeleteDatasetMutation,
 } from "../../api/graphql";
-import { withMikro } from "../../MikroContext";
 
 interface DatasetCardProps {
   dataset: ListDatasetFragment;
@@ -27,19 +24,19 @@ export const DatasetCard = ({ dataset, mates }: DatasetCardProps) => {
   if (!dataset?.id) return <></>;
 
   return (
-    <Dataset.Smart
+    <MikroDataset.Smart
       object={dataset?.id}
       className={`bg-slate-700 text-white rounded shadow-md pl-3  group`}
       mates={mates}
     >
       <div className="px-1 py-2 truncate">
-        <Dataset.DetailLink
+        <MikroDataset.DetailLink
           className="flex-grow cursor-pointer font-semibold"
           object={dataset.id}
         >
           {dataset?.name}
-        </Dataset.DetailLink>
+        </MikroDataset.DetailLink>
       </div>
-    </Dataset.Smart>
+    </MikroDataset.Smart>
   );
 };

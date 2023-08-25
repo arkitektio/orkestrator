@@ -7,18 +7,16 @@ import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { useDialog } from "../../layout/dialog/DialogProvider";
-import {
-  getDefaultSmartModel,
-  getIdentifierForCommentableModel,
-} from "../../linker";
-import { UserTag } from "../../lok/components/UserTag";
+import { LokUser, getDefaultSmartModel } from "../../linker";
 import { CreatePublicClientDialog } from "../../lok/components/dialogs/CreatePublicClient";
-import { withMikro } from "../../mikro/MikroContext";
+
+import { useDatalayer } from "@jhnnsrs/datalayer";
+import { withLok } from "../LokContext";
 import {
   MentionCommentFragment,
   useMyMentionsQuery,
   useResolveCommentMutation,
-} from "../../mikro/api/graphql";
+} from "../api/graphql";
 
 interface IFlowHomeProps {}
 
@@ -27,7 +25,7 @@ export const MentionedComment = ({
 }: {
   comment: MentionCommentFragment;
 }) => {
-  const [resolveComment] = withMikro(useResolveCommentMutation)({
+  const [resolveComment] = withLok(useResolveCommentMutation)({
     update: (cache, { data }) => {
       if (data?.resolveComment) {
         cache.modify({
@@ -41,21 +39,33 @@ export const MentionedComment = ({
     },
   });
 
-  if (!comment.contentType) return <>Cannot</>;
-  const identifier = getIdentifierForCommentableModel(comment.contentType);
-  if (!identifier) return <>No identifier found for {comment.contentType}</>;
+  const { s3resolve } = useDatalayer();
 
-  const Model = getDefaultSmartModel(identifier);
-  if (!Model) return <>No Smart Model found for {identifier}</>;
+  if (!comment.identifier) return <>No identifier found for</>;
+
+  const Model = getDefaultSmartModel(comment.identifier);
+  if (!Model) return <>No Smart Model found for {comment.identifier}</>;
 
   return (
     <div className="flex flex-col text-white">
       {comment?.user && (
         <div className="mt-2 flex flex-col w-full">
           <div className="flex flex-row ">
-            {comment.user.sub && (
-              <UserTag sub={comment?.user.sub} className="inline-flex mr-2" />
-            )}{" "}
+            <LokUser.DetailLink
+              object={comment?.user?.id}
+              className="flex flex-row p-1 bg-back-700 rounded"
+            >
+              <div className="my-auto mr-2">{comment?.user.username}</div>
+              <img
+                className="h-6 w-6 rounded-full hover:ring-pink-500 hover:ring-2 cursor-pointer"
+                src={
+                  comment?.user?.profile?.avatar
+                    ? s3resolve(comment?.user?.profile.avatar)
+                    : `https://eu.ui-avatars.com/api/?name=${data?.user?.username}&background=random`
+                }
+                alt=""
+              />
+            </LokUser.DetailLink>
             <div className="flex flex-grow my-auto">
               mentioned you <div className="mr-2"></div>
               {comment.mentions.length > 1 &&
@@ -88,7 +98,7 @@ export const MentionedComment = ({
               )}
               <div className="text-gray-500 my-auto">
                 <Model.DetailLink
-                  object={comment.objectId.toString()}
+                  object={comment.identifier}
                   className="text-slate-50 mt-5 "
                 >
                   <BsFolder2Open />
@@ -104,7 +114,7 @@ export const MentionedComment = ({
 };
 
 const TeamHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
-  const { data } = withMikro(useMyMentionsQuery)();
+  const { data } = withLok(useMyMentionsQuery)();
   const { ask } = useDialog();
   return (
     <PageLayout

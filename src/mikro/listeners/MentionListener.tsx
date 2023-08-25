@@ -1,20 +1,17 @@
-import React, { useState, useEffect } from "react";
-import Timestamp from "react-timestamp";
+import React, { useEffect } from "react";
 import { toast } from "react-toastify";
-import { Comment } from "../../komment/display/Comment";
 import {
   getDefaultSmartModel,
   getIdentifierForCommentableModel,
-} from "../../linker";
+} from "../../../linker";
+import { withMikro } from "../../../mikro/MikroContext";
 import {
   MentionCommentFragment,
-  useDetailCommentQuery,
-  useMyMentionsQuery,
   WatchMentionsDocument,
   WatchMentionsSubscription,
   WatchMentionsSubscriptionVariables,
-} from "../api/graphql";
-import { withMikro } from "../MikroContext";
+  useMyMentionsQuery,
+} from "../../../mikro/api/graphql";
 
 export interface MentionListenerProps {}
 

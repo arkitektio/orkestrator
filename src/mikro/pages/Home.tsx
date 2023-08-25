@@ -5,7 +5,6 @@ import {
   useQueryParams,
   withDefault,
 } from "use-query-params";
-import { Generators } from "../../components/Generators";
 import { MyBigFiles } from "../../components/MyBigFiles";
 import { MyContexts } from "../../components/MyContexts";
 import { MyDatasets } from "../../components/MyDatasets";
@@ -15,7 +14,6 @@ import { MyPlots } from "../../components/MyPlots";
 import { MyRepresentations } from "../../components/MyRepresentations";
 import { MySamples } from "../../components/MySamples";
 import { MyTables } from "../../components/MyTables";
-import { Producers } from "../../components/Producers";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { useDialog } from "../../layout/dialog/DialogProvider";
@@ -28,7 +26,8 @@ import { MyEras } from "../../mikro/components/MyEras";
 import { MyStages } from "../../mikro/components/MyStages";
 import { CreateContextModal } from "../../mikro/components/dialogs/CreateContextModal";
 import { CreateDatasetModal } from "../../mikro/components/dialogs/CreateDatasetModal";
-import HomeSidebar from "./HomeSidebar";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
+import HomeSidebar from "../sidebars/HomeSidebar";
 
 interface IDataHomeProps {}
 
@@ -64,6 +63,8 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
   });
 
   const { ask } = useDialog();
+
+  const { confirm } = useConfirm();
 
   return (
     <PageLayout
@@ -101,6 +102,12 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
                 onAction={async () => {
                   console.log("create dataset", "LOOOOLK");
 
+                  let z = await confirm({
+                    message: "Create Dataset",
+                    subtitle: "Are you sure you want to create a new dataset?",
+                    confirmLabel: "Create",
+                  });
+
                   await ask(CreateDatasetModal, {});
                   client?.refetchQueries({
                     include: [MyDatasetsDocument],
@@ -126,8 +133,6 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
           })
         )}
       </h1>
-      <Generators />
-      <Producers />
       <MyDatasets {...filterParams} />
       <MyExperiments {...filterParams} subscribe />
       <MyContexts {...filterParams} />

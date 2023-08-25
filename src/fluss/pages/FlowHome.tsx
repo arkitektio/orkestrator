@@ -15,7 +15,7 @@ import { ImportFlowDialog } from "../../fluss/components/dialogs/ImportFlowDialo
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { useDialog } from "../../layout/dialog/DialogProvider";
-import { Workspace } from "../../linker";
+import { FlussWorkspace } from "../../linker";
 import FlowHomeSidebar from "./FlowHomeSidebar";
 
 interface IFlowHomeProps {}
@@ -72,7 +72,7 @@ const FlowHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
             onAction={async () => {
               let x = await ask(CreateFlowDialog, {});
               if (x.res.drawvanilla) {
-                navigate(Workspace.linkBuilder(x.res.drawvanilla?.id));
+                navigate(FlussWorkspace.linkBuilder(x.res.drawvanilla?.id));
               }
             }}
           />
@@ -81,7 +81,7 @@ const FlowHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
             onAction={async () => {
               let x = await ask(ImportFlowDialog, {});
               if (x.res.importflow) {
-                navigate(Workspace.linkBuilder(x.res.importflow?.id));
+                navigate(FlussWorkspace.linkBuilder(x.res.importflow?.id));
               }
             }}
           />

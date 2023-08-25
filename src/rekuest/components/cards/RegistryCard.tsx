@@ -1,5 +1,5 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
-import { App, User } from "../../../linker";
+import { LokApp, LokUser } from "../../../linker";
 import { withLok } from "../../../lok/LokContext";
 import { useAppQuery, useUserQuery } from "../../../lok/api/graphql";
 import { RegistryFragment } from "../../api/graphql";
@@ -26,14 +26,14 @@ export const RegistryCard = ({ registry }: RegistryCardProps) => {
   return (
     <div className="flex flex-row rounded">
       {appdata?.app?.id && (
-        <App.DetailLink object={appdata?.app?.id}>
+        <LokApp.DetailLink object={appdata?.app?.id}>
           <div className="my-auto pr-1 bg-back-700 rounded-l p-1">
             {appdata.app.identifier}:{appdata.app.version}
           </div>
-        </App.DetailLink>
+        </LokApp.DetailLink>
       )}
       {userdata?.user?.id ? (
-        <User.DetailLink
+        <LokUser.DetailLink
           object={userdata?.user?.id}
           className="flex flex-row my-auto bg-back-500 rounded-r p-1"
         >
@@ -47,7 +47,7 @@ export const RegistryCard = ({ registry }: RegistryCardProps) => {
             }
             alt=""
           />
-        </User.DetailLink>
+        </LokUser.DetailLink>
       ) : (
         "Anonymous"
       )}

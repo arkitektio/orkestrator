@@ -2,12 +2,12 @@ import React from "react";
 import { usePinnedRunsQuery } from "../fluss/api/graphql";
 import { RunCard } from "../fluss/components/cards/RunCard";
 import { withFluss } from "../fluss/fluss";
+import { FlowHomeFilterParams } from "../fluss/pages/FlowHome";
 import { ListRender } from "../layout/SectionTitle";
-import { Run } from "../linker";
+import { FlussRun } from "../linker";
 import { useDeleteRunMate } from "../mates/run/useDeleteRunMate";
 import { usePinRunMate } from "../mates/run/usePinRunMate";
-import { FlowHomeFilterParams } from "../pages/flows/FlowHome";
-import { useConfirm } from "./confirmer/confirmer-context";
+import { useConfirm } from "../providers/confirmer/confirmer-context";
 export type IMyGraphsProps = {} & FlowHomeFilterParams;
 
 const MyPinnedRuns: React.FC<IMyGraphsProps> = ({ limit, createdDay }) => {
@@ -23,7 +23,9 @@ const MyPinnedRuns: React.FC<IMyGraphsProps> = ({ limit, createdDay }) => {
     <ListRender
       array={data?.runs}
       loading={loading}
-      title={<Run.ListLink className="flex-0">Pinned Runs</Run.ListLink>}
+      title={
+        <FlussRun.ListLink className="flex-0">Pinned Runs</FlussRun.ListLink>
+      }
       refetch={refetch}
     >
       {(s, index) => (

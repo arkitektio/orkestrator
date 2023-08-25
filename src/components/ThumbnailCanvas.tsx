@@ -4,7 +4,7 @@ import React from "react";
 import { Layer, Line, Stage, Text } from "react-konva";
 import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
-import { Roi } from "../linker";
+import { MikroRoi } from "../linker";
 import { withLok } from "../lok/LokContext";
 import { useUserQuery } from "../lok/api/graphql";
 import {
@@ -49,7 +49,7 @@ export const RoiLabel = ({
   return <Text x={x} y={y - 15} text={text} fontSize={14} fill="white" />;
 };
 
-const linkbuilder = Roi.linkBuilder;
+const linkbuilder = MikroRoi.linkBuilder;
 
 export const ThumbnailCanvas = ({
   rep,
@@ -115,7 +115,7 @@ export const ThumbnailCanvas = ({
       className="relative"
       style={{ height: height, width: width }}
       onDoubleClick={() => {
-        window.open(s3resolve(thumbnail), "_blank");
+        thumbnail && window.open(s3resolve(thumbnail), "_blank");
       }}
     >
       <canvas

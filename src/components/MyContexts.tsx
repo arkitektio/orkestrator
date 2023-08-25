@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { useDialog } from "../layout/dialog/DialogProvider";
-import { Context } from "../linker";
+import { MikroContext } from "../linker";
 import { useDeleteContextMate } from "../mates/context/useDeleteContextMate";
 import { withMikro } from "../mikro/MikroContext";
 import { useMyContextsQuery } from "../mikro/api/graphql";
@@ -26,21 +25,14 @@ const MyContexts: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
 
   const deleteContexMate = useDeleteContextMate();
 
-  const { ask } = useDialog();
-  const [show, setShow] = useState(false);
-
-  const [offset, setOffset] = useState(0);
-
-  useEffect(() => {
-    refetch({ limit: 20, offset: offset });
-  }, [offset, limit]);
-
-  if (error) return <div>{error.message}</div>;
-
   return (
     <ListRender
       array={data?.mycontexts}
-      title={<Context.ListLink className="flex-0">Contexts</Context.ListLink>}
+      title={
+        <MikroContext.ListLink className="flex-0">
+          Contexts
+        </MikroContext.ListLink>
+      }
       refetch={refetch}
     >
       {(ex, index) => (

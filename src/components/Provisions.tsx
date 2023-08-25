@@ -2,7 +2,7 @@ import React from "react";
 import { BsCheckCircle, BsExclamationTriangle } from "react-icons/bs";
 import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
-import { Provision } from "../linker";
+import { RekuestProvision } from "../linker";
 import { UserEmblem } from "../lok/components/UserEmblem";
 import { ProvisionStatus } from "../rekuest/api/graphql";
 import { UnprovideButton } from "../rekuest/components/UnprovideButton";
@@ -18,9 +18,9 @@ const Provisions: React.FC<IMyProvisionsProps> = () => {
 
   return (
     <>
-      <Provision.ListLink className="font-light text-xl dark:text-white">
+      <RekuestProvision.ListLink className="font-light text-xl dark:text-white">
         This app is being used by
-      </Provision.ListLink>
+      </RekuestProvision.ListLink>
       <ResponsiveContainerGrid>
         {provisions?.provisions?.filter(notEmpty).map((prov, index) => (
           <div
@@ -29,7 +29,7 @@ const Provisions: React.FC<IMyProvisionsProps> = () => {
               prov?.status
             )}`}
           >
-            <Provision.DetailLink object={prov.id} className="p-2">
+            <RekuestProvision.DetailLink object={prov.id} className="p-2">
               <div className="text-xl font-light mb-2 flex">
                 <div className="text-xl font-light flex-initial">
                   {prov?.template?.interface}
@@ -87,7 +87,7 @@ const Provisions: React.FC<IMyProvisionsProps> = () => {
                   </div>
                 </div>
               )}
-            </Provision.DetailLink>
+            </RekuestProvision.DetailLink>
             <div className="ml-2 pb-2 text-sm">
               {prov?.id && (
                 <UnprovideButton

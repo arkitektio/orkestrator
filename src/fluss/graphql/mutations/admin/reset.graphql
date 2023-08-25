@@ -1,5 +1,0 @@
-mutation ResetFluss {
-	reset {
-		ok
-	}
-}

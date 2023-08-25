@@ -1,16 +1,15 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Node } from "../../linker";
-import { useRekuest } from "../../rekuest";
-import { NodesDocument, NodesQuery } from "../../rekuest/api/graphql";
-import { useRequester } from "../../rekuest/providers/requester/requester-context";
-import { useReserver } from "../../rekuest/providers/reserver/reserver-context";
-import { queryfiltered } from "./GeneralMenu";
+import { RekuestNode } from "../../linker";
 import {
   Extension,
   ModifyingAction,
   useGeneralMenu,
-} from "./GeneralMenuContext";
+} from "../../providers/command/GeneralMenuContext";
+import { useRekuest } from "../../rekuest";
+import { NodesDocument, NodesQuery } from "../../rekuest/api/graphql";
+import { useReserver } from "../../rekuest/providers/reserver/reserver-context";
+import { queryfiltered } from "./GeneralMenu";
 
 export interface NavigationActionsProps {}
 
@@ -28,7 +27,6 @@ export const NodesExtension: React.FC<NavigationActionsProps> = ({}) => {
 
   const navigate = useNavigate();
   const { reserve } = useReserver();
-  const { assign } = useRequester();
 
   const { registerExtension, unregisterExtension } = useGeneralMenu();
 
@@ -50,7 +48,9 @@ export const NodesExtension: React.FC<NavigationActionsProps> = ({}) => {
               [
                 {
                   custom: async (action) => {
-                    navigate(Node.linkBuilder(nodemodifier?.params?.node));
+                    navigate(
+                      RekuestNode.linkBuilder(nodemodifier?.params?.node)
+                    );
                   },
                   key: "node-navigate",
                   label: "Navigate",

@@ -1,12 +1,10 @@
 import { useEffect } from "react";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
-import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { PageLayout } from "../../layout/PageLayout";
-import { Representation } from "../../linker";
 import { withRekuest } from "../../rekuest";
 import { useUnfoldProvenanceQuery } from "../../rekuest/api/graphql";
-import { useProvenanceLazyQuery } from "../api/graphql";
 import { withMikro } from "../MikroContext";
+import { useProvenanceLazyQuery } from "../api/graphql";
 import { RepresentationCard } from "./cards/RepresentationCard";
 
 export type ProvenanceProps = {

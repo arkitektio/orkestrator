@@ -1,12 +1,11 @@
 import React from "react";
-import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { SelfActions } from "../../components/SelfActions";
+import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
-import { Representation } from "../../linker";
-import { CommentableModels, useDetailInstrumentQuery } from "../api/graphql";
+import { MikroInstrument, MikroRepresentation } from "../../linker";
 import { withMikro } from "../MikroContext";
+import { useDetailInstrumentQuery } from "../api/graphql";
 
 export type InstrumentProps = {
   id: string;
@@ -23,12 +22,7 @@ const Instrument: React.FC<InstrumentProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments
-              id={id}
-              model={CommentableModels.GrunnlagInstrument}
-            />
-          ),
+          content: <MikroInstrument.Komments object={id} />,
           key: "comments",
         },
       ]}
@@ -44,19 +38,19 @@ const Instrument: React.FC<InstrumentProps> = ({ id }) => {
               {data?.instrument?.omeros
                 ?.filter(notEmpty)
                 .map((omero, index) => (
-                  <Representation.Smart
+                  <MikroRepresentation.Smart
                     object={omero.representation.id}
                     className="mt-2 p-6 rounded shadow-md bg-white border-gray-200 group text-black"
                   >
                     <div className="flex">
-                      <Representation.DetailLink
+                      <MikroRepresentation.DetailLink
                         object={omero.representation.id}
                         className="flex-grow cursor-pointer font-semibold"
                       >
                         {omero.representation.name}
-                      </Representation.DetailLink>
+                      </MikroRepresentation.DetailLink>
                     </div>
-                  </Representation.Smart>
+                  </MikroRepresentation.Smart>
                 ))}
             </ResponsiveGrid>
           </div>

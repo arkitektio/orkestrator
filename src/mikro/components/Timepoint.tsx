@@ -1,14 +1,12 @@
 import React from "react";
-import { SelfActions } from "../../components/SelfActions";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { Era } from "../../linker";
+import { MikroEra, MikroTimepoint } from "../../linker";
 import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import { withMikro } from "../MikroContext";
-import { CommentableModels, useDetailTimepointQuery } from "../api/graphql";
+import { useDetailTimepointQuery } from "../api/graphql";
 import { RepresentationCard } from "./cards/RepresentationCard";
 import { ViewCard } from "./cards/ViewCard";
 
@@ -25,16 +23,11 @@ const Timepoint: React.FC<PositionProps> = ({ id }) => {
 
   return (
     <PageLayout
-      actions={<SelfActions type={"@mikro/timepoint"} object={id} />}
+      actions={<MikroTimepoint.Actions object={id} />}
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments
-              id={id}
-              model={CommentableModels.GrunnlagTimepoint}
-            />
-          ),
+          content: <MikroTimepoint.Komments object={id} />,
           key: "comments",
         },
       ]}
@@ -43,9 +36,9 @@ const Timepoint: React.FC<PositionProps> = ({ id }) => {
         <div className="text-xl font-light text-white">
           {data?.timepoint?.name}{" "}
           {data?.timepoint?.era?.id && (
-            <Era.DetailLink object={data?.timepoint?.era?.id}>
+            <MikroEra.DetailLink object={data?.timepoint?.era?.id}>
               on {data?.timepoint?.era?.name}
-            </Era.DetailLink>
+            </MikroEra.DetailLink>
           )}
         </div>
         <div className="flex  @2xl:flex-row-reverse flex-col rounded-md gap-4 mt-2">

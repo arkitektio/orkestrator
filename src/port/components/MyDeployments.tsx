@@ -3,7 +3,7 @@ import { notEmpty } from "../../floating/utils";
 import { useDeploymentsQuery } from "../api/graphql";
 
 import { ListRender } from "../../layout/SectionTitle";
-import { Deployment } from "../../linker";
+import { PortDeployment } from "../../linker";
 import { useDeleteScan } from "../../mates/scan/useDeleteScanMate";
 import { useDeployScanMate } from "../../mates/scan/useDeployScanMate";
 import { withPort } from "../PortContext";
@@ -21,7 +21,9 @@ const MyDeployments: React.FC<IMyWhalesProps> = ({}) => {
 
   return (
     <ListRender
-      title={<Deployment.ListLink>Potential Deployments</Deployment.ListLink>}
+      title={
+        <PortDeployment.ListLink>Potential Deployments</PortDeployment.ListLink>
+      }
       array={data?.deployments?.filter(notEmpty)}
       refetch={refetch}
     >

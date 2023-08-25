@@ -2,8 +2,9 @@ import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "@jhnnsrs/herre";
 import React from "react";
 import TextTransition, { presets } from "react-text-transition";
-import { AdaptiveLogin } from "../../bridges/AdaptiveLogin";
-import { RekuestLink } from "../../linker";
+import { DisconnectButton } from "../../components/buttons/DisconnectButton";
+import { LoginButton } from "../../components/buttons/LoginButton";
+import { RekuestModuleLink } from "../../linker";
 
 export interface PublicHomeProps {}
 
@@ -66,16 +67,16 @@ export const PublicLogin: React.FC<PublicHomeProps> = (props) => {
           <div className="rounded-md shadow">
             {token ? (
               <div className="flex flex-row  gap-2">
-                <RekuestLink className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10">
+                <RekuestModuleLink className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10">
                   Dashboard
-                </RekuestLink>
+                </RekuestModuleLink>
               </div>
             ) : (
-              <AdaptiveLogin />
+              <LoginButton />
             )}
           </div>
           <div className="mt-3 sm:mt-0 sm:ml-3">
-            <FaktualReconfigure />
+            <DisconnectButton />
           </div>
         </div>
       </div>

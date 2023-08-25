@@ -1,5 +1,5 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
-import { User } from "../../linker";
+import { LokUser } from "../../linker";
 import { withLok } from "../LokContext";
 import { useUserQuery } from "../api/graphql";
 
@@ -15,7 +15,7 @@ export const UserTag: React.FC<{ sub: string; className?: string }> = ({
   return (
     <div className={className}>
       {data?.user?.id ? (
-        <User.DetailLink
+        <LokUser.DetailLink
           object={data?.user?.id}
           className="flex flex-row p-1 bg-back-700 rounded"
         >
@@ -29,7 +29,7 @@ export const UserTag: React.FC<{ sub: string; className?: string }> = ({
             }
             alt=""
           />
-        </User.DetailLink>
+        </LokUser.DetailLink>
       ) : (
         "Anonymous"
       )}

@@ -1,8 +1,8 @@
+import { useFakts } from "@jhnnsrs/fakts";
 import React from "react";
 import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
-import { useFakts } from "@jhnnsrs/fakts";
-import { useHealthz } from "../../healthz/context";
+import { useHealthz } from "../../providers/healthz/context";
 
 export interface PublicHomeProps {}
 

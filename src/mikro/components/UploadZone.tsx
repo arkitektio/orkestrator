@@ -1,22 +1,9 @@
-import React, { useEffect, useState } from "react";
-import {
-  BsCaretLeft,
-  BsCaretRight,
-  BsDownload,
-  BsPlusCircle,
-  BsTrash,
-} from "react-icons/bs";
-import { ImCancelCircle } from "react-icons/im";
+import React, { useState } from "react";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
-import { useMikro, withMikro } from "../MikroContext";
-import {
-  MyOmeroFilesDocument,
-  UploadOmeroFileMutationVariables,
-  useUploadOmeroFileMutation,
-} from "../api/graphql";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
-import { CreateFunc, UploadFunc, useDatalayer } from "../../datalayer/context";
+import { CreateFunc, UploadFunc } from "../../datalayer/context";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
+import { useMikro } from "../MikroContext";
 export type IMyRepresentationsProps = {};
 
 const limit = 20;

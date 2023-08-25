@@ -1,6 +1,6 @@
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { withMikro } from "../../mikro/MikroContext";
 import { useReleaseRepresentationsMutation } from "../../mikro/api/graphql";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { MateFinder } from "../types";
 
 export const useReleaseRepresentationMate = (datasetID: string): MateFinder => {

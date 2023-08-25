@@ -2,11 +2,11 @@ import React from "react";
 import { useMyWorkspacesQuery } from "../fluss/api/graphql";
 import { WorkspaceCard } from "../fluss/components/cards/WorkspaceCard";
 import { withFluss } from "../fluss/fluss";
+import { FlowHomeFilterParams } from "../fluss/pages/FlowHome";
 import { ListRender } from "../layout/SectionTitle";
-import { Workspace } from "../linker";
+import { FlussWorkspace } from "../linker";
 import { useDeleteWorkspaceMate } from "../mates/workspace/useDeleteWorkspaceMate";
 import { usePinWorkspaceMate } from "../mates/workspace/usePinWorkspaceMate";
-import { FlowHomeFilterParams } from "../pages/flows/FlowHome";
 export type IMyGraphsProps = {} & FlowHomeFilterParams;
 
 const MyWorkspaces: React.FC<IMyGraphsProps> = ({ limit, createdDay }) => {
@@ -23,7 +23,9 @@ const MyWorkspaces: React.FC<IMyGraphsProps> = ({ limit, createdDay }) => {
       array={data?.myworkspaces}
       loading={loading}
       title={
-        <Workspace.ListLink className="flex-0">Workspaces</Workspace.ListLink>
+        <FlussWorkspace.ListLink className="flex-0">
+          Workspaces
+        </FlussWorkspace.ListLink>
       }
       refetch={refetch}
     >

@@ -1,6 +1,6 @@
 import { BsTrash } from "react-icons/bs";
-import { useConfirm } from "../../components/confirmer/confirmer-context";
 import { useDeleteSampleMutation } from "../../mikro/api/graphql";
+import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { MateFinder } from "../types";
 
 export type DeleteFunction = typeof useDeleteSampleMutation;

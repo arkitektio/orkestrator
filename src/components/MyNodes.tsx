@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
 import { SectionTitle } from "../layout/SectionTitle";
-import { Node } from "../linker";
+import { RekuestNode } from "../linker";
 import { useDeleteNodeMate } from "../mates/nodes/useDeleteDatasetMate";
 import { useNodeActionMate } from "../mates/nodes/useNodeActionMate";
 import { withRekuest } from "../rekuest";
@@ -71,9 +71,9 @@ const MyNodes: React.FC<IMyNodesProps> = ({}) => {
 
   return (
     <div>
-      <Node.ListLink>
+      <RekuestNode.ListLink>
         <SectionTitle>My Nodes</SectionTitle>
-      </Node.ListLink>
+      </RekuestNode.ListLink>
       <br />
       <ResponsiveGrid>
         {data?.allnodes?.filter(notEmpty).map((node, index) => (

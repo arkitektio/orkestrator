@@ -4,7 +4,6 @@ import { SectionTitle } from "../../layout/SectionTitle";
 import { withMikro } from "../MikroContext";
 import {
   ColumnFragment,
-  CommentableModels,
   DetailTableQuery,
   DetailTableQueryVariables,
   useDetailTableQuery,
@@ -23,9 +22,8 @@ import { TbCsv } from "react-icons/tb";
 import { SelfActions } from "../../components/SelfActions";
 import { NumberInputField } from "../../components/forms/fields/number_input";
 import { TextInputField } from "../../components/forms/fields/text_input";
-import { MikroKomments } from "../../komment/MikroKomments";
 import { PageLayout } from "../../layout/PageLayout";
-import { Representation } from "../../linker";
+import { MikroRepresentation, MikroTable } from "../../linker";
 import { GraphCard } from "./cards/GraphCard";
 
 type TableData = { [key: string]: any };
@@ -129,9 +127,7 @@ const Table: React.FC<ISampleProps> = ({ id }) => {
       sidebars={[
         {
           label: "Comments",
-          content: (
-            <MikroKomments id={id} model={CommentableModels.BordTable} />
-          ),
+          content: <MikroTable.Komments object={id} />,
           key: "comments",
         },
         {
@@ -168,16 +164,16 @@ const Table: React.FC<ISampleProps> = ({ id }) => {
             <div className="font-light my-2">From Image</div>
             <ResponsiveGrid>
               {tabledata?.table?.repOrigins?.filter(notEmpty).map((rep) => (
-                <Representation.Smart
+                <MikroRepresentation.Smart
                   object={rep.id}
                   dragClassName={(options) =>
                     "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
                   }
                 >
-                  <Representation.DetailLink object={rep.id}>
+                  <MikroRepresentation.DetailLink object={rep.id}>
                     {rep.name}
-                  </Representation.DetailLink>
-                </Representation.Smart>
+                  </MikroRepresentation.DetailLink>
+                </MikroRepresentation.Smart>
               ))}
             </ResponsiveGrid>
           </div>

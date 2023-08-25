@@ -1,4 +1,4 @@
-import { Workspace } from "../../../linker";
+import { FlussWorkspace } from "../../../linker";
 import { MateFinder } from "../../../mates/types";
 import { ListWorkspaceFragment } from "../../api/graphql";
 
@@ -9,7 +9,7 @@ interface WorkspaceCardProps {
 
 export const WorkspaceCard = ({ workspace, mates }: WorkspaceCardProps) => {
   return (
-    <Workspace.Smart
+    <FlussWorkspace.Smart
       showSelfMates={true}
       object={workspace.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
@@ -22,7 +22,7 @@ export const WorkspaceCard = ({ workspace, mates }: WorkspaceCardProps) => {
       mates={mates}
     >
       <div className="px-6 py-4">
-        <Workspace.DetailLink
+        <FlussWorkspace.DetailLink
           className={({ isActive }) =>
             "font-bold text-md mb-2 cursor-pointer " +
             (isActive ? "text-primary-300" : "")
@@ -30,9 +30,9 @@ export const WorkspaceCard = ({ workspace, mates }: WorkspaceCardProps) => {
           object={workspace.id}
         >
           <span className="truncate">{workspace?.name}</span>
-        </Workspace.DetailLink>
+        </FlussWorkspace.DetailLink>
         <p className="text-white-700 text-base"></p>
       </div>
-    </Workspace.Smart>
+    </FlussWorkspace.Smart>
   );
 };

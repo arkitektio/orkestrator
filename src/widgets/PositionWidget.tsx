@@ -1,7 +1,7 @@
-import { PositionCanvas } from "../components/PositionCanvas";
 import { SaveParentSize } from "../layout/SaveParentSize";
-import { useDetailPositionQuery } from "../mikro/api/graphql";
 import { withMikro } from "../mikro/MikroContext";
+import { useDetailPositionQuery } from "../mikro/api/graphql";
+import { PositionCanvas } from "../mikro/components/canvases/PositionCanvas";
 import { StructureDisplayProps } from "../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
 
 export const PositionWidget: React.FC<StructureDisplayProps> = ({ value }) => {

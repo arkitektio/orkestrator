@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 import { useDialog } from "../../layout/dialog/DialogProvider";
-import { Flow } from "../../linker";
+import { FlussFlow } from "../../linker";
 import { NodeListItemFragment } from "../../rekuest/api/graphql";
 import { ReserveDialog } from "../../rekuest/components/dialogs/ReserveDialog";
 import { usePostman } from "../../rekuest/providers/postman/postman-context";
@@ -34,7 +34,7 @@ export const useNodeActionMate = (): ((
     if (node.interfaces?.includes("workflow") && node.meta?.flow) {
       mates.push({
         action: async () => {
-          await navigate(Flow.linkBuilder(node.meta.flow));
+          await navigate(FlussFlow.linkBuilder(node.meta.flow));
         },
         label: "Show Flow",
       });

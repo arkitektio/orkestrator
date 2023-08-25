@@ -1,4 +1,4 @@
-fragment ListUser on HerreUser {
+fragment ListUser on User {
   username
   firstName
   lastName
@@ -9,7 +9,7 @@ fragment ListUser on HerreUser {
   id
 }
 
-fragment DetailUser on HerreUser {
+fragment DetailUser on User {
   id
   username
   email
@@ -25,7 +25,7 @@ fragment DetailUser on HerreUser {
   }
 }
 
-fragment MeUser on HerreUser {
+fragment MeUser on User {
   id
   username
   roles

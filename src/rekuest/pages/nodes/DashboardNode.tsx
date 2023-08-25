@@ -5,7 +5,11 @@ import { NodeActions } from "../../../actions/NodeActions";
 import { ResponsiveGrid } from "../../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../../floating/utils";
 import { PageLayout } from "../../../layout/PageLayout";
-import { Collection, Node, Protocol } from "../../../linker";
+import {
+  RekuestCollection,
+  RekuestNode,
+  RekuestProtocol,
+} from "../../../linker";
 import { withRekuest } from "../../../rekuest";
 import {
   ChildPortFragment,
@@ -202,13 +206,13 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
           <div className="flex-none">
             <div className="flex flex-row gap-2">
               {data?.node?.collections?.map((i) => (
-                <Collection.DetailLink
+                <RekuestCollection.DetailLink
                   object={i.id}
                   className="border-primary-300 p-1 border rounded-md bg-primary-300 text-white"
                 >
                   {" "}
                   {i.name}{" "}
-                </Collection.DetailLink>
+                </RekuestCollection.DetailLink>
               ))}
             </div>
           </div>
@@ -216,7 +220,7 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
             <div className="flex-none">
               {data?.node?.isTestFor.filter(notEmpty).map((n) => {
                 return (
-                  <Node.DetailLink
+                  <RekuestNode.DetailLink
                     className="flex flex-row gap-2"
                     object={n.id}
                   >
@@ -224,7 +228,7 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
                       {" "}
                       Tests: {n.name}{" "}
                     </div>
-                  </Node.DetailLink>
+                  </RekuestNode.DetailLink>
                 );
               })}
             </div>
@@ -233,7 +237,7 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
             <div className="flex-none">
               {data?.node?.tests.filter(notEmpty).map((n) => {
                 return (
-                  <Node.DetailLink
+                  <RekuestNode.DetailLink
                     className="flex flex-row gap-2"
                     object={n.id}
                   >
@@ -241,7 +245,7 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
                       {" "}
                       Tested by: {n.name}{" "}
                     </div>
-                  </Node.DetailLink>
+                  </RekuestNode.DetailLink>
                 );
               })}
             </div>
@@ -250,7 +254,7 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
             <div className="flex-none">
               {data?.node?.protocols?.filter(notEmpty).map((n) => {
                 return (
-                  <Protocol.DetailLink
+                  <RekuestProtocol.DetailLink
                     className="flex flex-row gap-2"
                     object={n.id}
                   >
@@ -258,7 +262,7 @@ const DashboardNode: React.FC<INodeScreenProps> = (props) => {
                       {" "}
                       Fulfills {n.name}{" "}
                     </div>
-                  </Protocol.DetailLink>
+                  </RekuestProtocol.DetailLink>
                 );
               })}
             </div>

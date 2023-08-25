@@ -1,14 +1,13 @@
 import { Maybe } from "graphql/jsutils/Maybe";
-import React, { useState } from "react";
+import React from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { useDialog } from "../layout/dialog/DialogProvider";
-import { Dataset } from "../linker";
+import { MikroDataset } from "../linker";
 import { useDeleteDatesetMate } from "../mates/dataset/useDeleteDatasetMate";
 import { useExportDatasetMate } from "../mates/dataset/useExportDatasetMate";
 import { withMikro } from "../mikro/MikroContext";
 import { useMyDatasetsQuery } from "../mikro/api/graphql";
 import { DatasetCard } from "../mikro/components/cards/DatasetCard";
-import { DataHomeFilterParams } from "../pages/data/Home";
+import { DataHomeFilterParams } from "../mikro/pages/Home";
 
 export type IMyExperimentsProps = {
   subscribe?: Maybe<boolean>;
@@ -27,10 +26,6 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
     variables: variables,
   });
 
-  const [show, setShow] = useState(false);
-
-  const { ask } = useDialog();
-
   const deleteDatasetMate = useDeleteDatesetMate();
   const exportDatasetMate = useExportDatasetMate();
 
@@ -41,7 +36,11 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
       <ListRender
         array={data?.mydatasets}
         loading={loading}
-        title={<Dataset.ListLink className="flex-0">Datasets</Dataset.ListLink>}
+        title={
+          <MikroDataset.ListLink className="flex-0">
+            Datasets
+          </MikroDataset.ListLink>
+        }
         refetch={refetch}
       >
         {(dat, index) => (

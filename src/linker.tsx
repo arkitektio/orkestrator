@@ -1,7 +1,10 @@
 import React from "react";
 import { NavLink, NavLinkProps } from "react-router-dom";
+import { SelfActions, SelfActionsProps } from "./components/SelfActions";
+import { Komments } from "./lok/komment/Komments";
+import { KommentProps } from "./lok/komment/types";
 import { Identifier } from "./mates/types";
-import { CommentableModels, LinkableModels } from "./mikro/api/graphql";
+import { LinkableModels } from "./mikro/api/graphql";
 import {
   ClassNameOptions,
   SmartModel,
@@ -17,6 +20,9 @@ export interface CreatedSmartSmartProps
   dropStyle?: (props: ClassNameOptions) => React.CSSProperties;
   children: React.ReactNode;
 }
+
+export type SmartKommentProps = Omit<KommentProps, "identifier">;
+export type SelfActionProps = Omit<SelfActionsProps, "type">;
 
 export type CreatedSmartProps = Omit<SmartModelProps, "identifier">;
 
@@ -84,6 +90,18 @@ const buildModelLink = (model: Identifier, to: string) => {
   };
 };
 
+const buildKomments = (model: Identifier) => {
+  return ({ ...props }: SmartKommentProps) => {
+    return <Komments {...props} identifier={model} />;
+  };
+};
+
+const buildSelfActions = (model: Identifier) => {
+  return ({ ...props }: SmartKommentProps) => {
+    return <SelfActions {...props} type={model} />;
+  };
+};
+
 const linkBuilder = (model: Identifier, to: string) => (object: string) => {
   return `/user/${getModelBase(model)}/${to}/${object}`;
 };
@@ -99,7 +117,14 @@ export const buildModuleLink = (module: string) => {
 };
 
 export type GlobalRegistry = {
-  [key: Identifier]: (object: string) => string;
+  [key: Identifier]: {
+    DetailLink: React.FC<ModelLinkProps>;
+    ListLink: React.FC<BaseLinkProps>;
+    linkBuilder: (object: string) => string;
+    Smart: React.FC<CreatedSmartSmartProps>;
+    Komments: React.FC<SmartKommentProps>;
+    Actions: React.FC<SelfActionProps>;
+  };
 };
 
 let x: GlobalRegistry = {};
@@ -111,143 +136,146 @@ export const GlobalLink = ({
   ...props
 }: OmitedNavLinkProps & { object: string; model: Identifier }) => {
   return (
-    <NavLink to={(x[model] && x[model](object)) || "fake"} {...props}>
+    <NavLink
+      to={(x[model] && x[model].linkBuilder(object)) || "fake"}
+      {...props}
+    >
       {children}
     </NavLink>
   );
 };
 
 export const buildSmart = (model: Identifier, to: string) => {
-  x[model] = linkBuilder(model, to);
-
-  return {
+  x[model] = {
     DetailLink: buildModelLink(model, to),
     ListLink: buildBaseLink(model, to),
     linkBuilder: linkBuilder(model, to),
     Smart: buildSmartModel(model),
+    Komments: buildKomments(model),
+    Actions: buildSelfActions(model),
   };
+
+  return x[model];
 };
 
-export const Representation = buildSmart(
+export const MikroRepresentation = buildSmart(
   "@mikro/representation",
   "representations"
 );
 
-export const Image = buildSmart("@mikronext/image", "images");
+export const MikroGraph = buildSmart("@mikro/graph", "graphs");
 
-export const History = buildSmart("@mikronext/history", "history");
+export const MikroLabel = buildSmart("@mikro/label", "labels");
+export const MikroFeature = buildSmart("@mikro/feature", "features");
 
-export const TransformationView = buildSmart(
-  "@mikronext/transformationview",
-  "transformationviews"
+export const MikroSample = buildSmart("@mikro/sample", "samples");
+
+export const MikroRoi = buildSmart("@mikro/roi", "rois");
+
+export const MikroThumbnail = buildSmart("@mikro/thumbnail", "thumbnails");
+
+export const MikroContext = buildSmart("@mikro/context", "contexts");
+
+export const MikroLink = buildSmart("@mikro/link", "links");
+
+export const MikroModel = buildSmart("@mikro/model", "models");
+
+export const MikroStage = buildSmart("@mikro/stage", "stages");
+
+export const MikroPosition = buildSmart("@mikro/position", "positions");
+
+export const MikroVideo = buildSmart("@mikro/video", "videos");
+
+export const MikroDimensionMap = buildSmart(
+  "@mikro/dimensionmap",
+  "dimensionmaps"
 );
 
-export const LabelView = buildSmart("@mikronext/labelview", "labelviews");
+export const MikroChannel = buildSmart("@mikro/channel", "channels");
 
-export const File = buildSmart("@mikronext/file", "files");
+export const MikroObjective = buildSmart("@mikro/objective", "objectives");
 
-export const ChannelView = buildSmart("@mikronext/channelview", "channelviews");
+export const MikroInstrument = buildSmart("@mikro/instrument", "instruments");
 
-export const OpticsView = buildSmart("@mikronext/opticsview", "opticsviews");
+export const MikroFile = buildSmart("@mikro/file", "files");
 
-export const Graph = buildSmart("@mikro/graph", "graphs");
+export const MikroView = buildSmart("@mikro/view", "views");
 
-export const Label = buildSmart("@mikro/label", "labels");
-export const Feature = buildSmart("@mikro/feature", "features");
+export const MikroEra = buildSmart("@mikro/era", "eras");
 
-export const Sample = buildSmart("@mikro/sample", "samples");
+export const MikroTimepoint = buildSmart("@mikro/timepoint", "timepoints");
 
-export const Roi = buildSmart("@mikro/roi", "rois");
+export const MikroMetric = buildSmart("@mikro/metric", "metrics");
 
-export const Thumbnail = buildSmart("@mikro/thumbnail", "thumbnails");
+export const MikroTable = buildSmart("@mikro/table", "tables");
 
-export const Context = buildSmart("@mikro/context", "contexts");
+export const MikroPlot = buildSmart("@mikro/plot", "plots");
 
-export const Link = buildSmart("@mikro/link", "links");
+export const MikroExperiment = buildSmart("@mikro/experiment", "experiments");
 
-export const Model = buildSmart("@mikro/model", "models");
+export const MikroDataset = buildSmart("@mikro/dataset", "datasets");
+export const RekuestNode = buildSmart("@rekuest/node", "nodes");
 
-export const Stage = buildSmart("@mikro/stage", "stages");
+export const RekuestProtocol = buildSmart("@rekuest/protocol", "protocols");
 
-export const Position = buildSmart("@mikro/position", "positions");
-
-export const Video = buildSmart("@mikro/video", "videos");
-
-export const DimensionMap = buildSmart("@mikro/dimensionmap", "dimensionmaps");
-
-export const Channel = buildSmart("@mikro/channel", "channels");
-
-export const Objective = buildSmart("@mikro/objective", "objectives");
-
-export const Instrument = buildSmart("@mikro/instrument", "instruments");
-
-export const MikroFile = buildSmart("@mikro/omerofile", "files");
-
-export const View = buildSmart("@mikro/view", "views");
-
-export const Era = buildSmart("@mikro/era", "eras");
-
-export const Timepoint = buildSmart("@mikro/timepoint", "timepoints");
-
-export const Metric = buildSmart("@mikro/metric", "metrics");
-
-export const Table = buildSmart("@mikro/table", "tables");
-
-export const Plot = buildSmart("@mikro/plot", "plots");
-
-export const Experiment = buildSmart("@mikro/experiment", "experiments");
-
-export const Dataset = buildSmart("@mikro/dataset", "datasets");
-export const Node = buildSmart("@rekuest/node", "nodes");
-
-export const Protocol = buildSmart("@rekuest/protocol", "protocols");
-
-export const Collection = buildSmart("@rekuest/collection", "collections");
-export const Reservation = buildSmart("@rekuest/reservation", "reservations");
-export const MirrorRepository = buildSmart(
+export const RekuestCollection = buildSmart(
+  "@rekuest/collection",
+  "collections"
+);
+export const RekuestReservation = buildSmart(
+  "@rekuest/reservation",
+  "reservations"
+);
+export const RekuestMirrorRepository = buildSmart(
   "@rekuest/mirrorrepository",
   "repositories"
 );
-export const AppRepository = buildSmart(
+export const RekuestAppRepository = buildSmart(
   "@rekuest/apprepository",
   "repositories"
 );
-export const Provision = buildSmart("@rekuest/provision", "provisions");
+export const RekuestProvision = buildSmart("@rekuest/provision", "provisions");
 
-export const TestResult = buildSmart("@rekuest/testresult", "testresults");
+export const RekuestTestResult = buildSmart(
+  "@rekuest/testresult",
+  "testresults"
+);
 
-export const TestCase = buildSmart("@rekuest/testcase", "testcases");
-export const Agent = buildSmart("@rekuest/agent", "agents");
-export const Assignation = buildSmart("@rekuest/assignation", "assignations");
-export const Template = buildSmart("@rekuest/template", "templates");
+export const RekuestTestCase = buildSmart("@rekuest/testcase", "testcases");
+export const RekuestAgent = buildSmart("@rekuest/agent", "agents");
+export const RekuestAssignation = buildSmart(
+  "@rekuest/assignation",
+  "assignations"
+);
+export const RekuestTemplate = buildSmart("@rekuest/template", "templates");
 
-export const Workspace = buildSmart("@fluss/workspace", "workspaces");
-export const Flow = buildSmart("@fluss/flow", "flows");
-export const Run = buildSmart("@fluss/run", "runs");
-export const Snapshot = buildSmart("@fluss/snapshot", "snapshots");
+export const FlussWorkspace = buildSmart("@fluss/workspace", "workspaces");
+export const FlussFlow = buildSmart("@fluss/flow", "flows");
+export const FlussRun = buildSmart("@fluss/run", "runs");
+export const FlussSnapshot = buildSmart("@fluss/snapshot", "snapshots");
 
-export const User = buildSmart("@lok/user", "users");
-export const Team = buildSmart("@lok/team", "teams");
+export const LokUser = buildSmart("@lok/user", "users");
+export const LokTeam = buildSmart("@lok/team", "teams");
 
-export const Client = buildSmart("@lok/client", "clients");
+export const LokClient = buildSmart("@lok/client", "clients");
 
-export const App = buildSmart("@lok/app", "apps");
+export const LokApp = buildSmart("@lok/app", "apps");
 
-export const Release = buildSmart("@lok/c", "releases");
+export const LokRelease = buildSmart("@lok/c", "releases");
 
-export const Container = buildSmart("@port/container", "containers");
+export const PortContainer = buildSmart("@port/container", "containers");
 
-export const Whale = buildSmart("@port/whale", "whales");
+export const PortWhale = buildSmart("@port/whale", "whales");
 
-export const GithubRepo = buildSmart("@port/githubrepo", "githubrepos");
+export const PortGithubRepo = buildSmart("@port/githubrepo", "githubrepos");
 
-export const Deployment = buildSmart("@port/deployment", "deployments");
+export const PortDeployment = buildSmart("@port/deployment", "deployments");
 
-export const RekuestLink = buildModuleLink("rekuest");
-export const FlussLink = buildModuleLink("fluss");
-export const MikroLink = buildModuleLink("mikro");
-export const PortLink = buildModuleLink("port");
-export const LokLink = buildModuleLink("lok");
+export const RekuestModuleLink = buildModuleLink("rekuest");
+export const FlussModuleLink = buildModuleLink("fluss");
+export const MikroModuleLink = buildModuleLink("mikro");
+export const PortModuleLink = buildModuleLink("port");
+export const LokModuleLink = buildModuleLink("lok");
 
 export const FakeSmartModel = {
   DetailLink: buildModelLink("fake/fake", "fake"),
@@ -257,79 +285,5 @@ export const FakeSmartModel = {
 };
 
 export const getDefaultSmartModel = (ident: Identifier) => {
-  switch (ident) {
-    case "@rekuest/node":
-      return Node;
-    case "@rekuest/reservation":
-      return Reservation;
-    case "@rekuest/mirrorrepository":
-      return MirrorRepository;
-    case "@rekuest/apprepository":
-      return AppRepository;
-    case "@rekuest/provision":
-      return Provision;
-    case "@rekuest/agent":
-      return Agent;
-    case "@mikro/sample":
-      return Sample;
-    case "@mikro/representation":
-      return Representation;
-    case "@mikro/experiment":
-      return Experiment;
-    case "@mikro/feature":
-      return Feature;
-    case "@mikro/metric":
-      return Metric;
-    case "@mikro/roi":
-      return Roi;
-    case "@mikro/position":
-      return Position;
-    case "@mikro/stage":
-      return Stage;
-    case "@mikro/omerofile":
-      return MikroFile;
-    case "@mikro/label":
-      return Label;
-    case "@rekuest/assignation":
-      return Assignation;
-    case "@rekuest/template":
-      return Template;
-    case "@fluss/workspace":
-      return Workspace;
-    case "@fluss/flow":
-      return Flow;
-    case "@fluss/run":
-      return Run;
-    case "@fluss/snapshot":
-      return Snapshot;
-    case "@lok/user":
-      return User;
-    case "@lok/team":
-      return Team;
-    case "@lok/client":
-      return Client;
-  }
-
-  return null;
-};
-
-export const getIdentifierForCommentableModel = (model: CommentableModels) => {
-  switch (model) {
-    case CommentableModels.GrunnlagFeature:
-      return "@mikro/feature";
-    case CommentableModels.GrunnlagLabel:
-      return "@mikro/label";
-    case CommentableModels.GrunnlagSample:
-      return "@mikro/sample";
-    case CommentableModels.GrunnlagRepresentation:
-      return "@mikro/representation";
-    case CommentableModels.GrunnlagExperiment:
-      return "@mikro/experiment";
-    case CommentableModels.GrunnlagMetric:
-      return "@mikro/metric";
-    case CommentableModels.GrunnlagRoi:
-      return "@mikro/roi";
-    case CommentableModels.GrunnlagOmerofile:
-      return "@mikro/omerofile";
-  }
+  return x[ident];
 };

@@ -5,7 +5,17 @@
         }
       }
       const result: PossibleTypesResultData = {
-  "possibleTypes": {}
+  "possibleTypes": {
+    "CommentNode": [
+      "MentionDescendent",
+      "ParagraphDescendent"
+    ],
+    "Descendent": [
+      "Leaf",
+      "MentionDescendent",
+      "ParagraphDescendent"
+    ]
+  }
 };
       export default result;
     

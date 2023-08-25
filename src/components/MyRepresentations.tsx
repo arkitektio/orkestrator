@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { Representation } from "../linker";
+import { MikroRepresentation } from "../linker";
 import { useMikroLinkMate } from "../mates/generics/useLinkMate";
 import { usePostmanMate } from "../mates/postman/usePostmanMates";
 import { withMikro } from "../mikro/MikroContext";
@@ -11,7 +11,7 @@ import {
   useMyRepresentationsQuery,
 } from "../mikro/api/graphql";
 import { RepresentationCard } from "../mikro/components/cards/RepresentationCard";
-import { DataHomeFilterParams } from "../pages/data/Home";
+import { DataHomeFilterParams } from "../mikro/pages/Home";
 
 export type IMyRepresentationsProps = {};
 
@@ -93,9 +93,9 @@ const MyRepresentations: React.FC<
         array={data?.myrepresentations}
         loading={loading}
         title={
-          <Representation.ListLink className="flex-0">
+          <MikroRepresentation.ListLink className="flex-0">
             Imagesssss
-          </Representation.ListLink>
+          </MikroRepresentation.ListLink>
         }
         refetch={refetch}
       >

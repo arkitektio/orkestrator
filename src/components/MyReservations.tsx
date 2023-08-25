@@ -1,6 +1,6 @@
 import React from "react";
 import { notEmpty } from "../floating/utils";
-import { Reservation } from "../linker";
+import { RekuestReservation } from "../linker";
 import { useRequesterMate } from "../mates/reservation/useRequesterMate";
 import { withRekuest } from "../rekuest";
 import { useReservationsQuery } from "../rekuest/api/graphql";
@@ -21,11 +21,11 @@ const MyReservations: React.FC<{}> = () => {
 
   return (
     <>
-      <Reservation.ListLink>
+      <RekuestReservation.ListLink>
         <span className="font-light text-xl dark:text-white">
           This app uses
         </span>
-      </Reservation.ListLink>
+      </RekuestReservation.ListLink>
       <ResponsiveGrid>
         {data?.reservations?.filter(notEmpty).map((res, index) => (
           <ReservationCard

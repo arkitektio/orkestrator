@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { EdgeLabelRenderer, getSmoothStepPath } from "reactflow";
 import { RunEventType, StreamKind } from "../../../fluss/api/graphql";
-import { Assignation } from "../../../linker";
+import { RekuestAssignation } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
 import { useReferencedAssignationsLazyQuery } from "../../../rekuest/api/graphql";
 import { LabeledEdgeProps } from "../../types";
@@ -122,12 +122,12 @@ export const LabeledTrackEdge: React.FC<LabeledEdgeProps> = (props) => {
             </div>
           ))}
           {assignation?.assignations?.filter(notEmpty).map((assignation) => (
-            <Assignation.DetailLink
+            <RekuestAssignation.DetailLink
               object={assignation.id}
               className="text-xs text-gray-200"
             >
               Open
-            </Assignation.DetailLink>
+            </RekuestAssignation.DetailLink>
           ))}
         </div>
       </EdgeLabelRenderer>

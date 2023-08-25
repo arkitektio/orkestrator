@@ -5,7 +5,7 @@ import { ReservationTimeline } from "../../../components/timelines/Reserveration
 import { ActionButton } from "../../../layout/ActionButton";
 import { PageLayout } from "../../../layout/PageLayout";
 import { useDialog } from "../../../layout/dialog/DialogProvider";
-import { Assignation, Node } from "../../../linker";
+import { RekuestAssignation, RekuestNode } from "../../../linker";
 import { withRekuest } from "../../../rekuest";
 import {
   DetailReservationFragment,
@@ -35,9 +35,9 @@ export const ReservationToolbar: React.FC<ReservationToolbarProps> = ({
           </div>
           <div className="font-light text-2xl dark:text-white">
             {reservation?.node.id && (
-              <Node.DetailLink object={reservation?.node?.id}>
+              <RekuestNode.DetailLink object={reservation?.node?.id}>
                 {reservation?.node?.name}
-              </Node.DetailLink>
+              </RekuestNode.DetailLink>
             )}
           </div>
           <div className="font-light mt-auto ml-4 flex-row dark:text-white flex truncate">
@@ -112,7 +112,7 @@ const DashboardReservation: React.FC<IReservationProps> = ({}) => {
             onAction={async () => {
               if (data?.reservation) {
                 let x = await assign({ reservation: data?.reservation });
-                x?.id && navigate(Assignation.linkBuilder(x.id));
+                x?.id && navigate(RekuestAssignation.linkBuilder(x.id));
               }
             }}
             label="Assign"

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
 import { useDialog } from "../layout/dialog/DialogProvider";
-import { Graph } from "../linker";
+import { MikroThumbnail } from "../linker";
 import { withMikro } from "../mikro/MikroContext";
 import { useThumbnailsQuery } from "../mikro/api/graphql";
 import { ThumbnailCard } from "../mikro/components/cards/ThumbnailCard";
@@ -37,7 +37,11 @@ const MyThumbnails: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
   return (
     <ListRender
       array={data?.thumbnails}
-      title={<Graph.ListLink className="flex-0">Thumbails</Graph.ListLink>}
+      title={
+        <MikroThumbnail.ListLink className="flex-0">
+          Thumbails
+        </MikroThumbnail.ListLink>
+      }
       refetch={refetch}
     >
       {(ex, index) => <ThumbnailCard key={index} thumbnail={ex} mates={[]} />}
