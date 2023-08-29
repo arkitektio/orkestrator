@@ -2,12 +2,14 @@ import React from "react";
 import { useNavigate } from "react-router";
 import { notEmpty } from "../floating/utils";
 import { ActionButton } from "../layout/ActionButton";
+import { withRekuest } from "../rekuest";
 import {
   ListReservationFragment,
   ReservationStatus,
+  useReservationsQuery,
 } from "../rekuest/api/graphql";
 import { useRequester } from "../rekuest/providers/requester/requester-context";
-import { useReserver } from "../rekuest/providers/reserver/reserver-context";
+import { useSettings } from "../settings/settings-context";
 
 export interface SelfActionsProps {
   type: `${string}/${string}`;
@@ -27,11 +29,17 @@ export const SelfActions: React.FC<SelfActionsProps> = ({
         : "bg-gray-800 border-gray-800  "
     }  disabled:shadow-none font-semibold items-center cursor-pointer z-50 border  p-3 rounded-xl disabled:bg-gray-800 disabled:border-gray-800 truncate hover:bg-primary-400 disabled:cursor-not-allowed`,
 }) => {
-  const { reservations } = useReserver();
+  const { settings } = useSettings();
+
+  const { data } = withRekuest(useReservationsQuery)({
+    variables: {
+      instanceId: settings.instanceId,
+    },
+  });
   const { assign } = useRequester();
   const navigate = useNavigate();
 
-  let available_res = reservations?.reservations
+  let available_res = data?.reservations
     ?.filter((res) => res?.node?.args?.at(0)?.identifier == type)
     .filter(notEmpty)
     .sort((a, b) => (a.status == ReservationStatus.Active ? -1 : 1));
@@ -44,6 +52,7 @@ export const SelfActions: React.FC<SelfActionsProps> = ({
         <ActionButton
           label={res.title || res.node?.name || "Unknown"}
           description={res.node.kind || "No description"}
+          inactive={res.status != ReservationStatus.Active}
           onAction={async () => {
             let selfkey = res?.node?.args?.at(0)?.key;
             if (res.status == ReservationStatus.Active && selfkey) {

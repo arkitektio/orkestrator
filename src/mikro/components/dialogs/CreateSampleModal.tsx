@@ -1,15 +1,15 @@
 import { Form, Formik } from "formik";
+import { TwDialog } from "../../../components/dialog/TwDialog";
 import { GraphQLSearchInput } from "../../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../../components/forms/fields/text_input";
-import { Submit } from "../../../layout/dialog/DialogProvider";
-import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { Submit } from "../../../providers/dialog/DialogProvider";
+import { withMikro } from "../../MikroContext";
 import {
   CreateSampleMutationVariables,
   useCreateSampleMutation,
   useSearchExperimentsLazyQuery,
 } from "../../api/graphql";
-import { withMikro } from "../../MikroContext";
 
 export const CreateSampleModal = ({
   name = "new",

@@ -1,6 +1,6 @@
 import React from "react";
 import { PageLayout } from "../../layout/PageLayout";
-import { useDialog } from "../../layout/dialog/DialogProvider";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import DatasetList from "../components/lists/DatasetList";
 import ImageList from "../components/lists/ImageList";
 import StageList from "../components/lists/StageList";

@@ -5,7 +5,6 @@ import { MateFinder } from "../types";
 
 export const useProvideMate = () => {
   const { confirm } = useConfirm();
-
   const [link] = withRekuest(useProvideMutation)();
   return (res: { id: string }): MateFinder =>
     async (options) => {

@@ -1,4 +1,5 @@
 import { Form, Formik } from "formik";
+import { TwDialog } from "../../../components/dialog/TwDialog";
 import {
   CreateableListSearchInput,
   GraphQLListSearchInput,
@@ -6,8 +7,7 @@ import {
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { SwitchInputField } from "../../../components/forms/fields/switch_input";
 import { TextInputField } from "../../../components/forms/fields/text_input";
-import { Submit } from "../../../layout/dialog/DialogProvider";
-import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { Submit } from "../../../providers/dialog/DialogProvider";
 import { withLok } from "../../LokContext";
 import {
   CreatePublicClientMutation,

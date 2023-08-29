@@ -1,11 +1,11 @@
 import { Form, Formik } from "formik";
+import { TwDialog } from "../../../components/dialog/TwDialog";
 import { GraphQLSearchInput } from "../../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { SwitchInputField } from "../../../components/forms/fields/switch_input";
 import { TextInputField } from "../../../components/forms/fields/text_input";
 import { notEmpty } from "../../../floating/utils";
-import { Submit } from "../../../layout/dialog/DialogProvider";
-import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { Submit } from "../../../providers/dialog/DialogProvider";
 import { useSettings } from "../../../settings/settings-context";
 import { withRekuest } from "../../RekuestContext";
 import {

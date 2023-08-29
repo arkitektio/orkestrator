@@ -23,7 +23,7 @@ const MyRuns: React.FC<IMyGraphsProps> = ({ limit, createdDay }) => {
     <ListRender
       array={data?.myruns}
       loading={loading}
-      title={<FlussRun.ListLink className="flex-0">Datasets</FlussRun.ListLink>}
+      title={<FlussRun.ListLink className="flex-0">Runs</FlussRun.ListLink>}
       refetch={refetch}
     >
       {(s, index) => (

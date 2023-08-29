@@ -6,7 +6,6 @@ import { RekuestProvision } from "../linker";
 import { UserEmblem } from "../lok/components/UserEmblem";
 import { withRekuest } from "../rekuest";
 import { ProvisionStatus, useMyProvisionsQuery } from "../rekuest/api/graphql";
-import { UnprovideButton } from "../rekuest/components/UnprovideButton";
 import { colorFromProvisionStatus } from "../rekuest/ui/utils";
 import { ResponsiveGrid } from "./layout/ResponsiveGrid";
 
@@ -94,16 +93,6 @@ const MyProvisions: React.FC<IMyProvisionsProps> = () => {
                 </div>
               )}
             </RekuestProvision.DetailLink>
-            <div className=" text-sm">
-              {prov?.id && (
-                <UnprovideButton
-                  provision={prov?.id}
-                  className=" dark:text-slate-50 hover:bg-gray-400 text-gray-800 py-1 px-1 border border-slate-700 rounded"
-                >
-                  Unprovide
-                </UnprovideButton>
-              )}
-            </div>
             {prov?.agent?.registry?.user?.sub && (
               <UserEmblem sub={prov?.agent?.registry?.user?.sub} />
             )}

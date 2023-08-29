@@ -1,6 +1,6 @@
 import React from "react";
 import { PageLayout } from "../../layout/PageLayout";
-import { useDialog } from "../../layout/dialog/DialogProvider";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import ImageList from "../components/lists/ImageList";
 
 export type IRepresentationScreenProps = {};

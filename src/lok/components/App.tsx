@@ -3,8 +3,8 @@ import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveConta
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { LokRelease } from "../../linker";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import { withLok } from "../LokContext";
 import { useAppQuery } from "../api/graphql";
 import { ChangeAppDialog } from "./dialogs/ChangeAppDialog";

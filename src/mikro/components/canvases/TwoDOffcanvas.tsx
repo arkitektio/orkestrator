@@ -23,6 +23,7 @@ import {
 import { ImageView, useXarray } from "../../../providers/xarray/context";
 import {
   AvailableColormap,
+  XArrayProvider,
   available_color_maps,
 } from "../../../providers/xarray/provider";
 import { dtypeToMinMax } from "../../../providers/xarray/utils";
@@ -783,24 +784,26 @@ export const TwoDOffcanvas = ({
     1;
 
   return (
-    <SaveParentSize debounceTime={800}>
-      {({ width, height }) => {
-        let bwidth = follow == "width" ? width : height * aspectRatio;
-        let bheight = follow == "width" ? width / aspectRatio : height;
+    <XArrayProvider>
+      <SaveParentSize debounceTime={800}>
+        {({ width, height }) => {
+          let bwidth = follow == "width" ? width : height * aspectRatio;
+          let bheight = follow == "width" ? width / aspectRatio : height;
 
-        return (
-          <Canvas
-            withRois={withRois}
-            representation={representation}
-            highlightRois={highlightRois}
-            z={z}
-            width={bwidth}
-            height={bheight}
-            colormap={colorm}
-            path={s3resolve("/" + representation.store)}
-          />
-        );
-      }}
-    </SaveParentSize>
+          return (
+            <Canvas
+              withRois={withRois}
+              representation={representation}
+              highlightRois={highlightRois}
+              z={z}
+              width={bwidth}
+              height={bheight}
+              colormap={colorm}
+              path={s3resolve("/" + representation.store)}
+            />
+          );
+        }}
+      </SaveParentSize>
+    </XArrayProvider>
   );
 };

@@ -1,9 +1,9 @@
 import { useAlert } from "../../components/alerter/alerter-context";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { identifierToLinkableModel } from "../../linker";
+import { withMikro } from "../../mikro/MikroContext";
 import { useLinkMutation } from "../../mikro/api/graphql";
 import { AskRelationModal } from "../../mikro/components/dialogs/AskRelationModal";
-import { withMikro } from "../../mikro/MikroContext";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import { MateFinder } from "../types";
 
 export const useMikroLinkMate = (): MateFinder => {

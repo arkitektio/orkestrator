@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { useDialog } from "../layout/dialog/DialogProvider";
 import { MikroThumbnail } from "../linker";
 import { withMikro } from "../mikro/MikroContext";
 import { useThumbnailsQuery } from "../mikro/api/graphql";
 import { ThumbnailCard } from "../mikro/components/cards/ThumbnailCard";
 import { DataHomeFilterParams } from "../pages/data/Home";
+import { useDialog } from "../providers/dialog/DialogProvider";
 
 export type IMyExperimentsProps = {};
 

@@ -2,8 +2,8 @@ import { useDatalayer } from "@jhnnsrs/datalayer";
 import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { LokClient } from "../../linker";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import { withLok } from "../LokContext";
 import { useReleaseQuery } from "../api/graphql";
 

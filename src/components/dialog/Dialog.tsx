@@ -1,4 +1,4 @@
-import { useDialog } from "./DialogProvider";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 
 export const DialogDisplay = () => {
   const { component } = useDialog();

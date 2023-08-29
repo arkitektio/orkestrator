@@ -15,9 +15,9 @@
     "mikro_next": "graphql-codegen --config mikro_next.yml",
     "herre": "graphql-codegen --config herre.yml",
     "lok": "graphql-codegen --config lok.yml",
-    "dockbuild": "vite build && docker build -t jhnnsrs/orkestrator:prod .",
-    "dockbuildx": "vite build && docker buildx build -t jhnnsrs/orkestrator:prodx --platform linux/arm64/v8,linux/amd64 --push .",
-    "p": "docker push jhnnsrs/orkestrator:prod",
+    "dockbuild": "vite build && docker build -t jhnnsrs/orkestrator:release .",
+    "dockbuildx": "vite build && docker buildx build -t jhnnsrs/orkestrator:releasex --platform linux/arm64/v8,linux/amd64 --push .",
+    "p": "docker push jhnnsrs/orkestrator:release",
     "serve": "vite preview --port 6789"
   },
   "dependencies": {
@@ -27,7 +27,7 @@
     "@headlessui/react": "^1.5.0",
     "@heroicons/react": "^1.0.6",
     "@jhnnsrs/datalayer": "0.0.7",
-    "@jhnnsrs/fakts": "0.1.15",
+    "@jhnnsrs/fakts": "0.1.16",
     "@jhnnsrs/herre": "0.0.11",
     "@popperjs/core": "^2.11.5",
     "@radix-ui/react-dialog": "^1.0.4",

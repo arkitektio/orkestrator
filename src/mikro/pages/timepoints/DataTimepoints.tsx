@@ -1,7 +1,7 @@
 import React from "react";
 import { PageLayout } from "../../../layout/PageLayout";
-import { useDialog } from "../../../layout/dialog/DialogProvider";
 import { MyStages } from "../../../mikro/components/MyStages";
+import { useDialog } from "../../../providers/dialog/DialogProvider";
 
 export interface DataStagesProps {}
 

@@ -9,7 +9,6 @@ import {
   AssignationLogLevel,
   useDetailAssignationQuery,
 } from "../../api/graphql";
-import { UserImage } from "../../components/TemplatesDisplay";
 import { AssignationPuls } from "../../components/generic/StatusPulse";
 import { WidgetsContainer } from "../../widgets/containers/ReturnWidgetsContainer";
 
@@ -44,9 +43,7 @@ export const DashboardAssignation: React.FC = ({}) => {
           <div className="flex flex-row">
             <div className="flex-initial my-auto mr-2">Run by</div>
             <div className="flex-initial relative  my-auto">
-              {data?.assignation?.creator?.sub && (
-                <UserImage sub={data?.assignation?.creator?.sub} />
-              )}
+              {data?.assignation?.creator?.sub}
             </div>
           </div>
 

@@ -1,0 +1,29 @@
+mutation RunWhale($id: ID!, $instance: String) {
+  runWhale(id: $id, instance: $instance) {
+    ...DetailWhale
+  }
+}
+
+mutation DeleteWhale($id: ID!) {
+  deleteWhale(id: $id) {
+    id
+  }
+}
+
+mutation PullWhale($id: ID!) {
+  pullWhale(id: $id) {
+    id
+  }
+}
+
+mutation PurgeWhale($id: ID!) {
+  purgeWhale(id: $id) {
+    ...DetailWhale
+  }
+}
+
+mutation CreateWhale($deployment: ID!, $clientId: String!, $token: String!) {
+  createWhale(deployment: $deployment, clientId: $clientId, token: $token) {
+    ...DetailWhale
+  }
+}

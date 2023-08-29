@@ -14,8 +14,8 @@ import { CreateFlowDialog } from "../../fluss/components/dialogs/CreateFlowDialo
 import { ImportFlowDialog } from "../../fluss/components/dialogs/ImportFlowDialog";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { FlussWorkspace } from "../../linker";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import FlowHomeSidebar from "./FlowHomeSidebar";
 
 interface IFlowHomeProps {}

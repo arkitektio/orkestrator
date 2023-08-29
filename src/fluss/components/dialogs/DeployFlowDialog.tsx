@@ -1,19 +1,20 @@
 import { useAlert } from "../../../components/alerter/alerter-context";
+import { TwDialog } from "../../../components/dialog/TwDialog";
 import { FittingResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../../floating/utils";
-import { Submit } from "../../../layout/dialog/DialogProvider";
-import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { withLok } from "../../../lok/LokContext";
 import { useDetailClientQuery } from "../../../lok/api/graphql";
 import { ClientCard } from "../../../lok/components/cards/ClientCard";
-import { withLok } from "../../../lok/LokContext";
+import { Submit } from "../../../providers/dialog/DialogProvider";
 import { withRekuest } from "../../../rekuest";
 import {
   ListProvisionFragment,
   useDeployReservationsQuery,
+  useReservationsQuery,
 } from "../../../rekuest/api/graphql";
 import { ReservationPulse } from "../../../rekuest/components/generic/StatusPulse";
 import { useRequester } from "../../../rekuest/providers/requester/requester-context";
-import { useReserver } from "../../../rekuest/providers/reserver/reserver-context";
+import { useSettings } from "../../../settings/settings-context";
 
 export const ClientX = (props: { id: string }) => {
   const { data } = withLok(useDetailClientQuery)({
@@ -55,11 +56,18 @@ export const ResCard = ({ res, flow }: { res: any; flow: string }) => {
 
 export const DeployFlowDialog = (props: Submit<{}> & { flow: string }) => {
   const { alert } = useAlert();
-
-  const { reservations, reserve } = useReserver();
+  const { settings} = useSettings();
+  const { data: reservations } = withRekuest(useReservationsQuery)({
+    variables: {
+      instanceId: settings.instanceId
+    }
+  });
 
   const { data } = withRekuest(useDeployReservationsQuery)({
     fetchPolicy: "network-only",
+    variables: {
+      instanceId: settings.instanceId
+    }
   });
 
   const deployRes = reservations?.reservations?.filter((res) =>

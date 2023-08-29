@@ -16,7 +16,6 @@ import { MySamples } from "../../components/MySamples";
 import { MyTables } from "../../components/MyTables";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { useMikro } from "../../mikro/MikroContext";
 import {
   MyContextsDocument,
@@ -27,6 +26,7 @@ import { MyStages } from "../../mikro/components/MyStages";
 import { CreateContextModal } from "../../mikro/components/dialogs/CreateContextModal";
 import { CreateDatasetModal } from "../../mikro/components/dialogs/CreateDatasetModal";
 import { useConfirm } from "../../providers/confirmer/confirmer-context";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import HomeSidebar from "../sidebars/HomeSidebar";
 
 interface IDataHomeProps {}

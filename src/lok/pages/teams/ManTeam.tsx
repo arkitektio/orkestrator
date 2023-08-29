@@ -6,7 +6,7 @@ import { ResponsiveContainerGrid } from "../../../components/layout/ResponsiveCo
 import { notEmpty } from "../../../floating/utils";
 import { ActionButton } from "../../../layout/ActionButton";
 import { PageLayout } from "../../../layout/PageLayout";
-import { useDialog } from "../../../layout/dialog/DialogProvider";
+import { useDialog } from "../../../providers/dialog/DialogProvider";
 import { withLok } from "../../LokContext";
 import { useDetailGroupQuery } from "../../api/graphql";
 import { UserCard } from "../../components/cards/UserCard";

@@ -2,12 +2,7 @@ import { useDatalayer } from "@jhnnsrs/datalayer";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { withPort } from "../PortContext";
-import {
-  useDetailDeploymentQuery,
-  useRemoveContainerMutation,
-  useRestartContainerMutation,
-  useStopContainerMutation,
-} from "../api/graphql";
+import { useDetailDeploymentQuery } from "../api/graphql";
 
 export type RepoScanProps = {
   id: string;
@@ -19,22 +14,19 @@ export const Deployment = (props: RepoScanProps) => {
     pollInterval: 1000,
   });
   const { s3resolve } = useDatalayer();
-  const [restart] = withPort(useRestartContainerMutation)();
-  const [stop] = withPort(useStopContainerMutation)();
-  const [remove] = withPort(useRemoveContainerMutation)();
 
   return (
     <PageLayout>
       <SectionTitle>
-        Deployment for: {data?.deployment?.identifier}
+        Deployment for: {data?.deployment?.manifest.identifier}
       </SectionTitle>
-      {data?.deployment?.logo && (
-        <img src={s3resolve(data?.deployment?.logo)} />
+      {data?.deployment?.manifest.logo && (
+        <img src={s3resolve(data?.deployment?.manifest.logo)} />
       )}
 
       <div className="text-white">
         <div className="text-2xl">
-          This deployment is running {data?.deployment?.version}
+          This deployment is versioned as: {data?.deployment?.manifest.version}
         </div>
       </div>
     </PageLayout>

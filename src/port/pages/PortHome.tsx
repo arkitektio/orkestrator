@@ -2,12 +2,12 @@ import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { MyContainers } from "../../port/components/MyContainers";
 import { MyDeployments } from "../../port/components/MyDeployments";
 import { MyRepos } from "../../port/components/MyRepos";
 import { MyWhales } from "../../port/components/MyWhales";
 import { CreateRepoDialog } from "../../port/components/dialogs/CreateRepoDialog";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 
 export interface WhalesHomeProps {}
 

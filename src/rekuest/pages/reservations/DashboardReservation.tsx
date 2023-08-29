@@ -4,8 +4,8 @@ import { useNavigate, useParams } from "react-router";
 import { ReservationTimeline } from "../../../components/timelines/ReserverationTimeline";
 import { ActionButton } from "../../../layout/ActionButton";
 import { PageLayout } from "../../../layout/PageLayout";
-import { useDialog } from "../../../layout/dialog/DialogProvider";
 import { RekuestAssignation, RekuestNode } from "../../../linker";
+import { useDialog } from "../../../providers/dialog/DialogProvider";
 import { withRekuest } from "../../../rekuest";
 import {
   DetailReservationFragment,

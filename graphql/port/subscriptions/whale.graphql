@@ -1,0 +1,12 @@
+subscription MyWhalesUpdate {
+  whalesEvent {
+    whale
+    pull {
+      status
+      progress
+    }
+    up {
+      container
+    }
+  }
+}

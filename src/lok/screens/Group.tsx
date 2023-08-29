@@ -4,14 +4,14 @@ import { ResponsiveGrid } from "../../components/layout/ResponsiveGrid";
 import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { Representation } from "../../linker";
 import { useMikro, withMikro } from "../../mikro/MikroContext";
 import { useRepresentationsForQuery } from "../../mikro/api/graphql";
+import { useDialog } from "../../providers/dialog/DialogProvider";
+import { withLok } from "../LokContext";
 import { useDetailGroupQuery } from "../api/graphql";
 import { UserCard } from "../components/cards/UserCard";
 import { ChangeGroupDialog } from "../components/dialogs/ChangeGroupDialog";
-import { withLok } from "../LokContext";
 
 export type GroupProps = {
   id: string;

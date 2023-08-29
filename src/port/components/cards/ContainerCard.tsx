@@ -39,8 +39,8 @@ export const ContainerCard = ({ container, mates }: UserCardProps) => {
 
   const { data } = withLok(useReleaseQuery)({
     variables: {
-      identifier: container?.whale?.deployment?.identifier,
-      version: container?.whale?.deployment?.version,
+      identifier: container?.whale?.deployment?.manifest.identifier,
+      version: container?.whale?.deployment?.manifest.version,
     },
   });
 
@@ -76,8 +76,8 @@ export const ContainerCard = ({ container, mates }: UserCardProps) => {
           object={container?.id}
         >
           <div className="text-xl font-light mb-1 flex">
-            {container?.whale?.deployment.identifier}:
-            {container?.whale?.deployment.version}
+            {container?.whale?.deployment.manifest.identifier}:
+            {container?.whale?.deployment.manifest.version}
           </div>
         </PortContainer.DetailLink>
       </div>

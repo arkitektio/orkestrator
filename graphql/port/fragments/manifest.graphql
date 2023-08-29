@@ -1,0 +1,9 @@
+fragment Manifest on Manifest {
+  id
+  identifier
+  version
+  scopes
+  requirements
+  logo
+  originalLogo
+}

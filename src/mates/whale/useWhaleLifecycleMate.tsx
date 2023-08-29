@@ -1,4 +1,3 @@
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { withPort } from "../../port/PortContext";
 import {
   usePullWhaleMutation,
@@ -7,6 +6,7 @@ import {
 } from "../../port/api/graphql";
 import { RunWhaleDialog } from "../../port/components/dialogs/RunDialog";
 import { useConfirm } from "../../providers/confirmer/confirmer-context";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import { MateFinder } from "../types";
 
 export const useWhaleLifecycleMate = (): MateFinder => {

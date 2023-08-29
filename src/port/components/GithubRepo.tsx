@@ -5,7 +5,7 @@ import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveConta
 import { notEmpty } from "../../floating/utils";
 import { PageLayout } from "../../layout/PageLayout";
 import { SectionTitle } from "../../layout/SectionTitle";
-import { useDeployScanMate } from "../../mates/scan/useDeployScanMate";
+import { useAppifyDeployment } from "../../mates/deployment/useAppifyDeployment";
 import { withPort } from "../PortContext";
 import {
   useDetailGithubRepoQuery,
@@ -13,7 +13,7 @@ import {
   useRestartContainerMutation,
   useStopContainerMutation,
 } from "../api/graphql";
-import { RepoScanCard } from "./cards/DeploymentCard";
+import { DeploymentCard } from "./cards/DeploymentCard";
 
 export type GithubRepoProps = {
   id: string;
@@ -51,7 +51,7 @@ export const GithubRepo = (props: GithubRepoProps) => {
   const [stop] = withPort(useStopContainerMutation)();
   const [remove] = withPort(useRemoveContainerMutation)();
 
-  const deployScanMate = useDeployScanMate();
+  const appifyDeployment = useAppifyDeployment();
 
   return (
     <PageLayout>
@@ -74,8 +74,12 @@ export const GithubRepo = (props: GithubRepoProps) => {
       </div>
       <SectionTitle>Possible Deployments of this app</SectionTitle>
       <ResponsiveContainerGrid>
-        {data?.githubRepo?.scans?.filter(notEmpty).map((scan, index) => (
-          <RepoScanCard scan={scan} key={index} mates={[deployScanMate]} />
+        {data?.githubRepo?.deployments?.filter(notEmpty).map((dep, index) => (
+          <DeploymentCard
+            deployment={dep}
+            key={index}
+            mates={[appifyDeployment]}
+          />
         ))}
       </ResponsiveContainerGrid>
     </PageLayout>

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
-import { useDialog } from "../layout/dialog/DialogProvider";
 import { MikroSample } from "../linker";
 import { useDeleteSampleMate } from "../mates/sample/useDeleteSampleMutation";
 import { withMikro } from "../mikro/MikroContext";
@@ -12,6 +11,7 @@ import {
 } from "../mikro/api/graphql";
 import { SampleCard } from "../mikro/components/cards/SampleCard";
 import { DataHomeFilterParams } from "../mikro/pages/Home";
+import { useDialog } from "../providers/dialog/DialogProvider";
 export type IMySamplesProps = {};
 
 export const SampleType = "Sample";
