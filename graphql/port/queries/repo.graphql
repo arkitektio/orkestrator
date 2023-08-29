@@ -1,0 +1,11 @@
+query GithubRepos($limit: Int, $offset: Int) {
+  githubRepos(limit: $limit, offset: $offset) {
+    ...ListGithubRepo
+  }
+}
+
+query DetailGithubRepo($id: ID!) {
+  githubRepo(id: $id) {
+    ...DetailGithubRepo
+  }
+}

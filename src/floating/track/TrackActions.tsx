@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import { RunFragment, useExportRunLazyQuery } from "../../fluss/api/graphql";
 import { withFluss } from "../../fluss/fluss";
 import { ActionButton } from "../../layout/ActionButton";
-import { useDialog } from "../../layout/dialog/DialogProvider";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import { useTrackRiver } from "./context";
 
 export interface EditActionsProps {

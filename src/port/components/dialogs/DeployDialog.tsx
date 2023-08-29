@@ -1,8 +1,8 @@
+import { TwDialog } from "../../../components/dialog/TwDialog";
 import { notEmpty } from "../../../floating/utils";
-import { Submit } from "../../../layout/dialog/DialogProvider";
-import { TwDialog } from "../../../layout/dialog/TwDialog";
 import { useCreatePrivateClientMutation } from "../../../lok/api/graphql";
 import { withLok } from "../../../lok/LokContext";
+import { Submit } from "../../../providers/dialog/DialogProvider";
 import {
   DetailWhaleFragment,
   useCreateWhaleMutation,
@@ -29,10 +29,10 @@ export const DeployDialog = (
     if (data?.deployment) {
       const app = await createClient({
         variables: {
-          identifier: data?.deployment?.identifier,
-          version: data?.deployment?.version,
-          scopes: data?.deployment?.scopes.filter(notEmpty),
-          logoUrl: data?.deployment?.originalLogo,
+          identifier: data?.deployment?.manifest.identifier,
+          version: data?.deployment?.manifest.version,
+          scopes: data?.deployment?.manifest.scopes.filter(notEmpty),
+          logoUrl: data?.deployment?.manifest.originalLogo,
         },
       });
 
@@ -82,7 +82,7 @@ export const DeployDialog = (
           permissions.
         </div>
         <ul className="list-disc">
-          {data?.deployment?.scopes.filter(notEmpty).map((s) => (
+          {data?.deployment?.manifest.scopes.filter(notEmpty).map((s) => (
             <li className="font-light text-sm ">{s}</li>
           ))}
         </ul>

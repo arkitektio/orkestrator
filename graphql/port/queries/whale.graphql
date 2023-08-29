@@ -1,0 +1,11 @@
+query DetailWhale($id: ID!) {
+  whale(id: $id) {
+    ...DetailWhale
+  }
+}
+
+query Whales {
+  whales {
+    ...ListWhale
+  }
+}

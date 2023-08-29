@@ -1,0 +1,36 @@
+fragment DetailWhale on Whale {
+  id
+  deployment {
+    ...DetailDeployment
+  }
+  pulled
+  latestPull
+  containers {
+    id
+    name
+    image {
+      ...DetailImage
+    }
+    logs
+    labels
+    status
+  }
+}
+
+fragment ListWhale on Whale {
+  id
+  createdAt
+  deployment {
+    ...ListDeployment
+  }
+  clientId
+  pulled
+  latestPull
+  latestEvent {
+    whale
+    pull {
+      status
+      progress
+    }
+  }
+}

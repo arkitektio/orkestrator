@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { keyInObject } from "../../floating/utils";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { FlussFlow } from "../../linker";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import { ReserveDialog } from "../../rekuest/components/dialogs/ReserveDialog";
 import { useReserver } from "../../rekuest/providers/reserver/reserver-context";
 import { Mate, MateFinder } from "../types";

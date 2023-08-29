@@ -1,0 +1,11 @@
+query Containers($status: [ContainerStatus]) {
+  containers(status: $status) {
+    ...ListContainer
+  }
+}
+
+query DetailContainer($id: ID!) {
+  container(id: $id) {
+    ...DetailContainer
+  }
+}

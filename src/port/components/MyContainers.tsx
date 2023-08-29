@@ -42,9 +42,8 @@ const MyContainers: React.FC<IMyGraphsProps> = ({}) => {
   return (
     <div>
       <PortWhale.ListLink>
-        <SectionTitle>My Contained Apps</SectionTitle>
+        <SectionTitle>My Container</SectionTitle>
       </PortWhale.ListLink>
-      <button onClick={() => refetch()}>Hallo</button>
       <br />
       {JSON.stringify(error)}
       <ResponsiveContainerGrid>

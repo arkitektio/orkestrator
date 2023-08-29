@@ -187,14 +187,7 @@ export const portToWidget = (
   );
 };
 
-// helper for yup transform function
-function emptyStringToNull(value: any, originalValue: any) {
-  console.log(value, originalValue);
-  if (typeof originalValue === "string" && originalValue === "") {
-    return null;
-  }
-  return value;
-}
+
 
 export const port_to_validation = (port: PortFragment): Yup.AnySchema => {
   let baseType;

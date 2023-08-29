@@ -1,0 +1,23 @@
+mutation StopContainer($id: ID!) {
+  stopContainer(id: $id) {
+    id
+    name
+    status
+  }
+}
+
+mutation RemoveContainer($id: ID!) {
+  removeContainer(id: $id) {
+    id
+    name
+    status
+  }
+}
+
+mutation RestartContainer($id: ID!) {
+  restartContainer(id: $id) {
+    id
+    name
+    status
+  }
+}

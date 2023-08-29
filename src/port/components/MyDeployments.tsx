@@ -4,10 +4,10 @@ import { useDeploymentsQuery } from "../api/graphql";
 
 import { ListRender } from "../../layout/SectionTitle";
 import { PortDeployment } from "../../linker";
-import { useDeleteScan } from "../../mates/scan/useDeleteScanMate";
-import { useDeployScanMate } from "../../mates/scan/useDeployScanMate";
+import { useAppifyDeployment } from "../../mates/deployment/useAppifyDeployment";
+import { useDeleteDeployment } from "../../mates/deployment/useDeleteDeployment";
 import { withPort } from "../PortContext";
-import { RepoScanCard } from "./cards/DeploymentCard";
+import { DeploymentCard } from "./cards/DeploymentCard";
 
 export type IMyWhalesProps = {};
 
@@ -16,8 +16,8 @@ const MyDeployments: React.FC<IMyWhalesProps> = ({}) => {
     variables: { limit: 20 },
   });
 
-  const deployScan = useDeployScanMate();
-  const deleteRepoScan = useDeleteScan();
+  const deployDeployment = useAppifyDeployment();
+  const deleteDeployment = useDeleteDeployment();
 
   return (
     <ListRender
@@ -27,11 +27,11 @@ const MyDeployments: React.FC<IMyWhalesProps> = ({}) => {
       array={data?.deployments?.filter(notEmpty)}
       refetch={refetch}
     >
-      {(scan, index) => (
-        <RepoScanCard
-          scan={scan}
+      {(dep, index) => (
+        <DeploymentCard
+          deployment={dep}
           key={index}
-          mates={[deployScan, deleteRepoScan(scan)]}
+          mates={[deployDeployment, deleteDeployment(dep)]}
         />
       )}
     </ListRender>

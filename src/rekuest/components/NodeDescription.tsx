@@ -11,7 +11,7 @@ function replaceVariablesWithNames(template: string) {
   });
 }
 
-function replaceUndefinedValuesWithKeyName(obj) {
+function replaceUndefinedValuesWithKeyName(obj: any) {
   for (let key in obj) {
     if (obj[key] === undefined || obj[key] === null) {
       obj[key] = key;
@@ -24,21 +24,12 @@ export const NodeDescription = (props: {
   description: string;
   variables?: { [key: string]: any };
 }) => {
-  const [template, setTemplate] =
-    useState<HandlebarsTemplateDelegate<any> | null>(null);
   const [text, setText] = useState<string>(
     replaceVariablesWithNames(props.description)
   );
 
-  useEffect(() => {
-    if (props.description) {
-      const template = Handlebars.compile(props.description);
-      setTemplate(template);
-    }
-  }, [props.description]);
 
   useEffect(() => {
-    if (props.description) {
       if (props.variables) {
         const template = Handlebars.compile(props.description);
         const newText = template(
@@ -46,8 +37,7 @@ export const NodeDescription = (props: {
         );
         setText(newText);
       }
-    }
-  }, [props.variables, props.variables]);
+  }, [props.description, props.variables]);
 
   return <>{text}</>;
 };

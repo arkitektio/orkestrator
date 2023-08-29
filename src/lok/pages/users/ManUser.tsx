@@ -4,7 +4,7 @@ import { useParams } from "react-router";
 import { FittingResponsiveContainerGrid } from "../../../components/layout/ResponsiveContainerGrid";
 import { ActionButton } from "../../../layout/ActionButton";
 import { PageLayout } from "../../../layout/PageLayout";
-import { useDialog } from "../../../layout/dialog/DialogProvider";
+import { useDialog } from "../../../providers/dialog/DialogProvider";
 import { withLok } from "../../LokContext";
 import { useDetailUserQuery } from "../../api/graphql";
 import { TeamCard } from "../../components/cards/TeamCard";

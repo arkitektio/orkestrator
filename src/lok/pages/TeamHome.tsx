@@ -6,9 +6,9 @@ import Timestamp from "react-timestamp";
 import { notEmpty } from "../../floating/utils";
 import { ActionButton } from "../../layout/ActionButton";
 import { PageLayout } from "../../layout/PageLayout";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { LokUser, getDefaultSmartModel } from "../../linker";
 import { CreatePublicClientDialog } from "../../lok/components/dialogs/CreatePublicClient";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { withLok } from "../LokContext";

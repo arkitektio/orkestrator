@@ -45,6 +45,7 @@ export const DisplayMate: React.FC<MateProps> = ({
         })
         .catch((error) => {
           prog(undefined);
+          console.log(error);
           onError && onError(error);
         });
     }
@@ -72,6 +73,7 @@ export const DisplayMate: React.FC<MateProps> = ({
           })
           .catch((error) => {
             prog(undefined);
+            console.log(error);
             onError && onError(error);
           });
         return {};
@@ -103,6 +105,7 @@ export const DisplayMate: React.FC<MateProps> = ({
               })
               .catch((error) => {
                 prog(undefined);
+                console.log(error);
                 onError && onError(error);
               });
           }

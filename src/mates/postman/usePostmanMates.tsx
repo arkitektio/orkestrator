@@ -1,39 +1,31 @@
 import { withRekuest } from "../../rekuest";
-import {
-  PortKindInput,
-  useThisFilteredReservationsLazyQuery,
-} from "../../rekuest/api/graphql";
+import { useReservationsQuery } from "../../rekuest/api/graphql";
 import { useRequester } from "../../rekuest/providers/requester/requester-context";
 import { useSettings } from "../../settings/settings-context";
+import { notEmpty } from "../../utils";
 import { MateFinder } from "../types";
 
 export const usePostmanMate: () => MateFinder = () => {
   const { assign } = useRequester();
   const { settings } = useSettings();
 
-  const [find] = withRekuest(useThisFilteredReservationsLazyQuery)();
+  const { data } = withRekuest(useReservationsQuery)({
+    variables: {
+      instanceId: settings.instanceId,
+    },
+  });
 
   return async (options) => {
     if (options.justSelf) {
       try {
-        let reservations = await find({
-          fetchPolicy: "network-only",
-          variables: {
-            instanceId: settings.instanceId,
-            inputPortDemands: [
-              {
-                at: 0,
-                kind: PortKindInput.Structure,
-                identifier: options.self.identifier,
-              },
-            ],
-          },
-        });
+        let matching = data?.reservations
+          ?.filter(notEmpty)
+          .filter(
+            (r) => r.node.args?.at(0)?.identifier == options.self.identifier
+          );
 
-        console.log("reservations", reservations);
-
-        if (reservations.data?.reservations) {
-          return reservations.data.reservations.map((r) => ({
+        if (matching) {
+          return matching.map((r) => ({
             action: async (event) => {
               let key = r?.node?.args?.at(0)?.key;
               console.log(key);

@@ -7,7 +7,6 @@ import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
 import { manifest } from "../../constants";
-import { useEndpoints } from "../../providers/endpoints/EndpointsProvider";
 
 export interface PublicHomeProps {}
 
@@ -24,7 +23,7 @@ console.log("Advertised hosts", advertisedHosts);
 
 export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
   const { load } = useFakts();
-  const { endpoints } = useEndpoints();
+  const { registeredEndpoints } = useFakts();
   const { alert } = useAlert();
 
   return (
@@ -55,7 +54,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
               </div>
             </div>
             <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start gap-2">
-              {endpoints.map((e, index) => (
+              {registeredEndpoints.map((e, index) => (
                 <button
                   key={index}
                   type="button"

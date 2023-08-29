@@ -39,9 +39,9 @@ export const ContainerProvisions = (props: { clientId: string }) => {
             object={prov.id}
             className="bg-black rounded p-3"
           >
-            <Provision.DetailLink object={prov.id}>
+            <RekuestProvision.DetailLink object={prov.id}>
               {prov.id}
-            </Provision.DetailLink>
+            </RekuestProvision.DetailLink>
           </RekuestProvision.Smart>
         ))}
       </ResponsiveContainerGrid>
@@ -129,8 +129,9 @@ export const Container = (props: ContainerProps) => {
     >
       <div className="text-white">
         <div className="text-2xl">
-          Container hosting {data?.container?.whale?.deployment?.identifier}:
-          {data?.container?.whale?.deployment?.version}
+          Container hosting{" "}
+          {data?.container?.whale?.deployment?.manifest?.identifier}:
+          {data?.container?.whale?.deployment?.manifest?.version}
         </div>
 
         <div className="text-sm flex flex-col">
@@ -151,7 +152,9 @@ export const Container = (props: ContainerProps) => {
           <div className="flex flex-row">
             <div className="w-1/2">Requirements</div>
             <div className="w-1/2">
-              {data?.container?.whale?.deployment?.requirements.join(" | ")}
+              {data?.container?.whale?.deployment?.manifest?.requirements.join(
+                " | "
+              )}
             </div>
           </div>
         </div>

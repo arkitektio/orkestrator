@@ -8,12 +8,7 @@ import { RekuestModuleLink } from "../../linker";
 
 export interface PublicHomeProps {}
 
-const TEXTS = [
-  "cares about your data",
-  "orchestrates your lab",
-  "is generally nice",
-  "is beautiful",
-];
+const TEXTS = ["manages data", "orchestrates apps", "hosts your plugins"];
 
 export const FaktualReconfigure: React.FC<PublicHomeProps> = (props) => {
   const { logout } = useHerre();
@@ -43,7 +38,7 @@ export const PublicLogin: React.FC<PublicHomeProps> = (props) => {
   React.useEffect(() => {
     const intervalId = setInterval(
       () => setIndex((index) => index + 1),
-      3000 // every 3 seconds
+      4000 // every 3 seconds
     );
     return () => clearTimeout(intervalId);
   }, []);

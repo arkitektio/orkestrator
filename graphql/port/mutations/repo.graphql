@@ -1,0 +1,21 @@
+mutation DeleteGithubRepo($id: ID!) {
+  deleteGithubRepo(id: $id) {
+    id
+  }
+}
+
+mutation CreateGithubRepo($repo: String!, $user: String!, $branch: String!) {
+  createGithubRepo(repo: $repo, user: $user, branch: $branch) {
+    ...ListGithubRepo
+  }
+}
+
+mutation ScanRepo($id: ID!) {
+  scanRepo(id: $id) {
+    status
+    message
+    deployments {
+      ...ListDeployment
+    }
+  }
+}

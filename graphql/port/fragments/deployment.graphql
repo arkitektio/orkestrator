@@ -1,0 +1,18 @@
+fragment DetailDeployment on Deployment {
+  id
+  manifest {
+    ...Manifest
+  }
+  image
+}
+
+fragment ListDeployment on Deployment {
+  id
+  manifest {
+    ...Manifest
+  }
+  image
+  whales {
+    id
+  }
+}

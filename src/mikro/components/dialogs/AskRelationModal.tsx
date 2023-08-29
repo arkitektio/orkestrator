@@ -1,10 +1,11 @@
 import { Form, Formik } from "formik";
 import { useAlert } from "../../../components/alerter/alerter-context";
+import { TwDialog } from "../../../components/dialog/TwDialog";
 import { CreateableSearchInput } from "../../../components/forms/fields/SearchInput";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
-import { Submit } from "../../../layout/dialog/DialogProvider";
-import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { Submit } from "../../../providers/dialog/DialogProvider";
 import { structure_to_widget } from "../../../rekuest/widgets/returns/fallbacks/StructureReturnWidget";
+import { withMikro } from "../../MikroContext";
 import {
   MyContextsDocument,
   useCreateContextMutation,
@@ -12,7 +13,6 @@ import {
   useSearchContextsLazyQuery,
   useSearchRelationsLazyQuery,
 } from "../../api/graphql";
-import { withMikro } from "../../MikroContext";
 
 type Variables = { context: string; relation: string };
 

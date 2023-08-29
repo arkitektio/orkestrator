@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
-import { useDialog } from "../../layout/dialog/DialogProvider";
 import { FlussFlow } from "../../linker";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import { NodeListItemFragment } from "../../rekuest/api/graphql";
 import { ReserveDialog } from "../../rekuest/components/dialogs/ReserveDialog";
 import { usePostman } from "../../rekuest/providers/postman/postman-context";

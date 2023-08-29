@@ -6,7 +6,6 @@ import {
   NodeKind,
   useDetailAssignationLazyQuery,
 } from "../../../rekuest/api/graphql";
-import { UserImage } from "../../../rekuest/components/TemplatesDisplay";
 import { AssignationPuls } from "../../../rekuest/components/generic/StatusPulse";
 import { WidgetsContainer } from "../../../rekuest/widgets/containers/ReturnWidgetsContainer";
 import { useSettings } from "../../../settings/settings-context";
@@ -89,7 +88,7 @@ export const ParamsSidebar = (props: {}) => {
         {data?.assignation?.creator?.sub && (
           <div className="flex flex-row gap-2 mt-2 ">
             <div className="text-white  my-auto">Assigned by</div>
-            <UserImage sub={data?.assignation?.creator?.sub} />
+            {data?.assignation?.creator?.sub}
           </div>
         )}
         {data?.assignation?.parent?.id && (

@@ -1,6 +1,6 @@
 import { useDatalayer } from "@jhnnsrs/datalayer";
 import { PageLayout } from "../../layout/PageLayout";
-import { useDialog } from "../../layout/dialog/DialogProvider";
+import { useDialog } from "../../providers/dialog/DialogProvider";
 import { withLok } from "../LokContext";
 import {
   ApplicationAuthorizationGrantType,

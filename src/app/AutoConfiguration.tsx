@@ -1,3 +1,4 @@
+import { WellKnownDiscovery } from "@jhnnsrs/fakts";
 import { ToastContainer, ToastContentProps, toast } from "react-toastify";
 import { DatalayerAutoConfigure } from "../bridges/DatalayerAutoConfigure";
 import { FlussAutoConfigure } from "../bridges/FlussAutoConfigure";
@@ -9,7 +10,6 @@ import { MikroWard } from "../bridges/MikroWard";
 import { PortAutoConfigure } from "../bridges/PortAutoConfigure";
 import { RekuestAutoConfigure } from "../bridges/RekuestAutoConfigure";
 import { RekuestWard } from "../bridges/RekuestWard";
-import { StaticEndpoints } from "../bridges/StaticEndpoints";
 import { TauriFaktsSearcher } from "../bridges/TauriFaktsSearcher";
 import { GeneralMenu } from "../components/command/GeneralMenu";
 import { NavigationActions } from "../components/command/NavigationActions";
@@ -17,9 +17,9 @@ import { NodesExtension } from "../components/command/NodesExtension";
 import { SearchActions } from "../components/command/SearchActions";
 import { SelectionActions } from "../components/command/SelectionActions";
 import { ConfirmModal } from "../components/confirmer/ConfirmModal";
+import { DialogDisplay } from "../components/dialog/Dialog";
 import { notEmpty } from "../floating/utils";
 import { FlussWard } from "../fluss/ward";
-import { DialogDisplay } from "../layout/dialog/Dialog";
 import { LokGuard } from "../lok/LokGuard";
 import { MentionListener } from "../lok/komment/listeners/MentionListener";
 import { MikroGuard } from "../mikro/MikroGuard";
@@ -140,7 +140,7 @@ export const AutoConfiguration = () => {
       <TauriGuard>
         <TauriFaktsSearcher />
       </TauriGuard>
-      <StaticEndpoints endpoints={["http://localhost:8000"]} />
+      <WellKnownDiscovery endpoints={["http://localhost:8000"]} />
       <RekuestGuard>
         <RekuestWard />
         <NodesExtension />

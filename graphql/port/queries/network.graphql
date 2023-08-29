@@ -1,0 +1,12 @@
+query Networks {
+  networks {
+    ...DetailNetwork
+  }
+}
+
+query NetworkOptions($search: String, $values: [ID]) {
+  options: networks(name: $search, values: $values, limit: 20) {
+    value: id
+    label: name
+  }
+}

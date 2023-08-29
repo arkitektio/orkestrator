@@ -1,9 +1,9 @@
 import { Form, Formik } from "formik";
 import { useAlert } from "../../../components/alerter/alerter-context";
+import { TwDialog } from "../../../components/dialog/TwDialog";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../../components/forms/fields/text_input";
-import { Submit } from "../../../layout/dialog/DialogProvider";
-import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { Submit } from "../../../providers/dialog/DialogProvider";
 import { withPort } from "../../PortContext";
 import {
   CreateGithubRepoMutation,

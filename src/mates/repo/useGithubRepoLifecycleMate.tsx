@@ -15,7 +15,9 @@ export const useGithubRepoLifecycleMate = (): MateFinder => {
       return [
         {
           action: async (event) => {
-            await scanRepo({ variables: { id: event.self.id } });
+            console.log("scanning repo");
+            let z = await scanRepo({ variables: { id: event.self.id } });
+            console.log(z);
           },
           label: "Scan",
           description: "Scan Repo",

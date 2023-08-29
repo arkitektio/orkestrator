@@ -94,7 +94,7 @@ const MyRepresentations: React.FC<
         loading={loading}
         title={
           <MikroRepresentation.ListLink className="flex-0">
-            Imagesssss
+            Images
           </MikroRepresentation.ListLink>
         }
         refetch={refetch}

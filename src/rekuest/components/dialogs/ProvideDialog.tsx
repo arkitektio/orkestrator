@@ -1,7 +1,7 @@
 import { Form, Formik } from "formik";
+import { TwDialog } from "../../../components/dialog/TwDialog";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
-import { Submit } from "../../../layout/dialog/DialogProvider";
-import { TwDialog } from "../../../layout/dialog/TwDialog";
+import { Submit } from "../../../providers/dialog/DialogProvider";
 import { withRekuest } from "../../RekuestContext";
 import {
   DetailTemplateFragment,
