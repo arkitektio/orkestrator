@@ -17,24 +17,18 @@ import {
   FlowFragment,
   GlobalFragment,
   GraphInput,
-  GraphNodeFragment,
-  LocalNodeFragment,
   MapStrategy,
   PortFragment,
   PortInput,
   ReactiveNodeFragment,
   ReactiveTemplateDocument,
   ReactiveTemplateQuery,
-  Scope,
-  StreamKind,
 } from "../../fluss/api/graphql";
 import { useFluss } from "../../fluss/fluss-context";
 import { useRekuest } from "../../rekuest/RekuestContext";
 import {
   DetailNodeDocument,
   DetailNodeQuery,
-  DetailTemplateDocument,
-  DetailTemplateQuery,
   NodeKind,
 } from "../../rekuest/api/graphql";
 import { Graph } from "../base/Graph";
@@ -50,7 +44,6 @@ import {
   rekuestPortToFluss,
 } from "../utils";
 import { EditActions } from "./EditActions";
-import { EditSidebar } from "./components/EditSidebar";
 import { EditRiverContext } from "./context";
 import { LabeledEditEdge } from "./edges/LabeledEditEdge";
 import { defaultConnectionHandler, handle_to_index } from "./logic/connect";
@@ -64,7 +57,7 @@ import dagre from "dagre";
 import { useDrop } from "react-dnd";
 import { SMART_MODEL_DROP_TYPE } from "../../constants";
 import { PageLayout } from "../../layout/PageLayout";
-import { Komments } from "../../lok/komment/Komments";
+import { FlussReactiveTemplate, FlussRun, RekuestNode } from "../../linker";
 import { useDialog } from "../../providers/dialog/DialogProvider";
 import { DynamicSidebar } from "./DynamicSidebar";
 import { AskTypeDialog } from "./dialogs/AskTypeDialog";
@@ -232,9 +225,12 @@ export const EditRiver: React.FC<Props> = ({
     document.body.removeChild(element);
   }, [flow]);
 
-  const onNodeClick = useCallback((event: React.MouseEvent, node: FlowNode) => {
-    setSelectedNode(node.id);
-  }, []);
+  const onNodeClick = useCallback(
+    (event: React.MouseEvent, node: FlowNode) => {
+      setSelectedNode(node.id);
+    },
+    [setSelectedNode]
+  );
 
   const onConnect = (params: Connection) => {
     const { source, target, sourceHandle, targetHandle } = params;
@@ -431,7 +427,7 @@ export const EditRiver: React.FC<Props> = ({
               y: y - reactFlowBounds.top + index * 100,
             });
 
-            if (type == "@arkitekt/node") {
+            if (type == RekuestNode.identifier) {
               arkitektapi &&
                 arkitektapi
                   .query<DetailNodeQuery>({
@@ -440,6 +436,7 @@ export const EditRiver: React.FC<Props> = ({
                   })
                   .then(async (event) => {
                     console.log(event);
+                    let nodeID = "arkid-" + uuidv4();
 
                     if (event.data?.node) {
                       if (
@@ -451,9 +448,8 @@ export const EditRiver: React.FC<Props> = ({
                           filter: ["filter", "map"],
                         });
                         if (answer.type == "filter") {
-                          let id = "arkid-" + uuidv4();
                           let node: FlowNode<ArkitektFilterNodeFragment> = {
-                            id: id,
+                            id: nodeID,
                             type: "ArkitektFilterNode",
                             dragHandle: ".custom-drag-handle",
                             data: {
@@ -483,8 +479,17 @@ export const EditRiver: React.FC<Props> = ({
                                   .filter(notEmpty)
                                   .map(rekuestPortToFluss) || [],
                               ],
-                              constream: [],
+                              constream: [
+                                event?.data?.node?.args
+                                  ?.filter(
+                                    (x) =>
+                                      x?.nullable || x?.default != undefined
+                                  ) // by default, all nullable and default values are optional so not part of stream
+                                  .filter(notEmpty)
+                                  .map(rekuestPortToFluss) || [],
+                              ],
                               name: event.data?.node?.name || "no-name",
+                              description: event.data?.node.description || "",
                               hash: event.data?.node?.hash || "",
                               kind:
                                 event.data?.node?.kind || NodeKind.Generator,
@@ -496,9 +501,8 @@ export const EditRiver: React.FC<Props> = ({
                         }
                       }
 
-                      let id = "arkid-" + uuidv4();
                       let node: FlowNode<ArkitektNodeFragment> = {
-                        id: id,
+                        id: nodeID,
                         type: "ArkitektNode",
                         dragHandle: ".custom-drag-handle",
                         data: {
@@ -511,6 +515,8 @@ export const EditRiver: React.FC<Props> = ({
                               .filter(notEmpty)
                               .map(rekuestPortToFluss) || [],
                           ],
+                          name: event.data?.node?.name || "no-name",
+                          description: event.data?.node.description || "",
                           mapStrategy: MapStrategy.Map,
                           allowLocal: false,
                           assignTimeout: 100000,
@@ -523,8 +529,14 @@ export const EditRiver: React.FC<Props> = ({
                               ?.filter(notEmpty)
                               .map(rekuestPortToFluss) || [],
                           ],
-                          constream: [],
-                          name: event.data?.node?.name || "no-name",
+                          constream: [
+                            event?.data?.node?.args
+                              ?.filter(
+                                (x) => x?.nullable || x?.default != undefined
+                              ) // by default, all nullable and default values are optional so not part of stream
+                              .filter(notEmpty)
+                              .map(rekuestPortToFluss) || [],
+                          ],
                           hash: event.data?.node?.hash || "",
                           kind: event.data?.node?.kind || NodeKind.Generator,
                         },
@@ -536,59 +548,7 @@ export const EditRiver: React.FC<Props> = ({
                   });
             }
 
-            if (type == "@arkitekt/template") {
-              arkitektapi &&
-                arkitektapi
-                  .query<DetailTemplateQuery>({
-                    query: DetailTemplateDocument,
-                    variables: { id: id },
-                  })
-                  .then((event) => {
-                    console.log(event);
-
-                    if (event.data?.template?.node) {
-                      // two paths according to node scope
-                      let node: FlowNode<LocalNodeFragment> = {
-                        id: id,
-                        type: "LocalNode",
-                        dragHandle: ".custom-drag-handle",
-                        data: {
-                          __typename: "LocalNode",
-                          instream: [
-                            event?.data?.template.node?.args
-                              ?.filter(
-                                (x) => !x?.nullable && x?.default == undefined
-                              ) // by default, all nullable and default values are optional so not part of stream
-                              .filter(notEmpty)
-                              .map(rekuestPortToFluss) || [],
-                          ],
-                          mapStrategy: MapStrategy.Map,
-                          allowLocal: false,
-                          assignTimeout: 100000,
-                          yieldTimeout: 100000,
-                          maxRetries: 3,
-                          retryDelay: 2000,
-                          outstream: [
-                            event?.data?.template.node?.returns
-                              ?.filter(notEmpty)
-                              .map(rekuestPortToFluss) || [],
-                          ],
-                          constream: [],
-                          name: event.data?.template.node?.name || "no-name",
-                          hash: event.data?.template.node?.hash || "",
-                          kind:
-                            event.data?.template.node?.kind ||
-                            NodeKind.Generator,
-                          interface: event.data?.template.interface || "",
-                        },
-                        position: position,
-                      };
-                      addLocal(node);
-                    }
-                  });
-            }
-
-            if (type == "@fluss/reactivetemplate") {
+            if (type == FlussReactiveTemplate.identifier) {
               flussapi &&
                 flussapi
                   .query<ReactiveTemplateQuery>({
@@ -613,44 +573,12 @@ export const EditRiver: React.FC<Props> = ({
                         constream: event.data.reactivetemplate?.constream || [],
                         implementation:
                           event.data?.reactivetemplate?.implementation || "",
+                        documentation: event.data?.implementation || "",
                       },
                       position: position,
                     };
                     addReactive(node);
                   });
-            }
-            if (type == "@arkitekt/graphnode") {
-              let node: FlowNode<GraphNodeFragment> = {
-                id: id,
-                type: "GraphNode",
-                dragHandle: ".custom-drag-handle",
-                data: {
-                  __typename: "GraphNode",
-                  instream: [
-                    [
-                      {
-                        kind: StreamKind.Unset,
-                        nullable: true,
-                        scope: Scope.Global,
-                        key: "in",
-                      },
-                    ],
-                  ],
-                  outstream: [
-                    [
-                      {
-                        kind: StreamKind.Unset,
-                        nullable: true,
-                        scope: Scope.Global,
-                        key: "in",
-                      },
-                    ],
-                  ],
-                  constream: [],
-                },
-                position: position,
-              };
-              addReactive(node);
             }
           }
         });
@@ -708,20 +636,12 @@ export const EditRiver: React.FC<Props> = ({
             content: <DynamicSidebar />,
           },
           {
-            label: "Nodes",
-            key: "nodes",
-            content: <EditSidebar flow={flow} />,
-          },
-          {
             label: "Social",
             key: "social",
             content: (
               <div className="p-3">
                 {flow.workspace?.id && (
-                  <Komments
-                    model={"@fluss/workspace"}
-                    object={flow.workspace?.id}
-                  />
+                  <FlussRun.Komments object={flow.workspace?.id} />
                 )}
               </div>
             ),
@@ -744,7 +664,7 @@ export const EditRiver: React.FC<Props> = ({
               onConnect={onConnect}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
-              onNodeClick={(e, n) => setSelectedNode(n.id)}
+              onNodeClick={onNodeClick}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onInit={(e) => setReactFlowInstance(e)}

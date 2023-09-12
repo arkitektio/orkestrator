@@ -90,8 +90,6 @@ const ReserveForm: React.FC<ReserveFormProps> = ({ initial, onSubmit }) => {
     settings: { allowAutoRequest },
   } = useSettings();
 
-  const { s3resolve } = useDatalayer();
-
   const [searchUsers] = withRekuest(useUserOptionsLazyQuery)();
 
   return (
@@ -112,6 +110,7 @@ const ReserveForm: React.FC<ReserveFormProps> = ({ initial, onSubmit }) => {
                 templates={data?.reservableTemplates.filter(notEmpty)}
               />
             )}
+            {error && <div className="text-red-500">{error.message}</div>}
 
             <div className="mt-2">
               <TextInputField

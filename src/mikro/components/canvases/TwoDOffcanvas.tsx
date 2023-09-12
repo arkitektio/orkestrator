@@ -780,7 +780,7 @@ export const TwoDOffcanvas = ({
 
   const aspectRatio =
     (representation?.shape &&
-      representation?.shape[3] / representation?.shape[4]) ||
+      representation?.shape[4] / representation?.shape[5]) ||
     1;
 
   return (

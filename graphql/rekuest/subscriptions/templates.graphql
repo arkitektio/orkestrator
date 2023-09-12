@@ -1,0 +1,11 @@
+subscription TemplatesEvent($templateParams: [TemplateParamInput]) {
+  templates(templateParams: $templateParams) {
+    updated {
+      ...ReservableTemplate
+    }
+    created {
+      ...ReservableTemplate
+    }
+    deleted
+  }
+}

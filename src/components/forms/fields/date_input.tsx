@@ -16,7 +16,7 @@ export const DateField = (props: DateInputFieldProps) => {
         <div className="w-full mt-2 mb-2 relative z-100">
           <div className="relative flex flex-row">
             <DatePicker
-              className="w-full text-center outline-none"
+              className="w-full text-center outline-none text-black bg-white rounded-md shadow-lg"
               dateFormat="MMMM d, yyyy h:mm aa"
               showTimeSelect
               selected={field.value && new Date(field.value)}

@@ -27,32 +27,32 @@ export const LinkCard = ({ link, minimal, mates }: LinkCardProps) => {
       mates={mates}
     >
       <div className="px-1 py-2">
-        <MikroLink.DetailLink.DetailLink
+        <MikroLink.DetailLink
           className="flex-grow cursor-pointer font-semibold"
           object={link.id}
         >
           <div className="flex flex-row">
             {leftIdentifier && (
               <div className="flex-1 ">
-                {structure_to_widget(leftIdentifier, {
+                {structure_to_widget({identifier: leftIdentifier, key: "left"}, {
                   value: link.xId,
                   minimal: true,
                 })}
               </div>
             )}
-            <div className="flex-initial ml-1 font-light">{">"}</div>
+            <div className="flex-initial ml-5 font-light">is {">"} </div>
             <div className="flex-1 text-center ">{link.relation.name}</div>
-            <div className="flex-initial mr-1 font-light">{">"}</div>
+            <div className="flex-initial mr-5 font-light">for {">"}</div>
             {rightIdentifier && (
               <div className="flex-1 ">
-                {structure_to_widget(rightIdentifier, {
+                {structure_to_widget({identifier: rightIdentifier, key: "left"}, {
                   value: link.yId,
                   minimal: true,
                 })}
               </div>
             )}
           </div>
-        </MikroLink.DetailLink.DetailLink>
+        </MikroLink.DetailLink>
       </div>
     </MikroLink.Smart>
   );

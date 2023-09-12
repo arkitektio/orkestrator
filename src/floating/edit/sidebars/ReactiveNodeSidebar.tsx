@@ -68,7 +68,6 @@ export const ReactiveNodeSidebar = (
     <>
       <div className="px-5 py-5 flex flex-col">
         <StreamDisplay node={props.node} />
-        {JSON.stringify(data)}
         {data?.reactivetemplate?.id && (
           <Formik<{ [key: string]: any }>
             onSubmit={async (values) => {

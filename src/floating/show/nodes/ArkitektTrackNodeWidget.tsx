@@ -75,7 +75,7 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
               {node_data?.node?.name}{" "}
             </RekuestNode.DetailLink>
             <p className="flex-initial text-xs font-extralight truncate">
-              {node_data?.node?.description}
+              {node_data?.node?.documentation}
             </p>
           </>
         )}

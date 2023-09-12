@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDrop } from "react-dnd";
 import { AiOutlineTeam } from "react-icons/ai";
 import { BiData, BiSync } from "react-icons/bi";
 import { FiSettings } from "react-icons/fi";
@@ -6,7 +7,13 @@ import { GrDocker } from "react-icons/gr";
 import { IconContext } from "react-icons/lib";
 import { TbHistory, TbLayoutDashboard } from "react-icons/tb";
 import { TiArrowUp, TiFlowSwitch } from "react-icons/ti";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import {
+  NavLink,
+  NavLinkProps,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import { SMART_MODEL_DROP_TYPE } from "../../constants";
 import { FlussGuard } from "../../fluss/guard";
 import { LokGuard } from "../../lok/LokGuard";
 import { MikroGuard } from "../../mikro/MikroGuard";
@@ -21,6 +28,46 @@ import { UserIcon } from "./UserIcon";
 import "./styles.css";
 export type INavigationBarProps = {
   children?: React.ReactNode;
+};
+
+export const DroppableNavLink = (props: NavLinkProps) => {
+  const navigate = useNavigate();
+
+  const [{ isOver, canDrop, overItems }, drop] = useDrop(() => {
+    return {
+      accept: [SMART_MODEL_DROP_TYPE],
+      drop: (item, monitor) => {
+        if (!monitor.didDrop()) {
+          console.log("Ommitting Parent Drop");
+        }
+        return {};
+      },
+      collect: (monitor) => {
+        return {
+          isOver: !!monitor.isOver(),
+        };
+      },
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOver) {
+      const timeout = setTimeout(() => {
+        console.log("Navigating to ", props.to);
+        navigate(props.to);
+      }, 1000);
+
+      return () => {
+        clearTimeout(timeout);
+      };
+    }
+  }, [isOver]);
+
+  return (
+    <div className={`${isOver && "animate-pulse"}`}>
+      <NavLink {...props} ref={drop} />
+    </div>
+  );
 };
 
 const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
@@ -62,7 +109,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
           }}
         >
           <MikroGuard>
-            <NavLink
+            <DroppableNavLink
               key={"Data"}
               to={"mikro"}
               className={({ isActive }) =>
@@ -71,7 +118,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               }
             >
               <BiData />
-            </NavLink>
+            </DroppableNavLink>
           </MikroGuard>
           {/* <MikroGuard>
             <NavLink
@@ -86,7 +133,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             </NavLink>
           </MikroGuard> */}
           <RekuestGuard>
-            <NavLink
+            <DroppableNavLink
               key={"Dashboard"}
               to={"rekuest"}
               className={({ isActive }) =>
@@ -95,7 +142,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               }
             >
               <TbLayoutDashboard />
-            </NavLink>
+            </DroppableNavLink>
           </RekuestGuard>
           <RekuestGuard>
             <NavLink
@@ -110,7 +157,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             </NavLink>
           </RekuestGuard>
           <MikroNextGuard>
-            <NavLink
+            <DroppableNavLink
               key={"MikroNext"}
               to={"mikronext"}
               className={({ isActive }) =>
@@ -119,11 +166,11 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               }
             >
               <TiArrowUp />
-            </NavLink>
+            </DroppableNavLink>
           </MikroNextGuard>
 
           <FlussGuard>
-            <NavLink
+            <DroppableNavLink
               key={"Flows"}
               to={"fluss"}
               className={({ isActive }) =>
@@ -132,10 +179,10 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               }
             >
               <TiFlowSwitch />
-            </NavLink>
+            </DroppableNavLink>
           </FlussGuard>
           <PortGuard>
-            <NavLink
+            <DroppableNavLink
               key={"Port"}
               to={"port"}
               className={({ isActive }) =>
@@ -144,10 +191,10 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               }
             >
               <GrDocker />
-            </NavLink>
+            </DroppableNavLink>
           </PortGuard>
           <LokGuard>
-            <NavLink
+            <DroppableNavLink
               key={"Teams"}
               to={"lok"}
               className={({ isActive }) =>
@@ -156,9 +203,9 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               }
             >
               <AiOutlineTeam />
-            </NavLink>
+            </DroppableNavLink>
           </LokGuard>
-          <NavLink
+          <DroppableNavLink
             to={"/user/settings"}
             className={({ isActive }) =>
               ` dark:hover:text-back-400 px-2 py-2 
@@ -166,7 +213,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
             }
           >
             <FiSettings size={"2.6em"} style={{ stroke: "1px" }} />
-          </NavLink>
+          </DroppableNavLink>
         </IconContext.Provider>
       </div>
       <div className="flex flex-initial sm:flex-col flex-row gap-1 items-center pb-2">

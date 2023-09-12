@@ -2,7 +2,6 @@ import { useNavigate } from "react-router";
 import { keyInObject } from "../../floating/utils";
 import { FlussFlow } from "../../linker";
 import { useDialog } from "../../providers/dialog/DialogProvider";
-import { ReserveDialog } from "../../rekuest/components/dialogs/ReserveDialog";
 import { useReserver } from "../../rekuest/providers/reserver/reserver-context";
 import { Mate, MateFinder } from "../types";
 
@@ -25,14 +24,6 @@ export const useTemplateActionMate = (): ((template: {
         await reserve({ template: template.id });
       },
       label: "Reserve",
-    });
-
-    mates.push({
-      action: async () => {
-        let res = await ask(ReserveDialog, { initial: { node: template.id } });
-        console.log(res);
-      },
-      label: "Reserve New",
     });
 
     if (keyInObject("params", template)) {

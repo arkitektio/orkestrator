@@ -13,7 +13,7 @@ export const useAssignationMate = (): ((
   return (ass) => async (options) => {
     let mates: Mate[] = [];
 
-    if (!options.partnersIncludeSelf) {
+    if (!options.justSelf) {
       return mates;
     }
 

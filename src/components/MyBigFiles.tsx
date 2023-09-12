@@ -19,6 +19,7 @@ import { notEmpty } from "../floating/utils";
 import { useDeleteFileMate } from "../mates/file/useDeleteFileMate";
 import { useDownloadFileMate } from "../mates/file/useDownloadFileMate";
 import { useMikroLinkMate } from "../mates/generics/useLinkMate";
+import { usePostmanMate } from "../mates/postman/usePostmanMates";
 import { FileCard } from "../mikro/components/cards/FileCard";
 import { DataHomeFilterParams } from "../pages/data/Home";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
@@ -54,6 +55,7 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
   const deleteFileMate = useDeleteFileMate();
   const downloadFileMate = useDownloadFileMate();
   const mikroLinkMate = useMikroLinkMate();
+  const postmanMate = usePostmanMate();
 
   const variables = { limit: limit, offset: 0, createdDay: createdDay };
 
@@ -185,6 +187,7 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
               deleteFileMate(file),
               downloadFileMate(file.file),
               mikroLinkMate,
+              postmanMate,
             ]}
           />
         ))}

@@ -345,6 +345,10 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
             <div className="text-md mt-2 ">
               {data?.representation?.creator?.email}
             </div>
+            <div className="font-light mt-2 ">Type</div>
+            <div className="text-md mt-2 ">
+              {data?.representation?.variety}
+            </div>
             <div className="font-light">Shape</div>
             <div className="text-xl flex mb-2">
               {data?.representation?.shape?.map((val, index) => (
@@ -715,7 +719,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     {data?.representation?.origins
                       ?.filter(notEmpty)
                       .map((rep) => (
-                        <Representation.Smart
+                        <MikroRepresentation.Smart
                           object={rep.id}
                           dragClassName={(options) =>
                             "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow truncate"
@@ -737,14 +741,14 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                           }
                         >
                           <div className="truncate">
-                            <Representation.DetailLink object={rep.id}>
+                            <MikroRepresentation.DetailLink object={rep.id}>
                               {rep.name}
-                            </Representation.DetailLink>
+                            </MikroRepresentation.DetailLink>
                             <p className="text-xs">
                               {rep?.tags?.map((t) => "#" + t).join(" ")}
                             </p>
                           </div>
-                        </Representation.Smart>
+                        </MikroRepresentation.Smart>
                       ))}
                   </ResponsiveContainerGrid>
                 </>
@@ -758,7 +762,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     {data?.representation?.derived
                       ?.filter(notEmpty)
                       .map((rep) => (
-                        <Representation.Smart
+                        <MikroRepresentation.Smart
                           object={rep.id}
                           dragClassName={(options) =>
                             "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
@@ -780,13 +784,13 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                           }
                           mates={[deleteRepresentationMate(rep)]}
                         >
-                          <Representation.DetailLink object={rep.id}>
+                          <MikroRepresentation.DetailLink object={rep.id}>
                             {rep.name}
-                          </Representation.DetailLink>
+                          </MikroRepresentation.DetailLink>
                           <p className="text-xs">
                             {rep?.tags?.map((t) => "#" + t).join(" ")}
                           </p>
-                        </Representation.Smart>
+                        </MikroRepresentation.Smart>
                       ))}
                   </ResponsiveContainerGrid>
                 </>
@@ -800,16 +804,16 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     {data?.representation?.tables
                       ?.filter(notEmpty)
                       .map((table) => (
-                        <Table.Smart
+                        <MikroTable.Smart
                           object={table.id}
                           dragClassName={(options) =>
                             "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
                           }
                         >
-                          <Table.DetailLink object={table.id}>
+                          <MikroTable.DetailLink object={table.id}>
                             {table.name}
-                          </Table.DetailLink>
-                        </Table.Smart>
+                          </MikroTable.DetailLink>
+                        </MikroTable.Smart>
                       ))}
                   </ResponsiveContainerGrid>
                 </>
@@ -833,7 +837,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
               <div className="font-light my-2">Rois</div>
               <ResponsiveContainerGrid>
                 {data?.representation?.rois?.filter(notEmpty).map((roi) => (
-                  <Roi.Smart
+                  <MikroRoi.Smart
                     object={roi.id}
                     dragClassName={(options) =>
                       "truncate border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow"
@@ -844,13 +848,13 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                     })}
                     mates={[deleteRoiMate(roi)]}
                   >
-                    <Roi.DetailLink object={roi.id}>
+                    <MikroRoi.DetailLink object={roi.id}>
                       {roi?.label || roi?.type}
-                    </Roi.DetailLink>
+                    </MikroRoi.DetailLink>
                     <p className="text-xs">
                       {roi?.tags?.map((t) => "#" + t).join(" ")}
                     </p>
-                  </Roi.Smart>
+                  </MikroRoi.Smart>
                 ))}
               </ResponsiveContainerGrid>
             </>

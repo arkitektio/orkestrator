@@ -24,7 +24,7 @@ const Model: React.FC<IExperimentProps> = ({ id }) => {
           key: "comments",
         },
       ]}
-      actions={<SelfActions type="@mikro/context" object={id} />}
+      actions={<SelfActions type="@mikro/model" object={id} />}
     >
       {!error && data && (
         <div className="p-3 flex-grow flex flex-col">
