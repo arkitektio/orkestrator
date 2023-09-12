@@ -40,7 +40,7 @@ export const ModuleLayout: React.FC<ModuleLayoutProps> = (props) => {
   };
 
   return (
-    <div className={"flex-grow flex flex-row"}>
+    <div className="w-full">
       <Allotment>
         {props.sidebars?.map((sidebar, index) => (
           <Allotment.Pane

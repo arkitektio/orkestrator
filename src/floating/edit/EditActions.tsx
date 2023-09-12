@@ -3,12 +3,11 @@ import { useNavigate } from "react-router";
 import { FlowFragment } from "../../fluss/api/graphql";
 import { DeployFlowDialog } from "../../fluss/components/dialogs/DeployFlowDialog";
 import { ActionButton } from "../../layout/ActionButton";
-import { RekuestNode } from "../../linker";
 import { useDialog } from "../../providers/dialog/DialogProvider";
 import { withRekuest } from "../../rekuest";
-import { ReservationStatus, useNodesQuery } from "../../rekuest/api/graphql";
+import { useReservationsQuery } from "../../rekuest/api/graphql";
 import { useRequester } from "../../rekuest/providers/requester/requester-context";
-import { useReserver } from "../../rekuest/providers/reserver/reserver-context";
+import { useSettings } from "../../settings/settings-context";
 import { useEditRiver } from "./context";
 
 export interface EditActionsProps {
@@ -18,29 +17,19 @@ export interface EditActionsProps {
 export const EditActions: React.FC<EditActionsProps> = (props) => {
   const { saveDiagram, flow, addArkitekt, saving, setLayout, exportDiagram } =
     useEditRiver();
+
+  const { settings } = useSettings();
   const { assign } = useRequester();
-  const { reservations, reserve } = useReserver();
+
+  const { data } = withRekuest(useReservationsQuery)({
+    variables: { instanceId: settings.instanceId },
+  });
   const navigate = useNavigate();
 
   const { ask } = useDialog();
 
-  const { data: deployable, subscribeToMore } = withRekuest(useNodesQuery)({
-    variables: { interfaces: [`flow:${flow?.id}`] },
-  });
-
-  const reserved = reservations?.reservations
+  const reserved = data?.reservations
     ?.filter((res) => res?.node?.interfaces?.includes(`flow:${flow?.id}`))
-    .at(0);
-
-  const deployed = deployable?.allnodes?.at(0);
-
-  const deployRes = reservations?.reservations
-    ?.filter((res) => res?.node?.interfaces?.includes("fluss:deploy"))
-    ?.filter((res) => res?.status == ReservationStatus.Active)
-    .at(0);
-
-  const undeployRes = reservations?.reservations
-    ?.filter((res) => res?.node?.interfaces?.includes("fluss:undeploy"))
     .at(0);
 
   const onExport = () => {
@@ -84,22 +73,19 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
           onExport();
         }}
       />
-      {!deployed && (
+      <ActionButton
+        label={"Deploy"}
+        description="Deploy this flow"
+        onAction={async () => {
+          await ask(DeployFlowDialog, { flow: flow.id });
+        }}
+      />
+      {reserved && (
         <ActionButton
-          label={!deployed ? "Deploy" : "Redeploy"}
-          inactive={!deployRes}
-          description="Deploy this flow"
+          label={"Run"}
+          description="Run this flow"
           onAction={async () => {
-            await ask(DeployFlowDialog, { flow: flow.id });
-          }}
-        />
-      )}
-      {deployed && (
-        <ActionButton
-          label={"Open"}
-          description="Undeploy this flow"
-          onAction={async () => {
-            navigate(RekuestNode.linkBuilder(deployed.id));
+            await assign({ reservation: reserved });
           }}
         />
       )}

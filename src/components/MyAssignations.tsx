@@ -32,7 +32,7 @@ const colorFromStatus = (status: AssignationStatus | undefined) => {
 
 const MyAssignations: React.FC<IMyReservationsProps> = () => {
   const { settings } = useSettings();
-  const { data } = withRekuest(useRequestsQuery)({
+  const { data, error } = withRekuest(useRequestsQuery)({
     variables: {
       instanceId: settings.instanceId,
     },
@@ -42,6 +42,7 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
 
   return (
     <>
+     <div>{JSON.stringify(data)}</div>
       <ListRender
         array={data?.requests?.filter(
           (ass) =>
@@ -50,6 +51,8 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
               AssignationStatus.Cancelled,
               AssignationStatus.Acknowledged,
               AssignationStatus.Done,
+              AssignationStatus.Assigned,
+              AssignationStatus.Progress
             ].includes(ass?.status || AssignationStatus.Cancelled)
         )}
         title="On Going Tasks"

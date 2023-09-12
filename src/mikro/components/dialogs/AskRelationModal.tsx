@@ -121,12 +121,12 @@ export const AskRelationModal = (
           >
             <div className="mt-2 align-left text-left w-full">
               <div className="mt-2 text-sm mb-3 w-full">
-                Relate these to items together
+                Relate these to items together {props.leftIdentifier} and {props.rightIdentifier}
               </div>
               <div className="mt-2 grid gap-1 grid-cols-3 w-full">
                 {props.leftIdentifier && props.leftObject && (
                   <div className=" p-2   p-2 border-gray-800 rounded border">
-                    {structure_to_widget(props.leftIdentifier, {
+                    {structure_to_widget({identifier: props.leftIdentifier, key: "left"}, {
                       value: props.leftObject,
                     })}
                   </div>
@@ -149,7 +149,7 @@ export const AskRelationModal = (
                 </div>
                 {props.rightIdentifier && props.rightObject && (
                   <div className="p-2 p-2 border-gray-800 rounded border">
-                    {structure_to_widget(props.rightIdentifier, {
+                    {structure_to_widget({identifier: props.leftIdentifier, key: "right"}, {
                       value: props.rightObject,
                     })}
                   </div>

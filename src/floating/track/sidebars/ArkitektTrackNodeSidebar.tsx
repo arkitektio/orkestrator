@@ -127,9 +127,9 @@ export const ArkitektTrackNodeSidebar = (
                 ></div>
                 <div className="flex flex-col">
                   <div className="font-light">
-                    <Assignation.DetailLink object={a?.id}>
+                    <RekuestAssignation.DetailLink object={a?.id}>
                       {a?.status}
-                    </Assignation.DetailLink>
+                    </RekuestAssignation.DetailLink>
                   </div>
 
                   {a?.createdAt && <Timestamp date={a?.createdAt} relative />}

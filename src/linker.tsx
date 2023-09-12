@@ -116,15 +116,18 @@ export const buildModuleLink = (module: string) => {
   };
 };
 
+export type Smart = {
+  identifier: Identifier;
+  DetailLink: React.FC<ModelLinkProps>;
+  ListLink: React.FC<BaseLinkProps>;
+  linkBuilder: (object: string) => string;
+  Smart: React.FC<CreatedSmartSmartProps>;
+  Komments: React.FC<SmartKommentProps>;
+  Actions: React.FC<SelfActionProps>;
+};
+
 export type GlobalRegistry = {
-  [key: Identifier]: {
-    DetailLink: React.FC<ModelLinkProps>;
-    ListLink: React.FC<BaseLinkProps>;
-    linkBuilder: (object: string) => string;
-    Smart: React.FC<CreatedSmartSmartProps>;
-    Komments: React.FC<SmartKommentProps>;
-    Actions: React.FC<SelfActionProps>;
-  };
+  [key: Identifier]: Smart;
 };
 
 let x: GlobalRegistry = {};
@@ -145,8 +148,9 @@ export const GlobalLink = ({
   );
 };
 
-export const buildSmart = (model: Identifier, to: string) => {
+export const buildSmart = (model: Identifier, to: string): Smart => {
   x[model] = {
+    identifier: model,
     DetailLink: buildModelLink(model, to),
     ListLink: buildBaseLink(model, to),
     linkBuilder: linkBuilder(model, to),
@@ -197,7 +201,7 @@ export const MikroObjective = buildSmart("@mikro/objective", "objectives");
 
 export const MikroInstrument = buildSmart("@mikro/instrument", "instruments");
 
-export const MikroFile = buildSmart("@mikro/file", "files");
+export const MikroFile = buildSmart("@mikro/omerofile", "files");
 
 export const MikroView = buildSmart("@mikro/view", "views");
 
@@ -253,6 +257,10 @@ export const FlussWorkspace = buildSmart("@fluss/workspace", "workspaces");
 export const FlussFlow = buildSmart("@fluss/flow", "flows");
 export const FlussRun = buildSmart("@fluss/run", "runs");
 export const FlussSnapshot = buildSmart("@fluss/snapshot", "snapshots");
+export const FlussReactiveTemplate = buildSmart(
+  "@fluss/reactivetemplate",
+  "snapshots"
+);
 
 export const LokUser = buildSmart("@lok/user", "users");
 export const LokTeam = buildSmart("@lok/team", "teams");

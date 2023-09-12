@@ -9,28 +9,32 @@ import { Mate, MateFinder } from "../types";
 export const useRequesterMate = (): ((
   res: ListReservationFragment
 ) => MateFinder) => {
-  const { assign, unassign } = useRequester();
+  const { assign } = useRequester();
   const { unreserve } = usePostman();
 
   return (res) => async (options) => {
     let mates: Mate[] = [];
 
-    if (res.status === ReservationStatus.Active) {
-      mates.push({
-        action: async () => {
-          await assign({ reservation: res });
+    if (options.justSelf) {
+      if (res.status === ReservationStatus.Active) {
+        mates.push({
+          action: async () => {
+            await assign({ reservation: res });
+          },
+          label: "Assign",
+        });
+      }
+
+      mates.concat([
+        {
+          action: async () => {
+            await unreserve({ reservation: res.id });
+          },
+          label: "Unreserve",
         },
-        label: "Assign",
-      });
+      ]);
     }
 
-    return mates.concat([
-      {
-        action: async () => {
-          await unreserve({ reservation: res.id });
-        },
-        label: "Unreserve",
-      },
-    ]);
+    return mates;
   };
 };

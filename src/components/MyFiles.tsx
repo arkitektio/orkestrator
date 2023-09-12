@@ -7,6 +7,7 @@ import { SectionTitle } from "../layout/SectionTitle";
 import { MikroFile } from "../linker";
 import { useDeleteFileMate } from "../mates/file/useDeleteFileMate";
 import { useDownloadFileMate } from "../mates/file/useDownloadFileMate";
+import { usePostmanMate } from "../mates/postman/usePostmanMates";
 import { withMikro } from "../mikro/MikroContext";
 import {
   MyOmeroFilesDocument,
@@ -53,6 +54,7 @@ const MyFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
 
   const downloadFile = useDownloadFileMate();
   const deleteFile = useDeleteFileMate();
+  const mates = usePostmanMate();
 
   const [uploadFile] = withMikro(useUploadOmeroFileMutation)({
     update(cache, result) {
@@ -166,7 +168,7 @@ const MyFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
         {data?.myomerofiles?.filter(notEmpty).map((file) => (
           <FileCard
             file={file}
-            mates={[deleteFile(file), downloadFile(file.file)]}
+            mates={[deleteFile(file), downloadFile(file.file), mates]}
           />
         ))}
 

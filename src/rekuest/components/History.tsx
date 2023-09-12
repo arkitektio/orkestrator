@@ -6,21 +6,13 @@ import { SectionTitle } from "../../layout/SectionTitle";
 import { RekuestAssignation } from "../../linker";
 import { useAssignationMate } from "../../mates/assignation/useAssignationMates";
 import { withRekuest } from "../RekuestContext";
-import {
-  AssignationStatusInput,
-  useRequestsHistoryQuery,
-} from "../api/graphql";
+import { useRequestsHistoryQuery } from "../api/graphql";
 import { colorFromAssignationStatus } from "../utils";
 
 export const History = () => {
   const { data } = withRekuest(useRequestsHistoryQuery)({
     variables: {
-      limit: 100,
-      filter: [
-        AssignationStatusInput.Assigned,
-        AssignationStatusInput.Yield,
-        AssignationStatusInput.Progress,
-      ],
+      limit: 10,
     },
   });
 

@@ -3,7 +3,7 @@ import { useReservationsQuery } from "../../rekuest/api/graphql";
 import { useRequester } from "../../rekuest/providers/requester/requester-context";
 import { useSettings } from "../../settings/settings-context";
 import { notEmpty } from "../../utils";
-import { MateFinder } from "../types";
+import { Mate, MateFinder } from "../types";
 
 export const usePostmanMate: () => MateFinder = () => {
   const { assign } = useRequester();
@@ -16,16 +16,17 @@ export const usePostmanMate: () => MateFinder = () => {
   });
 
   return async (options) => {
+    let actions: Mate[] = [];
     if (options.justSelf) {
-      try {
-        let matching = data?.reservations
-          ?.filter(notEmpty)
-          .filter(
-            (r) => r.node.args?.at(0)?.identifier == options.self.identifier
-          );
+      let matching = data?.reservations
+        ?.filter(notEmpty)
+        .filter(
+          (r) => r.node.args?.at(0)?.identifier == options.self.identifier
+        );
 
-        if (matching) {
-          return matching.map((r) => ({
+      if (matching) {
+        actions = actions.concat(
+          matching.map((r) => ({
             action: async (event) => {
               let key = r?.node?.args?.at(0)?.key;
               console.log(key);
@@ -37,13 +38,45 @@ export const usePostmanMate: () => MateFinder = () => {
               return "Assigned";
             },
             label: r?.title || r?.node.name,
-          }));
-        }
-      } catch (e) {
-        console.error(e);
+          }))
+        );
       }
+    }
 
-      return [];
+    if (options.partners && !options.partnersIncludeSelf && !options.justSelf) {
+      let matching = data?.reservations
+        ?.filter(notEmpty)
+        .filter(
+          (r) =>
+            r.node.args?.at(0)?.identifier == options.self.identifier &&
+            r.node.args?.at(1)?.identifier ==
+              options.partners?.at(0)?.identifier
+        ); // Matching self + partner
+
+      if (matching) {
+        actions.concat(
+          matching.map((r) => ({
+            action: async (event) => {
+              let key = r?.node?.args?.at(0)?.key;
+              let otherkey = r?.node?.args?.at(1)?.key;
+
+              for (let partner of event.partners) {
+                console.log(key);
+
+                await assign({
+                  reservation: r,
+                  defaults:
+                    key && otherkey
+                      ? { [key]: event.self.id, [otherkey]: partner.id }
+                      : {},
+                });
+              }
+              return "Assign Batch";
+            },
+            label: r?.title || r?.node.name,
+          }))
+        );
+      }
     }
 
     return [];

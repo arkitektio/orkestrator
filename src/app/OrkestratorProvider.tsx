@@ -4,6 +4,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { DndProvider, MouseTransition } from "react-dnd-multi-backend";
 import { QueryParamProvider } from "use-query-params";
 import { ReactRouter6Adapter } from "use-query-params/adapters/react-router-6";
+import { AlerterProvider } from "../components/alerter/alerter-provider";
 import { GeneralMenuProvider } from "../providers/command/GeneralMenuProvider";
 import { ConfirmerProvider } from "../providers/confirmer/confirmer-provider";
 import { DialogProvider } from "../providers/dialog/DialogProvider";
@@ -29,7 +30,8 @@ export const OrkestratorProvider = ({
   return (
     <QueryParamProvider adapter={ReactRouter6Adapter}>
       <DndProvider options={HTML5toTouch}>
-          <ConfirmerProvider>
+        <ConfirmerProvider>
+          <AlerterProvider>
             <GeneralMenuProvider>
               <SettingsProvider>
                 <SelectionProvider>
@@ -37,7 +39,8 @@ export const OrkestratorProvider = ({
                 </SelectionProvider>
               </SettingsProvider>
             </GeneralMenuProvider>
-          </ConfirmerProvider>
+          </AlerterProvider>
+        </ConfirmerProvider>
       </DndProvider>
     </QueryParamProvider>
   );

@@ -1,5 +1,5 @@
 import { Form, Formik } from "formik";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CarouselInputField } from "../../../components/forms/fields/carousel_inputs";
 import { NumberInputField } from "../../../components/forms/fields/number_input";
 import { ArkitektNodeFragment, MapStrategy } from "../../../fluss/api/graphql";
@@ -42,14 +42,7 @@ export const ArkitektNodeSidebar = (
       .map((x) => x.split(".").at(1)) || [];
   const omitKeys3 = omitKeys.concat(omitKeys2).filter(notEmpty);
 
-  useEffect(() => {
-    if (node_data) {
-      updateNodeExtras(props.node.id, {
-        ...props.node.data,
-        extras: node_data.node,
-      });
-    }
-  }, [node_data]);
+  console.log("The defaults", props.node.data);
 
   return (
     <>
@@ -93,7 +86,7 @@ export const ArkitektNodeSidebar = (
         {node_data?.node?.id && (
           <Formik<Partial<ArkitektNodeFragment>>
             onSubmit={async (values) => {
-              console.log(values);
+              console.log("Updating Values", values);
               updateNodeExtras(props.node.id, {
                 ...props.node.data,
                 ...values,

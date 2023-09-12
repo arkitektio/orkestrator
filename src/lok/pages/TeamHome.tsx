@@ -61,7 +61,7 @@ export const MentionedComment = ({
                 src={
                   comment?.user?.profile?.avatar
                     ? s3resolve(comment?.user?.profile.avatar)
-                    : `https://eu.ui-avatars.com/api/?name=${data?.user?.username}&background=random`
+                    : `https://eu.ui-avatars.com/api/?name=${comment?.user?.username}&background=random`
                 }
                 alt=""
               />

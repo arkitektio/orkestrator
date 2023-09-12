@@ -241,6 +241,7 @@ export const flownodes_to_nodes = (nodes: FlowNode[]): NodeInput[] => {
             position: { x: position.x, y: position.y },
             typename: type || "Fake type",
             name: (rest as any).name,
+            description: (rest as any).description,
             hash: (rest as any).hash,
             implementation: (rest as any).implementation,
             kind: (rest as any).kind,

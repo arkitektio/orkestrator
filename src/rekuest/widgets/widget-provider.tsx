@@ -5,6 +5,7 @@ import { EnhancedStringWidget } from "./inputs/additionals/EnhancedStringWidget"
 import { SearchWidget } from "./inputs/additionals/SearchWidget";
 import { SliderWidget } from "./inputs/additionals/SliderWidget";
 import { BoolWidget } from "./inputs/fallbacks/BoolWidget";
+import { DateWidget } from "./inputs/fallbacks/DateWidget";
 import { FloatWidget } from "./inputs/fallbacks/FloatWidget";
 import { IntWidget } from "./inputs/fallbacks/IntWidget";
 import { ListWidget } from "./inputs/fallbacks/ListWidget";
@@ -43,6 +44,7 @@ export const WidgetRegistryProvider: React.FC<WidgetRegistryProviderProps> = ({
     x.registerInputWidgetFallback(PortKind.Structure, StructureWidget);
     x.registerInputWidgetFallback(PortKind.Union, UnionWidget);
     x.registerInputWidgetFallback(PortKind.List, ListWidget);
+    x.registerInputWidgetFallback(PortKind.Date, DateWidget);
 
     x.registerInputWidget("SearchWidget", SearchWidget);
     x.registerInputWidget("StringWidget", EnhancedStringWidget);

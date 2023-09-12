@@ -9,6 +9,8 @@ fragment FlowNodeCommons on FlowNodeCommons {
     ...Port
   }
   constants
+  name
+  description
 }
 
 fragment RetriableNode on RetriableNode {
@@ -20,8 +22,6 @@ fragment ArkitektNode on ArkitektNode {
   ...FlowNodeCommons
   ...RetriableNode
   __typename
-  name
-  description
   hash
   kind
   defaults
@@ -41,8 +41,6 @@ fragment ArkitektFilterNode on ArkitektFilterNode {
   ...FlowNodeCommons
   ...RetriableNode
   __typename
-  name
-  description
   hash
   kind
   defaults
@@ -62,8 +60,6 @@ fragment LocalNode on LocalNode {
   ...FlowNodeCommons
   ...RetriableNode
   __typename
-  name
-  description
   interface
   hash
   kind
@@ -107,8 +103,19 @@ fragment ReturnWidget on ReturnWidget {
 }
 
 fragment PortChildNested on PortChild {
-    scope
+  scope
+  identifier
+  kind
+  nullable
+  assignWidget {
+    ...Widget
+  }
+  returnWidget {
+    ...ReturnWidget
+  }
+  child {
     identifier
+    scope
     kind
     nullable
     assignWidget {
@@ -117,30 +124,19 @@ fragment PortChildNested on PortChild {
     returnWidget {
       ...ReturnWidget
     }
-    child {
-      identifier
-      scope
-      kind
-      nullable
-      assignWidget {
-        ...Widget
-      }
-      returnWidget {
-        ...ReturnWidget
-      }
+  }
+  variants {
+    identifier
+    scope
+    kind
+    nullable
+    assignWidget {
+      ...Widget
     }
-    variants {
-      identifier
-      scope
-      kind
-      nullable
-      assignWidget {
-        ...Widget
-      }
-      returnWidget {
-        ...ReturnWidget
-      }
+    returnWidget {
+      ...ReturnWidget
     }
+  }
 }
 
 fragment PortChild on PortChild {

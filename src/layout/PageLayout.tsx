@@ -94,7 +94,7 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
   };
 
   return (
-    <div className="flex flex-grow h-full w-full page-layout overflow-y-hidden relative">
+    <div className="h-full w-full relative">
       <Allotment onChange={(size) => {}}>
         <Allotment.Pane
           preferredSize={isOpen ? "70%" : "100%"}
@@ -113,7 +113,7 @@ export const PageLayout: React.FC<PageLayoutProps> = (props) => {
             >
               {props.children}
             </div>
-            <div className="absolute top-[1rem] right-0 flex flex-col gap-2 bg-gradient-to-r from-transparent to-black">
+            <div className="absolute top-[1rem] right-5 flex flex-col gap-2 bg-gradient-to-r from-transparent to-black">
               {props.sidebars?.map((s, index) => (
                 <div
                   key={index}
