@@ -6378,6 +6378,14 @@ export type UpdateStageMutationVariables = Exact<{
 
 export type UpdateStageMutation = { __typename?: 'Mutation', updateStage?: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
 
+export type CreateStageMutationVariables = Exact<{
+  name: Scalars['String'];
+  tags?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+}>;
+
+
+export type CreateStageMutation = { __typename?: 'Mutation', createStage?: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
+
 export type PinStageMutationVariables = Exact<{
   id: Scalars['ID'];
   pin: Scalars['Boolean'];
@@ -10189,6 +10197,40 @@ export function useUpdateStageMutation(baseOptions?: Apollo.MutationHookOptions<
 export type UpdateStageMutationHookResult = ReturnType<typeof useUpdateStageMutation>;
 export type UpdateStageMutationResult = Apollo.MutationResult<UpdateStageMutation>;
 export type UpdateStageMutationOptions = Apollo.BaseMutationOptions<UpdateStageMutation, UpdateStageMutationVariables>;
+export const CreateStageDocument = gql`
+    mutation CreateStage($name: String!, $tags: [String]) {
+  createStage(name: $name, tags: $tags) {
+    ...Stage
+  }
+}
+    ${StageFragmentDoc}`;
+export type CreateStageMutationFn = Apollo.MutationFunction<CreateStageMutation, CreateStageMutationVariables>;
+
+/**
+ * __useCreateStageMutation__
+ *
+ * To run a mutation, you first call `useCreateStageMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateStageMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createStageMutation, { data, loading, error }] = useCreateStageMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *      tags: // value for 'tags'
+ *   },
+ * });
+ */
+export function useCreateStageMutation(baseOptions?: Apollo.MutationHookOptions<CreateStageMutation, CreateStageMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateStageMutation, CreateStageMutationVariables>(CreateStageDocument, options);
+      }
+export type CreateStageMutationHookResult = ReturnType<typeof useCreateStageMutation>;
+export type CreateStageMutationResult = Apollo.MutationResult<CreateStageMutation>;
+export type CreateStageMutationOptions = Apollo.BaseMutationOptions<CreateStageMutation, CreateStageMutationVariables>;
 export const PinStageDocument = gql`
     mutation PinStage($id: ID!, $pin: Boolean!) {
   pinStage(id: $id, pin: $pin) {

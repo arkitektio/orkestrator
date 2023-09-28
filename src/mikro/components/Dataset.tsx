@@ -13,6 +13,7 @@ import { usePutDatasetsMate } from "../../mates/dataset/usePutDatasetsMate";
 import { useDeleteFileMate } from "../../mates/file/useDeleteFileMate";
 import { useDownloadFileMate } from "../../mates/file/useDownloadFileMate";
 import { useReleaseFileMate } from "../../mates/file/useReleaseFileMate";
+import { useDeleteRepresentationMate } from "../../mates/representation/useDeleteRepresentationMate";
 import { useReleaseRepresentationMate } from "../../mates/representation/useReleaseRepresentationMate";
 import { useReleaseSampleMate } from "../../mates/sample/useReleaseSampleMate";
 import { useConfirm } from "../../providers/confirmer/confirmer-context";
@@ -52,6 +53,7 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
 
   const relaseFileMate = useReleaseFileMate(id);
   const deleteFileMate = useDeleteFileMate();
+  const deleteRepresentationMate = useDeleteRepresentationMate();
   const downloadMate = useDownloadFileMate();
 
   const [putDatasets] = withMikro(usePutDatasetsMutation)();
@@ -207,7 +209,7 @@ const Dataset: React.FC<IExperimentProps> = ({ id }) => {
             {data?.dataset?.representations?.filter(notEmpty).map((rep) => (
               <RepresentationCard
                 rep={rep}
-                mates={[releaseRepresentationMate]}
+                mates={[releaseRepresentationMate, deleteRepresentationMate(rep)]}
               />
             ))}
             <DropZone

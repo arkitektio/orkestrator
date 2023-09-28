@@ -209,7 +209,7 @@ export const to_return: Connector<ArkitektNodeData, ReturnNodeData> = ({
   }
 
   if (outtypes.length !== intypes.length) {
-    return { errors: [{ message: "Stream length is different" }] };
+    return { errors: [{ message: "Stream is different", subtitle:  `The right node expectes ${intypes.length} items, the left node sends out ${outtypes.length}`}] };
   }
 
   if (outtypes.join() !== intypes.join()) {
@@ -217,8 +217,8 @@ export const to_return: Connector<ArkitektNodeData, ReturnNodeData> = ({
       errors: [
         {
           message:
-            "Types don't match " +
-            outtypes.join(",") +
+            "Stream types don't match ",
+          subtitle:   outtypes.join(",") +
             "vs " +
             intypes.join(","),
         },
@@ -254,7 +254,7 @@ export const ark_to_ark: Connector = ({
   }
 
   if (sourceTypes.length !== targetTypes.length) {
-    return { errors: [{ message: "Stream length is different" }] };
+    return { errors: [{ message: "Stream is different", subtitle:  `The right node expectes ${targetTypes.length} items, the left node sends out ${sourceTypes.length}`}] };
   }
 
   if (sourceTypes.join() !== targetTypes.join()) {
@@ -262,10 +262,10 @@ export const ark_to_ark: Connector = ({
       errors: [
         {
           message:
-            "Types don't match " +
-            sourceTypes.join(",") +
-            "vs " +
-            targetTypes.join(","),
+            "Types don't match ",
+          subtitle: "The right node expects " +  targetTypes.join(",") +
+            " while the left type sends out " +
+            sourceTypes.join(","),
         },
       ],
     };
@@ -299,7 +299,7 @@ export const to_filter: Connector = ({
   }
 
   if (sourceTypes.length !== targetTypes.length) {
-    return { errors: [{ message: "Stream length is different" }] };
+    return { errors: [{ message: "Stream is different", subtitle:  `The right node expectes ${sourceTypes.length} items, the left node sends out ${targetTypes.length}`}] };
   }
 
   if (sourceTypes.join() !== targetTypes.join()) {

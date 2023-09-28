@@ -25,7 +25,7 @@ export const useRequesterMate = (): ((
         });
       }
 
-      mates.concat([
+      mates = mates.concat([
         {
           action: async () => {
             await unreserve({ reservation: res.id });

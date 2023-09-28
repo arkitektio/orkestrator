@@ -1,5 +1,5 @@
 import { withRekuest } from "../../rekuest";
-import { useReservationsQuery } from "../../rekuest/api/graphql";
+import { ReservationStatus, useReservationsQuery } from "../../rekuest/api/graphql";
 import { useRequester } from "../../rekuest/providers/requester/requester-context";
 import { useSettings } from "../../settings/settings-context";
 import { notEmpty } from "../../utils";
@@ -22,7 +22,10 @@ export const usePostmanMate: () => MateFinder = () => {
         ?.filter(notEmpty)
         .filter(
           (r) => r.node.args?.at(0)?.identifier == options.self.identifier
-        );
+        ).filter(r => r.status == ReservationStatus.Active)
+        ;
+
+        console.log("Was called", matching, options)
 
       if (matching) {
         actions = actions.concat(
@@ -51,7 +54,7 @@ export const usePostmanMate: () => MateFinder = () => {
             r.node.args?.at(0)?.identifier == options.self.identifier &&
             r.node.args?.at(1)?.identifier ==
               options.partners?.at(0)?.identifier
-        ); // Matching self + partner
+        ).filter(r => r.status == ReservationStatus.Active); // Matching self + partner
 
       if (matching) {
         actions.concat(
@@ -79,6 +82,6 @@ export const usePostmanMate: () => MateFinder = () => {
       }
     }
 
-    return [];
+    return actions;
   };
 };

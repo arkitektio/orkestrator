@@ -42,7 +42,6 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
 
   return (
     <>
-     <div>{JSON.stringify(data)}</div>
       <ListRender
         array={data?.requests?.filter(
           (ass) =>
@@ -51,8 +50,6 @@ const MyAssignations: React.FC<IMyReservationsProps> = () => {
               AssignationStatus.Cancelled,
               AssignationStatus.Acknowledged,
               AssignationStatus.Done,
-              AssignationStatus.Assigned,
-              AssignationStatus.Progress
             ].includes(ass?.status || AssignationStatus.Cancelled)
         )}
         title="On Going Tasks"

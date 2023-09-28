@@ -33,10 +33,13 @@ export const useAssignationMate = (): ((
     });
 
     mates.push({
-      action: async () => {
-        await ack({ assignation: ass?.id });
+      action: async (event) => {
+        for (let partner of event.partners) {
+          console.log("Acknowledging", partner.id)
+          await ack({ assignation: partner?.id });
+        }
       },
-      label: "Ack",
+      label: options.partners && options.partners.length > 1 ? "Ack all" : "All",
     });
 
     return mates.concat([
@@ -44,7 +47,7 @@ export const useAssignationMate = (): ((
         action: async () => {
           ass?.id && navigate(RekuestAssignation.linkBuilder(ass?.id));
         },
-        label: "Open",
+        label: "Open Assignment",
       },
     ]);
   };

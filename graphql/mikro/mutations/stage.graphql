@@ -10,6 +10,13 @@ mutation UpdateStage($id: ID!, $tags: [String], $name: String!) {
   }
 }
 
+mutation CreateStage($name: String!, $tags: [String]) {
+  createStage(name: $name, tags: $tags) {
+    ...Stage
+  }
+}
+
+
 mutation PinStage($id: ID!, $pin: Boolean!) {
   pinStage(id: $id, pin: $pin) {
     id

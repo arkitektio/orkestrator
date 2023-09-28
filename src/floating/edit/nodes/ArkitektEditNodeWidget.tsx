@@ -308,11 +308,10 @@ export const ArkitektEditNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
                             onClick={() => rotateReturn(re)}
                           >
                             <div className="flex flex-inline">
-                              <span className="flex text-xs my-auto">
-                                {re?.key}
+                              <span className="flex my-auto">
+                                {re?.label || re.key}
                               </span>{" "}
                               <div className="flex-grow"></div>
-                              <div className="text-xs">{re?.label}</div>
                             </div>
                           </div>
                         );

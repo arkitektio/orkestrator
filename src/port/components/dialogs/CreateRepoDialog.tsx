@@ -10,7 +10,7 @@ import {
   CreateGithubRepoMutationVariables,
   useCreateGithubRepoMutation,
 } from "../../api/graphql";
-import github from "./github.png";
+import github from "./github-white.png";
 
 type Overrides = Partial<CreateGithubRepoMutationVariables>;
 
