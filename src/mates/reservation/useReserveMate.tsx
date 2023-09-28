@@ -24,13 +24,17 @@ export const useRequesterMate = (): ((
       });
     }
 
-    return mates.concat([
+     mates.push(
       {
         action: async () => {
           await unreserve({ reservation: res.id });
         },
         label: "Unreserve",
-      },
-    ]);
+      }
+    );
+
+    return mates
+
+
   };
 };

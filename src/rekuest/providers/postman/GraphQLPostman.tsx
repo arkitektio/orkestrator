@@ -31,7 +31,7 @@ import {
   WatchRequestsSubscriptionVariables,
   WatchReservationsDocument,
   WatchReservationsSubscription,
-  WatchReservationsSubscriptionVariables,
+  WatchReservationsSubscriptionVariables
 } from "../../api/graphql";
 import {
   AckVariables,
@@ -71,8 +71,8 @@ export const GraphQLPostman = (props: PostmanProviderProps) => {
         .subscribe((res) => {
           console.error("Received", res);
 
-          let update =
-            res.data?.reservations?.create || res.data?.reservations?.update;
+          let update = res.data?.reservations?.update 
+          let create =  res.data?.reservations?.create;
 
           if (update) {
             props.onReserveUpdate && props.onReserveUpdate(update);
@@ -89,6 +89,12 @@ export const GraphQLPostman = (props: PostmanProviderProps) => {
                 };
               }
             );
+          }
+
+          if (create) {
+            client.refetchQueries({
+              include: ["Reservations"],
+            });
           }
         });
 
@@ -110,9 +116,10 @@ export const GraphQLPostman = (props: PostmanProviderProps) => {
           },
         })
         .subscribe((res) => {
-          console.log(res);
 
-          let update = res.data?.requests?.create || res.data?.requests?.update;
+          let update = res.data?.requests?.update
+          let create =  res.data?.requests?.create;
+          console.log("Assignation update", update)
 
           if (update) {
             props.onAssignUpdate && props.onAssignUpdate(update);
@@ -129,6 +136,14 @@ export const GraphQLPostman = (props: PostmanProviderProps) => {
                 };
               }
             );
+
+           
+          }
+
+          if (create) {
+            client.refetchQueries({
+              include: ["Requests"],
+            });
           }
         });
 

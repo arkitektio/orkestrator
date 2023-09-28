@@ -20,6 +20,7 @@ import { useMikro } from "../../mikro/MikroContext";
 import {
   MyContextsDocument,
   MyDatasetsDocument,
+  MyStagesDocument,
 } from "../../mikro/api/graphql";
 import { MyEras } from "../../mikro/components/MyEras";
 import { MyStages } from "../../mikro/components/MyStages";
@@ -27,6 +28,7 @@ import { CreateContextModal } from "../../mikro/components/dialogs/CreateContext
 import { CreateDatasetModal } from "../../mikro/components/dialogs/CreateDatasetModal";
 import { useConfirm } from "../../providers/confirmer/confirmer-context";
 import { useDialog } from "../../providers/dialog/DialogProvider";
+import { CreateStageModal } from "../components/dialogs/CreateStageModal";
 import HomeSidebar from "../sidebars/HomeSidebar";
 
 interface IDataHomeProps {}
@@ -102,11 +104,6 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
                 onAction={async () => {
                   console.log("create dataset", "LOOOOLK");
 
-                  let z = await confirm({
-                    message: "Create Dataset",
-                    subtitle: "Are you sure you want to create a new dataset?",
-                    confirmLabel: "Create",
-                  });
 
                   await ask(CreateDatasetModal, {});
                   client?.refetchQueries({
@@ -115,6 +112,21 @@ export const DataHome: React.FunctionComponent<IDataHomeProps> = (props) => {
                 }}
               >
                 New Dataset
+              </ActionButton>
+              <ActionButton
+                label="Create new Stage"
+                description="Create a new Stage"
+                onAction={async () => {
+                  console.log("create dataset", "LOOOOLK");
+
+
+                  await ask(CreateStageModal, {});
+                  client?.refetchQueries({
+                    include: [MyStagesDocument],
+                  });
+                }}
+              >
+                New Stage
               </ActionButton>
             </>
           )}

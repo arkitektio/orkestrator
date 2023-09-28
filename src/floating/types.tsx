@@ -94,6 +94,7 @@ export type ConnectionUpdate = {
 
 export type ConnectionError = {
   message: string;
+  subtitle?: string;
 };
 
 export type ConnState = {

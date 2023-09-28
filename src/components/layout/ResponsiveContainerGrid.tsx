@@ -27,7 +27,7 @@ export const FittingResponsiveContainerGrid: React.FC<
           return {
             selectable: {
               identifier: item.dataset.identifier as Identifier,
-              object: item.dataset.object,
+              id: item.dataset.object,
             },
             item: item,
           };
@@ -81,7 +81,7 @@ const ResponsiveContainerGrid: React.FC<IResponsiveGridProps> = ({
           return {
             selectable: {
               identifier: item.dataset.identifier as Identifier,
-              object: item.dataset.object,
+              id: item.dataset.object,
             },
             item: item,
           };

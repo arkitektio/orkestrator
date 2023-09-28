@@ -20,6 +20,37 @@ export function buildDeleteMate(
     const [deleteItem] = xfunction({} as any);
 
     return (object: DeletableObject) => async (options) => {
+      if (options.justSelf) {
+        return [
+          {
+            action: async (event) => {
+              for (const partner of event.partners) {
+                await confirm({
+                  message: `Are you sure you want to delete this ${object.__typename}?`,
+                });
+
+                deleteItem({
+                  variables: { id: partner.id },
+                  update(cache: any, result: any, options: any) {
+                    if (object.__typename) {
+                      console.log("evicting", object.__typename, partner.id)
+                      const normalizedId = cache.identify({id: partner.id, __typename: object.__typename});
+                      cache.evict({ id: normalizedId });
+                      cache.gc();
+                    }
+                  }
+                });
+              }
+            },
+            label: (
+              <>
+                <BsTrash />
+              </>
+            ),
+            description: `Delete this ${object.__typename}`,
+          },
+        ];
+      }
       if (options.partnersIncludeSelf) {
         return [
           {
@@ -33,7 +64,8 @@ export function buildDeleteMate(
                   variables: { id: partner.id },
                   update(cache: any, result: any, options: any) {
                     if (object.__typename) {
-                      const normalizedId = cache.identify(object);
+                      console.log("evicting", object.__typename, partner.id)
+                      const normalizedId = cache.identify({id: partner.id, __typename: object.__typename});
                       cache.evict({ id: normalizedId });
                       cache.gc();
                     }
@@ -46,7 +78,7 @@ export function buildDeleteMate(
                 <BsTrash />
               </>
             ),
-            description: `Delete this ${object.__typename}`,
+            description: `Delete all ${object.__typename}`,
           },
         ];
       }

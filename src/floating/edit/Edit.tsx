@@ -287,7 +287,7 @@ export const EditRiver: React.FC<Props> = ({
         }
 
         if (update.errors) {
-          alert({ message: update.errors.map((x) => x.message).join(" | ") });
+          alert({ message: update.errors.map((x) => x.message).join(" | "), subtitle: update.errors.map((x) => x.subtitle).join(" | ") });
         }
       } catch (e: any) {
         alert({ message: e.message });

@@ -12,6 +12,7 @@ const SliderWidget: React.FC<InputWidgetProps<SliderWidgetFragment>> = ({
       name={port.key || "fake"}
       min={widget?.min || 0}
       max={widget?.max || 100}
+      step={widget?.step || 1}
       label={port.label || port.key}
       description={port.description || ""}
     />

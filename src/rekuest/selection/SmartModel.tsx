@@ -6,6 +6,7 @@ import { getEmptyImage } from "react-dnd-html5-backend";
 import { usePopper } from "react-popper";
 import { SMART_MODEL_DROP_TYPE } from "../../constants";
 import { composeMates } from "../../mates/compose";
+import { usePostmanMate } from "../../mates/postman/usePostmanMates";
 import { Drop, MateFinder, MateOptions } from "../../mates/types";
 import { Identifier } from "../api/scalars";
 import { Mates } from "./Mates";
@@ -70,6 +71,8 @@ export const SmartModel = ({
   const on_progress = async (x: number | undefined) => {
     setProgress(x);
   };
+
+  const postmanMate = usePostmanMate();
 
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
     placement: placement || "bottom",
@@ -223,7 +226,7 @@ export const SmartModel = ({
                     self={self}
                     overItems={overItems}
                     withSelf={isDragging}
-                    mateFinder={mates && composeMates(mates)}
+                    mateFinder={mates && composeMates([...mates, postmanMate])}
                   />
                 </div>
               </div>
@@ -257,7 +260,7 @@ export const SmartModel = ({
                 progress={on_progress}
                 onDone={async () => setShow(false)}
                 onError={async () => setShow(false)}
-                mateFinder={mates && composeMates(mates)}
+                mateFinder={mates && composeMates([...mates, postmanMate])}
               />
             </div>
           </div>

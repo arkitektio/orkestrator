@@ -84,6 +84,7 @@ fragment Widget on Widget {
   hook
   ward
   min
+  step
   placeholder
   max
   choices {

@@ -7,9 +7,10 @@ export type SliderInputField = CommonFieldProps<number> & {
   placeholder?: string;
   max: number;
   min: number;
+  step?: number;
 };
 
-export const SliderField = ({ min, max, ...props }: SliderInputField) => {
+export const SliderField = ({ min, max, step, ...props }: SliderInputField) => {
   return (
     <Field {...props}>
       {({
@@ -26,6 +27,7 @@ export const SliderField = ({ min, max, ...props }: SliderInputField) => {
               className="flex-grow mr-1"
               min={min}
               max={max}
+              step={step}
               {...field}
             />
             {field.value}

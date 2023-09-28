@@ -18,6 +18,7 @@ fragment SliderWidget on SliderWidget {
   kind
   min
   max
+  step
 }
 
 fragment SearchWidget on SearchWidget {
