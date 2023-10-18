@@ -184,7 +184,7 @@ export const PositionCanvas = ({
       });
       setModelSelection(
         selected_positions.map((pos) => ({
-          object: pos.id,
+          id: pos.id,
           identifier: "@mikro/position",
         }))
       );
@@ -245,7 +245,7 @@ export const PositionCanvas = ({
               stroke={
                 (highlight && highlight.includes(pos.id)) ||
                 modelSelection.find(
-                  (v) => v.identifier == "@mikro/position" && v.object == pos.id
+                  (v) => v.identifier == "@mikro/position" && v.id == pos.id
                 )
                   ? "red"
                   : "white"

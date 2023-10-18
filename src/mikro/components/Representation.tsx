@@ -721,8 +721,8 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                       .map((rep) => (
                         <MikroRepresentation.Smart
                           object={rep.id}
-                          dragClassName={(options) =>
-                            "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow truncate"
+                          className={
+                            "border border-gray-800 rounded p-5 cursor-pointer text-white bg-gray-900 break-word hover:shadow truncate overflow-hidden"
                           }
                           dragStyle={() =>
                             rep?.latestThumbnail

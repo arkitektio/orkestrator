@@ -1,8 +1,5 @@
 fragment Stage on Stage {
   id
-  positions {
-    ...ListPosition
-  }
   kind
   name
   createdAt

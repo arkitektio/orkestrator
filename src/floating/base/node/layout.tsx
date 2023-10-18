@@ -41,7 +41,7 @@ const MyHandle = (props: any) => {
 export const NodeLayoutProvider: React.FC<NodeLayoutProviderProps> = ({
   id,
   children,
-  expandedHeight = 200,
+  expandedHeight = 500,
   expandedWidth = 400,
   collapsedWidth = 170,
   collapsedHeight = 70,

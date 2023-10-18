@@ -562,7 +562,6 @@ export const RoiCanvas = ({
     representation.rois?.filter(
       (r) =>
         r?.type === RoiType.Rectangle &&
-        r.vectors?.at(0)?.z == z &&
         r.vectors?.at(0)?.c == c &&
         r.vectors?.at(0)?.t == t
     ) ?? [];

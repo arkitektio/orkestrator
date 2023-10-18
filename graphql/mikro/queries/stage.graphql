@@ -1,6 +1,9 @@
-query DetailStage($id: ID!) {
+query DetailStage($id: ID!, $limit: Int, $offset: Int) {
   stage(id: $id) {
     ...Stage
+  positions(limit: $limit, offset: $offset) {
+    ...ListPosition
+  }
   }
 }
 

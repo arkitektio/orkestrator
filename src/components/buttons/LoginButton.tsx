@@ -16,7 +16,7 @@ export const LoginButton: React.FC<{}> = (props) => {
         if (window.__TAURI__) {
           let port = await invoke("oauth_start", { config: { ports: [7890] } });
           console.log("Server started on port", port);
-          redirect_uri = `http://localhost:${port}`;
+          redirect_uri = `http://127.0.0.1:${port}/`;
         } else {
           redirect_uri = window.location.origin + "/callback";
         }

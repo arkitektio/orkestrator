@@ -16,8 +16,10 @@
     "herre": "graphql-codegen --config herre.yml",
     "lok": "graphql-codegen --config lok.yml",
     "dockbuild": "vite build && docker build -t jhnnsrs/orkestrator:release .",
+    "paperbuild": "vite build && docker build -t jhnnsrs/orkestrator:paper .",
     "dockbuildx": "vite build && docker buildx build -t jhnnsrs/orkestrator:releasex --platform linux/arm64/v8,linux/amd64 --push .",
     "p": "docker push jhnnsrs/orkestrator:release",
+    "paperp": "docker push jhnnsrs/orkestrator:paper",
     "serve": "vite preview --port 6789"
   },
   "dependencies": {

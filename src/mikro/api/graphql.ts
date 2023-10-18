@@ -5375,9 +5375,33 @@ export type Stage = {
   pinned?: Maybe<Scalars['Boolean']>;
   /** The users that have pinned the stage */
   pinnedBy: Array<User>;
-  positions: Array<Position>;
+  /** Derived Images from this Image */
+  positions?: Maybe<Array<Maybe<Position>>>;
   /** A comma-separated list of tags. */
   tags?: Maybe<Array<Maybe<Scalars['String']>>>;
+};
+
+
+/**
+ * An Stage is a set of positions that share a common space on a microscope and can
+ *     be use to translate.
+ *
+ *
+ *
+ */
+export type StagePositionsArgs = {
+  app?: InputMaybe<Scalars['String']>;
+  createdAfter?: InputMaybe<Scalars['DateTime']>;
+  createdAt?: InputMaybe<Scalars['DateTime']>;
+  createdBefore?: InputMaybe<Scalars['DateTime']>;
+  createdDay?: InputMaybe<Scalars['DateTime']>;
+  createdWhile?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  ids?: InputMaybe<Array<InputMaybe<Scalars['ID']>>>;
+  limit?: InputMaybe<Scalars['Int']>;
+  name?: InputMaybe<Scalars['String']>;
+  offset?: InputMaybe<Scalars['Int']>;
+  pinned?: InputMaybe<Scalars['Boolean']>;
+  stage?: InputMaybe<Scalars['ID']>;
 };
 
 /** The root Subscriptions */
@@ -5890,7 +5914,7 @@ export type PlotFragment = { __typename?: 'Plot', id: string, query: string, nam
 
 export type ListPlotFragment = { __typename?: 'Plot', id: string, name: string, creator: { __typename?: 'User', username: string } };
 
-export type PositionFragment = { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, roiOrigins: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null }> };
+export type PositionFragment = { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, roiOrigins: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null }> };
 
 export type ListPositionFragment = { __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null };
 
@@ -5914,7 +5938,7 @@ export type DetailSampleFragment = { __typename?: 'Sample', name: string, id: st
 
 export type ListSampleFragment = { __typename?: 'Sample', name: string, id: string, pinned?: boolean | null, experiments: Array<{ __typename?: 'Experiment', name: string }> };
 
-export type StageFragment = { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null };
+export type StageFragment = { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null };
 
 export type ListStageFragment = { __typename?: 'Stage', id: string, tags?: Array<string | null> | null, name: string, createdAt: any, kind?: AcquisitionKind | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null };
 
@@ -6245,7 +6269,7 @@ export type CreatePositionMutationVariables = Exact<{
 }>;
 
 
-export type CreatePositionMutation = { __typename?: 'Mutation', createPosition?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, roiOrigins: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null }> } | null };
+export type CreatePositionMutation = { __typename?: 'Mutation', createPosition?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, roiOrigins: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null }> } | null };
 
 export type DeletePositionMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -6376,7 +6400,7 @@ export type UpdateStageMutationVariables = Exact<{
 }>;
 
 
-export type UpdateStageMutation = { __typename?: 'Mutation', updateStage?: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
+export type UpdateStageMutation = { __typename?: 'Mutation', updateStage?: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
 
 export type CreateStageMutationVariables = Exact<{
   name: Scalars['String'];
@@ -6384,7 +6408,7 @@ export type CreateStageMutationVariables = Exact<{
 }>;
 
 
-export type CreateStageMutation = { __typename?: 'Mutation', createStage?: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
+export type CreateStageMutation = { __typename?: 'Mutation', createStage?: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
 
 export type PinStageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -6475,7 +6499,7 @@ export type DashboardQueryQueryVariables = Exact<{
 }>;
 
 
-export type DashboardQueryQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', name: string, id: string, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, omeros?: Array<{ __typename?: 'Omero', id: string, acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, store?: any | null, shape?: Array<number> | null, latestThumbnail?: { __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null } } | null> | null }> } | null };
+export type DashboardQueryQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', name: string, id: string, positions?: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, omeros?: Array<{ __typename?: 'Omero', id: string, acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, store?: any | null, shape?: Array<number> | null, latestThumbnail?: { __typename?: 'Thumbnail', id: string, image?: string | null, blurhash?: string | null } | null, metrics?: Array<{ __typename?: 'Metric', id: string, key: string, value?: any | null } | null> | null } } | null> | null } | null> | null } | null };
 
 export type MyDatasetsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -6742,7 +6766,7 @@ export type DetailPositionQueryVariables = Exact<{
 }>;
 
 
-export type DetailPositionQuery = { __typename?: 'Query', position?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, roiOrigins: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null }> } | null };
+export type DetailPositionQuery = { __typename?: 'Query', position?: { __typename?: 'Position', id: string, name: string, x: number, y: number, z: number, stage: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null }, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null, roiOrigins: Array<{ __typename?: 'ROI', id: string, type: RoiType, createdAt: any, tags?: Array<string | null> | null, pinned?: boolean | null, label?: string | null, createdWhile?: string | null, creator: { __typename?: 'User', id: string, sub?: string | null }, vectors?: Array<{ __typename?: 'Vector', x?: number | null, y?: number | null, z?: number | null, t?: number | null, c?: number | null } | null> | null }> } | null };
 
 export type PositionSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -6952,10 +6976,12 @@ export type HcsSampleMetricsQuery = { __typename?: 'Query', metrics?: Array<{ __
 
 export type DetailStageQueryVariables = Exact<{
   id: Scalars['ID'];
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
 }>;
 
 
-export type DetailStageQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null }>, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
+export type DetailStageQuery = { __typename?: 'Query', stage?: { __typename?: 'Stage', id: string, kind?: AcquisitionKind | null, name: string, createdAt: any, pinned?: boolean | null, tags?: Array<string | null> | null, positions?: Array<{ __typename?: 'Position', id: string, x: number, y: number, z: number, name: string, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, physicalSize?: { __typename?: 'PhysicalSize', x?: number | null, y?: number | null, z?: number | null } | null, representation: { __typename?: 'Representation', id: string, shape?: Array<number> | null } } | null> | null } | null> | null, instrument?: { __typename?: 'Instrument', id: string, name: string } | null, creator?: { __typename?: 'User', id: string, sub?: string | null } | null } | null };
 
 export type MyStagesQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -7732,27 +7758,6 @@ export const ListPlotFragmentDoc = gql`
   }
 }
     `;
-export const ListPositionFragmentDoc = gql`
-    fragment ListPosition on Position {
-  id
-  x
-  y
-  z
-  name
-  omeros(limit: 1) {
-    acquisitionDate
-    physicalSize {
-      x
-      y
-      z
-    }
-    representation {
-      id
-      shape
-    }
-  }
-}
-    `;
 export const ListInstrumentFragmentDoc = gql`
     fragment ListInstrument on Instrument {
   id
@@ -7762,9 +7767,6 @@ export const ListInstrumentFragmentDoc = gql`
 export const StageFragmentDoc = gql`
     fragment Stage on Stage {
   id
-  positions {
-    ...ListPosition
-  }
   kind
   name
   createdAt
@@ -7778,8 +7780,7 @@ export const StageFragmentDoc = gql`
   pinned
   tags
 }
-    ${ListPositionFragmentDoc}
-${ListInstrumentFragmentDoc}`;
+    ${ListInstrumentFragmentDoc}`;
 export const RepRoiFragmentDoc = gql`
     fragment RepRoi on ROI {
   id
@@ -8093,6 +8094,27 @@ export const DetailRepresentationFragmentDoc = gql`
 ${ThumbnailFragmentDoc}
 ${VideoFragmentDoc}
 ${OmeroFragmentDoc}`;
+export const ListPositionFragmentDoc = gql`
+    fragment ListPosition on Position {
+  id
+  x
+  y
+  z
+  name
+  omeros(limit: 1) {
+    acquisitionDate
+    physicalSize {
+      x
+      y
+      z
+    }
+    representation {
+      id
+      shape
+    }
+  }
+}
+    `;
 export const DetailRoiFragmentDoc = gql`
     fragment DetailRoi on ROI {
   id
@@ -13137,12 +13159,16 @@ export type HcsSampleMetricsQueryHookResult = ReturnType<typeof useHcsSampleMetr
 export type HcsSampleMetricsLazyQueryHookResult = ReturnType<typeof useHcsSampleMetricsLazyQuery>;
 export type HcsSampleMetricsQueryResult = Apollo.QueryResult<HcsSampleMetricsQuery, HcsSampleMetricsQueryVariables>;
 export const DetailStageDocument = gql`
-    query DetailStage($id: ID!) {
+    query DetailStage($id: ID!, $limit: Int, $offset: Int) {
   stage(id: $id) {
     ...Stage
+    positions(limit: $limit, offset: $offset) {
+      ...ListPosition
+    }
   }
 }
-    ${StageFragmentDoc}`;
+    ${StageFragmentDoc}
+${ListPositionFragmentDoc}`;
 
 /**
  * __useDetailStageQuery__
@@ -13157,6 +13183,8 @@ export const DetailStageDocument = gql`
  * const { data, loading, error } = useDetailStageQuery({
  *   variables: {
  *      id: // value for 'id'
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
  *   },
  * });
  */

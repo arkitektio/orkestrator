@@ -13,7 +13,7 @@ export const WorkspaceCard = ({ workspace, mates }: WorkspaceCardProps) => {
       showSelfMates={true}
       object={workspace.id}
       dragClassName={({ isOver, canDrop, isSelected, isDragging }) =>
-        `rounded shadow-xl group text-white bg-slate-700 ${
+        `truncate rounded shadow-xl group text-white bg-slate-700 ${
           isOver && !isDragging && "border-primary-200 border"
         } ${isDragging && "border-primary-200 border"} ${
           isSelected && "ring-1 ring-primary-200 "

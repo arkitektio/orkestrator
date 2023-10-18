@@ -50,9 +50,7 @@ export type AssignRequestVariables = {
   defaults?: { [key: string]: any };
 };
 
-export type ResolvedAssignRequest = {
-  id: string;
-  defered: Defered<AssignMutation["assign"]>;
+export type ResolvedAssignRequest = AssignRequest & {
   options: AssignMutationVariables;
 };
 

@@ -43,7 +43,7 @@ query MyRequests {
 }
 
 query RequestsHistory($limit: Int = 20, $filter: [AssignationStatusInput]) {
-  myrequests(limit: $limit, filter: $filter) {
+  myrequests(limit: $limit, filter: $filter, latest: true, onlyMine: true) {
     ...ListAssignation
   }
 }

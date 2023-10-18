@@ -19,9 +19,8 @@ import { notEmpty } from "../floating/utils";
 import { useDeleteFileMate } from "../mates/file/useDeleteFileMate";
 import { useDownloadFileMate } from "../mates/file/useDownloadFileMate";
 import { useMikroLinkMate } from "../mates/generics/useLinkMate";
-import { usePostmanMate } from "../mates/postman/usePostmanMates";
 import { FileCard } from "../mikro/components/cards/FileCard";
-import { DataHomeFilterParams } from "../pages/data/Home";
+import { DataHomeFilterParams } from "../mikro/pages/Home";
 import { ResponsiveContainerGrid } from "./layout/ResponsiveContainerGrid";
 export type IMyRepresentationsProps = {};
 
@@ -55,7 +54,6 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
   const deleteFileMate = useDeleteFileMate();
   const downloadFileMate = useDownloadFileMate();
   const mikroLinkMate = useMikroLinkMate();
-  const postmanMate = usePostmanMate();
 
   const variables = { limit: limit, offset: 0, createdDay: createdDay };
 
@@ -69,24 +67,10 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
   });
 
   const [uploadFile] = withMikro(useUploadBigFileMutation)({
-    update(cache, result) {
-      const existing: any = cache.readQuery({
-        query: MyOmeroFilesDocument,
-        variables,
-      });
-      cache.writeQuery({
-        query: MyOmeroFilesDocument,
-        variables,
-        data: {
-          myomerofiles: existing.myomerofiles.concat(
-            result.data?.uploadBigFile
-          ),
-        },
-      });
-    },
+    
   });
 
-  const [{ isOver, canDrop }, drop] = useDrop(() => {
+  const [{ isOver, canDrop, item }, drop] = useDrop(() => {
     return {
       accept: [NativeTypes.FILE],
       drop: (item, monitor) => {
@@ -115,7 +99,7 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
             })
               .then((x) => {
                 console.log(x);
-                return uploadFile({ variables: { file: x } });
+                return uploadFile({ variables: { file: x } }).then((x) => {refetch(variables); return x})
               })
               .then((x) =>
                 setUploadFutures((futures) =>
@@ -137,6 +121,7 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
       collect: (monitor) => ({
         isOver: !!monitor.isOver(),
         canDrop: !!monitor.canDrop(),
+        item: monitor.getItem(),
       }),
     };
   }, []);
@@ -187,7 +172,6 @@ const MyBigFiles: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
               deleteFileMate(file),
               downloadFileMate(file.file),
               mikroLinkMate,
-              postmanMate,
             ]}
           />
         ))}
