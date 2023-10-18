@@ -160,6 +160,7 @@ export const GraphQLPostman = (props: PostmanProviderProps) => {
             mutation: AssignDocument,
           });
           if (!x.data?.assign) throw new Error("No data received");
+          props.onAssignUpdate && props.onAssignUpdate(x.data.assign);
           return x.data.assign;
         },
         reserve: async (variables: ReserveVariables) => {

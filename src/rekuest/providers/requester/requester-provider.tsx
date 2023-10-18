@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router";
 import { v4 as uuidv4 } from "uuid";
 import { useAlert } from "../../../components/alerter/alerter-context";
+import { RekuestAssignation } from "../../../linker";
 import { DetailAssignationFragment } from "../../api/graphql";
 import { usePostman } from "../postman/postman-context";
 import {
@@ -25,6 +27,7 @@ export const RequesterProvider: React.FC<ReserverProviderProps> = ({
 }) => {
   const { assign: postassign, unassign: postunassign } = usePostman();
   const { alert } = useAlert();
+  const navigate = useNavigate();
 
   const [pendingRequests, setPendingRequests] = React.useState<AssignRequest[]>(
     []
@@ -35,6 +38,7 @@ export const RequesterProvider: React.FC<ReserverProviderProps> = ({
 
   const resolve = (request: ResolvedAssignRequest) => {
     let x = postassign(request.options);
+
     x.then((assign) => {
       if (assign) {
         request.defered.resolve(assign);
@@ -45,7 +49,13 @@ export const RequesterProvider: React.FC<ReserverProviderProps> = ({
           ...resolvedRequests,
           request,
         ]);
+        if (request.variables.reservation.node.interfaces?.includes("workflow")) {
+          navigate(RekuestAssignation.linkBuilder(assign?.id || ""));
+        }
+
       }
+      
+
     }).catch((e) => {
       console.error(e);
       request.defered.reject(e);

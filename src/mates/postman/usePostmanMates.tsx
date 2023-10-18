@@ -46,6 +46,43 @@ export const usePostmanMate: () => MateFinder = () => {
       }
     }
 
+    console.log(options)
+
+    if (options.partners && options.partners.length > 1) {
+      let matching = data?.reservations
+        ?.filter(notEmpty)
+        .filter(
+          (r) =>
+            r.node.args?.at(0)?.identifier == options.self.identifier
+        ).filter(r => r.status == ReservationStatus.Active); // Matching self + partner
+
+      if (matching) {
+        console.log("Was batch called", matching, options)
+        actions = actions.concat(
+          matching.map((r) => ({
+            action: async (event) => {
+              let key = r?.node?.args?.at(0)?.key;
+              if (!key) {
+                return "No key";
+              }
+
+              for (let partner of event.partners) {
+                console.log(key);
+
+                await assign({
+                  reservation: r,
+                  defaults:{ [key]: partner.id, },
+                });
+              }
+              return "Assign Batch";
+            },
+            label: (r?.title || r?.node.name )  + "(Batch)",
+          }))
+        );
+      }
+    }
+    
+
     if (options.partners && !options.partnersIncludeSelf && !options.justSelf) {
       let matching = data?.reservations
         ?.filter(notEmpty)
@@ -57,7 +94,7 @@ export const usePostmanMate: () => MateFinder = () => {
         ).filter(r => r.status == ReservationStatus.Active); // Matching self + partner
 
       if (matching) {
-        actions.concat(
+        actions = actions.concat(
           matching.map((r) => ({
             action: async (event) => {
               let key = r?.node?.args?.at(0)?.key;

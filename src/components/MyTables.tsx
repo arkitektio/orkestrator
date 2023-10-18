@@ -75,7 +75,7 @@ const MyTables: React.FC<IMyRepresentationsProps & DataHomeFilterParams> = ({
       array={data?.mytables}
       loading={loading}
       title={
-        <MikroTable.ListLink className="flex-0">Stages</MikroTable.ListLink>
+        <MikroTable.ListLink className="flex-0">Tables</MikroTable.ListLink>
       }
       refetch={refetch}
     >

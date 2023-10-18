@@ -20,6 +20,7 @@ import { ConfirmModal } from "../components/confirmer/ConfirmModal";
 import { DialogDisplay } from "../components/dialog/Dialog";
 import { notEmpty } from "../floating/utils";
 import { FlussWard } from "../fluss/ward";
+import { RekuestAssignation } from "../linker";
 import { LokGuard } from "../lok/LokGuard";
 import { MentionListener } from "../lok/komment/listeners/MentionListener";
 import { MikroGuard } from "../mikro/MikroGuard";
@@ -74,21 +75,41 @@ const CriticalMessageContainer =
     );
   };
 
+  const AssignMessageContainer =
+  (ass: PostmanAssignationFragment) =>
+  ({}: ToastContentProps) => {
+    return (
+      <RekuestAssignation.DetailLink object={ass.id} className="text-white">
+        Open Assignation
+      </RekuestAssignation.DetailLink>
+    );
+  };
+
+
+
+
 const DoneMessageContainer =
   (ass: PostmanAssignationFragment) =>
   ({}: ToastContentProps) => {
-    return <div className="text-white">{"Done :)"}</div>;
+    return <RekuestAssignation.DetailLink object={ass.id} className="text-white">{"Done :)"}</RekuestAssignation.DetailLink>;
   };
 
 const onAssignUpdate = (ass: PostmanAssignationFragment) => {
   console.log(ass);
   switch (ass.status) {
     case AssignationStatus.Acknowledged:
-    case AssignationStatus.Bound:
-    case AssignationStatus.Assigned: {
+    case AssignationStatus.Bound:{
       console.log(ass);
       break;
     }
+    case AssignationStatus.Bound: {
+      toast(AssignMessageContainer(ass));
+      break;
+    }
+
+
+
+
     case AssignationStatus.Critical: {
       toast(CriticalMessageContainer(ass));
       break;

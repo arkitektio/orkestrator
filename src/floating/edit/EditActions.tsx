@@ -34,7 +34,7 @@ export const EditActions: React.FC<EditActionsProps> = (props) => {
 
   const onExport = () => {
     let nput = exportDiagram();
-    let x = JSON.stringify(nput, null, 4);
+    let x = JSON.stringify(flow, null, 4);
     // Download the file
     const element = document.createElement("a");
     element.setAttribute(

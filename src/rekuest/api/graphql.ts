@@ -1850,7 +1850,9 @@ export type QueryMyprovisionsArgs = {
 export type QueryMyrequestsArgs = {
   exclude?: InputMaybe<Array<InputMaybe<AssignationStatusInput>>>;
   filter?: InputMaybe<Array<InputMaybe<AssignationStatusInput>>>;
+  latest?: InputMaybe<Scalars['Boolean']>;
   limit?: InputMaybe<Scalars['Int']>;
+  onlyMine?: InputMaybe<Scalars['Boolean']>;
 };
 
 
@@ -6353,7 +6355,7 @@ export type MyRequestsLazyQueryHookResult = ReturnType<typeof useMyRequestsLazyQ
 export type MyRequestsQueryResult = Apollo.QueryResult<MyRequestsQuery, MyRequestsQueryVariables>;
 export const RequestsHistoryDocument = gql`
     query RequestsHistory($limit: Int = 20, $filter: [AssignationStatusInput]) {
-  myrequests(limit: $limit, filter: $filter) {
+  myrequests(limit: $limit, filter: $filter, latest: true, onlyMine: true) {
     ...ListAssignation
   }
 }

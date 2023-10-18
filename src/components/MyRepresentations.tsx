@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ListRender } from "../layout/SectionTitle";
 import { MikroRepresentation } from "../linker";
 import { useMikroLinkMate } from "../mates/generics/useLinkMate";
-import { usePostmanMate } from "../mates/postman/usePostmanMates";
+import { useDeleteRepresentationMate } from "../mates/representation/useDeleteRepresentationMate";
 import { withMikro } from "../mikro/MikroContext";
 import {
   MyRepresentationsEventDocument,
@@ -23,17 +23,19 @@ const MyRepresentations: React.FC<
   const [offset, setOffset] = useState(0);
 
   const mikroLinkMate = useMikroLinkMate();
-  const postmanMate = usePostmanMate();
+  const deleteImageMate = useDeleteRepresentationMate();
+
+  const variables = {
+    limit: limit,
+    offset: 0,
+    order: ["-created_at"],
+    createdDay: createdDay,
+  };
 
   const { data, loading, subscribeToMore, refetch } = withMikro(
     useMyRepresentationsQuery
   )({
-    variables: {
-      limit: limit,
-      offset: 0,
-      order: ["-created_at"],
-      createdDay: createdDay,
-    },
+    variables: variables,
     //pollInterval: 1000,
   });
 
@@ -41,7 +43,7 @@ const MyRepresentations: React.FC<
     console.log("Subscribing to My Representations");
     const unsubscribe = subscribeToMore({
       document: MyRepresentationsEventDocument,
-      variables: {},
+      variables: variables,
       updateQuery: (prev, { subscriptionData }) => {
         console.log("Received Representation", subscriptionData);
         var data = subscriptionData as MyRepresentationsEventSubscriptionResult;
@@ -103,7 +105,7 @@ const MyRepresentations: React.FC<
           <RepresentationCard
             rep={rep}
             key={rep?.id}
-            mates={[mikroLinkMate, postmanMate]}
+            mates={[mikroLinkMate, deleteImageMate(rep)]}
           />
         )}
       </ListRender>
