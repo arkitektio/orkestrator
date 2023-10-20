@@ -1,9 +1,10 @@
+import { useFakts } from "@jhnnsrs/fakts";
 import { useHerre } from "@jhnnsrs/herre";
 import React from "react";
 import TextTransition, { presets } from "react-text-transition";
 import { DisconnectButton } from "../../components/buttons/DisconnectButton";
 import { LoginButton } from "../../components/buttons/LoginButton";
-import { RekuestModuleLink } from "../../linker";
+import { MikroModuleLink } from "../../linker";
 
 export interface PublicHomeProps {}
 
@@ -16,6 +17,7 @@ const TEXTS = [
 
 export const Home: React.FC<PublicHomeProps> = (props) => {
   const { token } = useHerre();
+  const { fakts} = useFakts()
 
   const [index, setIndex] = React.useState(0);
 
@@ -34,7 +36,7 @@ export const Home: React.FC<PublicHomeProps> = (props) => {
           <div className="sm:text-center lg:text-left">
             <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
               <span className="block xl:inline text-white">
-                Arkitekt {window.__TAURI__ && "@ tauri"}{" "}
+                {fakts.self.name} {" "}
               </span>{" "}
               <span className="block text-primary-300 xl:inline drop-shadow-2xl ">
                 <TextTransition springConfig={presets.gentle} inline>
@@ -43,16 +45,16 @@ export const Home: React.FC<PublicHomeProps> = (props) => {
               </span>
             </h1>
             <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-              Login in with your local arkitekt to enjoy all of your benefits or
+              Login in  with {fakts.self.name} to enjoy all of your benefits or
               enjoy the public demo
             </p>
             <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
               <div className="rounded-md shadow">
                 {token ? (
                   <div className="flex flex-row  gap-2">
-                    <RekuestModuleLink className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10">
+                    <MikroModuleLink className="w-full shadow-lg shadow-primary-300/60 flex items-center justify-center px-8 py-3 border text-base font-medium rounded-md dark:text-white text-back-700 border-primary-400 bg-primary-300 hover:bg-primary-400 md:py-4 md:text-lg md:px-10">
                       Dashboard
-                    </RekuestModuleLink>
+                    </MikroModuleLink>
                   </div>
                 ) : (
                   <LoginButton />

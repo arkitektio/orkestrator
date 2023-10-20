@@ -44,7 +44,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 If this is your first time using Arkitekt. Make sure you check
                 out our{" "}
                 <a
-                  href="https://jhnnsrs.github.io/doks"
+                  href="https://arkitekt.live"
                   target={"_blank"}
                   className="underline"
                 >
