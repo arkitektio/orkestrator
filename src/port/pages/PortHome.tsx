@@ -30,7 +30,6 @@ export const PortHome: React.FC<WhalesHomeProps> = (props) => {
       <MyContainers />
       <MyWhales />
       <MyRepos />
-      <MyDeployments />
     </PageLayout>
   );
 };

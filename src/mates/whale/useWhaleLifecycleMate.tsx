@@ -21,45 +21,41 @@ export const useWhaleLifecycleMate = (): MateFinder => {
   });
 
   return async (options) => {
-    if (options.justSelf) {
-      return [
-        {
-          action: async (event) => {
-            let x = await ask(RunWhaleDialog, { whale: event.self.id });
+    return [
+      {
+        action: async (event) => {
+          let x = await ask(RunWhaleDialog, { whale: event.self.id });
 
-            await deploy({ variables: x });
-          },
-          label: "Deploy",
-          description: "Deploy Whale",
+          await deploy({ variables: x });
         },
-        {
-          action: async (event) => {
-            await confirm({
-              message: "Do you really want to update this whale?",
-              confirmLabel: "Yes deploy!",
-            });
+        label: "Deploy",
+        description: "Deploy Whale",
+      },
+      {
+        action: async (event) => {
+          await confirm({
+            message: "Do you really want to update this whale?",
+            confirmLabel: "Yes deploy!",
+          });
 
-            await pull({ variables: { id: event.self.id } });
-          },
-          label: "Pull",
-          description: "Pull Update",
+          await pull({ variables: { id: event.self.id } });
         },
-        {
-          action: async (event) => {
-            await confirm({
-              message:
-                "Do you really want to delete the downloaded image for this whale (you need to pull before deploying it!)?",
-              confirmLabel: "Yes deploy!",
-            });
+        label: "Pull",
+        description: "Pull Update",
+      },
+      {
+        action: async (event) => {
+          await confirm({
+            message:
+              "Do you really want to delete the downloaded image for this whale (you need to pull before deploying it!)?",
+            confirmLabel: "Yes deploy!",
+          });
 
-            await purge({ variables: { id: event.self.id } });
-          },
-          label: "Purge",
-          description: "Purge Image",
+          await purge({ variables: { id: event.self.id } });
         },
-      ];
-    }
-
-    return [];
+        label: "Purge",
+        description: "Purge Image",
+      },
+    ];
   };
 };

@@ -47,32 +47,35 @@ export const GithubRepo = (props: GithubRepoProps) => {
     pollInterval: 1000,
   });
 
-  const [restart] = withPort(useRestartContainerMutation)();
-  const [stop] = withPort(useStopContainerMutation)();
-  const [remove] = withPort(useRemoveContainerMutation)();
-
   const appifyDeployment = useAppifyDeployment();
 
   return (
     <PageLayout>
-      <SectionTitle>Github Repo </SectionTitle>
-      <div className="text-white">
-        <div className="text-2xl">
-          {data?.githubRepo?.user}/{data?.githubRepo?.repo}:
-          {data?.githubRepo?.branch}
+      <SectionTitle>{data?.githubRepo?.repo} </SectionTitle>
+      <div className="bg-white rounded rounded-md p-3 flex flex-row text-black">
+        <div className="">
+          <div className="flex flex-row gap-2 text-1xl">
+            <div className="">Repo: </div>
+            <a
+              href={`https://github.com/${data?.githubRepo?.user}/${data?.githubRepo?.repo}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div className="">
+                {data?.githubRepo?.user}/{data?.githubRepo?.repo}:
+                {data?.githubRepo?.branch}
+              </div>
+            </a>
+          </div>
+          <div className="flex flex-row gap-2 text-1xl font-light mt-2 mb-3">
+            Description
+          </div>
+          {data?.githubRepo?.readme && (
+            <DisplayMarkdown link={data?.githubRepo?.readme} />
+          )}
         </div>
-        <a
-          href={`https://github.com/${data?.githubRepo?.user}/${data?.githubRepo?.repo}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Open{" "}
-        </a>
-        {data?.githubRepo?.readme && (
-          <DisplayMarkdown link={data?.githubRepo?.readme} />
-        )}
       </div>
-      <SectionTitle>Possible Deployments of this app</SectionTitle>
+      <SectionTitle>Defined Apps in this Repository</SectionTitle>
       <ResponsiveContainerGrid>
         {data?.githubRepo?.deployments?.filter(notEmpty).map((dep, index) => (
           <DeploymentCard

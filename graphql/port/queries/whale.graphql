@@ -4,8 +4,8 @@ query DetailWhale($id: ID!) {
   }
 }
 
-query Whales {
-  whales {
+query Whales($limit: Int, $offset: Int) {
+  whales(limit: $limit, offset: $offset) {
     ...ListWhale
   }
 }

@@ -28,7 +28,6 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
   });
 
   const deleteDatasetMate = useDeleteDatesetMate();
-  const exportDatasetMate = useExportDatasetMate();
   const putFiles = usePutFilesInDatasetsMate();
 
   if (error) return <div>{error.message} Not Loading </div>;
@@ -40,7 +39,7 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
         loading={loading}
         title={
           <MikroDataset.ListLink className="flex-0">
-            My Datasets are here
+            Datasets
           </MikroDataset.ListLink>
         }
         refetch={refetch}
@@ -49,7 +48,7 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
           <DatasetCard
             key={index}
             dataset={dat}
-            mates={[deleteDatasetMate(dat), exportDatasetMate, putFiles]}
+            mates={[deleteDatasetMate(dat), putFiles]}
           />
         )}
       </ListRender>

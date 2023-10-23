@@ -8,7 +8,6 @@ import { PortContainers } from "./pages/containers/PortContainers";
 import { PortGithubRepo } from "./pages/githubrepos/PortGithubRepo";
 import { PortGithubRepos } from "./pages/githubrepos/PortGithubRepos";
 import { PortRepoScan } from "./pages/reposcans/PortRepoScan";
-import { PortRepoScans } from "./pages/reposcans/PortRepoScans";
 import { PortWhale } from "./pages/whales/PortWhale";
 import { PortWhales } from "./pages/whales/PortWhales";
 import SidePane from "./panes/PortSidebar";
@@ -36,8 +35,7 @@ export const PortModule: React.FC<Props> = (props) => {
           <Route path="githubrepos" element={<PortGithubRepos />} />
           <Route path="githubrepos/:repo" element={<PortGithubRepo />} />
 
-          <Route path="reposcans" element={<PortRepoScans />} />
-          <Route path="reposcans/:scan" element={<PortRepoScan />} />
+          <Route path="deployments/:scan" element={<PortRepoScan />} />
         </Routes>
       </ModuleLayout>
     </PortGuard>

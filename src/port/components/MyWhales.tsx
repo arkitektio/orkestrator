@@ -50,7 +50,7 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
   return (
     <div>
       <ListRender
-        title={<PortWhale.ListLink>My Whales</PortWhale.ListLink>}
+        title={<PortWhale.ListLink>Authorized Apps</PortWhale.ListLink>}
         array={data?.whales}
         refetch={refetch}
       >
@@ -58,7 +58,7 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
           <PortWhale.Smart
             key={index}
             object={whale.id}
-            className="max-w-sm rounded  shadow-md bg-slate-800 text-white group relative"
+            className="max-w-sm rounded  shadow-md bg-slate-800 text-white group relative "
             mates={[deleteWhaleMate(whale), whaleLifecyleMate]}
           >
             <div
@@ -74,28 +74,42 @@ const MyWhales: React.FC<IMyGraphsProps> = ({}) => {
               }}
             ></div>
             <div
-              className="p-2"
+              className="p-2 truncate"
               style={{
                 zIndex: 100,
               }}
             >
               <div className="flex">
                 <span className="flex-grow font-semibold text-xs">
-                  {whale?.deployment.image}
+                  {whale?.deployment.manifest.identifier}
                 </span>
               </div>
               <PortWhale.DetailLink
                 className="text-xl font-light cursor-pointer mb-1"
                 object={whale?.id}
               >
-                {whale?.deployment.version}
+                {whale?.deployment.image}
               </PortWhale.DetailLink>
-              <div className="text-xs pb-2">
-                Build:{" "}
-                {whale.latestPull && (
-                  <Timestamp date={whale.latestPull} relative={true} />
+              {whale.latestPull ? (
+                <div className="text-xs pb-2">
+                  Last updated:{" "}
+                  {whale.latestPull && (
+                    <Timestamp date={whale.latestPull} relative={true} />
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="text-xs pb-2">
+                    <span className="font-semibold">
+                      ⚠️ Will download on deploy
+                    </span>
+                  </div>
+                </>
+              )}
+              {whale?.latestEvent?.pull?.progress != undefined &&
+                whale?.latestEvent?.pull?.progress != 1 && (
+                  <div className="animate-pulse">Downloading</div>
                 )}
-              </div>
             </div>
           </PortWhale.Smart>
         )}

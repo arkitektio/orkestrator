@@ -18,13 +18,16 @@ export const RepoCard = ({ repo, mates }: RepoCardProps) => {
       mates={mates}
     >
       <div className="p-2 ">
-        <div className="flex">
+        <div className="flex flex-col truncate">
           <PortGithubRepo.DetailLink
             object={repo.id}
-            className="flex-grow font-semibold text-xs"
+            className="flex-grow font-semibold text-2xl"
           >
-            {repo?.user}/{repo?.repo}:{repo?.branch}
+            {repo?.repo}
           </PortGithubRepo.DetailLink>
+          <div className="text-xs">
+            {repo?.user}/{repo?.repo}:{repo?.branch}
+          </div>
         </div>
       </div>
     </PortGithubRepo.Smart>

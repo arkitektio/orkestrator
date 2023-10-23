@@ -624,7 +624,10 @@ export type DetailWhaleQueryVariables = Exact<{
 
 export type DetailWhaleQuery = { __typename?: 'Query', whale?: { __typename?: 'Whale', id: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, image: string, manifest: { __typename?: 'Manifest', id: string, identifier: string, version: string, scopes: Array<string | null>, requirements?: any | null, logo?: string | null, originalLogo?: string | null } }, containers?: Array<{ __typename?: 'Container', id: string, name?: string | null, logs?: string | null, labels?: any | null, status?: ContainerStatus | null, image?: { __typename?: 'Image', tags?: Array<string | null> | null } | null } | null> | null } | null };
 
-export type WhalesQueryVariables = Exact<{ [key: string]: never; }>;
+export type WhalesQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars['Int']>;
+  offset?: InputMaybe<Scalars['Int']>;
+}>;
 
 
 export type WhalesQuery = { __typename?: 'Query', whales?: Array<{ __typename?: 'Whale', id: string, createdAt: any, clientId: string, pulled?: boolean | null, latestPull?: any | null, deployment: { __typename?: 'Deployment', id: string, image: string, manifest: { __typename?: 'Manifest', id: string, identifier: string, version: string, scopes: Array<string | null>, requirements?: any | null, logo?: string | null, originalLogo?: string | null }, whales: Array<{ __typename?: 'Whale', id: string }> }, latestEvent?: { __typename?: 'WhaleEvent', whale?: string | null, pull?: { __typename?: 'PullEvent', status?: PullProgressStatus | null, progress?: number | null } | null } | null } | null> | null };
@@ -1537,8 +1540,8 @@ export type DetailWhaleQueryHookResult = ReturnType<typeof useDetailWhaleQuery>;
 export type DetailWhaleLazyQueryHookResult = ReturnType<typeof useDetailWhaleLazyQuery>;
 export type DetailWhaleQueryResult = Apollo.QueryResult<DetailWhaleQuery, DetailWhaleQueryVariables>;
 export const WhalesDocument = gql`
-    query Whales {
-  whales {
+    query Whales($limit: Int, $offset: Int) {
+  whales(limit: $limit, offset: $offset) {
     ...ListWhale
   }
 }
@@ -1556,6 +1559,8 @@ export const WhalesDocument = gql`
  * @example
  * const { data, loading, error } = useWhalesQuery({
  *   variables: {
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
  *   },
  * });
  */
