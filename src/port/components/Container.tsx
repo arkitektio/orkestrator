@@ -129,9 +129,8 @@ export const Container = (props: ContainerProps) => {
     >
       <div className="text-white">
         <div className="text-2xl">
-          Container hosting{" "}
-          {data?.container?.whale?.deployment?.manifest?.identifier}:
-          {data?.container?.whale?.deployment?.manifest?.version}
+          App Plugin: {data?.container?.whale?.deployment?.manifest?.identifier}
+          :{data?.container?.whale?.deployment?.manifest?.version}
         </div>
 
         <div className="text-sm flex flex-col">
@@ -158,8 +157,12 @@ export const Container = (props: ContainerProps) => {
             </div>
           </div>
         </div>
+
         <div className="mt-3 bg-black rounded-lg p-3">
-          <pre>{data?.container?.logs}</pre>
+          <div className="text-xl">Latest Logs</div>
+          <pre className="max-h-[60vh] overflow-y-scroll">
+            {data?.container?.logs}
+          </pre>
         </div>
       </div>
     </PageLayout>

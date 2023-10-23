@@ -1,5 +1,8 @@
 import React, { useEffect } from "react";
-import { ResponsiveContainerGrid } from "../../components/layout/ResponsiveContainerGrid";
+import {
+  FittingResponsiveContainerGrid,
+  ResponsiveContainerGrid,
+} from "../../components/layout/ResponsiveContainerGrid";
 import { notEmpty } from "../../floating/utils";
 import { SectionTitle } from "../../layout/SectionTitle";
 import { PortWhale } from "../../linker";
@@ -42,10 +45,8 @@ const MyContainers: React.FC<IMyGraphsProps> = ({}) => {
   return (
     <div>
       <PortWhale.ListLink>
-        <SectionTitle>My Container</SectionTitle>
+        <SectionTitle>Deployed Plugin Apps</SectionTitle>
       </PortWhale.ListLink>
-      <br />
-      {JSON.stringify(error)}
       <ResponsiveContainerGrid>
         {data?.containers?.filter(notEmpty).map((s, index) => (
           <ContainerCard container={s} key={index} mates={[cLF(s)]} />

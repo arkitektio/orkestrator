@@ -4,6 +4,7 @@ import { ListRender } from "../layout/SectionTitle";
 import { MikroDataset } from "../linker";
 import { useDeleteDatesetMate } from "../mates/dataset/useDeleteDatasetMate";
 import { useExportDatasetMate } from "../mates/dataset/useExportDatasetMate";
+import { usePutFilesInDatasetsMate } from "../mates/dataset/usePutFilesMate";
 import { withMikro } from "../mikro/MikroContext";
 import { useMyDatasetsQuery } from "../mikro/api/graphql";
 import { DatasetCard } from "../mikro/components/cards/DatasetCard";
@@ -27,9 +28,9 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
   });
 
   const deleteDatasetMate = useDeleteDatesetMate();
-  const exportDatasetMate = useExportDatasetMate();
+  const putFiles = usePutFilesInDatasetsMate();
 
-  if (error) return <div>{error.message}</div>;
+  if (error) return <div>{error.message} Not Loading </div>;
 
   return (
     <>
@@ -47,7 +48,7 @@ const MyDatasets: React.FC<IMyExperimentsProps> = ({
           <DatasetCard
             key={index}
             dataset={dat}
-            mates={[deleteDatasetMate(dat), exportDatasetMate]}
+            mates={[deleteDatasetMate(dat), putFiles]}
           />
         )}
       </ListRender>

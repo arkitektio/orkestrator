@@ -9,26 +9,27 @@ export type RepoScanProps = {
 };
 
 export const Deployment = (props: RepoScanProps) => {
-  const { data } = withPort(useDetailDeploymentQuery)({
+  const { data, error } = withPort(useDetailDeploymentQuery)({
     variables: { id: props.id },
     pollInterval: 1000,
   });
   const { s3resolve } = useDatalayer();
 
+  if (error) return <div>{error.message} Not Loading </div>;
+
   return (
     <PageLayout>
       <SectionTitle>
-        Deployment for: {data?.deployment?.manifest.identifier}
+        {data?.deployment?.manifest.identifier}:
+        {data?.deployment?.manifest.version}
       </SectionTitle>
       {data?.deployment?.manifest.logo && (
-        <img src={s3resolve(data?.deployment?.manifest.logo)} />
+        <img
+          src={s3resolve(data?.deployment?.manifest.logo)}
+          className="w-20 h-20"
+        />
       )}
-
-      <div className="text-white">
-        <div className="text-2xl">
-          This deployment is versioned as: {data?.deployment?.manifest.version}
-        </div>
-      </div>
+      {data?.deployment?.manifest.requirements.join("  | ")}
     </PageLayout>
   );
 };

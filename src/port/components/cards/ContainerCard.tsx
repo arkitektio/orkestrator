@@ -5,6 +5,7 @@ import { useReleaseQuery } from "../../../lok/api/graphql";
 import { MateFinder } from "../../../mates/types";
 import { useConfirm } from "../../../providers/confirmer/confirmer-context";
 import { ContainerStatus, ListContainerFragment } from "../../api/graphql";
+import { Port } from "../../../pages/Port";
 
 interface UserCardProps {
   container: ListContainerFragment;
@@ -54,34 +55,36 @@ export const ContainerCard = ({ container, mates }: UserCardProps) => {
       )}`}
       mates={mates}
     >
-      <div className="p-2 ">
+      <div className="p-2 flex flex-row gap-2">
         {data?.release && (
-          <img
-            className="h-10 w-10 rounded-md"
-            src={
-              data?.release?.logo
-                ? s3resolve(data?.release?.logo)
-                : `https://eu.ui-avatars.com/api/?name=${data?.release?.app?.identifier}&background=random`
-            }
-            alt=""
-          />
+          <PortContainer.DetailLink object={container?.id}>
+            <img
+              className="h-10 w-10 rounded-full rounded my-auto"
+              src={
+                data?.release?.logo
+                  ? s3resolve(data?.release?.logo)
+                  : `https://eu.ui-avatars.com/api/?name=${data?.release?.app?.identifier}&background=random`
+              }
+              alt=""
+            />
+          </PortContainer.DetailLink>
         )}
-        <div className="flex">
+        <div className="flex flex-col my-auto">
           <span className="flex-grow font-semibold text-xs">
             {container.status}
           </span>
+
+          <PortContainer.DetailLink
+            className="text-xl font-light cursor-pointer"
+            object={container?.id}
+          >
+            <div className="text-xl font-light flex">
+              {container?.whale?.deployment.manifest.identifier}:
+              {container?.whale?.deployment.manifest.version}
+            </div>
+          </PortContainer.DetailLink>
         </div>
-        <PortContainer.DetailLink
-          className="text-xl font-light cursor-pointer mb-1"
-          object={container?.id}
-        >
-          <div className="text-xl font-light mb-1 flex">
-            {container?.whale?.deployment.manifest.identifier}:
-            {container?.whale?.deployment.manifest.version}
-          </div>
-        </PortContainer.DetailLink>
       </div>
-      <div className="pl-2 pb-2"></div>
     </PortContainer.Smart>
   );
 };
