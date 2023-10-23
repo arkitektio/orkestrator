@@ -27,7 +27,7 @@ const MyAgents: React.FC<IActiveClientsProps> = ({}) => {
 
   return (
     <>
-      <SectionTitle>Active Agents</SectionTitle>
+      <SectionTitle>Active Apps</SectionTitle>
       <ResponsiveContainerGrid>
         {data?.myagents?.filter(notEmpty).map((agent, index) => (
           <AgentCard

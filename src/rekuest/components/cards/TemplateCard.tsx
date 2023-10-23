@@ -8,9 +8,14 @@ import { ListTemplateFragment } from "../../api/graphql";
 interface TemplateCardProps {
   template: ListTemplateFragment;
   mates?: MateFinder[];
+  noemblem?: boolean;
 }
 
-export const TemplateCard = ({ template, mates }: TemplateCardProps) => {
+export const TemplateCard = ({
+  template,
+  mates,
+  noemblem,
+}: TemplateCardProps) => {
   const { data: appdata } = withLok(useReleaseQuery)({
     variables: {
       clientId: template?.agent?.registry?.client?.clientId,
@@ -56,7 +61,7 @@ export const TemplateCard = ({ template, mates }: TemplateCardProps) => {
             </LokRelease.DetailLink>
           )}
         </div>
-        {userdata?.user?.id && (
+        {userdata?.user?.id && !noemblem && (
           <LokUser.DetailLink
             object={userdata?.user?.id}
             className="absolute bottom-0 right-0 p-1 transform translate-x-1/2 translate-y-1/2"

@@ -144,18 +144,6 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               <TbLayoutDashboard />
             </DroppableNavLink>
           </RekuestGuard>
-          <RekuestGuard>
-            <NavLink
-              key={"History"}
-              to={"rekuest/history"}
-              className={({ isActive }) =>
-                ` dark:hover:text-back-400 px-2 py-2 hidden md:block
-                } ${isActive ? "dark:text-back-400" : "text-back-500"}`
-              }
-            >
-              <TbHistory />
-            </NavLink>
-          </RekuestGuard>
           <MikroNextGuard>
             <DroppableNavLink
               key={"MikroNext"}

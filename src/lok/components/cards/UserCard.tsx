@@ -29,13 +29,11 @@ export const UserCard = ({ user }: UserCardProps) => {
           object={user.id}
           className="flex-grow flex-col truncate"
         >
-          <div className="text-xl font-light mb-1 hidden @xs:block flex">
-            {user.firstName
+          <div className="text-xl font-light mb-1  flex">{user.username}</div>
+          <div className="text-sm font-extralight hidden @sm:block">
+            {user.firstName && user.lastName
               ? user.firstName + " " + user.lastName
               : user.username}
-          </div>
-          <div className="text-sm font-extralight hidden @sm:block">
-            {user.username}
           </div>
         </LokUser.DetailLink>
       </LokUser.DetailLink>

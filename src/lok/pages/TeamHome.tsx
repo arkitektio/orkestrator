@@ -17,6 +17,8 @@ import {
   useMyMentionsQuery,
   useResolveCommentMutation,
 } from "../api/graphql";
+import { CommentEdit } from "../komment/edit/CommentEdit";
+import { Comment } from "../komment/display/Comment";
 
 interface IFlowHomeProps {}
 
@@ -50,28 +52,7 @@ export const MentionedComment = ({
     <div className="flex flex-col text-white">
       {comment?.user && (
         <div className="mt-2 flex flex-col w-full">
-          <div className="flex flex-row ">
-            <LokUser.DetailLink
-              object={comment?.user?.id}
-              className="flex flex-row p-1 bg-back-700 rounded"
-            >
-              <div className="my-auto mr-2">{comment?.user.username}</div>
-              <img
-                className="h-6 w-6 rounded-full hover:ring-pink-500 hover:ring-2 cursor-pointer"
-                src={
-                  comment?.user?.profile?.avatar
-                    ? s3resolve(comment?.user?.profile.avatar)
-                    : `https://eu.ui-avatars.com/api/?name=${comment?.user?.username}&background=random`
-                }
-                alt=""
-              />
-            </LokUser.DetailLink>
-            <div className="flex flex-grow my-auto">
-              mentioned you <div className="mr-2"></div>
-              {comment.mentions.length > 1 &&
-                "and " + comment.mentions.length + " others"}{" "}
-              <Timestamp relative date={comment?.createdAt} />
-            </div>
+          <div className="flex flex-row-reverse">
             <div className="flex flex-initial my-auto">
               {comment.resolved ? (
                 <div className="flex flex-row mr-2">
@@ -98,7 +79,7 @@ export const MentionedComment = ({
               )}
               <div className="text-gray-500 my-auto">
                 <Model.DetailLink
-                  object={comment.identifier}
+                  object={comment.object}
                   className="text-slate-50 mt-5 "
                 >
                   <BsFolder2Open />
@@ -106,7 +87,9 @@ export const MentionedComment = ({
               </div>
             </div>
           </div>
-          <div className="flex-initial my-auto w-full"></div>
+          <div className="flex-initial my-auto w-full">
+            <Comment comment={comment} />
+          </div>
         </div>
       )}
     </div>
