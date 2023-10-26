@@ -78,6 +78,7 @@ export const useModelSelect = (
       item.id === proposedSelection.id
   );
 
+
   const mefocus =
     focus?.identifier === proposedSelection.identifier &&
     focus?.id === proposedSelection.id;
@@ -159,6 +160,8 @@ export const useModelSelect = (
     //   }
     // }
   };
+
+  
 
   const bind = {
     onMouseDown,

@@ -66,6 +66,8 @@ pub fn start_with_config<F: FnMut(String) + Send + 'static>(
         None => TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0))),
     }?;
 
+
+
     let port = listener.local_addr()?.port();
 
     thread::spawn(move || {

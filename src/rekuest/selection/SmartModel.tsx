@@ -67,6 +67,7 @@ export const SmartModel = ({
 
   const [progress, setProgress] = useState<number | undefined>(undefined);
   const [show, setShow] = useState(false);
+  const [focus, setFocus] = useState(false);
 
   const on_progress = async (x: number | undefined) => {
     setProgress(x);
@@ -94,6 +95,9 @@ export const SmartModel = ({
       };
     }
   }, [show]);
+
+
+
 
   const [{ isOver, canDrop, overItems }, drop] = useDrop(() => {
     return {
@@ -182,6 +186,12 @@ export const SmartModel = ({
           progress,
         })
       }
+      onFocus={() => {
+        setShow(true);
+      }}
+      onBlur={() => {
+        setShow(false);
+      }}
       onDoubleClick={() => {
         setShow(!show);
       }}
@@ -233,7 +243,7 @@ export const SmartModel = ({
             )}
           </>
         )}
-        {((isFocused && !isOver) || show) && (
+        {((isFocused && !isOver) || show ) && (
           <div
             ref={setPopperElement}
             style={{
