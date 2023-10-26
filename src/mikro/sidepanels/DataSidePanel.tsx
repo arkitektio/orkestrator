@@ -243,78 +243,89 @@ const DataSidebar: React.FunctionComponent<IDataSidebarProps> = (props) => {
           className="flex-grow flex flex-col gap-2 p-5 overflow-y-scroll direct"
           data-enableselect={true}
         >
-          {data?.experiments && data?.experiments.length > 0 && (
+          {data?.experiments && data?.experiments.length > 0 && (<>
             <div className="font-semibold text-center text-xs dark:text-slate-50 mt-2">
               Experiments
             </div>
-          )}
-          <ResponsiveContainerGrid>
+            <ResponsiveContainerGrid>
             {data?.experiments?.map((experiment, index) => (
               <ExperimentItem key={index} experiment={experiment} />
             ))}
           </ResponsiveContainerGrid>
-          {data?.datasets && data?.datasets.length > 0 && (
+          </>
+          )}
+          
+          {data?.datasets && data?.datasets.length > 0 && (<>
             <div className="font-semibold text-center text-xs dark:text-slate-50 mt-2">
               Datasets
             </div>
-          )}
+          
           <ResponsiveContainerGrid>
             {data?.datasets?.map((dataset, index) => (
               <DatasetItem key={index} dataset={dataset} />
             ))}
           </ResponsiveContainerGrid>
+          </>)}
           {data?.samples && data?.samples.length > 0 && (
+            <>
             <div
               className="font-semibold text-center text-xs dark:text-slate-50 mt-2"
               data-enableselect={true}
             >
               Samples
             </div>
-          )}
-          <ResponsiveContainerGrid>
+            <ResponsiveContainerGrid>
             {data?.samples?.map((sa, index) => (
               <SampleItem key={index} sa={sa} />
             ))}
           </ResponsiveContainerGrid>
-          {data?.tables && data?.tables.length > 0 && (
+          </>
+          )}
+          
+          {data?.tables && data?.tables.length > 0 && (<>
             <div
               className="font-semibold text-center text-xs dark:text-slate-50 mt-2"
               data-enableselect={true}
             >
               Tables
             </div>
-          )}
-          <ResponsiveContainerGrid>
+            <ResponsiveContainerGrid>
             {data?.tables?.map((ta, index) => (
               <TableItem table={ta} key={index} />
             ))}
-          </ResponsiveContainerGrid>
-          {data?.representations && data?.representations.length > 0 && (
+          </ResponsiveContainerGrid></>
+          )}
+          
+          {data?.representations && data?.representations.length > 0 && (<>
             <div
               className="font-semibold text-center text-xs dark:text-slate-50 mt-2"
               data-enableselect={true}
             >
               Images
             </div>
-          )}
-          <ResponsiveContainerGrid>
+            <ResponsiveContainerGrid>
             {data?.representations?.map((re, index) => (
               <RepresentationItem key={index} re={re} />
             ))}
           </ResponsiveContainerGrid>
-          {data?.files && data?.files.length > 0 && (
+          </>
+          )}
+          
+          {data?.files && data?.files.length > 0 && (<>
             <div
               className="font-semibold text-center text-xs dark:text-slate-50 mt-2"
               data-enableselect={true}
             >
               Files
             </div>
-          )}
-          <ResponsiveContainerGrid>
+            <ResponsiveContainerGrid>
             {data?.files?.map((f, index) => (
               <FileItem key={index} file={f} />
             ))}
           </ResponsiveContainerGrid>
+          </>
+          )}
+          
         </div>
       </div>
     </>

@@ -62,7 +62,7 @@ export const CreateContextModal = (
       {(formikProps) => (
         <Form>
           <TwDialog
-            title="Scan Github Repo"
+            title="Create New Context"
             buttons={
               <>
                 <button

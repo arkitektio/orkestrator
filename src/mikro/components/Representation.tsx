@@ -635,7 +635,8 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                               object={met.id}
                               className="font-light"
                             >
-                              {met?.key}
+                              {met.key && <div className="text-xs">{met.key}</div>}
+                              {met.value && <div className="text-md">{met.value}</div>}
                             </MikroMetric.DetailLink>
                           </div>
                         </MikroMetric.Smart>
