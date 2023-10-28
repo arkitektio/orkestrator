@@ -2,6 +2,7 @@ import React from "react";
 import { ListRender } from "../layout/SectionTitle";
 import { MikroModel } from "../linker";
 import { useDeleteModelMate } from "../mates/model/useDeleteModelMate";
+import { useDownloadModelMate } from "../mates/model/useDownloadModelMate";
 import { withMikro } from "../mikro/MikroContext";
 import { useMyModelsQuery } from "../mikro/api/graphql";
 import { ModelCard } from "../mikro/components/cards/ModelCard";
@@ -21,6 +22,7 @@ const MyModels: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
   });
 
   const deleteModelMate = useDeleteModelMate();
+  const downloadModelMate = useDownloadModelMate();
 
   if (error) return <div>{error.message}</div>;
 
@@ -34,7 +36,7 @@ const MyModels: React.FC<IMyExperimentsProps & DataHomeFilterParams> = ({
       refetch={refetch}
     >
       {(m, index) => (
-        <ModelCard key={index} model={m} mates={[deleteModelMate(m)]} />
+        <ModelCard key={index} model={m} mates={[deleteModelMate(m), downloadModelMate(m.data)]} />
       )}
     </ListRender>
   );

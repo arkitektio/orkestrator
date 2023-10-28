@@ -1,5 +1,5 @@
 overwrite: true
-schema: "http://localhost:8080/graphql"
+schema: "http://localhost:8030/graphql"
 documents: "graphql/mikro/**/*.graphql"
 generates:
   src/mikro/api/fragments.ts:
