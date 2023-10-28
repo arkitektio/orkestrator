@@ -62,6 +62,7 @@ const MyWorkspaces: React.FC<IMyGraphsProps> = ({ limit, createdDay }) => {
 
     const flownodes = flownodes_to_nodes(nodes_to_flownodes(y.graph.nodes));
     const flowedges = flowedges_to_edges(edges_to_flowedges(y.graph.edges));
+    
 
     //let image = await getImage();
 

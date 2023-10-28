@@ -50,7 +50,7 @@ export const ResCard = ({
 const DeployerButton = () => {
   const { data } = withRekuest(useDetailNodeQuery)({
     variables: {
-      hash: "7c7def6a3c09795d80078525432ee4905349779fd518af92531776c342c538fb",
+      hash: "07afcaeef1c2ed2a74719336920d90c4f506a671ea49eb4efb2668c24377b806",
     },
   });
 
