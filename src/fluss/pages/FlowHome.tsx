@@ -6,8 +6,10 @@ import {
   useQueryParams,
   withDefault,
 } from "use-query-params";
+import { MyDeployedWorkflows } from "../../components/MyDeployedWorkflows";
 import { MyPinnedRuns } from "../../components/MyPinnedRuns";
 import { MyPinnedWorkspaces } from "../../components/MyPinnedWorkspaces";
+import { MyReservedWorkflows } from "../../components/MyReservedWorkflows";
 import { MyRuns } from "../../components/MyRuns";
 import { MyDiagrams as MyWorkspaces } from "../../components/MyWorkspaces";
 import { CreateFlowDialog } from "../../fluss/components/dialogs/CreateFlowDialog";
@@ -88,6 +90,9 @@ const FlowHome: React.FunctionComponent<IFlowHomeProps> = (props) => {
         </>
       }
     >
+
+      <MyReservedWorkflows/>
+      <MyDeployedWorkflows/>
       <MyPinnedRuns limit={80} />
       <MyPinnedWorkspaces limit={80} />
       <MyRuns {...filterParams} />
