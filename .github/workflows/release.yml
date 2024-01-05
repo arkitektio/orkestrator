@@ -6,10 +6,12 @@ on:
 
 jobs:
   publish-tauri:
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-22.04, windows-latest, macos-latest]
+        platform: [ubuntu-20.04, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
