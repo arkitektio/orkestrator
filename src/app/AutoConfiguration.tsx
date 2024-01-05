@@ -1,12 +1,18 @@
 import { WellKnownDiscovery } from "@jhnnsrs/fakts";
+import { KlusterGuard } from "@jhnnsrs/kluster";
+import { OmeroArkGuard } from "@jhnnsrs/omero-ark";
 import { ToastContainer, ToastContentProps, toast } from "react-toastify";
 import { DatalayerAutoConfigure } from "../bridges/DatalayerAutoConfigure";
 import { FlussAutoConfigure } from "../bridges/FlussAutoConfigure";
+import { KlusterAutoConfigure } from "../bridges/KlusterAutoConfigure";
+import { KlusterWard } from "../bridges/KlusterWard";
 import { LokAutoConfigure } from "../bridges/LokAutoConfigure";
 import { MikroAutoConfigure } from "../bridges/MikroAutoConfigure";
 import { MikroNextAutoConfigure } from "../bridges/MikroNextAutoConfigure";
 import { MikroNextWard } from "../bridges/MikroNextWard";
 import { MikroWard } from "../bridges/MikroWard";
+import { OmeroArkAutoConfigure } from "../bridges/OmeroArkAutoConfigure";
+import { OmeroArkWard } from "../bridges/OmeroArkWard";
 import { PortAutoConfigure } from "../bridges/PortAutoConfigure";
 import { RekuestAutoConfigure } from "../bridges/RekuestAutoConfigure";
 import { RekuestWard } from "../bridges/RekuestWard";
@@ -138,10 +144,18 @@ export const AutoConfiguration = () => {
       <PortAutoConfigure />
       <DatalayerAutoConfigure />
       <LokAutoConfigure />
+      <OmeroArkAutoConfigure/>
+      <KlusterAutoConfigure/>
       <FlussAutoConfigure />
       <ConfirmModal />
 
       <FlussWard />
+      <KlusterGuard fallback={<></>}>
+        <KlusterWard/>
+      </KlusterGuard>
+      <OmeroArkGuard fallback={<></>}>
+        <OmeroArkWard/>
+      </OmeroArkGuard>
       <MikroNextWard />
       <ToastContainer
         position="bottom-right"

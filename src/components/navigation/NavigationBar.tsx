@@ -1,11 +1,13 @@
+import { KlusterGuard } from "@jhnnsrs/kluster";
+import { OmeroArkGuard } from "@jhnnsrs/omero-ark";
 import React, { useEffect } from "react";
 import { useDrop } from "react-dnd";
-import { AiOutlineTeam } from "react-icons/ai";
+import { AiOutlineCluster, AiOutlineTeam } from "react-icons/ai";
 import { BiData, BiSync } from "react-icons/bi";
 import { FiSettings } from "react-icons/fi";
 import { GrDocker } from "react-icons/gr";
 import { IconContext } from "react-icons/lib";
-import { TbHistory, TbLayoutDashboard } from "react-icons/tb";
+import { TbLayoutDashboard } from "react-icons/tb";
 import { TiArrowUp, TiFlowSwitch } from "react-icons/ti";
 import {
   NavLink,
@@ -18,6 +20,7 @@ import { FlussGuard } from "../../fluss/guard";
 import { LokGuard } from "../../lok/LokGuard";
 import { MikroGuard } from "../../mikro/MikroGuard";
 import { MikroNextGuard } from "../../mikro_next/MikroNextGuard";
+import { OmeroLogo } from "../../omero-ark/components/Logo";
 import { PortGuard } from "../../port/PortGuard";
 import { RekuestGuard } from "../../rekuest/RekuestGuard";
 import { ExperimentalFeature } from "../../settings/Experimental";
@@ -156,7 +159,30 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               <TiArrowUp />
             </DroppableNavLink>
           </MikroNextGuard>
-
+          <OmeroArkGuard>
+            <DroppableNavLink
+              key={"OmeroArk"}
+              to={"omero-ark"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-400 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-400" : "text-back-500"}`
+              }
+            >
+              <OmeroLogo/>
+            </DroppableNavLink>
+          </OmeroArkGuard>
+          <KlusterGuard fallback={<></>}>
+            <DroppableNavLink
+              key={"Kluster"}
+              to={"kluster"}
+              className={({ isActive }) =>
+                ` dark:hover:text-back-400 px-2 py-2 hidden md:block
+                } ${isActive ? "dark:text-back-400" : "text-back-500"}`
+              }
+            >
+                <AiOutlineCluster/>
+            </DroppableNavLink>
+          </KlusterGuard>
           <FlussGuard>
             <DroppableNavLink
               key={"Flows"}

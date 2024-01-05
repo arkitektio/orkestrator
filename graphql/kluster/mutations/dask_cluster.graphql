@@ -1,0 +1,9 @@
+mutation StopDaskCluster($id: ID!){
+    stopDaskCluster(id: $id)
+}
+
+mutation CreateNewCluster($name: String!){
+    createDaskCluster(input: {name: $name}){
+        ...DaskCluster
+    }
+}
