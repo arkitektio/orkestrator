@@ -1,0 +1,20 @@
+overwrite: true
+schema: "http://localhost:9010/graphql"
+documents: "graphql/kluster/**/*.graphql"
+generates:
+  src/kluster/api/fragments.ts:
+    plugins:
+      - "fragment-matcher"
+  src/kluster/api/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      withHooks: true
+      reactApolloVersion: 3
+      arrayInputCoercion: false
+
+  src/kluster/graphql.schema.json:
+    plugins:
+      - "introspection"

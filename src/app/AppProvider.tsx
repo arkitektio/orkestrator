@@ -1,6 +1,8 @@
 import { DatalayerProvider } from "@jhnnsrs/datalayer";
 import { FaktsProvider } from "@jhnnsrs/fakts";
 import { HerreProvider, windowRedirect } from "@jhnnsrs/herre";
+import { KlusterProvider } from "@jhnnsrs/kluster";
+import { OmeroArkProvider } from "@jhnnsrs/omero-ark";
 import React from "react";
 import { FlussProvider } from "../fluss/fluss-provider";
 import { LokProvider } from "../lok/LokProvider";
@@ -38,11 +40,15 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                     <LokProvider>
                       <DatalayerProvider>
                         <FlussProvider>
+                          <KlusterProvider>
                           <PortProvider>
                             <MikroNextProvider>
+                              <OmeroArkProvider>
                               <MikroProvider>{children}</MikroProvider>
+                              </OmeroArkProvider>
                             </MikroNextProvider>
                           </PortProvider>
+                          </KlusterProvider>
                         </FlussProvider>
                       </DatalayerProvider>
                     </LokProvider>

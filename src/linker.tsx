@@ -279,11 +279,24 @@ export const PortGithubRepo = buildSmart("@port/githubrepo", "githubrepos");
 
 export const PortDeployment = buildSmart("@port/deployment", "deployments");
 
+
+
+export const OmeroArkDataset = buildSmart("@omero-ark/dataset", "datasets");
+export const OmeroArkProject = buildSmart("@omero-ark/project", "projects");
+export const OmeroArkImage = buildSmart("@omero-ark/image", "images");
+
+
+export const KlusterDaskCluster = buildSmart("@kluster/dask-cluster", "clusters");
+
+
+
 export const RekuestModuleLink = buildModuleLink("rekuest");
 export const FlussModuleLink = buildModuleLink("fluss");
 export const MikroModuleLink = buildModuleLink("mikro");
 export const PortModuleLink = buildModuleLink("port");
 export const LokModuleLink = buildModuleLink("lok");
+export const OmeroArkModuleLInk = buildModuleLink("omero-ark");
+export const KlusterModuleLink = buildModuleLink("kluster");
 
 export const FakeSmartModel = {
   DetailLink: buildModelLink("fake/fake", "fake"),

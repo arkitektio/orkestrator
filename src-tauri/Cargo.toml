@@ -1,6 +1,6 @@
 [package]
 name = "orkestrator"
-version = "0.0.4"
+version = "0.0.7"
 description = "your arkitekt frontend"
 authors = ["you"]
 license = ""

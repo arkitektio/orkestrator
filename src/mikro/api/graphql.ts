@@ -5890,9 +5890,9 @@ export type DetailLinkFragment = { __typename?: 'DataLink', id: string, xId: str
 
 export type ListLinkFragment = { __typename?: 'DataLink', id: string, xId: string, yId: string, leftType?: LinkableModels | null, rightType?: LinkableModels | null, relation: { __typename?: 'Relation', id: string, name: string } };
 
-export type DetailModelFragment = { __typename?: 'Model', id: string, name: string, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> };
+export type DetailModelFragment = { __typename?: 'Model', id: string, name: string, data?: any | null, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> };
 
-export type ListModelFragment = { __typename?: 'Model', id: string, name: string, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> };
+export type ListModelFragment = { __typename?: 'Model', id: string, name: string, data?: any | null, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> };
 
 export type ObjectiveFragment = { __typename?: 'Objective', id: string, name: string, magnification?: number | null, omeros?: Array<{ __typename?: 'Omero', acquisitionDate?: any | null, representation: { __typename?: 'Representation', name?: string | null, id: string, variety: RepresentationVariety, pinned?: boolean | null, createdWhile?: string | null, origins: Array<{ __typename?: 'Representation', name?: string | null }>, latestThumbnail?: { __typename?: 'Thumbnail', image?: string | null, majorColor?: string | null, blurhash?: string | null } | null, sample?: { __typename?: 'Sample', name: string, experiments: Array<{ __typename?: 'Experiment', name: string }> } | null } } | null> | null };
 
@@ -6678,14 +6678,14 @@ export type MyModelsQueryVariables = Exact<{
 }>;
 
 
-export type MyModelsQuery = { __typename?: 'Query', mymodels?: Array<{ __typename?: 'Model', id: string, name: string, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> } | null> | null };
+export type MyModelsQuery = { __typename?: 'Query', mymodels?: Array<{ __typename?: 'Model', id: string, name: string, data?: any | null, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> } | null> | null };
 
 export type DetailModelQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
 
-export type DetailModelQuery = { __typename?: 'Query', model?: { __typename?: 'Model', id: string, name: string, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> } | null };
+export type DetailModelQuery = { __typename?: 'Query', model?: { __typename?: 'Model', id: string, name: string, data?: any | null, kind?: ModelKind | null, contexts: Array<{ __typename?: 'Context', id: string, name: string }> } | null };
 
 export type SearchModelsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']>;
@@ -7519,6 +7519,7 @@ export const DetailModelFragmentDoc = gql`
     id
     name
   }
+  data
   kind
 }
     `;
@@ -7530,6 +7531,7 @@ export const ListModelFragmentDoc = gql`
     id
     name
   }
+  data
   kind
 }
     `;

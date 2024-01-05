@@ -4,10 +4,12 @@ import React from "react";
 import { Route, Routes } from "react-router";
 import { NavigationBar } from "../components/navigation/NavigationBar";
 import FlussModule from "../fluss/FlussModule";
+import KlusterModule from "../kluster/KlusterModule";
 import { LokGuard } from "../lok/LokGuard";
 import LokModule from "../lok/LokModule";
 import MikroModule from "../mikro/MikroModule";
 import MikroNextModule from "../mikro_next/MikroNextModule";
+import OmeroArkModule from "../omero-ark/OmeroArkModule";
 import { NoRoute } from "../pages/fallbacks/NoRoute";
 import { PublicFakts } from "../pages/public/PublicFakts";
 import { PublicLogin } from "../pages/public/PublicLogin";
@@ -45,6 +47,10 @@ export const ProtectedRouter: React.FC<Props> = (props) => {
 
                   {/* Rekuest */}
                   <Route path="rekuest/*" element={<RekuestModule />}></Route>
+
+                  {/* Rekuest */}
+                  <Route path="omero-ark/*" element={<OmeroArkModule />}></Route>
+                  <Route path="kluster/*" element={<KlusterModule />}></Route>
 
                   {/* port */}
                   <Route path="port/*" element={<PortModule />}></Route>

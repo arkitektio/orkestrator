@@ -1137,6 +1137,16 @@
     cancelable-promise "^4.3.1"
     crypto-js "^4.1.1"
 
+"@jhnnsrs/kluster@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@jhnnsrs/kluster/-/kluster-0.0.1.tgz#b3eb5423437195115bd54052c0d3e85cd7fa9aba"
+  integrity sha512-RLvjdU+m+xQmk39O8mj0NuzUFanV389X7koH8kVyuxPHUn9RiDz6LPSFE5G5mRKhA3rA5ung+sH4AwYTM7SkVQ==
+
+"@jhnnsrs/omero-ark@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@jhnnsrs/omero-ark/-/omero-ark-0.0.1.tgz#92f509da22eab13be465bfbcbc701ae99a5ebe53"
+  integrity sha512-LpA/JPwQQ0zQGpQU0qpTqb33PR4hG2p/OttxOItOATQ3v53wHrfyzUGJO2rOCsZL2El+6Pv/CTJHXx1uf/rpeA==
+
 "@jridgewell/gen-mapping@^0.1.0":
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/@jridgewell/gen-mapping/-/gen-mapping-0.1.1.tgz#e5d2e450306a9491e3bd77e323e38d7aff315996"

@@ -1,0 +1,13 @@
+fragment DaskCluster on DaskCluster {
+    id
+    name
+    dashboardLink
+}
+
+
+fragment ListDaskCluster on DaskCluster {
+    id
+    name
+    dashboardLink
+    startTime
+}

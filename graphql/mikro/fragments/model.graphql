@@ -5,6 +5,7 @@ fragment DetailModel on Model {
     id
     name
   }
+  data
   kind
 }
 
@@ -15,5 +16,6 @@ fragment ListModel on Model {
     id
     name
   }
+  data
   kind
 }

@@ -39,7 +39,7 @@ export const useAssignationMate = (): ((
           await ack({ assignation: partner?.id });
         }
       },
-      label: options.partners && options.partners.length > 1 ? "Ack all" : "All",
+      label: options.partners && options.partners.length > 1 ? "Acknowledge all" : "Acknowledge",
     });
 
     return mates.concat([
