@@ -66,7 +66,8 @@ export const SearchWidget: React.FC<InputWidgetProps<SearchWidgetFragment>> = ({
 
   if (!ward)
     return (
-      <div>
+      <div className="border-red-800 border-1 rounded rounded-md">
+
         {" "}
         No ward specified for rekuest ward: {widget.ward}. Please register a
         Ward that supports "search"
@@ -134,7 +135,7 @@ export const ListSearchWidget: React.FC<
 
   if (!ward?.search)
     return (
-      <div>
+      <div className="border-red-800 border-1 rounded rounded-md">
         {" "}
         No ward specified for this {widget.ward}. Please register a Ward that
         supports "search"

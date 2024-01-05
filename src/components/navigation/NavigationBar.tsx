@@ -159,7 +159,7 @@ const NavigationBar: React.FC<INavigationBarProps> = ({ children }) => {
               <TiArrowUp />
             </DroppableNavLink>
           </MikroNextGuard>
-          <OmeroArkGuard>
+          <OmeroArkGuard  fallback={<></>}>
             <DroppableNavLink
               key={"OmeroArk"}
               to={"omero-ark"}
