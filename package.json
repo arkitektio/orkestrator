@@ -69,7 +69,6 @@
     "graphiql": "^2.0.4",
     "graphql-ws": "^5.14.0",
     "handlebars": "^4.7.8",
-    "js-colormaps": "^1.0.0",
     "konva": "^8.3.14",
     "lucide-react": "^0.268.0",
     "pathfinding": "^0.4.18",
