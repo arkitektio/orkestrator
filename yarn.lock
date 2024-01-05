@@ -5093,11 +5093,6 @@ jiti@^1.19.3:
   resolved "https://registry.yarnpkg.com/jiti/-/jiti-1.19.3.tgz#ef554f76465b3c2b222dc077834a71f0d4a37569"
   integrity sha512-5eEbBDQT/jF1xg6l36P+mWGGoH9Spuy0PCdSr2dtWRDGC6ph/w9ZCL4lmESW8f8F7MwT3XKescfP0wnZWAKL9w==
 
-js-colormaps@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/js-colormaps/-/js-colormaps-1.0.0.tgz#f87767bf3286766e92a2d09ee3ed4bff3775ed25"
-  integrity sha512-Zwi/tGg5oqkcSFUKCDfkqFw2tm+rhg9aKmmENL4YV2nuWCO2ciMn16y7qUPXm8vMyNGnF5eQyPJyu0enKbE7iA==
-
 "js-tokens@^3.0.0 || ^4.0.0", js-tokens@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"

@@ -39,6 +39,9 @@ import {
   useCreate_RoiMutation,
   useCreate_ThumbnailMutation,
 } from "../../api/graphql";
+
+
+
 export interface TwoDProps {
   representation: CanvasRepresentationFragment;
   colormap?: AvailableColormap;
