@@ -1,5 +1,5 @@
 import { DatalayerProvider } from "@jhnnsrs/datalayer";
-import { FaktsProvider } from "@jhnnsrs/fakts";
+import { FaktsProvider, buildFailsafeDemander, buildRemoteGrant, demandDeviceToken, demandRetrieve } from "@jhnnsrs/fakts";
 import { HerreProvider, windowRedirect } from "@jhnnsrs/herre";
 import { KlusterProvider } from "@jhnnsrs/kluster";
 import { OmeroArkProvider } from "@jhnnsrs/omero-ark";
@@ -26,10 +26,21 @@ const doRedirect = async (url: string, abortController: AbortController) => {
   }
 };
 
+
+export const grant = buildRemoteGrant({
+  demand: buildFailsafeDemander(
+    demandRetrieve,
+    demandDeviceToken
+  )
+})
+
+
+
+
 //TODO: Mater provider needs to be seperate
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
-    <FaktsProvider>
+    <FaktsProvider grant={grant}>
       <HerreProvider doRedirect={doRedirect}>
         <RekuestProvider>
           <WidgetRegistryProvider>
@@ -62,3 +73,4 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     </FaktsProvider>
   );
 };
+grant

@@ -1,5 +1,5 @@
 import { Disclosure } from "@headlessui/react";
-import { useFakts } from "@jhnnsrs/fakts";
+import { useFakts, useLoadFakts } from "@jhnnsrs/fakts";
 import { Form, Formik } from "formik";
 import React from "react";
 import { useAlert } from "../../components/alerter/alerter-context";
@@ -22,7 +22,14 @@ const advertisedHosts: string[] =
 console.log("Advertised hosts", advertisedHosts);
 
 export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
-  const { load } = useFakts();
+  const { causeLoad, error, ongoing } = useLoadFakts({
+    manifest,
+    requestedClientType: "website",
+    requestPublic: true,
+    requestedRedirectURIs: [window.location.origin + "/callback"],
+    retrieveTimeout: 10000,
+    challengeTimeout: 90000,
+  });
   const { registeredEndpoints } = useFakts();
   const { alert } = useAlert();
 
@@ -45,7 +52,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 out our{" "}
                 <a
                   href="https://arkitekt.live"
-                  target={"_blank"}
+                  target={"_bonClicklank"}
                   className="underline"
                 >
                   documentation
@@ -53,20 +60,29 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 .
               </div>
             </div>
+            {error && <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start" >
+                Could not connect to server {error}
+              </div>}
+
+
+            {ongoing && !error ? (
+              <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start" onClick={() =>
+                causeLoad()
+              }>
+                Connecting
+              </div>
+            ) : (<>
+            
+            
+            
             <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start gap-2">
               {registeredEndpoints.map((e, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() =>
-                    load({
+                    causeLoad({
                       endpoint: e,
-                      manifest,
-                    }).catch((e) => {
-                      alert({
-                        subtitle: e.message,
-                        message: "Could not load fakts from this endpoint",
-                      });
                     })
                   }
                   className="w-full shadow-lg shadow-primary-700/90 flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-300 hover:bg-primary-500 md:py-4 md:text-lg md:px-10"
@@ -88,16 +104,9 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                       }}
                       onSubmit={({ host }, { setSubmitting }) => {
                         setSubmitting(true);
-                        load({
-                          endpoint: host,
-                          manifest,
-                          introspectTimeout: 1000,
-                        }).catch((e) => {
-                          alert({
-                            subtitle: e.message,
-                            message: "Could not load fakts from this endpoint",
-                          });
-                        });
+                        causeLoad({
+                          url: host,
+                        })
                       }}
                     >
                       {(formikProps) => (
@@ -129,6 +138,8 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 </>
               )}
             </Disclosure>
+            </>
+            )}
 
             <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start"></div>
           </div>

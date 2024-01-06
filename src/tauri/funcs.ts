@@ -38,7 +38,7 @@ export const tauriStreamEndpoints = () => {
     let x = listen("fakts", async (event) => {
       try {
         let beacon = event.payload as Beacon;
-        let fakts = await introspectUrl(beacon.url, 4000);
+        let fakts = await introspectUrl(beacon.url, 4000, new AbortController());
         subscriber.next(fakts);
       } catch (e) {
         console.error("Failed to introspect url", e);
