@@ -15,6 +15,7 @@
     "mikro_next": "graphql-codegen --config mikro_next.yml",
     "herre": "graphql-codegen --config herre.yml",
     "kluster": "graphql-codegen --config kluster.yml",
+    "omero": "graphql-codegen --config omero_ark.yml",
     "lok": "graphql-codegen --config lok.yml",
     "dockbuild": "vite build && docker build -t jhnnsrs/orkestrator:release .",
     "paperbuild": "vite build && docker build -t jhnnsrs/orkestrator:paper .",

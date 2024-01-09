@@ -22,7 +22,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
   );
 
   return (
-    <PageLayout actions={<OmeroArkDataset.Actions object={id} />}>
+    <PageLayout actions={<OmeroArkDataset.Actions object={id} />} >
       <div className="p-3 @container">
         <div>
           <div
