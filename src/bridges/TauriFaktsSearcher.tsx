@@ -1,5 +1,5 @@
-import { Beacon, introspectUrl, useFakts } from "@jhnnsrs/fakts";
-import { listen } from "@tauri-apps/api/event";
+import { useLoadFakts } from "@jhnnsrs/fakts";
+import { invoke } from "@tauri-apps/api";
 import React, { useEffect } from "react";
 
 export interface CallbackProps {}
@@ -9,26 +9,21 @@ export interface ConfigValues {
 }
 
 export const TauriFaktsSearcher: React.FC<CallbackProps> = (props) => {
-  const { setRegisteredEndpoints } = useFakts();
+  const { registerEndpoints} = useLoadFakts();
+  const [future, setFuture] = React.useState<Promise<any> | null>(null);
+  const [scan, setScan] = React.useState(true)
 
-  const subscribe = async () => {
-    return listen("fakts", async (event) => {
-      try {
-        let beacon = event.payload as Beacon;
-        let fakts = await introspectUrl(beacon.url, 4000);
-        setRegisteredEndpoints((endpoints) => [...endpoints, fakts]);
-      } catch (e) {
-        console.error("Failed to introspect url", e);
-      }
-    });
-  };
 
   useEffect(() => {
-    let x = subscribe();
-    return () => {
-      x.then((x) => x());
-    };
-  }, []);
+    if (future || !scan) return;
+    setFuture(invoke("fakts_start").then((res) => {
+      console.log("Started Fakts", res);
+      registerEndpoints(res);
+      setFuture(null);
+    }));
+  }, [future, scan]);
 
-  return <></>;
+
+
+  return <div className="text-gray-300 animate-pulse" onClick={() => setScan(!scan)}> Network {future && "Searching Fakts for you locally"}</div>;
 };

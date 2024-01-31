@@ -16,6 +16,11 @@ export type Scalars = {
   DateTime: any;
 };
 
+export type CreateProjectInput = {
+  description?: InputMaybe<Scalars['String']>;
+  name: Scalars['String'];
+};
+
 export type Dataset = {
   __typename?: 'Dataset';
   description: Scalars['String'];
@@ -47,23 +52,24 @@ export type ImageFilter = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  createProject: Project;
   deleteMe: User;
   ensureOmeroUser: OmeroUser;
 };
 
 
+export type MutationCreateProjectArgs = {
+  input: CreateProjectInput;
+};
+
+
 export type MutationEnsureOmeroUserArgs = {
-  input: OmerUserInput;
+  input: OmeroUserInput;
 };
 
 export type OffsetPaginationInput = {
   limit?: Scalars['Int'];
   offset?: Scalars['Int'];
-};
-
-export type OmerUserInput = {
-  password: Scalars['String'];
-  username: Scalars['String'];
 };
 
 export type OmeroUser = {
@@ -72,6 +78,13 @@ export type OmeroUser = {
   omeroPassword: Scalars['String'];
   omeroUsername: Scalars['String'];
   user: User;
+};
+
+export type OmeroUserInput = {
+  host?: InputMaybe<Scalars['String']>;
+  password: Scalars['String'];
+  port?: InputMaybe<Scalars['Int']>;
+  username: Scalars['String'];
 };
 
 export type Project = {
@@ -155,9 +168,19 @@ export type ListProjectFragment = { __typename?: 'Project', id: string, name: st
 
 export type ProjectFragment = { __typename?: 'Project', id: string, name: string, description: string, tags: Array<string>, datasets: Array<{ __typename?: 'Dataset', id: string, name: string, description: string }> };
 
+export type CreateProjectMutationVariables = Exact<{
+  name: Scalars['String'];
+  description?: InputMaybe<Scalars['String']>;
+}>;
+
+
+export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string, name: string } };
+
 export type EnsureOmeroUserMutationVariables = Exact<{
   username: Scalars['String'];
   password: Scalars['String'];
+  host?: InputMaybe<Scalars['String']>;
+  port?: InputMaybe<Scalars['Int']>;
 }>;
 
 
@@ -260,9 +283,46 @@ export const ProjectFragmentDoc = gql`
   tags
 }
     ${ListDatasetFragmentDoc}`;
+export const CreateProjectDocument = gql`
+    mutation CreateProject($name: String!, $description: String) {
+  createProject(input: {name: $name, description: $description}) {
+    id
+    name
+  }
+}
+    `;
+export type CreateProjectMutationFn = Apollo.MutationFunction<CreateProjectMutation, CreateProjectMutationVariables>;
+
+/**
+ * __useCreateProjectMutation__
+ *
+ * To run a mutation, you first call `useCreateProjectMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateProjectMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createProjectMutation, { data, loading, error }] = useCreateProjectMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *      description: // value for 'description'
+ *   },
+ * });
+ */
+export function useCreateProjectMutation(baseOptions?: Apollo.MutationHookOptions<CreateProjectMutation, CreateProjectMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateProjectMutation, CreateProjectMutationVariables>(CreateProjectDocument, options);
+      }
+export type CreateProjectMutationHookResult = ReturnType<typeof useCreateProjectMutation>;
+export type CreateProjectMutationResult = Apollo.MutationResult<CreateProjectMutation>;
+export type CreateProjectMutationOptions = Apollo.BaseMutationOptions<CreateProjectMutation, CreateProjectMutationVariables>;
 export const EnsureOmeroUserDocument = gql`
-    mutation EnsureOmeroUser($username: String!, $password: String!) {
-  ensureOmeroUser(input: {username: $username, password: $password}) {
+    mutation EnsureOmeroUser($username: String!, $password: String!, $host: String, $port: Int) {
+  ensureOmeroUser(
+    input: {username: $username, password: $password, host: $host, port: $port}
+  ) {
     id
     omeroUsername
     omeroPassword
@@ -290,6 +350,8 @@ export type EnsureOmeroUserMutationFn = Apollo.MutationFunction<EnsureOmeroUserM
  *   variables: {
  *      username: // value for 'username'
  *      password: // value for 'password'
+ *      host: // value for 'host'
+ *      port: // value for 'port'
  *   },
  * });
  */

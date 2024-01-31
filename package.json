@@ -31,7 +31,7 @@
     "@headlessui/react": "^1.5.0",
     "@heroicons/react": "^1.0.6",
     "@jhnnsrs/datalayer": "0.0.7",
-    "@jhnnsrs/fakts": "^0.0.21",
+    "@jhnnsrs/fakts": "^0.0.24",
     "@jhnnsrs/herre": "0.0.11",
     "@jhnnsrs/kluster": "^0.0.1",
     "@jhnnsrs/omero-ark": "^0.0.1",

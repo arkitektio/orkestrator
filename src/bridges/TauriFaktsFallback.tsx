@@ -42,9 +42,12 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
   }, []);
 
   useEffect(() => {
+    if (beacons.length === 0) return;
+
+    let controller = new AbortController();
     console.log("Found Becacons", beacons);
     for (let beacon of beacons) {
-      let fakts = introspectUrl(beacon.url, 4000);
+      let fakts = introspectUrl(beacon.url, 4000, controller);
       fakts
         .then((f) => {
           console.log("Found endpoint", f);
@@ -56,6 +59,10 @@ export const TauriFaktsFallback: React.FC<CallbackProps> = (props) => {
           console.log("Failed to find endpoint", e);
         });
     }
+
+    return () => {
+      controller.abort();
+    };
   }, [beacons]);
 
   return (

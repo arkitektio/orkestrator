@@ -1,5 +1,5 @@
-mutation EnsureOmeroUser($username: String!, $password: String!) {
-  ensureOmeroUser(input: {username: $username, password: $password}) {
+mutation EnsureOmeroUser($username: String!, $password: String!, $host: String, $port: Int) {
+  ensureOmeroUser(input: {username: $username, password: $password, host: $host, port: $port}) {
     id
     omeroUsername
     omeroPassword

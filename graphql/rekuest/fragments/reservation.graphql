@@ -54,6 +54,7 @@ fragment DetailReservation on Reservation {
     kind
     name
     scope
+    hash
     description
     args {
       __typename
@@ -140,6 +141,7 @@ fragment ListReservation on Reservation {
     id
     kind
     name
+    hash
     description
     args {
       __typename

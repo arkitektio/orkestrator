@@ -2,6 +2,7 @@ import { Disclosure } from "@headlessui/react";
 import { useFakts, useLoadFakts } from "@jhnnsrs/fakts";
 import { Form, Formik } from "formik";
 import React from "react";
+import { TauriFaktsSearcher } from "../../bridges/TauriFaktsSearcher";
 import { useAlert } from "../../components/alerter/alerter-context";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../components/forms/fields/text_input";
@@ -22,14 +23,7 @@ const advertisedHosts: string[] =
 console.log("Advertised hosts", advertisedHosts);
 
 export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
-  const { causeLoad, error, ongoing } = useLoadFakts({
-    manifest,
-    requestedClientType: "website",
-    requestPublic: true,
-    requestedRedirectURIs: [window.location.origin + "/callback"],
-    retrieveTimeout: 10000,
-    challengeTimeout: 90000,
-  });
+  const { load, error, loading  } = useLoadFakts();
   const { registeredEndpoints } = useFakts();
   const { alert } = useAlert();
 
@@ -65,9 +59,16 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
               </div>}
 
 
-            {ongoing && !error ? (
+            {loading && !error ? (
               <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start" onClick={() =>
-                causeLoad()
+                load({
+                  manifest,
+                  requestedClientType: "website",
+                  requestPublic: true,
+                  requestedRedirectURIs: [window.location.origin + "/callback"],
+                  retrieveTimeout: 10000,
+                  challengeTimeout: 90000,
+                })
               }>
                 Connecting
               </div>
@@ -81,8 +82,14 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                   key={index}
                   type="button"
                   onClick={() =>
-                    causeLoad({
+                    load({
                       endpoint: e,
+                      manifest,
+                      requestedClientType: "website",
+                      requestPublic: true,
+                      requestedRedirectURIs: [window.location.origin + "/callback"],
+                      retrieveTimeout: 10000,
+                      challengeTimeout: 90000,
                     })
                   }
                   className="w-full shadow-lg shadow-primary-700/90 flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-300 hover:bg-primary-500 md:py-4 md:text-lg md:px-10"
@@ -104,8 +111,14 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                       }}
                       onSubmit={({ host }, { setSubmitting }) => {
                         setSubmitting(true);
-                        causeLoad({
+                        load({
                           url: host,
+                          manifest,
+                          requestedClientType: "website",
+                          requestPublic: true,
+                          requestedRedirectURIs: [window.location.origin + "/callback"],
+                          retrieveTimeout: 10000,
+                          challengeTimeout: 90000,
                         })
                       }}
                     >
@@ -141,12 +154,15 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
             </>
             )}
 
-            <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start"></div>
+            <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+              {window?.__TAURI__ && <TauriFaktsSearcher/>}
+            </div>
           </div>
         </main>
       </div>
       <div className="flex-initial sm:flex-initial sm:static sm:w-20">
         <PublicNavigationBar />
+        
       </div>
     </div>
   );

@@ -1122,10 +1122,10 @@
     "@jhnnsrs/datalayer" "0.0.6"
     cancelable-promise "^4.3.0"
 
-"@jhnnsrs/fakts@^0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@jhnnsrs/fakts/-/fakts-0.0.21.tgz#0055659852c7daf077774bb8c1b247769d2b9716"
-  integrity sha512-FYrMHg0sFC5thPMpxHyYjBCq9qRXPd+YYLqpvmWaapCnM+JQfpf2a/eYlLWv88IF2eyf5PMd0m3OhB3A038bxQ==
+"@jhnnsrs/fakts@^0.0.24":
+  version "0.0.24"
+  resolved "https://registry.yarnpkg.com/@jhnnsrs/fakts/-/fakts-0.0.24.tgz#0994ca4448ceb7b33e11868e3cc48dbfeda02841"
+  integrity sha512-lJIdY9iZMhOrn9cxblDG89ZKck6VVviVsXXIJvKTx/7AyJyruREMXWtGiR8yfvUH1+qAS87EUnP7oPwsy2VqVA==
   dependencies:
     any-signal "^4.1.1"
 

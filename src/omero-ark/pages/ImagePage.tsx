@@ -27,7 +27,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
               <div
                 className=" group overflow-hidden rounded rounded-md shadow shadow-xl relative"
               >
-                <AuthorizedImage id={id} />
+                <AuthorizedImage id={id} className="w-full h-full rounded rounded-md" size={1000} />
               </div>
             </div>
             <div className="flex-grow p-3 @container">

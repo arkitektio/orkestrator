@@ -24,19 +24,18 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
     <PageLayout actions={<OmeroArkDataset.Actions object={id} />} >
       <div className="p-3 @container">
-        <div>
-          <div
-          >
-            {data?.dataset?.name}
+      <div className="flex bg-white dark:bg-gray-100 rounded rounded-md p-3 mb-2 flex-col">
+          <div className="text-2xl font-light">
+              {data?.dataset?.name}
           </div>
-        </div>
-        <div className="flex flex-col p-3 rounded rounded-md mt-2 mb-2">
-          <div className="font-light mt-2 ">Created At</div>
-          <div className="font-light mt-2 ">Created by</div>
+          <div className="font-light mt-2 ">
+              {data?.dataset?.description}
+          </div>
+          <div className="flex flex-col rounded rounded-md">
+            <div className="font-light mt-2 ">Created At</div>
+            <div className="font-light mt-2 ">Created by</div>
 
-          <div className="font-light mt-2 ">Tags</div>
-          <div className="text-xl flex mb-2">
-          </div>
+        </div>
         </div>
         <ListRender
           title="Contained Images"
@@ -45,6 +44,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
           {(item, index) => <ImageCard image={item} key={index} />}
         </ListRender>
       </div>
+
     </PageLayout>
   );
 };
