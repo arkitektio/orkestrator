@@ -4,6 +4,7 @@ import { useParams } from "react-router";
 import { PageLayout } from "../../layout/PageLayout";
 import { ListRender } from "../../layout/SectionTitle";
 import { OmeroArkProject } from "../../linker";
+import { useOpenInOmeroMate } from "../../mates/omeroweb/useOpenInOmeroMate";
 import {
   useGetProjectQuery
 } from "../api/graphql";
@@ -19,6 +20,8 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       variables: {id},
     },
   );
+
+    const mate = useOpenInOmeroMate();
 
   return (
     <PageLayout actions={<OmeroArkProject.Actions object={id} />}>
@@ -48,7 +51,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
           title="Contained Dataset"
           array={data?.project?.datasets}
         >
-          {(item, index) => <DatasetCard dataset={item} key={index} />}
+          {(item, index) => <DatasetCard dataset={item} key={index} mates={[mate(`webclient/?show=dataset-${item.id}`)]}/>}
         </ListRender>
       </div>
     </PageLayout>

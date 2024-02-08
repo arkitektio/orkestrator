@@ -13,15 +13,17 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-  ArrayLike: any;
   DateTime: any;
+  UntypedOptions: any;
 };
 
+/** Filter for Dask Clusters */
 export type ClusterFilter = {
   ids?: InputMaybe<Array<Scalars['ID']>>;
   search?: InputMaybe<Scalars['String']>;
 };
 
+/** Create a dask cluster input */
 export type CreateClusterInput = {
   name: Scalars['String'];
 };
@@ -29,18 +31,29 @@ export type CreateClusterInput = {
 /**  A dask cluster */
 export type DaskCluster = {
   __typename?: 'DaskCluster';
+  /** A link to the dashboard for the dask cluster. Relative to the proxy. */
   dashboardLink: Scalars['String'];
+  /** The id of the dask cluster */
   id: Scalars['ID'];
+  /** The name of the dask cluster */
   name: Scalars['String'];
-  options: Scalars['ArrayLike'];
+  /** The options used to create the dask cluster */
+  options: Scalars['UntypedOptions'];
+  /** A link to the scheduler for the dask cluster. Relative to the proxy. */
   schedulerAddress: Scalars['String'];
+  /** The user who created the dask cluster */
   security?: Maybe<Security>;
+  /** When the dask cluster was created */
   startTime?: Maybe<Scalars['DateTime']>;
+  /** The status of the dask cluster */
   status: DaskClusterState;
+  /** When the dask cluster was stopped */
   stopTime?: Maybe<Scalars['DateTime']>;
+  /** The tags for the dask cluster (currently fake) */
   tags: Array<Scalars['String']>;
 };
 
+/** The state of a dask cluster */
 export enum DaskClusterState {
   Failed = 'FAILED',
   Pending = 'PENDING',
@@ -51,13 +64,22 @@ export enum DaskClusterState {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Create a new dask cluster on a bridge server */
   createDaskCluster: DaskCluster;
+  /** Scale a dask cluster */
+  scaleDaskCluster: DaskCluster;
+  /** Stop a dask cluster */
   stopDaskCluster: Scalars['ID'];
 };
 
 
 export type MutationCreateDaskClusterArgs = {
   input: CreateClusterInput;
+};
+
+
+export type MutationScaleDaskClusterArgs = {
+  input: ScaleClusterInput;
 };
 
 
@@ -72,8 +94,11 @@ export type OffsetPaginationInput = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Return a dask cluster by id */
   daskCluster: DaskCluster;
+  /** Return all dask clusters */
   daskClusters: Array<DaskCluster>;
+  /** Return the currently logged in user */
   me: User;
 };
 
@@ -88,6 +113,12 @@ export type QueryDaskClustersArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
+/** Create a dask cluster input */
+export type ScaleClusterInput = {
+  id: Scalars['ID'];
+  nWorkers: Scalars['Int'];
+};
+
 /**  A security object for a dask cluster */
 export type Security = {
   __typename?: 'Security';
@@ -95,12 +126,14 @@ export type Security = {
   tlsKey: Scalars['String'];
 };
 
+/** A user of the bridge server. Maps to an authentikate user */
 export type User = {
   __typename?: 'User';
   email: Scalars['String'];
   id: Scalars['ID'];
   password: Scalars['String'];
   sub: Scalars['String'];
+  /** Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
   username: Scalars['String'];
 };
 
@@ -121,6 +154,14 @@ export type CreateNewClusterMutationVariables = Exact<{
 
 
 export type CreateNewClusterMutation = { __typename?: 'Mutation', createDaskCluster: { __typename?: 'DaskCluster', id: string, name: string, dashboardLink: string } };
+
+export type ScaleDaskClusterMutationVariables = Exact<{
+  id: Scalars['ID'];
+  n: Scalars['Int'];
+}>;
+
+
+export type ScaleDaskClusterMutation = { __typename?: 'Mutation', scaleDaskCluster: { __typename?: 'DaskCluster', id: string, name: string, dashboardLink: string } };
 
 export type ListClusterQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -206,6 +247,40 @@ export function useCreateNewClusterMutation(baseOptions?: Apollo.MutationHookOpt
 export type CreateNewClusterMutationHookResult = ReturnType<typeof useCreateNewClusterMutation>;
 export type CreateNewClusterMutationResult = Apollo.MutationResult<CreateNewClusterMutation>;
 export type CreateNewClusterMutationOptions = Apollo.BaseMutationOptions<CreateNewClusterMutation, CreateNewClusterMutationVariables>;
+export const ScaleDaskClusterDocument = gql`
+    mutation ScaleDaskCluster($id: ID!, $n: Int!) {
+  scaleDaskCluster(input: {id: $id, nWorkers: $n}) {
+    ...DaskCluster
+  }
+}
+    ${DaskClusterFragmentDoc}`;
+export type ScaleDaskClusterMutationFn = Apollo.MutationFunction<ScaleDaskClusterMutation, ScaleDaskClusterMutationVariables>;
+
+/**
+ * __useScaleDaskClusterMutation__
+ *
+ * To run a mutation, you first call `useScaleDaskClusterMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useScaleDaskClusterMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [scaleDaskClusterMutation, { data, loading, error }] = useScaleDaskClusterMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      n: // value for 'n'
+ *   },
+ * });
+ */
+export function useScaleDaskClusterMutation(baseOptions?: Apollo.MutationHookOptions<ScaleDaskClusterMutation, ScaleDaskClusterMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ScaleDaskClusterMutation, ScaleDaskClusterMutationVariables>(ScaleDaskClusterDocument, options);
+      }
+export type ScaleDaskClusterMutationHookResult = ReturnType<typeof useScaleDaskClusterMutation>;
+export type ScaleDaskClusterMutationResult = Apollo.MutationResult<ScaleDaskClusterMutation>;
+export type ScaleDaskClusterMutationOptions = Apollo.BaseMutationOptions<ScaleDaskClusterMutation, ScaleDaskClusterMutationVariables>;
 export const ListClusterDocument = gql`
     query ListCluster {
   daskClusters {

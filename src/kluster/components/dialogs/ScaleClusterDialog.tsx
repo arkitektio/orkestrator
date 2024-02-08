@@ -2,40 +2,31 @@ import { Form, Formik } from "formik";
 import { useAlert } from "../../../components/alerter/alerter-context";
 import { TwDialog } from "../../../components/dialog/TwDialog";
 import { SubmitButton } from "../../../components/forms/fields/SubmitButton";
-import { TextInputField } from "../../../components/forms/fields/text_input";
 import { Submit } from "../../../providers/dialog/DialogProvider";
 
-import { withOmeroArk } from "@jhnnsrs/omero-ark";
-import { ParagraphInputField } from "../../../components/forms/fields/paragraph_input";
-import { CreateProjectMutation, useCreateProjectMutation } from "../../../omero-ark/api/graphql";
+import { withKluster } from "@jhnnsrs/kluster";
+import { SliderInputField } from "../../../components/forms/fields/slide_input";
+import { ScaleDaskClusterMutation, ScaleDaskClusterMutationVariables, useScaleDaskClusterMutation } from "../../api/graphql";
 
-export const CreateProjectDialog = ({
+export const ScaleClusterDialog = ({
+  id,
   submit,
   reject,
-}: Submit<{ res: CreateProjectMutation }>) => {
+}: Submit<{ res: ScaleDaskClusterMutation }> & {id: string}) => {
   const { alert } = useAlert();
-  const [create, data] = withOmeroArk(useCreateProjectMutation)({
-    refetchQueries: ["Projects"],
+  const [scale, data] = withKluster(useScaleDaskClusterMutation)({
+    refetchQueries: ["Clusters"],
   });
 
   return (
-    <Formik<Partial<{ name: string, description: string}>>
+    <Formik<ScaleDaskClusterMutationVariables>
       initialValues={{
-        name: "test",
-        description: "No Description"
+        id: id,
+        n: 2,
       }}
       onSubmit={async (values, { setSubmitting }) => {
-        console.log(values);
-        setSubmitting(true);
-        let name = values.name;
-        if (!name) {
-          alert({
-            subtitle: "Error",
-            message: "Please enter a name",
-          });
-          return;
-        }
-        let x = await create({ variables: { name: name} });
+        let x = await scale({ variables: values});
+        console.log(x)
         if (x.data) {
           submit({ res: x.data });
         }
@@ -55,21 +46,18 @@ export const CreateProjectDialog = ({
                   Cancel
                 </button>
                 <SubmitButton className="mt-3 w-full inline-flex rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-800 disabled:opacity-30">
-                  Create Project
+                  Scale
                 </SubmitButton>
               </>
             }
           >
             <div className="mt-2 align-left text-left ">
-              <TextInputField
-                name="name"
-                label="Name"
-                description="How should your project be called?"
-              />
-              <ParagraphInputField
-                name="description"
-                label="Description"
-                description="Describe your project."
+              <SliderInputField
+                min={0}
+                max={40}
+                name="n"
+                label="How Many Workers?"
+                description="How many workers do you want to add to the cluster?"
               />
             </div>
           </TwDialog>

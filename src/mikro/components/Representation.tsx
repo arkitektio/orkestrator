@@ -433,7 +433,7 @@ const RepresentationScreen: React.FC<ISampleProps> = ({ id }) => {
                             <tr>
                               {val.map((val2, index2) => (
                                 <td className="text-md text-black ">
-                                  {val2.toFixed(2)}
+                                  {val2?.toFixed(2)}
                                 </td>
                               ))}
                             </tr>

@@ -5,6 +5,8 @@ import { useParams } from "react-router";
 import { PageLayout } from "../../layout/PageLayout";
 import { ListRender } from "../../layout/SectionTitle";
 import { OmeroArkDataset } from "../../linker";
+import { useDeleteOmeroImageMate } from "../../mates/omero_image/useDeleteOmeroImageMate";
+import { useOpenInOmeroMate } from "../../mates/omeroweb/useOpenInOmeroMate";
 import {
   useGetDatasetQuery
 } from "../api/graphql";
@@ -21,12 +23,15 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
     },
   );
 
+  const mate = useOpenInOmeroMate();
+  const deleteMate = useDeleteOmeroImageMate()
+
   return (
     <PageLayout actions={<OmeroArkDataset.Actions object={id} />} >
       <div className="p-3 @container">
       <div className="flex bg-white dark:bg-gray-100 rounded rounded-md p-3 mb-2 flex-col">
           <div className="text-2xl font-light">
-              {data?.dataset?.name}
+              {data?.dataset?.name} 
           </div>
           <div className="font-light mt-2 ">
               {data?.dataset?.description}
@@ -41,7 +46,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
           title="Contained Images"
           array={data?.dataset?.images}
         >
-          {(item, index) => <ImageCard image={item} key={index} />}
+          {(item, index) => <ImageCard image={item} key={index} mates={[mate(`webclient/?show=image-${item.id}`), deleteMate(item)]} />}
         </ListRender>
       </div>
 

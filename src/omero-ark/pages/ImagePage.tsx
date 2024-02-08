@@ -6,6 +6,7 @@ import { OmeroArkImage } from "../../linker";
 import {
   useGetImageQuery
 } from "../api/graphql";
+import { OpenOmeroLink } from "../components/OpenOmeroLink";
 import AuthorizedImage from "../components/Thumbnail";
 
 export type IRepresentationScreenProps = {};
@@ -19,6 +20,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
     },
   );
 
+
   return (
     <PageLayout actions={<OmeroArkImage.Actions object={id} />} >
       
@@ -30,14 +32,13 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
                 <AuthorizedImage id={id} className="w-full h-full rounded rounded-md" size={1000} />
               </div>
             </div>
-            <div className="flex-grow p-3 @container">
-              <div>
-                  {data?.image?.name}
+            <div className="flex-1 flex flex-col @container ">
+              <div className="flex-initial bg-white rounded p-3 @container">
+              <div className="text-3xl">
+                  {data?.image?.name} 
                 </div>
-              </div>
               <div className="flex flex-col p-3 rounded rounded-md mt-2 mb-2">
-                <div className="font-light mt-2 ">Created At</div>
-                <div className="font-light mt-2 ">Created by</div>
+                <div className="font-light mt-2 ">Acquired At</div> <div className="font-semibold mt-2 ">{data?.image?.acquisitionDate}</div>
 
                 <div className="font-light mt-2 ">Tags</div>
                 <div className="text-xl flex mb-2">
@@ -47,9 +48,12 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
                     </>
                   ))}
                 </div>
+                <OpenOmeroLink url={`webclient/img_detail/${id}/`}> Open in WebViewer </OpenOmeroLink>
                 
               </div>
             </div>
+            </div>
+          </div>
 
     </PageLayout>
   );

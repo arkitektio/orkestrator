@@ -1,5 +1,5 @@
 import { withOmeroArk } from "@jhnnsrs/omero-ark"
-import { useDeleteMeMutation } from "../../omero_ark/api/graphql"
+import { useDeleteMeMutation } from "../../omero-ark/api/graphql"
 
 
 export const LogoutButton: React.FC = () => {

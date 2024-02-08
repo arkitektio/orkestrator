@@ -2,10 +2,10 @@ overwrite: true
 schema: "http://localhost:8888/graphql"
 documents: "graphql/omero-ark/**/*.graphql"
 generates:
-  src/omero_ark/api/fragments.ts:
+  src/omero-ark/api/fragments.ts:
     plugins:
       - "fragment-matcher"
-  src/omero_ark/api/graphql.ts:
+  src/omero-ark/api/graphql.ts:
     plugins:
       - "typescript"
       - "typescript-operations"
@@ -15,6 +15,6 @@ generates:
       reactApolloVersion: 3
       arrayInputCoercion: false
 
-  src/omero_ark/graphql.schema.json:
+  src/omero-ark/graphql.schema.json:
     plugins:
       - "introspection"
