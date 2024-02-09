@@ -175,7 +175,7 @@ export const AutoConfiguration = () => {
       <TauriGuard>
         <TauriFaktsSearcher />
       </TauriGuard>
-      <WellKnownDiscovery endpoints={["http://localhost:8000"]} />
+      <WellKnownDiscovery endpoints={["http://localhost:8000", "http://localhost:11000"]} />
       <RekuestGuard>
         <RekuestWard />
         <NodesExtension />

@@ -2,8 +2,8 @@ import { Disclosure } from "@headlessui/react";
 import { useFakts, useLoadFakts } from "@jhnnsrs/fakts";
 import { Form, Formik } from "formik";
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 import { TauriFaktsSearcher } from "../../bridges/TauriFaktsSearcher";
-import { useAlert } from "../../components/alerter/alerter-context";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
@@ -23,9 +23,10 @@ const advertisedHosts: string[] =
 console.log("Advertised hosts", advertisedHosts);
 
 export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
-  const { load, error, loading  } = useLoadFakts();
+  const [params, setParams] = useSearchParams()
+
+  const { load, error, loading , registerEndpoints } = useLoadFakts();
   const { registeredEndpoints } = useFakts();
-  const { alert } = useAlert();
 
   return (
     <div className="flex flex-col h-screen sm:flex-row-reverse w-full">
@@ -60,7 +61,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
 
 
             {loading && !error ? (
-              <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start" onClick={() =>
+              <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start text-gray-200 animate-pulse" onClick={() =>
                 load({
                   manifest,
                   requestedClientType: "website",
@@ -98,7 +99,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 </button>
               ))}
             </div>
-            <Disclosure defaultOpen={advertisedHosts.length == 0}>
+            <Disclosure defaultOpen={advertisedHosts.length == 0 || !!params.get("endpoint")}>
               {({ open }) => (
                 <>
                   <Disclosure.Button className="py-2 sm:justify-center lg:justify-start cursor-pointer  text-gray-500">
@@ -107,7 +108,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                   <Disclosure.Panel className=" sm:flex sm:justify-center lg:justify-start p-2 border-gray-200 rounded border rounded-md">
                     <Formik<ConfigValues>
                       initialValues={{
-                        host: `localhost:8000`,
+                        host:  params.get("endpoint") || "localhost:8000",
                       }}
                       onSubmit={({ host }, { setSubmitting }) => {
                         setSubmitting(true);
