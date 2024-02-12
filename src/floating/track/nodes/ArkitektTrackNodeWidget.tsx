@@ -6,6 +6,7 @@ import { Handle, Position } from "reactflow";
 import { RunEventFragment, RunEventType } from "../../../fluss/api/graphql";
 import { withRekuest } from "../../../rekuest";
 import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
+import { NodeDescription } from "../../../rekuest/components/NodeDescription";
 import { WidgetsContainer } from "../../../rekuest/widgets/containers/ReturnWidgetsContainer";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps } from "../../types";
@@ -27,6 +28,7 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
 
     const latestEvent =
       frozenevent || runState?.events?.find((e) => e?.source === id);
+
 
     const border =
       data.kind === NodeKind.Generator
@@ -96,8 +98,7 @@ export const ArkitektTrackNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           </div>
         </div>
         <p className="flex-initial text-xs font-extralight truncate">
-          {node_data?.node?.description}
-          {latestEvent?.value}
+          {node_data?.node?.description && <NodeDescription description={node_data?.node?.description}/>}
         </p>
         {isExpanded && (
           <>

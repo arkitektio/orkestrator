@@ -46,7 +46,6 @@ const Card = ({ image, mates }: Props) => {
     }, [image.id, ref]);
 
 
-
   return (
     <OmeroArkImage.Smart
       object={image?.id}
@@ -55,6 +54,7 @@ const Card = ({ image, mates }: Props) => {
           isOver && !isDragging && "border-primary-200 border"
         } ${isDragging && "ring-primary-200 ring"} `
       }
+      mates={mates}
     >
       <div className="px-2 py-2 h-40 w-full top-0 left-0 bg-opacity-20 bg-black  rounded rounded-xl" ref={ref}>
         <OmeroArkImage.DetailLink

@@ -5,6 +5,7 @@ import { Handle, Position } from "reactflow";
 import { ContractPulse } from "../../../fluss/components/ContractPulse";
 import { withRekuest } from "../../../rekuest";
 import { NodeKind, useDetailNodeQuery } from "../../../rekuest/api/graphql";
+import { NodeDescription } from "../../../rekuest/components/NodeDescription";
 import { useNodeLayout, withLayout } from "../../base/node/layout";
 import { ArkitektNodeProps } from "../../types";
 import { useTraceRiver } from "../context";
@@ -76,7 +77,9 @@ export const ArkitektTraceNodeWidget: React.FC<ArkitektNodeProps> = withLayout(
           </div>
         </div>
         <p className="flex-initial text-xs font-extralight truncate">
-          {node_data?.node?.description}
+          {node_data?.node?.description && <NodeDescription description={node_data?.node?.description} />}
+
+          
         </p>
       </NodeTraceLayout>
     );

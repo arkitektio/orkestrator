@@ -7,3 +7,9 @@ mutation CreateNewCluster($name: String!){
         ...DaskCluster
     }
 }
+
+mutation ScaleDaskCluster($id: ID!, $n: Int!){
+    scaleDaskCluster(input: {id: $id, nWorkers: $n}){
+        ...DaskCluster
+    }
+}

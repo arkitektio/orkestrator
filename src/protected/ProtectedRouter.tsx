@@ -27,7 +27,7 @@ export const ProtectedRouter: React.FC<Props> = (props) => {
       <div className="flex-grow flex bg-gradient-to-b from-back-900 via-back-900 via-back-850 via-back-850 to-back-800 overflow-y-auto">
         <FaktsGuard fallback={<PublicFakts />}>
           <HerreGuard fallback={<PublicLogin />}>
-            <LokGuard fallback={<>Waiting for Lok configuration</>}>
+            <LokGuard fallback={<PublicFakts/>}>
               <React.Suspense fallback={<>Loading slowly....</>}>
                 <Routes>
                   <Route index element={<Home />} />

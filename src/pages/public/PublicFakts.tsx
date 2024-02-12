@@ -1,8 +1,9 @@
 import { Disclosure } from "@headlessui/react";
-import { useFakts } from "@jhnnsrs/fakts";
+import { useFakts, useLoadFakts } from "@jhnnsrs/fakts";
 import { Form, Formik } from "formik";
 import React from "react";
-import { useAlert } from "../../components/alerter/alerter-context";
+import { useSearchParams } from "react-router-dom";
+import { TauriFaktsSearcher } from "../../bridges/TauriFaktsSearcher";
 import { SubmitButton } from "../../components/forms/fields/SubmitButton";
 import { TextInputField } from "../../components/forms/fields/text_input";
 import { PublicNavigationBar } from "../../components/navigation/PublicNavigationBar";
@@ -22,9 +23,10 @@ const advertisedHosts: string[] =
 console.log("Advertised hosts", advertisedHosts);
 
 export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
-  const { load } = useFakts();
+  const [params, setParams] = useSearchParams()
+
+  const { load, error, loading , registerEndpoints } = useLoadFakts();
   const { registeredEndpoints } = useFakts();
-  const { alert } = useAlert();
 
   return (
     <div className="flex flex-col h-screen sm:flex-row-reverse w-full">
@@ -45,7 +47,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 out our{" "}
                 <a
                   href="https://arkitekt.live"
-                  target={"_blank"}
+                  target={"_bonClicklank"}
                   className="underline"
                 >
                   documentation
@@ -53,6 +55,28 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 .
               </div>
             </div>
+            {error && <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start" >
+                Could not connect to server {error}
+              </div>}
+
+
+            {loading && !error ? (
+              <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start text-gray-200 animate-pulse" onClick={() =>
+                load({
+                  manifest,
+                  requestedClientType: "website",
+                  requestPublic: true,
+                  requestedRedirectURIs: [window.location.origin + "/callback"],
+                  retrieveTimeout: 10000,
+                  challengeTimeout: 90000,
+                })
+              }>
+                Connecting
+              </div>
+            ) : (<>
+            
+            
+            
             <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start gap-2">
               {registeredEndpoints.map((e, index) => (
                 <button
@@ -62,11 +86,11 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                     load({
                       endpoint: e,
                       manifest,
-                    }).catch((e) => {
-                      alert({
-                        subtitle: e.message,
-                        message: "Could not load fakts from this endpoint",
-                      });
+                      requestedClientType: "website",
+                      requestPublic: true,
+                      requestedRedirectURIs: [window.location.origin + "/callback"],
+                      retrieveTimeout: 10000,
+                      challengeTimeout: 90000,
                     })
                   }
                   className="w-full shadow-lg shadow-primary-700/90 flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-300 hover:bg-primary-500 md:py-4 md:text-lg md:px-10"
@@ -75,7 +99,7 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 </button>
               ))}
             </div>
-            <Disclosure defaultOpen={advertisedHosts.length == 0}>
+            <Disclosure defaultOpen={advertisedHosts.length == 0 || !!params.get("endpoint")}>
               {({ open }) => (
                 <>
                   <Disclosure.Button className="py-2 sm:justify-center lg:justify-start cursor-pointer  text-gray-500">
@@ -84,20 +108,19 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                   <Disclosure.Panel className=" sm:flex sm:justify-center lg:justify-start p-2 border-gray-200 rounded border rounded-md">
                     <Formik<ConfigValues>
                       initialValues={{
-                        host: `localhost:8000`,
+                        host:  params.get("endpoint") || "localhost:8000",
                       }}
                       onSubmit={({ host }, { setSubmitting }) => {
                         setSubmitting(true);
                         load({
-                          endpoint: host,
+                          url: host,
                           manifest,
-                          introspectTimeout: 1000,
-                        }).catch((e) => {
-                          alert({
-                            subtitle: e.message,
-                            message: "Could not load fakts from this endpoint",
-                          });
-                        });
+                          requestedClientType: "website",
+                          requestPublic: true,
+                          requestedRedirectURIs: [window.location.origin + "/callback"],
+                          retrieveTimeout: 10000,
+                          challengeTimeout: 90000,
+                        })
                       }}
                     >
                       {(formikProps) => (
@@ -129,13 +152,18 @@ export const PublicFakts: React.FC<PublicHomeProps> = (props) => {
                 </>
               )}
             </Disclosure>
+            </>
+            )}
 
-            <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start"></div>
+            <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+              {window?.__TAURI__ && <TauriFaktsSearcher/>}
+            </div>
           </div>
         </main>
       </div>
       <div className="flex-initial sm:flex-initial sm:static sm:w-20">
         <PublicNavigationBar />
+        
       </div>
     </div>
   );

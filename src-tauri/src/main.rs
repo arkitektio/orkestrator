@@ -6,6 +6,7 @@
 mod cmd;
 use serde::Serialize;
 use serde_derive::Deserialize;
+use tauri::async_runtime::JoinHandle;
 use tauri::Manager;
 use tauri::{utils::config::AppUrl, window::WindowBuilder, WindowUrl};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
@@ -33,6 +34,20 @@ use tokio::time::{sleep, Duration};
 #[derive(Deserialize, Serialize, Debug, Clone)]
 struct Beacon {
     url: String,
+}
+
+use std::sync::{Arc, Mutex};
+
+pub struct SharedState {
+    pub task_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
+}
+
+impl Default for SharedState {
+    fn default() -> Self {
+        SharedState {
+            task_handle: Arc::new(Mutex::new(None)),
+        }
+    }
 }
 
 fn main() {
@@ -68,6 +83,7 @@ fn main() {
         //             .unwrap();
         //         Ok(Response::new(200, "OK"))
         //     })
+        .manage(SharedState::default())
         .system_tray(tray)
         .on_system_tray_event(|app, event| match event {
             SystemTrayEvent::LeftClick {
@@ -119,62 +135,14 @@ fn main() {
             // .visible(false)
             // .disable_file_drop_handler()
             // .build()?;
-
-            let next_handle = app.handle();
-
-            tauri::async_runtime::spawn(async move {
-                // listen for udp broadcasts on port 8080
-                let socket = UdpSocket::bind("0.0.0.0:45678").await;
-
-                let socket = match socket {
-                    Ok(s) => s,
-                    Err(e) => {
-                        next_handle
-                            .get_window("orkestrator")
-                            .unwrap()
-                            .emit("bind-error", e.to_string())
-                            .unwrap();
-                        panic!("couldn't bind socket: {:?}", e)
-                    }
-                };
-
-                // receive a single datagram
-                let mut buf = [0u8; 1500];
-
-                while let Ok((amt, src)) = socket.recv_from(&mut buf).await {
-                    let data = &buf[..amt];
-                    let s = std::str::from_utf8(data).unwrap();
-                    println!("received {} bytes from {}", amt, src);
-                    println!("received {}", s);
-
-                    if s.starts_with("beacon-fakts") {
-                        let x: Beacon =
-                            serde_json::from_str(s.strip_prefix("beacon-fakts").unwrap()).unwrap();
-
-                        let window = next_handle.get_window("orkestrator");
-
-                        match window {
-                            Some(w) => {
-                                w.emit("fakts", x).unwrap();
-                            }
-                            None => {
-                                println!("no window");
-                                break;
-                            }
-                        }
-                    }
-                    sleep(Duration::from_millis(2000)).await;
-                }
-
-                println!("Done here");
-            });
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             cmd::oauth_start,
             cmd::upload_file,
             cmd::download_file,
+            cmd::fakts_cancel,
+            cmd::fakts_start,
             cmd::oauth_cancel,
         ])
         .run(context)

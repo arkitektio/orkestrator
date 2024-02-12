@@ -62,6 +62,11 @@ export const TrackRiver: React.FC<Props> = ({ id }) => {
     setEdges(edges_to_flowedges(data?.run?.flow?.graph?.edges || []));
   }, [data?.run?.flow?.graph]);
 
+
+  useEffect(() => {
+    refetch()
+  }, [live])
+
   const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null);
 
   return (

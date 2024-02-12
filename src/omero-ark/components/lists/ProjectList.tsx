@@ -1,6 +1,7 @@
 import { withOmeroArk } from "@jhnnsrs/omero-ark";
 import { ListRender } from "../../../layout/SectionTitle";
 import { OmeroArkProject } from "../../../linker";
+import { useOpenInOmeroMate } from "../../../mates/omeroweb/useOpenInOmeroMate";
 import { useListProjectsQuery } from "../../api/graphql";
 import ProjectCard from "../../components/cards/ProjectCard";
 
@@ -12,6 +13,9 @@ const List = () => {
   )({
     variables: {  },
   });
+
+
+  const mate = useOpenInOmeroMate();
 
   return (
     <>
@@ -25,7 +29,7 @@ const List = () => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <ProjectCard key={index} project={ex} mates={[]} />}
+      {(ex, index) => <ProjectCard key={index} project={ex} mates={[mate(`webclient/?show=project-${ex.id}`)]} />}
     </ListRender>
     </>
   );

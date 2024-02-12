@@ -10,7 +10,8 @@ import { ThumbnailWidget } from "../../../../widgets/ThumbnailWidget";
 
 import { Option } from "../../../../components/forms/fields/SearchInput";
 import { FileWidget } from "../../../../widgets/FileWidget";
-import { SearchWidgetFragment } from "../../../api/graphql";
+import { OmeroImageWidget } from "../../../../widgets/OmeroImageWidget";
+import { Scope, SearchWidgetFragment } from "../../../api/graphql";
 import { Port, ReturnWidgetProps } from "../../types";
 import { useWidgetRegistry } from "../../widget-context";
 
@@ -89,6 +90,9 @@ export const DefaultStructureWidget = ({
   port: Port;
   props: StructureDisplayProps;
 }) => {
+  
+
+
   if (port.returnWidget) {
     return <>Not implemented yet</>;
   }
@@ -105,7 +109,11 @@ export const DefaultStructureWidget = ({
     }
   }
 
-  return <></>;
+  if (port.scope == Scope.Local) {
+    return <div className="text-red-200">This is a local port and data cannot be displayed in the webinterface</div>;
+  }
+
+  return <div className="text-red-600"> Failure in Port Configuration. This is a bug!</div>;
 };
 
 export const structure_to_widget = (
@@ -129,6 +137,8 @@ export const structure_to_widget = (
       return <MetricWidget {...props} />;
     case "@mikro/omerofile":
       return <FileWidget {...props} />;
+    case "@omero-ark/image":
+      return <OmeroImageWidget {...props} />;
     default:
       return <DefaultStructureWidget port={port} props={props} />;
   }

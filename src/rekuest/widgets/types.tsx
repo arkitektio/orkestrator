@@ -14,7 +14,7 @@ export interface InputWidgetProps<
 
 export type Port = Pick<
   PortFragment,
-  "identifier" | "kind" | "nullable" | "child" | "returnWidget" | "assignWidget" | "variants" | "key"
+  "identifier" | "kind" | "nullable" | "child" | "returnWidget" | "assignWidget" | "variants" | "key" | "scope"
 >;
 
 export type InputWidgetTypes = InputWidgetFragment["__typename"];

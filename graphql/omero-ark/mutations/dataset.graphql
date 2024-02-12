@@ -1,0 +1,6 @@
+mutation CreateDataset($name: String!, $description: String, $projectId: ID!) {
+  createDataset(input: {name: $name, description: $description, projectId: $projectId}) {
+    id
+    name
+  }
+}
