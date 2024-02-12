@@ -23,11 +23,13 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
     },
   );
 
+ 
+
   const mate = useOpenInOmeroMate();
   const deleteMate = useDeleteOmeroImageMate()
 
   return (
-    <PageLayout actions={<OmeroArkDataset.Actions object={id} />} >
+    <PageLayout actions={<><OmeroArkDataset.Actions object={id} /></>} >
       <div className="p-3 @container">
       <div className="flex bg-white dark:bg-gray-100 rounded rounded-md p-3 mb-2 flex-col">
           <div className="text-2xl font-light">

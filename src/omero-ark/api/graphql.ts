@@ -16,6 +16,12 @@ export type Scalars = {
   DateTime: any;
 };
 
+export type CreateDatasetInput = {
+  description?: InputMaybe<Scalars['String']>;
+  name: Scalars['String'];
+  projectId: Scalars['ID'];
+};
+
 export type CreateProjectInput = {
   description?: InputMaybe<Scalars['String']>;
   name: Scalars['String'];
@@ -61,10 +67,16 @@ export type ImageFilter = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  createDataset: Dataset;
   createProject: Project;
   deleteImage: DeleteResult;
   deleteMe: User;
   ensureOmeroUser: OmeroUser;
+};
+
+
+export type MutationCreateDatasetArgs = {
+  input: CreateDatasetInput;
 };
 
 
@@ -182,6 +194,15 @@ export type ImageFragment = { __typename?: 'Image', id: string, name: string, ac
 export type ListProjectFragment = { __typename?: 'Project', id: string, name: string, description: string };
 
 export type ProjectFragment = { __typename?: 'Project', id: string, name: string, description: string, tags: Array<string>, datasets: Array<{ __typename?: 'Dataset', id: string, name: string, description: string }> };
+
+export type CreateDatasetMutationVariables = Exact<{
+  name: Scalars['String'];
+  description?: InputMaybe<Scalars['String']>;
+  projectId: Scalars['ID'];
+}>;
+
+
+export type CreateDatasetMutation = { __typename?: 'Mutation', createDataset: { __typename?: 'Dataset', id: string, name: string } };
 
 export type DeleteImageMutationVariables = Exact<{
   id: Scalars['ID'];
@@ -305,6 +326,44 @@ export const ProjectFragmentDoc = gql`
   tags
 }
     ${ListDatasetFragmentDoc}`;
+export const CreateDatasetDocument = gql`
+    mutation CreateDataset($name: String!, $description: String, $projectId: ID!) {
+  createDataset(
+    input: {name: $name, description: $description, projectId: $projectId}
+  ) {
+    id
+    name
+  }
+}
+    `;
+export type CreateDatasetMutationFn = Apollo.MutationFunction<CreateDatasetMutation, CreateDatasetMutationVariables>;
+
+/**
+ * __useCreateDatasetMutation__
+ *
+ * To run a mutation, you first call `useCreateDatasetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateDatasetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createDatasetMutation, { data, loading, error }] = useCreateDatasetMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *      description: // value for 'description'
+ *      projectId: // value for 'projectId'
+ *   },
+ * });
+ */
+export function useCreateDatasetMutation(baseOptions?: Apollo.MutationHookOptions<CreateDatasetMutation, CreateDatasetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateDatasetMutation, CreateDatasetMutationVariables>(CreateDatasetDocument, options);
+      }
+export type CreateDatasetMutationHookResult = ReturnType<typeof useCreateDatasetMutation>;
+export type CreateDatasetMutationResult = Apollo.MutationResult<CreateDatasetMutation>;
+export type CreateDatasetMutationOptions = Apollo.BaseMutationOptions<CreateDatasetMutation, CreateDatasetMutationVariables>;
 export const DeleteImageDocument = gql`
     mutation DeleteImage($id: ID!) {
   deleteImage(input: {id: $id}) {

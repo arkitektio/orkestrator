@@ -1,5 +1,5 @@
 import { DatalayerProvider } from "@jhnnsrs/datalayer";
-import { FaktsProvider, buildFailsafeDemander, buildRemoteGrant, demandDeviceToken, demandRetrieve } from "@jhnnsrs/fakts";
+import { FaktsProvider, buildRemoteGrant, demandRetrieve } from "@jhnnsrs/fakts";
 import { HerreProvider, windowRedirect } from "@jhnnsrs/herre";
 import { KlusterProvider } from "@jhnnsrs/kluster";
 import { OmeroArkProvider } from "@jhnnsrs/omero-ark";
@@ -28,10 +28,7 @@ const doRedirect = async (url: string, abortController: AbortController) => {
 
 
 export const grant = buildRemoteGrant({
-  demand: buildFailsafeDemander(
-    demandRetrieve,
-    demandDeviceToken
-  )
+  demand: demandRetrieve,
 })
 
 
