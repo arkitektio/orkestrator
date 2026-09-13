@@ -4,7 +4,7 @@ import os from "node:os";
 
 // ✅ Adjust these for your repo
 const GITHUB_OWNER = "arkitektio";       // or "arkitekt-io" if that’s your org
-const GITHUB_REPO = "orkestrator-next"; // repo name
+const GITHUB_REPO = "orkestrator"; // repo name
 
 /**
  * Sanitize a string to remove user directory paths and sensitive information.

@@ -1,5 +1,5 @@
-[![codecov](https://codecov.io/gh/arkitektio/orkestrator-next/branch/main/graph/badge.svg?token=UGXEA2THBV)](https://codecov.io/gh/arkitektio/orkestrator-next)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/arkitektio/orkestrator-next/)
+[![codecov](https://codecov.io/gh/arkitektio/orkestrator/branch/main/graph/badge.svg?token=UGXEA2THBV)](https://codecov.io/gh/arkitektio/orkestrator)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/arkitektio/orkestrator/)
 ![Maintainer](https://img.shields.io/badge/maintainer-jhnnsrs-blue)
 
 # Orkestrator (Next)
@@ -13,7 +13,7 @@ for the arkitekt platform. It is currently under development and not ready for p
 # Installation
 
 While the new version of Orkestrator is still under development, you can install it by downloading one of the releases
-from the [release page](https://github.com/arkitektio/orkestrator-next/releases) fitting your operating system.
+from the [release page](https://github.com/arkitektio/orkestrator/releases) fitting your operating system.
 We provide installers for Windows and MacOS, as well as an AppImage and deb package for Linux.
 
 > [!NOTE]

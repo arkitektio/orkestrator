@@ -5,7 +5,7 @@ electronLanguages: ["en", "en-US"]
 publish:
   provider: github
   owner: arkitektio
-  repo: orkestrator-next
+  repo: orkestrator
   releaseType: release # must be published (not draft) to update
 # Emit latest.yml + beta.yml (+ alpha.yml) on every build so the "Next"
 # channel (which rides beta.yml) rolls forward to stable once a stable ships.
