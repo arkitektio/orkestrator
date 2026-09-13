@@ -1,3 +1,23 @@
+# [2.1.0](https://github.com/arkitektio/orkestrator/compare/v2.0.2...v2.1.0) (2026-09-13)
+
+
+### Bug Fixes
+
+* better performance system ([ab21919](https://github.com/arkitektio/orkestrator/commit/ab21919f3863778991739381e1543065702610c1))
+* catalog ([818834c](https://github.com/arkitektio/orkestrator/commit/818834ce6c7aceba2c2357c3bb43d751a589e74e))
+* first step to add layer ([ccf4f80](https://github.com/arkitektio/orkestrator/commit/ccf4f80e0a3247619836222eada5ec7873c52b0e))
+* mode state endless loop ([b08e536](https://github.com/arkitektio/orkestrator/commit/b08e5362b62f43eeeb03de7219197dfea69f555f))
+* pmicrscalenous fixes for mikro and rekuest ([7d5fe56](https://github.com/arkitektio/orkestrator/commit/7d5fe56454260ca4dfb24b10eda687f48bd3cfcc))
+* prots ([fc57167](https://github.com/arkitektio/orkestrator/commit/fc571677a094d0cfa747807477d3642b24aa429c))
+* smaller issues ([c1ee613](https://github.com/arkitektio/orkestrator/commit/c1ee613b6feb2abf666f51e12f4b7cf633651bad))
+
+
+### Features
+
+* blokify the validators and effects ([2af0347](https://github.com/arkitektio/orkestrator/commit/2af03479899e2b195eefcc0bd1e096e068a246f9))
+* nicer rgb card ([296b924](https://github.com/arkitektio/orkestrator/commit/296b924b48a1904cff9a18d662532f5f5820a439))
+* removal of vestigal v2 ([84966ea](https://github.com/arkitektio/orkestrator/commit/84966eafa6b05160c3763cd2e0959908eb6c3a47))
+
 ## [2.0.2](https://github.com/arkitektio/orkestrator-next/compare/v2.0.1...v2.0.2) (2026-09-01)
 
 
