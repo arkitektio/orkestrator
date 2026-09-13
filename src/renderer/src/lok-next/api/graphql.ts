@@ -22,14 +22,10 @@ export type Scalars = {
   DateTime: { input: any; output: any; }
   /** The `Fakt` scalar type represents a reference to a fakt */
   Fakt: { input: any; output: any; }
-  /** The `Identifier` scalasr typsse represents a reference to a store previously created by the user n a datalayer */
-  Identifier: { input: any; output: any; }
   /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf). */
   JSON: { input: any; output: any; }
   /** The Service identifier is a unique identifier for a service. It is used to identify the service in the database and in the code. We encourage you to use the reverse domain name notation. E.g. `com.example.myservice` */
   ServiceIdentifier: { input: any; output: any; }
-  /** The `Identifier` scalasr typsse represents a reference to a store previously created by the user n a datalayer */
-  UnsafeChild: { input: any; output: any; }
   /** The `Version` represents a semver version string */
   Version: { input: any; output: any; }
   _Any: { input: any; output: any; }
@@ -42,11 +38,6 @@ export type AcceptInviteInput = {
 export type AcknowledgeMessageInput = {
   acknowledged: Scalars['Boolean']['input'];
   id: Scalars['ID']['input'];
-};
-
-export type AddItemToStashInput = {
-  items: Array<StashItemInput>;
-  stash: Scalars['ID']['input'];
 };
 
 export type AddUserToOrganizationInput = {
@@ -210,85 +201,6 @@ export type ComChannelOrdering =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
 
-/**
- * Comments represent the comments of a user on a specific data item
- * tart are identified by the unique combination of `identifier` and `object`.
- * E.g a comment for an Image on the Mikro services would be serverd as
- * `@mikro/image:imageID`.
- *
- * Comments always belong to the user that created it. Comments in threads
- * get a parent attribute set, that points to the immediate parent.
- *
- * Each comment contains multiple descendents, that make up a *rich* representation
- * of the underlying comment data including potential mentions, or links, or
- * paragraphs.
- */
-export type Comment = {
-  __typename?: 'Comment';
-  /** The children of this comment */
-  children: Array<Comment>;
-  /** The time this comment got created */
-  createdAt: Scalars['DateTime']['output'];
-  /** The immediate descendends of the comments. Think typed Rich Representation */
-  descendants: Array<Descendant>;
-  id: Scalars['ID']['output'];
-  /** The identifier of the object. Consult the documentation for the format */
-  identifier: Scalars['Identifier']['output'];
-  /** The users that got mentioned in this comment */
-  mentions: Array<User>;
-  /** The object id of the object, on its associated service */
-  object: Scalars['String']['output'];
-  /** The parent of this comment. Think Thread */
-  parent?: Maybe<Comment>;
-  resolved: Scalars['Boolean']['output'];
-  /** The user that resolved this comment */
-  resolvedBy?: Maybe<User>;
-  /** The user that created this comment */
-  user: User;
-};
-
-
-/**
- * Comments represent the comments of a user on a specific data item
- * tart are identified by the unique combination of `identifier` and `object`.
- * E.g a comment for an Image on the Mikro services would be serverd as
- * `@mikro/image:imageID`.
- *
- * Comments always belong to the user that created it. Comments in threads
- * get a parent attribute set, that points to the immediate parent.
- *
- * Each comment contains multiple descendents, that make up a *rich* representation
- * of the underlying comment data including potential mentions, or links, or
- * paragraphs.
- */
-export type CommentChildrenArgs = {
-  ordering?: Array<CommentOrdering>;
-};
-
-
-/**
- * Comments represent the comments of a user on a specific data item
- * tart are identified by the unique combination of `identifier` and `object`.
- * E.g a comment for an Image on the Mikro services would be serverd as
- * `@mikro/image:imageID`.
- *
- * Comments always belong to the user that created it. Comments in threads
- * get a parent attribute set, that points to the immediate parent.
- *
- * Each comment contains multiple descendents, that make up a *rich* representation
- * of the underlying comment data including potential mentions, or links, or
- * paragraphs.
- */
-export type CommentMentionsArgs = {
-  filters?: InputMaybe<UserFilter>;
-  ordering?: Array<UserOrdering>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-export type CommentOrdering =
-  { createdAt: Ordering; id?: never; }
-  |  { createdAt?: never; id: Ordering; };
-
 /** A Communication */
 export type Communication = {
   __typename?: 'Communication';
@@ -307,14 +219,6 @@ export type Context = {
   scope: Array<Scalars['String']['output']>;
   /** The user that is associated with this app */
   user: User;
-};
-
-export type CreateCommentInput = {
-  descendants: Array<DescendantInput>;
-  identifier: Scalars['Identifier']['input'];
-  notify?: InputMaybe<Scalars['Boolean']['input']>;
-  object: Scalars['ID']['input'];
-  parent?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type CreateGroupProfileInput = {
@@ -348,47 +252,13 @@ export type CreateServiceInstanceInput = {
   service: Scalars['ID']['input'];
 };
 
-export type CreateStashInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-};
-
 export type DeclineInviteInput = {
   token: Scalars['String']['input'];
 };
 
-export type DeleteStashInput = {
-  stash: Scalars['ID']['input'];
+export type DeleteRedeemTokenInput = {
+  id: Scalars['ID']['input'];
 };
-
-export type DeleteStashItems = {
-  items: Array<Scalars['ID']['input']>;
-};
-
-/** A descendant of a comment. Descendend are used to render rich text in the frontend. */
-export type Descendant = {
-  children?: Maybe<Array<Descendant>>;
-  kind: DescendantKind;
-  /** Unsafe children are not typed and fall back to json. This is a workaround if queries get too complex. */
-  unsafeChildren?: Maybe<Array<Scalars['UnsafeChild']['output']>>;
-};
-
-export type DescendantInput = {
-  bold?: InputMaybe<Scalars['Boolean']['input']>;
-  children?: InputMaybe<Array<DescendantInput>>;
-  code?: InputMaybe<Scalars['Boolean']['input']>;
-  italic?: InputMaybe<Scalars['Boolean']['input']>;
-  kind: DescendantKind;
-  text?: InputMaybe<Scalars['String']['input']>;
-  user?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** The Kind of a Descendant */
-export enum DescendantKind {
-  Leaf = 'LEAF',
-  Mention = 'MENTION',
-  Paragraph = 'PARAGRAPH'
-}
 
 export type DevelopmentClientInput = {
   hub?: InputMaybe<Scalars['ID']['input']>;
@@ -635,20 +505,6 @@ export type LayerOrdering =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
 
-/** A leaf of text. This is the most basic descendant and always ends a tree. */
-export type LeafDescendant = Descendant & {
-  __typename?: 'LeafDescendant';
-  bold?: Maybe<Scalars['Boolean']['output']>;
-  children?: Maybe<Array<Descendant>>;
-  code?: Maybe<Scalars['Boolean']['output']>;
-  italic?: Maybe<Scalars['Boolean']['output']>;
-  kind: DescendantKind;
-  text?: Maybe<Scalars['String']['output']>;
-  underline?: Maybe<Scalars['Boolean']['output']>;
-  /** Unsafe children are not typed and fall back to json. This is a workaround if queries get too complex. */
-  unsafeChildren?: Maybe<Array<Scalars['UnsafeChild']['output']>>;
-};
-
 export type LinkingRequestInput = {
   host: Scalars['String']['input'];
   isSecure?: Scalars['Boolean']['input'];
@@ -742,25 +598,12 @@ export type MembershipFilter = {
 export type MembershipOrdering =
   { id: Ordering; };
 
-/** A mention of a user */
-export type MentionDescendant = Descendant & {
-  __typename?: 'MentionDescendant';
-  children?: Maybe<Array<Descendant>>;
-  kind: DescendantKind;
-  /** Unsafe children are not typed and fall back to json. This is a workaround if queries get too complex. */
-  unsafeChildren?: Maybe<Array<Scalars['UnsafeChild']['output']>>;
-  user?: Maybe<User>;
-};
-
 export type Mutation = {
   __typename?: 'Mutation';
   acceptInvite: Membership;
   acknowledgeMessage: SystemMessage;
-  /** Add items to a stash */
-  addItemsToStash: Array<StashItem>;
   addUserToOrganization: Membership;
   cancelInvite: Invite;
-  createComment: Comment;
   createDevelopmentalClient: Client;
   createGroupProfile: GroupProfile;
   createInvite: Invite;
@@ -768,26 +611,18 @@ export type Mutation = {
   createProfile: Profile;
   createRedeemToken: RedeemToken;
   createServiceInstance: ServiceInstance;
-  /** Create a new stash */
-  createStash: Stash;
   declineInvite: Invite;
-  deleteStash: Scalars['ID']['output'];
-  /** Delete items from a stash */
-  deleteStashItems: Array<Scalars['ID']['output']>;
+  deleteRedeemToken: Scalars['ID']['output'];
   notifyUser: Scalars['Boolean']['output'];
   registerComChannel: ComChannel;
   render: Scalars['Fakt']['output'];
-  replyTo: Comment;
   requestMediaUpload: PresignedPostCredentials;
-  resolveComment: Comment;
   updateDevice: Device;
   updateGroupProfile: GroupProfile;
   updateMembershipColors: Membership;
   updateOrganization: Organization;
   updateProfile: Profile;
   updateServiceInstance: ServiceInstance;
-  /** Update a stash */
-  updateStash: Stash;
 };
 
 
@@ -801,11 +636,6 @@ export type MutationAcknowledgeMessageArgs = {
 };
 
 
-export type MutationAddItemsToStashArgs = {
-  input: AddItemToStashInput;
-};
-
-
 export type MutationAddUserToOrganizationArgs = {
   input: AddUserToOrganizationInput;
 };
@@ -813,11 +643,6 @@ export type MutationAddUserToOrganizationArgs = {
 
 export type MutationCancelInviteArgs = {
   input: CancelInviteInput;
-};
-
-
-export type MutationCreateCommentArgs = {
-  input: CreateCommentInput;
 };
 
 
@@ -856,23 +681,13 @@ export type MutationCreateServiceInstanceArgs = {
 };
 
 
-export type MutationCreateStashArgs = {
-  input: CreateStashInput;
-};
-
-
 export type MutationDeclineInviteArgs = {
   input: DeclineInviteInput;
 };
 
 
-export type MutationDeleteStashArgs = {
-  input: DeleteStashInput;
-};
-
-
-export type MutationDeleteStashItemsArgs = {
-  input: DeleteStashItems;
+export type MutationDeleteRedeemTokenArgs = {
+  input: DeleteRedeemTokenInput;
 };
 
 
@@ -891,18 +706,8 @@ export type MutationRenderArgs = {
 };
 
 
-export type MutationReplyToArgs = {
-  input: ReplyToCommentInput;
-};
-
-
 export type MutationRequestMediaUploadArgs = {
   input: RequestMediaUploadInput;
-};
-
-
-export type MutationResolveCommentArgs = {
-  input: ResolveCommentInput;
 };
 
 
@@ -933,11 +738,6 @@ export type MutationUpdateProfileArgs = {
 
 export type MutationUpdateServiceInstanceArgs = {
   input: UpdateServiceInstanceInput;
-};
-
-
-export type MutationUpdateStashArgs = {
-  input: UpdateStashInput;
 };
 
 export type NotifyUserInput = {
@@ -1044,16 +844,6 @@ export type OrganizationProfile = {
   name?: Maybe<Scalars['String']['output']>;
 };
 
-/** A Paragraph of text */
-export type ParagraphDescendant = Descendant & {
-  __typename?: 'ParagraphDescendant';
-  children?: Maybe<Array<Descendant>>;
-  kind: DescendantKind;
-  size?: Maybe<Scalars['String']['output']>;
-  /** Unsafe children are not typed and fall back to json. This is a workaround if queries get too complex. */
-  unsafeChildren?: Maybe<Array<Scalars['UnsafeChild']['output']>>;
-};
-
 /** Temporary Credentials for a file upload that can be used by a Client (e.g. in a python datalayer) */
 export type PresignedPostCredentials = {
   __typename?: 'PresignedPostCredentials';
@@ -1110,9 +900,6 @@ export type Query = {
   apps: Array<App>;
   client: Client;
   clients: Array<Client>;
-  comment: Comment;
-  comments: Array<Comment>;
-  commentsFor: Array<Comment>;
   device: Device;
   /** Look a device up by its raw device id, as reported by the client. Device ids are stored as a per-organization hash, so the raw id is hashed with the caller's organization before lookup. */
   deviceByDeviceId: Device;
@@ -1129,9 +916,7 @@ export type Query = {
   message: SystemMessage;
   myActiveMessages: Array<SystemMessage>;
   myManagedClients: Array<Client>;
-  myMentions: Array<Comment>;
   myRedeemTokens: Array<RedeemToken>;
-  myStashes: Array<Stash>;
   mycontext: Context;
   mygroups: Array<Group>;
   organization: Organization;
@@ -1149,10 +934,6 @@ export type Query = {
   serviceRelease: ServiceRelease;
   serviceReleases: Array<ServiceRelease>;
   services: Array<Service>;
-  stash: Stash;
-  stashItem: StashItem;
-  stashItems: Array<StashItem>;
-  stashes: Array<Stash>;
   user: User;
   userStats: UserStats;
   users: Array<User>;
@@ -1183,22 +964,6 @@ export type QueryClientsArgs = {
   filters?: InputMaybe<ClientFilter>;
   ordering?: Array<ClientOrdering>;
   pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-export type QueryCommentArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryCommentsArgs = {
-  ordering?: Array<CommentOrdering>;
-};
-
-
-export type QueryCommentsForArgs = {
-  identifier: Scalars['Identifier']['input'];
-  object: Scalars['ID']['input'];
 };
 
 
@@ -1357,30 +1122,6 @@ export type QueryServicesArgs = {
 };
 
 
-export type QueryStashArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryStashItemArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryStashItemsArgs = {
-  filters?: InputMaybe<StashItemFilter>;
-  ordering?: Array<StashItemOrdering>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-export type QueryStashesArgs = {
-  filters?: InputMaybe<StashFilter>;
-  ordering?: Array<StashOrdering>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
 export type QueryUserArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1408,7 +1149,15 @@ export type RedeemToken = {
   __typename?: 'RedeemToken';
   /** The client that this redeem token belongs to. */
   client?: Maybe<Client>;
+  /** When this token stops being redeemable. Null means never. */
+  expiresAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
+  /** How many times this token may be redeemed. Null means unlimited. */
+  maxRedemptions?: Maybe<Scalars['Int']['output']>;
+  /** The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and node_id exactly and may only request a subset of its scopes and requirements. */
+  pinnedManifest?: Maybe<Scalars['JSON']['output']>;
+  /** How many times this token has been redeemed so far. */
+  redemptionCount: Scalars['Int']['output'];
   /** The token of the redeem token */
   token: Scalars['String']['output'];
   /** The user that this redeem token belongs to. */
@@ -1432,6 +1181,9 @@ export type RedeemTokenFilter = {
 };
 
 export type RedeemTokenInput = {
+  expiresInDays?: InputMaybe<Scalars['Int']['input']>;
+  manifest: ManifestInput;
+  maxRedemptions?: InputMaybe<Scalars['Int']['input']>;
   token?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -1482,12 +1234,6 @@ export type RenderInput = {
   request?: InputMaybe<LinkingRequestInput>;
 };
 
-export type ReplyToCommentInput = {
-  descendants: Array<DescendantInput>;
-  notify?: InputMaybe<Scalars['Boolean']['input']>;
-  parent?: InputMaybe<Scalars['ID']['input']>;
-};
-
 export type RequestMediaUploadInput = {
   datalayer: Scalars['String']['input'];
   key: Scalars['String']['input'];
@@ -1498,11 +1244,6 @@ export type RequirementInput = {
   key: Scalars['String']['input'];
   optional?: Scalars['Boolean']['input'];
   service: Scalars['String']['input'];
-};
-
-export type ResolveCommentInput = {
-  id: Scalars['ID']['input'];
-  notify?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** A Role is a set of permissions that can be assigned to a user. It is used to define what a user can do in the system. */
@@ -1710,88 +1451,6 @@ export type ServiceReleaseFilter = {
 export type ServiceReleaseOrdering =
   { id: Ordering; };
 
-/**
- *
- * A Stash
- *
- */
-export type Stash = {
-  __typename?: 'Stash';
-  createdAt: Scalars['DateTime']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  isActive: Scalars['Boolean']['output'];
-  items: Array<StashItem>;
-  name: Scalars['String']['output'];
-  /** The owner of the stash */
-  owner: User;
-  updatedAt: Scalars['DateTime']['output'];
-};
-
-
-/**
- *
- * A Stash
- *
- */
-export type StashItemsArgs = {
-  filters?: InputMaybe<StashItemFilter>;
-  ordering?: Array<StashItemOrdering>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-/** __doc__ */
-export type StashFilter = {
-  AND?: InputMaybe<StashFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<StashFilter>;
-  OR?: InputMaybe<StashFilter>;
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  search?: InputMaybe<Scalars['String']['input']>;
-};
-
-/**
- *
- * A stashed item
- *
- */
-export type StashItem = {
-  __typename?: 'StashItem';
-  addedAt: Scalars['DateTime']['output'];
-  id: Scalars['ID']['output'];
-  identifier: Scalars['String']['output'];
-  object: Scalars['String']['output'];
-  updatedAt: Scalars['DateTime']['output'];
-};
-
-/** StashItem(id, stash, identifier, object, added_by, added_at, updated_at) */
-export type StashItemFilter = {
-  AND?: InputMaybe<StashItemFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<StashItemFilter>;
-  OR?: InputMaybe<StashItemFilter>;
-  identifier?: InputMaybe<StrFilterLookup>;
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  search?: InputMaybe<Scalars['String']['input']>;
-  stashes?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type StashItemInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  identifier: Scalars['String']['input'];
-  object: Scalars['String']['input'];
-};
-
-export type StashItemOrdering =
-  { id: Ordering; updatedAt?: never; }
-  |  { id?: never; updatedAt: Ordering; };
-
-export type StashOrdering =
-  { createdAt: Ordering; id?: never; name?: never; updatedAt?: never; }
-  |  { createdAt?: never; id: Ordering; name?: never; updatedAt?: never; }
-  |  { createdAt?: never; id?: never; name: Ordering; updatedAt?: never; }
-  |  { createdAt?: never; id?: never; name?: never; updatedAt: Ordering; };
-
 export type StrFilterLookup = {
   contains?: InputMaybe<Scalars['String']['input']>;
   endsWith?: InputMaybe<Scalars['String']['input']>;
@@ -1815,7 +1474,6 @@ export type StrFilterLookup = {
 export type Subscription = {
   __typename?: 'Subscription';
   communications: Communication;
-  mentions: Comment;
 };
 
 
@@ -1889,12 +1547,6 @@ export type UpdateServiceInstanceInput = {
   deniedGroups?: InputMaybe<Array<Scalars['ID']['input']>>;
   deniedUsers?: InputMaybe<Array<Scalars['ID']['input']>>;
   id: Scalars['ID']['input'];
-};
-
-export type UpdateStashInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  name: Scalars['String']['input'];
-  stash: Scalars['ID']['input'];
 };
 
 /**
@@ -2141,12 +1793,6 @@ export type ListServiceInstanceFragment = { __typename?: 'ServiceInstance', id: 
 
 export type ListServiceInstanceMappingFragment = { __typename?: 'ServiceInstanceMapping', id: string, key: string, optional: boolean, instance: { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> }, client: { __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null } };
 
-export type StashFragment = { __typename?: 'Stash', id: string, name: string, description?: string | null, createdAt: any, updatedAt: any, owner: { __typename?: 'User', id: string, username: string } };
-
-export type ListStashFragment = { __typename?: 'Stash', id: string, name: string, description?: string | null, createdAt: any, updatedAt: any, items: Array<{ __typename?: 'StashItem', id: string, identifier: string, object: string }>, owner: { __typename?: 'User', id: string, username: string } };
-
-export type StashItemFragment = { __typename?: 'StashItem', id: string, identifier: string, object: string };
-
 export type ListUserFragment = { __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
 
 export type DetailUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null, groups: Array<{ __typename?: 'Group', id: string, name: string }>, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', identifier: string, id: string }>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> };
@@ -2253,36 +1899,6 @@ export type CreateRedeemTokenMutationVariables = Exact<{
 
 
 export type CreateRedeemTokenMutation = { __typename?: 'Mutation', createRedeemToken: { __typename?: 'RedeemToken', id: string, token: string } };
-
-export type CreateStashMutationVariables = Exact<{
-  name?: InputMaybe<Scalars['String']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-
-export type CreateStashMutation = { __typename?: 'Mutation', createStash: { __typename?: 'Stash', id: string, name: string, description?: string | null, createdAt: any, updatedAt: any, items: Array<{ __typename?: 'StashItem', id: string, identifier: string, object: string }>, owner: { __typename?: 'User', id: string, username: string } } };
-
-export type AddItemsToStashMutationVariables = Exact<{
-  stash: Scalars['ID']['input'];
-  items: Array<StashItemInput> | StashItemInput;
-}>;
-
-
-export type AddItemsToStashMutation = { __typename?: 'Mutation', addItemsToStash: Array<{ __typename?: 'StashItem', id: string, identifier: string, object: string }> };
-
-export type DeleteStashItemsMutationVariables = Exact<{
-  items: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
-}>;
-
-
-export type DeleteStashItemsMutation = { __typename?: 'Mutation', deleteStashItems: Array<string> };
-
-export type DeleteStashMutationVariables = Exact<{
-  stash: Scalars['ID']['input'];
-}>;
-
-
-export type DeleteStashMutation = { __typename?: 'Mutation', deleteStash: string };
 
 export type RequestMediaUploadMutationVariables = Exact<{
   key: Scalars['String']['input'];
@@ -2574,13 +2190,6 @@ export type GetServiceQueryVariables = Exact<{
 
 
 export type GetServiceQuery = { __typename?: 'Query', service: { __typename?: 'Service', identifier: any, id: string, name: string, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
-
-export type MyStashesQueryVariables = Exact<{
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type MyStashesQuery = { __typename?: 'Query', stashes: Array<{ __typename?: 'Stash', id: string, name: string, description?: string | null, createdAt: any, updatedAt: any, items: Array<{ __typename?: 'StashItem', id: string, identifier: string, object: string }>, owner: { __typename?: 'User', id: string, username: string } }> };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3141,35 +2750,6 @@ export const ServiceInstanceFragmentDoc = gql`
 ${ListGroupFragmentDoc}
 ${ListServiceInstanceMappingFragmentDoc}
 ${ListInstanceAliasFragmentDoc}`;
-export const StashFragmentDoc = gql`
-    fragment Stash on Stash {
-  id
-  name
-  description
-  createdAt
-  updatedAt
-  owner {
-    id
-    username
-  }
-}
-    `;
-export const StashItemFragmentDoc = gql`
-    fragment StashItem on StashItem {
-  id
-  identifier
-  object
-}
-    `;
-export const ListStashFragmentDoc = gql`
-    fragment ListStash on Stash {
-  ...Stash
-  items {
-    ...StashItem
-  }
-}
-    ${StashFragmentDoc}
-${StashItemFragmentDoc}`;
 export const MembershipFragmentDoc = gql`
     fragment Membership on Membership {
   id
@@ -3681,136 +3261,6 @@ export function useCreateRedeemTokenMutation(baseOptions?: ApolloReactHooks.Muta
 export type CreateRedeemTokenMutationHookResult = ReturnType<typeof useCreateRedeemTokenMutation>;
 export type CreateRedeemTokenMutationResult = Apollo.MutationResult<CreateRedeemTokenMutation>;
 export type CreateRedeemTokenMutationOptions = Apollo.BaseMutationOptions<CreateRedeemTokenMutation, CreateRedeemTokenMutationVariables>;
-export const CreateStashDocument = gql`
-    mutation CreateStash($name: String, $description: String = "") {
-  createStash(input: {name: $name, description: $description}) {
-    ...ListStash
-  }
-}
-    ${ListStashFragmentDoc}`;
-export type CreateStashMutationFn = Apollo.MutationFunction<CreateStashMutation, CreateStashMutationVariables>;
-
-/**
- * __useCreateStashMutation__
- *
- * To run a mutation, you first call `useCreateStashMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateStashMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createStashMutation, { data, loading, error }] = useCreateStashMutation({
- *   variables: {
- *      name: // value for 'name'
- *      description: // value for 'description'
- *   },
- * });
- */
-export function useCreateStashMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateStashMutation, CreateStashMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreateStashMutation, CreateStashMutationVariables>(CreateStashDocument, options);
-      }
-export type CreateStashMutationHookResult = ReturnType<typeof useCreateStashMutation>;
-export type CreateStashMutationResult = Apollo.MutationResult<CreateStashMutation>;
-export type CreateStashMutationOptions = Apollo.BaseMutationOptions<CreateStashMutation, CreateStashMutationVariables>;
-export const AddItemsToStashDocument = gql`
-    mutation AddItemsToStash($stash: ID!, $items: [StashItemInput!]!) {
-  addItemsToStash(input: {stash: $stash, items: $items}) {
-    ...StashItem
-  }
-}
-    ${StashItemFragmentDoc}`;
-export type AddItemsToStashMutationFn = Apollo.MutationFunction<AddItemsToStashMutation, AddItemsToStashMutationVariables>;
-
-/**
- * __useAddItemsToStashMutation__
- *
- * To run a mutation, you first call `useAddItemsToStashMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useAddItemsToStashMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [addItemsToStashMutation, { data, loading, error }] = useAddItemsToStashMutation({
- *   variables: {
- *      stash: // value for 'stash'
- *      items: // value for 'items'
- *   },
- * });
- */
-export function useAddItemsToStashMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AddItemsToStashMutation, AddItemsToStashMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<AddItemsToStashMutation, AddItemsToStashMutationVariables>(AddItemsToStashDocument, options);
-      }
-export type AddItemsToStashMutationHookResult = ReturnType<typeof useAddItemsToStashMutation>;
-export type AddItemsToStashMutationResult = Apollo.MutationResult<AddItemsToStashMutation>;
-export type AddItemsToStashMutationOptions = Apollo.BaseMutationOptions<AddItemsToStashMutation, AddItemsToStashMutationVariables>;
-export const DeleteStashItemsDocument = gql`
-    mutation DeleteStashItems($items: [ID!]!) {
-  deleteStashItems(input: {items: $items})
-}
-    `;
-export type DeleteStashItemsMutationFn = Apollo.MutationFunction<DeleteStashItemsMutation, DeleteStashItemsMutationVariables>;
-
-/**
- * __useDeleteStashItemsMutation__
- *
- * To run a mutation, you first call `useDeleteStashItemsMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteStashItemsMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deleteStashItemsMutation, { data, loading, error }] = useDeleteStashItemsMutation({
- *   variables: {
- *      items: // value for 'items'
- *   },
- * });
- */
-export function useDeleteStashItemsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteStashItemsMutation, DeleteStashItemsMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<DeleteStashItemsMutation, DeleteStashItemsMutationVariables>(DeleteStashItemsDocument, options);
-      }
-export type DeleteStashItemsMutationHookResult = ReturnType<typeof useDeleteStashItemsMutation>;
-export type DeleteStashItemsMutationResult = Apollo.MutationResult<DeleteStashItemsMutation>;
-export type DeleteStashItemsMutationOptions = Apollo.BaseMutationOptions<DeleteStashItemsMutation, DeleteStashItemsMutationVariables>;
-export const DeleteStashDocument = gql`
-    mutation DeleteStash($stash: ID!) {
-  deleteStash(input: {stash: $stash})
-}
-    `;
-export type DeleteStashMutationFn = Apollo.MutationFunction<DeleteStashMutation, DeleteStashMutationVariables>;
-
-/**
- * __useDeleteStashMutation__
- *
- * To run a mutation, you first call `useDeleteStashMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteStashMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deleteStashMutation, { data, loading, error }] = useDeleteStashMutation({
- *   variables: {
- *      stash: // value for 'stash'
- *   },
- * });
- */
-export function useDeleteStashMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteStashMutation, DeleteStashMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<DeleteStashMutation, DeleteStashMutationVariables>(DeleteStashDocument, options);
-      }
-export type DeleteStashMutationHookResult = ReturnType<typeof useDeleteStashMutation>;
-export type DeleteStashMutationResult = Apollo.MutationResult<DeleteStashMutation>;
-export type DeleteStashMutationOptions = Apollo.BaseMutationOptions<DeleteStashMutation, DeleteStashMutationVariables>;
 export const RequestMediaUploadDocument = gql`
     mutation RequestMediaUpload($key: String!, $datalayer: String!) {
   requestMediaUpload(input: {key: $key, datalayer: $datalayer}) {
@@ -5242,41 +4692,6 @@ export function useGetServiceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetServiceQueryHookResult = ReturnType<typeof useGetServiceQuery>;
 export type GetServiceLazyQueryHookResult = ReturnType<typeof useGetServiceLazyQuery>;
 export type GetServiceQueryResult = Apollo.QueryResult<GetServiceQuery, GetServiceQueryVariables>;
-export const MyStashesDocument = gql`
-    query MyStashes($pagination: OffsetPaginationInput) {
-  stashes(pagination: $pagination) {
-    ...ListStash
-  }
-}
-    ${ListStashFragmentDoc}`;
-
-/**
- * __useMyStashesQuery__
- *
- * To run a query within a React component, call `useMyStashesQuery` and pass it any options that fit your needs.
- * When your component renders, `useMyStashesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useMyStashesQuery({
- *   variables: {
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useMyStashesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MyStashesQuery, MyStashesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<MyStashesQuery, MyStashesQueryVariables>(MyStashesDocument, options);
-      }
-export function useMyStashesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MyStashesQuery, MyStashesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<MyStashesQuery, MyStashesQueryVariables>(MyStashesDocument, options);
-        }
-export type MyStashesQueryHookResult = ReturnType<typeof useMyStashesQuery>;
-export type MyStashesLazyQueryHookResult = ReturnType<typeof useMyStashesLazyQuery>;
-export type MyStashesQueryResult = Apollo.QueryResult<MyStashesQuery, MyStashesQueryVariables>;
 export const MeDocument = gql`
     query Me {
   me {

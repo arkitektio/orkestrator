@@ -8,9 +8,6 @@ import { NotConnected } from "./components/fallbacks/NotConnected";
 import { NotFound } from "./components/fallbacks/NotFound";
 import {PrivateNavigationBar} from "./components/navigation/PrivateNavigationBar";
 
-
-import { Stash } from "@/lok-next/components/stash/Stash";
-
 // The dashboard carries dockview; it is the index route, but a deep link into a
 // module should not pay for it.
 const Hero = React.lazy(() => import("@/app/pages/Hero"));
@@ -74,7 +71,6 @@ function App() {
             <Route path="dokuments/*" element={protectModule(<DokumentsModule />)} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <Stash />
         </BackNavigationErrorCatcher>
       </AppLayout>
     </AppProvider>

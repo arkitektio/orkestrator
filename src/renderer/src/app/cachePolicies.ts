@@ -124,8 +124,6 @@ export const LOK_PAGINATED_FIELDS: PaginatedFieldMap = {
   serviceInstances: ["filters", "ordering"],
   serviceReleases: ["filters", "ordering"],
   services: ["filters", "ordering"],
-  stashItems: ["filters", "ordering"],
-  stashes: ["filters", "ordering"],
   users: ["filters", "ordering"],
 };
 
