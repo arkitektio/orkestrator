@@ -1,3 +1,10 @@
+## [2.1.2](https://github.com/arkitektio/orkestrator/compare/v2.1.1...v2.1.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* orkestrator references ([56cac74](https://github.com/arkitektio/orkestrator/commit/56cac746de21e52a5a2cdb50727b79381e35f3b9))
+
 ## [2.1.1](https://github.com/arkitektio/orkestrator/compare/v2.1.0...v2.1.1) (2026-09-13)
 
 
