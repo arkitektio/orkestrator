@@ -1,10 +1,18 @@
 import type { SliceSet } from "./sliceTypes";
 import { probeAfterPinChange } from "../../probe/probeTargeting";
 import { applyExactValues } from "../../probe/probeTypes";
-import { applyAttributeRows, buildProbedAttributes, planIdentity } from "@/mikro-next/lib/attributes/attributeTypes";
+import { applyAttributeRows, buildProbedAttributes } from "@/mikro-next/lib/attributes/attributeTypes";
+import {
+  loadSelection,
+  saveSelection,
+  withHopColumns,
+  withHopEnabled,
+  withSparseLimit,
+  type AttributeSelection,
+} from "@/mikro-next/lib/attributes/attributeSelection";
 import type { ProbeFetchKey, ProbeMode } from "../../probe/probeTypes";
 import type { MeshSelectionState, ProbedCoordinate, SceneAttributeKey } from "../viewerStore";
-import type { AttributeColumnLike, AttributePlanLike, AttributeRow, PlanRowsState, ProbedAttributes } from "@/mikro-next/lib/attributes/attributeTypes";
+import type { AttributeColumnLike, AttributeRow, HopMeta, PlanRowsState, ProbedAttributes } from "@/mikro-next/lib/attributes/attributeTypes";
 /**
  * "What is under this pixel?" — the probed point, its readout cadence, the
  * attribute rows resolved for it, and the scene-wide picked mesh instance,
@@ -61,11 +69,11 @@ export interface ProbeSlice {
    * probe, written by AttributeProbeTracker executing the probed system's
    * attribute plans locally (zarr sample + DuckDB lookup). */
   probedAttributes: ProbedAttributes<SceneAttributeKey> | null;
-  /** A new probed point's plans are known: reset the slice to all-pending. */
-  beginProbedAttributes: (key: SceneAttributeKey, plans: readonly AttributePlanLike[]) => void;
-  /** Async per-plan settlement: no-op set when the key went stale (same
+  /** A new probed point's hops are known: reset the slice to all-pending. */
+  beginProbedAttributes: (key: SceneAttributeKey, hops: readonly HopMeta[]) => void;
+  /** Async per-hop settlement: no-op set when the key went stale (same
    * late-arrival contract as mergeExactProbeValues). */
-  mergeAttributeRows: (key: SceneAttributeKey, planKey: string, state: PlanRowsState) => void;
+  mergeAttributeRows: (key: SceneAttributeKey, hopKey: string, state: PlanRowsState) => void;
   /** Whole-slice commit for the SYNCHRONOUS all-cached path — one set for N
    * plans instead of `begin` plus a `merge` each, and no set at all when the
    * result is value-equal to what is already up. */
@@ -96,6 +104,18 @@ export interface ProbeSlice {
    * collection (a MeshSample plan) MARKS that instance — highlight + hull. */
   markProbedInstances: boolean;
   setMarkProbedInstances: (mark: boolean) => void;
+  /**
+   * What a hover FETCHES: which hops of each attribute plan run, which
+   * columns a table hop selects, how much of a sparse profile is kept. Keyed
+   * by hop identity, so it holds across scenes over the same data, and
+   * persisted per browser (`loadSelection`/`saveSelection`). Read at UI
+   * cadence by the settings picker; the tracker reads it imperatively and
+   * folds its signature into the fetch key, so a change re-runs the probe.
+   */
+  attributeSelection: AttributeSelection;
+  setHopEnabled: (hopKey: string, enabled: boolean) => void;
+  setHopColumns: (hopKey: string, columns: readonly string[] | null) => void;
+  setSparseLimit: (limit: number) => void;
 }
 
 export const createProbeSlice = (
@@ -121,23 +141,14 @@ export const createProbeSlice = (
   mergeExactProbeValues: (key, values) =>
     set((state) => applyExactValues(state, key, values) ?? state),
   probedAttributes: null,
-  beginProbedAttributes: (key, plans) =>
+  beginProbedAttributes: (key, hops) =>
     set({
       probedAttributes: {
         key,
         byPlan: Object.fromEntries(
-          plans.map((plan) => [planIdentity(plan), { status: "pending", rows: [] } as PlanRowsState]),
+          hops.map((hop) => [hop.hopKey, { status: "pending", rows: [] } as PlanRowsState]),
         ),
-        planMeta: Object.fromEntries(
-          plans.map((plan) => [
-            planIdentity(plan),
-            {
-              tableName: plan.table.name,
-              tableId: plan.table.id,
-              attributes: plan.lookup.attributes,
-            },
-          ]),
-        ),
+        planMeta: Object.fromEntries(hops.map((hop) => [hop.hopKey, hop])),
       },
     }),
   mergeAttributeRows: (key, planKey, planState) =>
@@ -158,4 +169,17 @@ export const createProbeSlice = (
   setMeshSelection: (selection) => set({ meshSelection: selection }),
   markProbedInstances: false,
   setMarkProbedInstances: (mark) => set({ markProbedInstances: mark }),
+  attributeSelection: loadSelection(),
+  setHopEnabled: (hopKey, enabled) =>
+    set((state) => persisted(withHopEnabled(state.attributeSelection, hopKey, enabled))),
+  setHopColumns: (hopKey, columns) =>
+    set((state) => persisted(withHopColumns(state.attributeSelection, hopKey, columns))),
+  setSparseLimit: (limit) =>
+    set((state) => persisted(withSparseLimit(state.attributeSelection, limit))),
 });
+
+/** Write-through: the browser keeps what the session chose. */
+const persisted = (attributeSelection: AttributeSelection) => {
+  saveSelection(attributeSelection);
+  return { attributeSelection };
+};

@@ -8,7 +8,7 @@ import {
 } from "@/linkers";
 import { cn } from "@/lib/utils";
 import React from "react";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { useSearchParams } from "react-router-dom";
 import { useDetailExperimentQuery } from "../api/graphql";
 import {

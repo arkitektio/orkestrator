@@ -36,7 +36,7 @@ import {
   ReactiveNodeSuggestions,
   StreamPort,
 } from "../../types";
-import { useEditRiver } from "../context";
+import { useEditFlowStore } from "../context";
 import { ContextualContainer } from "./ContextualContainer";
 
 export const SearchForm = (props: { onSubmit: (data: any) => void }) => {
@@ -336,7 +336,7 @@ export const EdgeContextualRekuestNode = (props: {
     });
   }, [props.search]);
 
-  const { addEdgeContextualNode } = useEditRiver();
+  const addEdgeContextualNode = useEditFlowStore((s) => s.addEdgeContextualNode);
   const client = useRekuest();
 
   const onNodeClick = (id: string) => {
@@ -384,7 +384,7 @@ const EdgeReactiveNodes = (props: {
 }) => {
   const nodes = useEdgeReactiveNodes(props.search, props.params);
 
-  const { addEdgeContextualNode } = useEditRiver();
+  const addEdgeContextualNode = useEditFlowStore((s) => s.addEdgeContextualNode);
 
   return (
     <div className="flex flex-row gap-1 my-auto flex-wrap mt-2">
@@ -406,7 +406,7 @@ const EdgeReactiveNodes = (props: {
 };
 
 export const EdgeContextual = (props: { params: EdgeContextualParams }) => {
-  const { removeEdge } = useEditRiver();
+  const removeEdge = useEditFlowStore((s) => s.removeEdge);
 
   const [search, setSearch] = useState(undefined);
 

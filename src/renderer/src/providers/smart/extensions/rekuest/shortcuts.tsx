@@ -143,6 +143,10 @@ export const ShortcutButton = (
 ) => {
   const { assign } = useAssign();
   const { openDialog } = useDialog();
+  // Depend on the individual fields, not `props` (a fresh object every render),
+  // so the callbacks below — and the window keydown effect that depends on
+  // them — stay stable across renders.
+  const { objects, partners, onDone, onError } = props;
   const [doing, setDoing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [progress, setProgress] = React.useState<number | null>(0);
@@ -152,25 +156,25 @@ export const ShortcutButton = (
       if (event.kind === "COMPLETED") {
         setDoing(false);
         setProgress(null);
-        props.onDone?.({ event, kind: "shortcut" });
+        onDone?.({ event, kind: "shortcut" });
       }
       if (event.kind === "FAILED" || event.kind === "CRITICAL") {
         const message = event.message || "Unknown error";
         setDoing(false);
         setProgress(null);
         setError(message);
-        props.onError?.(message);
+        onError?.(message);
       }
       if (event.kind === "PROGRESS") {
         setProgress(event.progress || 0);
       }
     },
-    [props],
+    [onDone, onError],
   );
 
   const conditionalAssign = React.useCallback(
     async (shortcut: ListShortcutFragment) => {
-      const keys = buildShortcutArgs(shortcut, props);
+      const keys = buildShortcutArgs(shortcut, { objects, partners });
       if (!keys) {
         return;
       }
@@ -203,10 +207,10 @@ export const ShortcutButton = (
         untrack();
         const message = getErrorMessage(error);
         toast.error(message);
-        props.onError?.(message);
+        onError?.(message);
       }
     },
-    [assign, doStuff, openDialog, props],
+    [assign, doStuff, openDialog, objects, partners, onError],
   );
 
   React.useEffect(() => {

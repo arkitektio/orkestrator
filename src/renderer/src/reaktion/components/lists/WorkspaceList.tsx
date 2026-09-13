@@ -25,8 +25,8 @@ const List = ({ pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(item, index) => (
-        <WorkspaceCard key={index} workspace={item} />
+      {(item) => (
+        <WorkspaceCard key={item.id} workspace={item} />
       )}
     </ListRender>
   );

@@ -13,10 +13,11 @@ import { Action, ActionState } from "@/lib/localactions/LocalActionProvider";
 import type { ServiceMap } from "@/lib/arkitekt/provider";
 import type { OnDone } from "@/providers/smart/extensions/types";
 import { useSelectionSelector } from "@/providers/selection/SelectionContext";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDialog } from "../dialog";
+import { getModifierState } from "./modifierTracker";
 
 type LocalActionConfirmOptions = {
   title: string;
@@ -24,13 +25,6 @@ type LocalActionConfirmOptions = {
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
-};
-
-type ModifierState = {
-  ctrlKey: boolean;
-  shiftKey: boolean;
-  altKey: boolean;
-  metaKey: boolean;
 };
 
 export const usePerformAction = (props: {
@@ -50,46 +44,6 @@ export const usePerformAction = (props: {
   const navigate = useNavigate();
   const setSelection = useSelectionSelector((state) => state.setSelection);
   const setBSelection = useSelectionSelector((state) => state.setBSelection);
-  const modifierStateRef = useRef<ModifierState>({
-    ctrlKey: false,
-    shiftKey: false,
-    altKey: false,
-    metaKey: false,
-  });
-
-  useEffect(() => {
-    const updateModifierState = (event: KeyboardEvent | MouseEvent) => {
-      modifierStateRef.current = {
-        ctrlKey: event.ctrlKey,
-        shiftKey: event.shiftKey,
-        altKey: event.altKey,
-        metaKey: event.metaKey,
-      };
-    };
-
-    const resetModifierState = () => {
-      modifierStateRef.current = {
-        ctrlKey: false,
-        shiftKey: false,
-        altKey: false,
-        metaKey: false,
-      };
-    };
-
-    window.addEventListener("keydown", updateModifierState);
-    window.addEventListener("keyup", updateModifierState);
-    window.addEventListener("mousedown", updateModifierState);
-    window.addEventListener("mouseup", updateModifierState);
-    window.addEventListener("blur", resetModifierState);
-
-    return () => {
-      window.removeEventListener("keydown", updateModifierState);
-      window.removeEventListener("keyup", updateModifierState);
-      window.removeEventListener("mousedown", updateModifierState);
-      window.removeEventListener("mouseup", updateModifierState);
-      window.removeEventListener("blur", resetModifierState);
-    };
-  }, []);
 
   const confirm = useCallback((options: LocalActionConfirmOptions) => {
     return new Promise<boolean>((resolve) => {
@@ -126,7 +80,8 @@ export const usePerformAction = (props: {
         services: (connection?.serviceMap || {}) as ServiceMap,
         dialog,
         navigate,
-        modifiers: modifierStateRef.current,
+        // Read from the shared window-level tracker instead of per-row listeners.
+        modifiers: getModifierState(),
         confirm,
         location: window.location,
         state: props.state,

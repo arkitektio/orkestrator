@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { NodeResizeControl } from '@xyflow/react'
 import { motion } from 'framer-motion'
 import React from 'react'
-import { useEditNodeErrors, useEditRiver, EditFlowStoreContext } from '../edit/context'
+import { useEditNodeErrors, EditFlowStoreContext, useEditFlowStore } from '../edit/context'
 
 type NodeProps = {
   children: React.ReactNode
@@ -115,7 +115,7 @@ const BaseNodeShowLayout: React.FC<NodeProps & { showNodeErrors?: boolean; error
 }
 
 const EditNodeShowLayout: React.FC<NodeProps> = (props) => {
-  const { showNodeErrors } = useEditRiver()
+  const showNodeErrors = useEditFlowStore((s) => s.showNodeErrors);
   const errors = useEditNodeErrors(props.id)
   return <BaseNodeShowLayout {...props} showNodeErrors={showNodeErrors} errors={errors} />
 }

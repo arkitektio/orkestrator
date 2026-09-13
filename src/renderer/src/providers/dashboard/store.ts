@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { ReactNode } from "react";
-import { SerializedDockview } from "dockview";
+import type { SerializedDockview } from "dockview";
 
 // ── Types ──
 

@@ -5,8 +5,8 @@ import {
   ListRelationCategoryFragment,
   ListStructureRelationCategoryWithGraphFragment,
   useAssertRelationExistsMutation,
+  useAssertStructureExistsMutation,
   useAssertStructureRelationExistsMutation,
-  useEnsureStructureMutation,
   useGetDetailInstanceQuery,
   useListApplicableMeasurementCategoriesQuery,
   useListCandidateRelationCategoriesQuery,
@@ -58,7 +58,7 @@ export const StructureRelateButton = (props: {
   children: React.ReactNode;
 }) => {
   const [createSRelation] = useAssertStructureRelationExistsMutation();
-  const [createStructure] = useEnsureStructureMutation();
+  const [createStructure] = useAssertStructureExistsMutation();
 
   const handleRelationCreation = async () => {
     for (const object of props.left.objects) {
@@ -82,8 +82,8 @@ export const StructureRelateButton = (props: {
         });
 
         if (
-          !left.data?.ensureStructure.structure.id ||
-          !right.data?.ensureStructure.structure.id
+          !left.data?.assertStructureExists.structure.id ||
+          !right.data?.assertStructureExists.structure.id
         ) {
           throw new Error("Failed to ensure structures for relation creation");
         }
@@ -91,8 +91,8 @@ export const StructureRelateButton = (props: {
         await createSRelation({
           variables: {
             input: {
-              sourceId: left.data.ensureStructure.structure.id,
-              targetId: right.data.ensureStructure.structure.id,
+              sourceId: left.data.assertStructureExists.structure.id,
+              targetId: right.data.assertStructureExists.structure.id,
               term: termOf(props.category),
             },
           },
@@ -230,7 +230,7 @@ export const EntityRelationActions = (props: PassDownProps) => {
     variables: {
       search: props.filter && props.filter !== "" ? props.filter : undefined,
     },
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
   });
 
   const candidates = React.useMemo(
@@ -279,7 +279,7 @@ export const StructureRelationActions = (props: PassDownProps) => {
     variables: {
       search: props.filter && props.filter !== "" ? props.filter : undefined,
     },
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
   });
 
   // `StructureRelationCategoryFilter` has no `sourceIdentifier` / `targetIdentifier`
@@ -334,7 +334,7 @@ export const MeasurementActions = (props: PassDownProps) => {
     variables: {
       filters: { pinned: true },
     },
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
   });
 
   if (!firstObject) {
@@ -388,7 +388,7 @@ export const ApplicableMeasurements = (props: PassDownProps) => {
       search: props.filter && props.filter !== "" ? props.filter : undefined,
       sourceIdentifier: firstObject?.identifier || "",
     },
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
   });
 
   if (firstPartner || !firstObject) {

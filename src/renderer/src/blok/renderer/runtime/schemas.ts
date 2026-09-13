@@ -67,7 +67,7 @@ export const markActionSchema = <TSchema extends z.ZodTypeAny>(schema: TSchema):
 };
 
 /** Strips `.optional()` / `.nullable()` / `.default()` wrappers to reach the brand. */
-const unwrapSchema = (schema: z.ZodTypeAny): z.ZodTypeAny => {
+export const unwrapSchema = (schema: z.ZodTypeAny): z.ZodTypeAny => {
   let current: z.ZodTypeAny = schema;
 
   for (let depth = 0; depth < 8; depth += 1) {

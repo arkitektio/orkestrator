@@ -44,7 +44,7 @@ import {
   ReactiveNodeSuggestions,
   StreamPort,
 } from "../../types";
-import { useEditRiver } from "../context";
+import { useEditFlowStore } from "../context";
 import { ContextualContainer } from "./ContextualContainer";
 import { TemplateSelector } from "./TemplateSelector";
 
@@ -456,7 +456,7 @@ const ConnectReactiveNodes = (props: {
     props.search || "",
   );
 
-  const { addConnectContextualNode } = useEditRiver();
+  const addConnectContextualNode = useEditFlowStore((s) => s.addConnectContextualNode);
 
   return (
     <div className="flex flex-row gap-1 my-auto flex-wrap mt-2">
@@ -537,7 +537,7 @@ const ConnectArkitektNodes = (props: {
     refetch(buildVariabels(props.leftPorts, props.rightPorts, props.search));
   }, [props.leftPorts, props.rightPorts, props.search]);
 
-  const { addConnectContextualNode } = useEditRiver();
+  const addConnectContextualNode = useEditFlowStore((s) => s.addConnectContextualNode);
 
   const client = useRekuest();
 

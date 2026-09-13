@@ -73,7 +73,14 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                   Catalog
                 </p>
-                <p className="mt-1 text-sm font-medium">{data.blok.catalog.name}</p>
+                <p className="mt-1 text-sm font-medium">
+                  {data.blok.catalog.name}
+                  {!data.blok.catalog.isRegistered && (
+                    <span className="ml-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs text-muted-foreground">
+                      not registered
+                    </span>
+                  )}
+                </p>
               </div>
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -89,8 +96,27 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
               </div>
             </div>
 
+            {data.blok.diagnostics.length > 0 && (
+              <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                  Diagnostics
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {data.blok.diagnostics.map((diagnostic, index) => (
+                    <li key={`${diagnostic.code}-${index}`}>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {diagnostic.code}
+                        {diagnostic.path ? ` @ ${diagnostic.path}` : ""}
+                      </span>
+                      <span className="ml-2">{diagnostic.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="rounded-2xl border border-dashed border-border/70 bg-background/60 p-4 text-sm text-muted-foreground">
-              The preview is built from the stored blok UI payload and seeded with the demo state through the A2UI renderer.
+              The preview is built from the blok component tree and seeded with the demo state through the blok renderer.
             </div>
           </section>
 

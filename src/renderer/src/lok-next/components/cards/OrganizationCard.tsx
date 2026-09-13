@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LokOrganization } from "@/linkers";
 import { ListOrganizationFragment } from "@/lok-next/api/graphql";
@@ -33,4 +34,4 @@ const OrganizationCard = ({ item }: OrganizationCardProps) => {
   );
 };
 
-export default OrganizationCard;
+export default React.memo(OrganizationCard);

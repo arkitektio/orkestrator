@@ -15,7 +15,6 @@ export const DateTimeField = (props: FieldProps) => {
     <FormField
       control={form.control}
       name={props.name}
-      rules={{ validate: props.validate }}
       render={({ field }) => (
         <FormItem className="flex flex-col">
           <FormLabel>

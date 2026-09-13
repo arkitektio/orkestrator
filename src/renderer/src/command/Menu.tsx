@@ -20,7 +20,7 @@ import { DialogPortal } from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { useDebounce } from "@uidotdev/usehooks";
 import { Sparkles } from "lucide-react";
-import { createElement, Suspense, useCallback, useEffect, useState } from "react";
+import { createElement, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Context,
   ExtensionContext,
@@ -156,20 +156,34 @@ export const CommandMenu = (props: {
     setContext((c) => ({ ...c, query }));
   };
 
-  const activateModifier = (modifier: Modifier) => {
+  const activateModifier = useCallback((modifier: Modifier) => {
     setContext((c) => ({
       ...c,
       modifiers: [...c.modifiers, modifier],
       query: "",
     }));
-  };
+  }, []);
 
-  const removeModifier = (index: number) => {
+  const removeModifier = useCallback((index: number) => {
     setContext((c) => ({
       ...c,
       modifiers: c.modifiers.filter((_, i) => i !== index),
     }));
-  };
+  }, []);
+
+  // Stable provider value: only changes when the debounced context does, so
+  // extension consumers don't re-render on every keystroke of the raw query.
+  const extensionContextValue = useMemo(
+    () => ({ ...debouncedContext, activateModifier, removeModifier }),
+    [debouncedContext, activateModifier, removeModifier],
+  );
+  // The search the query children see: the DEBOUNCED query, so a keystroke
+  // does not fan out into one request per extension (shortcuts, actions ×2,
+  // definitions ×2). The raw `context.query` stays on the input itself.
+  const searchFilter = debouncedContext.query;
+  // One stable array: `props.objects || []` inline handed every child a fresh
+  // literal per render, defeating their memos.
+  const objects = useMemo(() => props.objects ?? [], [props.objects]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "m" && (e.metaKey || e.ctrlKey)) {
@@ -272,38 +286,32 @@ export const CommandMenu = (props: {
                     No actions matched this query.
                   </CommandEmpty>
                 )}
-                <ExtensionContext.Provider
-                  value={{
-                    ...debouncedContext,
-                    activateModifier,
-                    removeModifier,
-                  }}
-                >
+                <ExtensionContext.Provider value={extensionContextValue}>
                   <Guard.Rekuest>
                     <ApplicableShortcuts
-                      filter={context.query}
-                      objects={props.objects || []}
+                      filter={searchFilter}
+                      objects={objects}
                       partners={props.partners}
                       onDone={() => setContext((c) => ({ ...c, open: false }))}
                     />
                     <ApplicableActions
-                      filter={context.query}
-                      objects={props.objects || []}
+                      filter={searchFilter}
+                      objects={objects}
                       collection={props.collection}
                       partners={props.partners}
                       onDone={() => setContext((c) => ({ ...c, open: false }))}
                     />
                   </Guard.Rekuest>
                   <ApplicableLocalActions
-                    filter={context.query}
-                    objects={props.objects || []}
+                    filter={searchFilter}
+                    objects={objects}
                     partners={props.partners}
                     onDone={() => setContext((c) => ({ ...c, open: false }))}
                   />
                   <Guard.Kabinet>
                     <ApplicableDefinitions
-                      filter={context.query}
-                      objects={props.objects || []}
+                      filter={searchFilter}
+                      objects={objects}
                       partners={props.partners}
                       returns={props.returns || []}
                     />

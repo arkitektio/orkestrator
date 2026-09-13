@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RekuestBlok, RekuestMaterializedBlok } from "@/linkers";
 
@@ -31,4 +32,4 @@ const MaterializedBlokCard = ({ item }: Props) => {
   );
 };
 
-export default MaterializedBlokCard;
+export default React.memo(MaterializedBlokCard);

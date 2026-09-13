@@ -2,6 +2,9 @@ import { effectiveFlatNormals } from "./meshLayerDefaults";
 import { useThree, type ThreeEvent } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+
+/** Scratch for the per-pointer-move hit transform (never escapes the handler). */
+const hitScratch = new THREE.Vector3();
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 
 import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
@@ -94,10 +97,31 @@ const FabriksCollectionGroup = ({
   layer: MeshLayerView;
   collection: MeshCollectionRef;
 }) => {
-  const invalidate = useThree((state) => state.invalidate);
+  const rawInvalidate = useThree((state) => state.invalidate);
   const transformContext = useSceneStore((s) => s.transformContext);
   const viewApi = useViewStoreApi();
   const viewerApi = useMeshStoreApi();
+  /**
+   * Every manager-driven change goes through here — a landed LOD cell, a
+   * material flip, the slab clip, visibility.
+   *
+   * The bump is NOT optional bookkeeping: an OPAQUE fabriks mesh is a volume
+   * OCCLUDER (`platform/visibility/passVisibility.ts`), so its depth feeds the
+   * compositor's offscreen depth prepass, and that target is CACHED. A frame
+   * request alone leaves `decideVolumeFrame` on "cached" and the volume keeps
+   * the stale occlusion until the camera moves — the "I have to pan for it to
+   * update" symptom.
+   *
+   * `buildVolumeStructureKey` now folds the occluder SET, which catches a
+   * layer appearing or disappearing; this catches everything inside an
+   * unchanged set — cells mounting into the same BatchedMesh under the same
+   * material. Same contract as every uniform-write site (OCTREE_RENDERER.md
+   * §7 R1).
+   */
+  const invalidate = useCallback(() => {
+    viewerApi.getState().volumeInputs.bump("mesh-collection");
+    rawInvalidate();
+  }, [viewerApi, rawInvalidate]);
   const datalayer = useDatalayerEndpoint();
   const client = useMikro();
 
@@ -116,7 +140,9 @@ const FabriksCollectionGroup = ({
   useEffect(() => () => statsThrottle.cancel(), [statsThrottle]);
   const onStatsChanged = statsThrottle.trigger;
 
-  const { matrix, inverse: inverseRef } = useCollectionPlacement(
+  // `inverse` is the hook's own scratch matrix, kept current in place: the
+  // same object across renders, so the pick closure below reads it live.
+  const { matrix, inverse } = useCollectionPlacement(
     layer,
     collection,
     transformContext,
@@ -318,10 +344,9 @@ const FabriksCollectionGroup = ({
     manager?.setPlanConfig({ pixelBudget: DETAIL_BUDGETS[layer.detail ?? "balanced"] });
   }, [manager, layer.detail]);
 
+  // Visibility rides the driver (`inputs.visible` below): it must also REPLAN
+  // on the show edge, which the driver owns for both collection formats.
   const visible = layer.visible !== false;
-  useEffect(() => {
-    manager?.setVisible(visible);
-  }, [manager, visible]);
 
   const flatNormals = effectiveFlatNormals(layer);
   useEffect(() => {
@@ -383,6 +408,7 @@ const FabriksCollectionGroup = ({
     {
       matrix,
       slab: displayMode === "3D" ? null : { thickness: slabThickness },
+      visible,
     },
   );
 
@@ -415,7 +441,8 @@ const FabriksCollectionGroup = ({
   const pickEnabled = visible && clickProbeEnabled(gate) && interactionMode === "PROBE";
   const hoverCoalescer = useMemo(() => createRafCoalescer<() => void>((run) => run()), []);
   useEffect(() => () => hoverCoalescer.cancel(), [hoverCoalescer]);
-  const lastHover = useRef<string | null>(null);
+  // Last published hover, compared numerically (no per-move string key).
+  const lastHover = useRef<{ ordinal: number; x: number; y: number; z: number } | null>(null);
 
   /** The picked ordinal + frame, or null when the event isn't a usable hit. */
   const resolveMeshHit = (event: ThreeEvent<MouseEvent | PointerEvent>) => {
@@ -426,7 +453,8 @@ const FabriksCollectionGroup = ({
     // Mesh-local IS collection voxel space (corner-anchored), so the hit
     // point through the inverse placement is the voxel coordinate.
     const worldPos: [number, number, number] = [event.point.x, event.point.y, event.point.z];
-    const local = event.point.clone().applyMatrix4(inverseRef.current);
+    // Scratch vector: this runs on every pointer move, before the dedupe.
+    const local = hitScratch.copy(event.point).applyMatrix4(inverse);
     const voxelIndex: [number, number, number] = [
       Math.floor(local.x),
       Math.floor(local.y),
@@ -559,9 +587,19 @@ const FabriksCollectionGroup = ({
     event.stopPropagation();
     // Dedupe: same instance at the same voxel republishes nothing; the
     // tracker's 150 ms debounce (and its instant path) do the rest.
-    const signature = `${hit.ordinal}:${hit.voxelIndex.join(",")}`;
-    if (lastHover.current === signature) return;
-    lastHover.current = signature;
+    const [vx, vy, vz] = hit.voxelIndex;
+    const last = lastHover.current;
+    if (last && last.ordinal === hit.ordinal && last.x === vx && last.y === vy && last.z === vz) {
+      return;
+    }
+    if (last) {
+      last.ordinal = hit.ordinal;
+      last.x = vx;
+      last.y = vy;
+      last.z = vz;
+    } else {
+      lastHover.current = { ordinal: hit.ordinal, x: vx, y: vy, z: vz };
+    }
     hoverCoalescer.schedule(() => publishMeshProbe(hit, "hover"));
   };
 

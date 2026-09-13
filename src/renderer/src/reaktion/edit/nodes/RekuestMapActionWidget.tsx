@@ -23,7 +23,7 @@ import { FlussArgPortFragment } from "@/reaktion/api/graphql";
 import { useImplementationQuery } from "@/rekuest/api/graphql";
 import { GearIcon } from "@radix-ui/react-icons";
 import React from "react";
-import { useEditNodeErrors, useEditRiver } from "../context";
+import { useEditNodeErrors, useEditFlowStore } from "../context";
 
 export const DeviceSelector = (_props) => { };
 
@@ -47,12 +47,10 @@ export const RekuestMapActionWidget: React.FC<RekuestMapNodeProps> = ({
   id,
   selected,
 }) => {
-  const {
-    moveConstantToGlobals,
-    moveConstantToStream,
-    moveStreamToConstants,
-    updateData,
-  } = useEditRiver();
+  const moveConstantToGlobals = useEditFlowStore((s) => s.moveConstantToGlobals);
+  const moveConstantToStream = useEditFlowStore((s) => s.moveConstantToStream);
+  const moveStreamToConstants = useEditFlowStore((s) => s.moveStreamToConstants);
+  const updateData = useEditFlowStore((s) => s.updateData);
 
   const [expanded, setExpanded] = React.useState(false);
 

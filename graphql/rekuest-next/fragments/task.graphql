@@ -31,6 +31,49 @@ fragment PostmanTask on Task {
   finishedAt
 }
 
+# Slim shape for the global "my tasks" list and its per-task hydration
+# (`query MyTasks`, `query Task`). Every live task is watched by many cards
+# (`useLiveTask`) and re-diffed on every event, so this deliberately omits the
+# `...Ports` subtree (widgets/effects/validators, ~400 lines) that `PostmanTask`
+# carries — `useFilteredTasks` only needs `args { key kind identifier }` for
+# identifier/object matching. Detail views keep using `PostmanTask`.
+fragment LiveTask on Task {
+  id
+  latestEventKind
+  args
+  reference
+  isDone
+  events(ordering: {createdAt: DESC}) {
+    ...TaskEvent
+  }
+  action {
+    hash
+    id
+    name
+    args {
+      key
+      kind
+      identifier
+    }
+  }
+  dependencyMethod
+  dependency
+  dependencies
+  implementation {
+    id
+    interface
+    higherOrderFor {
+      id
+      action {
+        id
+        key
+      }
+    }
+  }
+  createdAt
+  finishedAt
+}
+
 fragment MinimalTask on Task {
   id
   reference

@@ -29,7 +29,7 @@ const List = (_props: Props) => {
         }
         refetch={() => refetch()}
       >
-        {(ex, index) => <ReleaseCard key={index} item={ex} />}
+        {(ex) => <ReleaseCard key={ex.id} item={ex} />}
       </ListRender>
     </>
   );

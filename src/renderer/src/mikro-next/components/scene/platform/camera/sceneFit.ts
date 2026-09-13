@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { resolveAxisIndices } from "../model/dims";
 import type { LayerState } from "../model/layerModel";
+import { isPlaceable } from "../model/placeable";
 import { buildAffineMatrix } from "../coords/worldTransform";
 
 /**
@@ -29,6 +30,9 @@ export function computeSceneWorldBox(layers: readonly LayerState[]): THREE.Box3 
   let contributed = false;
 
   for (const layer of layers) {
+    // No server placement → not drawn, and its (prefix-only) affine is not a
+    // world position; framing it would fit the camera to nothing.
+    if (!isPlaceable(layer)) continue;
     const { xPos, yPos, zPos } = resolveAxisIndices(layer.lens.axisNames, layer);
     // x/y are required; z is optional (2D layers have no z dim → flat box).
     if (xPos === -1 || yPos === -1) continue;

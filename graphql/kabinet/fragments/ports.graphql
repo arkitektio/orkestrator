@@ -16,12 +16,28 @@ fragment SliderAssignWidget on SliderAssignWidget {
 fragment StateChoiceAssignWidget on StateChoiceAssignWidget {
   __typename
   kind
+  followValue
   statePath
+  stateCall {
+    ...PortCall
+  }
   stateAccessors {
     optionKey
-    subPath
+    path
+    call {
+      ...PortCall
+    }
   }
   dependency
+  dependencies
+}
+
+fragment ProxyWidget on ProxyWidget {
+  __typename
+  kind
+  targetPort
+  targetAction
+  targetDependency
 }
 
 fragment FilterPort on ArgPort {
@@ -49,19 +65,74 @@ fragment SearchAssignWidget on SearchAssignWidget {
   dependencies
 }
 
+# Custom widgets name a component from the UI catalog (`component`) and bind
+# its props like a blok node. `fallback` is the widget to use when the catalog
+# does not know the component; it cannot recurse into another custom widget,
+# so it is selected as the non-custom variants only.
 fragment CustomAssignWidget on CustomAssignWidget {
   __typename
-  ward
-  hook
+  kind
+  followValue
+  component
+  props {
+    ...BlokComponentProp
+  }
+  dependencies
+  fallback {
+    __typename
+    kind
+    ...StringAssignWidget
+    ...SearchAssignWidget
+    ...SliderAssignWidget
+    ...ChoiceAssignWidget
+    ...ProxyWidget
+    ...StateChoiceAssignWidget
+  }
 }
 
+# Choices live on the port (`ArgPort.choices` / `ReturnPort.choices`); the
+# widget only says how to present them.
 fragment ChoiceAssignWidget on ChoiceAssignWidget {
   __typename
   kind
+  followValue
+  placeholder
+}
+
+# Child ports (list items, dict values, union variants, model fields) carry
+# the same effects, validators and defaults as top-level ports; the client
+# renders and validates them at every depth. Fragments cannot recurse, so the
+# tree is selected three levels deep; the deepest level keeps enough to render
+# a leaf widget.
+fragment ArgChildPortDeep on ArgPort {
+  __typename
+  kind
+  key
+  label
+  identifier
+  referenceUnit
+  proposedUnits
+  dimension
   choices {
     value
     label
     description
+  }
+  widget {
+    ...AssignWidget
+  }
+  description
+  nullable
+  default
+  children {
+    __typename
+    kind
+    key
+    identifier
+    nullable
+    widget {
+      ...AssignWidget
+    }
   }
 }
 
@@ -69,13 +140,13 @@ fragment ArgChildPortNested on ArgPort {
   __typename
   kind
   key
+  label
   identifier
+  referenceUnit
+  proposedUnits
+  dimension
   children {
-    kind
-    identifier
-    widget {
-      ...AssignWidget
-    }
+    ...ArgChildPortDeep
   }
   choices {
     value
@@ -85,21 +156,38 @@ fragment ArgChildPortNested on ArgPort {
   widget {
     ...AssignWidget
   }
+  effects {
+    ...PortEffect
+  }
+  validators {
+    ...Validator
+  }
   description
   nullable
+  default
 }
 
 fragment ArgChildPort on ArgPort {
   __typename
   kind
   key
+  label
   identifier
+  referenceUnit
+  proposedUnits
+  dimension
   children {
     ...ArgChildPortNested
   }
   widget {
     ...AssignWidget
   }
+  effects {
+    ...PortEffect
+  }
+  validators {
+    ...Validator
+  }
   choices {
     value
     label
@@ -107,19 +195,51 @@ fragment ArgChildPort on ArgPort {
   }
   nullable
   description
+  default
+}
+
+fragment ReturnChildPortDeep on ReturnPort {
+  __typename
+  kind
+  key
+  label
+  identifier
+  referenceUnit
+  proposedUnits
+  dimension
+  choices {
+    value
+    label
+    description
+  }
+  widget {
+    ...ReturnWidget
+  }
+  description
+  nullable
+  children {
+    __typename
+    kind
+    key
+    identifier
+    nullable
+    widget {
+      ...ReturnWidget
+    }
+  }
 }
 
 fragment ReturnChildPortNested on ReturnPort {
   __typename
   kind
   key
+  label
   identifier
+  referenceUnit
+  proposedUnits
+  dimension
   children {
-    kind
-    identifier
-    widget {
-      ...ReturnWidget
-    }
+    ...ReturnChildPortDeep
   }
   choices {
     value
@@ -129,21 +249,30 @@ fragment ReturnChildPortNested on ReturnPort {
   widget {
     ...ReturnWidget
   }
+  effects {
+    ...PortEffect
+  }
   description
   nullable
 }
-
 
 fragment ReturnChildPort on ReturnPort {
   __typename
   kind
   key
+  label
   identifier
+  referenceUnit
+  proposedUnits
+  dimension
   children {
     ...ReturnChildPortNested
   }
   widget {
     ...ReturnWidget
+  }
+  effects {
+    ...PortEffect
   }
   choices {
     value
@@ -158,15 +287,16 @@ fragment BaseEffect on Effect {
   __typename
   kind
   dependencies
-  function
+  source
+  call {
+    ...PortCall
+  }
 }
 
 fragment CustomEffect on CustomEffect {
   ...BaseEffect
   __typename
   kind
-  hook
-  ward
 }
 
 fragment MessageEffect on MessageEffect {
@@ -195,15 +325,19 @@ fragment AssignWidget on AssignWidget {
   ...SearchAssignWidget
   ...SliderAssignWidget
   ...ChoiceAssignWidget
+  ...ProxyWidget
   ...CustomAssignWidget
   ...StateChoiceAssignWidget
 }
 
 fragment Validator on Validator {
-  function
+  call {
+    ...PortCall
+  }
   dependencies
   label
   errorMessage
+  source
 }
 
 fragment ArgPort on ArgPort {
@@ -220,6 +354,9 @@ fragment ArgPort on ArgPort {
   }
   kind
   identifier
+  referenceUnit
+  proposedUnits
+  dimension
   children {
     ...ArgChildPort
   }
@@ -232,6 +369,11 @@ fragment ArgPort on ArgPort {
   nullable
   validators {
     ...Validator
+  }
+  requires {
+    key
+    operator
+    value
   }
 }
 
@@ -249,6 +391,9 @@ fragment ReturnPort on ReturnPort {
   }
   kind
   identifier
+  referenceUnit
+  proposedUnits
+  dimension
   children {
     ...ReturnChildPort
   }
@@ -257,7 +402,6 @@ fragment ReturnPort on ReturnPort {
     label
     description
   }
-  default
   nullable
   provides {
     key
@@ -270,17 +414,15 @@ fragment ReturnPort on ReturnPort {
 fragment CustomReturnWidget on CustomReturnWidget {
   __typename
   kind
-  hook
-  ward
+  component
+  props {
+    ...BlokComponentProp
+  }
 }
 
 fragment ChoiceReturnWidget on ChoiceReturnWidget {
   __typename
-  choices {
-    label
-    value
-    description
-  }
+  kind
 }
 
 fragment ReturnWidget on ReturnWidget {
@@ -290,3 +432,122 @@ fragment ReturnWidget on ReturnWidget {
   ...ChoiceReturnWidget
 }
 
+# --- Port calls -------------------------------------------------------------
+# `call` is a blok UtilCall. GraphQL fragments cannot recurse, so nesting is
+# selected to a fixed depth: a top-level call, whose arguments may hold one
+# nested call, whose arguments may hold one more (leaf) call. Deeper payloads
+# are rejected by the client's parser rather than silently truncated.
+
+fragment PortCallLeafArgument on ActionArgument {
+  key
+  valueLiteral
+  valuePath
+}
+
+fragment PortCallLeaf on UtilCall {
+  operation
+  arguments {
+    ...PortCallLeafArgument
+  }
+}
+
+fragment PortCallInnerArgument on ActionArgument {
+  ...PortCallLeafArgument
+  utilCall {
+    ...PortCallLeaf
+  }
+  valueList {
+    ...PortCallLeafArgument
+  }
+  valueDict {
+    ...PortCallLeafArgument
+  }
+}
+
+fragment PortCallInner on UtilCall {
+  operation
+  arguments {
+    ...PortCallInnerArgument
+  }
+}
+
+fragment PortCallArgument on ActionArgument {
+  ...PortCallLeafArgument
+  utilCall {
+    ...PortCallInner
+  }
+  valueList {
+    ...PortCallInnerArgument
+  }
+  valueDict {
+    ...PortCallInnerArgument
+  }
+}
+
+fragment PortCall on UtilCall {
+  operation
+  arguments {
+    ...PortCallArgument
+  }
+}
+
+fragment BlokAgentCallLeaf on AgentCall {
+  dependency
+  operation
+  arguments {
+    ...PortCallLeafArgument
+  }
+}
+
+fragment BlokArgumentInner on ActionArgument {
+  ...PortCallInnerArgument
+  agentCall {
+    ...BlokAgentCallLeaf
+  }
+}
+
+fragment BlokArgument on ActionArgument {
+  ...PortCallLeafArgument
+  utilCall {
+    operation
+    arguments {
+      ...BlokArgumentInner
+    }
+  }
+  agentCall {
+    dependency
+    operation
+    arguments {
+      ...BlokArgumentInner
+    }
+  }
+  valueList {
+    ...BlokArgumentInner
+  }
+  valueDict {
+    ...BlokArgumentInner
+  }
+}
+
+fragment BlokComponentProp on ComponentProp {
+  key
+  staticValue
+  declaresValue
+  dynamicValue {
+    path
+    literal
+  }
+  agentCall {
+    dependency
+    operation
+    arguments {
+      ...BlokArgument
+    }
+  }
+  utilCall {
+    operation
+    arguments {
+      ...BlokArgument
+    }
+  }
+}

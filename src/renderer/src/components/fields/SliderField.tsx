@@ -45,7 +45,6 @@ export const SliderField = (
     <FormField
       control={form.control}
       name={props.name}
-      rules={{ validate: props.validate }}
       render={({ field }) => (
         <FormItem>
           <div className="flex flex-row items-center justify-between w-full gap-2 relative">

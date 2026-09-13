@@ -290,6 +290,10 @@ export const normalizeLayer = (
 export const isLabelLayerState = (layer: LayerState): boolean =>
   layer.__typename === "LabelLayer";
 
+// Placeability lives in its own leaf module (`./placeable`) so DOM-free
+// pure-core code can import it; re-exported here for the model's consumers.
+export { isPlaceable, unplaceableReason, type UnplaceableReason } from "./placeable";
+
 /**
  * The `LayerState` a label mask normalizes to.
  *

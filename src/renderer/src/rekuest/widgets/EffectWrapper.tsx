@@ -7,11 +7,14 @@ export const EffectWrapper = ({
   registry,
   children,
   port,
+  path,
 }: {
   registry: WidgetRegistryType;
-  effects: (PortEffectFragment | null | undefined)[];
+  effects: readonly (PortEffectFragment | null | undefined)[];
   children: ReactNode;
   port: MappablePort;
+  /** react-hook-form path of the port's field. */
+  path: string[];
 }) => {
   const [effect, ...resteffect] = effects;
 
@@ -19,8 +22,8 @@ export const EffectWrapper = ({
     const Wrapper = registry.getEffectWidget(effect.__typename);
 
     return (
-      <Wrapper effect={effect} port={port}>
-        <EffectWrapper effects={resteffect} port={port} registry={registry}>
+      <Wrapper effect={effect} port={port} path={path}>
+        <EffectWrapper effects={resteffect} port={port} path={path} registry={registry}>
           {children}
         </EffectWrapper>
       </Wrapper>

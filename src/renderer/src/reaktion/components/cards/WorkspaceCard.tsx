@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Card,
   CardDescription,
@@ -7,7 +8,7 @@ import {
 import { FlussWorkspace } from "@/linkers";
 import { ListWorkspaceFragment } from "@/reaktion/api/graphql";
 
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 
 interface Props {
   workspace: ListWorkspaceFragment;
@@ -37,4 +38,4 @@ const TheCard = ({ workspace }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

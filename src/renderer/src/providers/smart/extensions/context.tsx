@@ -11,6 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { PlayIcon } from "lucide-react";
 import React from "react";
@@ -55,6 +56,9 @@ export const ObjectButton = (props: ObjectButtonProps) => {
 
 export const SmartContext = (props: SmartContextProps) => {
   const [filter, setFilterValue] = React.useState<string | undefined>(undefined);
+  // The raw value drives the input; the children put the filter straight into
+  // query variables, so hand them a debounced copy to avoid a request per key.
+  const debouncedFilter = useDebounce(filter, 200);
 
   return (
     <>
@@ -83,41 +87,41 @@ export const SmartContext = (props: SmartContextProps) => {
         />
 
         <CommandList className="mt-2">
-          <ApplicableLocalActions {...props} filter={filter} />
+          <ApplicableLocalActions {...props} filter={debouncedFilter} />
           <CommandEmpty>No Action available</CommandEmpty>
           <Guard.Alpaka unavailable={<></>}>
-            <ApplicableAlpakaTalk {...props} filter={filter} />
+            <ApplicableAlpakaTalk {...props} filter={debouncedFilter} />
           </Guard.Alpaka>
           <Guard.Rekuest unavailable={<></>}>
             {!props.disableShortcuts && (
-              <ApplicableShortcuts {...props} filter={filter} />
+              <ApplicableShortcuts {...props} filter={debouncedFilter} />
             )}
           </Guard.Rekuest>
 
           <Guard.Kraph unavailable={<></>}>
             {!props.disableKraph && (
-              <ApplicableRelations {...props} filter={filter} />
+              <ApplicableRelations {...props} filter={debouncedFilter} />
             )}
           </Guard.Kraph>
 
           <Guard.Rekuest unavailable={<></>}>
             {!props.disableActions && (
-              <ApplicableActions {...props} filter={filter} />
+              <ApplicableActions {...props} filter={debouncedFilter} />
             )}
             {!props.disableActions && (
-              <ApplicableImplementations {...props} filter={filter} />
+              <ApplicableImplementations {...props} filter={debouncedFilter} />
             )}
             {!props.disableBatchActions && (
-              <ApplicableBatchActions {...props} filter={filter} />
+              <ApplicableBatchActions {...props} filter={debouncedFilter} />
             )}
             {!props.disableBatchActions && (
-              <ApplicableBatchImplementations {...props} filter={filter} />
+              <ApplicableBatchImplementations {...props} filter={debouncedFilter} />
             )}
           </Guard.Rekuest>
 
           <Guard.Kabinet unavailable={<></>}>
             {!props.disableKabinet && (
-              <ApplicableDefinitions {...props} filter={filter} />
+              <ApplicableDefinitions {...props} filter={debouncedFilter} />
             )}
           </Guard.Kabinet>
         </CommandList>

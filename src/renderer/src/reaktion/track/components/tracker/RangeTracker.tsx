@@ -3,13 +3,14 @@ import { Slider } from "@/components/ui/slider";
 import { useEffect, useState } from "react";
 import { FiPlay } from "react-icons/fi";
 import { RiStopLine } from "react-icons/ri";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import {
   DetailRunFragment,
   RunEventFragment,
   useEventsBetweenLazyQuery,
 } from "../../../api/graphql";
 import { useTrackRiver } from "../../context";
+import { latestEventPerSource } from "./latestEvents";
 
 export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
   const { setRunState } = useTrackRiver();
@@ -27,21 +28,7 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
   const [fetchInbetweenEvents] = useEventsBetweenLazyQuery();
 
   useEffect(() => {
-    const newEvents = rangeEvents?.reduce((prev, event) => {
-      if (event && event.t <= t) {
-        const prev_node = prev?.find((i) => i.source === event?.source);
-        if (prev_node) {
-          if (prev_node.t <= event.t) {
-            return prev.map((i) => (i.source === event.source ? event : i));
-          }
-          return prev;
-        }
-        return [...prev, event];
-      }
-      return prev;
-    }, [] as RunEventFragment[]);
-
-    console.log(newEvents);
+    const { events: newEvents } = latestEventPerSource(rangeEvents, t);
     setRunState({ t: t, events: newEvents });
   }, [rangeEvents, t]);
 
@@ -57,7 +44,6 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
 
   useEffect(() => {
     const array = run?.snapshots?.map((snapshot) => snapshot.t) || [0, 100];
-    console.log("Snapshots", array);
 
     setRange({
       min: Math.min(...array),
@@ -73,7 +59,6 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
   }, [t, triggerRange]);
 
   useEffect(() => {
-    console.log("Changing t", t);
     setRunState((state) => ({
       t: t,
       events: state?.events?.filter((event) => event && event?.t <= t),
@@ -81,7 +66,6 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
   }, [t]);
 
   useEffect(() => {
-    console.log("fetching events");
 
     fetchInbetweenEvents({
       variables: {
@@ -91,7 +75,6 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
       },
     })
       .then((res) => {
-        console.error(res.data?.eventsBetween);
         setRangeEvents(res.data?.eventsBetween || []);
       })
       .catch((err) => {

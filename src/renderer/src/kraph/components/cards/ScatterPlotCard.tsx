@@ -1,3 +1,4 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { KraphScatterPlot } from "@/linkers";
 import {
@@ -28,4 +29,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

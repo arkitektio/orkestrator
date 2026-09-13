@@ -1,10 +1,17 @@
 import {
   AttributePlanFragment,
+  AttributePlanHopFragment,
   AttributePlansDocument,
   AttributePlansQuery,
   AttributePlansQueryVariables,
 } from "@/mikro-next/api/graphql";
-import type { AttributePlanLike } from "./attributeTypes";
+import type {
+  AttributeHopLike,
+  AttributePlanLike,
+  SparseHopLike,
+  TableHopLike,
+} from "./attributeTypes";
+import { hopSource } from "./attributeTypes";
 import { LruMap } from "./lruMap";
 
 /**
@@ -32,38 +39,70 @@ export type QueryClient = {
 };
 
 /**
- * A plan whose lookup is a parquet ROW — the only shape the core executes.
- *
- * `LookupStep` is a flat discriminator over two shapes: TABLE names a store
- * and the SQL to read a row with, SPARSE names a matrix layout to slice and
- * leaves all three of `table`, `lookup.store` and `lookup.sql` null. The
- * predicate is written on those fields rather than on `kind` because they are
- * what `AttributePlanLike` requires, so narrowing here is what keeps the
- * codegen→core hand-off cast-free — the property this module has always had.
+ * How many reference hops past the landing the server describes. Two, so a
+ * matrix's feature names are reachable in BOTH directions: a mask landing on
+ * a matrix, then its axis table (one), or a mask landing on a table, into the
+ * matrix it indexes, then that matrix's feature table (two). Which hops run is
+ * the user's choice (`attributeSelection`), not the query's.
  */
-const isTablePlan = (
-  fragment: AttributePlanFragment,
-): fragment is AttributePlanFragment & AttributePlanLike =>
-  fragment.table != null && fragment.lookup.store != null && fragment.lookup.sql != null;
+export const PLAN_JOIN_DEPTH = 2;
 
 /**
- * The generated fragment is a structural superset of the core's plan type for
- * every TABLE plan; this typed filter is where the compiler PROVES that (no
- * cast) — the one place the codegen dependency touches the core contract.
- * Sparse plans are dropped, and said out loud: a field silently withheld is
+ * `LookupStep` is a flat discriminator over two shapes: TABLE names a parquet
+ * store, its key columns and attributes; SPARSE names a matrix layout to
+ * slice and the axis the held id binds. These typed filters are where the
+ * compiler PROVES the generated fragment is a structural superset of the
+ * core's hop types (no cast) — the one place the codegen dependency touches
+ * the core contract. Written on the fields each shape requires rather than
+ * on `kind` alone, because those fields are what the core executes.
+ */
+const isTableHopFragment = (
+  hop: AttributePlanHopFragment,
+): hop is AttributePlanHopFragment & TableHopLike =>
+  hop.lookup.kind === "TABLE" && hop.table != null && hop.lookup.store != null;
+
+const isSparseHopFragment = (
+  hop: AttributePlanHopFragment,
+): hop is AttributePlanHopFragment & SparseHopLike =>
+  hop.lookup.kind === "SPARSE" &&
+  hop.sparseDataset != null &&
+  hop.lookup.sparseArray != null &&
+  hop.lookup.keyAxis != null;
+
+/**
+ * One fragment as a core plan, or null when its landing is not executable.
+ * A later hop that is malformed is dropped WITH its descendants (a hop never
+ * runs without its parent) and said out loud: a field silently withheld is
  * indistinguishable from one the server never published.
  */
-const toStructuralPlans = (
-  fragments: readonly AttributePlanFragment[],
-): readonly AttributePlanLike[] => {
-  const executable = fragments.filter(isTablePlan);
-  if (executable.length < fragments.length) {
+const toStructuralPlan = (fragment: AttributePlanFragment): AttributePlanLike | null => {
+  const accepted = new Map<number, AttributeHopLike>();
+  const dropped: number[] = [];
+  for (const hop of [...fragment.hops].sort((a, b) => a.index - b.index)) {
+    const executable = isTableHopFragment(hop) || isSparseHopFragment(hop);
+    const parentAccepted = hop.parent === null || hop.parent === undefined || accepted.has(hop.parent);
+    if (executable && parentAccepted) accepted.set(hop.index, hop);
+    else dropped.push(hop.index);
+  }
+  if (dropped.length) {
     console.warn(
-      `[attributes] ${fragments.length - executable.length} sparse plan(s) ignored — an attribute plan is the HOVER direction (one object's whole profile, over the object-major layout), which is not built. A sparse COLOURING reads the other layout and does not come through here.`,
+      `[attributePlans] edge ${fragment.edge.id}: hop(s) ${dropped.join(", ")} ignored — neither a parquet TABLE nor a sliceable SPARSE lookup, or under a hop that was`,
     );
   }
-  return executable;
+  const landing = accepted.get(0);
+  if (!landing) return null;
+  return {
+    edge: fragment.edge,
+    path: fragment.path,
+    sample: fragment.sample,
+    hops: [...accepted.values()],
+  };
 };
+
+export const toStructuralPlans = (
+  fragments: readonly AttributePlanFragment[],
+): readonly AttributePlanLike[] =>
+  fragments.map(toStructuralPlan).filter((plan): plan is AttributePlanLike => plan !== null);
 
 const DEFAULT_SYSTEM_CAP = 64;
 
@@ -104,7 +143,10 @@ export class AttributePlanCache {
   get(systemId: string): Promise<readonly AttributePlanLike[]> {
     let pending = this.plans.get(systemId);
     if (!pending) {
-      const variables: AttributePlansQueryVariables = { system: systemId };
+      const variables: AttributePlansQueryVariables = {
+        system: systemId,
+        maxJoinDepth: PLAN_JOIN_DEPTH,
+      };
       pending = this.client
         .query({ query: AttributePlansDocument, variables })
         .then((result) => {
@@ -113,13 +155,16 @@ export class AttributePlanCache {
             // The one silent way the feature can "do nothing": make it loud.
             console.warn(
               `[attributePlans] system ${systemId}: no plans discovered — ` +
-                `nothing links this system to a table (negative-cached for this scene)`,
+                `nothing links this system to a table or matrix (negative-cached for this scene)`,
             );
           } else {
             console.debug(
               `[attributePlans] system ${systemId}: ${plans.length} plan(s)`,
               plans.map((plan) => ({
-                table: plan.table.name,
+                chain: plan.hops.map((hop) => {
+                  const source = hopSource(hop);
+                  return `${source.kind.toLowerCase()}:${source.name}`;
+                }),
                 pathSteps: plan.path.map(
                   (step) =>
                     `${step.inverted ? "~" : ""}${step.transformation?.__typename ?? "?"}`,

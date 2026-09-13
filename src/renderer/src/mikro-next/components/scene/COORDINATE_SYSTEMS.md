@@ -65,26 +65,37 @@ adapter code is shaped by the same three. When editing anything in
 `@/mikro-next/lib/coords/transformGraph.ts` / `platform/model/layerModel.ts` / `platform/coords/levelGeometry.ts`,
 re-derive from here.
 
-**R1 — Edges are facts; matrices are client work.** The server ships
-transformations as edges `(input CS → output CS, params)` and — per SCENE
-LAYER — a resolved **path** of edges to the scene's world system
-(`Layer.pathToWorld: [{transformation, inverted}]`). The path is itself a
-fact, not a shortcut around R1: a layer belongs to exactly one scene, so "this
-layer to ITS world" has a single right answer, resolved from the layer's
-dataset facts plus that scene's membership edges (never another scene's
-registration). What the server still never resolves is a MATRIX: evaluating
-each step, inverting the flagged ones, and folding the chain stays
-client-side, in exactly one module — `@/mikro-next/lib/coords/transformGraph.ts` — attached to
-view-model state once per scene load. Do not compose matrices ad-hoc anywhere
-else.
+**R1 — `asAffine` is the placement; the client never composes a path.** The
+server ships transformations as edges `(input CS → output CS, params)` and —
+per SCENE LAYER — both a resolved **path** of edges to the scene's world
+system (`Layer.pathToWorld: [{transformation, inverted}]`) and that path
+**composed into one affine map** (`Layer.asAffine: {matrix, inputAxes,
+outputAxes, total}`). A layer belongs to exactly one scene, so "this layer to
+ITS world" has a single right answer, and the server states it once. The
+client reduces `asAffine` to the spatial 4×4 by axis NAME in exactly one
+place — `placementToSpatialAffine` in
+`@/mikro-next/lib/coords/transformGraph.ts` — and NEVER walks `pathToWorld`
+into a matrix: a second composition is a second source of truth that can
+disagree with the first. `pathToWorld` is selected for provenance only (the
+placement inspector, scene reconciliation keys). **A layer whose `asAffine` is
+null is not placeable and is not drawn** (`isPlaceable`, gated once in
+`shell/LayerRenderer.tsx` for every layer kind; the layer panel says why):
+unregistered (no path), or a path the server cannot condense (a FIELD step
+without a closed form, a singular inverse — the scene queries' `errorPolicy:
+"all"` nulls that one field instead of discarding the scene). The only edges
+the client still evaluates are WITHIN a dataset: the lens/level-0 `toParent`
+prefix (§3.1) and the per-level pyramid factors (§3.2). Do not compose
+matrices ad-hoc anywhere else.
 
 **R2 — Store what was authored or measured; derive everything else.**
 Server-derived (we consume, never re-implement): `Lens.renderAxes` (axis
 mapping from axis TYPES), `Lens.toParent` (crop translation from slice
 starts), `DataArray.toParent` (per-level pixel scale from actual shapes),
 `Layer.pathToWorld` / `ImageLayer.levelPaths` (path resolution over the
-graph). Client-derived (we own): composed matrices, relative level factors,
-GPU uniforms, frustums. If you find yourself persisting any of these, stop.
+graph), `Layer.asAffine` (that path composed). Client-derived (we own): the
+spatial 4×4 reduced from `asAffine` plus the lens prefix, relative level
+factors, GPU uniforms, frustums. If you find yourself persisting any of
+these, stop.
 
 **R3 — Coordinate systems are nodes, not strings.** Everything spatial is
 anchored by CS id: datasets, pyramid levels, lenses, mesh collections, ROIs.
@@ -193,7 +204,7 @@ have. The migration is an adapter, not a rewrite.
 | `LayerState.xAxis/yAxis/zAxis/tAxis/intensityAxis` | `lens.renderAxes` | `normalizeLayer` (`platform/model/layerModel.ts`) | `resolveAxisIndices` and ~15 call sites (slice signature, probes, panels) |
 | Relative level factors (old `scaleFactors` semantics) | `toParent` pixel scales, `rel = abs_L / abs_0` (a no-op now that level 0 = 1) | `relativeLevelScaleFactors` / `buildLevelSources` (`platform/coords/levelGeometry.ts`) | level geometry, plan tracker, residency, pool viability, probe geometry |
 | `spatialUnit` | first SPACE axis of the world CS | `sceneStore` | `ScaleBar` |
-| Mesh transforms | `MeshLayer.pathToWorld` via `composePlacementPath` | `@/mikro-next/lib/coords/transformGraph.ts` | `features/meshes/FabriksCollectionLayer` |
+| Mesh transforms | `MeshLayer.asAffine` via `placementToSpatialAffine` | `platform/model/collectionPlacement.ts` | `features/meshes/FabriksCollectionLayer` |
 
 Raw-fragment code paths that run BEFORE normalization (`lodPlanning`,
 `renderCost`, `renderGraph.defaultLayerGraph`, `colormap-utils`) read
@@ -211,10 +222,11 @@ lens voxel ──toParent──▶ level-0 array ──toParent──▶ intrins
              (pixel size — the ONLY place it lives)
 ```
 
-- `composePlacementPath(steps, scene, spatial)` evaluates each step's
-  transformation with `evalTransform` and **matrix-inverts** (`invert4`,
-  pure affine adjugate) the steps flagged `inverted` — the server marks edges
-  it traversed output→input. Singular inverses degrade like unknown kinds.
+- The `pathToWorld` span is NOT walked: `placementToSpatialAffine(layer.asAffine,
+  lensTriple, worldTriple)` reduces the server's composed map to the spatial
+  4×4 by axis name — rows by `outputAxes`, columns by `inputAxes`. (The
+  `inverted` flags, `invert4` and step evaluation are the server's problem
+  now; `invert4` survives only for the registration form's preview.)
 - The path starts at the layer's SOURCE system, but the renderer's voxel
   frame is the LENS grid — so `composeLayerAffine` prepends whatever local
   prefix the path does not cover, keyed off the path's actual start CS:
@@ -222,10 +234,14 @@ lens voxel ──toParent──▶ level-0 array ──toParent──▶ intrins
   `lens.toParent`; anywhere else (intrinsic, typically) → prepend both
   `toParent`s. This makes the client indifferent to which source the server
   chooses, and immune to double-applying the crop.
-- `pathToWorld: null` (unregistered layer) → local prefix only; the layer
-  stays in its intrinsic pixel frame (warn once) — exactly the old
-  `affineMatrix: null` behavior. `[]` (source IS world) → local prefix only,
-  no warning.
+- `asAffine: null` → the layer is NOT PLACEABLE and is not drawn
+  (`isPlaceable` / `unplaceableReason` in `platform/model/layerModel.ts`;
+  gated once in `shell/LayerRenderer.tsx`, skipped by `sceneFit`, flagged by
+  `shell/layerPanel/UnplaceableNotice.tsx`). Two reasons: `pathToWorld:
+  null` (unregistered) or a non-null path the server could not condense.
+  `composeLayerAffine` then returns only the local prefix, which is not a
+  world position. `[]` (source IS world) composes to an identity `asAffine`
+  → local prefix only.
 - Arrays (`scale`, `translation`, affine rows/cols) are in the **axis order
   of the edge's input CS**. The spatial subset is extracted **by axis name**
   via `renderAxes` (never by position). Axis orders come from
@@ -234,6 +250,18 @@ lens voxel ──toParent──▶ level-0 array ──toParent──▶ intrins
 - Affine edges are `M × (N+1)`, rows in OUTPUT axis order, last column the
   translation — `evalTransform` maps the spatial block name-by-name between
   input and output systems (tested against the FLIM registration numbers).
+- **The input and output sides are named separately.** `asAffine.inputAxes`
+  are the layer's source-system names (`row,col` for a Visium bin lattice;
+  the lens' `renderAxes` pick the x/y/z among them) and `outputAxes` are the
+  WORLD's (`spatialAxisTriple(scene.worldCoordinateSystem)` — `x,y`).
+  Every reducer — `composeLayerAffine`, the collection/annotation
+  `resolveCollectionMatrix`, points, tracks — passes both triples. A world
+  without typed axes keeps the lens names (older payloads, fixtures).
+  Handing input names to the output side indexOf's every slot to -1 and
+  drops the registration — that is a warned null, never a silent identity.
+- An `asAffine` whose row count disagrees with its `outputAxes` is refused
+  (`affine-arity` warning, identity) — one row per output axis is the
+  contract; fix such payloads server-side.
 - **Degradation is always to identity, never to a wrong matrix.** Edge kinds
   the evaluator cannot represent as a spatial affine (MapAxis permutations,
   Bijections, Displacement fields) warn once and drop out. If you add support
@@ -242,10 +270,9 @@ lens voxel ──toParent──▶ level-0 array ──toParent──▶ intrins
 - `ImageLayer.levelPaths` (per pyramid level → world) is NOT selected: the
   octree renderer keeps one matrix per layer plus relative level factors, so
   querying it would pay per-level server path resolutions for nothing. When
-  per-level placement lands (e.g. with the translation work below), reselect
-  it and feed `levelPaths[level].path` through `composePlacementPath` —
-  every level stars into the same intrinsic system, so the registration tail
-  is shared.
+  per-level placement lands (e.g. with the translation work below), it needs
+  a server-composed map per level (`LevelPlacement.asAffine`, not in the
+  schema yet) — the client will not walk `levelPaths[level].path` either.
 
 ### 3.2 Per-level scales: pixel factors in, relative factors out
 
@@ -315,10 +342,10 @@ Arming plays no part: a shape lands in the scene's own coordinate system, so
 there is no layer for the user to be pointing at. EDIT mode + an active tool is
 the whole precondition for drawing.
 
-Reading (`features/annotations/AnnotationLayer.tsx`): the layer composes its own
-server-resolved `pathToWorld` via `composePlacementPath`, the same way the mesh
-layer does. `createdWithTransforms` is provenance only — never used for
-resolution.
+Reading (`features/annotations/AnnotationLayer.tsx`): the layer reduces its own
+server-composed `asAffine` via `placementToSpatialAffine`, the same way the
+mesh layer does; without one it is not drawn. `createdWithTransforms` is
+provenance only — never used for resolution.
 
 ### 3.5 Axis mapping is structural now
 
@@ -383,23 +410,34 @@ data/registration matter, not a client one.
 
 ## 5. Debugging a misplaced layer
 
-1. `console.warn` first — every degradation path warns once with the edge
-   type and CS ids (`[transformGraph] …`, `[mesh] …`). A silent wrong
-   position means the numbers composed; a warned identity means an edge or
-   step didn't. "no path to the scene's world system (unregistered)" means
-   the SERVER returned `pathToWorld: null` — the layer isn't registered into
-   this scene; that's a data/registration question, not a client bug.
-2. Layer renders in raw pixels (1 px = 1 world unit): the path composed but
-   contained no calibration edge — inspect `pathToWorld` in Apollo devtools;
-   the pixel→physical scale must appear as one of its steps.
-3. Check the chain piecewise: `composeLayerAffine` and
-   `composePlacementPath` are pure — feed them the fragment from Apollo
-   devtools, compare against hand-multiplied step matrices (invert the
-   `inverted: true` ones). `transformGraph.test.ts` has worked examples to
-   copy from.
-4. Axis-order suspicion: arrays are input-CS-ordered. If a CS is missing from
-   `scene.coordinateSystems`, its edges evaluate against the layer's dim
-   order — check the fragment actually selected `coordinateSystems`.
+1. Layer not on the canvas and its card shows "not placed": the SERVER
+   returned `asAffine: null`. "no registration" = `pathToWorld: null`, the
+   layer isn't registered into this scene; "could not be composed" = a path
+   exists but the server refused to condense it (FIELD step, singular
+   inverse) — either way a data/registration question, not a client bug.
+   There is no client fallback by design (§1 R1).
+2. `console.warn` next — every degradation path warns once with the edge
+   type and CS ids (`[transformGraph] …`, `[collection] …`). A silent wrong
+   position means the numbers composed; a warned identity means the
+   `asAffine` payload could not be read. If the source axes are NOT named
+   like the world's (`row,col` vs `y,x`) look for the `writes [y,x] but none
+   of the output slots …` warning: the placement's output side was reduced
+   with the wrong names. `affine-arity` means the server shipped an affine
+   whose rows do not match its `outputAxes`. `partial (asAffine.total =
+   false)` is informational: the path constrains only some world axes.
+   A placement with a negative determinant (a flipped lattice) is legitimate
+   data — the plane materials are double-sided so the mirrored quad is not
+   back-face culled.
+3. Check the numbers: `composeLayerAffine` and `placementToSpatialAffine`
+   are pure — feed them the fragment from Apollo devtools and compare
+   against the `asAffine.matrix` by hand (rows = `outputAxes`, columns =
+   `inputAxes`, last column translation). `transformGraph.test.ts` has worked
+   examples (the Visium bin lattice) to copy from.
+4. Axis-order suspicion: `asAffine.inputAxes` must be the layer's source
+   axis names and `outputAxes` the world's; the lens `renderAxes` and
+   `spatialAxisTriple(world)` pick the x/y/z among each. A world without
+   typed axes falls back to the lens names — check the `Axis` fragment
+   selected `type`.
 5. Crop applied twice (or not at all): the local-prefix detection keys off
    the path's start CS (`pathStartId`). Compare the first step's input (or
    output, if inverted) CS id against `lens.coordinateSystem.id` and the

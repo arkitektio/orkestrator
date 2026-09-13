@@ -12,7 +12,7 @@ import {
 } from "@/rekuest/widgets/DependencyContext";
 import { InputWidgetProps } from "@/rekuest/widgets/types";
 import { pathToName } from "@/rekuest/widgets/utils";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useWatch } from "react-hook-form";
 
 
@@ -32,8 +32,14 @@ export const StateChoiceWidget = (
 ) => {
 
 
-  const stateKey = props.widget?.statePath?.split(".")[0];
-  const statePaths = props.widget?.statePath?.split(".").slice(1) || [];
+  const statePath = props.widget?.statePath;
+  const stateKey = statePath?.split(".")[0];
+  // Memoized: `statePaths` is a dependency of `search` below, and a fresh
+  // array per render made SearchField re-query on every live-state patch.
+  const statePaths = useMemo(
+    () => statePath?.split(".").slice(1) || [],
+    [statePath],
+  );
   const stateAccessors = props.widget?.stateAccessors;
   const dependency = props.widget?.dependency;
 
@@ -59,7 +65,7 @@ export const StateChoiceWidget = (
       ?.mappedAgents?.[0]?.agent;
   }
 
-  const { value: liveValue } = useAgentLiveState({
+  const { value: liveValue, revision } = useAgentLiveState({
     agentID: agentID,
     stateInterface: stateKey,
     skip: !agentID || !stateKey,
@@ -87,9 +93,9 @@ export const StateChoiceWidget = (
       }
 
       // 2. Identify Subpaths (Handling null accessors)
-      const valuePath = stateAccessors?.find(a => a?.optionKey === 'VALUE')?.subPath;
-      const labelPath = stateAccessors?.find(a => a?.optionKey === 'LABEL')?.subPath;
-      const descPath = stateAccessors?.find(a => a?.optionKey === 'DESCRIPTION')?.subPath;
+      const valuePath = stateAccessors?.find(a => a?.optionKey === 'VALUE')?.path;
+      const labelPath = stateAccessors?.find(a => a?.optionKey === 'LABEL')?.path;
+      const descPath = stateAccessors?.find(a => a?.optionKey === 'DESCRIPTION')?.path;
 
 
       // 3. Map the array with fallbacks
@@ -160,6 +166,7 @@ export const StateChoiceWidget = (
         description={props.port.description || undefined}
         noOptionFoundPlaceholder="No options found"
         commandPlaceholder="Search..."
+        searchKey={revision ?? undefined}
       />
     </>
   );

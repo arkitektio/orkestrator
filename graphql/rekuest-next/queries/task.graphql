@@ -2,7 +2,7 @@
 # first mount (survives reload) and kept live by the WatchMyTasks subscription.
 query MyTasks {
   myTasks {
-    ...PostmanTask
+    ...LiveTask
   }
 }
 
@@ -13,9 +13,19 @@ query DetailTask($id: ID!) {
 }
 
 # Single-task hydration for the non-traversable subscription `create` path:
-# a thin TaskChange only carries ids, so the client fetches the full PostmanTask
-# once to populate the normalized cache. See TaskUpdater / ChildTaskUpdater.
+# a thin TaskChange only carries ids, so the client fetches the task once to
+# populate the normalized cache. Same slim `LiveTask` shape as `MyTasks`, since
+# the result is inserted into that list (see TaskUpdater / taskCache).
 query Task($id: ID!) {
+  task(id: $id) {
+    ...LiveTask
+  }
+}
+
+# Full-ports single-task fetch for the places that need `action { ...Ports }`:
+# hydrating a new child into `DetailTask.children` (ChildTaskUpdater) and the
+# task-hook runner (positional `returns` need the return ports).
+query FullTask($id: ID!) {
   task(id: $id) {
     ...PostmanTask
   }

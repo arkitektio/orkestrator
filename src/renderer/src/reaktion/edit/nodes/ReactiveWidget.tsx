@@ -30,7 +30,7 @@ import { useUpdateNodeInternals } from "@xyflow/react";
 import React from "react";
 import { ReactiveNodeFragment } from "@/reaktion/api/graphql";
 import { FlowNodeData, ReactiveNodeData, ReactiveNodeProps } from "../../types";
-import { useEditRiver } from "../context";
+import { useEditFlowStore } from "../context";
 
 export type ShapeProps = {
   implementation: ReactiveImplementation;
@@ -200,7 +200,7 @@ export const Reorder = ({ data }: ShapeProps) => {
 export const BufferCount = ({ data, id }: ShapeProps) => {
 
 
-  const { updateData } = useEditRiver();
+  const updateData = useEditFlowStore((s) => s.updateData);
   const updateNodeInternal = useUpdateNodeInternals();
 
 
@@ -282,7 +282,7 @@ export const DefaultContext = ({ data }: ContextMenuProps) => {
 };
 
 export const ChangeZipImplementation = ({ data, id }: ContextMenuProps) => {
-  const { updateData } = useEditRiver();
+  const updateData = useEditFlowStore((s) => s.updateData);
   const updateNodeInternal = useUpdateNodeInternals();
 
   const changeImplementation = (implementation: ReactiveImplementation) => {
@@ -398,7 +398,7 @@ export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = ({
   data,
   id,
 }) => {
-  const { updateData } = useEditRiver();
+  const updateData = useEditFlowStore((s) => s.updateData);
 
   const Shape = shapeForImplementation(data.implementation);
   const ContextMenuImplementatoin = contextMenuForImplementation(

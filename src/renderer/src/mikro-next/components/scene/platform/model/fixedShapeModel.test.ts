@@ -127,6 +127,13 @@ const plainTransfer = (over: Partial<TransferFn> = {}): TransferFn => ({
   ...over,
 });
 
+/** The basis tints a layer must carry, in slot order, to earn `"rgb"`. */
+const RGB_BASIS = [
+  [255, 0, 0],
+  [0, 255, 0],
+  [0, 0, 255],
+] as const;
+
 const channel = (over: Partial<ChannelRenderNode> = {}): ChannelRenderNode => ({
   type: "channel",
   kind: CHANNEL_KIND,
@@ -344,6 +351,38 @@ describe("resolveRenderKind", () => {
     // Swap two and it is an ordinary three-channel composite again.
     const swapped = [rgbSources[1], rgbSources[0], rgbSources[2]];
     expect(resolveRenderKind(swapped, Blending.Additive)).toBe("graph");
+  });
+
+  it("keeps rgb for EVERY mapping the RGB card can produce", () => {
+    // The card edits two things: the three plane indices (any permutation, a
+    // repeat included — its "mono" preset points all three at one plane) and
+    // the one shared window it writes to all three. None of that may cost the
+    // specialised material, and this is the guard that says so: if a future
+    // control on that card starts moving something else, this breaks here
+    // rather than as an unexplained frame-rate drop on an RGB scene.
+    const mapped = (indices: readonly number[], climMin: number, climMax: number) =>
+      indices.map((intensityIndex, slot) =>
+        channel({
+          intensityIndex,
+          transfer: plainTransfer({
+            colormap: null,
+            color: [...RGB_BASIS[slot]],
+            climMin,
+            climMax,
+          }),
+        }),
+      );
+
+    const mappings = [
+      [0, 1, 2], // rgb preset
+      [2, 1, 0], // bgr preset / the swap action
+      [1, 2, 0], // an arbitrary per-slot pick
+      [3, 3, 3], // mono: every primary on one plane
+      [0, 0, 2], // two primaries sharing a plane
+    ];
+    for (const indices of mappings) {
+      expect(resolveRenderKind(mapped(indices, 12, 4000), Blending.Additive)).toBe("rgb");
+    }
   });
 
   it("needs a SHARED window to earn rgb", () => {

@@ -5,7 +5,7 @@ fragment EntityCategory on EntityCategory {
   label
   description
   image {
-    presignedUrl
+    ...MediaStore
   }
   latest: entities(ordering: [ {
      createdAt: DESC

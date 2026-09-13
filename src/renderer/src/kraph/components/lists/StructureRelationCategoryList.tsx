@@ -28,8 +28,8 @@ const List = ({ filters, pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => (
-        <StructureRelationCategoryCard key={index} item={ex} />
+      {(ex) => (
+        <StructureRelationCategoryCard key={ex.id} item={ex} />
       )}
     </ListRender>
   );

@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { MikroScene } from "@/linkers";
@@ -33,4 +34,4 @@ const TheCard = ({ scene }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

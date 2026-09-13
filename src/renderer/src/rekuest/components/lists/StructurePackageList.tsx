@@ -22,7 +22,7 @@ const List = ({ search }: Props) => {
       }
       refetch={() => refetch()}
     >
-      {(ex, index) => <StructurePackageCard key={index} item={ex} />}
+      {(ex) => <StructurePackageCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

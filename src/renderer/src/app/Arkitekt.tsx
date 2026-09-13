@@ -8,6 +8,17 @@ import { buildArkitekt } from "@/lib/arkitekt";
 import { aliasToHttpPath } from "@/lib/arkitekt/alias/helpers";
 import { createGraphQLServiceBuilder } from "@/lib/arkitekt/builders/graphQlServiceBuidler";
 import { ModuleRegistry, ServiceBuilderMap } from "@/lib/arkitekt/types";
+import {
+  ALPAKA_TYPE_POLICIES,
+  ELEKTRO_TYPE_POLICIES,
+  FLUSS_TYPE_POLICIES,
+  KABINET_TYPE_POLICIES,
+  KRAPH_TYPE_POLICIES,
+  LOK_TYPE_POLICIES,
+  LOVEKIT_TYPE_POLICIES,
+  MIKRO_TYPE_POLICIES,
+  REKUEST_TYPE_POLICIES,
+} from "@/app/cachePolicies";
 import { createLivekitClient } from "@/lib/livekit copy/client";
 import lokResult from "@/lok-next/api/fragments";
 import lovekitResult from "@/lovekit/api/fragments";
@@ -31,7 +42,7 @@ export const serviceMap = {
     optional: true,
     wardKey: "mikro",
     describe: true,
-    builder: createGraphQLServiceBuilder(mikroResult.possibleTypes, { describe: true }),
+    builder: createGraphQLServiceBuilder(mikroResult.possibleTypes, { describe: true, typePolicies: MIKRO_TYPE_POLICIES }),
   },
   rekuest: {
     key: "rekuest",
@@ -39,27 +50,27 @@ export const serviceMap = {
     optional: true,
     wardKey: "rekuest",
     describe: true,
-    builder: createGraphQLServiceBuilder(rekuestResult.possibleTypes, { describe: true }),
+    builder: createGraphQLServiceBuilder(rekuestResult.possibleTypes, { describe: true, typePolicies: REKUEST_TYPE_POLICIES }),
   },
   lovekit: {
     key: "lovekit",
     service: "live.arkitekt.lovekit",
     optional: true,
-    builder: createGraphQLServiceBuilder(lovekitResult.possibleTypes),
+    builder: createGraphQLServiceBuilder(lovekitResult.possibleTypes, { typePolicies: LOVEKIT_TYPE_POLICIES }),
   },
   fluss: {
     key: "fluss",
     service: "live.arkitekt.fluss",
     optional: true,
     wardKey: "fluss",
-    builder: createGraphQLServiceBuilder(flussResult.possibleTypes),
+    builder: createGraphQLServiceBuilder(flussResult.possibleTypes, { typePolicies: FLUSS_TYPE_POLICIES }),
   },
   kabinet: {
     key: "kabinet",
     service: "live.arkitekt.kabinet",
     optional: true,
     wardKey: "kabinet",
-    builder: createGraphQLServiceBuilder(kabinetResult.possibleTypes),
+    builder: createGraphQLServiceBuilder(kabinetResult.possibleTypes, { typePolicies: KABINET_TYPE_POLICIES }),
   },
   omero_ark: {
     key: "omero_ark",
@@ -73,14 +84,14 @@ export const serviceMap = {
     service: "live.arkitekt.kraph",
     optional: true,
     wardKey: "kraph",
-    builder: createGraphQLServiceBuilder(kraphResult.possibleTypes),
+    builder: createGraphQLServiceBuilder(kraphResult.possibleTypes, { typePolicies: KRAPH_TYPE_POLICIES }),
   },
   alpaka: {
     key: "alpaka",
     service: "live.arkitekt.alpaka",
     optional: true,
     wardKey: "alpaka",
-    builder: createGraphQLServiceBuilder(alpakaResult.possibleTypes),
+    builder: createGraphQLServiceBuilder(alpakaResult.possibleTypes, { typePolicies: ALPAKA_TYPE_POLICIES }),
   },
   dokuments: {
     key: "dokuments",
@@ -93,7 +104,7 @@ export const serviceMap = {
     service: "live.arkitekt.elektro",
     optional: true,
     wardKey: "elektro",
-    builder: createGraphQLServiceBuilder(elektroResult.possibleTypes),
+    builder: createGraphQLServiceBuilder(elektroResult.possibleTypes, { typePolicies: ELEKTRO_TYPE_POLICIES }),
   },
   livekit: {
     key: "livekit",
@@ -188,7 +199,7 @@ export const moduleRegistry = {
 } as const satisfies ModuleRegistry;
 
 // Check if running in tauri
-export const Arkitekt = buildArkitekt({ manifest, serviceBuilderMap: serviceMap, moduleRegistry, selfServiceBuilder: createGraphQLServiceBuilder(lokResult.possibleTypes) });
+export const Arkitekt = buildArkitekt({ manifest, serviceBuilderMap: serviceMap, moduleRegistry, selfServiceBuilder: createGraphQLServiceBuilder(lokResult.possibleTypes, { typePolicies: LOK_TYPE_POLICIES }) });
 
 export const Guard = {
   Lok: Arkitekt.Guard,

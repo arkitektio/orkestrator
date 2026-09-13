@@ -1,3 +1,4 @@
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { MikroCoordinateSystem } from "@/linkers";
@@ -27,4 +28,4 @@ const TheCard = ({ system }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

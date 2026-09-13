@@ -20,7 +20,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { Pin, PinOff } from "lucide-react";
 import { useEffect } from "react";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import {
   applyTaskChangeScalars,
   hydrateAndInsertAgentTask,

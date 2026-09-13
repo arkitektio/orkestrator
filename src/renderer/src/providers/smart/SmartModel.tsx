@@ -1,54 +1,35 @@
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
-import { useSettingsStore } from "@/providers/settings/SettingsContext";
-import { getSmartBuilderAdapters } from "@/providers/smart/buildSmartAdapters";
 import { SmartContext } from "@/providers/smart/extensions/context";
-import { Structure } from "@/types";
 import { Portal } from "@radix-ui/react-portal";
 import React from "react";
 import { motion } from "framer-motion";
-import { useSelectionStoreApi } from "../selection/SelectionContext";
-import {
-  enterHoverGroup,
-  leaveHoverGroup,
-  useHoverGroupActive,
-} from "./hoverGroup";
 import { SmartModelProps } from "./types";
 import { useSmartModel } from "./useSmartModel";
 
-export const SmartModel = ({
-  ...props
-}: SmartModelProps) => {
+/**
+ * The card wrapper: selection, drag source, drop target, and the floating
+ * "combine with partner" panel.
+ *
+ * The right-click menu and the hover card are NOT here. They are delegated to
+ * the single `SmartSurface` mounted at the app root, which resolves the card
+ * from the `data-*` attributes below and the node registry — a per-card Radix
+ * root for each was ~15 component instances and a document listener per card.
+ * `data-hover` opts a card into the hover card; `data-partners` and
+ * `data-dragging` tell the surface when to stay closed.
+ */
+export const SmartModel = ({ ...props }: SmartModelProps) => {
   const {
     ref,
     floatingRef,
     floatingStyles,
     self,
     isOver,
-    isDragging,
     partners,
     clearPartners,
     handleClick,
     handleDragStart,
     getCurrentSelection,
-  } = useSmartModel({ identifier: props.identifier, object: props.object,  });
-
-  const [contextMenuOpen, setContextMenuOpen] = React.useState(false);
-
-  // Hover cards are opt-out via the user settings (default on).
-  const hoverCardsEnabled = useSettingsStore(
-    (state) => state.settings?.showHoverCards ?? true,
-  );
-  const hoverEnabled = Boolean(props.hover) && hoverCardsEnabled;
+  } = useSmartModel({ identifier: props.identifier, object: props.object });
 
   const className = React.useMemo(
     () =>
@@ -62,19 +43,19 @@ export const SmartModel = ({
         "selected:after:absolute selected:after:top-0 selected:after:right-0 selected:after:z-[9998] selected:after:flex selected:after:h-6 selected:after:w-6 selected:after:translate-x-1/2 selected:after:-translate-y-1/2 selected:after:items-center selected:after:justify-center selected:after:rounded-full selected:after:bg-primary selected:after:text-xs selected:after:font-semibold selected:after:text-white selected:after:content-[attr(data-selected-index)]",
         "b-selected:before:absolute b-selected:before:top-0 b-selected:before:right-0 b-selected:before:z-[9999] b-selected:before:flex b-selected:before:h-6 b-selected:before:w-6 b-selected:before:translate-x-1/2 b-selected:before:-translate-y-1/2 b-selected:before:items-center b-selected:before:justify-center b-selected:before:rounded-full b-selected:before:bg-red-500 b-selected:before:text-xs b-selected:before:font-semibold b-selected:before:text-white b-selected:before:content-[attr(data-bselected-index)]",
       ),
-    [
-      props.className,
-    ],
+    [props.className],
   );
 
-  const triggerContent = (
+  return (
     <div
-      key={`${props.identifier}:${props.object}`}
+      key={`${props.identifier}:${props.object.id}`}
       ref={ref}
       onClick={handleClick}
       className={cn("relative", props.containerClassName, className)}
       onDragStart={handleDragStart}
       draggable={false}
+      data-hover={props.hover ? "true" : undefined}
+      data-partners={partners.length > 0 ? "true" : undefined}
     >
       {props.children}
       {isOver && <CombineButton />}
@@ -104,139 +85,6 @@ export const SmartModel = ({
       )}
     </div>
   );
-
-  const menu = (
-    <ContextMenu modal={false} onOpenChange={setContextMenuOpen}>
-      {/* `data-nonbreaker`: the menu is portalled out of the card, so without it
-          SelectionBox's global mousedown handler would clear the selection the
-          moment a row is pressed — an action on a multi-selection would then run
-          against the single right-clicked item. */}
-      <ContextMenuContent className="dark:border-gray-700 max-w-md" data-nonbreaker>
-        <SmartModelContext self={self} />
-      </ContextMenuContent>
-      <ContextMenuTrigger asChild>
-        {hoverEnabled ? (
-          <HoverCardTrigger asChild>{triggerContent}</HoverCardTrigger>
-        ) : (
-          triggerContent
-        )}
-      </ContextMenuTrigger>
-    </ContextMenu>
-  );
-
-  if (!hoverEnabled) {
-    return menu;
-  }
-
-  return (
-    <SmartHoverCard self={self} disabled={isDragging || contextMenuOpen || partners.length > 0}>
-      {menu}
-    </SmartHoverCard>
-  );
-};
-
-// Wraps the model trigger in a shadcn HoverCard. The detailed hover content is
-// resolved per-identifier through the smart builder adapters and is only
-// mounted while the card is open, so the (potentially expensive) detail query
-// is fired on demand when the item actually becomes visible.
-const SmartHoverCard = ({
-  self,
-  children,
-  disabled,
-}: {
-  self: Structure;
-  children: React.ReactNode;
-  disabled?: boolean;
-}) => {
-  const [open, setOpen] = React.useState(false);
-  const groupActive = useHoverGroupActive();
-  const openRef = React.useRef(false);
-
-  const handleOpenChange = React.useCallback((next: boolean) => {
-    if (disabled && next) return;
-    setOpen(next);
-    if (next === openRef.current) {
-      return;
-    }
-    openRef.current = next;
-    if (next) {
-      enterHoverGroup();
-    } else {
-      leaveHoverGroup();
-    }
-  }, [disabled]);
-
-  // Make sure we release our slot in the group if we unmount while open
-  // (e.g. the item scrolls out of view).
-  React.useEffect(() => {
-    return () => {
-      if (openRef.current) {
-        openRef.current = false;
-        leaveHoverGroup();
-      }
-    };
-  }, []);
-
-  // Force close if disabled while open
-  React.useEffect(() => {
-    if (disabled && open) {
-      setOpen(false);
-      if (openRef.current) {
-        openRef.current = false;
-        leaveHoverGroup();
-      }
-    }
-  }, [disabled, open]);
-
-  return (
-    <HoverCard
-      open={open}
-      onOpenChange={handleOpenChange}
-      openDelay={groupActive ? 80 : 600}
-      closeDelay={100}
-    >
-      {children}
-      <HoverCardContent
-        side="right"
-        align="center"
-        sideOffset={12}
-        className="w-80 max-w-[min(90vw,20rem)] p-0 ring-0 border-0 bg-transparent overflow-visible shadow-none"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Gradient "frame" — the padding lets this gradient show as a border
-            around the solid body. The shadow lives here (on the actual visible
-            element) so it isn't lost on the transparent portal container. */}
-        <div className="rounded-3xl bg-primary p-[1px] shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7)]">
-          <div className="rounded-3xl overflow-hidden bg-popover border border-primary/20">
-            {open &&
-              getSmartBuilderAdapters().renderHover({
-                identifier: self.identifier,
-                object: self.object,
-              })}
-          </div>
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  );
-};
-
-// The menu content only mounts while the context menu is open, so the selection
-// it saw when it opened is the selection the user meant to act on. Snapshot it:
-// anything that clears the selection while the menu is open (a stray mousedown,
-// an item disappearing from a list) must not silently shrink an action's targets
-// down to the single right-clicked structure.
-const SmartModelContext = ({ self }: { self: Structure }) => {
-  const storeApi = useSelectionStoreApi();
-
-  const [{ objects, partners }] = React.useState(() => {
-    const { selection, bselection } = storeApi.getState();
-
-    return selection.length > 0
-      ? { objects: selection, partners: bselection }
-      : { objects: [self], partners: [] as Structure[] };
-  });
-
-  return <SmartContext objects={objects} partners={partners} />;
 };
 
 export const CombineButton = () => {

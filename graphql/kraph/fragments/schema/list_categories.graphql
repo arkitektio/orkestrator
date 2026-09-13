@@ -5,7 +5,7 @@ fragment BaseListCategory on Category {
   }
   description
   image {
-    presignedUrl
+    ...MediaStore
   }
   key
   ageName

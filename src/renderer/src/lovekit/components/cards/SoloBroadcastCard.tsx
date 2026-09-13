@@ -1,3 +1,4 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { LovekitSoloBroadcast } from "@/linkers";
@@ -29,4 +30,4 @@ const TheCard = ({ item, className }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

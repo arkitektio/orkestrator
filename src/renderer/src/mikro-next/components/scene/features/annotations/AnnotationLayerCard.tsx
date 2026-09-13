@@ -85,11 +85,16 @@ export const AnnotationLayerCard = memo(
     // A SCALAR selector, deliberately: `visibleRois` is rewritten whenever the
     // z-plane moves, and subscribing to the objects would re-render this card
     // at scrub cadence (P17). A count only re-renders when the count changes.
-    const inView = useRoiSelectionStore(
-      (s) =>
-        Object.values(s.visibleRois).filter((roi) => roi.layerId === layer.id)
-          .length,
-    );
+    const inView = useRoiSelectionStore((s) => {
+      // Counted without allocating (`Object.values` + `filter` per store
+      // write, per card).
+      let count = 0;
+      const visible = s.visibleRois;
+      for (const key in visible) {
+        if (visible[key].layerId === layer.id) count += 1;
+      }
+      return count;
+    });
 
     const total = annotations?.length ?? 0;
 

@@ -24,21 +24,19 @@ import { FlussArgPortFragment } from "@/reaktion/api/graphql";
 import { GearIcon } from "@radix-ui/react-icons";
 import React from "react";
 import { RekuestFilterNodeProps } from "../../types";
-import { useEditNodeErrors, useEditRiver } from "../context";
+import { useEditNodeErrors, useEditFlowStore } from "../context";
 
 export const RekuestFilterActionWidget: React.FC<RekuestFilterNodeProps> = ({
   data: { ins, outs, constants, ...data },
   id,
   selected,
 }) => {
-  const {
-    moveConstantToGlobals,
-    moveConstantToStream,
-    moveStreamToConstants,
-    moveOutStreamToVoid,
-    moveVoidtoOutstream,
-    updateData,
-  } = useEditRiver();
+  const moveConstantToGlobals = useEditFlowStore((s) => s.moveConstantToGlobals);
+  const moveConstantToStream = useEditFlowStore((s) => s.moveConstantToStream);
+  const moveStreamToConstants = useEditFlowStore((s) => s.moveStreamToConstants);
+  const moveOutStreamToVoid = useEditFlowStore((s) => s.moveOutStreamToVoid);
+  const moveVoidtoOutstream = useEditFlowStore((s) => s.moveVoidtoOutstream);
+  const updateData = useEditFlowStore((s) => s.updateData);
 
   const [expanded, setExpanded] = React.useState(false);
 

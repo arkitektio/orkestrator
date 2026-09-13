@@ -3,7 +3,7 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { KraphLink } from "@/linkers";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { useGetDetailLinkQuery } from "../api/graphql";
 import { StandingsPanel } from "../components/StandingsPanel";
 

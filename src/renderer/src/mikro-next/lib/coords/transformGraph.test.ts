@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   composeLayerAffine,
-  composePlacementPath,
   evalTransform,
   invert4,
   placementToSpatialAffine,
@@ -86,6 +85,50 @@ describe("evalTransform", () => {
     expect(m[2][3]).toBe(0);
   });
 
+  it("returns null, not identity, when the output triple names none of the affine's rows", () => {
+    // The lens' own names handed to an edge that writes world names: every
+    // output slot indexOf's to -1. Identity here is a layer left in raw pixels
+    // with nothing logged — the failure that hid the Visium bin-lattice bug.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const m = evalTransform(
+      { __typename: "AffineTransformation", affine: [[2, 0, 10], [0, 2, 20]] },
+      ["row", "col"],
+      ["y", "x"],
+      ["col", "row", null],
+      ["col", "row", null],
+    );
+    expect(m).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("none of the output slots"));
+    warn.mockRestore();
+  });
+
+  it("leaves an affine that touches no spatial input axis as identity, silently", () => {
+    // A ByDimension child acting on a non-spatial axis only: no slot on either
+    // side, and that is correct pass-through, not a misplacement.
+    const m = evalTransform(
+      { __typename: "AffineTransformation", affine: [[3, 1]] },
+      ["t"],
+      ["t"],
+      ["x", "y", "z"],
+    );
+    expect(m).not.toBeNull();
+    expect(m![0][0]).toBe(1);
+  });
+
+  it("degrades a flat affine with more output names than rows to null", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const m = evalTransform(
+      { __typename: "AffineTransformation", affine: [[2, 0, 10], [0, 2, 20]] },
+      ["row", "col"],
+      ["c", "y", "x"],
+      ["col", "row", null],
+      ["x", "y", null],
+    );
+    expect(m).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("has 2 rows"));
+    warn.mockRestore();
+  });
+
   it("returns null for kinds it cannot represent", () => {
     expect(
       evalTransform({ __typename: "FieldTransformation" }, DIMS, DIMS, SPATIAL),
@@ -156,102 +199,6 @@ const REGISTRATION_STEP = {
   inverted: false,
 };
 
-describe("composePlacementPath", () => {
-  it("composes steps first-to-last (calibration then registration)", () => {
-    const m = composePlacementPath([CALIBRATION_STEP, REGISTRATION_STEP], SCENE, SPATIAL)!;
-    // pixel (1, 0, 0): x' = 1·0.325 + 30
-    expect(m[0][0]).toBeCloseTo(0.325);
-    expect(m[0][3]).toBeCloseTo(30);
-    expect(m[2][2]).toBeCloseTo(0.5);
-    expect(m[2][3]).toBeCloseTo(10);
-  });
-
-  it("inverts flagged steps (walking an edge output→input)", () => {
-    const m = composePlacementPath(
-      [{ ...CALIBRATION_STEP, inverted: true }],
-      SCENE,
-      SPATIAL,
-    )!;
-    expect(m[0][0]).toBeCloseTo(1 / 0.325); // µm → pixels
-    expect(m[2][2]).toBeCloseTo(2);
-  });
-
-  it("null path → null; empty path → null (identity)", () => {
-    expect(composePlacementPath(null, SCENE, SPATIAL)).toBeNull();
-    expect(composePlacementPath([], SCENE, SPATIAL)).toBeNull();
-  });
-
-  it("uses self-described inputAxes/outputAxes without any scene CS index", () => {
-    // The strict schema: edges carry their own axis order, so the scene
-    // context can be EMPTY (the fragment no longer ships coordinateSystems).
-    // A rank-bridging registration: (y, x) params applied under a (z, y, x)
-    // spatial mapping — unnamed z passes through untouched.
-    const steps = [
-      {
-        transformation: {
-          __typename: "ScaleTransformation",
-          inputAxes: ["y", "x"],
-          outputAxes: ["y", "x"],
-          input: { id: "cs:unknown" },
-          output: { id: "cs:world" },
-          scale: [0.65, 0.325],
-        },
-        inverted: false,
-      },
-    ];
-    const m = composePlacementPath(steps, {}, SPATIAL)!;
-    expect(m[0][0]).toBeCloseTo(0.325); // x
-    expect(m[1][1]).toBeCloseTo(0.65); // y
-    expect(m[2][2]).toBe(1); // z untouched (not named by the edge)
-  });
-
-  it("composite children use their own subset axes (ByDimension)", () => {
-    const steps = [
-      {
-        transformation: {
-          __typename: "ByDimensionTransformation",
-          inputAxes: ["t", "z", "y", "x"],
-          outputAxes: ["t", "z", "y", "x"],
-          input: { id: "cs:a" },
-          output: { id: "cs:b" },
-          transformations: [
-            {
-              __typename: "TranslationTransformation",
-              inputAxes: ["z"],
-              outputAxes: ["z"],
-              translation: [5],
-            },
-            {
-              __typename: "ScaleTransformation",
-              inputAxes: ["y", "x"],
-              outputAxes: ["y", "x"],
-              scale: [2, 2],
-            },
-          ],
-        },
-        inverted: false,
-      },
-    ];
-    const m = composePlacementPath(steps, {}, SPATIAL)!;
-    expect(m[2][3]).toBeCloseTo(5); // z translated by the z-only child
-    expect(m[0][0]).toBeCloseTo(2); // x scaled by the xy child
-    expect(m[2][2]).toBe(1);
-  });
-
-  it("degrades unresolvable steps to identity, keeps the rest", () => {
-    const m = composePlacementPath(
-      [
-        { transformation: { __typename: "FieldTransformation" }, inverted: false },
-        REGISTRATION_STEP,
-      ],
-      SCENE,
-      SPATIAL,
-    )!;
-    expect(m[0][0]).toBe(1);
-    expect(m[0][3]).toBeCloseTo(30);
-  });
-});
-
 /**
  * Regression: scene 28's calibration edge, verbatim. The dataset is isometric
  * in x/y (both 0.2405 µm) yet rendered anisotropic, because the ByDimension
@@ -294,11 +241,8 @@ describe("evalTransform parameter arity", () => {
   });
 
   it("reads an outputAxes-aligned scale/translation against outputAxes", () => {
-    const m = composePlacementPath(
-      [{ transformation: calibrationChildren("cs:scene28"), inverted: false }],
-      {},
-      SPATIAL,
-    )!;
+    const edge = calibrationChildren("cs:scene28");
+    const m = evalTransform(edge, edge.inputAxes, edge.outputAxes, SPATIAL)!;
     // x and y isometric — the symptom that started this.
     expect(m[0][0]).toBeCloseTo(0.2405001955034213);
     expect(m[1][1]).toBeCloseTo(0.2405001955034213);
@@ -313,11 +257,8 @@ describe("evalTransform parameter arity", () => {
 
   it("warns rather than silently mis-indexing", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    composePlacementPath(
-      [{ transformation: calibrationChildren("cs:scene28:warn"), inverted: false }],
-      {},
-      SPATIAL,
-    );
+    const edge = calibrationChildren("cs:scene28:warn");
+    evalTransform(edge, edge.inputAxes, edge.outputAxes, SPATIAL);
     expect(warn).toHaveBeenCalled();
     expect(warn.mock.calls.map(String).join("\n")).toMatch(/outputAxes/);
     warn.mockRestore();
@@ -365,9 +306,11 @@ describe("composeLayerAffine", () => {
   const makeLayer = (opts?: {
     lensToParent?: unknown;
     pathToWorld?: unknown;
+    asAffine?: unknown;
     pathStartId?: string;
   }) => ({
     pathToWorld: (opts?.pathToWorld ?? null) as never,
+    asAffine: (opts?.asAffine ?? null) as never,
     lens: {
       axisNames: DIMS,
       renderAxes: { x: "x", y: "y", z: "z" },
@@ -387,11 +330,23 @@ describe("composeLayerAffine", () => {
     },
   });
 
-  it("prepends the lens crop before an intrinsic-rooted path", () => {
+  it("prepends the lens crop before an intrinsic-rooted placement", () => {
     const layer = makeLayer({
       // Cropped lens: z slices start at 4 → translation on the z axis.
       lensToParent: { __typename: "TranslationTransformation", translation: [0, 0, 4, 0, 0] },
+      // The path is provenance (it says where the placement STARTS); the
+      // matrix is the server's composition of it: calibration then registration.
       pathToWorld: [CALIBRATION_STEP, REGISTRATION_STEP],
+      asAffine: {
+        matrix: [
+          [0, 0, 0.5, 0, 0, 10], // z
+          [0, 0, 0, 0.325, 0, 20], // y
+          [0, 0, 0, 0, 0.325, 30], // x
+        ],
+        inputAxes: DIMS,
+        outputAxes: ["z", "y", "x"],
+        total: true,
+      },
     });
     const m = composeLayerAffine(SCENE, layer)!;
     // lens voxel (0,0,0) → intrinsic z 4 → physical z 2.0 µm → world z 12.
@@ -417,24 +372,170 @@ describe("composeLayerAffine", () => {
     const layer = makeLayer({
       lensToParent: { __typename: "TranslationTransformation", translation: [0, 0, 4, 0, 0] },
       pathToWorld: lensRootedPath,
+      asAffine: {
+        matrix: [
+          [0, 0, 1, 0, 0, 7], // z
+          [0, 0, 0, 1, 0, 0], // y
+          [0, 0, 0, 0, 1, 0], // x
+        ],
+        inputAxes: DIMS,
+        outputAxes: ["z", "y", "x"],
+        total: true,
+      },
     });
     const m = composeLayerAffine(SCENE, layer)!;
-    // The crop must NOT be double-applied: only the path's z shift remains.
+    // The crop must NOT be double-applied: only the placement's z shift remains.
     expect(m[2][3]).toBeCloseTo(7);
   });
 
-  it("stays in the intrinsic frame for unregistered layers (null path)", () => {
+  it("never walks pathToWorld: without asAffine only the local prefix remains, and it warns", () => {
+    // The steps alone would compose to a real placement; the client must not
+    // do that. `isPlaceable` keeps such a layer off screen, so what comes back
+    // here is only the lens prefix (pixel units) — never a world position.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const layer = makeLayer({
+      lensToParent: { __typename: "TranslationTransformation", translation: [0, 0, 4, 0, 0] },
+      pathToWorld: [CALIBRATION_STEP, REGISTRATION_STEP],
+      asAffine: null,
+    });
+    const m = composeLayerAffine(SCENE, layer)!;
+    expect(m[2][3]).toBeCloseTo(4); // crop only
+    expect(m[0][0]).toBe(1); // no calibration applied
+    expect(m[0][3]).toBe(0); // no registration applied
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("not drawn"));
+    warn.mockRestore();
+  });
+
+  it("warns 'unregistered' for a null path and null asAffine", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const layer = makeLayer({
       lensToParent: { __typename: "TranslationTransformation", translation: [0, 0, 4, 0, 0] },
       pathToWorld: null,
+      asAffine: null,
     });
     const m = composeLayerAffine(SCENE, layer)!;
-    expect(m[2][3]).toBeCloseTo(4); // crop only, pixel units
-    expect(m[0][0]).toBe(1);
+    expect(m[2][3]).toBeCloseTo(4);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("unregistered"));
+    warn.mockRestore();
   });
 
   it("returns null (identity) when nothing transforms", () => {
     expect(composeLayerAffine({}, makeLayer())).toBeNull();
+  });
+});
+
+describe("composeLayerAffine — lens axes named unlike the world (Visium HD bin lattice)", () => {
+  // Scene 2's own numbers: a 2 µm bin-id array (row, col) fitted onto the H&E
+  // pixel grid (y, x) by a reflected affine, then the H&E's µm calibration.
+  // The world is (c, y, x); the lens is (row, col). Reducing with lens names
+  // on the output side indexOf's every slot to -1 and silently dropped the
+  // whole registration — the layer sat in raw pixels next to the tissue.
+  const WORLD = {
+    id: "cs:world",
+    axes: [
+      { name: "c", type: "CHANNEL", order: 0 },
+      { name: "y", type: "SPACE", order: 1 },
+      { name: "x", type: "SPACE", order: 2 },
+    ],
+  };
+  const SCENE_CYX = { worldCoordinateSystem: WORLD };
+  const LATTICE_STEP = {
+    transformation: {
+      __typename: "ByDimensionTransformation",
+      inputAxes: ["row", "col"],
+      outputAxes: ["y", "x"],
+      input: { id: "cs:bins" },
+      output: { id: "cs:he" },
+      transformations: [
+        {
+          __typename: "AffineTransformation",
+          inputAxes: ["row", "col"],
+          // Over-declared by the server: 2 rows under 3 names.
+          outputAxes: ["c", "y", "x"],
+          affine: [
+            [-7.3035151893397705, -0.04863885486632391, 24099.110308890056],
+            [-0.04860509668249711, 7.303741872268973, 253.42724783538984],
+          ],
+        },
+      ],
+    },
+    inverted: false,
+  };
+  const CALIBRATION_CYX = {
+    transformation: {
+      __typename: "ScaleTransformation",
+      inputAxes: ["c", "y", "x"],
+      outputAxes: ["c", "y", "x"],
+      input: { id: "cs:he" },
+      output: { id: "cs:world" },
+      scale: [1, 0.2738, 0.2738],
+    },
+    inverted: false,
+  };
+  const AS_AFFINE = {
+    matrix: [
+      [-1.999702458841229, -0.013317318462399487, 6598.3364025740975],
+      [-0.013308075471667707, 1.9997645246272446, 69.38838045732973],
+    ],
+    inputAxes: ["row", "col"],
+    outputAxes: ["y", "x"],
+    total: false,
+  };
+  const binLayer = (asAffine: typeof AS_AFFINE | null) => ({
+    pathToWorld: [LATTICE_STEP, CALIBRATION_CYX] as never,
+    asAffine,
+    lens: {
+      axisNames: ["row", "col"],
+      renderAxes: { x: "col", y: "row", z: null },
+      coordinateSystem: { id: "cs:bins" },
+      toParent: null,
+      dataset: {
+        intrinsicSystem: { id: "cs:bins", name: "bins" },
+        dataArrays: [{ level: 0, coordinateSystem: { id: "cs:bins" }, toParent: null }],
+      },
+    },
+  });
+  const expectPlaced = (m: number[][] | null) => {
+    expect(m).not.toBeNull();
+    // x ← col, y ← row (reflected), translation in µm.
+    expect(m![0][0]).toBeCloseTo(1.9997645, 5);
+    expect(m![0][1]).toBeCloseTo(-0.0133081, 5);
+    expect(m![0][3]).toBeCloseTo(69.38838, 3);
+    expect(m![1][0]).toBeCloseTo(-0.0133173, 5);
+    expect(m![1][1]).toBeCloseTo(-1.9997025, 5);
+    expect(m![1][3]).toBeCloseTo(6598.3364, 2);
+    expect(m![2][2]).toBe(1);
+    expect(m![2][3]).toBe(0);
+  };
+
+  it("places the layer from the server's asAffine", () => {
+    expectPlaced(composeLayerAffine(SCENE_CYX, binLayer(AS_AFFINE)));
+  });
+
+  it("still composes a lens named like the world against typed world axes", () => {
+    const he = {
+      pathToWorld: [CALIBRATION_CYX] as never,
+      asAffine: {
+        matrix: [[1, 0, 0, 0], [0, 0.2738, 0, 0], [0, 0, 0.2738, 0]],
+        inputAxes: ["c", "y", "x"],
+        outputAxes: ["c", "y", "x"],
+        total: true,
+      },
+      lens: {
+        axisNames: ["c", "y", "x"],
+        renderAxes: { x: "x", y: "y", z: null },
+        coordinateSystem: { id: "cs:he" },
+        toParent: null,
+        dataset: {
+          intrinsicSystem: { id: "cs:he", name: "he" },
+          dataArrays: [{ level: 0, coordinateSystem: { id: "cs:he" }, toParent: null }],
+        },
+      },
+    };
+    const m = composeLayerAffine(SCENE_CYX, he)!;
+    expect(m[0][0]).toBeCloseTo(0.2738);
+    expect(m[1][1]).toBeCloseTo(0.2738);
+    expect(m[0][3]).toBe(0);
   });
 });
 

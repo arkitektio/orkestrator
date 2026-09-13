@@ -92,7 +92,7 @@ export const NavigationPane = () => {
         <Separator className="my-3" />
 
         {data?.members.map((i) => (
-          <>
+          <React.Fragment key={i.user.sub}>
             <SidePaneGroup
               title={
                 <DroppableNavLink
@@ -114,7 +114,7 @@ export const NavigationPane = () => {
                 </DroppableNavLink>
               ))}
             </SidePaneGroup>
-          </>
+          </React.Fragment>
         ))}
         {error && <div>Error: {JSON.stringify(error)}</div>}
       </nav>

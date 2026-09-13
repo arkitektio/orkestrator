@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import type * as THREE from "three";
 
@@ -38,10 +38,25 @@ export const AnimationPlayer = () => {
     if (playingId) invalidate();
   }, [playingId, invalidate]);
 
+  // Per-frame scratch: the playing animation resolved once per `playingId`
+  // (not a list scan per frame) and a reused camera-apply context.
+  const frameScratch = useRef({
+    playingId: null as string | null,
+    animation: null as
+      | ReturnType<typeof animationApi.getState>["animations"][number]
+      | null,
+    context: { camera, controls: null as TargetControls | null, size: { width: 0, height: 0 } },
+  });
+
   useFrame((_, delta) => {
     const state = animationApi.getState();
     if (!state.playingId) return;
-    const animation = state.animations.find((a) => a.id === state.playingId);
+    const scratch = frameScratch.current;
+    if (scratch.playingId !== state.playingId) {
+      scratch.playingId = state.playingId;
+      scratch.animation = state.animations.find((a) => a.id === state.playingId) ?? null;
+    }
+    const animation = scratch.animation;
     if (!animation) return;
 
     // Read the clock back after advancing: `advance` clamps to the tour's end
@@ -55,19 +70,20 @@ export const AnimationPlayer = () => {
     const targetControls =
       controls && "target" in controls ? (controls as unknown as TargetControls) : null;
 
-    applyCameraState(
-      pose,
-      { camera, controls: targetControls, size: { width: size.width, height: size.height } },
-      displayMode,
-      state.frame,
-    );
+    const context = scratch.context;
+    context.camera = camera;
+    context.controls = targetControls;
+    context.size.width = size.width;
+    context.size.height = size.height;
+    applyCameraState(pose, context, displayMode, state.frame);
 
     const viewer = viewerApi.getState();
     // In 2D the pose's z is the slice, not the target (see platform/camera/cameraState.ts).
     const sliceZ = readSceneZ(pose, state.frame.axes);
     if (displayMode === "2D" && sliceZ !== null) viewer.setCurrentZ(sliceZ);
-    for (const [dim, index] of Object.entries(readDimSelections(pose, state.frame.axes))) {
-      viewer.setDimSelection(dim, index);
+    const dims = readDimSelections(pose, state.frame.axes);
+    for (const dim in dims) {
+      viewer.setDimSelection(dim, dims[dim]);
     }
 
     // Keep the demand loop turning for the next step.

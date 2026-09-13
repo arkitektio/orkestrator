@@ -375,28 +375,6 @@ export const CameraController = () => {
         />
       )}
 
-      {displayMode === "3D" ? (
-        <PerspectiveCamera
-          key="perspective-camera"
-          makeDefault
-          position={[0, -200, 200]}
-          fov={45}
-          up={[0, 0, 1]}
-          near={frustumNear}
-          far={frustumFar}
-        />
-      ) : (
-        <OrthographicCamera
-          key="orthographic-camera"
-          makeDefault
-          zoom={5}
-          position={[0, 0, 50000]}
-          up={[0, 1, 0]}
-          near={frustumNear}
-          far={frustumFar}
-        />
-      )}
-
       {/* Orbit Controls. The key deliberately carries only the display mode:
             camera settings are live props now, so toggling one no longer
             remounts the controls (which used to reset the orbit target to the

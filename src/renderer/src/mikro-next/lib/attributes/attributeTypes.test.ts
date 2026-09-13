@@ -3,28 +3,19 @@ import type { AttributeFetchKey, AttributePlanLike, ProbedAttributes } from "./a
 import {
   applyAttributeRows,
   buildProbedAttributes,
+  hopKey,
+  hopMetaOf,
+  hopMetasOf,
   planIdentity,
 } from "./attributeTypes";
+import { chainPlan, sparsePlan, tableHop, tablePlan } from "./__fixtures__/plans";
 
-const plan = (over: Partial<AttributePlanLike> = {}): AttributePlanLike => ({
-  edge: { id: "edge-1", version: 3 },
-  table: { id: "table-1", name: "nuclei morphology" },
-  path: [],
-  sample: {
-    system: { id: "sys-1", axes: [{ name: "y", order: 0 }, { name: "x", order: 1 }] },
-    store: { id: "zarr-1", bucket: "b", key: "k" },
-    consumes: ["y", "x"],
-    produces: ["i"],
-    passthrough: [],
-  },
-  lookup: {
-    store: { id: "pq-1", bucket: "b", key: "t.parquet" },
-    keyColumns: [{ axis: "i", column: { name: "i", dtype: "BIGINT" } }],
-    attributes: [{ name: "area", dtype: "DOUBLE" }],
-    sql: 'SELECT "area" FROM read_parquet(?) WHERE "i" = ?',
-  },
-  ...over,
-});
+const plan = (over: Partial<AttributePlanLike> = {}): AttributePlanLike =>
+  tablePlan({
+    edge: { id: "edge-1", version: 3 },
+    hops: [tableHop({ table: { id: "table-1", name: "nuclei morphology" } })],
+    ...over,
+  });
 
 const key = (voxel: [number, number, number] = [1, 2, 0]): AttributeFetchKey => ({
   systemId: "sys-1",
@@ -65,13 +56,40 @@ describe("planIdentity", () => {
   });
 });
 
+describe("hopKey / hopMetaOf", () => {
+  it("keys the landing by the plan identity and later hops by position and target", () => {
+    const chain = chainPlan();
+    expect(hopKey(chain, chain.hops[0])).toBe(planIdentity(chain));
+    expect(hopKey(chain, chain.hops[1])).toBe(`${planIdentity(chain)}#1:types`);
+    expect(hopKey(chain, chain.hops[2])).toBe(`${planIdentity(chain)}#2:sd1`);
+  });
+
+  it("keys a sparse landing by the matrix", () => {
+    expect(planIdentity(sparsePlan())).toBe("sd1:e-sparse@1");
+  });
+
+  it("describes each hop for the HUD: kind, name, parent, via, cardinality", () => {
+    const metas = hopMetasOf(chainPlan());
+    expect(metas.map((meta) => [meta.kind, meta.name, meta.parentKey === null, meta.via, meta.cardinality])).toEqual([
+      ["TABLE", "morphology", true, null, "ONE"],
+      ["TABLE", "cell types", false, "via cell_type", "ONE"],
+      ["SPARSE", "expression", false, "via i", "ONE"],
+    ]);
+    expect(metas[1].parentKey).toBe(metas[0].hopKey);
+    const names = hopMetaOf(sparsePlan(), sparsePlan().hops[1]);
+    expect(names.via).toBe("along gene");
+    expect(names.cardinality).toBe("MANY");
+    expect(hopMetaOf(sparsePlan(), sparsePlan().hops[0]).valueAxes).toEqual(["gene"]);
+  });
+});
+
 describe("applyAttributeRows", () => {
   const planKey = planIdentity(plan());
   const current: ProbedAttributes = {
     key: key(),
     byPlan: { [planKey]: { status: "pending", rows: [] } },
     planMeta: {
-      [planKey]: { tableName: "nuclei morphology", tableId: "table-1", attributes: [] },
+      [planKey]: hopMetaOf(plan(), plan().hops[0]),
     },
   };
 
@@ -107,12 +125,7 @@ describe("applyAttributeRows", () => {
 
 describe("buildProbedAttributes", () => {
   const meta = (plans: AttributePlanLike[]): ProbedAttributes["planMeta"] =>
-    Object.fromEntries(
-      plans.map((p) => [
-        planIdentity(p),
-        { tableName: p.table.name, tableId: p.table.id, attributes: p.lookup.attributes },
-      ]),
-    );
+    Object.fromEntries(plans.map((p) => [planIdentity(p), hopMetaOf(p, p.hops[0])]));
 
   const rows = [{ area: 12 }];
 
@@ -125,7 +138,7 @@ describe("buildProbedAttributes", () => {
     expect(built).not.toBeNull();
     expect(built!.key).toEqual(key());
     expect(built!.byPlan[planIdentity(p)].rows).toBe(rows);
-    expect(built!.planMeta[planIdentity(p)].tableName).toBe("nuclei morphology");
+    expect(built!.planMeta[planIdentity(p)].name).toBe("nuclei morphology");
   });
 
   it("returns null when the result is value-equal — the caller then skips the set", () => {
@@ -165,7 +178,7 @@ describe("buildProbedAttributes", () => {
 
   it("rebuilds when the plan SET changes even if the shared plan is unchanged", () => {
     const a = plan();
-    const b = plan({ edge: { id: "edge-2", version: 1 }, table: { id: "t2", name: "b" } });
+    const b = plan({ edge: { id: "edge-2", version: 1 }, hops: [tableHop({ table: { id: "t2", name: "b" } })] });
     const stateA = [planIdentity(a), { status: "rows" as const, rows }] as const;
     const first = buildProbedAttributes(null, key(), meta([a]), [stateA]);
     const next = buildProbedAttributes(first, key(), meta([a, b]), [

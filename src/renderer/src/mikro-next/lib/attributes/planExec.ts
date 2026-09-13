@@ -1,5 +1,10 @@
 import type { AxisCoords } from "../coords/axisPath";
-import { isMeshSample, isNetworkSample, type AttributePlanLike } from "./attributeTypes";
+import {
+  isMeshSample,
+  isNetworkSample,
+  type AttributePlanLike,
+  type TableHopLike,
+} from "./attributeTypes";
 
 /**
  * Pure plan-execution arithmetic: turning a path-mapped point plus a sampled
@@ -10,7 +15,8 @@ import { isMeshSample, isNetworkSample, type AttributePlanLike } from "./attribu
  *    set (sibling edges may name their produced axis differently);
  *  - passthrough axes join the key by name, stated in the PLAN's own space;
  *  - bind order is the parquet path first (the `read_parquet(?)` argument),
- *    then the key values in `keyColumns` order;
+ *    then the key values in `keyColumns` order — a list-valued key (a MANY
+ *    hop) contributes each of its values to an `IN (…)`;
  *  - a missing axis is a hard null — a key is never borrowed or guessed.
  */
 
@@ -56,22 +62,43 @@ export function buildHeld(
 }
 
 /**
- * The key values for `plan.lookup.sql` in `keyColumns` order, each read from
- * `held` by the plan's own axis name. Null when a key axis is missing. The
- * parquet URL is prepended separately (`buildParams`) because it comes from
- * the store's ACCESS GRANT at query time, not from the plan.
+ * What a hop is bound from: a scalar per name — the sampled id under the
+ * plan's produced axis, the passthrough coordinates, a parent row's column
+ * (which may be a string id) — or, for a MANY binding, a list (every position
+ * a sparse parent returned).
  */
-export function buildKeyValues(
-  plan: AttributePlanLike,
-  held: Record<string, HeldValue>,
-): BindParam[] | null {
-  const values: BindParam[] = [];
-  for (const keyColumn of plan.lookup.keyColumns) {
+export type HeldMap = Record<string, BindParam | readonly BindParam[]>;
+
+export type BoundKeys = {
+  /** The key values in `keyColumns` order; a list key contributes each of
+   * its values, in order, so `params` binds the statement's `IN (?, ?, …)`. */
+  params: BindParam[];
+  /** The one key that was bound as a list, and how many values it carries. */
+  many: { axis: string; count: number } | null;
+};
+
+/**
+ * The key values for a TABLE hop's statement in `keyColumns` order, each read
+ * from `held` by the hop's own axis name. Null when a key axis is missing, a
+ * list is empty, or two keys are lists (one `IN` per statement is the
+ * contract). The parquet URL is prepended separately (`buildParams`) because
+ * it comes from the store's ACCESS GRANT at query time, not from the plan.
+ */
+export function buildKeyValues(hop: TableHopLike, held: HeldMap): BoundKeys | null {
+  const params: BindParam[] = [];
+  let many: BoundKeys["many"] = null;
+  for (const keyColumn of hop.lookup.keyColumns) {
     const value = held[keyColumn.axis];
     if (value === undefined) return null;
-    values.push(value);
+    if (Array.isArray(value)) {
+      if (value.length === 0 || many !== null) return null;
+      many = { axis: keyColumn.axis, count: value.length };
+      params.push(...(value as readonly BindParam[]));
+    } else {
+      params.push(value as BindParam);
+    }
   }
-  return values;
+  return { params, many };
 }
 
 /**
@@ -79,12 +106,12 @@ export function buildKeyValues(
  * argument), then the key values in `keyColumns` order.
  */
 export function buildParams(
-  plan: AttributePlanLike,
+  hop: TableHopLike,
   parquetUrl: string,
-  held: Record<string, HeldValue>,
+  held: HeldMap,
 ): BindParam[] | null {
-  const keyValues = buildKeyValues(plan, held);
-  return keyValues === null ? null : [parquetUrl, ...keyValues];
+  const bound = buildKeyValues(hop, held);
+  return bound === null ? null : [parquetUrl, ...bound.params];
 }
 
 /**

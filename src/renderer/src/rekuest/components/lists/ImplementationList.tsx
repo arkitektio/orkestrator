@@ -30,8 +30,8 @@ const List = ({ filters, order, pagination }: Props) => {
         refetch={refetch}
         error={error}
       >
-        {(ex, index) => (
-          <ImplementationCard key={index} item={ex} />
+        {(ex) => (
+          <ImplementationCard key={ex.id} item={ex} />
         )}
       </ListRender>
     </>

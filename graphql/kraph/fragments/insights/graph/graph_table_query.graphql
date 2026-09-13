@@ -1,9 +1,8 @@
 
 fragment GraphTableQuery on GraphTableQuery {
   ...BaseGraphQuery
-  # The compiled form, read-only and deprecated. Kept for display only — the
-  # plan is what a client writes.
-  query
+  # The compiled Cypher is no longer readable — the plan is the only form a
+  # client sees or writes.
   # True when the row was saved as raw Cypher before plans existed. Such a row
   # still renders but takes no filter, order or page.
   legacy

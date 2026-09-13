@@ -249,6 +249,10 @@ const labelMaterialSettings = (material: NodeMaterial) => {
   material.depthWrite = false;
   material.depthTest = false;
   material.lights = false;
+  // A reflected placement (negative determinant) flips the plane quad's
+  // winding; FrontSide would cull the mask. Same reasoning as the image plane
+  // in brickNodeMaterials.ts. The volume material overrides this to BackSide.
+  material.side = THREE.DoubleSide;
 };
 
 export function createLabelPlaneNodeMaterial(

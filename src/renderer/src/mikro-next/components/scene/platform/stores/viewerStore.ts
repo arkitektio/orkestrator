@@ -66,10 +66,16 @@ export type SceneAttributeKey = AttributeFetchKey &
     instanceValue?: number;
   };
 
-/** Build the scene key for a probed point: `pointId` encodes the probe identity. */
+/**
+ * Build the scene key for a probed point: `pointId` encodes the probe identity
+ * — and the fetch selection's signature, so changing what a hover fetches is a
+ * new request to the resolver and the service's point cache rather than a
+ * stale hit. `isSameProbeKey` ignores it, so the HUD still matches the point.
+ */
 export const sceneAttributeKey = (
   probe: ProbeFetchKey & { strategy?: string; values?: readonly { value: number | null }[] },
   systemId: string,
+  selectionSignature = "",
 ): SceneAttributeKey => {
   const instanceValue =
     probe.strategy === "mesh" && probe.values?.[0]?.value != null
@@ -80,7 +86,9 @@ export const sceneAttributeKey = (
     voxelIndex: probe.voxelIndex,
     sliceSignature: probe.sliceSignature,
     systemId,
-    pointId: `${probe.layerId}:${probe.voxelIndex.join(",")}:${probe.sliceSignature}`,
+    pointId: `${probe.layerId}:${probe.voxelIndex.join(",")}:${probe.sliceSignature}${
+      selectionSignature ? `|${selectionSignature}` : ""
+    }`,
     ...(instanceValue !== undefined ? { instanceValue } : {}),
   };
 };

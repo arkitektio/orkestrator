@@ -29,7 +29,7 @@ const List = ({ filters, pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <ProviderCard key={index} item={ex} />}
+      {(ex) => <ProviderCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

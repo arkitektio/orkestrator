@@ -2,13 +2,12 @@ fragment NaturalEvent on NaturalEvent {
   ...BaseNode
   id
   label
-
 }
 
 fragment ListNaturalEvent on NaturalEvent {
   id
   label
-  category {
+  categories {
     label
     id
   }
@@ -16,10 +15,10 @@ fragment ListNaturalEvent on NaturalEvent {
 
 fragment PathNaturalEvent on NaturalEvent {
   ...ListNaturalEvent
-  category {
+  categories {
     label
     image {
-      presignedUrl
+      ...MediaStore
     }
   }
 }

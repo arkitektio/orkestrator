@@ -2,9 +2,8 @@ import { ContainerGrid } from "@/components/layout/ContainerGrid";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TooltipButton } from "@/components/ui/tooltip-button";
-import { ArgChildPortFragment, AssignWidgetFragment, PortKind } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
-import { InputWidgetProps, MappablePort, Port } from "@/rekuest/widgets/types";
+import { ArgChildPortFragment, PortKind } from "@/rekuest/api/graphql";
+import { InputWidgetProps } from "@/rekuest/widgets/types";
 import {
   pathToName,
   portToDefaults,
@@ -12,45 +11,23 @@ import {
 } from "@/rekuest/widgets/utils";
 import { Plus, X } from "lucide-react";
 import { useFieldArray, useFormContext } from "react-hook-form";
+import { ChildWidget } from "../ChildWidget";
 import { ListChoicesWidget } from "../custom/ListChoicesWidget";
 import { ListSearchWidget } from "../custom/ListSearchWidget";
-
-const RenderDownWidget = ({
-  port,
-  path,
-  bound,
-}: {
-  port: ArgChildPortFragment;
-  path: string[];
-  bound?: string;
-}) => {
-  const { registry } = useWidgetRegistry();
-  const Widget = registry.getInputWidgetForPort(port as unknown as MappablePort);
-
-  return (
-    <div className="mt-2">
-      <Widget
-        port={{ ...port, __typename: "Port" } as unknown as Port}
-        parentKind={PortKind.List}
-        widget={port.widget as unknown as AssignWidgetFragment}
-        bound={bound}
-        path={path}
-      />
-    </div>
-  );
-};
 
 export const SideBySideWidget = ({
   port,
   valuetype,
   path,
   bound,
+  options,
 }: InputWidgetProps & { valuetype: ArgChildPortFragment }) => {
   const control = useFormContext().control;
+  const name = pathToName(path);
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: pathToName(path),
+    name,
   });
 
   return (
@@ -63,10 +40,12 @@ export const SideBySideWidget = ({
               key={item.id}
               className="p-3 relative overflow-visible focus-within:z-50"
             >
-              <RenderDownWidget
-                port={valuetype}
-                path={path.concat(index.toString(), "__value")}
+              <ChildWidget
+                child={valuetype}
+                pathKey={`${name}.${index}.__value`}
+                parentKind={PortKind.List}
                 bound={bound}
+                options={options}
               />
               <Button
                 variant="outline"

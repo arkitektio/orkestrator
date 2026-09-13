@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import {
   AggregationFunction,
-  ConflictPolicy,
   DerivationRule,
   DerivationType,
   PropertyDefinition,
@@ -19,27 +18,31 @@ export type { PropertyDefinition };
 
 export const DEFAULT_DERIVATION = DerivationType.Latest
 export const DEFAULT_AGGREGATION = AggregationFunction.Latest
-export const DEFAULT_CONFLICT_POLICY = ConflictPolicy.Combine
 
 /**
  * Anything rule-shaped: the read type, the input type, or a partial being
- * edited. The read type makes `conflictPolicy` required and the input type makes
- * every field nullable, so neither one alone can describe both ends of a form
- * that loads from the first and submits to the second.
+ * edited. The read type makes the priority lists required and the input type
+ * makes every field nullable, so neither one alone can describe both ends of a
+ * form that loads from the first and submits to the second.
  */
 export type DerivationRuleLike = {
   [K in keyof Omit<DerivationRule, "__typename">]?: DerivationRule[K] | null;
 };
 
 /**
- * `DerivationRule` gained required `conflictPolicy`, `subjectPriority` and
- * `toolPriority` fields. These mirror the server-side input defaults.
+ * `subjectPriority` and `toolPriority` are required on the read type; these
+ * mirror the server-side input defaults.
+ *
+ * `evidence` is carried through untouched. It replaced `conflictPolicy` and is
+ * a rule list saying *which* measurements this property folds; no editor
+ * writes one yet, and a save is a full replace, so dropping it here would wipe
+ * a rule set the server holds.
  */
 export const buildDerivationRule = (
   rule?: DerivationRuleLike | null,
 ): DerivationRule => ({
   aggregation: rule?.aggregation || DEFAULT_AGGREGATION,
-  conflictPolicy: rule?.conflictPolicy || DEFAULT_CONFLICT_POLICY,
+  evidence: rule?.evidence,
   subjectPriority: rule?.subjectPriority ?? [],
   toolPriority: rule?.toolPriority ?? [],
   key: rule?.key,

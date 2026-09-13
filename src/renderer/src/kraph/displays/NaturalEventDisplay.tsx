@@ -1,7 +1,7 @@
 import { DisplayWidgetProps } from "@/lib/display/registry";
 import { KraphInstance } from "@/linkers";
 import { useGetInstanceQuery } from "../api/graphql";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 
 /**
  * Claim-grain, deliberately — see `EntityDisplay`. Displays render from outside

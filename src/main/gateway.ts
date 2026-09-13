@@ -70,6 +70,9 @@ export class AgentGateway {
 
   public async initialize(context: { token: string, url: string, agentUrl: string, services: AvailableService[] }) {
       this.token = context.token;
+      // `agent:init` is sent on every (re)connect; rebuild the list from the
+      // registry instead of appending duplicates to the previous run's.
+      this.implementations = [];
 
       const client = new GraphQLClient(context.url, {
           headers: {

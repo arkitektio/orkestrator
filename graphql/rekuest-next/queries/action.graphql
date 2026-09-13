@@ -33,6 +33,13 @@ query ActionByHash($hash: ActionHash!) {
   }
 }
 
+# Existence/id probe only (useHashActionWithProgress): no ports.
+query ActionIdByHash($hash: ActionHash!) {
+  action(hash: $hash) {
+    id
+  }
+}
+
 query AllActions(
   $pagination: OffsetPaginationInput
   $filters: ActionFilter

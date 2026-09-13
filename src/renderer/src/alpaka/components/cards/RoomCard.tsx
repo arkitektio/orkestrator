@@ -1,3 +1,4 @@
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -96,4 +97,4 @@ const TheCard = ({ item, index = 0 }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

@@ -58,7 +58,7 @@ import {
 import { buildItoldyousoMetric, isManuallyAssertable } from "@/kraph/lib/itoldyouso";
 import { KraphNode } from "@/linkers";
 import { Plus, RefreshCw } from "lucide-react";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { ViewOptions } from "../types";
 
 
@@ -532,9 +532,10 @@ export const EntityList = (props: {
     [],
   );
 
-  const filters: EntityFilter = {
-    search: search || undefined,
-  };
+  const filters: EntityFilter = React.useMemo(
+    () => ({ search: search || undefined }),
+    [search],
+  );
 
   const { data, loading, refetch, error } = useEntityNodesQuery({
     variables: {
@@ -555,8 +556,14 @@ export const EntityList = (props: {
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
-  const columns = calculateColumns(props.category);
-  const rows = calculateRows(data?.entities || []);
+  const columns = React.useMemo(
+    () => calculateColumns(props.category),
+    [props.category],
+  );
+  const rows = React.useMemo(
+    () => calculateRows(data?.entities || []),
+    [data?.entities],
+  );
 
   const exportToCSV = () => {
     if (!rows || rows.length === 0) {

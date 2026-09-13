@@ -1,56 +1,39 @@
-import { FormField } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { notEmpty } from "@/lib/utils";
-import { ArgChildPortFragment, AssignWidgetFragment, PortKind } from "@/rekuest/api/graphql";
-import { usePortValidate } from "@/rekuest/hooks/usePortValidator";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
-import { InputWidgetProps, MappablePort, Port } from "@/rekuest/widgets/types";
+import { ArgChildPortFragment, PortKind } from "@/rekuest/api/graphql";
+import { InputWidgetProps, PortOptions } from "@/rekuest/widgets/types";
 import { pathToName, portToLabel } from "@/rekuest/widgets/utils";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ControllerRenderProps,
   FieldValues,
   useFormContext,
 } from "react-hook-form";
-
-const RenderDownWidget = ({
-  port,
-  path,
-}: {
-  port: ArgChildPortFragment;
-  path: string[];
-}) => {
-  const { registry } = useWidgetRegistry();
-  const Widget = registry.getInputWidgetForPort(port as unknown as MappablePort);
-
-  return (
-    <div className="mt-2">
-      <Widget
-        port={{ ...port, __typename: "Port" } as unknown as Port}
-        parentKind={PortKind.Union}
-        widget={port.widget as unknown as AssignWidgetFragment}
-        path={path}
-      />
-    </div>
-  );
-};
+import { ChildWidget } from "../ChildWidget";
 
 const SubForm = ({
   variants,
   field,
-  path,
+  name,
+  bound,
+  options,
 }: {
   variants: ArgChildPortFragment[];
   field: ControllerRenderProps<FieldValues, string>;
-  path: string[];
+  name: string;
+  bound?: string;
+  options?: PortOptions;
 }) => {
   const form = useFormContext();
 
-  const chosenVariant = field.value && variants[field.value.__use];
+  // The value is { __use: "<index>", __value }; __use is a string on the wire.
+  const useIndex = field.value?.__use != null ? Number(field.value.__use) : -1;
+  const chosenVariant = useIndex >= 0 ? variants[useIndex] : undefined;
 
-  const choices = variants.map((v, i) => ({
-    label: portToLabel(v),
-    value: i.toString(),
-  }));
+  const choices = useMemo(
+    () => variants.map((v, i) => ({ label: portToLabel(v), value: i.toString() })),
+    [variants],
+  );
 
   return (
     <div className="@container">
@@ -59,12 +42,14 @@ const SubForm = ({
           <div
             key={c.value}
             className="cursor-pointer inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow"
-            data-state={field.value && field.value.__use == c.value && "active"}
+            data-state={String(useIndex) === c.value ? "active" : undefined}
             onClick={() =>
-              form.setValue(pathToName(path), {
-                __use: c.value,
-                __value: undefined,
-              })
+              form.setValue(
+                name,
+                { __use: c.value, __value: undefined },
+                // Switching variants changes what is valid; say so right away.
+                { shouldValidate: true, shouldDirty: true },
+              )
             }
           >
             {c.label}
@@ -72,26 +57,41 @@ const SubForm = ({
         ))}
       </div>
       {chosenVariant && (
-        <RenderDownWidget port={chosenVariant} path={path.concat("__value")} />
+        <ChildWidget
+          child={chosenVariant}
+          pathKey={`${name}.__value`}
+          parentKind={PortKind.Union}
+          bound={bound}
+          options={options}
+        />
       )}
     </div>
   );
 };
 
-const UnionWidget: React.FC<InputWidgetProps> = ({ port, path }) => {
+const UnionWidget: React.FC<InputWidgetProps> = ({ port, path, bound, options }) => {
   const form = useFormContext();
-  const validate = usePortValidate(port);
+  const name = pathToName(path);
+  const variants = useMemo(
+    () => (port.children?.filter(notEmpty) ?? []) as ArgChildPortFragment[],
+    [port.children],
+  );
   return (
     <FormField
       control={form.control}
-      name={pathToName(path)}
-      rules={{ validate: validate }}
+      name={name}
       render={({ field }) => (
-        <SubForm
-          variants={port.children?.filter(notEmpty) || []}
-          field={field}
-          path={path}
-        />
+        <FormItem>
+          <FormLabel>{port.label || port.key}</FormLabel>
+          <SubForm
+            variants={variants}
+            field={field}
+            name={name}
+            bound={bound}
+            options={options}
+          />
+          <FormMessage />
+        </FormItem>
       )}
     />
   );

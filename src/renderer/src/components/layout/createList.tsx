@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import type { WatchQueryFetchPolicy } from "@apollo/client";
 import * as ListLayout from "@/components/ui/list-layout";
 import {
   Empty,
@@ -125,6 +126,12 @@ interface CreateListOptions<TData, TFilters, TOrder, TOrdering, TItem> {
    * columns, which is right for scalars and far too narrow for those.
    */
   minItemWidth?: number;
+  /**
+   * Apollo fetch policy for the list query. Defaults to `cache-and-network`
+   * (always revalidates on mount); pass `cache-first` for lists that are
+   * kept fresh by subscriptions or updaters.
+   */
+  fetchPolicy?: WatchQueryFetchPolicy;
 }
 
 export const createList = <
@@ -151,6 +158,7 @@ export const createList = <
     defaultLimit: initialLimit = 20,
     cardProps: defaultCardProps = {},
     minItemWidth,
+    fetchPolicy = "cache-and-network",
   } = options;
 
   const GenericList = (props: GeneratedListProps<TFilters, TOrder, TOrdering>) => {
@@ -160,7 +168,12 @@ export const createList = <
     const emptyTitle = props.emptyTitle ?? defaultEmptyTitle;
     const emptyDescription = props.emptyDescription ?? defaultEmptyDesc;
     const defaultLimit = props.defaultLimit ?? initialLimit;
-    const cardProps = { ...defaultCardProps, ...props.cardProps };
+    // Stable per `props.cardProps` identity so memoized item cards can bail
+    // out; callers should hoist literal `cardProps` objects.
+    const cardProps = useMemo(
+      () => ({ ...defaultCardProps, ...props.cardProps }),
+      [props.cardProps],
+    );
 
     // --- Logic ---
 
@@ -169,13 +182,21 @@ export const createList = <
       offset: 0,
     });
 
+    // Serialize the query inputs once per identity change rather than three
+    // times on every render.
+    const queryKey = useMemo(
+      () =>
+        JSON.stringify(props.filters) +
+        "|" +
+        JSON.stringify(props.order) +
+        "|" +
+        JSON.stringify(props.ordering),
+      [props.filters, props.order, props.ordering],
+    );
+
     useEffect(() => {
       setPagination((prev) => ({ ...prev, offset: 0 }));
-    }, [
-      JSON.stringify(props.filters),
-      JSON.stringify(props.order),
-      JSON.stringify(props.ordering),
-    ]);
+    }, [queryKey]);
 
     const { data, loading, error, refetch, } = useHook({
       variables: {
@@ -184,7 +205,7 @@ export const createList = <
         ordering: props.ordering as TOrdering,
         pagination: pagination,
       },
-      fetchPolicy: "cache-and-network",
+      fetchPolicy,
     });
 
     const listData = (data ? data[dataKey] : []) as unknown as TItem[];

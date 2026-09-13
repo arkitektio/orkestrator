@@ -9,7 +9,7 @@ import FlavourCard from "../components/cards/FlavourCard";
 export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data, refetch }) => {
   return (
     <KabinetRelease.ModelPage
-      title={data?.release.description}
+      title={data?.release.name}
       object={data?.release}
       sidebars={
         <Sidebars>
@@ -26,9 +26,6 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data, refet
           </h1>
           <p className="mt-3 text-xl text-muted-foreground max-w-[80%]">
             {data?.release.version}
-          </p>
-          <p className="mt-3 text-xl text-muted-foreground max-w-[80%]">
-            {data.release.description}
           </p>
         </div>
         <Card className="w-full h-full flex-row relative"></Card>

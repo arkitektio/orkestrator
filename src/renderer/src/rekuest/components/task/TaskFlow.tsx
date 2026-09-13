@@ -1,7 +1,11 @@
 import { useRunForTaskQuery } from "@/reaktion/api/graphql";
 import { TrackFlow } from "@/reaktion/track/TrackFlow";
 import { DetailTaskFragment } from "@/rekuest/api/graphql";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+
+const RETRY_BASE_MS = 1000;
+const RETRY_MAX_MS = 30_000;
+const RETRY_MAX_ATTEMPTS = 6;
 
 /**
  * Live flow view for tasks whose implementation is a reaktion `run_flow`.
@@ -18,10 +22,19 @@ export const TaskFlow = (props: {
     },
   });
 
+  // Retry with exponential backoff and a ceiling: a persistent error must not
+  // become an unbounded 1 Hz refetch loop.
+  const attemptsRef = useRef(0);
   useEffect(() => {
-    if (!error) return;
+    if (!error) {
+      attemptsRef.current = 0;
+      return;
+    }
     console.error(error);
-    const t = setTimeout(refetch, 1000);
+    if (attemptsRef.current >= RETRY_MAX_ATTEMPTS) return;
+    const delay = Math.min(RETRY_BASE_MS * 2 ** attemptsRef.current, RETRY_MAX_MS);
+    attemptsRef.current += 1;
+    const t = setTimeout(() => void refetch(), delay);
     return () => clearTimeout(t);
   }, [error, refetch]);
 

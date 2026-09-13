@@ -729,6 +729,17 @@ export function Chat({ isMobile, room }: ChatProps) {
     setStagedStructures((prev) => [...prev, ...attachable]);
   });
 
+  // Sorted once per `room.messages` identity: this component rerenders on
+  // every inbound message, and `createdAt` is ISO-8601 so string comparison
+  // orders correctly without allocating two Dates per comparison.
+  const sortedMessages = useMemo(
+    () =>
+      [...room.messages].sort((a, b) =>
+        a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0,
+      ),
+    [room.messages],
+  );
+
   return (
     <div
       className="relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[inherit]"
@@ -746,10 +757,7 @@ export function Chat({ isMobile, room }: ChatProps) {
         </div>
       )}
       <ChatList
-        messages={[...room.messages].sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-        )}
+        messages={sortedMessages}
         currentAgentId="default"
         sendMessage={sendMessage}
         isMobile={isMobile}

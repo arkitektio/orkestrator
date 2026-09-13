@@ -374,12 +374,40 @@ export const TaskTimeline = () => {
     if (!el || !store) return
     const timeWidthOf = (rect: DOMRect) => (rect.width * 11) / 12
 
+    // Wheel and pointermove can fire many times per frame; coalesce the store
+    // write into one requestAnimationFrame flush so the graph re-renders at
+    // most once per frame. Reads go through `currentZoom` so a burst of events
+    // within the same frame builds on the pending value, not the stale store.
+    let pending: { start: number; end: number } | null = null
+    let rafId: number | null = null
+    const flush = () => {
+      rafId = null
+      if (!pending) return
+      const { start, end } = pending
+      pending = null
+      store.getState().setZoomWindow(start, end)
+    }
+    const scheduleZoom = (start: number, end: number) => {
+      pending = { start, end }
+      if (rafId === null) rafId = requestAnimationFrame(flush)
+    }
+    const cancelScheduled = () => {
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      rafId = null
+      pending = null
+    }
+    const currentZoom = () => {
+      if (pending) return { zs: pending.start, ze: pending.end }
+      const { zoomStart, zoomEnd } = store.getState()
+      return { zs: zoomStart, ze: zoomEnd }
+    }
+
     const onWheel = (e: WheelEvent) => {
       const rect = el.getBoundingClientRect()
       const timeWidth = timeWidthOf(rect)
       if (timeWidth <= 0) return
 
-      const { zoomStart: zs, zoomEnd: ze, setZoomWindow: setZ } = store.getState()
+      const { zs, ze } = currentZoom()
       const span = ze - zs
 
       // Horizontal intent → pan; vertical intent → zoom.
@@ -388,7 +416,7 @@ export const TaskTimeline = () => {
         e.preventDefault()
         const panFull = (e.deltaX / timeWidth) * span
         const newStart = Math.max(0, Math.min(1 - span, zs + panFull))
-        setZ(newStart, newStart + span)
+        scheduleZoom(newStart, newStart + span)
         return
       }
 
@@ -400,7 +428,7 @@ export const TaskTimeline = () => {
       const factor = e.deltaY < 0 ? 1 / 1.15 : 1.15 // scroll up → zoom in
       const newSpan = Math.min(1, span * factor) // ≥1 collapses to the full range
       const newStart = Math.max(0, Math.min(1 - newSpan, anchorFull - cursorScreen * newSpan))
-      setZ(newStart, newStart + newSpan)
+      scheduleZoom(newStart, newStart + newSpan)
     }
 
     // click-drag to pan (only meaningful when zoomed in)
@@ -408,7 +436,7 @@ export const TaskTimeline = () => {
       null
     const onPointerDown = (e: PointerEvent) => {
       if (e.button !== 0) return
-      const { zoomStart: zs, zoomEnd: ze } = store.getState()
+      const { zs, ze } = currentZoom()
       const span = ze - zs
       if (span >= 1) return
       drag = {
@@ -423,10 +451,14 @@ export const TaskTimeline = () => {
       // grab-and-drag: dragging right reveals earlier time (window shifts left)
       const panFull = -((e.clientX - drag.startX) / drag.timeWidth) * drag.span
       const newStart = Math.max(0, Math.min(1 - drag.span, drag.startZoomStart + panFull))
-      store.getState().setZoomWindow(newStart, newStart + drag.span)
+      scheduleZoom(newStart, newStart + drag.span)
     }
     const onPointerUp = () => {
+      if (!drag) return
       drag = null
+      // Land on the final drag position right away rather than one frame late.
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      flush()
     }
 
     el.addEventListener('wheel', onWheel, { passive: false })
@@ -438,6 +470,7 @@ export const TaskTimeline = () => {
       el.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
+      cancelScheduled()
     }
   }, [store])
 

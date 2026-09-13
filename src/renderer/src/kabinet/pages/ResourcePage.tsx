@@ -48,7 +48,12 @@ export const ResourcePage =  asDetailQueryRoute(
       </KabinetResource.ModelPage>
     );
   },
-  { queryOptions: { pollInterval: 5000 } },
+  {
+    queryOptions: {
+      pollInterval: 15000,
+      skipPollAttempt: () => document.hidden,
+    },
+  },
 );
 
 

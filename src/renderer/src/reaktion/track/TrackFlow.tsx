@@ -43,7 +43,6 @@ export type Props = {
 };
 
 export const TrackFlow: React.FC<Props> = ({ run }) => {
-  console.log("THE FLOW", run);
 
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
 

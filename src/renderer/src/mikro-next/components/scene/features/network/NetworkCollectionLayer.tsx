@@ -98,7 +98,7 @@ const NetworkCollectionGroup = ({
   layer: NetworkLayerView;
   collection: NetworkCollectionRef;
 }) => {
-  const invalidate = useThree((state) => state.invalidate);
+  const rawInvalidate = useThree((state) => state.invalidate);
   const transformContext = useSceneStore((s) => s.transformContext);
   const viewApi = useViewStoreApi();
   const networkApi = useNetworkStoreApi();
@@ -107,6 +107,20 @@ const NetworkCollectionGroup = ({
   // reaches them through its own slice hook, which would make
   // `features/network -> features/meshes` an edge for nothing.
   const viewerApi = useViewerStoreApi();
+  /**
+   * Bumps the volume compositor's input tracker alongside the frame request —
+   * the mesh layer's contract, for the same reason: the compositor CACHES its
+   * offscreen volume target, so a scene change that reaches that target must
+   * move a cache key or the stale composite is served until the camera moves.
+   * Konnektion segments are transparent today and so never occlude, but that
+   * is a material flag, not a structural fact — keeping both collection
+   * layers on one contract is what stops it from becoming a silent
+   * regression.
+   */
+  const invalidate = useCallback(() => {
+    viewerApi.getState().volumeInputs.bump("network-collection");
+    rawInvalidate();
+  }, [viewerApi, rawInvalidate]);
   const datalayer = useDatalayerEndpoint();
   const client = useMikro();
 
@@ -199,10 +213,6 @@ const NetworkCollectionGroup = ({
       maxLevel: layer.maxLevel ?? null,
     });
   }, [manager, layer.detail, layer.maxLevel]);
-
-  useEffect(() => {
-    manager?.setVisible(layer.visible !== false);
-  }, [manager, layer.visible]);
 
   /**
    * The layer's STORED pickers, resolved to per-node state.
@@ -376,6 +386,10 @@ const NetworkCollectionGroup = ({
     {
       matrix,
       slab: displayMode === "3D" ? null : { thickness: slabThickness },
+      // Visibility rides the driver: `konnektionManager.updatePlan` drops every
+      // view while hidden, so the SHOW edge has to replan or the layer stays
+      // empty/stale until the next camera settle.
+      visible: layer.visible !== false,
     },
   );
 

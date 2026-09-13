@@ -1,16 +1,9 @@
+# `ensureStructure` is gone — `assertStructureExists` always took the same
+# (identifier, object) pair and is idempotent on it, so there was never a second
+# call to make.
 mutation AssertStructureExists($input: AssertStructureExistsInput!) {
   assertStructureExists(input: $input) {
-    assertion {
-      ...Assertion
-    }
-    structure {
-      ...Structure
-    }
-  }
-}
-
-mutation EnsureStructure($input: EnsureStructureInput!) {
-  ensureStructure(input: $input) {
+    pending
     assertion {
       ...Assertion
     }
@@ -22,6 +15,7 @@ mutation EnsureStructure($input: EnsureStructureInput!) {
 
 mutation RetractStructure($id: ID!) {
   retractStructure(input: { id: $id }) {
+    pending
     assertion {
       ...Assertion
     }
@@ -31,8 +25,11 @@ mutation RetractStructure($id: ID!) {
   }
 }
 
-mutation UpdateStructure($input: UpdateStructureInput!) {
-  updateStructure(input: $input) {
+# Was `updateStructure`. A structure's identity is immutable; what a later act
+# adds is measurements against it, which is all this ever did.
+mutation RecordMetrics($input: RecordMetricsInput!) {
+  recordMetrics(input: $input) {
+    pending
     assertion {
       ...Assertion
     }
@@ -42,13 +39,15 @@ mutation UpdateStructure($input: UpdateStructureInput!) {
   }
 }
 
-mutation LinkStructureToEntity($input: LinkStructureInput!) {
-  linkStructureToEntity(input: $input) {
+# Was `linkStructureToEntity`. Records an INFORMS claim — the datum is evidence
+# for the entity — so what it answers with is the link, not the structure it
+# started from.
+mutation AssertInforms($input: AssertInformsInput!) {
+  assertInforms(input: $input) {
+    pending
     assertion {
       ...Assertion
     }
-    # `linkStructureToEntity` records an INFORMS link, so what it answers with is
-    # the link, not the structure it started from.
     link {
       ...Link
     }

@@ -1,0 +1,55 @@
+# UI catalogs: what a UI app (this client) can render (`components`) and
+# evaluate (`operations`). The client registers its own catalog on startup
+# (`rekuest/catalog/UiCatalogRegistrar.tsx`); the server validates bloks and
+# definitions that name it against this.
+
+fragment CatalogProp on CatalogProp {
+  key
+  kind
+  required
+  description
+}
+
+fragment CatalogArgument on CatalogArgument {
+  key
+  kind
+  required
+  description
+}
+
+fragment CatalogComponent on CatalogComponent {
+  name
+  description
+  acceptsChildren
+  props {
+    ...CatalogProp
+  }
+}
+
+fragment CatalogOperation on CatalogOperation {
+  name
+  description
+  returns
+  arguments {
+    ...CatalogArgument
+  }
+}
+
+fragment UICatalog on UICatalog {
+  id
+  name
+  description
+  isRegistered
+  components {
+    ...CatalogComponent
+  }
+  operations {
+    ...CatalogOperation
+  }
+}
+
+fragment ListUICatalog on UICatalog {
+  id
+  name
+  isRegistered
+}

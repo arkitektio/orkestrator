@@ -1,16 +1,17 @@
 import * as THREE from "three";
 import { SceneLayerFragment } from "@/mikro-next/api/graphql";
 import {
-  composePlacementPath,
-  type PlacementStepLike,
+  placementToSpatialAffine,
+  spatialAxisTriple,
 } from "@/mikro-next/lib/coords/transformGraph";
 import type { SceneTransformContext } from "./layerModel";
 import { affineToMatrix4 } from "../coords/worldTransform";
 
 /**
  * A COLLECTION's placement — a fabriks mesh collection or a konnektion network
- * collection: `pathToWorld` composed through the transform graph, and NOTHING
- * else (COORDINATE_SYSTEMS.md, "Coordinate conventions").
+ * collection: the server's `asAffine` (its `pathToWorld` composed) reduced to
+ * the spatial 4×4, and NOTHING else (COORDINATE_SYSTEMS.md, "Coordinate
+ * conventions"). The client never walks the path into a matrix.
  *
  * One module for both because there is one rule, not two. The formats differ in
  * what they store; they agree exactly on how a collection is placed, and on the
@@ -43,11 +44,15 @@ export type NetworkCollectionRef = NonNullable<NetworkLayerVariant["collection"]
  * declaration.
  */
 type PlaceableLayer = {
-  // Typed as what `composePlacementPath` actually consumes rather than as one
-  // variant's `pathToWorld`: the per-typename fragment types are structurally
+  // Typed as what `placementToSpatialAffine` actually consumes rather than as
+  // one variant's `asAffine`: the per-typename fragment types are structurally
   // identical here but nominally distinct, so naming one of them would reject
   // the other for no reason.
-  pathToWorld?: readonly PlacementStepLike[] | null;
+  asAffine?: {
+    matrix: readonly (readonly number[])[];
+    inputAxes: readonly string[];
+    outputAxes: readonly string[];
+  } | null;
 };
 type PlaceableCollection = {
   id: string;
@@ -127,18 +132,27 @@ export function resolveCollectionMatrix(
     );
   }
 
-  const composed = composePlacementPath(layer.pathToWorld, transformContext, spatial, names);
-  if (!composed) {
-    // A null path is UNREGISTERED or UNMAPPABLE. The meshes are still drawn,
-    // in the collection's own space, rather than dropped silently — the same
-    // degradation images and annotations use.
+  if (!layer.asAffine) {
+    // UNREGISTERED, or a path the server could not condense. The renderer
+    // does not dispatch such a layer at all (`isPlaceable`); panels that
+    // still ask for a matrix (navigation, mesh design) get the collection's
+    // own space, never a guess.
     if (firstResolve) {
       console.warn(
-        `[collection] ${collection.id}: no path to world; ` +
-          `rendering in the collection's own space`,
+        `[collection] ${collection.id}: no placement (asAffine is null); ` +
+          `not drawn — using the collection's own space where a matrix is required`,
       );
     }
     return new THREE.Matrix4().identity();
   }
-  return affineToMatrix4(composed);
+  // Input side: the collection's own axis names in vertex-component order.
+  // Output side: the WORLD's names — a collection's axes need not be named
+  // like the world's, and reducing with the same triple on both sides
+  // indexOf's to -1 and silently drops the placement.
+  const composed = placementToSpatialAffine(
+    layer.asAffine,
+    spatial,
+    spatialAxisTriple(transformContext.worldCoordinateSystem),
+  );
+  return composed ? affineToMatrix4(composed) : new THREE.Matrix4().identity();
 }

@@ -9,9 +9,17 @@ const makeLayer = (opts: {
   axisNames?: string[];
   affineMatrix?: number[][] | null;
   xAxis?: string | null;
+  /** Server placement present (the default); false = unplaceable, skipped. */
+  placed?: boolean;
 }): LayerState =>
   ({
     id: "layer",
+    // `affineMatrix` is only a world position when the server composed a
+    // placement; the box math gates on `isPlaceable` (asAffine non-null).
+    asAffine:
+      opts.placed === false
+        ? null
+        : { matrix: [[1, 0, 0, 0]], inputAxes: ["x"], outputAxes: ["x"], total: true },
     affineMatrix: opts.affineMatrix ?? null,
     xAxis: opts.xAxis === undefined ? "x" : opts.xAxis,
     yAxis: "y",
@@ -21,6 +29,15 @@ const makeLayer = (opts: {
   }) as unknown as LayerState;
 
 describe("computeSceneWorldBox", () => {
+  it("skips unplaceable layers (no server asAffine) — they are not drawn", () => {
+    expect(computeSceneWorldBox([makeLayer({ shape: [20, 50, 100], placed: false })])).toBeNull();
+    const box = computeSceneWorldBox([
+      makeLayer({ shape: [20, 50, 100], placed: false }),
+      makeLayer({ shape: [1, 10, 10] }),
+    ])!;
+    expect(box.max.x).toBe(10); // only the placed layer contributes
+  });
+
   it("anchors a single identity-affine layer at the origin corner", () => {
     // Corner-anchored: shape [z, y, x] = [20, 50, 100] → world box
     // [0,0,0]..[100,50,20] — voxel v sits at exactly affine(v).

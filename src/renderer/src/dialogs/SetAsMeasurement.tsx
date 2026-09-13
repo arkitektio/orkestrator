@@ -14,7 +14,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import {
   ListMeasurementCategoryWithGraphFragment,
   useAssertMeasurementExistsMutation,
-  useEnsureStructureMutation,
+  useAssertStructureExistsMutation,
   useEntityCategoriesMatchingDescriptorQuery,
   useListEntitiesQuery,
 } from "@/kraph/api/graphql";
@@ -27,7 +27,7 @@ import { toast } from "sonner";
 /**
  * Measuring is a claim: this structure measures that entity, under the word the
  * measurement category declares. The structure has to exist as a node before it
- * can be an endpoint, so it is ensured first — `ensureStructure` is idempotent,
+ * can be an endpoint, so it is asserted first — `assertStructureExists` is idempotent,
  * so an object already recorded is simply found.
  */
 export const SetAsMeasurement = (props: {
@@ -40,7 +40,7 @@ export const SetAsMeasurement = (props: {
   const source = props.left[0];
   const [attaching, setAttaching] = useState<string | null>(null);
 
-  const [ensureStructure] = useEnsureStructureMutation();
+  const [ensureStructure] = useAssertStructureExistsMutation();
   const [assertMeasurement] = useAssertMeasurementExistsMutation();
 
   const attach = async (entityId: string) => {
@@ -55,7 +55,7 @@ export const SetAsMeasurement = (props: {
           },
         },
       });
-      const sourceId = structure.data?.ensureStructure.structure.id;
+      const sourceId = structure.data?.assertStructureExists.structure.id;
       if (!sourceId) {
         throw new Error("Could not record the structure being measured");
       }
@@ -182,9 +182,9 @@ export const SetAsMeasurement = (props: {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <CardTitle className="truncate text-base">{entity.label}</CardTitle>
-                      {entity.category?.label && (
+                      {entity.categories.length > 0 && (
                         <CardDescription className="mt-1">
-                          {entity.category.label}
+                          {entity.categories.map((c) => c.label).join(", ")}
                         </CardDescription>
                       )}
                     </div>

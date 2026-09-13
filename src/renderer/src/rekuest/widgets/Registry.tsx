@@ -139,25 +139,24 @@ export class WidgetRegistry {
     return this.effectWidgetMap[x] || this.unknownEffectWidget;
   }
 
+  /**
+   * Widget by the port's annotated widget typename, else by port kind, else
+   * the unknown-widget box. A typename the client does not implement (e.g. a
+   * server-side default it has no special rendering for) must degrade to the
+   * kind fallback, not to a registry error.
+   */
   public getInputWidgetForPort(
     port: ArgPort,
     allowFallback: boolean = true,
   ): React.FC<InputWidgetProps> {
-    if (!port?.widget?.__typename) {
-      const widget =
-        (port?.kind &&
-          allowFallback &&
-          this.portTypeInputFallbackMap[port?.kind]) ||
-        this.unknownInputWidget;
-
-      return widget;
-    }
-
-    const widget =
-      this.typeInputWidgetMap[port?.widget?.__typename] ||
-      this.unknownInputWidget;
-
-    return widget;
+    const typename = port?.widget?.__typename;
+    const byType = typename ? this.typeInputWidgetMap[typename] : undefined;
+    if (byType) return byType;
+    const byKind =
+      port?.kind && allowFallback
+        ? this.portTypeInputFallbackMap[port.kind]
+        : undefined;
+    return byKind || this.unknownInputWidget;
   }
 
   public registerReturnWidgetFallback(
@@ -194,18 +193,13 @@ export class WidgetRegistry {
     port: ReturnPort,
     allowFallback: boolean = true,
   ): React.FC<ReturnWidgetProps<any>> {
-    if (!port?.widget?.__typename) {
-      return (
-        (port?.kind &&
-          allowFallback &&
-          this.portTypeReturnFallbackMap[port?.kind]) ||
-        this.unknownReturnWidget
-      );
-    }
-
-    return (
-      this.typeReturnWidgetMap[port?.widget?.__typename] ||
-      this.unknownReturnWidget
-    );
+    const typename = port?.widget?.__typename;
+    const byType = typename ? this.typeReturnWidgetMap[typename] : undefined;
+    if (byType) return byType;
+    const byKind =
+      port?.kind && allowFallback
+        ? this.portTypeReturnFallbackMap[port.kind]
+        : undefined;
+    return byKind || this.unknownReturnWidget;
   }
 }

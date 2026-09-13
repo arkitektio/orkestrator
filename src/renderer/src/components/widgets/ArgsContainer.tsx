@@ -1,32 +1,71 @@
 import { AssignWidgetFragment } from "@/rekuest/api/graphql";
 import { notEmpty } from "@/lib/utils";
 import { EffectWrapper } from "@/rekuest/widgets/EffectWrapper";
+import { PortsRootContext } from "@/rekuest/widgets/PortsRootContext";
 import { ArgsContainerProps } from "@/rekuest/widgets/tailwind";
-import { ArgPort, PortGroup } from "@/rekuest/widgets/types";
-import { useMemo } from "react";
+import { ArgPort, PortGroup, PortOptions, WidgetRegistryType } from "@/rekuest/widgets/types";
+import { pathToName, portHash } from "@/rekuest/widgets/utils";
+import React, { useMemo } from "react";
+import { useController } from "react-hook-form";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../ui/collapsible";
+import { portGridClass } from "./gridColumns";
+
+export { portHash };
 
 export type FilledGroup = PortGroup & {
   filledPorts: ArgPort[];
 };
 
-export const portHash = (port: ArgPort[]) => {
-  return port
-    .map((port) => `${port.key}-${port.kind}-${port.identifier}`)
-    .join("-");
+const EMPTY_EFFECTS: NonNullable<ArgPort["effects"]> = [];
+
+type ResolvedPort = {
+  port: ArgPort;
+  Widget: ReturnType<WidgetRegistryType["getInputWidgetForPort"]>;
+  path: string[];
+  effects: NonNullable<ArgPort["effects"]>;
 };
 
-export const NanaContainer = () => {
-  return (
-    <div className="grid @lg:grid-cols-2 @lg:grid-cols-2 @xl:grid-cols-3 @2xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6 gap-5">
-      {" "}
-    </div>
-  );
+type ResolvedGroup = FilledGroup & { resolvedPorts: ResolvedPort[] };
+
+/**
+ * A port hidden through the `hidden` prop is a prefilled input, not an absent
+ * one: it keeps its field registered so it is validated and submitted, it just
+ * renders nothing.
+ */
+const HiddenPortField = ({ name }: { name: string }) => {
+  useController({ name });
+  return null;
 };
+
+const PortRow = React.memo(function PortRow({
+  port,
+  Widget,
+  path,
+  effects,
+  registry,
+  options,
+  bound,
+}: ResolvedPort & {
+  registry: WidgetRegistryType;
+  options?: PortOptions;
+  bound?: string;
+}) {
+  return (
+    <EffectWrapper effects={effects} port={port} path={path} registry={registry}>
+      <Widget
+        port={port}
+        bound={bound}
+        widget={port.widget as unknown as AssignWidgetFragment}
+        options={options}
+        path={path}
+      />
+    </EffectWrapper>
+  );
+});
 
 export const ArgsContainer = ({
   ports,
@@ -37,54 +76,65 @@ export const ArgsContainer = ({
   bound,
   path,
 }: ArgsContainerProps) => {
-  const hash = portHash(ports.filter(notEmpty));
+  const hash = portHash(ports);
+  const pathKey = path.join(".");
 
-  const filledGroups = useMemo(() => {
-    if (!groups || groups.length === 0) {
-      groups = [
-        {
-          key: "default",
-          ports: ports.filter(notEmpty).map((p) => p.key),
-        },
-      ];
-    }
+  // Resolve widgets, paths and effects once per port set. Doing this in the
+  // render body handed every widget fresh `path` / `effects` arrays on each
+  // render, which defeated memoization down the widget tree and re-triggered
+  // search queries keyed on those props.
+  const resolvedGroups = useMemo<ResolvedGroup[]>(() => {
+    const presentPorts = ports.filter(notEmpty);
+    const declaredGroups = (groups ?? []).filter(notEmpty);
+    const grouped = new Set(declaredGroups.flatMap((g) => g.ports));
+    // Ports the server left out of every group still exist (and are still
+    // validated); render them in the default group instead of dropping them.
+    const ungrouped = presentPorts.filter((p) => !grouped.has(p.key));
+    const effectiveGroups: PortGroup[] = [
+      ...declaredGroups,
+      ...(ungrouped.length > 0
+        ? [{ key: "default", ports: ungrouped.map((p) => p.key) }]
+        : []),
+    ];
 
-    const argGroups: FilledGroup[] = groups.filter(notEmpty).map((g) => ({
-      ...g,
-      filledPorts: ports
-        .filter(notEmpty)
-        .filter((x) => g.ports.includes(x?.key)),
-    }));
+    return effectiveGroups.map((g) => {
+      const filledPorts = presentPorts.filter((x) => g.ports.includes(x?.key));
+      return {
+        ...g,
+        filledPorts,
+        resolvedPorts: filledPorts.map((port) => ({
+          port,
+          Widget: registry.getInputWidgetForPort(port),
+          path: [...path, port.key],
+          effects: port.effects || EMPTY_EFFECTS,
+        })),
+      };
+    });
+    // `hash` and `pathKey` stand in for the identity of `ports` / `path`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hash, groups, registry, pathKey]);
 
-    return argGroups;
-  }, [ports, hash]);
+  const visibleGroups = useMemo(
+    () =>
+      resolvedGroups.map((group) => ({
+        ...group,
+        visible: group.resolvedPorts.filter((r) => !(hidden && hidden[r.port.key])),
+        prefilled: group.resolvedPorts.filter((r) => hidden && hidden[r.port.key]),
+      })),
+    [resolvedGroups, hidden],
+  );
 
-  const glen = groups?.length || 0;
-
-  const glg_size = glen < 2 ? glen : 2;
-  const gxl_size = glen < 3 ? glen : 3;
-  const gxxl_size = glen < 4 ? glen : 4;
-  const gxxxl_size = glen < 5 ? glen : 5;
-  const gxxxxl_size = glen < 6 ? glen : 6;
-
+  const groupCount = visibleGroups.filter((g) => g.visible.length > 0).length;
 
   return (
-    <div
-      className={`grid @lg:grid-cols-${glg_size} @xl:grid-cols-${gxl_size} @2xl:grid-cols-${gxxl_size}  @3xl:grid-cols-${gxxxl_size}   @5xl:grid-cols-${gxxxxl_size} gap-5`}
-    >
-      {filledGroups.map((group, index) => {
-        const len = group.filledPorts.length;
-
-        const lg_size = len < 2 ? len : 2;
-        const xl_size = len < 3 ? len : 3;
-        const xxl_size = len < 4 ? len : 4;
-        const xxxl_size = len < 5 ? len : 5;
-        const xxxxl_size = len < 6 ? len : 6;
-
-
-        return (
-          <Collapsible key={index} className="@container" defaultOpen={true}>
-            {group.key != "default" && (
+    <PortsRootContext.Provider value={path}>
+      <div className={portGridClass(groupCount)}>
+        {visibleGroups.map((group) => (
+          <Collapsible key={group.key} className="@container" defaultOpen={true}>
+            {group.prefilled.map((r) => (
+              <HiddenPortField key={r.port.key} name={pathToName(r.path)} />
+            ))}
+            {group.visible.length > 0 && group.key != "default" && (
               <div className="mb-2">
                 <CollapsibleTrigger className="text-xs">
                   {group.key}
@@ -95,36 +145,21 @@ export const ArgsContainer = ({
               </div>
             )}
             <CollapsibleContent>
-              <div className={`grid @lg:grid-cols-${lg_size} @xl:grid-cols-${xl_size} @2xl:grid-cols-${xxl_size}  @3xl:grid-cols-${xxxl_size}   @5xl:grid-cols-${xxxxl_size} gap-5`}>
-
-
-                {group.filledPorts.map((port, index) => {
-                  const Widget = registry.getInputWidgetForPort(port);
-                  if (hidden && hidden[port.key]) return null;
-
-                  return (
-                    <EffectWrapper
-                      key={index}
-                      effects={port.effects || []}
-                      port={port}
-                      registry={registry}
-                    >
-                      <Widget
-                        key={index}
-                        port={port}
-                        bound={bound}
-                        widget={port.widget as unknown as AssignWidgetFragment}
-                        options={options}
-                        path={[...path, port.key]}
-                      />
-                    </EffectWrapper>
-                  );
-                })}
+              <div className={portGridClass(group.visible.length)}>
+                {group.visible.map((resolved) => (
+                  <PortRow
+                    key={resolved.port.key}
+                    {...resolved}
+                    registry={registry}
+                    options={options}
+                    bound={bound}
+                  />
+                ))}
               </div>
             </CollapsibleContent>
           </Collapsible>
-        );
-      })}
-    </div>
+        ))}
+      </div>
+    </PortsRootContext.Provider>
   );
 };

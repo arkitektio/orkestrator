@@ -17,5 +17,4 @@ fragment ListFlavour on Flavour {
 
 fragment Flavour on Flavour {
   ...ListFlavour
-  description
 }

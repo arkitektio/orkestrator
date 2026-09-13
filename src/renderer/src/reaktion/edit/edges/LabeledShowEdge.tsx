@@ -3,13 +3,12 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   getSmoothStepPath,
-  useNodes,
   useStore,
 } from "@xyflow/react";
 import { MergeIcon } from "lucide-react";
 import React from "react";
 import { FlowNode, VanillaEdgeProps } from "../../types";
-import { useEditRiver } from "../context";
+import { useEditFlowStore } from "../context";
 
 const connectionNodeIdSelector = (state: any) => state.connectionNodeId;
 
@@ -41,9 +40,14 @@ export const LabeledShowEdge: React.FC<VanillaEdgeProps> = (props) => {
 
   const isConnecting = !!connectionNodeId;
 
-  const { showEdgeLabels } = useEditRiver();
+  const showEdgeLabels = useEditFlowStore((s) => s.showEdgeLabels);
 
-  const node = useNodes().find((n) => n.id == target) as FlowNode | undefined;
+  // O(1) lookup of the target node; `useNodes().find(...)` subscribed every
+  // edge to the whole node array and scanned it on every drag tick.
+  const targetIns = useStore(
+    (state) =>
+      (state.nodeLookup.get(target) as FlowNode | undefined)?.data?.ins,
+  );
 
   return (
     <>
@@ -80,7 +84,7 @@ export const LabeledShowEdge: React.FC<VanillaEdgeProps> = (props) => {
                 data-edgeid={id}
               >
                 {streamToReactNode(
-                  node?.data?.ins.at(handleToStream(targetHandleId)),
+                  targetIns?.at(handleToStream(targetHandleId)),
                 )}
               </div>
             )}

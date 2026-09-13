@@ -639,9 +639,14 @@ describe("FabriksCollectionManager against the raw fixture", () => {
 
     manager.setVisible(true);
     expect(manager.group.visible).toBe(true);
-    // The re-show replays the recorded settle from the caches: same cells
-    // mounted, and NOT ONE more ranged GET — this is what keeping the manager
-    // alive across `visible: false` buys.
+    // Showing does not plan by itself: `CollectionDriver.update` owns the show
+    // edge for both collection formats (planning here too would run the whole
+    // plan+drain twice per toggle). This is that call.
+    expect(manager.buildDebugReport().stats.plans).toBe(plansBefore);
+    manager.updatePlan(VIEW);
+    // The re-show replans from the caches: same cells mounted, and NOT ONE
+    // more ranged GET — this is what keeping the manager alive across
+    // `visible: false` buys.
     expect(manager.buildDebugReport().stats.plans).toBe(plansBefore + 1);
     expect(manager.buildDebugReport().mountedCells).toBe(mounted);
     expect(rangeGets).toBe(fetchedWhileVisible);

@@ -23,11 +23,20 @@ export const useEditFlowStore = <T,>(selector: (state: EditFlowState) => T) => {
   return useStore(store, selector);
 };
 
-export const useEditRiver = () => {
+/**
+ * Undo/redo state of the flow store's temporal (zundo) history.
+ *
+ * NOTE: there is deliberately no hook that returns the whole flow state. The
+ * store's `nodes` array is replaced on every drag tick, so any component
+ * subscribed to the whole state rerenders at pointer rate — with one such
+ * subscription per node and per edge that was the entire graph. Select the
+ * field or action you need with `useEditFlowStore((s) => s.field)`; actions
+ * are stable references and never cause a rerender.
+ */
+export const useEditTemporal = () => {
   const store = useEditFlowStoreApi();
 
-  const state = useStore(store, useShallow((currentState) => currentState));
-  const temporal = useStore(
+  return useStore(
     store.temporal,
     useShallow((temporalState) => ({
       undo: temporalState.undo,
@@ -36,18 +45,16 @@ export const useEditRiver = () => {
       canRedo: temporalState.futureStates.length > 0,
     })),
   );
-
-  return {
-    ...state,
-    ...temporal,
-    state,
-  };
 };
 
-export const useEditNodeErrors = (id: string) => {
-  const remainingErrors = useEditFlowStore((state) => state.remainingErrors);
-  return remainingErrors.filter((error) => error.id === id && error.type === "node");
-};
+export const useEditNodeErrors = (id: string) =>
+  // Shallow-compared so the per-node array only changes when this node's
+  // errors change, not on every store write.
+  useEditFlowStore(
+    useShallow((state) =>
+      state.remainingErrors.filter((error) => error.id === id && error.type === "node"),
+    ),
+  );
 
 export const useSubflowChildCount = (id: string) => {
   return useEditFlowStore(

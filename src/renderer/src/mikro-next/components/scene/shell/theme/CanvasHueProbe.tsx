@@ -2,6 +2,7 @@ import { addAfterEffect, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { useSettings } from "@/providers/settings/SettingsContext";
 import type { BrandTarget } from "@/providers/settings/brandTheme";
+import { qualityGovernor } from "../../platform/quality/qualityGovernor";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { useViewStoreApi } from "../../platform/stores/viewStore";
 import { majorityHueFromPixels, sameBrandTarget } from "./majorityHue";
@@ -173,11 +174,14 @@ export const CanvasHueProbe = () => {
       clock.framePending = false;
       if (!enabledRef.current) return;
 
-      // Throttle only while the camera moves — see MOVING_CAPTURE_INTERVAL_MS.
+      // Throttle while the scene is ACTIVE — camera motion or brick streaming
+      // (the same definition QualityAdapter uses): a streaming burst drives
+      // frames continuously with the camera at rest, and every one of them
+      // paid a full drawImage for a tint that updates at most every QUIET_MS.
       // Read imperatively: this is an after-effect, never a React subscription.
       const captureAt = performance.now();
       if (
-        viewApi.getState().cameraMoving &&
+        (viewApi.getState().cameraMoving || qualityGovernor.isStreaming()) &&
         captureAt - clock.lastCaptureAt < MOVING_CAPTURE_INTERVAL_MS
       ) {
         return;

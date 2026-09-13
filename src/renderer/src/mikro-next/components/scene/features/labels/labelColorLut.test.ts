@@ -28,7 +28,6 @@ const arrayPlan = (
 ): AttributePlanLike =>
   ({
     edge: { id: "edge", version: 1 },
-    table: { id: tableId, name: tableId },
     path: [],
     sample: {
       __typename: "ArraySample",
@@ -38,18 +37,27 @@ const arrayPlan = (
       passthrough: false,
       store: { id: sampleStoreId, key: "k", bucket: "b", path: "p" },
     },
-    lookup: {
-      store: lookupStore,
-      keyColumns: [{ axis: "object_id", column: { id: "c", name: keyColumn } }],
-      attributes: [],
-      sql: "",
-    },
+    hops: [
+      {
+        index: 0,
+        parent: null,
+        cardinality: "ONE",
+        via: null,
+        joinPath: [],
+        table: { id: tableId, name: tableId },
+        lookup: {
+          kind: "TABLE",
+          store: lookupStore,
+          keyColumns: [{ axis: "object_id", column: { id: "c", name: keyColumn } }],
+          attributes: [],
+        },
+      },
+    ],
   }) as unknown as AttributePlanLike;
 
 const meshPlan = (tableId: string, keyColumn: string): AttributePlanLike =>
   ({
     edge: { id: "edge", version: 1 },
-    table: { id: tableId, name: tableId },
     path: [],
     sample: {
       __typename: "MeshSample",
@@ -59,12 +67,22 @@ const meshPlan = (tableId: string, keyColumn: string): AttributePlanLike =>
       passthrough: false,
       store: { id: "fabriks", key: "k", bucket: "b", path: "p" },
     },
-    lookup: {
-      store: lookupStore,
-      keyColumns: [{ axis: "object_id", column: { id: "c", name: keyColumn } }],
-      attributes: [],
-      sql: "",
-    },
+    hops: [
+      {
+        index: 0,
+        parent: null,
+        cardinality: "ONE",
+        via: null,
+        joinPath: [],
+        table: { id: tableId, name: tableId },
+        lookup: {
+          kind: "TABLE",
+          store: lookupStore,
+          keyColumns: [{ axis: "object_id", column: { id: "c", name: keyColumn } }],
+          attributes: [],
+        },
+      },
+    ],
   }) as unknown as AttributePlanLike;
 
 /**

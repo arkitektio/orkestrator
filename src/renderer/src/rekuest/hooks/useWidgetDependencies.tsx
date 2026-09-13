@@ -1,38 +1,30 @@
 import { useMemo } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 
-
-const resolveValue = (
-  values: Record<string, any>,
-  wanted_path: string,
-  my_path: string[],
-) => {
+/**
+ * Resolve a widget dependency path to the form field it refers to.
+ *
+ * - With no widget path (top-level form), the dependency is the field name.
+ * - `/a/b` is absolute from the form root.
+ * - `a/b` is relative to the widget's parent.
+ */
+const resolveDependencyName = (wanted_path: string, my_path: string[]) => {
   if (my_path.length === 0) {
-    return values[wanted_path];
+    return wanted_path;
   }
 
-  let fullPath: string[] = [];
-
+  let fullPath: string[];
   if (wanted_path.startsWith("/")) {
-    // Absolute path from root
     fullPath = wanted_path.slice(1).split("/");
   } else {
-    // Relative neighbor from parent
     const parentPath = my_path.slice(0, -1);
     fullPath = [...parentPath, ...wanted_path.split("/")];
   }
 
-  // Navigate through values
-  let current: any = values;
-  for (const part of fullPath) {
-    if (current == null || !(part in current)) {
-      return undefined;
-    }
-    current = current[part];
-  }
-
-  return current;
+  return fullPath.join(".");
 };
+
+let unserializableCounter = 0;
 
 export const useWidgetDependencies = (props: {
   widget: {
@@ -40,28 +32,51 @@ export const useWidgetDependencies = (props: {
   };
   path: string[];
 }) => {
+  const { control } = useFormContext();
+  const dependencies = props.widget?.dependencies;
+  const pathKey = props.path.join(".");
 
-  const form = useFormContext();
+  const names = useMemo(
+    () => (dependencies || []).map((wanted) => resolveDependencyName(wanted, props.path)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dependencies, pathKey],
+  );
 
-  const values = useMemo(() => form.getValues(), [form.formState]);
+  // Subscribe to exactly the dependency fields. The previous implementation
+  // re-read the whole form on every `formState` change, which re-issued every
+  // search widget's query on every keystroke anywhere in the form.
+  const watched = useWatch({ control, name: names }) as unknown[];
+
+  // Key on the values so `values` (and everything memoized on it downstream)
+  // only changes when a dependency actually changes.
+  const watchedKey = useMemo(() => {
+    try {
+      return JSON.stringify(watched);
+    } catch {
+      // Unserializable dependency value: fall back to the array identity.
+      return `unserializable:${++unserializableCounter}`;
+    }
+  }, [watched]);
 
   const foundValues = useMemo(() => {
-    return (
-      (props.widget?.dependencies || [])
-        .map((wanted_path, index) => {
-          return { ["arg" + index]: resolveValue(values, wanted_path, props.path) };
-        })
-        .reduce((acc, curr) => {
-          return { ...acc, ...curr };
-        }, {}) || {}
-    );
-  }, [values, props.widget?.dependencies]);
+    const result: Record<string, unknown> = {};
+    watched.forEach((value, index) => {
+      result["arg" + index] = value;
+    });
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedKey]);
 
-  return {
-    values: foundValues,
-    met: !props.widget.dependencies || props.widget.dependencies.length == 0 || Object.keys(foundValues).length == props.widget.dependencies?.length
-  }
-}
+  const met = useMemo(
+    () =>
+      !dependencies ||
+      dependencies.length == 0 ||
+      watched.every((value) => value !== undefined && value !== null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dependencies, watchedKey],
+  );
 
+  return { values: foundValues, met };
+};
 
 export default useWidgetDependencies;

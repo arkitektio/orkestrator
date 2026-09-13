@@ -16,6 +16,7 @@ import {
   useRequestGeneralParquetAccessMutation,
 } from "@/mikro-next/api/graphql";
 import { useDatalayerEndpoint } from "@/app/Arkitekt";
+import { useDebounce } from "@/hooks/use-debounce";
 
 // The minimal shape the DuckDB reader needs from a parquet-backed model: a
 // ParquetStore id to request an access grant against, and the declared column
@@ -54,6 +55,7 @@ type DuckDbTableResult = DuckDbTableState & {
 };
 
 type CachedGrant = {
+  storeId: string;
   accessKey: string;
   secretKey: string;
   sessionToken: string;
@@ -62,6 +64,11 @@ type CachedGrant = {
   key: string;
   expiresAt: number;
 };
+
+// How long a keystroke in the global search sits before it reaches DuckDB.
+// Every search is two full parquet scans (COUNT + page), so typing must not
+// fan out into one pair per character.
+const SEARCH_DEBOUNCE_MS = 200;
 
 const escapeSqlIdentifier = (value: string) =>
   `"${value.replaceAll('"', '""')}"`;
@@ -334,6 +341,159 @@ const buildHistogramQuery = (
     .join(" ");
 };
 
+// ---------------------------------------------------------------------------
+// Pure load machinery — no React, no DuckDB import, so it is unit-testable
+// against a mocked connection.
+// ---------------------------------------------------------------------------
+
+// Every load run takes a ticket; only the holder of the latest ticket may
+// publish its result. A run that finds itself superseded (a newer search,
+// page or sort arrived while it was scanning) must drop its result on the
+// floor instead of racing the newer run for `setState`.
+export class RunSequence {
+  private latest = 0;
+
+  begin(): number {
+    this.latest += 1;
+    return this.latest;
+  }
+
+  isCurrent(id: number): boolean {
+    return id === this.latest;
+  }
+}
+
+// The last COUNT(*) result, keyed on everything that can change it. The count
+// SQL text already encodes the parquet url, the searchable columns, the
+// search and the column filters — and nothing else — so it is the key: a
+// page or sort change leaves it untouched and skips the full-table scan.
+export type DuckDbCountCache = { key: string; total: number } | null;
+
+export const resolveCountCacheKey = (
+  table: DuckDbParquetSource,
+  parquetUrl: string,
+  search: string,
+  columnFilters: DuckDbColumnFilters,
+) => buildCountQuery(table, parquetUrl, search, columnFilters);
+
+export type DuckDbBatch = { toArray(): unknown[] };
+
+// The slice of `AsyncDuckDBConnection` the loader uses. Load queries go
+// through `send()` rather than `query()` on purpose: `query()` is one blocking
+// RUN_QUERY task inside the worker, which `cancelSent()` cannot reach, whereas
+// `send()` polls the pending query one task at a time and a cancel message
+// slips in between polls. That is what makes superseding a keystroke's scan
+// actually stop the scan instead of merely ignoring its result.
+export type DuckDbQuerySender = {
+  send(text: string): Promise<AsyncIterable<DuckDbBatch>>;
+};
+
+const collectRows = async (sender: DuckDbQuerySender, sql: string) => {
+  const reader = await sender.send(sql);
+  const rows: Record<string, unknown>[] = [];
+
+  // The reader must be drained fully before the next statement is sent on
+  // the same connection; a half-read result would be clobbered by it.
+  for await (const batch of reader) {
+    for (const row of batch.toArray()) {
+      rows.push(rowToRecord(row));
+    }
+  }
+
+  return rows;
+};
+
+export type DuckDbTablePage = {
+  rows: Record<string, unknown>[];
+  totalRowCount: number;
+  countCache: DuckDbCountCache;
+};
+
+// Loads one page for the table. Returns `null` when `isCurrent()` reports
+// the run superseded between the count and the page query, so the caller
+// never waits on a page it will not show.
+export const loadDuckDbTablePage = async ({
+  connection,
+  parquetUrl,
+  table,
+  search,
+  columnFilters,
+  sorting,
+  pagination,
+  countCache,
+  isCurrent = () => true,
+}: {
+  connection: DuckDbQuerySender;
+  parquetUrl: string;
+  table: DuckDbParquetSource;
+  search: string;
+  columnFilters: DuckDbColumnFilters;
+  sorting: SortingState;
+  pagination: PaginationState;
+  countCache: DuckDbCountCache;
+  isCurrent?: () => boolean;
+}): Promise<DuckDbTablePage | null> => {
+  const countKey = resolveCountCacheKey(table, parquetUrl, search, columnFilters);
+
+  let totalRowCount: number;
+  if (countCache && countCache.key === countKey) {
+    totalRowCount = countCache.total;
+  } else {
+    const [countRow] = await collectRows(connection, countKey);
+    totalRowCount = Number(countRow?.total_row_count ?? 0);
+  }
+
+  if (!isCurrent()) {
+    return null;
+  }
+
+  const rows = await collectRows(
+    connection,
+    buildRowsQuery(
+      table,
+      parquetUrl,
+      search,
+      columnFilters,
+      sorting,
+      pagination.pageIndex,
+      pagination.pageSize,
+    ),
+  );
+
+  return {
+    rows,
+    totalRowCount,
+    countCache: { key: countKey, total: totalRowCount },
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
+type LiveConnection = {
+  connection: duckdb.AsyncDuckDBConnection;
+  // What the connection was set up for; a different grant or endpoint means
+  // the secret it carries is wrong and it must be rebuilt.
+  identity: string;
+  parquetUrl: string;
+};
+
+const resolveConnectionIdentity = (
+  grant: CachedGrant,
+  datalayerEndpoint?: string,
+) =>
+  [
+    grant.bucket,
+    grant.key,
+    grant.accessKey,
+    grant.sessionToken,
+    datalayerEndpoint ?? "",
+  ].join("|");
+
+const closeQuietly = (connection: duckdb.AsyncDuckDBConnection) =>
+  connection.close().catch(() => undefined);
+
 export const useDuckDbTable = ({
   table,
   pagination,
@@ -358,9 +518,31 @@ export const useDuckDbTable = ({
   });
   const datalayer = useDatalayerEndpoint();
 
+  // The input stays bound to the raw `search`; DuckDB only sees it once the
+  // user pauses.
+  const debouncedSearch = useDebounce(search, SEARCH_DEBOUNCE_MS);
+
+  // One connection for the hook's lifetime. httpfs + the S3 secret are set up
+  // once per grant instead of once per query, and the connection is rebuilt
+  // only when the grant (or datalayer endpoint) it was built for changes.
+  const liveRef = useRef<LiveConnection | null>(null);
+  const openingRef = useRef<Promise<LiveConnection> | null>(null);
+  const disposedRef = useRef(false);
+  // A single DuckDB connection is a single statement stream: everything that
+  // touches it (page loads, histograms, exports) is chained here so two
+  // results can never interleave.
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const [runs] = useState(() => new RunSequence());
+  const loadInFlightRef = useRef(false);
+  const countCacheRef = useRef<DuckDbCountCache>(null);
+
   const ensureGrant = useCallback(async () => {
     const cachedGrant = grantRef.current;
-    if (cachedGrant && cachedGrant.expiresAt > Date.now() + 30_000) {
+    if (
+      cachedGrant &&
+      cachedGrant.storeId === table.store.id &&
+      cachedGrant.expiresAt > Date.now() + 30_000
+    ) {
       return cachedGrant;
     }
 
@@ -384,6 +566,7 @@ export const useDuckDbTable = ({
     }
 
     const resolvedGrant: CachedGrant = {
+      storeId: table.store.id,
       accessKey: parquetGrant.accessKey,
       secretKey: parquetGrant.secretKey,
       sessionToken: parquetGrant.sessionToken,
@@ -397,35 +580,99 @@ export const useDuckDbTable = ({
     return resolvedGrant;
   }, [requestGeneralParquetAccess, requestParquetAccess, table.store.id]);
 
-  const withDuckDbConnection = useCallback(
-    async <T,>(run: (args: {
-      connection: duckdb.AsyncDuckDBConnection;
-      parquetUrl: string;
-    }) => Promise<T>) => {
-      const db = await getDuckDb();
-      const grant = await ensureGrant();
-      const parquetUrl = resolveParquetUrl(grant);
-      const connection = await db.connect();
+  const acquireConnection = useCallback(async (): Promise<LiveConnection> => {
+    const grant = await ensureGrant();
+    const identity = resolveConnectionIdentity(grant, datalayer);
 
+    const live = liveRef.current;
+    if (live && live.identity === identity) {
+      return live;
+    }
+
+    const opening = openingRef.current;
+    if (opening) {
+      const opened = await opening.catch(() => null);
+      if (opened && opened.identity === identity) {
+        return opened;
+      }
+    }
+
+    const nextOpening = (async () => {
+      const stale = liveRef.current;
+      liveRef.current = null;
+      if (stale) {
+        await closeQuietly(stale.connection);
+      }
+
+      const db = await getDuckDb();
+      const connection = await db.connect();
       try {
         await ensureHttpfs(connection);
         await connection.query(buildCreateSecretQuery(grant, datalayer));
-        return await run({ connection, parquetUrl });
-      } finally {
-        await connection.close();
+      } catch (error) {
+        await closeQuietly(connection);
+        throw error;
       }
-    },
-    [datalayer, ensureGrant],
-  );
+
+      if (disposedRef.current) {
+        await closeQuietly(connection);
+        throw new Error("DuckDB table unmounted while connecting");
+      }
+
+      const next: LiveConnection = {
+        connection,
+        identity,
+        parquetUrl: resolveParquetUrl(grant),
+      };
+      liveRef.current = next;
+      return next;
+    })();
+
+    openingRef.current = nextOpening;
+    try {
+      return await nextOpening;
+    } finally {
+      if (openingRef.current === nextOpening) {
+        openingRef.current = null;
+      }
+    }
+  }, [datalayer, ensureGrant]);
+
+  const enqueue = useCallback(<T,>(task: () => Promise<T>): Promise<T> => {
+    const next = queueRef.current.catch(() => undefined).then(task);
+    queueRef.current = next;
+    return next;
+  }, []);
+
+  useEffect(() => {
+    disposedRef.current = false;
+
+    return () => {
+      disposedRef.current = true;
+      const live = liveRef.current;
+      liveRef.current = null;
+      if (!live) {
+        return;
+      }
+
+      // Abort whatever is scanning, then close once the queue has drained so
+      // no task is left holding a closed connection.
+      void live.connection.cancelSent().catch(() => undefined);
+      void queueRef.current
+        .catch(() => undefined)
+        .then(() => closeQuietly(live.connection));
+    };
+  }, []);
 
   const loadColumnHistogram = useCallback(
     async (columnName: string, limit = 8) => {
-      const histogramRows = await withDuckDbConnection(async ({ connection, parquetUrl }) => {
+      const histogramRows = await enqueue(async () => {
+        const { connection, parquetUrl } = await acquireConnection();
         const result = await connection.query(
           buildHistogramQuery(
             table,
             parquetUrl,
-            search,
+            debouncedSearch,
             columnFilters,
             columnName,
             limit,
@@ -440,17 +687,18 @@ export const useDuckDbTable = ({
         count: Number(row.histogram_count ?? 0),
       }));
     },
-    [columnFilters, search, table, withDuckDbConnection],
+    [acquireConnection, columnFilters, debouncedSearch, enqueue, table],
   );
 
   const exportAsCsv = useCallback(
     async (selectedColumns?: string[]) => {
-      const exportRows = await withDuckDbConnection(async ({ connection, parquetUrl }) => {
+      const exportRows = await enqueue(async () => {
+        const { connection, parquetUrl } = await acquireConnection();
         const result = await connection.query(
           buildExportQuery(
             table,
             parquetUrl,
-            search,
+            debouncedSearch,
             columnFilters,
             sorting,
             selectedColumns,
@@ -467,71 +715,85 @@ export const useDuckDbTable = ({
 
       return rowsToCsv(exportRows, exportColumns);
     },
-    [columnFilters, search, sorting, table, withDuckDbConnection],
+    [acquireConnection, columnFilters, debouncedSearch, enqueue, sorting, table],
   );
 
   useEffect(() => {
-    let cancelled = false;
+    const runId = runs.begin();
 
     const load = async () => {
       setState((current) => ({ ...current, loading: true, error: null }));
 
+      // A superseded run may be mid-scan on the shared connection. Ask DuckDB
+      // to abandon it so the queue reaches this run without waiting for a
+      // result nobody will show.
+      if (loadInFlightRef.current && liveRef.current) {
+        await liveRef.current.connection.cancelSent().catch(() => undefined);
+      }
+
       try {
-        const [countResult, rowsResult] = await withDuckDbConnection(
-          async ({ connection, parquetUrl }) =>
-            Promise.all([
-              connection.query(
-                buildCountQuery(table, parquetUrl, search, columnFilters),
-              ),
-              connection.query(
-                buildRowsQuery(
-                  table,
-                  parquetUrl,
-                  search,
-                  columnFilters,
-                  sorting,
-                  pagination.pageIndex,
-                  pagination.pageSize,
-                ),
-              ),
-            ]),
-        );
+        const page = await enqueue(async () => {
+          if (!runs.isCurrent(runId)) {
+            return null;
+          }
 
-        const totalRow = rowToRecord(countResult.toArray()[0]);
-        const totalRowCount = Number(totalRow.total_row_count ?? 0);
-        const rows = rowsResult.toArray().map((row) => rowToRecord(row));
+          const { connection, parquetUrl } = await acquireConnection();
+          if (!runs.isCurrent(runId)) {
+            return null;
+          }
 
-        if (!cancelled) {
-          setState({
-            rows,
-            totalRowCount,
-            loading: false,
-            error: null,
-          });
+          loadInFlightRef.current = true;
+          try {
+            return await loadDuckDbTablePage({
+              connection,
+              parquetUrl,
+              table,
+              search: debouncedSearch,
+              columnFilters,
+              sorting,
+              pagination,
+              countCache: countCacheRef.current,
+              isCurrent: () => runs.isCurrent(runId),
+            });
+          } finally {
+            loadInFlightRef.current = false;
+          }
+        });
+
+        if (page === null || !runs.isCurrent(runId)) {
+          return;
         }
+
+        countCacheRef.current = page.countCache;
+        setState({
+          rows: page.rows,
+          totalRowCount: page.totalRowCount,
+          loading: false,
+          error: null,
+        });
       } catch (error) {
-        if (!cancelled) {
-          setState({
-            rows: [],
-            totalRowCount: 0,
-            loading: false,
-            error: error instanceof Error ? error : new Error(String(error)),
-          });
+        if (!runs.isCurrent(runId)) {
+          return;
         }
+
+        setState({
+          rows: [],
+          totalRowCount: 0,
+          loading: false,
+          error: error instanceof Error ? error : new Error(String(error)),
+        });
       }
     };
 
     void load();
-
-    return () => {
-      cancelled = true;
-    };
   }, [
+    acquireConnection,
+    columnFilters,
+    debouncedSearch,
+    enqueue,
     pagination.pageIndex,
     pagination.pageSize,
-    columnFilters,
-    withDuckDbConnection,
-    search,
+    runs,
     sorting,
     table,
   ]);

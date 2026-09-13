@@ -4,7 +4,7 @@ import { RekuestTask } from "@/linkers";
 import { useMemo } from "react";
 import {
   TaskEventKind,
-  PostmanTaskFragment,
+  LiveTaskFragment,
   useCancelMutation,
 } from "../../api/graphql";
 import { deriveLiveState } from "../../hooks/useTasks";
@@ -17,7 +17,7 @@ import { TaskStatusIcon, formatEventKind } from "../hovers/status";
  * the global toast and the background tasks panel so both stay consistent.
  */
 export const TaskStatusLine = (props: {
-  task: PostmanTaskFragment;
+  task: LiveTaskFragment;
   compact?: boolean;
   showCancel?: boolean;
   showLink?: boolean;

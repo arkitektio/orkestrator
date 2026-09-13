@@ -6,6 +6,23 @@
       }
       const result: PossibleTypesResultData = {
   "possibleTypes": {
+    "Asserted": [
+      "AssertedComment",
+      "AssertedDescription",
+      "AssertedDifference",
+      "AssertedEntity",
+      "AssertedInstances",
+      "AssertedLinks",
+      "AssertedMeasurement",
+      "AssertedMetric",
+      "AssertedNaturalEvent",
+      "AssertedParticipation",
+      "AssertedProtocolEvent",
+      "AssertedRelation",
+      "AssertedSameness",
+      "AssertedStructure",
+      "AssertedStructureRelation"
+    ],
     "Category": [
       "EntityCategory",
       "MeasurementCategory",
@@ -17,6 +34,7 @@
     "ClaimEndpoint": [
       "Instance",
       "Link",
+      "Metric",
       "Structure",
       "Term"
     ],
@@ -27,7 +45,9 @@
     ],
     "Edge": [
       "Classification",
+      "Derivation",
       "Description",
+      "Difference",
       "InputParticipation",
       "Measurement",
       "OutputParticipation",
@@ -52,10 +72,8 @@
       "GraphTableQuery"
     ],
     "InformsTarget": [
-      "Entity",
-      "Link",
-      "NaturalEvent",
-      "ProtocolEvent"
+      "Instance",
+      "Link"
     ],
     "Node": [
       "Entity",
@@ -69,6 +87,13 @@
     ],
     "Plottable": [
       "GraphTableQuery"
+    ],
+    "StandingTarget": [
+      "Comment",
+      "Instance",
+      "Link",
+      "Metric",
+      "Structure"
     ],
     "_Entity": [
       "Assertion",

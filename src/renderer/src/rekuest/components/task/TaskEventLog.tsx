@@ -12,8 +12,8 @@ import {
 } from "@/rekuest/api/graphql";
 import { UnknownReturnWidget } from "@/app/shadCnWidgetRegistry";
 import { Clock } from "lucide-react";
-import { ReactNode, useEffect, useMemo, useState } from "react";
-import Timestamp from "react-timestamp";
+import { ReactNode, memo, useEffect, useMemo, useState } from "react";
+import Timestamp from "@/components/ui/timestamp";
 import { useWidgetRegistry } from "../../widgets/WidgetsContext";
 import { deriveLiveState } from "../../hooks/useTasks";
 import { isTerminalEvent } from "../../lib/taskTracker";
@@ -25,17 +25,29 @@ import {
 } from "../../lib/taskStatus";
 import { TaskStatusLine } from "./TaskStatusLine";
 
-const formatLogTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString(undefined, { hour12: false });
+// Module-level formatter: `toLocaleTimeString` constructs a fresh Intl
+// formatter per call, which adds up fast for a log with hundreds of rows.
+// The options mirror `toLocaleTimeString(undefined, { hour12: false })`.
+const LOG_TIME_FORMAT = new Intl.DateTimeFormat(undefined, {
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+  hour12: false,
+});
+
+const formatLogTime = (iso: string) => {
+  const ms = Date.parse(iso);
+  return Number.isNaN(ms) ? "" : LOG_TIME_FORMAT.format(ms);
+};
 
 /**
  * One line of the log: fixed-width time and kind columns, free-form body.
  * Deliberately terminal-flavored — the log is the raw, complete record.
  */
-const LogRow = (props: {
+const LogRow = memo(function LogRow(props: {
   event: TaskEventFragment;
   children?: ReactNode;
-}) => {
+}) {
   const { event, children } = props;
   return (
     <li className="flex items-baseline gap-3 px-3 py-0.5 hover:bg-muted/40">
@@ -53,18 +65,18 @@ const LogRow = (props: {
       <div className="min-w-0 flex-1 text-xs">{children}</div>
     </li>
   );
-};
+});
 
 /** A yield line: result rendered inline, collapsible for chatty generators. */
 const YieldLogRow = (props: {
-  task: DetailTaskFragment;
+  returnPorts: DetailTaskFragment["action"]["returns"];
   event: TaskEventFragment;
   defaultExpanded: boolean;
 }) => {
   const { registry } = useWidgetRegistry();
   const [expanded, setExpanded] = useState(props.defaultExpanded);
   const hasReturns =
-    props.event.returns != null && props.task.action.returns.length > 0;
+    props.event.returns != null && props.returnPorts.length > 0;
 
   if (!hasReturns) {
     return (
@@ -88,7 +100,7 @@ const YieldLogRow = (props: {
           <div className="my-1.5 w-full rounded-md border bg-background/60 p-3 font-sans">
             <ReturnsContainer
               registry={registry}
-              ports={props.task.action.returns}
+              ports={props.returnPorts}
               values={props.event.returns}
               options={{ labels: true }}
             />
@@ -99,15 +111,91 @@ const YieldLogRow = (props: {
   );
 };
 
+/**
+ * One event dispatched to its row. Memoised on the event (a stable cache
+ * object) and the action's return ports rather than the whole task, so a new
+ * progress event only mounts one new row instead of rerendering every line.
+ */
+const TaskLogEntry = memo(function TaskLogEntry(props: {
+  event: TaskEventFragment;
+  returnPorts: DetailTaskFragment["action"]["returns"];
+  defaultExpanded: boolean;
+}) {
+  const { event: e, returnPorts, defaultExpanded } = props;
+  switch (e.kind) {
+    case TaskEventKind.Yield:
+      return (
+        <YieldLogRow
+          returnPorts={returnPorts}
+          event={e}
+          defaultExpanded={defaultExpanded}
+        />
+      );
+    case TaskEventKind.Delegate:
+      return (
+        <LogRow event={e}>
+          <span className="text-muted-foreground">
+            delegated to {e.delegatedTo?.action.name}
+          </span>
+          {e.delegatedTo && (
+            <RekuestTask.DetailLink
+              object={e.delegatedTo}
+              className="ml-1 text-foreground underline-offset-2 hover:underline"
+            >
+              (details)
+            </RekuestTask.DetailLink>
+          )}
+        </LogRow>
+      );
+    case TaskEventKind.Failed:
+    case TaskEventKind.Critical:
+      return (
+        <LogRow event={e}>
+          <span className="text-destructive">{e.message}</span>
+        </LogRow>
+      );
+    case TaskEventKind.Progress:
+      return (
+        <LogRow event={e}>
+          <div className="flex items-baseline gap-2">
+            {e.progress != null && (
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                {e.progress}%
+              </span>
+            )}
+            {e.message && (
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                {e.message}
+              </span>
+            )}
+          </div>
+        </LogRow>
+      );
+    default:
+      return (
+        <LogRow event={e}>
+          {e.message && (
+            <span className="text-muted-foreground">{e.message}</span>
+          )}
+        </LogRow>
+      );
+  }
+});
+
 export const ChildTasksSection = (props: {
   task: DetailTaskFragment;
 }) => {
-  const children = (props.task.children ?? [])
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    );
+  // Sorted once per `children` identity; this section rerenders on every
+  // task event, and `createdAt` is ISO-8601 so the strings sort correctly
+  // without allocating Dates per comparison.
+  const rawChildren = props.task.children;
+  const children = useMemo(
+    () =>
+      (rawChildren ?? [])
+        .slice()
+        .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0)),
+    [rawChildren],
+  );
 
   if (children.length === 0) {
     return null;
@@ -419,87 +507,59 @@ export const TaskResultSection = (props: { task: DetailTaskFragment }) => {
 // open) so a chatty generator doesn't turn the log into a wall of widgets.
 const MAX_EXPANDED_YIELDS = 3;
 
+// Only the newest window of events is mounted by default; a long-running task
+// can accumulate thousands of progress lines, and each row is a DOM subtree.
+const LOG_WINDOW = 200;
+
 /**
  * The task's complete event record, oldest → newest, as dense log lines.
- * Every event kind is shown — nothing is filtered out.
+ * Every event kind is shown — nothing is filtered out — but only the newest
+ * `LOG_WINDOW` are mounted until the reader asks for earlier ones.
  */
 export const TaskTimeLine = (props: {
   task: DetailTaskFragment;
 }) => {
   const { task } = props;
+  const [visibleLimit, setVisibleLimit] = useState(LOG_WINDOW);
 
   // The cache stores events newest-first; a log reads top-to-bottom.
-  const events = useMemo(() => [...task.events].reverse(), [task.events]);
+  const { events, expandAllYields, latestYieldId } = useMemo(() => {
+    const yieldsWithReturns = task.events.filter(
+      (e) => e.kind === TaskEventKind.Yield && e.returns != null,
+    );
+    return {
+      events: [...task.events].reverse(),
+      expandAllYields: yieldsWithReturns.length <= MAX_EXPANDED_YIELDS,
+      latestYieldId: yieldsWithReturns.at(0)?.id,
+    };
+  }, [task.events]);
 
-  const yieldsWithReturns = task.events.filter(
-    (e) => e.kind === TaskEventKind.Yield && e.returns != null,
-  );
-  const expandAllYields = yieldsWithReturns.length <= MAX_EXPANDED_YIELDS;
-  const latestYieldId = yieldsWithReturns.at(0)?.id;
+  const hiddenCount = Math.max(0, events.length - visibleLimit);
+  const visible = hiddenCount > 0 ? events.slice(hiddenCount) : events;
+  const returnPorts = task.action.returns;
 
   return (
     <ol className="flex w-full flex-col rounded-md border bg-muted/20 py-1 font-mono">
-      {events.map((e) => {
-        switch (e.kind) {
-          case TaskEventKind.Yield:
-            return (
-              <YieldLogRow
-                key={e.id}
-                task={task}
-                event={e}
-                defaultExpanded={expandAllYields || e.id === latestYieldId}
-              />
-            );
-          case TaskEventKind.Delegate:
-            return (
-              <LogRow key={e.id} event={e}>
-                <span className="text-muted-foreground">
-                  delegated to {e.delegatedTo?.action.name}
-                </span>
-                {e.delegatedTo && (
-                  <RekuestTask.DetailLink
-                    object={e.delegatedTo}
-                    className="ml-1 text-foreground underline-offset-2 hover:underline"
-                  >
-                    (details)
-                  </RekuestTask.DetailLink>
-                )}
-              </LogRow>
-            );
-          case TaskEventKind.Failed:
-          case TaskEventKind.Critical:
-            return (
-              <LogRow key={e.id} event={e}>
-                <span className="text-destructive">{e.message}</span>
-              </LogRow>
-            );
-          case TaskEventKind.Progress:
-            return (
-              <LogRow key={e.id} event={e}>
-                <div className="flex items-baseline gap-2">
-                  {e.progress != null && (
-                    <span className="shrink-0 tabular-nums text-muted-foreground">
-                      {e.progress}%
-                    </span>
-                  )}
-                  {e.message && (
-                    <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                      {e.message}
-                    </span>
-                  )}
-                </div>
-              </LogRow>
-            );
-          default:
-            return (
-              <LogRow key={e.id} event={e}>
-                {e.message && (
-                  <span className="text-muted-foreground">{e.message}</span>
-                )}
-              </LogRow>
-            );
-        }
-      })}
+      {hiddenCount > 0 && (
+        <li className="px-3 py-1">
+          <button
+            type="button"
+            onClick={() => setVisibleLimit((limit) => limit + LOG_WINDOW)}
+            className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Show {Math.min(hiddenCount, LOG_WINDOW)} earlier ({hiddenCount}{" "}
+            hidden)
+          </button>
+        </li>
+      )}
+      {visible.map((e) => (
+        <TaskLogEntry
+          key={e.id}
+          event={e}
+          returnPorts={returnPorts}
+          defaultExpanded={expandAllYields || e.id === latestYieldId}
+        />
+      ))}
     </ol>
   );
 };

@@ -27,7 +27,7 @@ import { ArrowDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ClickContextualParams, FlowNode, ReactiveNodeSuggestions } from "../../types";
-import { useEditRiver } from "../context";
+import { useEditFlowStore } from "../context";
 import { ContextualContainer } from "./ContextualContainer";
 
 export const SearchForm = (props: { onSubmit: (data: any) => void }) => {
@@ -183,7 +183,7 @@ const ClickReactiveNodes = (props: {
 }) => {
   const nodes = useClickReactiveNodes(props.search || "");
 
-  const { addClickNode } = useEditRiver();
+  const addClickNode = useEditFlowStore((s) => s.addClickNode);
 
   return (
     <div className="flex flex-row gap-1 my-auto flex-wrap mt-2">
@@ -232,7 +232,7 @@ const ClickArkitektNodes = (props: {
     });
   }, [props.search]);
 
-  const { addClickNode } = useEditRiver();
+  const addClickNode = useEditFlowStore((s) => s.addClickNode);
   const client = useRekuest();
 
   const onNodeClick = (id: string) => {
@@ -332,7 +332,7 @@ const ClickAgents = (props: {
     });
   }, [props.search]);
 
-  const { addClickNode } = useEditRiver();
+  const addClickNode = useEditFlowStore((s) => s.addClickNode);
 
   const onAgentClick = (agent: ListAgentFragment) => {
     addClickNode(

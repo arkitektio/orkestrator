@@ -11,7 +11,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { useWidgetRegistry } from "../../widgets/WidgetsContext";
 import { statusBarColor } from "../../lib/taskStatus";
 import {
@@ -84,16 +84,24 @@ const TimelineItemDetail = ({ item }: { item: TimelineItem }) => {
   );
 };
 
+/**
+ * Controlled popover around a single timeline bar. Only mounted for the bar
+ * the user clicked — a Radix Popover root per bar is far too heavy for a
+ * gantt with hundreds of children.
+ */
 export const TimelineItemPopover = ({
   item,
+  open,
+  onOpenChange,
   children,
 }: {
   item: TimelineItem;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
-  highlighted: boolean;
 }) => {
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-[500px]">
         <TimelineItemDetail item={item} />
@@ -109,37 +117,54 @@ const TimelineBars = ({
   items: TimelineItem[];
   highlighted: string[];
 }) => {
+  const highlightedSet = useMemo(() => new Set(highlighted), [highlighted]);
+  const [openId, setOpenId] = useState<string | null>(null);
+
   return (
     <div className="relative h-8 w-full bg-muted/30 rounded-full">
-      {items.map((item, index) => {
+      {items.map((item) => {
+        const id = item.task.id;
+        const bar = (
+          <div
+            key={id}
+            onClick={() => setOpenId(id)}
+            className={`${
+              highlightedSet.has(id)
+                ? "ring-2 ring-offset-1 ring-primary z-20 opacity-100"
+                : "opacity-60 hover:opacity-100 hover:z-20"
+            } ${statusBarColor(
+              item.task.latestEventKind
+            )} absolute h-full border rounded-md cursor-pointer transition-all flex items-center justify-center shadow-sm`}
+            style={{
+              left: item.start * 100 + "%",
+              width: Math.max((item.end - item.start) * 100, 0.5) + "%",
+            }}
+          >
+            <div className="text-[10px] truncate w-full text-center px-1 text-white font-medium drop-shadow-md">
+              {item.task.action?.name}
+            </div>
+            {!item.task.isDone && (
+              <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="w-3 h-3 animate-spin text-white" />
+              </div>
+            )}
+          </div>
+        );
+
+        if (openId !== id) {
+          return bar;
+        }
+
         return (
           <TimelineItemPopover
-            key={index}
+            key={id}
             item={item}
-            highlighted={highlighted.includes(item.task.id)}
+            open
+            onOpenChange={(open) => {
+              if (!open) setOpenId(null);
+            }}
           >
-            <div
-              className={`${
-                highlighted.includes(item.task.id)
-                  ? "ring-2 ring-offset-1 ring-primary z-20 opacity-100"
-                  : "opacity-60 hover:opacity-100 hover:z-20"
-              } ${statusBarColor(
-                item.task.latestEventKind
-              )} absolute h-full border rounded-md cursor-pointer transition-all flex items-center justify-center shadow-sm`}
-              style={{
-                left: item.start * 100 + "%",
-                width: Math.max((item.end - item.start) * 100, 0.5) + "%",
-              }}
-            >
-              <div className="text-[10px] truncate w-full text-center px-1 text-white font-medium drop-shadow-md">
-                {item.task.action?.name}
-              </div>
-              {!item.task.isDone && (
-                <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
-                  <Loader2 className="w-3 h-3 animate-spin text-white" />
-                </div>
-              )}
-            </div>
+            {bar}
           </TimelineItemPopover>
         );
       })}

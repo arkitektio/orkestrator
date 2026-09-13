@@ -55,6 +55,28 @@ describe("collectPassSets", () => {
     expect(sets.otherRenderables).not.toContain(internal);
   });
 
+  it("prunes the subtree of an invisible ancestor", () => {
+    // How the collection layers hide: the manager flips the GROUP, never the
+    // leaves. A leaf the renderer skips must not be classified, or the
+    // compositor's structure key cannot see the layer disappear and serves a
+    // cached target carrying its stale depth.
+    const scene = new THREE.Scene();
+    const hiddenGroup = new THREE.Group();
+    hiddenGroup.visible = false;
+    const volume = taggedMesh();
+    const occluder = opaqueMesh();
+    const overlay = overlayMesh();
+    hiddenGroup.add(volume, occluder, overlay);
+    scene.add(hiddenGroup);
+
+    const sets = collectPassSets(scene);
+    expect(sets.volumeMeshes).toEqual([]);
+    expect(sets.occluders).toEqual([]);
+    expect(sets.otherRenderables).toEqual([]);
+    // …and the leaves keep their own flags: the walk only reads.
+    expect(occluder.visible).toBe(true);
+  });
+
   it("excludes invisible-material opaque meshes from the occluder set", () => {
     const scene = new THREE.Scene();
     const mesh = opaqueMesh();

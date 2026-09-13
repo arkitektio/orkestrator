@@ -4,14 +4,13 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
 import { KraphTerm } from "@/linkers";
 import { useGetTermQuery } from "../api/graphql";
 import UpdateTermForm from "../forms/UpdateTermForm";
 import { termKindLabel, termTint } from "../lib/terms";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 const Page = asDetailQueryRoute(useGetTermQuery, ({ data, refetch }) => {
-  const resolve = useResolve();
   const term = data.term;
 
   return (
@@ -62,12 +61,16 @@ const Page = asDetailQueryRoute(useGetTermQuery, ({ data, refetch }) => {
           )}
         </div>
         <div className="w-full h-full flex-row relative">
-          {term.image?.presignedUrl && (
-            <Image
-              src={resolve(term.image.presignedUrl)}
-              style={{ filter: "brightness(0.7)" }}
-              className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
-            />
+          {term.image && (
+            <WithKraphMediaUrl media={term.image}>
+              {(url) => (
+                <Image
+                  src={url}
+                  style={{ filter: "brightness(0.7)" }}
+                  className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
+                />
+              )}
+            </WithKraphMediaUrl>
           )}
         </div>
       </div>

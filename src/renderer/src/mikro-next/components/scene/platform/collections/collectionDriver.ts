@@ -55,6 +55,9 @@ export interface DrivableCollection {
   updatePlan(view: CollectionPlanView): unknown;
   setVoxelToWorld(matrix: THREE.Matrix4): void;
   setSlabClip(slab: { z: number; thickness: number } | null): void;
+  /** Show/hide the collection's group. Managers may stop planning while
+   *  hidden — the driver replans on the show edge, so they need not. */
+  setVisible(visible: boolean): void;
   getPlanConfig(): { readonly pixelBudget: number };
 }
 
@@ -71,6 +74,9 @@ export type CollectionInputs = {
   matrix: THREE.Matrix4;
   /** null in 3D — z is not clipped there. */
   slab: { thickness: number } | null;
+  /** The layer's `visible` flag. A hidden collection stops planning, so the
+   *  driver OWNS the re-show replan — see `update()`. */
+  visible: boolean;
 };
 
 export class CollectionDriver<M extends DrivableCollection> {
@@ -78,6 +84,7 @@ export class CollectionDriver<M extends DrivableCollection> {
   private disposed = false;
   private indexReady = false;
   private slab: CollectionInputs["slab"];
+  private visible: boolean;
 
   constructor(
     private readonly target: M,
@@ -85,7 +92,9 @@ export class CollectionDriver<M extends DrivableCollection> {
     inputs: CollectionInputs,
   ) {
     this.slab = inputs.slab;
+    this.visible = inputs.visible;
     this.target.setVoxelToWorld(inputs.matrix);
+    this.target.setVisible(inputs.visible);
     this.applySlab();
 
     // The plan cadence: once on mount (after the catalog lands) and on every
@@ -145,6 +154,17 @@ export class CollectionDriver<M extends DrivableCollection> {
     if (inputs.slab !== undefined) {
       this.slab = inputs.slab;
       this.applySlab();
+    }
+    if (inputs.visible !== undefined && inputs.visible !== this.visible) {
+      this.visible = inputs.visible;
+      this.target.setVisible(inputs.visible);
+      // The SHOW edge replans. A manager that dropped every plan while hidden
+      // (konnektion) has nothing mounted, and one that kept planning against a
+      // stale camera has the wrong cells — `plan()` reads the LIVE camera and
+      // the managers dedupe an unchanged plan, so this is correct for both.
+      // Without it the layer waits for the next camera settle, which is what
+      // made a re-show need a pan.
+      if (inputs.visible) this.plan();
     }
   }
 

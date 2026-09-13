@@ -36,10 +36,15 @@ export const useMutation: MutationFuncType = (doc, options) => {
 export const useQuery: QueryFuncType = (doc, options) => {
   const mikro = useMikro();
 
+  // Defaults, not overrides: a mount still revalidates against the network
+  // (`cache-and-network`), but subsequent variable changes are served from the
+  // cache when the entry exists (`cache-first`) instead of refetching every
+  // time. Call sites may override either policy through `options`.
   return useApolloQuery(doc, {
+    fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
     ...options,
     client: mikro,
-    nextFetchPolicy: "network-only",
   });
 };
 

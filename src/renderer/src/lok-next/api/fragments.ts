@@ -5,13 +5,7 @@
         }
       }
       const result: PossibleTypesResultData = {
-  "possibleTypes": {
-    "Descendant": [
-      "LeafDescendant",
-      "MentionDescendant",
-      "ParagraphDescendant"
-    ]
-  }
+  "possibleTypes": {}
 };
       export default result;
     

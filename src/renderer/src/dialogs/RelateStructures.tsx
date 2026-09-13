@@ -3,7 +3,7 @@ import { Structure } from "@/types";
 import {
   ListStructureRelationCategoryWithGraphFragment,
   useAssertStructureRelationExistsMutation,
-  useEnsureStructureMutation,
+  useAssertStructureExistsMutation,
   useListStructureRelationCategoryQuery
 } from "@/kraph/api/graphql";
 import { toast } from "sonner";
@@ -19,7 +19,9 @@ export const RelateStructures = (props: {
 
   const { closeDialog } = useDialog();
 
-  const [ensureStructure] = useEnsureStructureMutation({
+  // `ensureStructure` is gone: `assertStructureExists` is idempotent on the
+  // (identifier, object) pair, so asserting twice records one structure.
+  const [ensureStructure] = useAssertStructureExistsMutation({
     onCompleted: () => {},
     onError: (error) => {
       console.error("Error creating structure:", error);
@@ -63,14 +65,14 @@ export const RelateStructures = (props: {
       });
 
       if (!left.data || !right.data) {
-        throw new Error("Failed to ensure structures");
+        throw new Error("Failed to assert structures");
       }
 
       await createSRelation({
         variables: {
           input: {
-            sourceId: left.data.ensureStructure.structure.id,
-            targetId: right.data.ensureStructure.structure.id,
+            sourceId: left.data.assertStructureExists.structure.id,
+            targetId: right.data.assertStructureExists.structure.id,
             term: category.term?.key ?? category.key,
           },
         },

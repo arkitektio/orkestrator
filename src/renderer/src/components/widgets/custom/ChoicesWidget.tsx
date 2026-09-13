@@ -8,19 +8,17 @@ import { useCallback } from "react";
 export const ChoicesWidget = (
   props: InputWidgetProps<ChoiceAssignWidgetFragment>,
 ) => {
-  console.log(props.widget?.choices);
-  const choices = props.widget?.choices || [];
+  // Choices live on the port; the widget only selects the presentation.
+  const choices = props.port.choices || [];
 
   const search = useCallback(
     async (searching: SearchOptions) => {
-      console.log("Searching", searching);
       if (searching.search) {
         return choices
           .filter(notEmpty)
           .filter((c) => c.label.startsWith(searching.search || ""));
       }
       if (searching.values) {
-        console.log("Searching", searching.values);
         return choices
           .filter(notEmpty)
           .filter((c) => searching.values?.includes(c.value));
@@ -37,7 +35,7 @@ export const ChoicesWidget = (
       search={search}
       description={props.port.description || undefined}
       noOptionFoundPlaceholder="No options found"
-      commandPlaceholder="Search..."
+      commandPlaceholder={props.widget?.placeholder || "Search..."}
     />
   );
 };

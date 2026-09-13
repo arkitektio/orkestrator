@@ -81,10 +81,10 @@ export const NavigationPane = () => {
           </Button>
         }
       >
-        {data?.rooms.map((room, index) => (
+        {data?.rooms.map((room) => (
           <AlpakaRoom.DetailLink
             object={room}
-            key={index}
+            key={room.id}
             className="flex flex-row w-full gap-3 rounded-lg  text-muted-foreground transition-all hover:text-primary"
           >
             <CubeIcon className="h-4 w-4" />
@@ -137,7 +137,7 @@ const Pane: React.FunctionComponent = () => {
       ) : (
         <>
           <ListRender array={data?.rooms}>
-            {(item, i) => <RoomCard item={item} key={i} />}
+            {(item) => <RoomCard item={item} key={item.id} />}
           </ListRender>
         </>
       )}

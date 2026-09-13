@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
-import autoAnimate from "@formkit/auto-animate";
-import React, { useEffect, useRef } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
+import React from "react";
 
 export type FittingResponsiveGridProps = {
   children?: React.ReactNode;
@@ -24,21 +24,18 @@ export const ContainerGrid: React.FC<FittingResponsiveGridProps> = ({
   minItemWidth,
   className,
 }) => {
-  const parent = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (parent.current) {
-      autoAnimate(parent.current, {
-        // Animation duration in milliseconds (default: 250)
-        duration: 240,
-        // Easing for motion (default: 'ease-in-out')
-        easing: "ease-in-out",
-        // When true, this will enable animations even if the user has indicated
-        // they don’t want them via prefers-reduced-motion.
-        disrespectUserMotionPreference: false,
-      });
-    }
-  }, [children]);
+  // Attach auto-animate exactly once per grid element. It observes child
+  // mutations itself; re-calling `autoAnimate()` on every render (the previous
+  // `[children]` effect) re-walked every child and stacked observers/intervals.
+  const [parent] = useAutoAnimate<HTMLDivElement>({
+    // Animation duration in milliseconds (default: 250)
+    duration: 240,
+    // Easing for motion (default: 'ease-in-out')
+    easing: "ease-in-out",
+    // When true, this will enable animations even if the user has indicated
+    // they don’t want them via prefers-reduced-motion.
+    disrespectUserMotionPreference: false,
+  });
 
   if (minItemWidth) {
     return (

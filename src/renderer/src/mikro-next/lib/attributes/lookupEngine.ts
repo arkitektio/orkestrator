@@ -3,11 +3,13 @@ import type {
   AttributePlanLike,
   AttributeRow,
   ParquetStoreLike,
+  TableHopLike,
 } from "./attributeTypes";
-import { planIdentity } from "./attributeTypes";
+import { hopKey } from "./attributeTypes";
 import { LruMap } from "./lruMap";
-import type { BindParam, HeldValue } from "./planExec";
+import type { BindParam, HeldMap, HeldValue } from "./planExec";
 import { buildKeyValues } from "./planExec";
+import { tableHopSql } from "./planSql";
 import { bindSqlLiteral, escapeSqlIdentifier, escapeSqlLiteral } from "./sqlBind";
 
 /**
@@ -23,15 +25,20 @@ import { bindSqlLiteral, escapeSqlIdentifier, escapeSqlLiteral } from "./sqlBind
  *    Grant/region round-trips run OFF the query chain (network overlaps
  *    queued DuckDB work); only the `CREATE SECRET` SQL is serialized, and a
  *    grant is recorded as installed only after that SQL succeeds;
- *  - a prepared-statement LRU keyed by plan identity, with a runtime-probed
- *    fallback to escaped-literal SQL for builds that cannot prepare
- *    `read_parquet(?)`. A statement that has answered before is PROVEN: its
- *    later failures are real errors and surface as such — only a first-use
- *    failure downgrades the build to literal SQL;
- *  - a result LRU keyed `(plan identity, key tuple)` — hovering anywhere
- *    inside one object hits it without touching DuckDB. Parquet contents
- *    changing deliberately does NOT invalidate (per the plan contract; a
- *    version-bumped edge changes the key instead);
+ *  - the statement is DERIVED from the hop (`planSql.ts`) — a plan carries
+ *    `keyColumns` and `attributes`, never SQL — with the user's projection
+ *    folded in, so a narrowed hop reads only its column chunks;
+ *  - a prepared-statement LRU keyed by hop identity (plus projection), with a
+ *    runtime-probed fallback to escaped-literal SQL for builds that cannot
+ *    prepare `read_parquet(?)`. A statement that has answered before is
+ *    PROVEN: its later failures are real errors and surface as such — only a
+ *    first-use failure downgrades the build to literal SQL. A MANY binding
+ *    (an `IN` list whose length is part of the statement) is always run as
+ *    literal SQL rather than churning the statement LRU;
+ *  - a result LRU keyed `(hop identity, projection, key tuple)` — hovering
+ *    anywhere inside one object hits it without touching DuckDB. Parquet
+ *    contents changing deliberately does NOT invalidate (per the plan
+ *    contract; a version-bumped edge changes the key instead);
  *  - all queries serialized on an internal chain, with staleness checks both
  *    before and after the connection/secret legs so a superseded hover never
  *    issues SQL;
@@ -92,6 +99,11 @@ export type ParquetGrantLike = {
   bucket: string;
   key: string;
   expiresIn: number;
+};
+
+export type LookupOptions = {
+  /** Attribute names to select (a projection); null/empty = every declared one. */
+  columns?: readonly string[] | null;
 };
 
 export type LookupEngineDeps = {
@@ -186,33 +198,44 @@ export class AttributeLookupEngine {
   constructor(private readonly deps: LookupEngineDeps) {}
 
   /**
-   * Run one plan's lookup for the held values. Returns the normalized rows
-   * (plural — 0..n is the contract), or null when `isStale` cut it short.
-   * Throws when a key axis is missing from `held` (a contract violation the
-   * caller surfaces as unreachable, never queries around).
+   * Run one TABLE hop's lookup for the held values. Returns the normalized
+   * rows (plural — 0..n is the contract), or null when `isStale` cut it
+   * short. Throws when a key axis is missing from `held` (a contract
+   * violation the caller surfaces as unreachable, never queries around).
+   *
+   * `columns` narrows the select list to a subset of the hop's declared
+   * attributes (the user's projection); unknown names are dropped, and an
+   * empty or complete set means the declared list.
    */
   lookup(
     plan: AttributePlanLike,
-    held: Record<string, HeldValue>,
+    hop: TableHopLike,
+    held: HeldMap,
     isStale: () => boolean = () => false,
+    options: LookupOptions = {},
   ): Promise<readonly AttributeRow[] | null> {
-    const keyValues = buildKeyValues(plan, held);
-    if (keyValues === null) {
+    const bound = buildKeyValues(hop, held);
+    if (bound === null) {
       return Promise.reject(
-        new Error("held values do not cover the plan's key columns"),
+        new Error("held values do not cover the hop's key columns"),
       );
     }
+    const statement = tableHopSql(hop, { columns: options.columns, many: bound.many });
+    const statementKey = `${hopKey(plan, hop)}${statement.shapeKey}`;
     return this.cachedQuery(
-      planIdentity(plan),
-      plan.lookup.sql,
-      keyValues,
-      plan.lookup.store,
+      statementKey,
+      statement.sql,
+      bound.params,
+      hop.lookup.store,
       isStale,
+      // An `IN` list's length is part of the statement: preparing one per
+      // distinct count would churn the statement LRU for nothing.
+      bound.many !== null,
     );
   }
 
   /**
-   * Synchronous result-LRU lookup: the rows for `(plan, held)` if this
+   * Synchronous result-LRU lookup: the rows for `(hop, held)` if this
    * session already ran that lookup — no connection, no query, no promise.
    * Powers the tracker's instant repeat-hover path (re-hovering an object
    * whose key tuple was already answered must not wait out the debounce).
@@ -220,30 +243,35 @@ export class AttributeLookupEngine {
    */
   peek(
     plan: AttributePlanLike,
-    held: Record<string, HeldValue>,
+    hop: TableHopLike,
+    held: HeldMap,
+    options: LookupOptions = {},
   ): readonly AttributeRow[] | null {
-    const keyValues = buildKeyValues(plan, held);
-    if (keyValues === null) return null;
-    return this.results.get(resultKey(planIdentity(plan), keyValues)) ?? null;
+    const bound = buildKeyValues(hop, held);
+    if (bound === null) return null;
+    const statement = tableHopSql(hop, { columns: options.columns, many: bound.many });
+    return this.results.get(resultKey(`${hopKey(plan, hop)}${statement.shapeKey}`, bound.params)) ?? null;
   }
 
   /**
-   * Pre-pay a plan's fixed costs — connection, scoped secret, prepared
+   * Pre-pay a hop's fixed costs — connection, scoped secret, prepared
    * statement — without running a query, so the first real lookup pays only
-   * the row read. Cheap to call repeatedly: a fully-warm plan returns
+   * the row read. Cheap to call repeatedly: a fully-warm hop returns
    * synchronously, and failures are silent (the lookup path re-attempts and
-   * surfaces them properly).
+   * surfaces them properly). The statement prepared is the ONE, full-width
+   * one; a projected statement is prepared on first use.
    */
-  warm(plan: AttributePlanLike): void {
+  warm(plan: AttributePlanLike, hop: TableHopLike): void {
     if (this.disposed) return;
-    const store = plan.lookup.store;
+    const store = hop.lookup.store;
+    const statementKey = hopKey(plan, hop);
     const grant = this.grants.get(store.id);
     const secretFresh =
       grant !== undefined &&
       this.installedSecrets.get(store.id) === grant &&
       grant.expiresAt > Date.now() + GRANT_EXPIRY_SKEW_MS;
     const statementReady =
-      this.preferLiteral || this.statements.get(planIdentity(plan)) !== undefined;
+      this.preferLiteral || this.statements.get(statementKey) !== undefined;
     if (secretFresh && statementReady) return;
 
     const grantReady = this.grantFor(store);
@@ -255,8 +283,8 @@ export class AttributeLookupEngine {
       if (!this.preferLiteral) {
         await this.ensureStatement(
           connection,
-          planIdentity(plan),
-          plan.lookup.sql,
+          statementKey,
+          tableHopSql(hop).sql,
         ).catch(() => undefined);
       }
     }).catch(() => undefined);
@@ -277,7 +305,7 @@ export class AttributeLookupEngine {
     } catch (error) {
       return Promise.reject(error);
     }
-    return this.cachedQuery(ref.key, ref.sql, [value], ref.store, () => false);
+    return this.cachedQuery(ref.key, ref.sql, [value], ref.store, () => false, false);
   }
 
   /**
@@ -453,6 +481,8 @@ export class AttributeLookupEngine {
     keyValues: readonly BindParam[],
     store: ParquetStoreLike,
     isStale: () => boolean,
+    /** Run as escaped-literal SQL regardless of the prepare probe. */
+    literal: boolean,
   ): Promise<readonly AttributeRow[] | null> {
     const cacheKey = resultKey(statementKey, keyValues);
     const cached = this.results.get(cacheKey);
@@ -476,7 +506,7 @@ export class AttributeLookupEngine {
       // meanwhile must still never issue SQL.
       if (this.disposed || isStale()) return null;
       const params: BindParam[] = [grantUrl(grant), ...keyValues];
-      const rows = await this.runQuery(connection, statementKey, sql, params);
+      const rows = await this.runQuery(connection, statementKey, sql, params, literal);
       this.results.set(cacheKey, rows);
       return rows;
     }).finally(() => {
@@ -585,8 +615,9 @@ export class AttributeLookupEngine {
     statementKey: string,
     sql: string,
     params: readonly BindParam[],
+    literal = false,
   ): Promise<readonly AttributeRow[]> {
-    if (!this.preferLiteral) {
+    if (!this.preferLiteral && !literal) {
       let entry: StatementEntry | null = null;
       try {
         entry = await this.ensureStatement(connection, statementKey, sql);
@@ -610,7 +641,8 @@ export class AttributeLookupEngine {
       }
     }
     const result = await connection.query(bindSqlLiteral(sql, params));
-    this.preferLiteral = true;
+    // A deliberate literal run says nothing about what the build can prepare.
+    if (!literal) this.preferLiteral = true;
     return result.toArray().map((row) => rowToRecord(row));
   }
 

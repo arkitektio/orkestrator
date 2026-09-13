@@ -1,31 +1,19 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import Zod from "zod";
 import { DetailImplementationFragment, ListDependencyFragment, ResolvedDependencyInput } from "../api/graphql";
-import { Port } from "../widgets/types";
+import { createPortResolver } from "../widgets/portResolver";
 import {
   buildZodSchema,
+  extractErrorMessages,
+  portHash,
   portToDefaults,
+  pruneUnmountedPorts,
   submittedDataToRekuestFormat,
 } from "../widgets/utils";
 
-const extractErrorMessages = (obj: Record<string, any>, prefix = ""): string[] => {
-  const out: string[] = [];
-  for (const [k, v] of Object.entries(obj)) {
-    const path = prefix ? `${prefix}.${k}` : k;
-    if (typeof v?.message === "string") out.push(`${path}: ${v.message}`);
-    else if (v && typeof v === "object") out.push(...extractErrorMessages(v, path));
-  }
-  return out;
-};
-
-export const portHash = (port: Port[]) => {
-  return port
-    .map((port) => `${port.key}-${port.kind}-${port.identifier}`)
-    .join("-");
-};
+export { portHash };
 
 const buildDependenciesSchema = (
   dependencies: ListDependencyFragment[],
@@ -110,33 +98,37 @@ export const useImplementationForm = (props: {
   mode?: "onChange" | "onBlur" | "onSubmit" | "onTouched" | "all";
   reValidateMode?: "onChange" | "onBlur" | "onSubmit";
 }) => {
-  const hash = portHash(props.implementation?.action.args || []);
+  const args = props.implementation?.action.args;
+  const hash = portHash(args || []);
+  const overwritesKey = JSON.stringify(props.overwrites || {});
+  const presetKey = JSON.stringify(props.presetDependencies || []);
 
-  const defaultValues = useCallback(async () => {
-    return {
-      args: portToDefaults(
-        props.implementation?.action.args || [],
-        props.overwrites || {},
-      ),
+  const buildDefaults = useCallback(
+    () => ({
+      args: portToDefaults(args || [], props.overwrites || {}),
       dependencies: props.presetDependencies || [],
-    };
-  }, [hash, props.overwrites, props.presetDependencies]);
+    }),
+    // The JSON keys stand in for the identity of the (often inline) objects.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hash, overwritesKey, presetKey],
+  );
 
-  const myResolver = useCallback(() => {
-    const argsSchema = buildZodSchema(props.implementation?.action.args || []);
-    const depsSchema = buildDependenciesSchema(props.implementation?.dependencies || []);
-
+  const resolver = useMemo(() => {
     const zodSchema = Zod.object({
-      args: argsSchema,
-      dependencies: depsSchema,
+      args: buildZodSchema(args || []),
+      dependencies: buildDependenciesSchema(props.implementation?.dependencies || []),
     });
-    return zodResolver(zodSchema);
-  }, [hash, props.additionalSchema, props.implementation?.dependencies]);
+    return createPortResolver(zodSchema, args || [], {
+      portsPath: ["args"],
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hash, props.implementation?.dependencies]);
 
   const { handleSubmit, ...form } = useForm({
-    defaultValues: defaultValues,
+    defaultValues: buildDefaults(),
+    mode: props.mode || "onSubmit",
     reValidateMode: props.reValidateMode || "onChange",
-    resolver: myResolver(),
+    resolver,
   });
 
   const overWrittenHandleSubmit = useCallback(
@@ -144,9 +136,11 @@ export const useImplementationForm = (props: {
       return handleSubmit(
         (data) => {
           onSubmit({
-            args: submittedDataToRekuestFormat(
-              data.args || {},
-              props.implementation?.action.args || [],
+            args: pruneUnmountedPorts(
+              submittedDataToRekuestFormat(data.args || {}, args || []),
+              args || [],
+              resolver.mountedNames(),
+              ["args"],
             ),
             dependencies: data.dependencies,
           });
@@ -159,19 +153,19 @@ export const useImplementationForm = (props: {
         },
       );
     },
-    [handleSubmit, hash],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [handleSubmit, hash, resolver],
   );
 
+  const lastResetKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (props.doNotAutoReset) return;
-    form.reset({
-      args: portToDefaults(
-        props.implementation?.action.args || [],
-        props.overwrites || {},
-      ),
-      dependencies: props.presetDependencies || [],
-    });
-  }, [hash]);
+    const key = `${hash}:${overwritesKey}:${presetKey}`;
+    if (lastResetKeyRef.current === key) return;
+    lastResetKeyRef.current = key;
+    form.reset(buildDefaults());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hash, overwritesKey, presetKey, props.doNotAutoReset]);
 
   return { ...form, handleSubmit: overWrittenHandleSubmit };
 };

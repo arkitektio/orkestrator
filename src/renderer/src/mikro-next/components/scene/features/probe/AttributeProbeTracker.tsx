@@ -2,16 +2,21 @@ import { useEffect } from "react";
 import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
 import { acquireAttributeService } from "@/mikro-next/lib/attributes/attributeService";
 import { createAttributeResolver } from "@/mikro-next/lib/attributes/attributeResolver";
+import {
+  executeOptionsFor,
+  selectHops,
+  selectionSignature,
+  type AttributeSelection,
+} from "@/mikro-next/lib/attributes/attributeSelection";
 import type {
   AttributePlanLike,
+  HopMeta,
   PlanRowsState,
 } from "@/mikro-next/lib/attributes/attributeTypes";
-import { isMeshSample, planIdentity } from "@/mikro-next/lib/attributes/attributeTypes";
+import { hopKey, hopMetasOf, isMeshSample } from "@/mikro-next/lib/attributes/attributeTypes";
 import type { AxisCoords } from "@/mikro-next/lib/coords/axisPath";
 import { applyPathToCoords } from "@/mikro-next/lib/coords/axisPath";
 import {
-  buildHeld,
-  isBackground,
   probeCoordsFor,
   resolveSampleIndex,
   type HeldValue,
@@ -19,6 +24,7 @@ import {
 import { sceneAttributeKey, type SceneAttributeKey } from "../../platform/stores/viewerStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import type { ProbeResult } from "../../platform/probe/probeTypes";
+import { probeSystemIdFor } from "../../platform/probe/probeTargeting";
 import type { LayerState } from "../../platform/model/layerModel";
 import { buildSliceMap, resolveFixedDimIndex } from "../../platform/coords/selection";
 import { collectionSpatialAxes } from "../../platform/model/collectionPlacement";
@@ -76,15 +82,7 @@ export function AttributeProbeTracker() {
         LayerState["lens"]["dataset"]["dataArrays"][number] | null
       >((best, da) => (best === null || da.level < best.level ? da : best), null);
 
-    /**
-     * The probed layer's level-0 system id — the frame `voxelIndex` is
-     * expressed in (the composeLayerAffine reduction), so the server-resolved
-     * plan path starts exactly where our coordinates live.
-     */
-    const systemIdFor = (layer: LayerState): string | null =>
-      level0Of(layer)?.coordinateSystem?.id ??
-      layer.lens.dataset.intrinsicSystem?.id ??
-      null;
+    const systemIdFor = probeSystemIdFor;
 
     /**
      * The probed point as named level-0 coordinates: spatial axes from the
@@ -197,32 +195,32 @@ export function AttributeProbeTracker() {
       }
     };
 
-    /**
-     * Display metadata per plan, memoized on the plan LIST's identity — the
-     * attribute service hands back the same array for a system for the life of
-     * the session, so this collapses to one build per system instead of one
-     * per probe.
-     */
-    const planMetaCache = new WeakMap<
+    const selectionNow = (): AttributeSelection => viewerStore.getState().attributeSelection;
+
+    /** The hops that run for these plans under the current selection, as
+     * display metadata — memoized on the plan LIST's identity and the
+     * selection's, so a re-hover costs no rebuild. */
+    const hopMetaCache = new WeakMap<
       readonly AttributePlanLike[],
-      NonNullable<ReturnType<typeof viewerStore.getState>["probedAttributes"]>["planMeta"]
+      WeakMap<AttributeSelection, readonly HopMeta[]>
     >();
-    const planMetaFor = (plans: readonly AttributePlanLike[]) => {
-      const cached = planMetaCache.get(plans);
+    const hopMetasFor = (
+      plans: readonly AttributePlanLike[],
+      selection: AttributeSelection,
+    ): readonly HopMeta[] => {
+      let bySelection = hopMetaCache.get(plans);
+      if (!bySelection) {
+        bySelection = new WeakMap();
+        hopMetaCache.set(plans, bySelection);
+      }
+      const cached = bySelection.get(selection);
       if (cached) return cached;
-      const meta = Object.fromEntries(
-        plans.map((plan) => [
-          planIdentity(plan),
-          {
-            tableName: plan.table.name,
-            tableId: plan.table.id,
-            attributes: plan.lookup.attributes,
-          },
-        ]),
-      );
-      planMetaCache.set(plans, meta);
-      return meta;
+      const metas = plans.flatMap((plan) => hopMetasOf(plan, selectHops(selection, plan)));
+      bySelection.set(selection, metas);
+      return metas;
     };
+    const metaRecord = (metas: readonly HopMeta[]) =>
+      Object.fromEntries(metas.map((meta) => [meta.hopKey, meta]));
 
     // Warn-once diagnostics: an unreachable plan is an honest absence in the
     // UI, but a silent one is undebuggable — say WHERE it died, once per
@@ -240,68 +238,93 @@ export function AttributeProbeTracker() {
       key: SceneAttributeKey,
       plan: AttributePlanLike,
       isStale: () => boolean,
-    ): Promise<PlanRowsState | null> => {
+      deliver: (hopKey: string, state: PlanRowsState) => void,
+    ): Promise<void> => {
+      const options = executeOptionsFor(selectionNow(), plan);
+      const unreachableAll = (reason: string, detail: unknown) => {
+        for (const hop of options.hops ?? plan.hops) {
+          const id = hopKey(plan, hop);
+          warnUnreachable(id, reason, detail);
+          deliver(id, { status: "unreachable", rows: [] });
+        }
+      };
       // Mesh probes: the instance id IS the field value — value-known path.
       if (key.instanceValue !== undefined) {
         const coords = meshCoordsFor(key.layerId, key);
         if (!coords) {
-          warnUnreachable(planIdentity(plan), "mesh probe's collection missing from scene", {
-            layerId: key.layerId,
-          });
-          return { status: "unreachable", rows: [] };
+          unreachableAll("mesh probe's collection missing from scene", { layerId: key.layerId });
+          return;
         }
-        const state = await service.executePlanWithValue(plan, coords, key.instanceValue, {
+        await service.executePlanWithValue(plan, coords, key.instanceValue, {
+          ...options,
           isStale,
           onUnreachable: warnUnreachable,
+          onHop: deliver,
         });
-        return state;
+        return;
       }
 
       const layer = layerById(key.layerId);
       if (!layer) {
-        warnUnreachable(planIdentity(plan), "probed layer missing from scene", {
-          layerId: key.layerId,
-        });
-        return { status: "unreachable", rows: [] };
+        unreachableAll("probed layer missing from scene", { layerId: key.layerId });
+        return;
       }
-      const state = await service.executePlanAt(plan, coordsFor(layer, key), {
+      const landingKey = hopKey(plan, plan.hops[0]);
+      await service.executePlanAt(plan, coordsFor(layer, key), {
+        ...options,
         isStale,
         sampleSync: residentSamplerFor(plan),
         onUnreachable: warnUnreachable,
+        onHop: (id, state) => {
+          deliver(id, state);
+          // The landing carries the sampled id — the one the mesh marking reads.
+          if (id === landingKey && !isStale()) syncMeshSelection(key, state);
+        },
       });
-      if (state !== null && !isStale()) syncMeshSelection(key, state);
-      return state;
     };
 
-    // Warm each system's plans once at discovery: secret creation and
-    // statement prepare then run on the engine's chain WHILE the first hover
-    // is still zarr-sampling, instead of serially after it.
-    const warmedSystems = new Set<string>();
+    // Warm each hop once, as it first becomes selected: secret creation,
+    // statement prepare and a matrix's `indptr` then land on the engine's
+    // chain WHILE the first hover is still zarr-sampling, instead of serially
+    // after it. Keyed per hop rather than per system so a hop switched on
+    // later warms then, not never.
+    const warmedHops = new Set<string>();
+    const warmSelected = (plans: readonly AttributePlanLike[], selection: AttributeSelection) => {
+      for (const plan of plans) {
+        for (const hop of selectHops(selection, plan)) {
+          const id = hopKey(plan, hop);
+          if (warmedHops.has(id)) continue;
+          warmedHops.add(id);
+          service.warmHop(plan, hop);
+        }
+      }
+    };
     const resolver = createAttributeResolver<SceneAttributeKey>({
       resolvePlans: async (key) => {
         const plans = await service.plansFor(key.systemId);
-        if (!warmedSystems.has(key.systemId)) {
-          warmedSystems.add(key.systemId);
-          for (const plan of plans) service.engine.warm(plan);
-        }
-        return plans;
+        const selection = selectionNow();
+        warmSelected(plans, selection);
+        // Only plans with a hop to run: a plan the user silenced whole never
+        // begins, so the HUD shows no empty block for it.
+        return plans.filter((plan) => selectHops(selection, plan).length > 0);
       },
       executePlan,
-      begin: (key, plans) => viewerStore.getState().beginProbedAttributes(key, plans),
-      deliver: (key, planKey, state) =>
-        viewerStore.getState().mergeAttributeRows(key, planKey, state),
+      begin: (key, plans) =>
+        viewerStore.getState().beginProbedAttributes(key, hopMetasFor(plans, selectionNow())),
+      deliver: (key, id, state) => viewerStore.getState().mergeAttributeRows(key, id, state),
     });
 
     const keyOf = (probe: ProbeResult): SceneAttributeKey | null => {
+      const signature = selectionSignature(selectionNow());
       if (probe.strategy === "mesh") {
         const systemId = meshLayerById(probe.layerId)?.collection?.coordinateSystem.id ?? null;
         if (!systemId) return null;
-        return sceneAttributeKey(probe, systemId);
+        return sceneAttributeKey(probe, systemId, signature);
       }
       const layer = layerById(probe.layerId);
       const systemId = layer ? systemIdFor(layer) : null;
       if (!systemId) return null;
-      return sceneAttributeKey(probe, systemId);
+      return sceneAttributeKey(probe, systemId, signature);
     };
 
     /**
@@ -312,10 +335,12 @@ export function AttributeProbeTracker() {
      * runs unchanged, so the read-avoidance contract holds.
      */
     const tryInstant = (key: SceneAttributeKey): boolean => {
-      const plans = service.peekPlans(key.systemId);
-      if (plans === null) return false;
+      const discovered = service.peekPlans(key.systemId);
+      if (discovered === null) return false;
+      const selection = selectionNow();
+      const plans = discovered.filter((plan) => selectHops(selection, plan).length > 0);
       if (plans.length === 0) {
-        viewerStore.getState().beginProbedAttributes(key, plans);
+        viewerStore.getState().beginProbedAttributes(key, []);
         return true;
       }
       // Mesh probes carry the field value with them — no residency needed.
@@ -326,13 +351,15 @@ export function AttributeProbeTracker() {
       if (!startCoords) return false;
 
       const states: [string, PlanRowsState][] = [];
+      const landings: PlanRowsState[] = [];
       for (const plan of plans) {
-        const planKey = planIdentity(plan);
+        const options = executeOptionsFor(selection, plan);
+        const hops = options.hops ?? plan.hops;
         const mapped = plan.path.length
           ? applyPathToCoords(plan.path, startCoords)
           : startCoords;
         if (mapped === null) {
-          states.push([planKey, { status: "unreachable", rows: [] }]);
+          for (const hop of hops) states.push([hopKey(plan, hop), { status: "unreachable", rows: [] }]);
           continue;
         }
         let value: HeldValue;
@@ -343,39 +370,30 @@ export function AttributeProbeTracker() {
           const index = resolveSampleIndex(plan, mapped);
           if (index === null) {
             // Also the mesh-sample-plan case under a voxel probe: no array.
-            states.push([planKey, { status: "unreachable", rows: [] }]);
+            for (const hop of hops) states.push([hopKey(plan, hop), { status: "unreachable", rows: [] }]);
             continue;
           }
           const resident = residentSamplerFor(plan)?.(index) ?? null;
           if (resident === null) return false; // not resident: needs the async path
           value = resident;
         }
-        if (isBackground(value)) {
-          states.push([
-            planKey,
-            { status: "background", rows: [], sampledValue: value, sampleSource },
-          ]);
-          continue;
+        const chain = service.peekPlanWithValue(plan, mapped, value, sampleSource, options);
+        if (chain === null) return false; // a cache miss somewhere: a real lookup is needed
+        for (const hop of hops) {
+          const id = hopKey(plan, hop);
+          const state = chain[id];
+          if (!state) return false;
+          states.push([id, state]);
+          if (hop.index === 0) landings.push(state);
         }
-        const held = buildHeld(plan, mapped, value);
-        if (held === null) {
-          states.push([planKey, { status: "unreachable", rows: [] }]);
-          continue;
-        }
-        const rows = service.peekRows(plan, held);
-        if (rows === null) return false; // LRU miss: a real lookup is needed
-        states.push([
-          planKey,
-          { status: "rows", rows, sampledValue: value, sampleSource },
-        ]);
       }
 
       const store = viewerStore.getState();
-      // ONE commit for N plans (and none at all when nothing changed): this
+      // ONE commit for N hops (and none at all when nothing changed): this
       // path runs whenever the cursor re-crosses an already-visited voxel, and
-      // `begin` + a `merge` per plan woke every subscriber 1+N times for it.
-      store.commitProbedAttributes(key, planMetaFor(plans), states);
-      for (const [, state] of states) syncMeshSelection(key, state);
+      // `begin` + a `merge` per hop woke every subscriber 1+N times for it.
+      store.commitProbedAttributes(key, metaRecord(hopMetasFor(plans, selection)), states);
+      for (const state of landings) syncMeshSelection(key, state);
       return true;
     };
 
@@ -415,12 +433,19 @@ export function AttributeProbeTracker() {
       );
 
     let lastProbe = viewerStore.getState().probeReadout;
+    let lastSelection = viewerStore.getState().attributeSelection;
     request(lastProbe);
     const unsubscribe = viewerStore.subscribe((state) => {
       if (state.probeReadout !== lastProbe) {
         // Exact-value merges replace the probe object too, but the fetch key
         // (voxel + signature) is unchanged, so the resolver dedupes them.
         lastProbe = state.probeReadout;
+        request(lastProbe);
+      } else if (state.attributeSelection !== lastSelection) {
+        // What a hover fetches changed: the same point is a new request (the
+        // selection's signature is in the key), so the readout refreshes
+        // without waiting for the cursor to move.
+        lastSelection = state.attributeSelection;
         request(lastProbe);
       }
     });

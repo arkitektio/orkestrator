@@ -43,7 +43,6 @@ const store = { id: "store-a", bucket: "b", key: "k" };
 const meshPlan = (tableId: string, keyColumn: string): AttributePlanLike =>
   ({
     edge: { id: "edge", version: 1 },
-    table: { id: tableId, name: tableId },
     path: [],
     sample: {
       __typename: "MeshSample",
@@ -53,12 +52,22 @@ const meshPlan = (tableId: string, keyColumn: string): AttributePlanLike =>
       passthrough: false,
       store: { id: "fabriks", key: "k", bucket: "b", path: "p" },
     },
-    lookup: {
-      store,
-      keyColumns: [{ axis: "object_id", column: { id: "c", name: keyColumn } }],
-      attributes: [],
-      sql: "",
-    },
+    hops: [
+      {
+        index: 0,
+        parent: null,
+        cardinality: "ONE",
+        via: null,
+        joinPath: [],
+        table: { id: tableId, name: tableId },
+        lookup: {
+          kind: "TABLE",
+          store,
+          keyColumns: [{ axis: "object_id", column: { id: "c", name: keyColumn } }],
+          attributes: [],
+        },
+      },
+    ],
   }) as unknown as AttributePlanLike;
 
 /** An engine stand-in: one canned (object_id, value) result per read. */

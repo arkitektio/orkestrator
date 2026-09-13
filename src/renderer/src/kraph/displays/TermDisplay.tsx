@@ -2,6 +2,7 @@ import { DisplayWidgetProps } from "@/lib/display/registry";
 import { KraphTerm } from "@/linkers";
 import { useGetTermQuery } from "../api/graphql";
 import { termKindLabel, termTint } from "../lib/terms";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 export const TermDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetTermQuery({ variables: { id: props.object } });
@@ -32,12 +33,18 @@ export const TermDisplay = (props: DisplayWidgetProps) => {
           className="absolute inset-x-0 top-0 h-1"
           style={{ background: termTint(term.color) }}
         />
-        {term.image?.presignedUrl && (
-          <img
-            src={term.image.presignedUrl}
-            alt={term.label ?? term.key}
-            className="w-full h-20 object-cover rounded"
-          />
+        {term.image && (
+          <WithKraphMediaUrl media={term.image}>
+            {(url) => (
+              <img
+                src={url}
+                alt={term.label ?? term.key}
+                loading="lazy"
+                height={80}
+                className="w-full h-20 object-cover rounded"
+              />
+            )}
+          </WithKraphMediaUrl>
         )}
         <div className="font-semibold text-sm">{term.label || term.key}</div>
         <div className="text-xs text-muted-foreground">

@@ -8,6 +8,7 @@ import {
 import { Action, ActionState } from "@/lib/localactions/LocalActionProvider";
 import { CommandGroup } from "cmdk";
 import { Sparkles } from "lucide-react";
+import { useMemo } from "react";
 import { CommandActionRow } from "../CommandActionRow";
 import type { OnDone, PassDownProps } from "../types";
 
@@ -44,16 +45,19 @@ export const Actions = (props: {
     search: props.filter,
   });
 
-  const actions = [...matchingActions].sort((left, right) => {
-    const leftPinned = pinnedActionIds.includes(left.id);
-    const rightPinned = pinnedActionIds.includes(right.id);
+  const actions = useMemo(() => {
+    const pinned = new Set(pinnedActionIds);
+    return [...matchingActions].sort((left, right) => {
+      const leftPinned = pinned.has(left.id);
+      const rightPinned = pinned.has(right.id);
 
-    if (leftPinned !== rightPinned) {
-      return leftPinned ? -1 : 1;
-    }
+      if (leftPinned !== rightPinned) {
+        return leftPinned ? -1 : 1;
+      }
 
-    return left.action.title.localeCompare(right.action.title);
-  });
+      return left.action.title.localeCompare(right.action.title);
+    });
+  }, [matchingActions, pinnedActionIds]);
 
   if (actions.length === 0) {
     return null;

@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from "react";
-import { createDefaultWorker } from "@/lib/zarr/runner";
 import { workerPool } from "@/mikro-next/workers/pool";
 import { assertWebGPUSupported } from "@/mikro-next/components/scene/platform/gpu/webgpuSupport";
 import type { MikroClient } from "@/lib/zarr/store/types";
@@ -64,7 +63,8 @@ export const useDatalayerWarmup = (client: MikroClient): void => {
 
     // Zarr decode workers: module workers (zstd/blosc bundles) cost tens of ms
     // each to spawn and evaluate. Idempotent — only ever fills empty slots.
-    workerPool.prewarm(createDefaultWorker, 8);
+    // Whole pool, not a literal count: 8 left half of it cold on 16+ cores.
+    workerPool.prewarm();
   }, [client]);
 };
 

@@ -6,7 +6,7 @@ import { buildAssignInput } from "@/rekuest/assign";
 import {
   TaskEventFragment,
   TaskEventKind,
-  useActionByHashQuery
+  useActionIdByHashQuery,
 } from "../api/graphql";
 import { isTerminalEvent, trackTask } from "../lib/taskTracker";
 import { useAssign } from "./useAssign";
@@ -22,7 +22,8 @@ export const useHashActionWithProgress = (
   options: useActionOptions
 ) => {
 
-  const { data } = useActionByHashQuery({
+  // Only the id / existence is needed here — skip the full `Ports` subtree.
+  const { data } = useActionIdByHashQuery({
     variables: {
       hash: options.hash,
     },

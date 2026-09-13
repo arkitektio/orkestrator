@@ -49,7 +49,7 @@ import {
   ReactiveNodeSuggestions,
   StreamPort,
 } from "../../types";
-import { useEditRiver } from "../context";
+import { useEditFlowStore } from "../context";
 import { ContextualContainer } from "./ContextualContainer";
 
 export const SearchForm = (props: { onSubmit: (data: any) => void }) => {
@@ -200,7 +200,7 @@ export const TargetDropContextual = (props: {
   params: DropContextualParams;
   ports: FlussReturnPortFragment[] | null | undefined;
 }) => {
-  const { addContextualNode } = useEditRiver();
+  const addContextualNode = useEditFlowStore((s) => s.addContextualNode);
 
   const client = useRekuest();
   const [variables, setVariables] = useState<AllActionsQueryVariables>({
@@ -387,7 +387,7 @@ export const SourceDropContextual = (props: {
   params: DropContextualParams;
   ports: FlussArgPortFragment[] | null | undefined;
 }) => {
-  const { addContextualNode } = useEditRiver();
+  const addContextualNode = useEditFlowStore((s) => s.addContextualNode);
 
   const client = useRekuest();
   const [variables, setVariables] = useState<AllActionsQueryVariables>({

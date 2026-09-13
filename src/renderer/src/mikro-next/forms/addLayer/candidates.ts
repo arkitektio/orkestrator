@@ -25,23 +25,60 @@
  * The old shape listed all three with a reason attached. A reason is only worth
  * a row when the thing is something you would otherwise reach for; a pyramid
  * level never is.
+ *
+ * What each row BECOMES is not decided here. `engine.ts` reads it off the
+ * lens's structure, the server's capability sets and the derivation graph
+ * (`lineage.ts`); this module only assembles the rows, hands each its
+ * suggestion, and orders them by their relation to what the scene already
+ * draws.
  */
 
 import { residentName } from "@/mikro-next/components/coordinates/residents";
 import type {
   AddLayerCandidateFragment,
   ArrayDatasetSpec,
-  ColumnRole,
 } from "../../api/graphql";
 import { lensLabel } from "../../lenses";
+import {
+  emptyStaged,
+  relationToScene,
+  suggestLensKinds,
+  suggestTableKinds,
+  extentOf,
+  type Capabilities,
+  type LayerKind,
+  type LensSuggestion,
+  type Relation,
+  type StagedScene,
+  type TableKind,
+  type TableSuggestion,
+} from "./engine";
+import {
+  nodeOfCandidate,
+  treeSpaces,
+  type DerivationGraph,
+  type NodeKey,
+} from "./spaceGraph";
 
-/**
- * The one enum member this module compares against, spelled as its wire value.
- * Type-only imports keep the file free of runtime imports from the generated
- * api — that module pulls in the Apollo client and with it `window`, and this
- * one is pure logic that runs in vitest's `node` environment.
- */
-const TRACK_ID = "TRACK_ID" as ColumnRole;
+// The kind vocabulary and the structural gate live in the engine now, with
+// the lineage rules that order within the gate; they are re-exported so the
+// picker's callers keep one import. Type-only imports of the generated api
+// keep the file free of runtime imports from it — that module pulls in the
+// Apollo client and with it `window`, and this one is pure logic that runs
+// in vitest's `node` environment.
+export {
+  LAYER_KIND_INFO,
+  TABLE_KIND_INFO,
+  inferLensKinds,
+  inferTableKinds,
+  isRgbCapable,
+  isVectorField,
+  isVolumetric,
+  hasPhasorAxis,
+  type Capabilities,
+  type LayerKind,
+  type TableKind,
+} from "./engine";
 
 export type Candidate = AddLayerCandidateFragment;
 
@@ -58,16 +95,6 @@ export type DatasetCandidate = Extract<
   { __typename: "ArrayDataset" }
 >;
 
-/**
- * Which lenses the server would accept as a drawable / label layer, as id sets.
- * `null` means the capability query has not answered yet — every lens is offered
- * rather than wrongly hidden, and the server stays the last word either way.
- */
-export type Capabilities = {
-  drawable: ReadonlySet<string>;
-  labels: ReadonlySet<string>;
-} | null;
-
 /** The space that makes an entry reachable — a caption, not a heading. */
 export type SpaceRef = { id: string; name: string; isWorld: boolean };
 
@@ -78,60 +105,12 @@ export type SpaceLike = {
   residents: readonly Candidate[];
 };
 
+/** The scene's world: the root of the children tree, and every row's frame. */
+export type WorldRef = { id: string; name: string };
+
 // ---------------------------------------------------------------------------
 // What a source becomes
 // ---------------------------------------------------------------------------
-
-/**
- * The layer kinds a lens can become, named for what you get rather than for the
- * mutation behind them. Which one is *chosen* is never asked: `inferLensKinds`
- * decides, and the alternatives stay behind a disclosure for the case where the
- * inference is not what someone wanted.
- */
-export type LayerKind = "LABEL" | "VECTOR" | "VOLUME" | "INTENSITY" | "RGB";
-
-export const LAYER_KIND_INFO: Record<
-  LayerKind,
-  { title: string; description: string }
-> = {
-  LABEL: {
-    title: "Segmentation",
-    description: "Object ids, drawn as coloured regions you can click",
-  },
-  VECTOR: {
-    title: "Vector field",
-    description: "Per-voxel vectors, drawn as glyphs coloured by magnitude",
-  },
-  VOLUME: {
-    title: "Volume",
-    description: "The whole stack rendered at once, projected through z",
-  },
-  INTENSITY: {
-    title: "Image",
-    description: "One channel at a time, through a colormap",
-  },
-  RGB: {
-    title: "Colour image",
-    description: "Three channels mapped to red, green and blue",
-  },
-};
-
-/** How a table's rows are drawn. Same treatment: inferred, overridable. */
-export type TableKind = "TRACK" | "POINT";
-
-export const TABLE_KIND_INFO: Record<
-  TableKind,
-  { title: string; description: string }
-> = {
-  TRACK: {
-    title: "Tracks",
-    description: "Rows joined into trajectories by their track id",
-  },
-  POINT: {
-    title: "Points",
-    description: "One mark per row, at its coordinates",
-  },
-};
 
 /** One way of looking at a dataset, and what it would become. */
 export type LensOption = {
@@ -142,9 +121,19 @@ export type LensOption = {
   space: SpaceRef;
   /** Every kind the server would accept, the inferred one first. */
   kinds: LayerKind[];
+  /** The ranking behind `kinds`: its evidence, notes and first-frame defaults. */
+  suggestion: LensSuggestion;
 };
 
-export type DatasetEntry = {
+/** What every entry knows about its place in the scene's lineage. */
+type Related = {
+  /** The container this entry is, in the derivation graph. */
+  nodeKey: NodeKey;
+  /** How it relates to what the scene already draws, or null for no relation. */
+  relation: Relation | null;
+};
+
+export type DatasetEntry = Related & {
   kind: "dataset";
   key: string;
   id: string;
@@ -156,7 +145,7 @@ export type DatasetEntry = {
   lenses: LensOption[];
 };
 
-export type TableEntry = {
+export type TableEntry = Related & {
   kind: "table";
   key: string;
   table: TableCandidate;
@@ -165,9 +154,10 @@ export type TableEntry = {
   space: SpaceRef;
   /** Inferred first, as everywhere else. */
   kinds: TableKind[];
+  suggestion: TableSuggestion;
 };
 
-export type MeshEntry = {
+export type MeshEntry = Related & {
   kind: "mesh";
   key: string;
   mesh: MeshCandidate;
@@ -176,7 +166,7 @@ export type MeshEntry = {
   space: SpaceRef;
 };
 
-export type NetworkEntry = {
+export type NetworkEntry = Related & {
   kind: "network";
   key: string;
   network: NetworkCandidate;
@@ -185,7 +175,7 @@ export type NetworkEntry = {
   space: SpaceRef;
 };
 
-export type AnnotationEntry = {
+export type AnnotationEntry = Related & {
   kind: "annotation";
   key: string;
   collection: AnnotationCandidate;
@@ -213,101 +203,6 @@ export type Source =
   | { kind: "annotation"; entry: AnnotationEntry };
 
 // ---------------------------------------------------------------------------
-// Inference
-// ---------------------------------------------------------------------------
-
-const extentOf = (lens: LensCandidate, axis: string | null | undefined) => {
-  if (!axis) return 0;
-  const index = lens.axisNames.indexOf(axis);
-  return index < 0 ? 0 : (lens.shape[index] ?? 0);
-};
-
-/**
- * Whether this lens is worth rendering as a volume.
- *
- * The z *extent*, not the presence of a z axis: `renderAxes.z` is set for
- * anything volumetric and `spec: VOLUME` "holds whenever a z axis is present,
- * even if it carries a single plane" — so both would call a single-plane stack a
- * volume, and volume-render one slice of data.
- */
-export const isVolumetric = (lens: LensCandidate): boolean =>
-  extentOf(lens, lens.renderAxes?.z) > 1;
-
-/**
- * Whether RGB is even offerable: three channels to map to red, green and blue.
- *
- * Offerable, never inferred. A three-long channel axis in microscopy is three
- * fluorescence channels far more often than it is an RGB triplet, so guessing
- * would be wrong most of the time on this data.
- */
-export const isRgbCapable = (lens: LensCandidate): boolean =>
-  extentOf(lens, lens.renderAxes?.intensity) >= 3;
-
-/**
- * Whether this lens IS a vector field a glyph can draw: a DISPLACEMENT value
- * axis of 2 or 3 components, no wider than the spatial axes. The same three
- * conditions `createVectorLayer` refuses on, asked as a predicate — and like
- * LABEL's CATEGORIZED edge, the axis type is something an author STATED, which
- * is why (unlike RGB) it is allowed to decide the inference outright.
- */
-export const isVectorField = (lens: LensCandidate): boolean => {
-  const components = extentOf(lens, lens.renderAxes?.vector);
-  const spatial = lens.renderAxes?.z != null ? 3 : 2;
-  return components >= 2 && components <= 3 && components <= spatial;
-};
-
-/**
- * What a lens becomes, in preference order — the first is what it becomes
- * without being asked.
- *
- * A label wins outright when the server says the lens is one: `asLayer: LABEL`
- * requires a primary derivation declaring CATEGORIZED, so a lens that qualifies
- * *is* a mask, and drawing a mask as intensities is never what was wanted.
- * Otherwise real z extent means a volume, and everything else is a plain image.
- */
-export const inferLensKinds = (
-  lens: LensCandidate,
-  capabilities: Capabilities,
-): LayerKind[] => {
-  // Unknown capabilities are optimistic about the *set* — better to let the
-  // server refuse a creation than to hide a lens the picker was merely unsure
-  // about — but never about the choice. Optimism used to cost nothing, when both
-  // kinds were offered side by side and someone picked; now the first entry is
-  // what gets created without being asked, and guessing "mask" at every ordinary
-  // stack for the length of one round trip is a wrong default, not a generous
-  // one. So an unconfirmed LABEL is offered last, and only leads once the server
-  // has actually said the lens is one.
-  const answered = capabilities !== null;
-  const image = capabilities?.drawable.has(lens.id) ?? true;
-  const label = capabilities?.labels.has(lens.id) ?? true;
-
-  const kinds: LayerKind[] = [];
-  if (label && answered) kinds.push("LABEL");
-  // A vector field wins over every raster reading, and offers them only where
-  // there is genuinely a channel axis beside the field: the server now REFUSES
-  // `createIntensityLayer` with the axis omitted on such a lens, because drawing
-  // the components as one grey picture was the wrong picture this kind closed.
-  if (isVectorField(lens)) {
-    kinds.push("VECTOR");
-    if (image && lens.renderAxes?.intensity) kinds.push("INTENSITY");
-    return kinds;
-  }
-  if (image) {
-    if (isVolumetric(lens)) kinds.push("VOLUME");
-    kinds.push("INTENSITY");
-    if (isRgbCapable(lens)) kinds.push("RGB");
-  }
-  if (label && !answered) kinds.push("LABEL");
-  return kinds;
-};
-
-/** Tracks when the rows can be joined into them, points otherwise. */
-export const inferTableKinds = (table: TableCandidate): TableKind[] =>
-  table.columns.some((column) => column.role === TRACK_ID)
-    ? ["TRACK", "POINT"]
-    : ["POINT"];
-
-// ---------------------------------------------------------------------------
 // Building the sections
 // ---------------------------------------------------------------------------
 
@@ -318,31 +213,58 @@ const columnSummary = (table: TableCandidate) =>
   table.description || table.columns.map((column) => column.name).join(", ");
 
 /**
- * Every source reachable from a scene's world, grouped by what it is.
+ * Every source under a scene's world, grouped by what it is.
+ *
+ * The rows come from the world's children tree (`treeSpaces`): the world
+ * itself, then every space an edge lands in from below, level by level. When
+ * the server's `placedSystems` is given it is the last word on which of those
+ * spaces are offered — a tree walk cannot know which chains condense to one
+ * affine map — and the world is always offered, since data sitting IN it is
+ * trivially composable there.
  *
  * A dataset is assembled from two directions and keyed by its id, because the
  * two halves need not share a space: the `ArrayDataset` resident carries the
  * name and the spec, its `Lens` residents carry what can actually be drawn. A
  * lens whose dataset is not itself a resident still yields an entry — the lens
  * knows its dataset — and a dataset with no drawable lens yields none.
- *
- * The world's own residents are asked for separately and deduped here: whether
- * `placedSystems` includes the world itself is not stated, and data sitting IN
- * the world is trivially composable there.
  */
 export const buildSections = (input: {
-  world: SpaceLike;
-  placedSystems: readonly SpaceLike[];
+  world: WorldRef;
+  /** The world's component (`graphFromComponent`), children walked from the world. */
+  graph: DerivationGraph;
+  /** The server's placeability answer, as space ids. Omitted: every space in the tree. */
+  placeable?: ReadonlySet<string>;
   capabilities: Capabilities;
   search: string;
+  /** What the scene already draws. Defaults to nothing. */
+  staged?: StagedScene;
 }): Section[] => {
-  const { world, placedSystems, capabilities } = input;
+  const { world, graph, capabilities } = input;
+  const staged = input.staged ?? emptyStaged();
   const search = input.search.trim().toLowerCase();
 
-  const others = placedSystems
-    .filter((space) => space.id !== world.id)
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  // How a candidate relates to the scene, from its node in the graph. A node
+  // the graph does not know (a resident with no space) has no relation.
+  const relate = (
+    candidate: { __typename: string; id: string; dataset?: { id: string } },
+    channels = 1,
+  ): Related => {
+    const node = nodeOfCandidate(graph, candidate);
+    return {
+      nodeKey: node?.key ?? `${candidate.__typename}:${candidate.id}`,
+      relation: node ? relationToScene(graph, node, staged, channels) : null,
+    };
+  };
+
+  // The residents were fetched as the generated candidate fragment; the graph
+  // holds them structurally typed, so the cast only restates what was put in.
+  const spaces = treeSpaces(graph, input.placeable).map(
+    (space): SpaceLike => ({
+      id: space.id,
+      name: space.id === world.id ? world.name : space.name,
+      residents: space.residents as readonly Candidate[],
+    }),
+  );
 
   const datasets = new Map<string, DatasetEntry>();
   const tables: TableEntry[] = [];
@@ -370,12 +292,13 @@ export const buildSections = (input: {
       description: dataset.description,
       specs: specs ?? [],
       lenses: [],
+      ...relate({ __typename: "ArrayDataset", id: dataset.id }),
     };
     datasets.set(dataset.id, created);
     return created;
   };
 
-  for (const space of [world, ...others]) {
+  for (const space of spaces) {
     const spaceRef: SpaceRef = {
       id: space.id,
       name: space.name,
@@ -385,23 +308,32 @@ export const buildSections = (input: {
     for (const resident of space.residents) {
       switch (resident.__typename) {
         case "Lens": {
-          const kinds = inferLensKinds(resident, capabilities);
+          const suggestion = suggestLensKinds(graph, resident, capabilities, staged);
           // Not drawable as anything — the server would refuse the creation, so
           // the lens is not offered at all.
-          if (!kinds.length) break;
-          datasetEntry(resident.dataset).lenses.push({
+          if (!suggestion.kinds.length) break;
+          const entry = datasetEntry(resident.dataset, resident.dataset.spec);
+          entry.lenses.push({
             key: `Lens:${resident.id}`,
             lens: resident,
             label: lensLabel(resident),
             space: spaceRef,
-            kinds,
+            kinds: suggestion.kinds,
+            suggestion,
           });
+          // The relation reads the channel count off a lens, which the dataset
+          // resident does not carry; the widest lens answers for the entry.
+          const channels = extentOf(resident, resident.renderAxes?.intensity);
+          if (channels > 1) {
+            Object.assign(entry, relate({ __typename: "ArrayDataset", id: resident.dataset.id }, channels));
+          }
           break;
         }
         case "ArrayDataset":
           datasetEntry(resident, resident.spec);
           break;
-        case "TableDataset":
+        case "TableDataset": {
+          const suggestion = suggestTableKinds(graph, resident);
           tables.push({
             kind: "table",
             key: `TableDataset:${resident.id}`,
@@ -409,9 +341,12 @@ export const buildSections = (input: {
             name: resident.name,
             secondary: columnSummary(resident),
             space: spaceRef,
-            kinds: inferTableKinds(resident),
+            kinds: suggestion.kinds,
+            suggestion,
+            ...relate(resident),
           });
           break;
+        }
         case "MeshCollection":
           meshes.push({
             kind: "mesh",
@@ -420,6 +355,7 @@ export const buildSections = (input: {
             name: residentName(resident),
             secondary: `spec ${resident.specVersion}`,
             space: spaceRef,
+            ...relate(resident),
           });
           break;
         // A konnektion collection. Nameless like a mesh collection, so the row
@@ -433,6 +369,7 @@ export const buildSections = (input: {
             name: residentName(resident),
             secondary: `spec ${resident.specVersion}`,
             space: spaceRef,
+            ...relate(resident),
           });
           break;
         case "AnnotationCollection":
@@ -443,6 +380,7 @@ export const buildSections = (input: {
             name: resident.name,
             secondary: resident.description ?? undefined,
             space: spaceRef,
+            ...relate(resident),
           });
           break;
         case "DataArray":
@@ -467,8 +405,16 @@ export const buildSections = (input: {
         ),
     }));
 
-  const byName = <T extends { name: string; key: string }>(a: T, b: T) =>
-    a.name.localeCompare(b.name) || a.key.localeCompare(b.key);
+  // What relates to the scene floats up — a segmentation of a staged image
+  // above an unrelated stack — and what is already there sinks; within a
+  // rank, by name.
+  const byName = <T extends { name: string; key: string; relation: Relation | null }>(
+    a: T,
+    b: T,
+  ) =>
+    (b.relation?.rank ?? 0) - (a.relation?.rank ?? 0) ||
+    a.name.localeCompare(b.name) ||
+    a.key.localeCompare(b.key);
 
   const sections: Section[] = [
     {

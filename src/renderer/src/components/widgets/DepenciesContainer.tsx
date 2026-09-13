@@ -1,3 +1,4 @@
+import { portHash } from "@/rekuest/widgets/utils";
 import { ListAgentFragment, ListDependencyFragment, ResolvedDependencyInput, useAgentForDependencyLazyQuery } from "@/rekuest/api/graphql";
 import { ArgPort, PortGroup } from "@/rekuest/widgets/types";
 
@@ -14,6 +15,7 @@ import { UserAvatar } from "@/lok-next/components/UserAvatar";
 import { CheckIcon } from "@radix-ui/react-icons";
 import { Bot, Circle, SearchIcon, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { useFormContext, useWatch } from "react-hook-form";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -24,11 +26,7 @@ export type FilledGroup = PortGroup & {
   filledPorts: ArgPort[];
 };
 
-export const portHash = (port: ArgPort[]) => {
-  return port
-    .map((port) => `${port.key}-${port.kind}-${port.identifier}`)
-    .join("-");
-};
+export { portHash };
 
 export const NanaContainer = () => {
   return (
@@ -157,7 +155,7 @@ export const DependencySearchField = ({
     });
   };
 
-  const queryAgents = (searchStr: string) => {
+  const queryAgents = useDebouncedCallback((searchStr: string) => {
     search({ variables: { search: searchStr, dependency: dependency.id } })
       .then((res) => {
         const found = res.data?.agents?.filter(notEmpty) || [];
@@ -172,7 +170,7 @@ export const DependencySearchField = ({
         setError(err.message);
         setAgents([]);
       });
-  };
+  });
 
   // Load initial options + resolve data for pre-selected agents
   useEffect(() => {

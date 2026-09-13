@@ -27,7 +27,7 @@ const List = ({ filters, pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <TableDatasetCard key={index} item={ex} />}
+      {(ex) => <TableDatasetCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

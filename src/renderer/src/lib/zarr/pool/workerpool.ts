@@ -15,6 +15,38 @@ type QueuedTask<T> = WorkerPoolTaskDescriptor<T> & {
   reject: (error: unknown) => void
 }
 
+/**
+ * One pool slot. `worker` is `null` until something spawns into it (the
+ * pool's `factory`, `prewarm`, or a task that returns the worker it made).
+ * `inFlight` counts the tasks currently running on it.
+ */
+export interface WorkerSlot {
+  worker: Worker | null
+  inFlight: number
+}
+
+export interface WorkerPoolOptions {
+  /**
+   * Tasks that may run concurrently on ONE worker. A codec task is
+   * `fetch → decode`, and the fetch is pure network wait (the worker thread
+   * idles on a socket) — so exclusive checkout capped HTTP concurrency at
+   * the pool size while decodes queued behind workers that were merely
+   * waiting. Overlapping a few fetches per worker lifts that ceiling to
+   * `poolSize × maxInFlightPerWorker` without more threads. Decodes still
+   * serialize per worker (one event loop), which is what the thread count
+   * is sized for.
+   */
+  maxInFlightPerWorker?: number
+  /**
+   * Spawns a worker for an empty slot the first time it is needed. With a
+   * factory the pool owns every worker it hands out; without one the task
+   * receives `null` and must spawn (and return) its own.
+   */
+  factory?: () => Worker
+}
+
+export const DEFAULT_MAX_IN_FLIGHT_PER_WORKER = 4
+
 function createCanceledError(): Error {
   if (typeof DOMException !== 'undefined') {
     return new DOMException('Aborted', 'AbortError')
@@ -25,8 +57,23 @@ function createCanceledError(): Error {
   return error
 }
 
+/** Queue order: higher priority first, then FIFO (`sequence` is unique). */
+function compareTasks(a: QueuedTask<unknown>, b: QueuedTask<unknown>): number {
+  const priorityA = a.priority ?? 0
+  const priorityB = b.priority ?? 0
+  if (priorityA !== priorityB) {
+    return priorityB - priorityA
+  }
+
+  return a.sequence - b.sequence
+}
+
 export class WorkerPool {
-  workerQueue: Array<Worker | null>
+  readonly slots: WorkerSlot[]
+
+  readonly maxInFlightPerWorker: number
+
+  private readonly factory: (() => Worker) | undefined
 
   private taskQueue: Array<QueuedTask<unknown>>
 
@@ -36,13 +83,29 @@ export class WorkerPool {
 
   private nextSequence: number
 
-  constructor(poolSize: number) {
-    this.workerQueue = new Array<Worker | null>(poolSize)
-    this.workerQueue.fill(null)
+  constructor(poolSize: number, options: WorkerPoolOptions = {}) {
+    this.slots = Array.from({ length: poolSize }, () => ({ worker: null, inFlight: 0 }))
+    this.maxInFlightPerWorker = Math.max(
+      1,
+      options.maxInFlightPerWorker ?? DEFAULT_MAX_IN_FLIGHT_PER_WORKER,
+    )
+    this.factory = options.factory
     this.taskQueue = []
     this.tasks = new Map()
     this.nextTaskId = 0
     this.nextSequence = 0
+  }
+
+  /** Tasks handed to a worker and not yet settled. */
+  get inFlight(): number {
+    let total = 0
+    for (const slot of this.slots) total += slot.inFlight
+    return total
+  }
+
+  /** Tasks waiting for a slot. */
+  get queued(): number {
+    return this.taskQueue.length
   }
 
   /**
@@ -50,14 +113,15 @@ export class WorkerPool {
    * module-worker cold start (spawn + codec-bundle eval) overlaps scene
    * setup instead of serializing in front of the first chunk fetches.
    * Idempotent: live workers are untouched; repeat calls only fill remaining
-   * `null` slots. Fills from the END because checkout `pop()`s from there —
-   * pre-warmed workers are the first ones handed to tasks.
+   * `null` slots.
    */
-  prewarm(factory: () => Worker, count = this.workerQueue.length): void {
+  prewarm(factory: (() => Worker) | undefined = this.factory, count = this.slots.length): void {
+    if (!factory) return
     let spawned = 0
-    for (let i = this.workerQueue.length - 1; i >= 0 && spawned < count; i--) {
-      if (this.workerQueue[i] === null) {
-        this.workerQueue[i] = factory()
+    for (const slot of this.slots) {
+      if (spawned >= count) break
+      if (slot.worker === null && slot.inFlight === 0) {
+        slot.worker = factory()
         spawned++
       }
     }
@@ -134,18 +198,60 @@ export class WorkerPool {
     return true
   }
 
-  terminateWorkers(): void {
-    for (let i = 0; i < this.workerQueue.length; i++) {
-      const worker = this.workerQueue[i]
-      if (worker != null) {
-        worker.terminate()
+  /**
+   * Drop a worker that died (uncaught error, terminated) from its slot so
+   * the slot respawns on next use. The caller terminates/disposes the worker
+   * itself; tasks still counted on the slot settle through their own
+   * rejections. This — not a task rejection — is how a worker leaves the
+   * pool: several tasks share one worker, so one task failing says nothing
+   * about the worker's health.
+   */
+  retire(worker: Worker): void {
+    for (const slot of this.slots) {
+      if (slot.worker === worker) {
+        slot.worker = null
+        return
       }
-      this.workerQueue[i] = null
     }
   }
 
+  terminateWorkers(): void {
+    for (const slot of this.slots) {
+      slot.worker?.terminate()
+      slot.worker = null
+    }
+  }
+
+  /**
+   * Least-loaded live worker under the cap; an empty slot (spawn) only when
+   * every live worker already has work — a pre-warmed worker is free, a cold
+   * spawn is not.
+   */
+  private pickSlot(): WorkerSlot | null {
+    let best: WorkerSlot | null = null
+    let empty: WorkerSlot | null = null
+    for (const slot of this.slots) {
+      if (slot.worker === null) {
+        // Without a factory, a `null` slot with work on it belongs to a task
+        // that spawned its own worker — nothing to share until it returns.
+        // With one, the slot is spawnable regardless (a retired worker's
+        // tasks are still counted here while their rejections drain).
+        if ((slot.inFlight === 0 || this.factory) && empty === null) empty = slot
+        continue
+      }
+      if (slot.inFlight >= this.maxInFlightPerWorker) continue
+      if (best === null || slot.inFlight < best.inFlight) best = slot
+    }
+
+    if (best !== null && best.inFlight === 0) return best
+    return empty ?? best
+  }
+
   private pumpQueue(): void {
-    while (this.workerQueue.length > 0 && this.taskQueue.length > 0) {
+    while (this.taskQueue.length > 0) {
+      const slot = this.pickSlot()
+      if (slot === null) break
+
       const queuedTask = this.taskQueue.shift()!
 
       if (queuedTask.settled) {
@@ -157,12 +263,16 @@ export class WorkerPool {
         continue
       }
 
-      const worker = this.workerQueue.pop() ?? null
+      if (slot.worker === null && this.factory) {
+        slot.worker = this.factory()
+      }
+
+      slot.inFlight++
       queuedTask.started = true
 
-      queuedTask.task(worker)
+      queuedTask.task(slot.worker)
         .then(({ worker: returnedWorker, result }) => {
-          this.workerQueue.push(returnedWorker ?? null)
+          this.release(slot, returnedWorker)
 
           if (queuedTask.canceled) {
             this.rejectTask(queuedTask, createCanceledError())
@@ -173,13 +283,21 @@ export class WorkerPool {
           this.pumpQueue()
         })
         .catch((error: unknown) => {
-          this.workerQueue.push(null)
+          this.release(slot, null)
           this.rejectTask(
             queuedTask,
             queuedTask.canceled ? createCanceledError() : error,
           )
           this.pumpQueue()
         })
+    }
+  }
+
+  private release(slot: WorkerSlot, returnedWorker: Worker | null): void {
+    slot.inFlight--
+    // A task that spawned its own worker (no factory) donates it to the slot.
+    if (slot.worker === null && returnedWorker !== null) {
+      slot.worker = returnedWorker
     }
   }
 
@@ -194,26 +312,41 @@ export class WorkerPool {
     return taskInput
   }
 
-  private insertTask(task: QueuedTask<unknown>): void {
-    const insertionIndex = this.taskQueue.findIndex((queuedTask) => {
-      if ((queuedTask.priority ?? 0) !== (task.priority ?? 0)) {
-        return (queuedTask.priority ?? 0) < (task.priority ?? 0)
+  /** First index whose task sorts at or after `task` (binary search). */
+  private lowerBound(task: QueuedTask<unknown>): number {
+    let low = 0
+    let high = this.taskQueue.length
+    while (low < high) {
+      const mid = (low + high) >>> 1
+      if (compareTasks(this.taskQueue[mid], task) < 0) {
+        low = mid + 1
+      } else {
+        high = mid
       }
+    }
+    return low
+  }
 
-      return queuedTask.sequence > task.sequence
-    })
-
-    if (insertionIndex === -1) {
+  private insertTask(task: QueuedTask<unknown>): void {
+    const index = this.lowerBound(task)
+    if (index === this.taskQueue.length) {
       this.taskQueue.push(task)
       return
     }
 
-    this.taskQueue.splice(insertionIndex, 0, task)
+    this.taskQueue.splice(index, 0, task)
   }
 
   private removeQueuedTask(taskId: number): boolean {
-    const index = this.taskQueue.findIndex((task) => task.id === taskId)
-    if (index === -1) {
+    const task = this.tasks.get(taskId)
+    if (!task) {
+      return false
+    }
+
+    // `(priority, sequence)` is unique, so the lower bound IS the task's
+    // index if it is queued at all.
+    const index = this.lowerBound(task)
+    if (this.taskQueue[index] !== task) {
       return false
     }
 

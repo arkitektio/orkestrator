@@ -1,6 +1,16 @@
+import { useRekuest } from "@/app/Arkitekt";
+import type { ApolloClient } from "@apollo/client";
 import { applyPatch } from "fast-json-patch";
-import { useRef, useState } from "react";
-import { useCheckoutQuery, useWatchAgentSubscription, useWatchStateSubscription } from "../api/graphql";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCheckoutQuery,
+  useWatchAgentSubscription,
+  useWatchStateSubscription,
+  WatchStateDocument,
+  type WatchStateSubscription,
+  type WatchStateSubscriptionVariables,
+} from "../api/graphql";
+import { createLiveStateStore, EMPTY_LIVE_STATE } from "./liveStateStore";
 
 export const useLiveState = ({
   stateID
@@ -67,6 +77,30 @@ export const useLiveState = ({
 
 
 
+/**
+ * One `WatchState` subscription per `(agentID, interface)` shared by every
+ * consumer, patches coalesced to one publish per animation frame — see
+ * `./liveStateStore.ts`. The client is the same one the generated
+ * `useWatchStateSubscription` uses (`lib/rekuest/hooks.tsx` → `useRekuest()`).
+ */
+const agentLiveStateStore = createLiveStateStore<ApolloClient<unknown>>({
+  subscribe: (client, variables, handlers) => {
+    const subscription = client
+      .subscribe<WatchStateSubscription, WatchStateSubscriptionVariables>({
+        query: WatchStateDocument,
+        variables: { agentID: variables.agentID, interface: variables.interface },
+      })
+      .subscribe({
+        next: (result) => {
+          const event = result.data?.watchState;
+          if (event) handlers.next(event);
+        },
+        error: handlers.error,
+      });
+    return () => subscription.unsubscribe();
+  },
+});
+
 export const useAgentLiveState = ({
   agentID,
   stateInterface,
@@ -76,50 +110,34 @@ export const useAgentLiveState = ({
   stateInterface?: string;
   skip?: boolean;
 }) => {
+  const client = useRekuest();
+  const active = !skip && !!agentID && !!stateInterface && !!client;
 
-    const [liveValue, setLiveValue] = useState<Record<string, unknown> | null>(null);
-    const [revision, setRevision] = useState<number | null>(null);
-    const valueRef = useRef<Record<string, unknown> | null>(null);
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      if (!active) return () => {};
+      return agentLiveStateStore.acquire(
+        client,
+        agentID as string,
+        stateInterface as string,
+        onStoreChange,
+      );
+    },
+    [active, client, agentID, stateInterface],
+  );
+  const getSnapshot = useCallback(
+    () =>
+      active
+        ? agentLiveStateStore.getSnapshot(agentID as string, stateInterface as string)
+        : EMPTY_LIVE_STATE,
+    [active, agentID, stateInterface],
+  );
 
-
-    const currentLiveValue = liveValue
-    // Subscribe to live patches
-    useWatchStateSubscription({
-      skip: skip || !agentID || !stateInterface,
-      variables: { agentID: agentID as string, interface: stateInterface as string },
-      onData: ({ data: subData }) => {
-        const event = subData.data?.watchState;
-        if (!event) return;
-
-        if (event.__typename === "StateSnapshotEvent") {
-          // Full snapshot replaces the value
-          valueRef.current = event.value;
-          setLiveValue({ ...event.value });
-          setRevision(event.globalRevision);
-        } else if (event.__typename === "StatePatchEvent") {
-          // Apply JSON patch to current value
-          if (valueRef.current) {
-            const result = applyPatch(
-              valueRef.current,
-              [{ op: event.op as "replace" | "add" | "remove", path: event.path, value: event.value }],
-              false,
-              false,
-            );
-            valueRef.current = result.newDocument;
-            setLiveValue({ ...result.newDocument });
-            setRevision(event.globalRevision);
-          }
-        }
-      },
-      onError: (err) => {
-        console.error("Error in state subscription:", err);
-      }
-    });
-
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   return {
-    value: currentLiveValue,
-    revision,
+    value: snapshot.value,
+    revision: snapshot.revision,
   };
 }
 

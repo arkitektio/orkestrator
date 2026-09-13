@@ -9,6 +9,12 @@ import {
 } from "react";
 import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
 import type { AxisCoords } from "../coords/axisPath";
+import type { AttributePlanLike } from "./attributeTypes";
+import {
+  EMPTY_SELECTION,
+  selectionSignature,
+  type AttributeSelection,
+} from "./attributeSelection";
 import {
   acquireAttributeService,
   type AttributeService,
@@ -74,15 +80,16 @@ export type UseAttributesAtResult = {
  * never delivers.
  */
 export function useAttributesAt(
-  input: { systemId: string; coords: AxisCoords } | null,
+  input: { systemId: string; coords: AxisCoords; selection?: AttributeSelection } | null,
 ): UseAttributesAtResult {
   const service = useAttributeServiceOrNull();
-  // Value-identity for the coords object so callers may inline literals.
+  // Value-identity for the coords object so callers may inline literals. The
+  // selection joins the key: a changed selection is a new ask, not a stale hit.
   const inputKey = input
     ? `${input.systemId}|${Object.keys(input.coords)
         .sort()
         .map((axis) => `${axis}=${input.coords[axis]}`)
-        .join(",")}`
+        .join(",")}|${selectionSignature(input.selection ?? EMPTY_SELECTION)}`
     : null;
   const inputRef = useRef(input);
   inputRef.current = input;
@@ -130,4 +137,40 @@ export function useAttributesAt(
   }, [service, inputKey, instant]);
 
   return state;
+}
+
+/**
+ * A system's attribute plans, for surfaces that list or configure them (the
+ * scene settings' fetch picker): synchronous from the plan cache when the
+ * system was already discovered, otherwise fetched once — the same cached
+ * promise the hover tracker uses, so listing never doubles a discovery.
+ * Null while unknown; an empty array means nothing links the system to a
+ * table or matrix.
+ */
+export function usePlansFor(systemId: string | null): readonly AttributePlanLike[] | null {
+  const service = useAttributeServiceOrNull();
+  // The cache answers synchronously at render; the state below only carries a
+  // discovery this hook itself awaited, tagged with the system it was for.
+  const known = service && systemId ? service.peekPlans(systemId) : null;
+  const [fetched, setFetched] = useState<{
+    systemId: string;
+    plans: readonly AttributePlanLike[];
+  } | null>(null);
+  useEffect(() => {
+    if (!service || !systemId || service.peekPlans(systemId)) return;
+    let live = true;
+    service
+      .plansFor(systemId)
+      .then((plans) => {
+        if (live) setFetched({ systemId, plans });
+      })
+      .catch(() => {
+        if (live) setFetched({ systemId, plans: [] });
+      });
+    return () => {
+      live = false;
+    };
+  }, [service, systemId]);
+  if (known) return known;
+  return fetched && fetched.systemId === systemId ? fetched.plans : null;
 }

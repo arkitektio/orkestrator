@@ -1,5 +1,5 @@
 import { AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { WidgetRegistryContext } from "./WidgetsContext";
 import {
   EffectWidgetProps,
@@ -54,13 +54,18 @@ export const WidgetRegistryProvider: React.FC<WidgetRegistryProviderProps> = ({
 }) => {
   const [widgetRegistry] = useState<WidgetRegistryType>(registry);
 
+  // Stable context value: every widget, ArgsContainer and ReturnsContainer
+  // reads this context, so a fresh object per render rerendered all of them.
+  const value = useMemo(
+    () => ({
+      registry: widgetRegistry,
+      setRegistry: () => {},
+    }),
+    [widgetRegistry],
+  );
+
   return (
-    <WidgetRegistryContext.Provider
-      value={{
-        registry: widgetRegistry,
-        setRegistry: () => {},
-      }}
-    >
+    <WidgetRegistryContext.Provider value={value}>
       {children}
     </WidgetRegistryContext.Provider>
   );

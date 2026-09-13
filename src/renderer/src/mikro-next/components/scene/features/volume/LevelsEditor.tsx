@@ -18,6 +18,16 @@ import { formatContrastValue } from "../../platform/layerui/contrast-utils";
  *
  * Bars use log-scaled counts — microscopy histograms are dominated by the
  * background bin and a linear scale renders as one spike.
+ *
+ * Two opt-in shapes for callers whose layer is not one scalar channel:
+ *  - `traces` draws SEVERAL distributions over the one value axis instead of
+ *    the single tinted series (the RGB card's three planes). Bars are already
+ *    positioned by VALUE rather than by index, so traces with different bin
+ *    edges overlay correctly with no resampling.
+ *  - `showGamma={false}` drops the midtone stop entirely. For a layer whose
+ *    transfer has no gamma to give — an RGB layer's shader arm compiles the
+ *    `pow` out and its update mutation has no column for it — a midtone the
+ *    user can drag is a control that silently does nothing.
  */
 
 const PLOT_HEIGHT = 64;
@@ -52,9 +62,70 @@ const curveAtRaw = (stops: readonly TransferCurveStop[], v: number): number => {
   return last.value;
 };
 
+/** Bin CENTRES for a series: the server's own edges when they line up with the
+ *  counts, else the domain divided evenly. */
+const resolveBinValues = (
+  bins: readonly number[],
+  count: number,
+  domainMin: number,
+  domainSpan: number,
+): readonly number[] => {
+  if (bins.length === count && bins.length > 0) return bins;
+  if (count <= 1) return [domainMin];
+  return Array.from({ length: count }, (_, i) => domainMin + (domainSpan * i) / (count - 1));
+};
+
+/** Log-scaled bar heights (see the doc comment). Plain loop for the max — a
+ *  spread over a 256-bin array allocates an arguments list per call. */
+const resolveBarHeights = (histogram: readonly number[]): number[] => {
+  let maxCount = 1;
+  for (const count of histogram) if (count > maxCount) maxCount = count;
+  const maxLog = Math.log1p(maxCount);
+  return histogram.map((count) => (Math.log1p(Math.max(count, 0)) / maxLog) * PLOT_HEIGHT);
+};
+
+/** One series' `<rect>`s, positioned by VALUE so series with different bin
+ *  edges — and domains wider than the data — land on the same axis. */
+const seriesBars = (
+  histogram: readonly number[],
+  binValues: readonly number[],
+  barHeights: readonly number[],
+  fillOf: (index: number) => string,
+  domainMin: number,
+  domainSpan: number,
+  keyPrefix: string,
+): React.ReactNode[] =>
+  histogram.map((_, i) => {
+    const v = binValues[i] ?? domainMin;
+    const h = barHeights[i];
+    if (h <= 0) return null;
+    // Width spans to the next bin; the last bin mirrors its predecessor's gap.
+    const nextV = binValues[i + 1] ?? v + (v - (binValues[i - 1] ?? v));
+    const x = ((v - domainMin) / domainSpan) * 100;
+    const w = Math.max(((nextV - domainMin) / domainSpan) * 100 - x, 0.15);
+    return (
+      <rect
+        key={`${keyPrefix}${i}`}
+        x={x}
+        y={PLOT_HEIGHT - h}
+        width={w + 0.15}
+        height={h}
+        fill={fillOf(i)}
+      />
+    );
+  });
+
+export type LevelsTrace = {
+  bins: number[];
+  histogram: number[];
+  /** CSS colour for this distribution's bars. */
+  color: string;
+};
+
 export const LevelsEditor = ({
   bins,
   histogram,
+  traces,
   value,
   colormap,
   baseColor,
@@ -64,12 +135,17 @@ export const LevelsEditor = ({
   histMax,
   dtypeMin,
   dtypeMax,
+  showGamma = true,
   onChange,
   stops,
   onStopsChange,
 }: {
   bins: number[];
   histogram: number[];
+  /** Several distributions over the one value axis, drawn with `screen`
+   * blending, INSTEAD of the `bins`/`histogram` series. Empty or absent keeps
+   * the single-series behaviour. */
+  traces?: readonly LevelsTrace[];
   value: LevelsValue;
   colormap: ColorMap | null | undefined;
   baseColor?: number[] | null;
@@ -79,6 +155,10 @@ export const LevelsEditor = ({
   histMax: number | null | undefined;
   dtypeMin: number;
   dtypeMax: number;
+  /** False hides the midtone stop, its numeric field and the γ readout, and
+   * takes "mid" out of the drag targets. Gamma then rides through every
+   * `onChange` unchanged (1 for a layer that has none). */
+  showGamma?: boolean;
   onChange: (next: LevelsValue) => void;
   /** The intensity transfer CURVE (server LookupStops). ≥2 stops = curve mode:
    * the black/mid/white handles yield to draggable curve points and gamma is
@@ -112,23 +192,12 @@ export const LevelsEditor = ({
   const xOf = (v: number) => ((v - domainMin) / domainSpan) * 100;
   const valueAt = (ratio: number) => domainMin + clamp(ratio, 0, 1) * domainSpan;
 
-  const binValues = useMemo(() => {
-    if (bins.length === histogram.length && bins.length > 0) return bins;
-    if (histogram.length <= 1) return [domainMin];
-    return Array.from(
-      { length: histogram.length },
-      (_, i) => domainMin + (domainSpan * i) / (histogram.length - 1),
-    );
-  }, [bins, histogram.length, domainMin, domainSpan]);
+  const binValues = useMemo(
+    () => resolveBinValues(bins, histogram.length, domainMin, domainSpan),
+    [bins, histogram.length, domainMin, domainSpan],
+  );
 
-  // Log-scaled bar heights (see doc comment). Plain loop for the max — a
-  // spread over a 256-bin array allocates an arguments list per call.
-  const barHeights = useMemo(() => {
-    let maxCount = 1;
-    for (const count of histogram) if (count > maxCount) maxCount = count;
-    const maxLog = Math.log1p(maxCount);
-    return histogram.map((count) => (Math.log1p(Math.max(count, 0)) / maxLog) * PLOT_HEIGHT);
-  }, [histogram]);
+  const barHeights = useMemo(() => resolveBarHeights(histogram), [histogram]);
 
   const barColors = useMemo(
     () =>
@@ -145,31 +214,38 @@ export const LevelsEditor = ({
   // 256 elements on EVERY drag tick. Bars are now drawn fully colored once
   // per histogram/domain change, and the out-of-window regions are dimmed by
   // two overlay rects (below) whose position is a cheap per-render attribute.
-  const bars = useMemo(
+  const singleBars = useMemo(
     () =>
-      histogram.map((_, i) => {
-        const v = binValues[i] ?? domainMin;
-        const h = barHeights[i];
-        if (h <= 0) return null;
-        // Position bars by value (not index) so they bunch correctly when the
-        // domain is wider than the data. Width spans to the next bin; the last
-        // bin mirrors its predecessor's gap.
-        const nextV = binValues[i + 1] ?? v + (v - (binValues[i - 1] ?? v));
-        const x = ((v - domainMin) / domainSpan) * 100;
-        const w = Math.max(((nextV - domainMin) / domainSpan) * 100 - x, 0.15);
-        return (
-          <rect
-            key={i}
-            x={x}
-            y={PLOT_HEIGHT - h}
-            width={w + 0.15}
-            height={h}
-            fill={barColors[i]}
-          />
-        );
-      }),
+      seriesBars(histogram, binValues, barHeights, (i) => barColors[i], domainMin, domainSpan, ""),
     [histogram, binValues, barHeights, barColors, domainMin, domainSpan],
   );
+
+  // Multi-series mode: one flat-coloured group per trace, composited with
+  // `screen` so overlapping distributions lighten instead of hiding each
+  // other — three plane histograms read as one picture, and where all three
+  // agree the bar goes white, which is exactly what that region looks like.
+  const traceBars = useMemo(() => {
+    if (!traces || traces.length === 0) return null;
+    return traces.map((trace, t) => {
+      const values = resolveBinValues(trace.bins, trace.histogram.length, domainMin, domainSpan);
+      const heights = resolveBarHeights(trace.histogram);
+      return (
+        <g key={t} style={{ mixBlendMode: "screen" }}>
+          {seriesBars(
+            trace.histogram,
+            values,
+            heights,
+            () => trace.color,
+            domainMin,
+            domainSpan,
+            `${t}:`,
+          )}
+        </g>
+      );
+    });
+  }, [traces, domainMin, domainSpan]);
+
+  const bars = traceBars ?? singleBars;
 
   // Transfer curve over the full domain, in plot coordinates: the piecewise
   // stop curve when active, else the clim-window + gamma power law.
@@ -260,11 +336,13 @@ export const LevelsEditor = ({
       };
     }
     const rect = surfaceRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0) return { target: "mid", stops: [] };
+    if (!rect || rect.width === 0) return { target: showGamma ? "mid" : "black", stops: [] };
     const px = clientX - rect.left;
     const candidates: [DragTarget, number][] = [
       ["black", (xOf(black) / 100) * rect.width],
-      ["mid", (xOf(mid) / 100) * rect.width],
+      // A hidden midtone is not a drag target: grabbing an invisible handle
+      // would set a gamma the caller has no use for.
+      ...(showGamma ? ([["mid", (xOf(mid) / 100) * rect.width]] as [DragTarget, number][]) : []),
       ["white", (xOf(white) / 100) * rect.width],
     ];
     candidates.sort((a, b) => Math.abs(px - a[1]) - Math.abs(px - b[1]));
@@ -393,7 +471,7 @@ export const LevelsEditor = ({
           {curve ? (
             <span className="text-muted-foreground"> · curve ({curve.length})</span>
           ) : (
-            <span className="text-muted-foreground"> · γ {gamma.toFixed(2)}</span>
+            showGamma && <span className="text-muted-foreground"> · γ {gamma.toFixed(2)}</span>
           )}
         </span>
       </div>
@@ -481,7 +559,7 @@ export const LevelsEditor = ({
               })
             : ([
                 [black, "#0a0a0a"],
-                [mid, "#9ca3af"],
+                ...(showGamma ? [[mid, "#9ca3af"] as [number, string]] : []),
                 [white, "#fafafa"],
               ] as [number, string][])
           ).map(([v, fill], i) => {
@@ -501,17 +579,19 @@ export const LevelsEditor = ({
       </div>
 
       {!curve && (
-        <div className="grid grid-cols-3 gap-1">
+        <div className={`grid gap-1 ${showGamma ? "grid-cols-3" : "grid-cols-2"}`}>
           <Input
             {...draftProps("min", String(value.min))}
             className="h-6 px-2 text-[10px] font-mono"
             title="Black point"
           />
-          <Input
-            {...draftProps("gamma", gamma.toFixed(2))}
-            className="h-6 px-2 text-center text-[10px] font-mono"
-            title="Gamma (midtone)"
-          />
+          {showGamma && (
+            <Input
+              {...draftProps("gamma", gamma.toFixed(2))}
+              className="h-6 px-2 text-center text-[10px] font-mono"
+              title="Gamma (midtone)"
+            />
+          )}
           <Input
             {...draftProps("max", String(value.max))}
             className="h-6 px-2 text-right text-[10px] font-mono"

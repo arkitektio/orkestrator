@@ -1,3 +1,4 @@
+import React from "react";
 import { OmeroArkProject } from "@/linkers";
 
 import { Card } from "@/components/ui/card";
@@ -28,4 +29,4 @@ const TCard = ({ project }: Props) => {
   );
 };
 
-export default TCard;
+export default React.memo(TCard);

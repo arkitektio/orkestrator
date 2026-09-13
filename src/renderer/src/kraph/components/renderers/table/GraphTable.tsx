@@ -101,8 +101,8 @@ export const RenderGraphQueryTable = (props: {
     if (searchable) setSearchKey(searchable.key);
   }, [table]);
 
-  const columns = calculateColumns(table);
-  const rows = calculateRows(table);
+  const columns = React.useMemo(() => calculateColumns(table), [table]);
+  const rows = React.useMemo(() => calculateRows(table), [table]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reactTable = useReactTable<{ [key: string]: any }>({

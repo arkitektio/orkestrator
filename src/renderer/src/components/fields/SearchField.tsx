@@ -20,6 +20,7 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { cn, notEmpty } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
@@ -37,10 +38,16 @@ export const ButtonLabel = (props: {
   const [option, setOption] = useState<Option | null | undefined>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Callers frequently pass an inline `search` function; resolving the label
+  // must only depend on the value, not on that function's identity.
+  const searchRef = useLatestRef(props.search);
+
   useEffect(() => {
-    props
-      .search({ values: [props.value] })
+    let cancelled = false;
+    searchRef
+      .current({ values: [props.value] })
       .then((res) => {
+        if (cancelled) return;
         if (res.length === 0) {
           setOption(null);
           setError("No option found for value");
@@ -48,9 +55,12 @@ export const ButtonLabel = (props: {
         setOption(res[0] || null);
       })
       .catch((err) => {
-        setError(err.message);
+        if (!cancelled) setError(err.message);
       });
-  }, [props.value, props.search]);
+    return () => {
+      cancelled = true;
+    };
+  }, [props.value]);
 
   return (
     <div className="flex flex-row items-center">
@@ -75,17 +85,34 @@ export type SearchFieldProps = {
   createComponent?: React.ReactNode;
   noOptionFoundPlaceholder?: string;
   search: SearchFunction;
+  /**
+   * What to store in the form for a chosen option value. Defaults to the
+   * option value itself; structure ports store `{ __identifier, object }`.
+   */
+  toFieldValue?: (optionValue: string) => unknown;
+  /** The option key a stored field value corresponds to (inverse of `toFieldValue`). */
+  fieldKey?: (fieldValue: unknown) => string | undefined;
+  /**
+   * Changes when the option source changes (e.g. live agent state), so the
+   * initial option list is reloaded even though `search` is held in a ref.
+   */
+  searchKey?: string | number;
 } & FieldProps;
+
+const identityKey = (value: unknown): string | undefined =>
+  value == null ? undefined : String(value);
 
 export const SearchField = ({
   name,
   label,
-  validate,
   search,
   createComponent,
   commandPlaceholder = "Search...",
   noOptionFoundPlaceholder = "No options found",
   description,
+  toFieldValue,
+  fieldKey = identityKey,
+  searchKey,
 }: SearchFieldProps) => {
   const form = useFormContext();
 
@@ -95,29 +122,49 @@ export const SearchField = ({
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
 
-  const query = (string: string) => {
-    search({ search: string })
-      .then((res) => {
-        setOptions(res || []);
-        setError(null);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setOptions([]);
-      });
-  };
+  // `search` is usually an inline closure (new identity every render). Keep
+  // it in a ref so neither the initial load nor the per-keystroke query is
+  // re-issued just because the parent rerendered.
+  const searchRef = useLatestRef(search);
 
-  useEffect(() => {
-    search({})
+  // Guards against out-of-order responses: only the latest request may
+  // populate the options.
+  const requestRef = useRef(0);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const runSearch = useCallback((options: SearchOptions) => {
+    const requestId = ++requestRef.current;
+    searchRef
+      .current(options)
       .then((res) => {
+        if (requestRef.current !== requestId) return;
         setOptions(res || []);
         setError(null);
       })
       .catch((err) => {
+        if (requestRef.current !== requestId) return;
         setError(err.message || "Error");
         setOptions([]);
       });
-  }, [name, search]);
+  }, []);
+
+  const query = useCallback(
+    (string: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        debounceRef.current = null;
+        runSearch({ search: string });
+      }, 200);
+    },
+    [runSearch],
+  );
+
+  useEffect(() => {
+    runSearch({});
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [name, runSearch, searchKey]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -143,8 +190,9 @@ export const SearchField = ({
     <FormField
       control={form.control}
       name={name}
-      rules={{ validate: validate }}
-      render={({ field }) => (
+      render={({ field }) => {
+        const currentKey = fieldKey(field.value);
+        return (
         <>
           <FormItem className="flex flex-col dark:text-white">
             {label != undefined && <FormLabel>{label}</FormLabel>}
@@ -167,7 +215,7 @@ export const SearchField = ({
                         onBlur={() => setOpen(false)}
                         onFocus={() => setOpen(true)}
                       />
-                      {field.value != undefined && field.value != null && (
+                      {currentKey !== undefined && (
                         <div
                           className={cn(
                             "z-8 absolute w-full h-full cursor-pointer flex flex-row items-center bg-slate-800 top-0 left-0 rounded-md px-2 flex h-10 w-full rounded-md  py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 truncate",
@@ -175,14 +223,14 @@ export const SearchField = ({
                           onClick={() => {
                             setInputValue("");
                             form.setValue(name, undefined, {
-                              shouldValidate: false,
+                              shouldValidate: true,
                             });
                             setOpen(true);
                             field.onChange(undefined);
                             inputRef.current?.focus();
                           }}
                         >
-                          <ButtonLabel search={search} value={field.value} />
+                          <ButtonLabel search={search} value={currentKey} />
                         </div>
                       )}
                     </div>
@@ -222,14 +270,16 @@ export const SearchField = ({
                                 e.stopPropagation();
                               }}
                               onSelect={() => {
-                                if (field.value !== option.value) {
-                                  form.setValue(name, option.value, {
-                                    shouldValidate: true,
-                                  });
+                                if (currentKey !== option.value) {
+                                  form.setValue(
+                                    name,
+                                    toFieldValue ? toFieldValue(option.value) : option.value,
+                                    { shouldValidate: true },
+                                  );
                                   setInputValue("");
                                 } else {
                                   form.setValue(name, null, {
-                                    shouldValidate: false,
+                                    shouldValidate: true,
                                   });
                                   setInputValue("");
                                 }
@@ -240,7 +290,7 @@ export const SearchField = ({
                               <CheckIcon
                                 className={cn(
                                   "ml-auto h-4 w-4",
-                                  option.value === field.value
+                                  option.value === currentKey
                                     ? "opacity-100"
                                     : "opacity-0",
                                 )}
@@ -258,7 +308,8 @@ export const SearchField = ({
             <FormMessage />
           </FormItem>
         </>
-      )}
+        );
+      }}
     />
   );
 };

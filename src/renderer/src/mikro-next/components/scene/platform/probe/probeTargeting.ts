@@ -64,3 +64,29 @@ export const probeAfterPinChange = <T extends { layerId: string }>(
   nextProbeLayerId: string | null,
 ): T | null =>
   nextProbeLayerId !== null && probe?.layerId !== nextProbeLayerId ? null : probe;
+
+/** The shape of a layer this module reads a probe system off (structural). */
+export type ProbeSystemLayerLike = {
+  lens: {
+    dataset: {
+      dataArrays: readonly { level: number; coordinateSystem?: { id: string } | null }[];
+      intrinsicSystem?: { id: string } | null;
+    };
+  };
+};
+
+/**
+ * The system a probe on this layer asks its attribute plans of: the layer's
+ * level-0 system — the frame a `voxelIndex` is expressed in (the
+ * composeLayerAffine reduction), so a server-resolved plan path starts
+ * exactly where the coordinates live — falling back to the dataset's
+ * intrinsic system. Null when the layer has neither. Shared by the hover
+ * tracker (which executes plans) and the settings picker (which lists them),
+ * so both name the same system.
+ */
+export const probeSystemIdFor = (layer: ProbeSystemLayerLike): string | null => {
+  const level0 = layer.lens.dataset.dataArrays.reduce<
+    ProbeSystemLayerLike["lens"]["dataset"]["dataArrays"][number] | null
+  >((best, da) => (best === null || da.level < best.level ? da : best), null);
+  return level0?.coordinateSystem?.id ?? layer.lens.dataset.intrinsicSystem?.id ?? null;
+};

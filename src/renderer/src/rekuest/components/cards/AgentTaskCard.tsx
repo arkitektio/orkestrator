@@ -1,8 +1,9 @@
+import React from "react";
 import { cn } from "@/lib/utils";
 import { RekuestTask } from "@/linkers";
 import { ListTaskFragment } from "@/rekuest/api/graphql";
 import { TaskStatusIcon } from "@/rekuest/lib/taskStatus";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 
 interface Props {
   item: ListTaskFragment;
@@ -31,4 +32,4 @@ const AgentTaskCard = ({ item }: Props) => {
   );
 };
 
-export default AgentTaskCard;
+export default React.memo(AgentTaskCard);

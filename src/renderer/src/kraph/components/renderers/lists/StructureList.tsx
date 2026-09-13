@@ -177,9 +177,10 @@ export const StructureList = (props: {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const filters: StructureFilter = {
-    search: search || undefined,
-  };
+  const filters: StructureFilter = React.useMemo(
+    () => ({ search: search || undefined }),
+    [search],
+  );
 
   const ordering: StructureOrder[] = React.useMemo(
     () => [{ id: serverOrdering }],
@@ -198,14 +199,14 @@ export const StructureList = (props: {
     },
   });
 
-  const rows = data?.structures || [];
+  const rows = React.useMemo(() => data?.structures || [], [data?.structures]);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
-  const columns = calculateColumns(props.kind);
+  const columns = React.useMemo(() => calculateColumns(props.kind), [props.kind]);
 
   const table = useReactTable({
     data: rows,

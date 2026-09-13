@@ -1,4 +1,5 @@
 import { ChoicesWidget } from "@/components/widgets/custom/ChoicesWidget";
+import { CustomWidget } from "@/components/widgets/custom/CustomWidget";
 import { ProxyWidget } from "@/components/widgets/custom/ProxyWidget";
 import { SearchWidget } from "@/components/widgets/custom/SearchWidget";
 import { SliderWidget } from "@/components/widgets/custom/SliderWidget";
@@ -71,12 +72,12 @@ export const UnknownEffectWidget = ({
 
 // HideEffect only knows how to render the "HideEffect" variant of the
 // PortEffectFragment union, so narrow to that variant before delegating.
-const HideEffectAdapter = ({ effect, port, children }: EffectWidgetProps) => {
+const HideEffectAdapter = ({ effect, port, path, children }: EffectWidgetProps) => {
   if (effect.__typename !== "HideEffect") {
     return null;
   }
   return (
-    <HideEffect effect={effect} port={port}>
+    <HideEffect effect={effect} port={port} path={path}>
       {children}
     </HideEffect>
   );
@@ -138,6 +139,8 @@ registry.registerInputWidget(
 );
 
 registry.registerInputWidget("ProxyWidget", ProxyWidget);
+registry.registerInputWidget("StringAssignWidget", StringWidget);
+registry.registerInputWidget("CustomAssignWidget", CustomWidget);
 
 registry.registerReturnWidgetFallback(
   PortKind.Int,

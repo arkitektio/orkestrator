@@ -191,8 +191,24 @@ export interface EditFlowState extends ValidationResult {
   onConnectEnd: OnConnectEnd;
 }
 
-export const createEditFlowStore = (initialState: ValidationResult) =>
-  createStore<EditFlowState>()(
+export const createEditFlowStore = (initialState: ValidationResult) => {
+  // Undo history and node drags: React Flow replaces `nodes` on every pointer
+  // move of a drag. Recording each of those as an undo step pushed ~60
+  // snapshots per drag into the 100-entry history and evicted real edits. The
+  // intermediate ticks are skipped and the drag is committed as ONE step
+  // (from the pre-drag state) when the final `dragging: false` change lands.
+  let suppressHistory = false;
+  let dragStartState: TemporalEditFlowState | null = null;
+  const partialize = (state: EditFlowState): TemporalEditFlowState => ({
+    nodes: state.nodes,
+    edges: state.edges,
+    globals: state.globals,
+    remainingErrors: state.remainingErrors,
+    solvedErrors: state.solvedErrors,
+    valid: state.valid,
+  });
+
+  return createStore<EditFlowState>()(
     temporal(
       (set, get) => ({
         ...initialState,
@@ -216,6 +232,17 @@ export const createEditFlowStore = (initialState: ValidationResult) =>
             changes.length === 1 &&
             (changes[0].type === "position" || changes[0].type === "dimensions")
           ) {
+            const change = changes[0];
+            if (change.type === "position" && change.dragging) {
+              if (!dragStartState) dragStartState = partialize(state);
+              suppressHistory = true;
+              try {
+                set({ nodes: nextNodes });
+              } finally {
+                suppressHistory = false;
+              }
+              return;
+            }
             set({ nodes: nextNodes });
             return;
           }
@@ -1223,14 +1250,30 @@ export const createEditFlowStore = (initialState: ValidationResult) =>
       }),
       {
         limit: 100,
-        partialize: (state): TemporalEditFlowState => ({
-          nodes: state.nodes,
-          edges: state.edges,
-          globals: state.globals,
-          remainingErrors: state.remainingErrors,
-          solvedErrors: state.solvedErrors,
-          valid: state.valid,
-        }),
+        partialize,
+        handleSet: (handleSet) => {
+          // zundo hands over its internal `_handleSet(pastState, replace,
+          // currentState, deltaState)`; its declared type is `setState`.
+          const record = handleSet as unknown as (
+            pastState: TemporalEditFlowState,
+            replace: Parameters<typeof handleSet>[1],
+            currentState: TemporalEditFlowState,
+            deltaState?: Partial<TemporalEditFlowState> | null,
+          ) => void;
+          return (pastState, replace, currentState, deltaState) => {
+            if (suppressHistory) return;
+            if (dragStartState) {
+              // The drag just ended: record it as one step from where it began.
+              const start = dragStartState;
+              dragStartState = null;
+              record(start, replace, currentState, deltaState);
+              return;
+            }
+            // At runtime `pastState` is the partialized previous state.
+            record(pastState as TemporalEditFlowState, replace, currentState, deltaState);
+          };
+        },
       },
     ),
   );
+};

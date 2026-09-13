@@ -5,7 +5,10 @@ import {
   type SceneAnnotationFragment,
   type SceneLayerFragment,
 } from "@/mikro-next/api/graphql";
-import { composePlacementPath } from "@/mikro-next/lib/coords/transformGraph";
+import {
+  placementToSpatialAffine,
+  spatialAxisTriple,
+} from "@/mikro-next/lib/coords/transformGraph";
 
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { padDegenerateAxes } from "../../platform/camera/cameraFit";
@@ -201,22 +204,28 @@ export function resolveCollectionMatrix(
     return new THREE.Matrix4().identity();
   }
   const spatial = [names[names.length - 1], names[names.length - 2], names[names.length - 3]];
-  const composed = composePlacementPath(layer.pathToWorld, transformContext, spatial, names);
-  if (!composed) {
-    // A null path is UNREGISTERED or UNMAPPABLE — the layer's `placement` says
-    // which, but the shared SceneLayer fragment does not select it. The shapes
-    // are still drawn, in the collection's own space, rather than dropped
-    // silently.
+  if (!layer.asAffine) {
+    // UNREGISTERED, or a path the server could not condense. The renderer
+    // does not dispatch such a layer (`isPlaceable`); panels that still ask
+    // for a matrix (move-to, mesh design) get the collection's own space,
+    // never a guess.
     if (!warnedCollections.has(collection.id)) {
       warnedCollections.add(collection.id);
       console.warn(
-        `[annotation] collection ${collection.id}: no path to world; ` +
-          `drawing in the collection's own space`,
+        `[annotation] collection ${collection.id}: no placement (asAffine is null); ` +
+          `not drawn — using the collection's own space where a matrix is required`,
       );
     }
     return new THREE.Matrix4().identity();
   }
-  return affineToMatrix4(composed);
+  // The server's `asAffine` is the only placement authority; input side named
+  // by the collection's axes, output side by the world's.
+  const composed = placementToSpatialAffine(
+    layer.asAffine,
+    spatial,
+    spatialAxisTriple(transformContext.worldCoordinateSystem),
+  );
+  return composed ? affineToMatrix4(composed) : new THREE.Matrix4().identity();
 }
 
 /**

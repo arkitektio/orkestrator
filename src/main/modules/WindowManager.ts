@@ -47,10 +47,15 @@ export class WindowManager implements AppModule {
     private iconPath = '';
     private debouncedSetZoomFactor: (zoomLevel: number, window: BrowserWindow) => void;
     private debouncedSaveWindowState: () => void;
+    // In-memory copy of the persisted zoom factor. `store.get` re-reads the
+    // JSON file from disk on every call, which is far too expensive for the
+    // per-frame `resize` event below.
+    private zoomFactor: number;
 
     constructor(ipcTransport: IpcTransport) {
         this.store = new Store();
         this.ipcTransport = ipcTransport;
+        this.zoomFactor = this.store.get("zoomFactor", 0.7) as number;
         this.debouncedSetZoomFactor = debounce((zoomLevel: number, window: BrowserWindow) => {
             window.webContents.setZoomFactor(zoomLevel);
         }, 150);
@@ -143,16 +148,21 @@ export class WindowManager implements AppModule {
         }
 
         // Try restoring zoom factor
-        const zoom = this.store.get("zoomFactor", 0.7) as number;
-        this.mainWindow.webContents.setZoomFactor(zoom);
+        this.mainWindow.webContents.setZoomFactor(this.zoomFactor);
 
         this.mainWindow.webContents.setWindowOpenHandler((details) => {
             return { action: "deny" };
         });
 
         this.mainWindow.on("resize", () => {
+            // `resize` fires continuously while the user drags a window edge;
+            // only touch the zoom when Chromium has actually drifted from the
+            // stored value (setZoomFactor triggers a full relayout).
             if (this.mainWindow) {
-                this.mainWindow.webContents.setZoomFactor(this.store.get("zoomFactor", 0.7) as number);
+                const webContents = this.mainWindow.webContents;
+                if (webContents.getZoomFactor() !== this.zoomFactor) {
+                    webContents.setZoomFactor(this.zoomFactor);
+                }
             }
             this.debouncedSaveWindowState();
         });
@@ -362,10 +372,12 @@ export class WindowManager implements AppModule {
         this.ipcTransport.handleChannel("set-zoom-level", (_, zoomLevel: number) => {
             const focusedWindow = BrowserWindow.getFocusedWindow();
             if (focusedWindow) {
+                this.zoomFactor = zoomLevel;
                 this.store.set("zoomFactor", zoomLevel);
                 this.debouncedSetZoomFactor(zoomLevel, focusedWindow);
                 return { success: true };
             } else if (this.mainWindow) {
+                this.zoomFactor = zoomLevel;
                 this.store.set("zoomFactor", zoomLevel);
                 this.debouncedSetZoomFactor(zoomLevel, this.mainWindow);
                 return { success: true };
@@ -377,7 +389,7 @@ export class WindowManager implements AppModule {
             if (BrowserWindow.getFocusedWindow() || this.mainWindow) {
                 return {
                     success: true,
-                    zoomLevel: this.store.get("zoomFactor", 0.7),
+                    zoomLevel: this.zoomFactor,
                 };
             }
             return { success: false, error: "No window to get zoom level" };

@@ -2,6 +2,11 @@
  * A function that receives an available worker (or null if a new worker should
  * be created) and returns the worker to recycle back into the pool along with
  * the task result.
+ *
+ * The worker is SHARED: up to `maxInFlightPerWorker` tasks run on it at once,
+ * so a task must never terminate it over its own failure — cancel or fail the
+ * one request instead. A worker that actually died is removed with
+ * `pool.retire(worker)`.
  */
 export type WorkerPoolTask<T> = (
   worker: Worker | null

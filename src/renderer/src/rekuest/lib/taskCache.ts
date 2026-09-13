@@ -1,7 +1,10 @@
-import type { ApolloClient, Reference } from "@apollo/client";
+import type { ApolloClient, DocumentNode, Reference } from "@apollo/client";
 import {
   DetailTaskDocument,
   DetailTaskQuery,
+  FullTaskDocument,
+  FullTaskQuery,
+  LiveTaskFragment,
   PostmanTaskFragment,
   TaskChangeFragment,
   TaskDocument,
@@ -80,14 +83,14 @@ export const flushBufferedEvents = (client: RekuestClient, id: string) => {
   }
 };
 
-/** Fetch a task's full graph once (network-only), normalizing it into the cache. */
-export const hydrateTask = async (
+const fetchTask = async <Q extends { task?: unknown }>(
   client: RekuestClient,
+  query: DocumentNode,
   id: string,
-): Promise<PostmanTaskFragment | undefined> => {
+): Promise<Q["task"] | undefined> => {
   try {
-    const result = await client.query<TaskQuery, TaskQueryVariables>({
-      query: TaskDocument,
+    const result = await client.query<Q, TaskQueryVariables>({
+      query,
       variables: { id },
       fetchPolicy: "network-only",
     });
@@ -99,13 +102,33 @@ export const hydrateTask = async (
 };
 
 /**
+ * Fetch a task once (network-only) in the slim `LiveTask` shape shared with the
+ * global `MyTasks` list, normalizing it into the cache.
+ */
+export const hydrateTask = (
+  client: RekuestClient,
+  id: string,
+): Promise<LiveTaskFragment | undefined> =>
+  fetchTask<TaskQuery>(client, TaskDocument, id);
+
+/**
+ * Fetch a task once with its full `action { ...Ports }` (`PostmanTask`), for
+ * readers that render ports — `DetailTask.children` (timeline / task-space).
+ */
+export const hydrateFullTask = (
+  client: RekuestClient,
+  id: string,
+): Promise<PostmanTaskFragment | undefined> =>
+  fetchTask<FullTaskQuery>(client, FullTaskDocument, id);
+
+/**
  * A thin `create` carries only ids, so fetch the full task once and insert it
  * into the global list cache. Returns the hydrated task (for the toast decision).
  */
 export const hydrateAndInsertMyTask = async (
   client: RekuestClient,
   create: TaskChangeFragment,
-): Promise<PostmanTaskFragment | undefined> => {
+): Promise<LiveTaskFragment | undefined> => {
   const task = await hydrateTask(client, create.id);
   if (!task) return undefined;
 
@@ -150,7 +173,7 @@ export const hydrateChildIntoDetailTask = async (
   childId: string,
   parentId: string,
 ) => {
-  const child = await hydrateTask(client, childId);
+  const child = await hydrateFullTask(client, childId);
   if (!child) return;
 
   client.cache.updateQuery<DetailTaskQuery>(
@@ -184,7 +207,7 @@ export const hydrateAndInsertAgentTask = async (
   client: RekuestClient,
   create: TaskChangeFragment,
   agentId: string,
-): Promise<PostmanTaskFragment | undefined> => {
+): Promise<LiveTaskFragment | undefined> => {
   const task = await hydrateTask(client, create.id);
   if (!task) return undefined;
 

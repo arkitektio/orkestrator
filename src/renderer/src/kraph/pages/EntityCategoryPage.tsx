@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { DialogButton } from "@/components/ui/dialogbutton";
 import { DragZone } from "@/components/upload/drag";
 import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
-import { useKraphMediaResolve } from "@/datalayer/hooks/useKraphMediaResolve";
 import { KraphEntityCategory } from "@/linkers";
 import { Plus, Settings2 } from "lucide-react";
 import { useNavigate as useNavigateRouter } from "react-router-dom";
@@ -18,6 +17,7 @@ import {
 } from "../api/graphql";
 import { EntityList } from "../components/renderers/lists/EntityList";
 import { EntityCategorySidebar } from "../sidebars/EntityCategorySidebar";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 export const Page = asDetailQueryRoute(
   useGetEntityCategoryQuery,
@@ -35,8 +35,6 @@ export const Page = asDetailQueryRoute(
       },
       refetchQueries: [{ query: EntityNodesDocument, variables: { entityCategory: data.entityCategory.id } }],
     });
-
-    const resolve = useKraphMediaResolve();
 
     const { openSheet } = useDialog();
 
@@ -144,14 +142,17 @@ export const Page = asDetailQueryRoute(
               </p>
             </div>
             <div className="w-full h-full flex-row relative">
-              {data.entityCategory?.image?.presignedUrl && (
-                <img
-                  src={resolve(data.entityCategory?.image.presignedUrl)}
-                  style={{ filter: "brightness(0.7)" }}
-                  className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
-                />
+              {data.entityCategory?.image && (
+                <WithKraphMediaUrl media={data.entityCategory.image}>
+                  {(url) => (
+                    <img
+                      src={url}
+                      style={{ filter: "brightness(0.7)" }}
+                      className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
+                    />
+                  )}
+                </WithKraphMediaUrl>
               )}
-              {data.entityCategory?.image?.presignedUrl}
             </div>
 
             <DragZone uploadFile={uploadFile} createFile={createFile} />

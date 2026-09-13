@@ -14,7 +14,6 @@ import { AlertCircle } from "lucide-react";
 import { useCallback } from "react";
 import {
   AggregationFunction,
-  ConflictPolicy,
   DerivationRule,
   DerivationType,
   ValueKind,
@@ -120,13 +119,13 @@ export const DerivationRuleEditor = (props: {
     [searchMetricKeys, searchStructureKindRows, props.sourceKindId, rule.sourceNode],
   );
 
+  // `conflictPolicy` is gone. What to do about disagreement is the derivation
+  // itself now — PRIORITY_LATEST ranks subjects, LATEST_ASSERTION_TOOL ranks
+  // tools — so there is one answer to give instead of two that could contradict
+  // each other.
   const priorityKind = PRIORITY_FOR[derivation];
-  const policyWantsSubjects =
-    rule.conflictPolicy === ConflictPolicy.SubjectPriority &&
-    rule.subjectPriority.length === 0;
-  const policyWantsTools =
-    rule.conflictPolicy === ConflictPolicy.LatestTool &&
-    rule.toolPriority.length === 0;
+  const wantsSubjects = priorityKind === "subject" && rule.subjectPriority.length === 0;
+  const wantsTools = priorityKind === "tool" && rule.toolPriority.length === 0;
 
   return (
     <div className="space-y-5">
@@ -270,32 +269,19 @@ export const DerivationRuleEditor = (props: {
           <Label className="font-medium">Whose reading wins</Label>
           <p className="text-xs text-muted-foreground">
             Two people measuring the same thing differently is an ordinary state,
-            not an error. This says what to do about it.
+            not an error. The fold above says what to do about it.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs">On disagreement</Label>
-          <Select
-            value={rule.conflictPolicy}
-            onValueChange={(v) =>
-              patch({ conflictPolicy: v as ConflictPolicy })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(ConflictPolicy).map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!priorityKind && (
+          <p className="text-xs text-muted-foreground">
+            {DERIVATION_BLURB[derivation]} Nothing to rank — pick
+            PRIORITY_LATEST or LATEST_ASSERTION_TOOL above to name whose reading
+            is trusted.
+          </p>
+        )}
 
-        {(priorityKind === "subject" || policyWantsSubjects) && (
+        {priorityKind === "subject" && (
           <div className="space-y-2">
             <Label className="text-xs">Subjects, most trusted first</Label>
             <OrderedStringList
@@ -315,7 +301,7 @@ export const DerivationRuleEditor = (props: {
           </div>
         )}
 
-        {(priorityKind === "tool" || policyWantsTools) && (
+        {priorityKind === "tool" && (
           <div className="space-y-2">
             <Label className="text-xs">Tools, most trusted first</Label>
             <OrderedStringList
@@ -327,19 +313,19 @@ export const DerivationRuleEditor = (props: {
           </div>
         )}
 
-        {policyWantsSubjects && (
+        {wantsSubjects && (
           <Alert variant="destructive" className="py-2">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              SUBJECT_PRIORITY with no subjects listed has nothing to rank.
+              PRIORITY_LATEST with no subjects listed has nothing to rank.
             </AlertDescription>
           </Alert>
         )}
-        {policyWantsTools && (
+        {wantsTools && (
           <Alert variant="destructive" className="py-2">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              LATEST_TOOL with no tools listed has nothing to rank.
+              LATEST_ASSERTION_TOOL with no tools listed has nothing to rank.
             </AlertDescription>
           </Alert>
         )}

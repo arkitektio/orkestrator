@@ -34,6 +34,8 @@ import type { OperationDefinitionNode } from "graphql";
 import { AlertCircle, ChevronsUpDown, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
+import { useLatestRef } from "@/hooks/useLatestRef";
 
 
 export type Option = {
@@ -49,11 +51,16 @@ export const ButtonLabel = (props: {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // `search` is rebuilt whenever a dependency value changes; the label only
+  // needs re-resolving when the selected object changes.
+  const searchRef = useLatestRef(props.search);
+  const selected = props.value.object;
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    props
-      .search({ values: [props.value.object] })
+    searchRef
+      .current({ values: [selected] })
       .then((res) => {
         if (cancelled) return;
         if (res.length === 0) {
@@ -73,7 +80,7 @@ export const ButtonLabel = (props: {
     return () => {
       cancelled = true;
     };
-  }, [props.value, props.search]);
+  }, [selected, searchRef]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-row items-center gap-1.5 text-left">
@@ -224,9 +231,10 @@ export const SearchWidget = (
     fetchOptions(lastSearchRef.current, offsetRef.current);
   }, [hasMore, loadingMore, fetchOptions]);
 
-  const query = (string: string) => {
+  // One request after the user pauses, not one per keystroke.
+  const query = useDebouncedCallback((string: string) => {
     fetchOptions(string, 0);
-  };
+  });
 
   useEffect(() => {
     fetchOptions(undefined, 0);
@@ -320,7 +328,7 @@ export const SearchWidget = (
                           e.stopPropagation();
                           setInputValue("");
                           form.setValue(pathToName(props.path), undefined, {
-                            shouldValidate: false,
+                            shouldValidate: true,
                           });
                           field.onChange(undefined);
                         }}
@@ -374,7 +382,7 @@ export const SearchWidget = (
                                   setInputValue("");
                                 } else {
                                   form.setValue(pathToName(props.path), null, {
-                                    shouldValidate: false,
+                                    shouldValidate: true,
                                   });
                                   setInputValue("");
                                 }

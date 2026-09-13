@@ -1,5 +1,5 @@
-import { cn, notEmpty } from "@/lib/utils";
-import { AssignWidgetFragment } from "../api/graphql";
+import { portGridClass } from "@/components/widgets/gridColumns";
+import { cn } from "@/lib/utils";
 import PortConstraintBadges from "../components/displays/PortConstraintBadges";
 import { EffectWrapper } from "./EffectWrapper";
 import { ArgPort, ReturnPort, PortGroup , PortOptions, WidgetRegistryType } from "./types";
@@ -34,21 +34,8 @@ export const ReturnsContainer =  ({
   showKeys = false,
   className,
 }: ReturnContainerProps) => {
-  const len = ports.length;
-
-  const lg_size = len < 2 ? len : 2;
-  const xl_size = len < 3 ? len : 3;
-  const xxl_size = len < 4 ? len : 4;
-  const xxxl_size = len < 5 ? len : 5;
-  const xxxxl_size = len < 6 ? len : 6;
-
   return (
-    <div
-      className={cn(
-        `grid @lg:grid-cols-${lg_size} @xl:grid-cols-${xl_size} @2xl:grid-cols-${xxl_size} @3xl:grid-cols-${xxxl_size} @5xl:grid-cols-${xxxxl_size} gap-4`,
-        className,
-      )}
-    >
+    <div className={cn(portGridClass(ports.length), className)}>
       {Object.keys(values).map((key, index) => {
         const port = ports.find((p) => p.key === key);
         if (!port) return <>No Port</>;
@@ -69,6 +56,7 @@ export const ReturnsContainer =  ({
               <EffectWrapper
                 effects={port.effects || []}
                 port={port}
+                path={[port.key]}
                 registry={registry}
               >
                 <Widget
@@ -127,6 +115,7 @@ export const WrappedReturnsContainer = ({
               <EffectWrapper
                 effects={port.effects || []}
                 port={port}
+                path={[port.key]}
                 registry={registry}
               >
                 <Widget
@@ -146,71 +135,6 @@ export const WrappedReturnsContainer = ({
               </div>
             )}
             <PortConstraintBadges items={port.provides} className="mt-1" />
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-export const ArgsContainer = ({
-  ports,
-  options,
-  path,
-  hidden,
-  registry,
-}: ArgsContainerProps) => {
-  const len = ports.length;
-
-  const lg_size = len < 2 ? len : 2;
-  const xl_size = len < 3 ? len : 3;
-  const xxl_size = len < 4 ? len : 4;
-  const xxxl_size = len < 5 ? len : 5;
-  const xxxxl_size = len < 6 ? len : 6;
-
-  return (
-    <div
-      className={`grid @lg:grid-cols-${lg_size} @xl-grid-cols-${xl_size} @2xl:grid-cols-${xxl_size}  @3xl:grid-cols-${xxxl_size}   @5xl:grid-cols-${xxxxl_size} gap-4`}
-    >
-      {ports.filter(notEmpty).map((port, index) => {
-        if (hidden && hidden[port.key]) return null;
-        const Widget = registry.getInputWidgetForPort(port);
-
-        return (
-          <div
-            className="@container flex flex-col rounded rounded-md bg-gray-900 p-2 border-gray-800 border border-1"
-            key={index}
-          >
-            <label
-              className="flex-initial font-light text-slate-200 mb-2"
-              htmlFor={port.key}
-            >
-              {port.label || port.key}
-            </label>
-            <div className="flex-grow bg-gray-800 rounded rounded-md max-h-[300px]">
-              <EffectWrapper
-                effects={port.effects || []}
-                port={port}
-                registry={registry}
-              >
-                <Widget
-                  path={path}
-                  key={index}
-                  port={port}
-                  widget={port.widget as AssignWidgetFragment}
-                  options={options}
-                />
-              </EffectWrapper>
-            </div>
-            {port.description && (
-              <div
-                id={`${port.key}-help`}
-                className="text-xs mb-4 font-light flex-initial text-slate-400"
-              >
-                {port.description}
-              </div>
-            )}
-            <PortConstraintBadges items={port.requires} className="mt-1" />
           </div>
         );
       })}

@@ -76,10 +76,10 @@ export const NavigationPane = () => {
         }>
 
 
-          {data?.backends.map((backend, index) => (
+          {data?.backends.map((backend) => (
             <KabinetBackend.PaneLink
               object={backend}
-              key={index}
+              key={backend.id}
               className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
             >
               <IconForBackendKind kind={backend.kind} className="h-4 w-4" />
@@ -126,7 +126,7 @@ const Pane: React.FunctionComponent = () => {
         ) : (
           <>
             <ListRender array={data?.definitions}>
-              {(item, i) => <DefinitionCard item={item} key={i} />}
+              {(item) => <DefinitionCard item={item} key={item.id} />}
             </ListRender>
           </>
         )}

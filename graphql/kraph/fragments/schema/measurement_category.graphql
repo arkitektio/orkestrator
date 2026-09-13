@@ -11,7 +11,7 @@ fragment MeasurementCategory on MeasurementCategory {
   label
   description
   image {
-    presignedUrl
+    ...MediaStore
   }
   pinned
 }

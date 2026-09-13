@@ -51,11 +51,12 @@ declare global {
       checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string }>;
       getChannel: () => Promise<{ channel: "latest" | "next"; version: string }>;
       setChannel: (channel: "latest" | "next") => Promise<{ success: boolean; result?: any; error?: string }>;
-      onStatus: (callback: (status: string) => void) => void;
-      onAvailable: (callback: (info: any) => void) => void;
-      onNone: (callback: () => void) => void;
-      onProgress: (callback: (progress: any) => void) => void;
-      onError: (callback: (error: any) => void) => void;
+      /** Each subscription returns its disposer — call it on unmount. */
+      onStatus: (callback: (status: string) => void) => () => void;
+      onAvailable: (callback: (info: any) => void) => () => void;
+      onNone: (callback: () => void) => () => void;
+      onProgress: (callback: (progress: any) => void) => () => void;
+      onError: (callback: (error: any) => void) => () => void;
     };
   }
 }

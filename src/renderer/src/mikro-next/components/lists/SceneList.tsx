@@ -28,7 +28,7 @@ const List = ({ filters, pagination }: Props) => {
       // that picture into a column too narrow to recognise it in.
       minItemWidth={260}
     >
-      {(ex, index) => <SceneCard key={index} scene={ex} />}
+      {(ex) => <SceneCard key={ex.id} scene={ex} />}
     </ListRender>
   );
 };

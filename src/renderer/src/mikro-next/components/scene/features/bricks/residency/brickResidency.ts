@@ -2924,6 +2924,10 @@ export class BrickResidencyManager {
             fixedOffsets: pool.fixedOffsets,
             chunks,
           },
+          // A brick cancelled while its repack is still queued behind other
+          // jobs is dropped from the dispatcher instead of being posted; the
+          // rejection lands in the catch below, which is silent once aborted.
+          signal: controller.signal,
         });
         this.stats.repackMs += performance.now() - repackStartedAt;
         if (controller.signal.aborted || this.disposed) return;
@@ -3225,6 +3229,9 @@ export class BrickResidencyManager {
    * no free pass, no stale drain, no GPU-repack dispatch (see
    * `resolveDrainPolicy`) — so uploads stop colliding with gesture frames;
    * the deferred backlog drains at full budget on the first settled frame. */
+  /** Reusable progress snapshot for `drainUploads` (see `progressOf`). */
+  private readonly drainProgressScratch = { bytes: 0, bricks: 0, elapsedMs: 0 };
+
   drainUploads(interacting = false): void {
     if (this.disposed) return;
     // No device, no uploads. Belt-and-braces — the only caller is the canvas
@@ -3243,11 +3250,16 @@ export class BrickResidencyManager {
     );
     const budget = policy.budget;
     const progress = { bytes: 0, bricks: 0, uploadedAny: false };
-    const progressOf = () => ({
-      bytes: progress.bytes,
-      bricks: progress.bricks,
-      elapsedMs: performance.now() - drainStartedAt,
-    });
+    // Evaluated in the drain loops' conditions, i.e. once per brick
+    // considered per frame while streaming: fill one reusable view instead of
+    // allocating a progress object per evaluation.
+    const progressView = this.drainProgressScratch;
+    const progressOf = () => {
+      progressView.bytes = progress.bytes;
+      progressView.bricks = progress.bricks;
+      progressView.elapsedMs = performance.now() - drainStartedAt;
+      return progressView;
+    };
 
     // Planned-first two-pass drain, ordered GLOBALLY across pools: visible
     // (planned) bricks from every pool spend the budget first — with the

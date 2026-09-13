@@ -15,10 +15,12 @@ import { DebugProvider } from "@/providers/debug/DebugProvider";
 import { SelectionProvider } from "@/providers/selection/SelectionProvider";
 import { SettingsProvider } from "@/providers/settings/SettingsProvider";
 import { SmartProvider } from "@/providers/smart/provider";
+import { SmartSurface } from "@/providers/smart/SmartSurface";
 import { TaskUpdater } from "@/rekuest/components/functional/TaskUpdater";
 import { TaskHookRunner } from "@/lib/taskhooks/TaskHookRunner";
 import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
 import { AgentUpdater } from "@/rekuest/components/functional/AgentUpdater";
+import { UiCatalogRegistrar } from "@/rekuest/catalog/UiCatalogRegistrar";
 import { WidgetRegistryProvider } from "@/rekuest/widgets/WidgetsProvider";
 import { NuqsAdapter } from "nuqs/adapters/react-router"; // <--- Specific adapter
 import React from "react";
@@ -98,6 +100,7 @@ import { DownloadProvider } from "@/providers/download/DownloadProvider";
 import { AgentProvider } from "./agent/AgentProvider";
 import { WardRegistrar } from "@/lib/arkitekt/WardRegistrar";
 import { RefetchOnReactivate } from "@/hooks/use-refetch-on-reactivate";
+import { GcOnNavigate } from "@/hooks/use-gc-on-navigate";
 import { BuiltinDashboardWidgets } from "@/providers/dashboard/widgets/BuiltinDashboardWidgets";
 import { RekuestDashboardWidgets } from "@/providers/dashboard/widgets/RekuestDashboardWidgets";
 import { MikroDashboardWidgets } from "@/providers/dashboard/widgets/MikroDashboardWidgets";
@@ -127,12 +130,15 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                 <SelectionProvider>
                                   <AgentProvider disabled={false}>
                                     <WardRegistrar />
+                                    <SmartSurface />
                                     <RefetchOnReactivate />
+                                    <GcOnNavigate />
                                     <BuiltinDashboardWidgets />
                                     <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
                                       <TaskUpdater />
                                       <TaskNotificationStack />
                                       <AgentUpdater />
+                                      <UiCatalogRegistrar />
                                       <RekuestDashboardWidgets />
                                       <LatestTasksDashboardWidget />
                                       <TaskHookRunner />

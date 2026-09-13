@@ -1,6 +1,9 @@
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import { TIER_HIGH, TIER_LOW, TIER_MEDIUM } from "../quality/qualityGovernor";
+import { VOLUME_PASS_OBJECT, collectPassSets } from "../visibility/passVisibility";
 import {
+  buildVolumeStructureKey,
   createCompositorStats,
   createVolumeInputsTracker,
   decideSettleRefine,
@@ -144,6 +147,52 @@ describe("needsTargetResize", () => {
     expect(needsTargetResize({ width: 10, height: 10 }, { width: 10, height: 10 })).toBe(false);
     expect(needsTargetResize({ width: 10, height: 10 }, { width: 11, height: 10 })).toBe(true);
     expect(needsTargetResize({ width: 10, height: 10 }, { width: 10, height: 11 })).toBe(true);
+  });
+});
+
+describe("buildVolumeStructureKey", () => {
+  const scene = () => {
+    const root = new THREE.Scene();
+    const volume = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial());
+    volume.userData[VOLUME_PASS_OBJECT] = true;
+    const group = new THREE.Group();
+    const occluder = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial());
+    group.add(occluder);
+    root.add(volume, group);
+    return { root, volume, group, occluder };
+  };
+
+  it("changes when an OCCLUDER is hidden by its group", () => {
+    // The bug this closes: a mesh layer hides by flipping its group, the
+    // depth prepass stops writing its depth, but the key never moved — so
+    // decideVolumeFrame stayed on "cached" and the composited volume kept the
+    // stale occlusion hole until the camera moved.
+    const { root, group } = scene();
+    const before = buildVolumeStructureKey(collectPassSets(root));
+    group.visible = false;
+    const after = buildVolumeStructureKey(collectPassSets(root));
+    expect(after).not.toBe(before);
+    group.visible = true;
+    expect(buildVolumeStructureKey(collectPassSets(root))).toBe(before);
+  });
+
+  it("changes on a volume material rebuild and on a placement edit", () => {
+    const { root, volume } = scene();
+    const before = buildVolumeStructureKey(collectPassSets(root));
+    volume.material = new THREE.MeshBasicMaterial();
+    expect(buildVolumeStructureKey(collectPassSets(root))).not.toBe(before);
+
+    const placed = buildVolumeStructureKey(collectPassSets(root));
+    volume.position.set(1, 0, 0);
+    volume.updateMatrixWorld(true);
+    expect(buildVolumeStructureKey(collectPassSets(root))).not.toBe(placed);
+  });
+
+  it("is stable when nothing structural moved", () => {
+    const { root } = scene();
+    expect(buildVolumeStructureKey(collectPassSets(root))).toBe(
+      buildVolumeStructureKey(collectPassSets(root)),
+    );
   });
 });
 

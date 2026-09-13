@@ -1,6 +1,6 @@
 import { PropertyDefinitionFragment, ValueKind } from "@/kraph/api/graphql";
 import { Check, X } from "lucide-react";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 
 export const PropertyRenderer = ({
   value,

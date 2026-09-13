@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { MikroTableDataset } from "@/linkers";
 import { ListTableDatasetFragment } from "../../api/graphql";
@@ -27,4 +28,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

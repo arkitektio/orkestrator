@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserInfo } from "@/lok-next/components/protected/UserInfo";
 import { MikroFolder } from "@/linkers";
 import { FolderIcon } from "lucide-react";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { GetFolderQuery } from "../../api/graphql";
 import { ProvenanceSection } from "./ProvenanceSection";
 

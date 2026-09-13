@@ -1,5 +1,4 @@
 import { Option } from "@/components/fields/ListSearchField";
-import { DisplayWidgetProps } from "@/lib/display/registry";
 
 export type SearchFunction = (search: string) => Promise<Option[]>;
 
@@ -10,7 +9,13 @@ export type Registration = {
   description?: string;
   path: string;
   search?: SearchFunction;
-  diplayWidget?: React.ComponentType<DisplayWidgetProps>;
+  /**
+   * Whether objects of this model are *datums*: things a scientist makes
+   * claims about (an image, an ROI, a trace, a document). Only datums get the
+   * Knowledge sidebar; infrastructure (actions, agents, users, categories)
+   * does not.
+   */
+  datum: boolean;
 };
 
 /**
@@ -51,6 +56,11 @@ export class SmartRegistry {
   getModelPath(identifier: string): string | undefined {
     const model = this.findModel(identifier);
     return model?.path;
+  }
+
+  /** `false` for unknown identifiers: nothing unregistered is a datum. */
+  isDatum(identifier: string): boolean {
+    return this.findModel(identifier)?.datum ?? false;
   }
 
   /**

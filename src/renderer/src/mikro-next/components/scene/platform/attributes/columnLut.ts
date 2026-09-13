@@ -4,7 +4,7 @@ import type {
   AttributeRow,
   ParquetStoreLike,
 } from "@/mikro-next/lib/attributes/attributeTypes";
-import { isMeshSample, isNetworkSample } from "@/mikro-next/lib/attributes/attributeTypes";
+import { isMeshSample, isNetworkSample, isTableHop, landingOf } from "@/mikro-next/lib/attributes/attributeTypes";
 import type { AttributeLookupEngine } from "@/mikro-next/lib/attributes/lookupEngine";
 import { escapeSqlIdentifier, escapeSqlLiteral } from "@/mikro-next/lib/attributes/sqlBind";
 import { sampleColorMapRgb } from "../gpu/colormaps";
@@ -142,8 +142,11 @@ export const accessForTable = (
   tableId: string,
   want: PlanWant,
 ): TableAccess | null => {
+  // The LANDING is what keys a table by a sampled or picked id; a later hop
+  // binds from rows, which a LUT cannot supply.
   const plan = plans.find((candidate) => {
-    if (candidate.table.id !== tableId) return false;
+    const landing = landingOf(candidate);
+    if (!isTableHop(landing) || landing.table.id !== tableId) return false;
     if (want.kind === "mesh") return isMeshSample(candidate.sample);
     if (want.kind === "network") return isNetworkSample(candidate.sample);
     // An array-sampled plan over THIS array. `sample.store` is the zarr store
@@ -151,9 +154,11 @@ export const accessForTable = (
     if (isMeshSample(candidate.sample) || isNetworkSample(candidate.sample)) return false;
     return candidate.sample.store?.id === want.storeId;
   });
-  const keyColumn = plan?.lookup.keyColumns[0]?.column.name;
-  if (!plan || !keyColumn) return null;
-  return { store: plan.lookup.store, keyColumn };
+  const landing = plan ? landingOf(plan) : null;
+  if (!landing || !isTableHop(landing)) return null;
+  const keyColumn = landing.lookup.keyColumns[0]?.column.name;
+  if (!keyColumn) return null;
+  return { store: landing.lookup.store, keyColumn };
 };
 
 /** Where a COMPOSITE-keyed column is read from: the store and the key columns

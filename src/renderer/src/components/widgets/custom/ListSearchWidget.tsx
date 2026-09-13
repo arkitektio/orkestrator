@@ -34,6 +34,8 @@ import { cn, notEmpty } from "@/lib/utils";
 import { AlertCircle, ChevronsUpDown, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
+import { useLatestRef } from "@/hooks/useLatestRef";
 
 export type Option = {
   label: string;
@@ -51,22 +53,30 @@ export const ListButtonLabel = (props: {
   const [options, setOptions] = useState<Option[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  const searchRef = useLatestRef(props.search);
+  const selectedKey = (props.value ?? []).map((x) => x.__value.object).join("|");
+
   useEffect(() => {
-    if (props.value == undefined || props.value.length == 0) {
+    if (!selectedKey) {
       setOptions([]);
       setError(null);
       return;
     }
-    props
-      .search({ values: props.value.map((x) => x.__value.object) })
+    let cancelled = false;
+    searchRef
+      .current({ values: selectedKey.split("|") })
       .then((res) => {
+        if (cancelled) return;
         setOptions(res.filter(notEmpty));
         setError(null);
       })
       .catch((err) => {
-        setError(err.message);
+        if (!cancelled) setError(err.message);
       });
-  }, [props.value, props.search]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedKey, searchRef]);
 
   const remove = (value: string) => {
     props.setValue(
@@ -206,9 +216,12 @@ export const ListSearchWidget = (
     fetchOptions(lastSearchRef.current, offsetRef.current);
   }, [hasMore, loadingMore, fetchOptions]);
 
+  const debouncedFetch = useDebouncedCallback((string: string) => {
+    fetchOptions(string, 0);
+  });
   const onValueChange = (string: string) => {
     setOpen(true);
-    fetchOptions(string, 0);
+    debouncedFetch(string);
   };
 
   useEffect(() => {

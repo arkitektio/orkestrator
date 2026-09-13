@@ -6,7 +6,7 @@ import {
   useDetailTaskQuery,
   useInterruptMutation,
 } from "@/rekuest/api/graphql";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { useCancelTask } from "../../hooks/useAssign";
 import { useReassign } from "../../hooks/useReassign";
 import { isCancelable, isInterruptable } from "../../lib/taskStatus";

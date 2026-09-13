@@ -2,6 +2,15 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 import { Assign } from "../main/message";
 
+// Subscribe `cb` to an ipcRenderer channel and return the disposer. Every
+// event listener exposed to the renderer must be removable, otherwise each
+// React remount stacks another listener on the shared ipcRenderer.
+const subscribe = <T,>(channel: string, cb: (payload: T) => void): (() => void) => {
+  const listener = (_e: unknown, payload: T) => cb(payload);
+  ipcRenderer.on(channel, listener);
+  return () => ipcRenderer.removeListener(channel, listener);
+};
+
 // Custom APIs for renderer
 const api = {
   getFilePath: (file: File) => {
@@ -102,11 +111,11 @@ if (process.contextIsolated) {
       checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
       getChannel: () => ipcRenderer.invoke("get-update-channel"),
       setChannel: (channel: "latest" | "next") => ipcRenderer.invoke("set-update-channel", channel),
-      onStatus: (cb) => ipcRenderer.on("updater:status", (_e, s) => cb(s)),
-      onAvailable: (cb) => ipcRenderer.on("updater:available", (_e, info) => cb(info)),
-      onNone: (cb) => ipcRenderer.on("updater:none", cb),
-      onProgress: (cb) => ipcRenderer.on("updater:progress", (_e, p) => cb(p)),
-      onError: (cb) => ipcRenderer.on("updater:error", (_e, err) => cb(err))
+      onStatus: (cb: (status: string) => void) => subscribe<string>("updater:status", cb),
+      onAvailable: (cb: (info: unknown) => void) => subscribe<unknown>("updater:available", cb),
+      onNone: (cb: () => void) => subscribe<unknown>("updater:none", () => cb()),
+      onProgress: (cb: (progress: unknown) => void) => subscribe<unknown>("updater:progress", cb),
+      onError: (cb: (error: unknown) => void) => subscribe<unknown>("updater:error", cb),
     });
   } catch (error) {
     console.error(error);

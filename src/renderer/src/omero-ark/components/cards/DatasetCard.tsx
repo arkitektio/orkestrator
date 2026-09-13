@@ -1,3 +1,4 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { OmeroArkDataset } from "@/linkers";
 
@@ -28,4 +29,4 @@ const TCard = ({ item }: Props) => {
   );
 };
 
-export default TCard;
+export default React.memo(TCard);

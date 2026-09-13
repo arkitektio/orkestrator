@@ -56,13 +56,28 @@ export const calculateDuration = (start?: string, end?: string) => {
 };
 
 const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
+  // A view draws a node under *every* category that admits it (RFC 0019), so
+  // there is no single category any more. The property definitions a reading
+  // has are the union over those categories, deduped by key — which is the same
+  // set `richProperties` is folded from.
+  const categories = data.entity.categories;
+  const categoryTitle =
+    categories.map((c) => c.label).join(" · ") || data.entity.label;
+  const propertyDefinitions = Array.from(
+    new Map(
+      categories
+        .flatMap((c) => c.propertyDefinitions ?? [])
+        .map((def) => [def.key, def]),
+    ).values(),
+  );
+
   return (
     <KraphEntity.ModelPage
       variant="black"
       object={{ id: data.entity.id }}
       title={<>
         <div className="flex flex-row">
-          {data.entity.category?.label ?? data.entity.label} <div className="ml-2 text-md font-light">{data.entity.label}</div>
+          {categoryTitle} <div className="ml-2 text-md font-light">{data.entity.label}</div>
         </div>
       </>}
       sidebars={
@@ -98,36 +113,39 @@ const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
 
 
           <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl flex flex-row truncate ellipsis">
-            {data.entity.category?.label ?? data.entity.label} <div className="ml-2 text-md font-light">{data.entity.label}</div>
+            {categoryTitle} <div className="ml-2 text-md font-light">{data.entity.label}</div>
           </h1>
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Database className="h-4 w-4" /> Metadata
             </h3>
             <div className="grid gap-4 pl-2">
-              {data.entity.category && (
+              {categories.length > 0 && (
                 <div className="grid gap-1">
                   <span className="text-sm font-medium text-muted-foreground">
-                    Category
+                    {categories.length === 1 ? "Category" : "Categories"}
                   </span>
-                  <KraphEntityCategory.DetailLink
-                    object={{ id: data.entity.category.id }}
-                    className="text-sm font-medium hover:underline"
-                  >
-                    {data.entity.category.label}
-                  </KraphEntityCategory.DetailLink>
+                  {categories.map((category) => (
+                    <KraphEntityCategory.DetailLink
+                      key={category.id}
+                      object={{ id: category.id }}
+                      className="text-sm font-medium hover:underline"
+                    >
+                      {category.label}
+                    </KraphEntityCategory.DetailLink>
+                  ))}
                 </div>
               )}
             </div>
           </div>
 
-          {(data.entity.category?.propertyDefinitions?.length ?? 0) > 0 ? (
+          {propertyDefinitions.length > 0 ? (
             <>
               <Separator />
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Properties</h3>
                 <div className="grid gap-2 pl-2">
-                  {data.entity.category?.propertyDefinitions?.map((def) => {
+                  {propertyDefinitions.map((def) => {
                     const prop = data.entity.richProperties.find(
                       (p) => p.key === def.key,
                     );

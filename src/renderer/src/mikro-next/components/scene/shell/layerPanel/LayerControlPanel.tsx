@@ -10,6 +10,8 @@ import { LAYER_CARDS, renderLayerCard, type AnyLayerCardEntry } from "./cardRegi
 import { DesignStagingCard } from "../../features/meshDesign/ui/DesignStagingCard";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useBrickStore } from "../../features/bricks/store/brickSlice";
+import { unplaceableReason } from "../../platform/model/layerModel";
+import { UnplaceableNotice } from "./UnplaceableNotice";
 
 // Viewport coverage is deliberately GONE from this panel (and from
 // LayerViewRange entirely). It used to arrive as a bucketed Record and flow
@@ -180,7 +182,18 @@ export const LayerControlPanel = ({
               onRemove: handleRemove,
               onClose: handleClose,
             };
-            return <Fragment key={key}>{renderLayerCard(entry, layer, common)}</Fragment>;
+            // A layer without a server placement (`asAffine` null) is not on
+            // the canvas at all — say so under its card, for every kind, in
+            // the one place that sees every kind.
+            const unplaceable = unplaceableReason(layer);
+            return unplaceable ? (
+              <div key={key} className="flex flex-col">
+                {renderLayerCard(entry, layer, common)}
+                <UnplaceableNotice reason={unplaceable} />
+              </div>
+            ) : (
+              <Fragment key={key}>{renderLayerCard(entry, layer, common)}</Fragment>
+            );
           })}
         </div>
 

@@ -65,6 +65,8 @@ export type EffectWidgetProps = {
   children: React.ReactNode;
   effect: PortEffectFragment;
   port: MappablePort;
+  /** react-hook-form path of the port's field (e.g. `["args", "mode"]`). */
+  path: string[];
 };
 
 export type Effect = PortEffectFragment;

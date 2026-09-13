@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
-import { useArkitekt } from "./hooks";
+import { useConnection } from "./hooks";
 import { Service, ServiceBuilderMap } from "./types";
 
 /**
@@ -9,7 +9,7 @@ import { Service, ServiceBuilderMap } from "./types";
  * by reading the `ward` field from each Service and the `wardKey` from each ServiceDefinition.
  */
 export const WardRegistrar = () => {
-  const { connection } = useArkitekt();
+  const connection = useConnection();
   const { registry } = useWidgetRegistry();
 
   const serviceMap = connection?.serviceMap;

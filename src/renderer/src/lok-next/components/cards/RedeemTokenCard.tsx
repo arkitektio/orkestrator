@@ -1,3 +1,4 @@
+import React from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { LokRedeemToken } from "@/linkers";
@@ -34,4 +35,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

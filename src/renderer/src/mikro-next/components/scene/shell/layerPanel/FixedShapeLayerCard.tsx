@@ -1,6 +1,5 @@
 import { memo, useState } from "react";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
 import {
   ProjectionMode,
   useUpdateIntensityLayerMutation,
@@ -11,7 +10,6 @@ import {
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import {
   CardSection,
-  RowLabel,
   Segment,
   SegmentGroup,
   layerCardShellClasses,
@@ -26,6 +24,7 @@ import {
   TransferEditor,
 } from "../../features/volume/rendergraph/RenderNodeEditor";
 import { LayerGraphFlyout } from "./LayerGraphFlyout";
+import { RgbChannelEditor } from "./RgbChannelEditor";
 import { LayerRow } from "./LayerRow";
 import { UnplannableNotice } from "./UnplannableNotice";
 import { type LayerCardProps } from "./cardShell";
@@ -74,13 +73,20 @@ const PROJECTIONS: ReadonlyArray<{
  * card, not a poorer one — the graph editor's whole vocabulary (add a node,
  * change a blend, reparent) describes choices these types do not offer.
  *
- * The editors themselves are the SAME ones the graph editor mounts
+ * The INTENSITY and PHASOR editors are the SAME ones the graph editor mounts
  * (`TransferEditor`, `PhasorNodeEditor`), reused rather than reimplemented — an
  * intensity layer's transfer is the identical `TransferFn`, tint included, and
  * a phasor layer's `phasorRender` normalizes to the identical node. What
  * differs is only where the edit is persisted: each type has its own
  * `update*Layer` mutation, because the generic `updateLayer` takes a
  * `renderGraph` and none of these has one.
+ *
+ * RGB does NOT share that editor, and `RgbChannelEditor`'s docblock argues
+ * why at length: an RGB layer's question is which plane feeds which primary,
+ * and almost everything a transfer editor offers — gamma, a curve, a colormap,
+ * a per-plane window — is both unpersistable for it and enough to demote it
+ * off its specialised material. It brings its own sections instead of a
+ * "Rendering" block.
  *
  * Live preview is a store write (the renderer reads `sceneStore.layers`); the
  * mutation is the explicit Save, exactly as the graph editor sequences it.
@@ -151,26 +157,38 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
   const setIntensityTransfer = (transfer: TransferFn) =>
     pushChannels([{ ...layer.channels[0], transfer }]);
 
-  // ONE window for all three planes: an RGB image is three views of one
-  // acquisition, so the editor edits the shared window and writes it to each.
-  const setRgbTransfer = (transfer: TransferFn) =>
+  /**
+   * ONE window for all three planes: an RGB image is three views of one
+   * acquisition, so the editor edits the shared window and writes it to each.
+   *
+   * Only the window — never a gamma, a curve or a colormap. That is not a
+   * simplification of the editor's output but the precondition of
+   * `renderKind === "rgb"` (`platform/model/layerModel.ts`): identical clims,
+   * no gamma, basis tints. The RGB editor offers none of them, so this can
+   * only ever be handed the two values it copies.
+   */
+  const setRgbWindow = (climMin: number, climMax: number) =>
     pushChannels(
       layer.channels.map((channel) => ({
         ...channel,
-        transfer: {
-          ...channel.transfer,
-          climMin: transfer.climMin,
-          climMax: transfer.climMax,
-        },
+        transfer: { ...channel.transfer, climMin, climMax },
       })),
     );
 
-  const setRgbPlane = (slot: number, index: number) =>
+  /** All three plane indices at once — a preset moves two or three of them,
+   *  and three separate writes would republish the layer mid-edit. */
+  const setRgbPlanes = (indices: readonly number[]) =>
     pushChannels(
-      layer.channels.map((channel, i) =>
-        i === slot ? { ...channel, intensityIndex: index } : channel,
-      ),
+      layer.channels.map((channel, i) => ({
+        ...channel,
+        intensityIndex: indices[i] ?? channel.intensityIndex,
+      })),
     );
+
+  /** The axis the three indices address. `pushChannels` folds it onto the flat
+   *  field the renderer and the planner read; `save()` persists it. */
+  const setRgbAxis = (intensityAxis: string) =>
+    pushChannels(layer.channels.map((channel) => ({ ...channel, intensityAxis })));
 
   const setPhasorNode = (node: PhasorRenderNode) => {
     viewApi.getState().markInteraction(); // same live-preview cadence as pushChannels
@@ -222,6 +240,10 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
             redIndex: red?.intensityIndex ?? null,
             greenIndex: green?.intensityIndex ?? null,
             blueIndex: blue?.intensityIndex ?? null,
+            // The axis those three index. Editable on a lens with more than
+            // one candidate, and unpersisted until now — a remapped layer came
+            // back addressing the old axis on the next load.
+            intensityAxis: red?.intensityAxis ?? null,
           },
         },
       });
@@ -292,51 +314,35 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
               </SegmentGroup>
             </CardSection>
           )}
-          <CardSection title="Rendering">
-            {layer.__typename === "IntensityLayer" && layer.channels[0] && (
-              <TransferEditor
-                layer={layer}
-                transfer={layer.channels[0].transfer}
-                onChange={setIntensityTransfer}
-              />
-            )}
-            {layer.__typename === "RgbLayer" && layer.channels[0] && (
-              <div className="flex flex-col gap-2">
-                {/* The tints are fixed basis vectors — what is editable is
-                    WHICH plane feeds each of them, and the shared window. */}
-                <div className="flex items-center gap-2">
-                  {(["Red", "Green", "Blue"] as const).map((name, slot) => (
-                    <div key={name} className="flex min-w-0 flex-1 flex-col gap-1">
-                      <RowLabel>{name}</RowLabel>
-                      <Input
-                        type="number"
-                        min={0}
-                        step={1}
-                        className="h-7 text-xs"
-                        value={layer.channels[slot]?.intensityIndex ?? 0}
-                        onChange={(e) => setRgbPlane(slot, Number(e.target.value))}
-                      />
-                    </div>
-                  ))}
-                </div>
-                {/* Window only: the tints are fixed, so the picker would
-                    offer an edit `setRgbTransfer` has nowhere to put. */}
+          {/* RGB brings its OWN sections (channels / exposure / source) rather
+              than a "Rendering" block: what it edits is a mapping, and the
+              one window is a consequence of that, not a transfer to tune. */}
+          {layer.__typename === "RgbLayer" && layer.channels[0] && (
+            <RgbChannelEditor
+              layer={layer}
+              onPlanes={setRgbPlanes}
+              onWindow={setRgbWindow}
+              onIntensityAxis={setRgbAxis}
+            />
+          )}
+          {layer.__typename !== "RgbLayer" && (
+            <CardSection title="Rendering">
+              {layer.__typename === "IntensityLayer" && layer.channels[0] && (
                 <TransferEditor
                   layer={layer}
-                  showColormap={false}
                   transfer={layer.channels[0].transfer}
-                  onChange={setRgbTransfer}
+                  onChange={setIntensityTransfer}
                 />
-              </div>
-            )}
-            {layer.__typename === "PhasorLayer" && layer.phasors[0] && (
-              <PhasorNodeEditor
-                layer={layer}
-                node={layer.phasors[0]}
-                onChange={setPhasorNode}
-              />
-            )}
-          </CardSection>
+              )}
+              {layer.__typename === "PhasorLayer" && layer.phasors[0] && (
+                <PhasorNodeEditor
+                  layer={layer}
+                  node={layer.phasors[0]}
+                  onChange={setPhasorNode}
+                />
+              )}
+            </CardSection>
+          )}
           {/* The metadata + placement chrome every layer card offers. Passing
               no editor is what keeps the graph section out. */}
           <LayerGraphFlyout inline layer={layer} onUpdate={onUpdate} onClose={onClose} />

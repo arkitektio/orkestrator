@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/command'
 import { rekuestActionToMatchingNode } from '@/reaktion/plugins/rekuest'
 import { SubflowDropContextualParams } from '../../types'
-import { useEditRiver } from '../context'
+import { useEditFlowStore } from '../context'
 import { ContextualContainer } from './ContextualContainer'
 import {
   ConstantActionDocument,
@@ -95,7 +95,7 @@ export const SubflowDropContextual = (props: {
   params: SubflowDropContextualParams
 }) => {
   const client = useRekuest()
-  const { addContextualNode } = useEditRiver()
+  const addContextualNode = useEditFlowStore((s) => s.addContextualNode);
 
   const agentId = (props.params.subflowNode.data as { agent?: { id?: string } }).agent?.id
   const subflowTitle = props.params.subflowNode.data.title

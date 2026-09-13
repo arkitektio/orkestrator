@@ -25,7 +25,7 @@ const MaterializedBlokList = ({ pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(item, index) => <MaterializedBlokCard key={index} item={item} />}
+      {(item) => <MaterializedBlokCard key={item.id} item={item} />}
     </ListRender>
   );
 };

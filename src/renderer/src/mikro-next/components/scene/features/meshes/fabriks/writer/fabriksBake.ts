@@ -296,7 +296,8 @@ const assignCells = (
   return cells;
 };
 
-const bboxOf = (floats: readonly number[]): { min: Vec3; max: Vec3 } => {
+// Accepts typed arrays directly so callers never box a whole Float32Array.
+const bboxOf = (floats: ArrayLike<number>): { min: Vec3; max: Vec3 } => {
   const min: Vec3 = [Infinity, Infinity, Infinity];
   const max: Vec3 = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i < floats.length; i += 3) {
@@ -340,7 +341,7 @@ export function bakeFabriksCollection(
 
   // Global bounds → non-negative frame.
   const global = { min: [Infinity, Infinity, Infinity] as Vec3, max: [-Infinity, -Infinity, -Infinity] as Vec3 };
-  for (const mesh of meshes) mergeBox(global, bboxOf(Array.from(mesh.positions)));
+  for (const mesh of meshes) mergeBox(global, bboxOf(mesh.positions));
   if (!global.min.every(Number.isFinite)) throw new Error("The meshes carry no vertices.");
   const offset: Vec3 = [Math.floor(global.min[0]), Math.floor(global.min[1]), Math.floor(global.min[2])];
   const extent = Math.max(

@@ -6,7 +6,8 @@ import {
   type RoiLookupTarget,
 } from "./roiAttributeLookup";
 import type { SelectedRoi } from "./roiSelectionStore";
-import { AttributePlanBlock } from "../../platform/layerui/AttributeRowsSection";
+import { HopBlocks } from "../../platform/layerui/AttributeRowsSection";
+import { useViewerStore } from "../../platform/stores/viewerStore";
 
 /**
  * "What is under this ROI?" — attribute-plan rows for a selected annotation,
@@ -23,9 +24,11 @@ const RoiTargetAttributes = ({
   target: RoiLookupTarget;
   showLabel: boolean;
 }) => {
+  const selection = useViewerStore((s) => s.attributeSelection);
   const { status, results, error } = useAttributesAt({
     systemId: target.systemId,
     coords: target.coords,
+    selection,
   });
 
   if (status === "idle") return null;
@@ -53,7 +56,7 @@ const RoiTargetAttributes = ({
     );
   }
 
-  // Unreachable plans are honest absences; a system with no reachable tables
+  // Unreachable hops are honest absences; a system with no reachable tables
   // renders nothing at all (plansFor negative-caches the empty answer).
   const shown = results.filter((result) => result.state.status !== "unreachable");
   if (shown.length === 0) return null;
@@ -61,14 +64,7 @@ const RoiTargetAttributes = ({
   return (
     <div className="space-y-1">
       {label}
-      {shown.map((result) => (
-        <AttributePlanBlock
-          key={result.planKey}
-          tableName={result.table.name}
-          attributes={result.attributes}
-          state={result.state}
-        />
-      ))}
+      <HopBlocks blocks={shown.map((result) => ({ meta: result, state: result.state }))} />
     </div>
   );
 };

@@ -20,7 +20,7 @@ const List = () => {
         }
         refetch={() => refetch()}
       >
-        {(ex, index) => <ProjectCard key={index} project={ex} />}
+        {(ex) => <ProjectCard key={ex.id} project={ex} />}
       </ListRender>
     </>
   );

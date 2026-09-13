@@ -27,6 +27,9 @@
     "Selector": [
       "CPUSelector",
       "CudaSelector",
+      "LabelSelector",
+      "OneApiSelector",
+      "RAMSelector",
       "RocmSelector"
     ]
   }

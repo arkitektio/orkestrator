@@ -1,20 +1,38 @@
 import type { MikroClient } from "@/lib/zarr/store/types";
 import type { AxisCoords } from "../coords/axisPath";
+import { createSparseProfileReader } from "../sparse/sparseProfile";
 import {
+  hopMetaOf,
   isMeshSample,
   isNetworkSample,
-  planIdentity,
+  isSparseHop,
   type AttributeColumnLike,
+  type AttributeHopLike,
   type AttributePlanLike,
   type AttributeRow,
+  type HopMeta,
   type PlanRowsState,
 } from "./attributeTypes";
+import {
+  EMPTY_SELECTION,
+  executeOptionsFor,
+  selectHops,
+  selectionSignature,
+  type AttributeSelection,
+} from "./attributeSelection";
 import {
   createExactSampler,
   type OpenedZarrArray,
 } from "./exactSampleSource";
 import { createLookupEngine } from "./createLookupEngine";
-import { executePlanAt, executePlanWithValue, type ExecutePlanOptions } from "./executePlan";
+import {
+  executePlanAt,
+  executePlanWithValue,
+  peekPlanWithValue,
+  type ExecutePlanDeps,
+  type ExecutePlanOptions,
+  type PlanHopStates,
+} from "./executePlan";
 import type { AttributeLookupEngine } from "./lookupEngine";
 import { LruMap } from "./lruMap";
 import type { HeldValue } from "./planExec";
@@ -55,31 +73,38 @@ export type AttributesAtInput = {
   systemId: string;
   /** Named integer coordinates in the system's level-0 frame. */
   coords: AxisCoords;
+  /** Which hops run and what they select; the defaults when omitted. */
+  selection?: AttributeSelection;
   signal?: AbortSignal;
 };
 
-/** One plan's outcome, with the display metadata the caller needs to render it. */
-export type PlanAttributesResult = {
-  planKey: string;
-  table: { id: string; name: string };
-  attributes: readonly AttributeColumnLike[];
-  state: PlanRowsState;
-};
+/** One hop's outcome, with the display metadata the caller needs to render it. */
+export type PlanAttributesResult = HopMeta & { state: PlanRowsState };
+
+/** Which hops to peek and what they select — the executor's selection slice. */
+export type PeekPlanOptions = Pick<ExecutePlanOptions, "hops" | "columnsFor" | "sparseLimit">;
 
 export interface AttributeService {
   /**
-   * Run every plan of `systemId` at `coords`. One entry per plan; an aborted
-   * request resolves to what settled before the abort (callers usually
-   * discard on abort anyway). Rejects on plan-discovery failure.
+   * Run the selected hops of every plan of `systemId` at `coords`. One entry
+   * per hop that ran; an aborted request resolves to what settled before the
+   * abort (callers usually discard on abort anyway). Rejects on
+   * plan-discovery failure.
    */
   attributesAt(input: AttributesAtInput): Promise<readonly PlanAttributesResult[]>;
   /** Synchronous cache-only answer for a point this service already ran. */
-  peekAttributesAt(input: { systemId: string; coords: AxisCoords }): readonly PlanAttributesResult[] | null;
+  peekAttributesAt(
+    input: Omit<AttributesAtInput, "signal">,
+  ): readonly PlanAttributesResult[] | null;
   /** The system's plans (discovery cached; empty array = none attached). */
   plansFor(systemId: string): Promise<readonly AttributePlanLike[]>;
   peekPlans(systemId: string): readonly AttributePlanLike[] | null;
-  /** Pre-pay a system's fixed costs (discovery, secrets, statements). */
-  warm(systemId: string): Promise<void>;
+  /** Pre-pay a system's fixed costs (discovery, secrets, statements, a
+   * matrix's `indptr`) for the hops the selection runs. */
+  warm(systemId: string, selection?: AttributeSelection): Promise<void>;
+  /** Pre-pay ONE hop's fixed costs — for hosts that warm per plan as
+   * discovery lands. */
+  warmHop(plan: AttributePlanLike, hop: AttributeHopLike): void;
   followReference(
     column: AttributeColumnLike,
     value: HeldValue,
@@ -88,24 +113,29 @@ export interface AttributeService {
     column: AttributeColumnLike,
     value: HeldValue,
   ): readonly AttributeRow[] | null;
-  /** Host hooks (the scene tracker): shared executor + result-LRU peek. */
+  /** Host hooks (the scene tracker): shared executor + cache-only peek. */
   executePlanAt(
     plan: AttributePlanLike,
     coords: AxisCoords,
     opts?: ExecutePlanOptions,
-  ): Promise<PlanRowsState | null>;
+  ): Promise<PlanHopStates | null>;
   /** The value-KNOWN executor (mesh instance picks): skips the field-array
    * sample, everything else identical. */
   executePlanWithValue(
     plan: AttributePlanLike,
     coords: AxisCoords,
     value: HeldValue,
-    opts?: Pick<ExecutePlanOptions, "isStale" | "onUnreachable">,
-  ): Promise<PlanRowsState | null>;
-  peekRows(
+    opts?: Omit<ExecutePlanOptions, "sampleSync">,
+  ): Promise<PlanHopStates | null>;
+  /** The whole chain from caches alone, for an already-mapped point and a
+   * value in hand; null on the first miss. */
+  peekPlanWithValue(
     plan: AttributePlanLike,
-    held: Record<string, HeldValue>,
-  ): readonly AttributeRow[] | null;
+    mapped: AxisCoords,
+    value: HeldValue,
+    sampleSource: "resident" | "exact",
+    opts?: PeekPlanOptions,
+  ): PlanHopStates | null;
   /** Attach/detach a host's already-open arrays (scene registry). */
   registerArrayProvider(
     provider: ((storeId: string) => OpenedZarrArray | null) | null,
@@ -113,22 +143,26 @@ export interface AttributeService {
   /** Drop cached plan discovery (edge changed on the server). */
   invalidate(systemId?: string): void;
   dispose(): void;
-  /** The underlying engine, for warm-per-plan wiring. */
+  /** The underlying engine, for ad-hoc column reads (pickers, LUTs). */
   readonly engine: AttributeLookupEngine;
 }
 
 const DEFAULT_RESULT_CAP = 64;
 
-const pointKey = (systemId: string, coords: AxisCoords): string =>
+const pointKey = (systemId: string, coords: AxisCoords, selection: AttributeSelection): string =>
   `${systemId}|${Object.keys(coords)
     .sort()
     .map((axis) => `${axis}=${coords[axis]}`)
-    .join(",")}`;
+    .join(",")}|${selectionSignature(selection)}`;
 
 export function createAttributeService(
   options: AttributeServiceOptions,
 ): AttributeService {
   const engine = createLookupEngine(options.client, options.datalayer);
+  const sparse = createSparseProfileReader({
+    client: options.client,
+    datalayer: options.datalayer,
+  });
   const planCache = new AttributePlanCache(options.client, options.planCacheCap);
   const sampler = createExactSampler({
     client: options.client,
@@ -140,8 +174,9 @@ export function createAttributeService(
     options.resultCap ?? DEFAULT_RESULT_CAP,
   );
 
-  const execDeps = {
+  const execDeps: ExecutePlanDeps = {
     engine,
+    sparse,
     sampleExact: (plan: AttributePlanLike, index: readonly number[]) =>
       // Mesh and network samples have no array; executePlanAt guards earlier,
       // this is type-narrowing plus defense in depth.
@@ -150,43 +185,52 @@ export function createAttributeService(
         : sampler.readExact(plan.sample.store, index).catch(() => null),
   };
 
-  const toResult = (
+  /** The states of one plan's run as per-hop results, in chain order. */
+  const toResults = (
     plan: AttributePlanLike,
-    state: PlanRowsState,
-  ): PlanAttributesResult => ({
-    planKey: planIdentity(plan),
-    table: plan.table,
-    attributes: plan.lookup.attributes,
-    state,
-  });
+    hops: readonly AttributeHopLike[],
+    states: PlanHopStates,
+  ): PlanAttributesResult[] =>
+    hops.flatMap((hop) => {
+      const meta = hopMetaOf(plan, hop);
+      const state = states[meta.hopKey];
+      return state ? [{ ...meta, state }] : [];
+    });
+
+  const warmHop = (plan: AttributePlanLike, hop: AttributeHopLike): void => {
+    if (isSparseHop(hop)) sparse.warm(plan, hop);
+    else engine.warm(plan, hop);
+  };
 
   const service: AttributeService = {
     engine,
 
-    async attributesAt({ systemId, coords, signal }) {
-      const cached = results.get(pointKey(systemId, coords));
+    async attributesAt({ systemId, coords, selection = EMPTY_SELECTION, signal }) {
+      const cached = results.get(pointKey(systemId, coords, selection));
       if (cached !== undefined) return cached;
       const isStale = () => !!signal?.aborted;
       const plans = await planCache.get(systemId);
       const settled = await Promise.all(
-        plans.map((plan) =>
-          executePlanAt(execDeps, plan, coords, { isStale }).then((state) =>
-            state === null ? null : toResult(plan, state),
-          ),
-        ),
+        plans.map(async (plan) => {
+          const hops = selectHops(selection, plan);
+          if (hops.length === 0) return [];
+          const states = await executePlanAt(execDeps, plan, coords, {
+            isStale,
+            ...executeOptionsFor(selection, plan),
+          });
+          return states === null ? null : toResults(plan, hops, states);
+        }),
       );
-      const complete = settled.filter(
-        (entry): entry is PlanAttributesResult => entry !== null,
-      );
+      const complete = settled.flatMap((entry) => entry ?? []);
       // Cache only complete, uninterrupted answers.
-      if (!signal?.aborted && complete.length === plans.length) {
-        results.set(pointKey(systemId, coords), complete);
+      if (!signal?.aborted && settled.every((entry) => entry !== null)) {
+        results.set(pointKey(systemId, coords, selection), complete);
       }
       return complete;
     },
 
-    peekAttributesAt({ systemId, coords }) {
-      return results.get(pointKey(systemId, coords)) ?? null;
+    peekAttributesAt({ systemId, coords, selection = EMPTY_SELECTION }) {
+      return results.get(pointKey(systemId, coords, selection)) ?? null;
     },
 
     plansFor(systemId) {
@@ -197,10 +241,14 @@ export function createAttributeService(
       return planCache.peek(systemId);
     },
 
-    async warm(systemId) {
+    async warm(systemId, selection = EMPTY_SELECTION) {
       const plans = await planCache.get(systemId);
-      for (const plan of plans) engine.warm(plan);
+      for (const plan of plans) {
+        for (const hop of selectHops(selection, plan)) warmHop(plan, hop);
+      }
     },
+
+    warmHop,
 
     followReference(column, value) {
       return engine.followReference(column, value);
@@ -215,11 +263,11 @@ export function createAttributeService(
     },
 
     executePlanWithValue(plan, coords, value, opts) {
-      return executePlanWithValue({ engine }, plan, coords, value, opts);
+      return executePlanWithValue(execDeps, plan, coords, value, opts);
     },
 
-    peekRows(plan, held) {
-      return engine.peek(plan, held);
+    peekPlanWithValue(plan, mapped, value, sampleSource, opts) {
+      return peekPlanWithValue(execDeps, plan, mapped, value, sampleSource, opts);
     },
 
     registerArrayProvider(provider) {
@@ -233,6 +281,7 @@ export function createAttributeService(
 
     dispose() {
       engine.dispose();
+      sparse.dispose();
       sampler.dispose();
       planCache.invalidate();
       results.drain();

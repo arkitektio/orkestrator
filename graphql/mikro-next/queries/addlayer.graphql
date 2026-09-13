@@ -1,37 +1,51 @@
-# Candidates for the Add Layer dialog, asked the way the model is actually
-# shaped: a scene composes over a world coordinate system, and what can be added
-# is everything living in a space with a traversable path into that world.
+# The scene the Add Layer dialog is adding to: its world, the server's own
+# answer to what is placeable there, and the layers already staged.
 #
-# `placedSystems` IS that set — "the same set the `placeableIn` filters answer
-# from, so a picker and a layer mutation cannot disagree" — and asking it instead
-# of one flat `placeableIn` list per source kind buys three things: mesh
-# collections and annotation collections become visible (they have no
-# placeability filter of their own), the answer comes pre-grouped by the space
-# that makes each candidate reachable, and there is one round trip instead of
-# one per kind.
+# `placedSystems` is the OFFER — "the same set the `placeableIn` filters answer
+# from, so a picker and a layer mutation cannot disagree" — as ids: the
+# structure the picker walks comes from `AddLayerWorldGraph`, and a space that
+# walk reaches but the server does not list (one reached only across a FIELD,
+# say) yields no row.
 #
-# Directed, unlike `coordinateGraph`, which walks the undirected neighbourhood:
-# this asks who can get IN.
+# The scene's own layers ride along: the picker ranks candidates by their
+# relation to what is already staged, and defaults a new channel's styling from
+# a staged sibling of the same dataset.
 query AddLayerReachable($scene: ID!) {
   scene(id: $scene) {
     id
     name
+    layers {
+      ...AddLayerStagedLayer
+    }
     worldCoordinateSystem {
       id
       name
-      # The world's own residents. Whether `placedSystems` includes the world
-      # itself is not stated, and data sitting IN the world is trivially
-      # composable there — so it is asked for separately and deduped by space id.
-      residents {
-        ...AddLayerCandidate
-      }
       placedSystems {
         id
-        name
-        residents {
-          ...AddLayerCandidate
-        }
       }
+    }
+  }
+}
+
+# The world's coordinate-system component: every space it relates to and every
+# top-level edge between them, each in its true stored direction. The picker
+# walks the CHILDREN from the world — an edge lands in its `output`, so a
+# space's children are the spaces whose edges land in it: the grids registered
+# into the world, the derived datasets, crops and levels landing in those
+# grids, and so on down — which is the tree the derivation engine ranks by.
+# The server's walk is undirected, so a dataset registered into a second world
+# brings that world along; the client's directed walk from THIS world never
+# reaches it, and its spaces are simply not listed.
+query AddLayerWorldGraph($world: ID!, $maxDepth: Int) {
+  coordinateGraph(coordinateSystem: $world, maxDepth: $maxDepth) {
+    root {
+      id
+    }
+    systems {
+      ...AddLayerSpace
+    }
+    transformations {
+      ...DerivationEdge
     }
   }
 }
@@ -41,15 +55,50 @@ query AddLayerReachable($scene: ID!) {
 #
 # `asLayer` is a real narrowing rather than a no-op: IMAGE requires an x and a y
 # axis of more than one pixel (the same gate layer creation applies), and LABEL
-# additionally requires a primary derivation declaring CATEGORIZED. That second
-# one is not derivable from anything the picker fetches, so it is asked rather
-# than guessed — a kind button is disabled when the server would refuse it, not
-# after it has.
+# additionally requires a primary derivation declaring CATEGORIZED. The engine
+# can see that edge in the lineage too, but the server is the last word on what
+# it will draw as a mask — a crop of a mask is one to a person and not to
+# `createLabelLayer` — so LABEL stays a gate the server answers, and lineage
+# only orders and explains within it. PHASOR needs no set of its own:
+# `renderAxes.phasor` is the same server-derived fact `asLayer: PHASOR` checks.
 query AddLayerLensCapabilities($space: ID!) {
   drawable: lenses(filters: { placeableIn: { space: $space, asLayer: IMAGE } }) {
     id
   }
   labels: lenses(filters: { placeableIn: { space: $space, asLayer: LABEL } }) {
     id
+  }
+}
+
+# The provenance HELPER: the full lineage component around one candidate,
+# fetched once a row is chosen. The world's children tree already holds every
+# derivation landing inside this world; this is what reaches an ancestor
+# outside it — the acquisition a segmentation came from when only the
+# segmentation was registered here — and anything beyond the tree's depth.
+#
+# Edge endpoints select their residents because a lineage edge names a space,
+# and the engine keys nodes by container — the same hop `parentDatasetOfEdge`
+# makes on the dataset page.
+query AddLayerLineage($coordinateSystem: ID!, $maxDepth: Int) {
+  lineageGraph(coordinateSystem: $coordinateSystem, maxDepth: $maxDepth) {
+    root {
+      id
+    }
+    nodes {
+      ...AddLayerLineageNode
+    }
+    edges {
+      ...DerivationEdge
+      input {
+        residents {
+          ...AddLayerSpaceOwner
+        }
+      }
+      output {
+        residents {
+          ...AddLayerSpaceOwner
+        }
+      }
+    }
   }
 }

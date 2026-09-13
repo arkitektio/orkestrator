@@ -1,7 +1,7 @@
 import { useDialog } from "@/app/dialog";
-import { useArkitekt } from "@/lib/arkitekt/provider";
+import { useConnection } from "@/lib/arkitekt/provider";
 import { useDownload } from "@/providers/download/DownloadProvider";
-import { TaskEventKind, useTaskQuery } from "@/rekuest/api/graphql";
+import { TaskEventKind, useFullTaskQuery } from "@/rekuest/api/graphql";
 import { ApolloClient } from "@apollo/client";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -42,13 +42,14 @@ const SingleHookWatcher = ({ entry }: { entry: PendingHook }) => {
   const { startDownload } = useDownload();
   const navigate = useNavigate();
   const dialog = useDialog();
-  const arkitekt = useArkitekt();
+  const connection = useConnection();
 
   // Dedupes within one mount. After a reload the task is re-read from cache, so
   // completion still fires (the ref resets with the fresh mount).
   const handledRef = useRef(false);
 
-  const { data } = useTaskQuery({
+  // Full ports: handlers align positional `returns` to `task.action.returns`.
+  const { data } = useFullTaskQuery({
     variables: { id: entry.taskId },
     fetchPolicy: "cache-and-network",
   });
@@ -58,7 +59,7 @@ const SingleHookWatcher = ({ entry }: { entry: PendingHook }) => {
     if (!task || handledRef.current) return;
 
     const hook = TASK_HOOKS[entry.hookType];
-    const serviceMap = arkitekt.connection?.serviceMap ?? {};
+    const serviceMap = connection?.serviceMap ?? {};
     const buildCtx = (returns: unknown[]): HookContext => ({
       task,
       returns,
@@ -105,7 +106,7 @@ const SingleHookWatcher = ({ entry }: { entry: PendingHook }) => {
         setStatus(entry.reference, "error", e?.message ?? String(e));
       }
     })();
-  }, [task, entry, arkitekt, setStatus, removePendingHook, startDownload, navigate, dialog]);
+  }, [task, entry, connection, setStatus, removePendingHook, startDownload, navigate, dialog]);
 
   return null;
 };

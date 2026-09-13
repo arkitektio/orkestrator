@@ -12,7 +12,7 @@ fragment Term on Term {
   purl
   createdAt
   image {
-    presignedUrl
+    ...MediaStore
   }
 }
 

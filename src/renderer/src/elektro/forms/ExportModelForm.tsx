@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { ArgsContainer } from "@/components/widgets/ArgsContainer";
-import { ActionDescription } from "@/lib/rekuest/ActionDescription";
+import { FormActionDescription } from "@/lib/rekuest/ActionDescription";
 import {
   ActionFilter,
   DemandKind,
@@ -215,9 +215,7 @@ const ExporterRunForm = (props: {
     }
   };
 
-  const data = form.watch();
   const isSubmitting = form.formState.isSubmitting;
-  const isValid = form.formState.isValid;
 
   return (
     <div>
@@ -238,9 +236,9 @@ const ExporterRunForm = (props: {
       <DialogDescription className="mt-2" asChild>
         <div>
           {action?.description && (
-            <ActionDescription
+            <FormActionDescription
               description={action.description}
-              variables={data}
+              control={form.control}
             />
           )}
           <Form {...form}>
@@ -256,7 +254,7 @@ const ExporterRunForm = (props: {
                 path={[]}
               />
               <div className="flex justify-end">
-                <Button type="submit" variant="outline" disabled={!isValid}>
+                <Button type="submit" variant="outline" disabled={isSubmitting}>
                   <Download className="h-4 w-4 mr-2" />
                   Export{isSubmitting ? "ing…" : ""}
                 </Button>

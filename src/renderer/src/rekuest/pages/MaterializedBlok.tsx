@@ -121,9 +121,9 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
                 </p>
               </div>
               <div className="rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
-                {Array.isArray(materializedBlok.blok.uiComponents)
-                  ? `${materializedBlok.blok.uiComponents.length} nodes`
-                  : "A2UI stream"}
+                {`${materializedBlok.blok.components.length} root node${
+                  materializedBlok.blok.components.length === 1 ? "" : "s"
+                }`}
               </div>
             </div>
 

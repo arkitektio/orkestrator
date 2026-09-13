@@ -11,9 +11,10 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { Sidebars } from "./Sidebars";
+import { flattenChildren, Sidebars } from "./Sidebars";
 import { PageLayout, PageVariant } from "./PageLayout";
 import { KnowledgeSidebar } from "@/kraph/components/sidebars/KnowledgeSidebar";
+import { smartRegistry } from "@/providers/smart/registry";
 
 /** Label of the rail tab holding this structure's conversations. */
 const CHAT_TAB_LABEL = "Chat";
@@ -26,6 +27,12 @@ const CHAT_TAB_LABEL = "Chat";
  */
 const KNOWLEDGE_TAB_LABEL = "Knowledge";
 
+/** A `<Sidebars.Tab label="Knowledge">` slot, wherever a page put it. */
+const isKnowledgeTab = (child: ReactNode) =>
+  isValidElement(child) &&
+  child.type === Sidebars.Tab &&
+  (child.props as { label?: string }).label === KNOWLEDGE_TAB_LABEL;
+
 /**
  * Most model pages hand in their own rail instead of using the default below,
  * and every model page should be able to talk about what it is showing — so
@@ -36,19 +43,30 @@ const KNOWLEDGE_TAB_LABEL = "Knowledge";
  * - a bare component as the rail (a handful of pages pass just their
  *   `Knowledge`) is promoted to a two-tab rail, since a tabless rail has
  *   nowhere for the chat to go.
+ *
+ * Knowledge is a datum's affair (see `SmartConfig.datum`). `X.Knowledge`
+ * already renders nothing for a non-datum, but a page that hand-placed it in
+ * a Knowledge tab would still show that tab, empty — so for a non-datum the
+ * tab is dropped here, and a bare rail gets no Knowledge slot at all.
  */
 const withChatTab = (
   rail: ReactNode,
   chatTab: ReactNode,
   sidebarKey: string,
+  datum: boolean,
 ): ReactNode => {
   if (isValidElement(rail) && rail.type === Sidebars) {
     const element = rail as ReactElement<ComponentProps<typeof Sidebars>>;
+    const tabs = datum
+      ? element.props.children
+      : flattenChildren(element.props.children).filter(
+          (child) => !isKnowledgeTab(child),
+        );
     return cloneElement(
       element,
       {},
       <>
-        {element.props.children}
+        {tabs}
         {chatTab}
       </>,
     );
@@ -56,7 +74,7 @@ const withChatTab = (
 
   return (
     <Sidebars sidebarKey={sidebarKey}>
-      <Sidebars.Tab label={KNOWLEDGE_TAB_LABEL}>{rail}</Sidebars.Tab>
+      {datum && <Sidebars.Tab label={KNOWLEDGE_TAB_LABEL}>{rail}</Sidebars.Tab>}
       {chatTab}
     </Sidebars>
   );
@@ -105,6 +123,7 @@ export const ModelPageLayout = ({
   pageActions,
 }: ModelPageLayoutProps) => {
   const objects = useMemo(() => [{ identifier, object }], [identifier, object]);
+  const datum = smartRegistry.isDatum(identifier);
   const knowledgeSidebar = (
     <KnowledgeSidebar identifier={identifier} object={object} />
   );
@@ -120,15 +139,17 @@ export const ModelPageLayout = ({
   return (
     <PageLayout
       title={title}
-      sidebars={sidebars ? withChatTab(sidebars, chatTab, sidebarKey ?? "DetailModel") : (
+      sidebars={sidebars ? withChatTab(sidebars, chatTab, sidebarKey ?? "DetailModel", datum) : (
         <Sidebars
           sidebarKey={sidebarKey ?? "DetailModel"}
           defaultTab={defaultSidebar}
           variant={overlay ? "overlay" : "default"}
         >
-          <Sidebars.Tab label={KNOWLEDGE_TAB_LABEL}>
-            <Guard.Kraph>{knowledgeSidebar}</Guard.Kraph>
-          </Sidebars.Tab>
+          {datum && (
+            <Sidebars.Tab label={KNOWLEDGE_TAB_LABEL}>
+              <Guard.Kraph>{knowledgeSidebar}</Guard.Kraph>
+            </Sidebars.Tab>
+          )}
           {additionalSidebars}
           {chatTab}
         </Sidebars>

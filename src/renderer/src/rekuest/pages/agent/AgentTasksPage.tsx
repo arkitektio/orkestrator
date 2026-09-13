@@ -14,7 +14,7 @@ import {
   TASK_STATE_FILTER_OPTIONS as STATE_OPTIONS,
 } from "@/rekuest/lib/taskStatus";
 import { parseAsBoolean, parseAsIsoDateTime, parseAsStringLiteral, useQueryState, parseAsArrayOf } from "nuqs";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { X } from "lucide-react";
 
 export const AgentTasksPage = asDetailQueryRoute(

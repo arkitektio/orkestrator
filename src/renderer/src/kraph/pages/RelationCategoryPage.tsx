@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { DragZone } from "@/components/upload/drag";
 import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
-import { useResolve } from "@/datalayer/hooks/useResolve";
 import {
   KraphRelationCategory
 } from "@/linkers";
@@ -14,14 +13,13 @@ import {
   useUpdateRelationCategoryMutation
 } from "../api/graphql";
 import UpdateRelationCategoryForm from "../forms/UpdateRelationCategoryForm";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 const Page = asDetailQueryRoute(
   useGetRelationCategoryQuery,
   ({ data, refetch }) => {
     const uploadFile = useKraphMediaUpload();
     const [update] = useUpdateRelationCategoryMutation();
-
-    const resolve = useResolve();
 
     const createFile = async (file: File) => {
       const response = await uploadFile(file);
@@ -75,12 +73,16 @@ const Page = asDetailQueryRoute(
             </p>
           </div>
           <div className="w-full h-full flex-row relative">
-            {data.relationCategory?.image?.presignedUrl && (
-              <Image
-                src={resolve(data.relationCategory?.image.presignedUrl)}
-                style={{ filter: "brightness(0.7)" }}
-                className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
-              />
+            {data.relationCategory?.image && (
+              <WithKraphMediaUrl media={data.relationCategory.image}>
+                {(url) => (
+                  <Image
+                    src={url}
+                    style={{ filter: "brightness(0.7)" }}
+                    className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
+                  />
+                )}
+              </WithKraphMediaUrl>
             )}
           </div>
         </div>

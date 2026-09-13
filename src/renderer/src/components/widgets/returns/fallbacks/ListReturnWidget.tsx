@@ -41,10 +41,9 @@ const ListReturnWidget: React.FC<ReturnWidgetProps> = ({
       </CardHeader>
       {value?.map((va, index) => {
         return (
-          <Card>
+          <Card key={index}>
             <CardContent>
               <Widget
-                key={index}
                 value={va}
                 port={childPort as unknown as ReturnWidgetProps["port"]}
                 widget={childPort.widget as unknown as ReturnWidgetFragment}

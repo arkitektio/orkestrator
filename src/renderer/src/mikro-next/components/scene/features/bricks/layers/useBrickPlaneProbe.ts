@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+/** Module-level scratch for the probe geometry memo (never escapes it). */
+const probeGeometryScratch = {
+  matrix: new THREE.Matrix4(),
+  point: new THREE.Vector3(),
+};
+
 import { buildAffineMatrix } from "../../../platform/coords/worldTransform";
 import {
   buildSliceMap,
@@ -140,7 +146,10 @@ export const useBrickPlaneProbe = ({
   // Reads shapes/scales from the pool's (deduplicated) level geometry — the
   // raw dataArrays list may contain duplicate resolutions, so its indices do
   // not align with plan levels.
-  const resolveProbeGeometryContext = useCallback((): ProbeGeometryContext | null => {
+  // Memoized per placement/selection change: this used to run (with a
+  // Matrix4 build + clone + invert) on every hover frame, twice on the
+  // design path.
+  const probeGeometryContext = useMemo((): ProbeGeometryContext | null => {
     if (!layer || !pool) return null;
 
     const levelIndex = Math.min(
@@ -160,8 +169,8 @@ export const useBrickPlaneProbe = ({
       shapeZ,
     );
     if (currentZ !== undefined && Number.isFinite(currentZ)) {
-      const inv = buildAffineMatrix(layer).clone().invert();
-      const pt = new THREE.Vector3(0, 0, currentZ).applyMatrix4(inv);
+      const inv = probeGeometryScratch.matrix.copy(buildAffineMatrix(layer)).invert();
+      const pt = probeGeometryScratch.point.set(0, 0, currentZ).applyMatrix4(inv);
       const zIndex = Math.max(0, Math.min(shapeZ - 1, Math.round(pt.z / scaleZ)));
       zSelection = { start: zIndex, step: 1, length: 1 };
     }
@@ -184,6 +193,11 @@ export const useBrickPlaneProbe = ({
       volumeSize: [width, height, depth],
     };
   }, [planTargetLevel, currentZ, layer, pool]);
+
+  const resolveProbeGeometryContext = useCallback(
+    () => probeGeometryContext,
+    [probeGeometryContext],
+  );
 
   /** Group-local plane point → BASE (level-0) voxel, updateProbe's own math. */
   const baseVoxelAt = useCallback(

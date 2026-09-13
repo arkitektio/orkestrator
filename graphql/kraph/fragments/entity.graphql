@@ -1,4 +1,4 @@
-# An entity as one view draws it: the category it was drawn under, and the
+# An entity as one view draws it: the categories it was drawn under, and the
 # properties that view derives. All of that is view-grain and exists only inside
 # a graph — the claim underneath is `Instance`.
 #
@@ -6,11 +6,16 @@
 # for three link kinds. There is one now: `connections`, every `Link` touching
 # this node, discriminated by `kind`. That is more honest than three fields,
 # because a link's kind is what distinguishes it and there are eight of them.
+#
+# A node is drawn under *every* category of its view that admits it (RFC 0019),
+# so the single `category` is gone: `categories` is the list, one per label, and
+# `label` is the first of `drawnLabels`. Empty is an ordinary answer — a claim
+# the view admits but has not drawn yet has no category at all.
 
 fragment ListEntity on Entity {
   id
   label
-  category {
+  categories {
     id
     label
   }
@@ -18,7 +23,7 @@ fragment ListEntity on Entity {
 
 fragment Entity on Entity {
   ...BaseNode
-  category {
+  categories {
     id
     label
     ageName

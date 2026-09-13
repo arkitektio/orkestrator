@@ -44,17 +44,35 @@ import { get, open, root, slice, type Array as ZarrArray } from "zarrita";
 
 import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
 import type { MikroClient } from "@/lib/zarr/store/types";
-import type { SparseColouringSourceFragment, SparseLayoutReadFragment } from "@/mikro-next/api/graphql";
+import type { SparseColouringSourceFragment } from "@/mikro-next/api/graphql";
 import { buildS3FetchConfig, getGeneralAccess } from "../zarr/access";
 import { LruMap } from "../attributes/lruMap";
 
 /** A layout, paired with the store it lives in. */
+/** What `openSparseLayout` needs of a store: where it is, and its shape. */
+export type SparseLayoutChoiceStore = {
+  id: string;
+  key: string;
+  shape?: readonly number[] | null;
+};
+
+/** What a read needs of a layout: where it sits, and how to unravel it. */
+export type SparseLayoutChoiceLayout = {
+  path: string;
+  indexedAxis: number;
+  indexOrder: readonly number[];
+  rangeReadable?: boolean;
+};
+
+/** A layout, paired with the store it lives in. Structural, so both the
+ * colouring's dataset fragment and an attribute plan's hop satisfy it. */
 export type SparseLayoutChoice = {
-  store: SparseColouringSourceFragment["arrays"][number]["store"];
-  layout: SparseLayoutReadFragment;
+  store: SparseLayoutChoiceStore;
+  layout: SparseLayoutChoiceLayout;
   /** The axis `indptr` walks — the one a slice selects along. */
   indexedAxis: number;
-  /** The axis the mask's ids run along: the one a slice returns a value per. */
+  /** The axis a slice returns a value per: the mask's ids for a colouring,
+   * the feature axis for a profile. */
   objectAxis: number;
 };
 
@@ -158,10 +176,13 @@ export const openSparseLayout = async (
 
     // `path` is the layout's own value — `layouts/axis{k}`, never a guess.
     const at = root(store).resolve(`/${choice.layout.path.replace(/^\/+/, "")}`);
+    // `open.v3`, never bare `open()`: on a fresh store zarrita's auto-detect
+    // probes v2 FIRST (`.zattrs`, then `.zarray`) before trying `zarr.json`,
+    // and these three run concurrently, so each paid two 404s per open.
     const [indptrArray, indices, data] = await Promise.all([
-      open(at.resolve("indptr"), { kind: "array" }),
-      open(at.resolve("indices"), { kind: "array" }),
-      open(at.resolve("data"), { kind: "array" }),
+      open.v3(at.resolve("indptr"), { kind: "array" }),
+      open.v3(at.resolve("indices"), { kind: "array" }),
+      open.v3(at.resolve("data"), { kind: "array" }),
     ]);
     const indptr = (await get(indptrArray as never)).data as SparseLayoutHandle["indptr"];
 
@@ -262,17 +283,37 @@ export const sliceAsValues = (
   }
 
   for (let k = 0; k < sliceRead.indices.length; k += 1) {
-    let remainder = sliceRead.indices[k];
+    const coordinates = unravel(order, extents, sliceRead.indices[k]);
     let objectPosition = -1;
     let keep = true;
-    for (let d = order.length - 1; d >= 0; d -= 1) {
-      const coordinate = remainder % extents[d];
-      remainder = Math.floor(remainder / extents[d]);
+    for (let d = 0; d < order.length; d += 1) {
       const axis = order[d];
+      const coordinate = coordinates[d];
       if (axis === handle.choice.objectAxis) objectPosition = coordinate;
       else if (wanted.has(axis) && wanted.get(axis) !== coordinate) keep = false;
     }
     if (keep && objectPosition >= 0) values.set(objectPosition, sliceRead.values[k]);
   }
   return values;
+};
+
+/**
+ * One raveled `indices` entry back into a coordinate per uncompressed axis,
+ * in `order` — C order, last axis fastest, exactly as the writer raveled it.
+ * `extents[d]` is the extent of `order[d]`. At rank two (`order` of one) the
+ * entry IS the coordinate.
+ */
+export const unravel = (
+  order: readonly number[],
+  extents: readonly number[],
+  raveled: number,
+): number[] => {
+  const coordinates = new Array<number>(order.length);
+  let remainder = raveled;
+  for (let d = order.length - 1; d >= 0; d -= 1) {
+    const extent = extents[d] ?? 1;
+    coordinates[d] = remainder % extent;
+    remainder = Math.floor(remainder / extent);
+  }
+  return coordinates;
 };

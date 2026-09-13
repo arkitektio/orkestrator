@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -12,7 +12,24 @@ import { MikroCoordinateSystem } from "@/linkers";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { resolveProbeStrategy } from "../../platform/probe/probeModes";
 import type { ProbeMode } from "../../platform/probe/probeTypes";
-import { effectiveProbeLayerId } from "../../platform/probe/probeTargeting";
+import { effectiveProbeLayerId, probeSystemIdFor } from "../../platform/probe/probeTargeting";
+import { usePlansFor } from "@/mikro-next/lib/attributes/AttributeServiceProvider";
+import {
+  defaultEnabled,
+  isHopEnabled,
+  normalizeColumns,
+  SPARSE_LIMIT_RANGE,
+  type AttributeSelection,
+} from "@/mikro-next/lib/attributes/attributeSelection";
+import {
+  hopMetaOf,
+  isSparseHop,
+  isTableHop,
+  type AttributeHopLike,
+  type AttributePlanLike,
+  type TableHopLike,
+} from "@/mikro-next/lib/attributes/attributeTypes";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useModeStore } from "../../platform/stores/modeStore";
 import { LIGHT_RIG_RANGES } from "../../platform/gpu/shading";
 import { VOLUME_POST_RANGES } from "../../platform/gpu/volumePost";
@@ -264,6 +281,237 @@ const STRATEGY_LABELS: Record<string, string> = {
   plane: "plane",
 };
 
+/** How deep a hop sits in its plan's chain — the landing is 0. */
+const hopDepth = (plan: AttributePlanLike, hop: AttributeHopLike): number => {
+  let depth = 0;
+  let current: AttributeHopLike | undefined = hop;
+  while (current && current.parent !== null && current.parent !== undefined) {
+    const parentIndex: number = current.parent;
+    current = plan.hops.find((candidate) => candidate.index === parentIndex);
+    depth += 1;
+  }
+  return depth;
+};
+
+/** The column checklist under an expanded TABLE hop. `null` = every column. */
+const ColumnChecklist = ({
+  hop,
+  columns,
+  onChange,
+}: {
+  hop: TableHopLike;
+  columns: readonly string[] | null;
+  onChange: (columns: readonly string[] | null) => void;
+}) => {
+  const names = hop.lookup.attributes.map((attribute) => attribute.name);
+  const kept = new Set(columns ?? names);
+  const toggle = (name: string) => {
+    const next = names.filter((candidate) => (candidate === name ? !kept.has(name) : kept.has(candidate)));
+    // Everything unticked is not "nothing": the last column stays selected.
+    if (next.length === 0) return;
+    onChange(normalizeColumns(hop, next));
+  };
+  return (
+    <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border/60 pl-2">
+      {hop.lookup.attributes.map((attribute) => (
+        <label
+          key={attribute.name}
+          className="flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground"
+        >
+          <input
+            type="checkbox"
+            className="h-3 w-3 accent-primary"
+            checked={kept.has(attribute.name)}
+            onChange={() => toggle(attribute.name)}
+          />
+          <span className="truncate">{attribute.longName ?? attribute.name}</span>
+        </label>
+      ))}
+      {columns !== null && (
+        <button
+          className="text-[10px] text-primary/80 hover:text-primary"
+          onClick={() => onChange(null)}
+        >
+          select all
+        </button>
+      )}
+    </div>
+  );
+};
+
+const HopRow = ({
+  plan,
+  hop,
+  selection,
+}: {
+  plan: AttributePlanLike;
+  hop: AttributeHopLike;
+  selection: AttributeSelection;
+}) => {
+  const setHopEnabled = useViewerStore((s) => s.setHopEnabled);
+  const setHopColumns = useViewerStore((s) => s.setHopColumns);
+  const [open, setOpen] = useState(false);
+  const meta = hopMetaOf(plan, hop);
+  const parent =
+    hop.parent === null || hop.parent === undefined
+      ? null
+      : plan.hops.find((candidate) => candidate.index === hop.parent) ?? null;
+  const parentEnabled = parent === null || isHopEnabled(selection, plan, parent);
+  const chosen = selection.hops[meta.hopKey]?.enabled ?? defaultEnabled(plan, hop);
+  const columns = selection.hops[meta.hopKey]?.columns ?? null;
+  const expandable = isTableHop(hop) && hop.lookup.attributes.length > 0;
+  const narrowed = columns !== null && isTableHop(hop);
+
+  return (
+    <div style={{ paddingLeft: hopDepth(plan, hop) * 10 }}>
+      <div className="flex items-center justify-between gap-2 py-0.5">
+        <span className="flex min-w-0 items-center gap-1">
+          {expandable ? (
+            <button
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setOpen((value) => !value)}
+              title={open ? "Hide columns" : "Choose columns"}
+            >
+              {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            </button>
+          ) : (
+            <span className="inline-block w-3" />
+          )}
+          <span className="truncate text-xs text-muted-foreground" title={meta.name}>
+            {meta.name}
+          </span>
+          <span
+            className={`rounded px-1 text-[9px] font-medium ${
+              meta.kind === "SPARSE" ? "bg-sky-500/15 text-sky-600 dark:text-sky-300" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {meta.kind === "SPARSE" ? "matrix" : "table"}
+          </span>
+          {meta.via && <span className="truncate text-[9px] text-muted-foreground/70">{meta.via}</span>}
+          {narrowed && (
+            <span className="text-[9px] text-muted-foreground/70">
+              {columns.length}/{(hop as TableHopLike).lookup.attributes.length}
+            </span>
+          )}
+        </span>
+        <Switch
+          checked={chosen && parentEnabled}
+          disabled={!parentEnabled}
+          onCheckedChange={(value) => setHopEnabled(meta.hopKey, value)}
+          title={
+            !parentEnabled
+              ? "Switch on what this hop binds from first"
+              : meta.kind === "SPARSE"
+                ? "One object's whole profile — off by default"
+                : undefined
+          }
+        />
+      </div>
+      {open && isTableHop(hop) && (
+        <ColumnChecklist
+          hop={hop}
+          columns={columns}
+          onChange={(next) => setHopColumns(meta.hopKey, next)}
+        />
+      )}
+    </div>
+  );
+};
+
+/** The plans of one system, one row per hop of each chain. */
+const AttributeFetchGroup = ({ systemId, title }: { systemId: string; title: string }) => {
+  const plans = usePlansFor(systemId);
+  const selection = useViewerStore((s) => s.attributeSelection);
+  if (plans === null) {
+    return <p className="text-[10px] text-muted-foreground">{title}: discovering attributes…</p>;
+  }
+  if (plans.length === 0) {
+    return <p className="text-[10px] text-muted-foreground">{title}: no attributes attached</p>;
+  }
+  return (
+    <div>
+      <div className="text-[10px] font-medium text-muted-foreground">{title}</div>
+      {plans.map((plan) =>
+        plan.hops.map((hop) => (
+          <HopRow key={`${plan.edge.id}:${hop.index}`} plan={plan} hop={hop} selection={selection} />
+        )),
+      )}
+    </div>
+  );
+};
+
+/**
+ * What a hover FETCHES. Lists every attribute plan of the probe's target
+ * layer (and of each mesh/network collection in the scene, which a pick
+ * probes), one row per hop of each chain: the landing table or matrix, then
+ * the references it can cross. Each hop has a switch; a table hop unfolds to
+ * a column checklist; matrices share one cap on how much of a profile is
+ * kept. Choices persist per browser, keyed by the hop — the same data in
+ * another scene remembers them.
+ */
+const AttributeFetchSection = ({ targetLayer }: { targetLayer: LayerStateLike | undefined }) => {
+  const sceneStoreApi = useSceneStoreApi();
+  const collectionsKey = useSceneStore((s) =>
+    s.sceneLayers
+      .map((layer) =>
+        (layer.__typename === "MeshLayer" || layer.__typename === "NetworkLayer") &&
+        layer.collection?.coordinateSystem?.id
+          ? `${layer.id}:${layer.collection.coordinateSystem.id}:${layer.name ?? ""}`
+          : "",
+      )
+      .filter(Boolean)
+      .join("|"),
+  );
+  const groups = useMemo(() => {
+    const out: { systemId: string; title: string }[] = [];
+    const seen = new Set<string>();
+    const targetSystem = targetLayer ? probeSystemIdFor(targetLayer) : null;
+    if (targetLayer && targetSystem) {
+      seen.add(targetSystem);
+      out.push({ systemId: targetSystem, title: layerDisplayLabel(targetLayer) });
+    }
+    for (const layer of sceneStoreApi.getState().sceneLayers) {
+      if (layer.__typename !== "MeshLayer" && layer.__typename !== "NetworkLayer") continue;
+      const systemId = layer.collection?.coordinateSystem?.id;
+      if (!systemId || seen.has(systemId)) continue;
+      seen.add(systemId);
+      out.push({ systemId, title: layer.name ?? layer.__typename });
+    }
+    return out;
+    // The key STANDS FOR the scene layers read via getState().
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionsKey, targetLayer, sceneStoreApi]);
+  const selection = useViewerStore((s) => s.attributeSelection);
+  const setSparseLimit = useViewerStore((s) => s.setSparseLimit);
+  const plansOfFirst = usePlansFor(groups[0]?.systemId ?? null);
+  const anySparse = (plansOfFirst ?? []).some((plan) => plan.hops.some(isSparseHop));
+
+  if (groups.length === 0) return null;
+  return (
+    <div className="mt-2">
+      <div className="text-[10px] font-medium text-muted-foreground">Attributes on hover</div>
+      <div className="mt-1 space-y-1">
+        {groups.map((group) => (
+          <AttributeFetchGroup key={group.systemId} systemId={group.systemId} title={group.title} />
+        ))}
+      </div>
+      {anySparse && (
+        <SliderRow
+          label="Matrix entries kept"
+          value={selection.sparseLimit}
+          min={SPARSE_LIMIT_RANGE.min}
+          max={SPARSE_LIMIT_RANGE.max}
+          step={SPARSE_LIMIT_RANGE.step}
+          decimals={0}
+          onChange={setSparseLimit}
+        />
+      )}
+    </div>
+  );
+};
+
+type LayerStateLike = Parameters<typeof layerDisplayLabel>[0] & Parameters<typeof probeSystemIdFor>[0];
+
 /**
  * How the probe BEHAVES — target layer, march strategy, threshold. Moved out
  * of the probe HUD so the readout can be just the reading; these are settings,
@@ -399,6 +647,8 @@ const ProbeSettingsSection = () => {
           />
         </div>
       )}
+
+      <AttributeFetchSection targetLayer={targetLayer} />
     </div>
   );
 };

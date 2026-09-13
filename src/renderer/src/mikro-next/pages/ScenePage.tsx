@@ -61,10 +61,9 @@ const DetailPage = asDetailQueryRoute(
     // to ERROR (not return null) when a path exists but will not condense — a
     // FIELD/displacement step has no closed form, a singular step cannot be
     // walked backwards. Under Apollo's default policy that one field would
-    // discard the entire scene; here it comes back null and
-    // `composeLayerAffine` falls back to walking `pathToWorld`, which degrades
-    // that same step to identity with a warning. Exactly today's behaviour,
-    // scoped to the layer instead of the page.
+    // discard the entire scene; here it comes back null, and `asAffine` being
+    // the ONLY placement authority, that layer is simply not drawn
+    // (`isPlaceable`) and its card says why. The rest of the scene renders.
     queryOptions: { errorPolicy: "all" },
   },
 );

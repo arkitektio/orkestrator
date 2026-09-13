@@ -26,6 +26,7 @@ const build = () =>
  * fails here and names the member.
  */
 const EXPECTED_KEYS = [
+  "attributeSelection", "setHopColumns", "setHopEnabled", "setSparseLimit",
   "beginProbedAttributes", "brickSystem", "bumpMeshVersion", "bumpPoolsVersion",
   "bumpResidencyVersion", "canvas", "captureScreenshot", "clearProbedAttributes",
   "commitProbedAttributes", "currentZ", "debug", "dimSelections",

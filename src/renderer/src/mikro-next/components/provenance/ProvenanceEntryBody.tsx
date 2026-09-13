@@ -1,7 +1,7 @@
 import { RekuestTask } from "@/linkers";
 import { AppInfo } from "@/lok-next/components/protected/AppInfo";
 import { UserInfo } from "@/lok-next/components/protected/UserInfo";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
 import { changeShape, summarizeFields } from "./provenanceSummary";
 

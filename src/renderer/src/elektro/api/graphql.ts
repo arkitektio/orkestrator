@@ -3515,7 +3515,7 @@ export type ExperimentFragment = { __typename?: 'Experiment', id: string, name: 
 
 export type ListExperimentFragment = { __typename?: 'Experiment', id: string, name: string };
 
-export type FileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<{ __typename?: 'Trace', id: string, name: string }>, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, presignedUrl: string }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> };
+export type FileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<{ __typename?: 'Trace', id: string, name: string }>, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> };
 
 export type ListFileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null };
 
@@ -3567,7 +3567,7 @@ export type ListSimulationFragment = { __typename?: 'Simulation', id: string, na
 
 export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null };
 
-export type BigFileStoreFragment = { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, presignedUrl: string };
+export type BigFileStoreFragment = { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string };
 
 export type DetailTraceFragment = { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } };
 
@@ -3585,7 +3585,7 @@ export type FinishBigfileUploadMutationVariables = Exact<{
 }>;
 
 
-export type FinishBigfileUploadMutation = { __typename?: 'Mutation', finishBigfileUpload: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, presignedUrl: string } };
+export type FinishBigfileUploadMutation = { __typename?: 'Mutation', finishBigfileUpload: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string } };
 
 export type RequestBigfileAccessMutationVariables = Exact<{
   input: RequestBigFileAccessInput;
@@ -3688,7 +3688,7 @@ export type From_File_LikeMutationVariables = Exact<{
 }>;
 
 
-export type From_File_LikeMutation = { __typename?: 'Mutation', fromFileLike: { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<{ __typename?: 'Trace', id: string, name: string }>, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, presignedUrl: string }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> } };
+export type From_File_LikeMutation = { __typename?: 'Mutation', fromFileLike: { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<{ __typename?: 'Trace', id: string, name: string }>, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> } };
 
 export type DeleteFileMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3817,7 +3817,7 @@ export type GetFileQueryVariables = Exact<{
 }>;
 
 
-export type GetFileQuery = { __typename?: 'Query', file: { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<{ __typename?: 'Trace', id: string, name: string }>, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, presignedUrl: string }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> } };
+export type GetFileQuery = { __typename?: 'Query', file: { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<{ __typename?: 'Trace', id: string, name: string }>, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> } };
 
 export type GetFilesQueryVariables = Exact<{
   filters?: InputMaybe<FileFilter>;
@@ -4573,7 +4573,6 @@ export const BigFileStoreFragmentDoc = gql`
   key
   bucket
   path
-  presignedUrl
 }
     `;
 export const FileFragmentDoc = gql`

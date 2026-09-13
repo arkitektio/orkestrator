@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Card,
   CardFooter,
@@ -67,4 +68,4 @@ const SearchAgentCard = ({ item }: Props) => {
   );
 };
 
-export default SearchAgentCard;
+export default React.memo(SearchAgentCard);

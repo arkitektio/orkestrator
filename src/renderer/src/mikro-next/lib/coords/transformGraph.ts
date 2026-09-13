@@ -231,6 +231,48 @@ const paramPositions = (
   return null;
 };
 
+const edgeLabel = (transform: NonNullable<TransformLike>): string =>
+  `${transform.__typename}:${transform.input?.id ?? "?"}→${transform.output?.id ?? "?"}`;
+
+/**
+ * Which axis names an affine's ROWS are to be read with.
+ *
+ * The contract is `outputAxes`: "rows in output axis order", one row per
+ * output axis, each row `inputAxes.length + 1` wide. A conformant edge takes
+ * `axesOut` unchanged.
+ *
+ * Mirrors `paramPositions`: reading a mis-sized affine against `outputAxes`
+ * does not fail — it yields a WRONG matrix with nothing logged (a 2-row affine
+ * under `[c,y,x]` reads y from the x row and finds no x row at all). Any
+ * mismatch that reaches here is null: the step degrades to identity, loudly.
+ * The one tolerated shape is resolved BEFORE this, by `compositeChildAxesOut`.
+ */
+const affineRowAxes = (
+  transform: NonNullable<TransformLike>,
+  rows: readonly (readonly number[])[],
+  axesIn: readonly string[],
+  axesOut: readonly string[],
+): readonly string[] | null => {
+  const edge = edgeLabel(transform);
+  const width = axesIn.length + 1;
+  if (rows.some((row) => row.length < width)) {
+    warnOnce(
+      `affine-arity:${edge}:cols`,
+      `${edge} declares inputAxes [${axesIn.join(",")}] but an affine row has fewer than ` +
+        `${width} entries; treating the step as identity.`,
+    );
+    return null;
+  }
+  if (rows.length === axesOut.length) return axesOut;
+  warnOnce(
+    `affine-arity:${edge}:rows`,
+    `${edge} declares outputAxes [${axesOut.join(",")}] but its affine has ${rows.length} rows; ` +
+      `treating the step as identity. This edge violates the schema contract — fix the server ` +
+      `so outputAxes lists exactly the axes the affine has rows for.`,
+  );
+  return null;
+};
+
 /**
  * Evaluate one transformation edge into the spatial 4×4.
  *
@@ -299,15 +341,36 @@ export const evalTransform = (
       // last column the translation.
       const rows = transform.affine;
       if (!rows?.length) return null;
+      const rowAxes = affineRowAxes(transform, rows, axesIn, axesOut);
+      if (!rowAxes) return null;
+      const rowPos =
+        rowAxes === axesOut ? outPos : spatialOut.map((name) => (name ? rowAxes.indexOf(name) : -1));
       const m = identity4();
+      let readAnyRow = false;
       for (let i = 0; i < spatial.length; i++) {
-        const r = outPos[i];
+        const r = rowPos[i];
         if (r === -1 || !rows[r]) continue;
+        readAnyRow = true;
         for (let j = 0; j < spatial.length; j++) {
           const c = inPos[j];
           m[i][j] = c !== -1 ? rows[r][c] ?? (i === j ? 1 : 0) : i === j ? 1 : 0;
         }
         m[i][3] = rows[r][axesIn.length] ?? 0;
+      }
+      // The edge CONSUMES spatial input axes, yet no output slot named one of
+      // its rows: the caller's output triple does not describe this edge's
+      // output side (lens names `col,row` handed to an edge that writes
+      // `y,x`). Identity here is the silent misplacement this module promises
+      // never to produce — a layer left in raw pixels with nothing logged.
+      // Null instead, so the caller degrades loudly.
+      if (!readAnyRow && inPos.some((p) => p !== -1)) {
+        warnOnce(
+          `affine-out:${edgeLabel(transform)}:${spatialOut.join(",")}`,
+          `${edgeLabel(transform)} writes [${rowAxes.join(",")}] but none of the output slots ` +
+            `[${spatialOut.join(",")}] names one of them; cannot place. ` +
+            `The caller's output axis names must be the edge's OUTPUT system's, not its input's.`,
+        );
+        return null;
       }
       return m;
     }
@@ -323,9 +386,9 @@ export const evalTransform = (
       // Every child gets the SAME `spatial`/`spatialOut` pair, which assumes
       // the intermediate systems of a chain name their spatial axes alike —
       // unknowable otherwise, since a step's intermediate CS is not carried
-      // here. True today: the only caller that passes a differing pair
-      // (`placementToSpatialAffine`) hands over a flat AFFINE, never a
-      // composite.
+      // here. True for what reaches this arm: the lens/level-0 prefix edges
+      // (`toParent` sequences within one dataset). World placements never do —
+      // they arrive pre-composed as a flat `asAffine`.
       let m = identity4();
       for (const child of transform.transformations ?? []) {
         const cm = evalTransform(
@@ -368,53 +431,6 @@ const buildAxesIndex = (scene: SceneTransformContext): Map<string, string[]> => 
   if (world?.axes?.length) axesById.set(world.id, world.axes.map((axis) => axis.name));
   return axesById;
 };
-
-/**
- * Compose a server-resolved placement path (`pathToWorld` /
- * `levelPaths[].path`) into one spatial 4×4. Steps are applied first-to-last;
- * an `inverted` step is evaluated forward and then matrix-inverted (the
- * server flags edges it traversed output→input). Unresolvable steps —
- * unrepresentable kinds or singular inverses — warn once and degrade to
- * identity, never to a wrong matrix. Returns null for a null path
- * (unregistered) and for an identity result (callers treat null as identity).
- */
-export function composePlacementPath(
-  steps: readonly PlacementStepLike[] | null | undefined,
-  scene: SceneTransformContext,
-  spatial: readonly (string | null | undefined)[],
-  fallbackAxes: readonly string[] = ["z", "y", "x"],
-): number[][] | null {
-  if (!steps) return null;
-
-  const axesById = buildAxesIndex(scene);
-  const axesOf = (cs: { id: string } | null | undefined): readonly string[] =>
-    (cs && axesById.get(cs.id)) ?? fallbackAxes;
-
-  let m = identity4();
-  for (const step of steps) {
-    const edge = step.transformation;
-    if (!edge) continue;
-    // SELF-DESCRIBED axis order first (`inputAxes`/`outputAxes` on the
-    // edge — non-null since the strict schema landed); the CS-index fallback
-    // remains for the world system and structural robustness.
-    let em = evalTransform(
-      edge,
-      edge.inputAxes ?? axesOf(edge.input),
-      edge.outputAxes ?? axesOf(edge.output),
-      spatial,
-    );
-    if (em && step.inverted) em = invert4(em);
-    if (!em) {
-      warnOnce(
-        `step:${edge.__typename}:${edge.input?.id ?? "?"}:${step.inverted}`,
-        `cannot evaluate ${step.inverted ? "inverted " : ""}${edge.__typename} placement step; treating as identity`,
-      );
-      continue;
-    }
-    m = mul4(em, m);
-  }
-  return isIdentity4(m) ? null : m;
-}
 
 /**
  * Reduce a server-composed `AffinePlacement` to the spatial 4×4.
@@ -483,9 +499,12 @@ const pathStartId = (steps: readonly PlacementStepLike[]): string | undefined =>
  * `pathToWorld` starts at the layer's SOURCE system — but the renderer's
  * voxel frame is the LENS grid, so any prefix the path does not cover
  * (lens → level-0 crop, level-0 → intrinsic) is prepended from the lens' and
- * level-0's own `toParent` edges, keyed off the path's actual start CS. A
- * null path (unregistered layer) composes just the local prefix, keeping the
- * layer in its intrinsic pixel frame — the established degradation.
+ * level-0's own `toParent` edges, keyed off the path's actual start CS.
+ *
+ * The placement is the server's `asAffine`, the ONLY authority: this module
+ * never composes `pathToWorld` into a matrix. A layer without `asAffine` is
+ * not placeable and is not drawn (`isPlaceable` in layerModel gates the
+ * dispatch); what this returns for it is only the local prefix.
  */
 export function composeLayerAffine(
   scene: SceneTransformContext,
@@ -494,6 +513,19 @@ export function composeLayerAffine(
   const dims = layer.lens.axisNames;
   const ra = layer.lens.renderAxes;
   const spatial = [ra.x, ra.y, ra.z] as const;
+  // The path ENDS in the world system, whose axes need not be named like the
+  // lens' (`row,col` bin lattices land in a `y,x` world). Reducing the
+  // placement with lens names on its output side indexOf's every slot to -1
+  // and drops the whole registration — the layer sits in raw pixels with no
+  // warning. Typed world axes give the real output triple; a world without
+  // axis types (older payloads, structural fixtures) keeps the lens names,
+  // which is exactly what those composed with before.
+  const world = scene.worldCoordinateSystem;
+  const worldSpatial: readonly (string | null | undefined)[] = world?.axes?.some(
+    (axis) => axis.type != null,
+  )
+    ? spatialAxisTriple(world)
+    : spatial;
 
   const axesById = buildAxesIndex(scene);
   const axesOf = (cs: { id: string } | null | undefined): readonly string[] =>
@@ -501,7 +533,8 @@ export function composeLayerAffine(
 
   const evalEdgeOrIdentity = (transform: TransformLike, label: string): Mat4 => {
     if (!transform) return identity4();
-    // Self-described axis order first (see composePlacementPath).
+    // Self-described axis order first (`inputAxes`/`outputAxes` on the edge);
+    // the CS-index fallback remains for edges predating self-description.
     const m = evalTransform(
       transform,
       transform.inputAxes ?? axesOf(transform.input),
@@ -535,55 +568,29 @@ export function composeLayerAffine(
     }
   }
 
-  if (path) {
-    // The server's own composition of THIS path, when selected — same span,
-    // so it slots in where the edge walk used to and the local prefix above
-    // is unaffected. Falling back to the walk keeps older/partial documents
-    // (and every existing test fixture) rendering exactly as before.
-    const pathMatrix = layer.asAffine
-      ? placementToSpatialAffine(layer.asAffine, spatial, spatial)
-      : composePlacementPath(path, scene, spatial, dims);
+  // The placement itself is the server's `asAffine` and NOTHING else — the
+  // client never composes `pathToWorld` into a matrix. A null `asAffine`
+  // (unregistered layer, or a path the server could not condense: a FIELD
+  // step without a closed form, a singular inverse) means the layer is not
+  // placeable; `LayerRenderer` keeps it off screen (`isPlaceable`) and the
+  // layer panel says why. The matrix returned here is then only the local
+  // prefix and must not be read as a world placement.
+  if (layer.asAffine) {
+    const pathMatrix = placementToSpatialAffine(layer.asAffine, spatial, worldSpatial);
     if (pathMatrix) m = mul4(pathMatrix, m);
-
-    // Dev-only cross-check. `asAffine` is the server's composition of THIS
-    // path, so the two must agree; a disagreement means one of them is
-    // composing the edges wrongly (the scene-28 arity bug is exactly that
-    // shape) and the renderer would show no sign of it. Loud in dev, free in
-    // production — never changes what is rendered.
-    if (import.meta.env.DEV && layer.asAffine && pathMatrix) {
-      const walked = composePlacementPath(path, scene, spatial, dims);
-      if (walked) {
-        const worst = Math.max(
-          ...walked.flatMap((row, i) =>
-            row.map((v, j) => {
-              const d = Math.abs(v - pathMatrix[i][j]);
-              // Relative for the basis, absolute for the translation column,
-              // which carries large world offsets.
-              return j === 3 ? d / Math.max(1, Math.abs(v)) : d;
-            }),
-          ),
-        );
-        if (worst > 1e-6) {
-          warnOnce(
-            `asAffine-mismatch:${lensCsId ?? "?"}`,
-            `server asAffine and the client's walk of the same pathToWorld disagree ` +
-              `(worst component ${worst.toExponential(2)}); rendering the server's. ` +
-              `One of the two is composing this path wrongly — compare them before trusting either.`,
-          );
-        }
-      }
-    }
-    if (layer.asAffine && layer.asAffine.total === false) {
+    if (layer.asAffine.total === false) {
       warnOnce(
         `partial:${lensCsId ?? "?"}`,
         `layer's placement is partial (asAffine.total = false): it constrains only ` +
           `[${layer.asAffine.outputAxes.join(",")}] of the world's axes; the rest pass through as identity`,
       );
     }
-  } else if (path === null) {
+  } else {
     warnOnce(
-      `unregistered:${lensCsId ?? "?"}`,
-      `layer has no path to the scene's world system (unregistered); staying in its intrinsic frame`,
+      `unplaceable:${path === null ? "unregistered" : "uncomposable"}:${lensCsId ?? "?"}`,
+      path === null
+        ? `layer has no path to the scene's world system (unregistered); not drawn`
+        : `layer's placement could not be composed server-side (asAffine is null); not drawn`,
     );
   }
 

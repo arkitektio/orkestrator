@@ -2,6 +2,7 @@ import {
   ApolloClient,
   ApolloLink,
   InMemoryCache,
+  TypePolicies,
   createHttpLink,
   split,
 } from "@apollo/client";
@@ -13,8 +14,20 @@ import { createAuthRetryLink, isSubscriptionQuery } from "../runtime/authRetryLi
 import { Service, ServiceBuilder } from "../types";
 import { buildGraphQlWard } from "../ward";
 
+export type GraphQLServiceBuilderOptions = {
+  describe?: boolean;
+  /**
+   * Apollo `typePolicies` for this service's cache. Above all the offset
+   * pagination policies for root list fields
+   * (`lib/arkitekt/builders/cachePolicies.ts`, per-service maps in
+   * `app/cachePolicies.ts`) — without them every page and every search
+   * prefix becomes a permanent, separate `ROOT_QUERY` entry.
+   */
+  typePolicies?: TypePolicies;
+};
+
 export const createGraphQLServiceBuilder =
-  (possibleTypes: any, builderOptions?: { describe?: boolean }): ServiceBuilder<Service<ApolloClient<any>>> =>
+  (possibleTypes: any, builderOptions?: GraphQLServiceBuilderOptions): ServiceBuilder<Service<ApolloClient<any>>> =>
     (options) => {
       const { alias, getToken } = options;
 
@@ -74,7 +87,10 @@ export const createGraphQLServiceBuilder =
 
       const client = new ApolloClient({
         link: authRetryLink.concat(splitLink),
-        cache: new InMemoryCache({ possibleTypes }),
+        cache: new InMemoryCache({
+          possibleTypes,
+          typePolicies: builderOptions?.typePolicies,
+        }),
         devtools: { enabled: import.meta.env.DEV },
       });
 

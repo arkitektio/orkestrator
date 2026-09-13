@@ -18,8 +18,10 @@ import { EXCLUDE_FROM_CAPTURE } from "../../platform/visibility/captureVisibilit
 import {
   COMPOSITOR_INTERNAL,
   collectPassSets,
-  disableColorWrite,
-  hideObjects,
+  disableColorWriteInto,
+  hideObjectsInto,
+  restoreColorWrite,
+  restoreHidden,
   type PassSets,
 } from "../../platform/visibility/passVisibility";
 import {
@@ -29,6 +31,7 @@ import {
 } from "../../platform/quality/qualityGovernor";
 import {
   SETTLE_REFINE_DELAY_MS,
+  buildVolumeStructureKey,
   createCompositorStats,
   decideSettleRefine,
   decideVolumeFrame,
@@ -107,17 +110,6 @@ const fitQuadToCamera = (quad: THREE.Mesh, camera: THREE.Camera): void => {
   scratchQuadLocal.makeScale(halfWidth, halfHeight, 1);
   scratchQuadLocal.setPosition(0, 0, -distance);
   quad.matrixWorld.multiplyMatrices(camera.matrixWorld, scratchQuadLocal);
-};
-
-/** Tagged-mesh count + material ids + world matrices: catches structural
- * changes (mount/unmount, material rebuild, affine edit) no counter covers. */
-const buildStructureKey = (sets: PassSets): string => {
-  let key = `${sets.volumeMeshes.length}`;
-  for (const mesh of sets.volumeMeshes) {
-    const material = mesh.material as THREE.Material;
-    key += `|${material.id}:${mesh.matrixWorld.elements.join(",")}`;
-  }
-  return key;
 };
 
 export const VolumeCompositor = () => {
@@ -256,6 +248,15 @@ export const VolumeCompositor = () => {
   // frame's key holds one by reference (see decideVolumeFrame), so this frame
   // must write the other.
   const passSetsRef = useRef<PassSets>({ volumeMeshes: [], occluders: [], otherRenderables: [] });
+  // Scratch for the per-pass hide/restore bookkeeping (one list per hide
+  // site, since the sites nest) and the prepass colorWrite flags.
+  const hideScratchRef = useRef({
+    others: [] as THREE.Object3D[],
+    volumesPrepass: [] as THREE.Object3D[],
+    occluders: [] as THREE.Object3D[],
+    volumesCanvas: [] as THREE.Object3D[],
+    colorWrite: new Map<THREE.Material, boolean>(),
+  });
   const cameraBuffersRef = useRef<[number[], number[]]>([new Array(16).fill(0), new Array(16).fill(0)]);
   const cameraBufferIndexRef = useRef(0);
   const hasContentRef = useRef(false);
@@ -379,7 +380,7 @@ export const VolumeCompositor = () => {
       // Thunk: `decideVolumeFrame` calls this only if the camera/size/version
       // compares all pass. During a gesture they never do, so the per-frame
       // string build below simply does not happen.
-      structureKey: () => buildStructureKey(sets),
+      structureKey: () => buildVolumeStructureKey(sets),
       residencyVersion: viewer.residencyVersion,
       poolsVersion: viewer.poolsVersion,
       qualityVersion: qualityGovernor.getVersion(),
@@ -415,8 +416,8 @@ export const VolumeCompositor = () => {
       // the whole canvas. Enforce the invariant instead of assuming it.
       const sceneWithBackground = scene as THREE.Scene;
       const prevBackground = sceneWithBackground.background;
-      const restoreOthers = hideObjects(sets.otherRenderables);
-      let restoreOccluders: (() => void) | null = null;
+      const hideScratch = hideScratchRef.current;
+      hideObjectsInto(sets.otherRenderables, hideScratch.others);
       try {
         sceneWithBackground.background = null;
         gl.setClearColor(0x000000, 0);
@@ -426,27 +427,28 @@ export const VolumeCompositor = () => {
           // colorWrite off (never scene.overrideMaterial — a plain override
           // corrupts BatchedMesh multi-draw ranges), then volumes on top of
           // the surviving depth (autoClear off keeps it).
-          const restoreVolumes = hideObjects(sets.volumeMeshes);
-          const restoreColorWrite = disableColorWrite(sets.occluders);
+          hideObjectsInto(sets.volumeMeshes, hideScratch.volumesPrepass);
+          disableColorWriteInto(sets.occluders, hideScratch.colorWrite);
           gl.autoClear = true;
           try {
             gl.render(scene, camera);
           } finally {
-            restoreColorWrite();
-            restoreVolumes();
+            restoreColorWrite(hideScratch.colorWrite);
+            restoreHidden(hideScratch.volumesPrepass);
           }
-          restoreOccluders = hideObjects(sets.occluders);
+          hideObjectsInto(sets.occluders, hideScratch.occluders);
           gl.autoClear = false;
           gl.render(scene, camera);
         } else {
-          restoreOccluders = hideObjects(sets.occluders);
+          hideObjectsInto(sets.occluders, hideScratch.occluders);
           gl.autoClear = true;
           gl.render(scene, camera);
         }
         hasContentRef.current = true;
       } finally {
-        restoreOccluders?.();
-        restoreOthers();
+        // `restoreHidden` is a no-op on an empty (never filled) list.
+        restoreHidden(hideScratch.occluders);
+        restoreHidden(hideScratch.others);
         sceneWithBackground.background = prevBackground;
         gl.autoClear = prevAutoClear;
         gl.setClearColor(scratchClearColor, prevClearAlpha);
@@ -484,14 +486,15 @@ export const VolumeCompositor = () => {
     }
 
     // --- Canvas pass: everything but volumes, plus the composite quad ------
-    const restoreVolumes = hideObjects(sets.volumeMeshes);
+    const volumesCanvas = hideScratchRef.current.volumesCanvas;
+    hideObjectsInto(sets.volumeMeshes, volumesCanvas);
     quad.visible = hasContentRef.current;
     if (quad.visible) fitQuadToCamera(quad, camera);
     try {
       gl.render(scene, camera);
     } finally {
       quad.visible = false;
-      restoreVolumes();
+      restoreHidden(volumesCanvas);
     }
   };
 

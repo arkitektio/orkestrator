@@ -52,6 +52,7 @@ export const ClientImage = (props: { clientId: string, className?: string }) => 
       className={props.className}
       src={resolve(data?.client.logo?.presignedUrl)}
       alt={data?.client.name}
+      loading="lazy"
     />
   );
 };

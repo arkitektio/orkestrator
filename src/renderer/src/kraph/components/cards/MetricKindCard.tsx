@@ -1,3 +1,4 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { ListMetricKindFragment } from "@/kraph/api/graphql";
 import { KraphMetricKind } from "@/linkers";
@@ -28,4 +29,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

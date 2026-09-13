@@ -41,7 +41,7 @@ import {
   Table,
   Table2
 } from "lucide-react";
-import { createElement, useCallback, useEffect, useState } from "react";
+import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CreateFolderForm } from "../../forms/CreateFolderForm";
 
@@ -769,14 +769,19 @@ export const useFolderExplorer = (folder: FolderFragment) => {
     setSearchParams(newParams, { replace: true });
   }, [searchInput, filters, viewMode, pagination, setSearchParams]);
 
-  const renderableChildren = (data?.children ?? []).filter(isRenderable);
+  const children = data?.children;
+  const renderableChildren = useMemo(
+    () => (children ?? []).filter(isRenderable),
+    [children],
+  );
 
-  const filteredAndSortedData = (() => {
+  const { type: filterType, sortField, sortDirection } = filters;
+  const filteredAndSortedData = useMemo(() => {
     let items = [...renderableChildren];
 
     // Filter by type (client-side for now)
-    if (filters.type !== "all") {
-      const allowed = MATCHES_FILTER[filters.type];
+    if (filterType !== "all") {
+      const allowed = MATCHES_FILTER[filterType];
       items = items.filter((item) => allowed.includes(item.__typename));
     }
 
@@ -788,18 +793,18 @@ export const useFolderExplorer = (folder: FolderFragment) => {
       let aValue: string | number = aName;
       let bValue: string | number = bName;
 
-      if (filters.sortField === "size") {
+      if (sortField === "size") {
         aValue = a.__typename === "File" ? a.size ?? 0 : 0;
         bValue = b.__typename === "File" ? b.size ?? 0 : 0;
       }
 
-      if (aValue < bValue) return filters.sortDirection === "asc" ? -1 : 1;
-      if (aValue > bValue) return filters.sortDirection === "asc" ? 1 : -1;
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
 
     return items;
-  })();
+  }, [renderableChildren, filterType, sortField, sortDirection]);
 
   const setSearchInputValue = useCallback((value: string) => {
     setSearchInput(value);

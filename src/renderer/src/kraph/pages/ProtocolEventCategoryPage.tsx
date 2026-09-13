@@ -6,7 +6,6 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { Button } from "@/components/ui/button";
 import { DragZone } from "@/components/upload/drag";
 import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
-import { useResolve } from "@/datalayer/hooks/useResolve";
 import {
   KraphProtocolEventCategory,
   KraphProtocolStepTemplate,
@@ -16,14 +15,13 @@ import {
   useUpdateProtocolEventCategoryMutation,
 } from "../api/graphql";
 import LoadingCreateProtocolEventForm from "../forms/LoadingCreateProtocolEventForm";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 const Page =  asDetailQueryRoute(
   useGetProtocolEventCategoryQuery,
   ({ data, refetch }) => {
     const uploadFile = useKraphMediaUpload();
     const [update] = useUpdateProtocolEventCategoryMutation();
-
-    const resolve = useResolve();
 
     const createFile = async (file: File) => {
       const response = await uploadFile(file);
@@ -77,12 +75,16 @@ const Page =  asDetailQueryRoute(
       >
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
           <div className="w-full h-full relative flex items-center justify-center min-h-[300px]">
-            {data.protocolEventCategory?.image?.presignedUrl ? (
-              <img
-                src={resolve(data.protocolEventCategory?.image.presignedUrl)}
-                style={{ filter: "brightness(0.7)" }}
-                className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
-              />
+            {data.protocolEventCategory?.image ? (
+              <WithKraphMediaUrl media={data.protocolEventCategory.image}>
+                {(url) => (
+                  <img
+                    src={url}
+                    style={{ filter: "brightness(0.7)" }}
+                    className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
+                  />
+                )}
+              </WithKraphMediaUrl>
             ) : (
               <ImageCreator
                 kind="Category"

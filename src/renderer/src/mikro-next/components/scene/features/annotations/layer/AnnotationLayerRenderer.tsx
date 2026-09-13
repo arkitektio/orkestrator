@@ -23,14 +23,20 @@ import {
 import { buildOutlineBatches } from "../annotationBatch";
 import { prunedSelections, repairedSelections } from "../selectionRepair";
 import { useRoiDrawingStore } from "../roiDrawingStore";
-import { useRoiSelectionStore, type SelectedRoi } from "../roiSelectionStore";
+import {
+  useRoiSelectionStore,
+  useRoiSelectionStoreApi,
+  type SelectedRoi,
+} from "../roiSelectionStore";
 import { AnnotationOutlineBatch } from "./AnnotationOutlineBatch";
 import { AnnotationPoints } from "./AnnotationPoints";
 import { AnnotationShape } from "./AnnotationShape";
 import {
+  partitionEntries,
   placeAnnotations,
+  pointGroupsOf,
   sameEntries,
-  splitPointEntries,
+  shownEntries,
   type PlacedEntry,
   type PlacementIdentity,
 } from "./placedAnnotations";
@@ -169,10 +175,14 @@ const AnnotationCollectionGroup = ({
     [annotations, affineMatrix, identity],
   );
 
-  /** On screen now. One list for the draw AND the rubber band. */
+  /**
+   * On screen now. One list for the draw AND the rubber band. Value-stable
+   * (`shownEntries`): a scrub tick that keeps the same entries keeps the same
+   * array, so the partition and the outline batches below skip.
+   */
   const shown = useMemo(
     () =>
-      placed.filter((entry) =>
+      shownEntries(placed, (entry) =>
         isAnnotationInView(
           { coordinates: entry.annotation.coordinates, zSpan: entry.zSpan },
           { coverages, plane },
@@ -198,17 +208,23 @@ const AnnotationCollectionGroup = ({
   // selections (layer/name/kind/geometry changed elsewhere) and PRUNE ids
   // this layer owns that its query no longer returns (deleted elsewhere —
   // the ghost's own delete would reject forever).
+  // Triggered by DATA (`annotations`, `placed`), not by the selection: the
+  // selection is read as a snapshot, so a click does not re-walk the whole
+  // placed set four times. A selection made against current data needs no
+  // repair; one made against stale data is caught when the data changes.
   const mergeSelectedRois = useRoiSelectionStore((s) => s.mergeSelectedRois);
+  const roiSelectionApi = useRoiSelectionStoreApi();
   useEffect(() => {
     if (!annotations) return; // never prune against an unloaded query
+    const currentSelection = roiSelectionApi.getState().selectedRois;
     const rois = placed.map((entry) => entry.roi);
-    const repairs = repairedSelections(selectedRois, rois);
+    const repairs = repairedSelections(currentSelection, rois);
     if (repairs.length > 0) mergeSelectedRois(repairs);
     const present = new Set(placed.map((entry) => entry.annotation.id));
-    for (const id of prunedSelections(selectedRois, layerId, present)) {
+    for (const id of prunedSelections(currentSelection, layerId, present)) {
       removeSelectedRoi(id);
     }
-  }, [annotations, placed, selectedRois, mergeSelectedRois, removeSelectedRoi, layerId]);
+  }, [annotations, placed, roiSelectionApi, mergeSelectedRois, removeSelectedRoi, layerId]);
 
   // The marquee's world: written only when the SHOWN set actually changed —
   // a z-scrub tick that filtered to the same entries writes nothing.
@@ -246,9 +262,13 @@ const AnnotationCollectionGroup = ({
     [selectedRois],
   );
 
-  const { pointGroups, otherShapes } = useMemo(
-    () => splitPointEntries(shown, (id) => selectedRoiIds.has(id), flattenToPlane),
-    [shown, selectedRoiIds, flattenToPlane],
+  // Partition BEFORE styling: `others` must not depend on the selection, or
+  // the outline batches below would rebuild (and re-upload) on every click —
+  // which is what happened when the split and the point styling were one memo.
+  const { points, others: otherShapes } = useMemo(() => partitionEntries(shown), [shown]);
+  const pointGroups = useMemo(
+    () => pointGroupsOf(points, (id) => selectedRoiIds.has(id), flattenToPlane),
+    [points, selectedRoiIds, flattenToPlane],
   );
 
   // Merged outline batches (`orkestrator.annotationBatch`, read once per

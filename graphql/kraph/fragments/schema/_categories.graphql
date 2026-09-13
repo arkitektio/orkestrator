@@ -12,7 +12,7 @@ fragment BaseCategory on Category {
     ...ListGraphQuery
   }
   image {
-    presignedUrl
+    ...MediaStore
   }
   ageName
 }

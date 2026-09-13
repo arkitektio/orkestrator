@@ -25,7 +25,7 @@ const SidebarsTab = (_props: SidebarsTabProps): null => null;
 SidebarsTab.displayName = "Sidebars.Tab";
 
 /** Depth-first flatten of arrays and fragments down to plain elements. */
-const flattenChildren = (children: ReactNode): ReactNode[] =>
+export const flattenChildren = (children: ReactNode): ReactNode[] =>
   Children.toArray(children).flatMap((child) =>
     isValidElement(child) && child.type === Fragment
       ? flattenChildren((child.props as { children?: ReactNode }).children)

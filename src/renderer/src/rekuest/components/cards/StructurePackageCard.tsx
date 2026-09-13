@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { RekuestStructurePackage } from "@/linkers";
@@ -27,4 +28,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

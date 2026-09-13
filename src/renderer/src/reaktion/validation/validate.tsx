@@ -373,10 +373,13 @@ export const validateNodeConstants = (
   console.log("Validating node constants");
   if (!node.data.constants) return state;
   if (node.data.constants.length == 0) return state;
-  const schema = buildZodSchema(
-    node.data.constants.filter((k) => !(k.key in node.data.globalsMap)),
-  ); // Only validate non global constants
   try {
+    // Only validate non global constants. The schema build is inside the try:
+    // an unsupported port kind must surface as a node error, not abort the
+    // whole graph validation.
+    const schema = buildZodSchema(
+      node.data.constants.filter((k) => !(k.key in node.data.globalsMap)),
+    );
     schema.parse(node.data.constantsMap);
     return state;
   } catch (e) {

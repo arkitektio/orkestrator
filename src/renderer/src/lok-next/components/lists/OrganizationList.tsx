@@ -22,7 +22,7 @@ const OrganizationList = ({ filters, pagination }: Props) => {
       title="Organizations"
       refetch={refetch}
     >
-      {(ex, index) => <OrganizationCard key={index} item={ex} />}
+      {(ex) => <OrganizationCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

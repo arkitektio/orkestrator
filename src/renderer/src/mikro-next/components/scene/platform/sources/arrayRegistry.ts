@@ -28,11 +28,11 @@ export const openZarrArray = async (store: ZarrStore): Promise<OpenedZarrArray> 
 export async function openSceneArrays(
   storesById: Map<string, ZarrStore>,
 ): Promise<Map<string, OpenedZarrArray>> {
-  const arraysByStoreId = new Map<string, OpenedZarrArray>();
-
-  for (const [storeId, store] of storesById) {
-    arraysByStoreId.set(storeId, await openZarrArray(store));
-  }
-
-  return arraysByStoreId;
+  // One metadata round trip per store — in parallel. A sequential `for …
+  // await` here put (stores − 1) × RTT on the cold-open critical path, before
+  // the `arraysOpen` stamp; `openMissingSceneArrays` already fans out.
+  const opened = await Promise.all(
+    [...storesById].map(async ([storeId, store]) => [storeId, await openZarrArray(store)] as const),
+  );
+  return new Map(opened);
 }

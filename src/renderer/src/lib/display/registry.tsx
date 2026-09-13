@@ -32,11 +32,14 @@ export function createDisplayProvider<
     );
   };
 
+  // The registry is a module constant, so the context value can be too.
+  const displayContextValue = { registry };
+
   const DisplayProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
   }) => {
     return (
-      <DisplayContext.Provider value={{ registry: registry }}>
+      <DisplayContext.Provider value={displayContextValue}>
         {children}
       </DisplayContext.Provider>
     );

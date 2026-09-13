@@ -11,14 +11,12 @@ export const EnumWidget = (
 
   const search = useCallback(
     async (searching: SearchOptions) => {
-      console.log("Searching", searching);
       if (searching.search) {
         return choices
           .filter(notEmpty)
           .filter((c) => c.label.startsWith(searching.search || ""));
       }
       if (searching.values) {
-        console.log("Searching", searching.values);
         return choices
           .filter(notEmpty)
           .filter((c) => searching.values?.includes(c.value));

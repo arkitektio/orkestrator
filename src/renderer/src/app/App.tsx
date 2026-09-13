@@ -1,5 +1,4 @@
 import { Arkitekt } from "@/app/Arkitekt";
-import Hero from "@/app/pages/Hero";
 import { AppLayout } from "@/components/layout/AppLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -9,21 +8,26 @@ import { NotConnected } from "./components/fallbacks/NotConnected";
 import { NotFound } from "./components/fallbacks/NotFound";
 import {PrivateNavigationBar} from "./components/navigation/PrivateNavigationBar";
 
+// The dashboard carries dockview; it is the index route, but a deep link into a
+// module should not pay for it.
+const Hero = React.lazy(() => import("@/app/pages/Hero"));
 
-import AlpakaModule from "@/alpaka/AlpakaModule";
-import BlokModule from "@/blok/BlokModule";
-import DokumentsModule from "@/dokuments/DokumentsModule";
-import ElektroModule from "@/elektro/ElektroModule";
-import KabinetModule from "@/kabinet/KabinetModule";
-import KraphModule from "@/kraph/KraphModule";
-import LokNextModule from "@/lok-next/LokNextModule";
-import LovekitModule from "@/lovekit/LovekitModule";
-import MikroNextModule from "@/mikro-next/MikroNextModule";
-import OmeroArkModule from "@/omero-ark/OmeroArkModule";
-import ReaktionModule from "@/reaktion/ReaktionModule";
-import RekuestNextModule from "@/rekuest/RekuestNextModule";
-import SettingsModule from "@/settings/SettingsModule";
-import { Stash } from "@/lok-next/components/stash/Stash";
+// Each module root is its own chunk: the scene renderer (three.js), DuckDB,
+// Monaco and the flow editor only load when their route is first visited
+// instead of being parsed before the first paint for every user.
+const AlpakaModule = React.lazy(() => import("@/alpaka/AlpakaModule"));
+const BlokModule = React.lazy(() => import("@/blok/BlokModule"));
+const DokumentsModule = React.lazy(() => import("@/dokuments/DokumentsModule"));
+const ElektroModule = React.lazy(() => import("@/elektro/ElektroModule"));
+const KabinetModule = React.lazy(() => import("@/kabinet/KabinetModule"));
+const KraphModule = React.lazy(() => import("@/kraph/KraphModule"));
+const LokNextModule = React.lazy(() => import("@/lok-next/LokNextModule"));
+const LovekitModule = React.lazy(() => import("@/lovekit/LovekitModule"));
+const MikroNextModule = React.lazy(() => import("@/mikro-next/MikroNextModule"));
+const OmeroArkModule = React.lazy(() => import("@/omero-ark/OmeroArkModule"));
+const ReaktionModule = React.lazy(() => import("@/reaktion/ReaktionModule"));
+const RekuestNextModule = React.lazy(() => import("@/rekuest/RekuestNextModule"));
+const SettingsModule = React.lazy(() => import("@/settings/SettingsModule"));
 
 // Entrypoint of the application.
 // We provide two main routers, one for the public routes, and one for the private routes.
@@ -33,7 +37,7 @@ const protectModule = (component: React.ReactNode, fallback?: React.ReactNode) =
       notConnectedFallback={fallback || <NotConnected />}
       connectingFallback={<ConnectingFallback />}
     >
-      {component}
+      <React.Suspense fallback={<ConnectingFallback />}>{component}</React.Suspense>
     </Arkitekt.Guard>
   );
 };
@@ -44,7 +48,14 @@ function App() {
       <AppLayout navigationBar={<PrivateNavigationBar />}>
         <BackNavigationErrorCatcher>
           <Routes>
-            <Route index element={<Hero />} />
+            <Route
+              index
+              element={
+                <React.Suspense fallback={<ConnectingFallback />}>
+                  <Hero />
+                </React.Suspense>
+              }
+            />
             <Route path="mikro/*" element={protectModule(<MikroNextModule />)} />
             <Route path="elektro/*" element={protectModule(<ElektroModule />)} />
             <Route path="rekuest/*" element={protectModule(<RekuestNextModule />)} />
@@ -60,7 +71,6 @@ function App() {
             <Route path="dokuments/*" element={protectModule(<DokumentsModule />)} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <Stash />
         </BackNavigationErrorCatcher>
       </AppLayout>
     </AppProvider>

@@ -20,7 +20,7 @@ const List = () => {
         }
         refetch={() => refetch()}
       >
-        {(ex, index) => <DatasetCard key={index} item={ex} />}
+        {(ex) => <DatasetCard key={ex.id} item={ex} />}
       </ListRender>
     </>
   );

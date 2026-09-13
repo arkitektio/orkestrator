@@ -1,5 +1,6 @@
 import { ReturnContainerProps } from "@/rekuest/widgets/tailwind";
 import { PortGroup, ReturnPort } from "@/rekuest/widgets/types";
+import { portGridClass } from "../gridColumns";
 
 export type FilledGroup = PortGroup & {
   ports: ReturnPort[];
@@ -11,31 +12,19 @@ export const ReturnsContainer = ({
   options,
   registry,
 }: ReturnContainerProps) => {
-  const len = ports.length;
-
-  const lg_size = len < 2 ? len : 2;
-  const xl_size = len < 3 ? len : 3;
-  const xxl_size = len < 4 ? len : 4;
-  const xxxl_size = len < 5 ? len : 5;
-  const xxxxl_size = len < 6 ? len : 6;
-
   return (
-    <div
-      className={`grid @lg:grid-cols-${lg_size} @xl-grid-cols-${xl_size} @2xl:grid-cols-${xxl_size}  @3xl:grid-cols-${xxxl_size}   @5xl:grid-cols-${xxxxl_size} gap-5 w-full h-full`}
-    >
-      {ports.map((port, index) => {
+    <div className={`${portGridClass(ports.length)} w-full h-full`}>
+      {ports.map((port) => {
         const Widget = registry.getReturnWidgetForPort(port);
 
         return (
-          <>
-            <Widget
-              key={index}
-              value={values[port.key]}
-              port={port}
-              widget={port.widget}
-              options={options}
-            />
-          </>
+          <Widget
+            key={port.key}
+            value={values[port.key]}
+            port={port}
+            widget={port.widget}
+            options={options}
+          />
         );
       })}
     </div>

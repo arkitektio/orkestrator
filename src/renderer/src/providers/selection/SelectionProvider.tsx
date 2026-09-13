@@ -1,5 +1,5 @@
 import { useSelectionContainer } from "@air/react-drag-to-select";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useStore } from "zustand";
 
 import { SelectionContext } from "./SelectionContext";
@@ -8,21 +8,27 @@ import { createSelectionStore } from "./store";
 export type ArkitektProps = { children: React.ReactNode };
 
 export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
-  const storeRef = useRef(createSelectionStore());
-  const store = storeRef.current;
-  const selectables = useStore(store, (state) => state.selectables);
+  // Created once per provider (lazy initializer), never re-created.
+  const [store] = useState(createSelectionStore);
   const setFocusIndex = useStore(store, (state) => state.setFocusIndex);
   const handleSelectionChange = useStore(
     store,
     (state) => state.handleSelectionChange,
   );
+  const beginMarquee = useStore(store, (state) => state.beginMarquee);
+  const endMarquee = useStore(store, (state) => state.endMarquee);
 
+  // The keyboard handlers read `selectables` from the store on demand instead
+  // of subscribing to it: subscribing rerendered the provider (and rebound
+  // the document listeners) every time a list of cards mounted or unmounted.
   useEffect(() => {
     const listener = {
       handleEvent: (e: KeyboardEvent) => {
         if ((e.key === "ArrowDown" || e.key == "ArrowRight") && e.ctrlKey) {
+          store.getState().flushSelectables();
+          const count = store.getState().selectables.length;
           setFocusIndex((i) =>
-            i === undefined || i >= (selectables.length || 0) - 1 ? 0 : i + 1,
+            i === undefined || i >= (count || 0) - 1 ? 0 : i + 1,
           );
         }
         if ((e.key === "ArrowUp" || e.key == "ArrowLeft") && e.ctrlKey) {
@@ -47,9 +53,11 @@ export const SelectionProvider: React.FC<ArkitektProps> = ({ children }) => {
       document.removeEventListener("keydown", listener);
       document.removeEventListener("click", onOutListener);
     };
-  }, [selectables, setFocusIndex]);
+  }, [store, setFocusIndex]);
 
   const { DragSelection } = useSelectionContainer({
+    onSelectionStart: beginMarquee,
+    onSelectionEnd: endMarquee,
     onSelectionChange: handleSelectionChange,
     shouldStartSelecting: (target) => {
       /**

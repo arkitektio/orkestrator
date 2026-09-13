@@ -1,4 +1,5 @@
-import { useArkitekt } from "@/lib/arkitekt/provider";
+import { useArkitektActions, useArkitektStore } from "@/lib/arkitekt/provider";
+import { useArkitektStoreApi } from "@/lib/arkitekt/hooks";
 import { useSettings } from "@/providers/settings/SettingsContext";
 import React, {
   createContext,
@@ -8,6 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useNavigate } from "react-router-dom";
 import { AgentState, OrkestratorAgent } from "./Agent";
 import { resetAgentState, setAgentState, useAgentState } from "./store";
@@ -31,7 +33,9 @@ const useAgentContext = () => useContext(AgentContext);
 
 export const useAgent = (): AgentContextType => {
   const { agent, disabled } = useAgentContext();
-  const state = useAgentState((currentState) => currentState);
+  // The agent store is replaced wholesale on every socket message; shallow
+  // compare so consumers only rerender when a top-level field changes.
+  const state = useAgentState(useShallow((currentState) => currentState));
 
   return useMemo(
     () => ({
@@ -52,25 +56,27 @@ export const AgentProvider: React.FC<{
   children,
   disabled = false,
 }) => {
-  const arkitekt = useArkitekt();
+  // The agent needs the merged Arkitekt context (store state + actions), but
+  // this provider wraps the whole app, so it must not subscribe to the whole
+  // store: it reads the state imperatively and subscribes outside React.
+  const store = useArkitektStoreApi();
+  const actions = useArkitektActions();
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const connection = arkitekt.connection;
   const agentRef = useRef<OrkestratorAgent | null>(null);
   const [agent, setAgent] = useState<OrkestratorAgent | null>(null);
 
-  // Keep `navigate` and the live `arkitekt` context in refs so they never appear
-  // in the effect deps below — otherwise every navigation (react-router returns a
-  // fresh `navigate`) and every token refresh (a new `connection` object) would
+  // Keep `navigate` in a ref so it never appears in the effect deps below —
+  // otherwise every navigation (react-router returns a fresh `navigate`) would
   // tear down and reconnect the agent.
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
-  const arkitektRef = useRef(arkitekt);
-  arkitektRef.current = arkitekt;
 
   // A stable identity for "the connection we're bound to": the endpoint. Token
   // refresh keeps the same endpoint, so it does not churn the agent.
-  const connectionKey = connection?.endpoint?.base_url ?? null;
+  const connectionKey = useArkitektStore(
+    (state) => state.connection?.endpoint?.base_url ?? null,
+  );
 
   useEffect(() => {
     try {
@@ -84,8 +90,9 @@ export const AgentProvider: React.FC<{
         return;
       }
 
-      const newAgent = new OrkestratorAgent(arkitektRef.current, (path) =>
-        navigateRef.current(path),
+      const newAgent = new OrkestratorAgent(
+        { ...store.getState(), ...actions },
+        (path) => navigateRef.current(path),
       );
       agentRef.current = newAgent;
       setAgent(newAgent);
@@ -114,12 +121,19 @@ export const AgentProvider: React.FC<{
       console.error("AgentProvider: Failed to start agent", e);
       return undefined;
     }
+    // `store` and `actions` are stable for the provider's lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionKey, disabled, settings.startAgent]);
 
-  // Push token/context refreshes into the live agent WITHOUT reconnecting.
-  useEffect(() => {
-    agentRef.current?.setContext(arkitekt);
-  }, [arkitekt, connection]);
+  // Push token/context refreshes into the live agent WITHOUT reconnecting, and
+  // without rerendering this provider on every store write.
+  useEffect(
+    () =>
+      store.subscribe((state) => {
+        agentRef.current?.setContext({ ...state, ...actions });
+      }),
+    [store, actions],
+  );
 
   const contextValue = useMemo(
     () => ({

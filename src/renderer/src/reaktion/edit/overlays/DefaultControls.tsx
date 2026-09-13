@@ -9,12 +9,16 @@ import {
 } from '@/components/ui/sheet'
 import { EyeOpenIcon, LetterCaseToggleIcon, QuestionMarkIcon } from '@radix-ui/react-icons'
 import { ChevronRight, ChevronsLeft } from 'lucide-react'
-import { useEditRiver } from '../context'
+import { useEditFlowStore, useEditTemporal } from '../context'
 
 export const DefaultControls = () => {
 
 
-  const { undo, redo, canUndo, canRedo, setShowEdgeLabels, setShowNodeErrors, showEdgeLabels, showNodeErrors } = useEditRiver()
+  const { undo, redo, canUndo, canRedo } = useEditTemporal();
+  const setShowEdgeLabels = useEditFlowStore((s) => s.setShowEdgeLabels);
+  const setShowNodeErrors = useEditFlowStore((s) => s.setShowNodeErrors);
+  const showEdgeLabels = useEditFlowStore((s) => s.showEdgeLabels);
+  const showNodeErrors = useEditFlowStore((s) => s.showNodeErrors);
 
 
   return <div className="flex flex-row bg-card gap-2 rounded rounded-md overflow-hidden px-2 h-10 absolute top-2 left-2 z-10">

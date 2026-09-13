@@ -6,7 +6,6 @@ import { TermKind } from "@/kraph/api/graphql";
  */
 const TERM_KIND_LABELS: Partial<Record<TermKind, string>> = {
   [TermKind.Entity]: "Entity",
-  [TermKind.Reagent]: "Reagent",
   [TermKind.NaturalEvent]: "Natural Event",
   [TermKind.ProtocolEvent]: "Protocol Event",
   [TermKind.Measurement]: "Measurement",

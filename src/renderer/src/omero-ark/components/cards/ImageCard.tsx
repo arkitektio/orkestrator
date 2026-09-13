@@ -80,4 +80,4 @@ const TCard = ({ image }: Props) => {
   );
 };
 
-export default TCard;
+export default React.memo(TCard);

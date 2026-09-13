@@ -3,13 +3,13 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { Card } from "@/components/ui/card";
 import { DragZone } from "@/components/upload/drag";
 import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
-import { useResolve } from "@/datalayer/hooks/useResolve";
 import { KraphNaturalEventCategory } from "@/linkers";
 import {
   NaturalEventCategoryFragment,
   useGetNaturalEventCategoryQuery,
   useUpdateNaturalEventCategoryMutation,
 } from "../api/graphql";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 export type IRepresentationScreenProps = {};
 
@@ -64,8 +64,6 @@ export default asDetailQueryRoute(
     const uploadFile = useKraphMediaUpload();
     const [update] = useUpdateNaturalEventCategoryMutation();
 
-    const resolve = useResolve();
-
     const createFile = async (file: File) => {
       const response = await uploadFile(file);
       if (response) {
@@ -107,12 +105,16 @@ export default asDetailQueryRoute(
             </p>
           </div>
           <div className="w-full h-full flex-row relative">
-            {data.naturalEventCategory?.image?.presignedUrl && (
-              <img
-                src={resolve(data.naturalEventCategory?.image.presignedUrl)}
-                style={{ filter: "brightness(0.7)" }}
-                className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
-              />
+            {data.naturalEventCategory?.image && (
+              <WithKraphMediaUrl media={data.naturalEventCategory.image}>
+                {(url) => (
+                  <img
+                    src={url}
+                    style={{ filter: "brightness(0.7)" }}
+                    className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
+                  />
+                )}
+              </WithKraphMediaUrl>
             )}
           </div>
         </div>

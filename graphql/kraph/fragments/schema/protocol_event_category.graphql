@@ -6,7 +6,7 @@ fragment ProtocolEventCategory on ProtocolEventCategory {
   label
   description
   image {
-    presignedUrl
+    ...MediaStore
   }
   inputs {
     ...EventRole

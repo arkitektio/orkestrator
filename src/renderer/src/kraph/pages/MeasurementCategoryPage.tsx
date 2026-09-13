@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { DragZone } from "@/components/upload/drag";
 import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
-import { useResolve } from "@/datalayer/hooks/useResolve";
 import {
   KraphMeasurementCategory,
   KraphMetricKind
@@ -15,14 +14,13 @@ import {
   useUpdateMeasurementCategoryMutation
 } from "../api/graphql";
 import UpdateMeasurementCategoryForm from "../forms/UpdateMeasurementCategoryForm";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 const Page = asDetailQueryRoute(
   useGetMeasurmentCategoryQuery,
   ({ data, refetch }) => {
     const uploadFile = useKraphMediaUpload();
     const [update] = useUpdateMeasurementCategoryMutation();
-
-    const resolve = useResolve();
 
     const createFile = async (file: File) => {
       const response = await uploadFile(file);
@@ -76,12 +74,16 @@ const Page = asDetailQueryRoute(
             </p>
           </div>
           <div className="w-full h-full flex-row relative">
-            {data.measurementCategory?.image?.presignedUrl && (
-              <Image
-                src={resolve(data.measurementCategory?.image.presignedUrl)}
-                style={{ filter: "brightness(0.7)" }}
-                className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
-              />
+            {data.measurementCategory?.image && (
+              <WithKraphMediaUrl media={data.measurementCategory.image}>
+                {(url) => (
+                  <Image
+                    src={url}
+                    style={{ filter: "brightness(0.7)" }}
+                    className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
+                  />
+                )}
+              </WithKraphMediaUrl>
             )}
           </div>
         </div>

@@ -16,7 +16,6 @@ export const FloatField = (props: FieldProps & { placeholder?: string }) => {
     <FormField
       control={form.control}
       name={props.name}
-      rules={{ validate: props.validate }}
       render={({ field }) => (
         <FormItem>
           <FormLabel>

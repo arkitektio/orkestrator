@@ -27,7 +27,7 @@ const List = ({ filters, pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <CoordinateSystemCard key={index} system={ex} />}
+      {(ex) => <CoordinateSystemCard key={ex.id} system={ex} />}
     </ListRender>
   );
 };

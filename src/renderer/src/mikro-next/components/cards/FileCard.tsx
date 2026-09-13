@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { MikroFile } from "@/linkers";
 import { cn } from "@/lib/utils";
@@ -48,4 +49,4 @@ const TheCard = ({ item, className }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

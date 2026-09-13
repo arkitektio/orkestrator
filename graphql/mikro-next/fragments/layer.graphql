@@ -366,29 +366,30 @@ fragment SceneLayer on Layer {
   visible
   order
   # Server-resolved path from this layer's source CS to the scene's world
-  # system (null = unregistered, [] = source IS world). Still selected even
-  # though `asAffine` below is what gets composed: scene reconciliation keys
-  # off each step's id + version (platform/model/sceneStructure.ts), and the
-  # placement inspector needs the per-step validity/invariance/provenance.
+  # system (null = unregistered, [] = source IS world). Selected for
+  # PROVENANCE ONLY, never composed into a matrix on the client: scene
+  # reconciliation keys off each step's id + version
+  # (platform/model/sceneStructure.ts), and the placement inspector shows the
+  # per-step validity/invariance/provenance.
   pathToWorld {
     ...PlacementStep
   }
   # The SAME path, composed by the server -- "`asAffine` is the same path
-  # composed, for when you only need the map". Preferred over re-walking the
-  # edges client-side: identical span, so it drops straight into
-  # `composeLayerAffine` under the same lens prefix, and it cannot be
-  # mis-indexed by an edge whose parameter arity disagrees with its
-  # `inputAxes` (the scene-28 bug -- see transformGraph.ts `paramPositions`).
+  # composed, for when you only need the map". This is the ONLY placement
+  # authority on the client: it drops straight into `composeLayerAffine`
+  # under the lens prefix, and into the collection / annotation / point /
+  # track placements as-is. A client walk of the edges would be a second
+  # source of truth that can disagree (the scene-28 arity bug was exactly
+  # that), so there is none.
   #
-  # Selected on the INTERFACE, so every layer kind gets it: point and track
-  # layers already depended on it (they have no lens for the walk to use), and
-  # lens-backed layers now do too.
+  # Selected on the INTERFACE, so every layer kind gets it.
   #
   # NOTE this field ERRORS rather than returning null when a path exists but
   # will not condense (a FIELD step has no closed form; a singular step cannot
   # be inverted). The scene queries therefore set `errorPolicy: "all"` so that
-  # nulls this one field and the client falls back to walking `pathToWorld`,
-  # instead of discarding the whole scene.
+  # nulls this one field instead of discarding the whole scene; a layer whose
+  # `asAffine` is null is NOT DRAWN (`isPlaceable`, LayerRenderer) and its
+  # card says why.
   asAffine {
     matrix
     inputAxes

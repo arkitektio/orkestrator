@@ -223,14 +223,16 @@ export const readDimSelections = (
   state: Pick<CameraStateFragment, "position">,
   axes: WorldSpatialAxes | null,
 ): Record<string, number> => {
-  const spatial = new Set(
-    [axes?.x, axes?.y, axes?.z].filter((n): n is string => Boolean(n)),
-  );
+  // Called per frame while a tour plays: no Set / entries-array allocation.
+  const ax = axes?.x ?? null;
+  const ay = axes?.y ?? null;
+  const az = axes?.z ?? null;
   const out: Record<string, number> = {};
-  for (const [name, value] of Object.entries(
-    (state.position ?? {}) as Record<string, unknown>,
-  )) {
-    if (spatial.has(name) || typeof value !== "number") continue;
+  const position = (state.position ?? {}) as Record<string, unknown>;
+  for (const name in position) {
+    if (name === ax || name === ay || name === az) continue;
+    const value = position[name];
+    if (typeof value !== "number") continue;
     out[name] = Math.round(value);
   }
   return out;

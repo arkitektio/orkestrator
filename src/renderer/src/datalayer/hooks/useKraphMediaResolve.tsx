@@ -20,15 +20,11 @@ export const useKraphMediaResolve = () => {
 
   const s3resolve = useCallback(
     (key: string | undefined) => {
-      console.log("useKraphResolve", { key, endpoint });
       if (key == undefined || key == null || key == "" || !endpoint) {
         return "";
       }
 
-
-      const url = s3resolveWithEndpoint(endpoint, key);
-      console.log("useKraphResolve", url);
-      return url;
+      return s3resolveWithEndpoint(endpoint, key);
     },
     [endpoint],
   );

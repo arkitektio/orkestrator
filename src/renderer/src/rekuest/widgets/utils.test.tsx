@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 // `../api/graphql` is the 1.3MB generated Apollo module (and pulls in the
 // rekuest hooks/client). We only need the PortKind enum, so stub it. The smart
-// registry drags in UI components, and shadowrealm-api instantiates a realm at
-// module load — both are stubbed so this stays a fast, isolated unit test.
+// registry drags in UI components, so it is stubbed too; this stays a fast,
+// isolated unit test.
 vi.mock("../api/graphql", () => ({
   PortKind: {
     Bool: "BOOL",
@@ -26,12 +27,10 @@ vi.mock("@/providers/smart/registry", () => ({
   smartRegistry: { getDisplayName: (identifier: string) => identifier },
 }));
 
-vi.mock("shadowrealm-api", () => ({
-  default: class ShadowRealmStub {
-    evaluate() {
-      return () => true;
-    }
-  },
+// The port-call catalog pulls in the standard blok functions, one of which
+// toasts; keep the toaster out of the unit test.
+vi.mock("sonner", () => ({
+  toast: { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() },
 }));
 
 import type { LabellablePort, PortablePort } from "./types";
@@ -199,14 +198,79 @@ describe("portToZod", () => {
     expect(schema.safeParse("hi").success).toBe(false);
   });
 
-  it("throws for an empty union", () => {
-    expect(() => portToZod(p({ kind: PortKind.Union, key: "u", children: [] }))).toThrow(
-      "Union port is not defined",
-    );
+  it("degrades an empty union to accept-anything with a warning instead of throwing", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const schema = portToZod(p({ kind: PortKind.Union, key: "u", children: [] }));
+    expect(schema.safeParse("anything").success).toBe(true);
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 
-  it("throws for an unsupported kind", () => {
-    expect(() => portToZod(p({ kind: PortKind.Interface, key: "x" }))).toThrow();
+  it("degrades an unsupported kind (INTERFACE) instead of throwing", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const schema = portToZod(p({ kind: PortKind.Interface, key: "x" }));
+    expect(schema.safeParse({ any: "thing" }).success).toBe(true);
+    warn.mockRestore();
+  });
+
+  it("accepts undefined AND null for nullable ports (optional args left untouched)", () => {
+    const schema = buildZodSchema([p({ kind: PortKind.String, key: "s", nullable: true })]);
+    expect(schema.safeParse({}).success).toBe(true);
+    expect(schema.safeParse({ s: null }).success).toBe(true);
+    expect(schema.safeParse({ s: 5 }).success).toBe(false);
+  });
+
+  it("treats an emptied number input as missing, not 0", () => {
+    const required = portToZod(p({ kind: PortKind.Int, key: "n" }));
+    expect(required.safeParse("").success).toBe(false);
+    expect(required.safeParse("7").data).toBe(7);
+    expect(required.safeParse("1.5").success).toBe(false);
+    const optional = portToZod(p({ kind: PortKind.Float, key: "f", nullable: true }));
+    expect(optional.safeParse("").success).toBe(true);
+    expect(optional.safeParse("").data).toBeUndefined();
+    expect(optional.safeParse("2.5").data).toBe(2.5);
+  });
+
+  it("accepts ISO strings and Date objects for dates", () => {
+    const schema = portToZod(p({ kind: PortKind.Date, key: "d" }));
+    expect(schema.safeParse("2020-01-01T00:00:00.000Z").data).toBeInstanceOf(Date);
+    expect(schema.safeParse(new Date()).success).toBe(true);
+    expect(schema.safeParse("not a date").success).toBe(false);
+  });
+
+  it("stringifies a numeric quantity default", () => {
+    const schema = portToZod(p({ kind: PortKind.Quantity, key: "q" }));
+    expect(schema.safeParse(100).data).toBe("100");
+    expect(schema.safeParse("").success).toBe(false);
+  });
+
+  it("accepts any string for an enum without choices", () => {
+    const schema = portToZod(p({ kind: PortKind.Enum, key: "e" }));
+    expect(schema.safeParse("real").success).toBe(true);
+  });
+
+  it("reports multi-variant union errors inside the chosen variant", () => {
+    const schema = portToZod(
+      p({
+        kind: PortKind.Union,
+        key: "u",
+        children: [
+          { kind: PortKind.Int, key: "i" },
+          { kind: PortKind.Model, key: "m", children: [{ kind: PortKind.String, key: "name" }] },
+        ],
+      }),
+    );
+    expect(schema.safeParse({ __use: "0", __value: "3" }).success).toBe(true);
+    const failed = schema.safeParse({ __use: "1", __value: { name: 5 } });
+    expect(failed.success).toBe(false);
+    if (!failed.success) {
+      expect(failed.error.issues[0].path).toEqual(["__value", "name"]);
+    }
+  });
+
+  it("memoizes the schema per port object", () => {
+    const port = p({ kind: PortKind.String, key: "s" });
+    expect(portToZod(port)).toBe(portToZod(port));
   });
 });
 
@@ -221,9 +285,16 @@ describe("buildZodSchema", () => {
   });
 
   it("adds an __identifier literal when given", () => {
-    const schema = buildZodSchema([p({ kind: PortKind.String, key: "name" })], [], "@x/model");
+    const schema = buildZodSchema([p({ kind: PortKind.String, key: "name" })], "@x/model");
     expect(schema.safeParse({ name: "Ada", __identifier: "@x/model" }).success).toBe(true);
     expect(schema.safeParse({ name: "Ada", __identifier: "@x/other" }).success).toBe(false);
+  });
+
+  it("carries no refinements, so extending with extra fields works", () => {
+    const schema = buildZodSchema([
+      p({ kind: PortKind.Int, key: "max", validators: [{ call: { operation: "x" } }] } as never),
+    ]);
+    expect(() => schema.extend({ name: z.string() })).not.toThrow();
   });
 });
 
@@ -256,6 +327,48 @@ describe("recursiveSet / recursiveExtract round-trip", () => {
       { __key: "a", __value: 1 },
       { __key: "b", __value: 2 },
     ]);
+  });
+
+  it("extracts a dict back to a keyed object", () => {
+    const dict = p({ kind: PortKind.Dict, key: "d", children: [{ kind: PortKind.Int, key: "c" }] });
+    expect(
+      recursiveExtract([{ __key: "a", __value: 1 }, { __key: "b", __value: 2 }], dict),
+    ).toEqual({ a: 1, b: 2 });
+  });
+
+  it("round-trips a model with a nested list", () => {
+    const model = p({
+      kind: PortKind.Model,
+      key: "m",
+      children: [
+        { kind: PortKind.String, key: "name" },
+        { kind: PortKind.List, key: "tags", children: [{ kind: PortKind.String, key: "t" }] },
+      ],
+    });
+    const set = recursiveSet({ name: "a", tags: ["x", "y"] }, model);
+    expect(set).toEqual({ name: "a", tags: [{ __value: "x" }, { __value: "y" }] });
+    expect(recursiveExtract(set, model)).toEqual({ name: "a", tags: ["x", "y"] });
+  });
+
+  it("seeds a model without a value from its children's defaults", () => {
+    const model = p({
+      kind: PortKind.Model,
+      key: "m",
+      children: [
+        { kind: PortKind.String, key: "name", default: "anon" },
+        { kind: PortKind.Int, key: "age" },
+      ],
+    });
+    expect(recursiveSet(undefined, model)).toEqual({ name: "anon", age: null });
+    const bare = p({ kind: PortKind.Model, key: "m", children: [{ kind: PortKind.Int, key: "age" }] });
+    expect(recursiveSet(undefined, bare)).toBeNull();
+  });
+
+  it("extracts dates as ISO strings and numeric strings as numbers", () => {
+    const when = new Date("2020-01-01T00:00:00.000Z");
+    expect(recursiveExtract(when, p({ kind: PortKind.Date, key: "d" }))).toBe(when.toISOString());
+    expect(recursiveExtract("3", p({ kind: PortKind.Int, key: "i" }))).toBe(3);
+    expect(recursiveExtract("", p({ kind: PortKind.Float, key: "f" }))).toBeNull();
   });
 
   it("wraps a union value as { __use, __value } on set and unwraps on extract", () => {
@@ -348,5 +461,13 @@ describe("argDictToArgs", () => {
       p({ kind: PortKind.Int, key: "c" }),
     ];
     expect(argDictToArgs({ a: "x" }, ports)).toEqual(["x", 5, null]);
+  });
+
+  it("keeps explicit falsy values instead of falling back", () => {
+    const ports = [
+      p({ kind: PortKind.Int, key: "b", default: 5 }),
+      p({ kind: PortKind.Bool, key: "c", default: true }),
+    ];
+    expect(argDictToArgs({ b: 0, c: false }, ports)).toEqual([0, false]);
   });
 });

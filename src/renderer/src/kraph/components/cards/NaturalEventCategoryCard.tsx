@@ -1,25 +1,28 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
 import { ListNaturalEventCategoryFragment } from "@/kraph/api/graphql";
 import { KraphNaturalEventCategory } from "@/linkers";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 interface Props {
   item: ListNaturalEventCategoryFragment;
 }
 
 const TheCard = ({ item }: Props) => {
-  const s3resolve = useResolve();
-
   return (
     <KraphNaturalEventCategory.Smart object={item}>
       <Card className="px-2 py-2  aspect-square transition-all ease-in-out duration-200 truncate relative">
-        {item?.image?.presignedUrl && (
-          <Image
-            src={s3resolve(item?.image.presignedUrl)}
-            style={{ filter: "brightness(0.2)" }}
-            className="z-3 object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
-          />
+        {item?.image && (
+          <WithKraphMediaUrl media={item.image}>
+            {(url) => (
+              <Image
+                src={url}
+                style={{ filter: "brightness(0.2)" }}
+                className="z-3 object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
+              />
+            )}
+          </WithKraphMediaUrl>
         )}
         <div className="p-3 h-full w-full bg-opacity-20 hover:bg-opacity-10 transition-all ease-in-out duration-200 flex flex-col break-all overflow-y-hidden truncate">
           <KraphNaturalEventCategory.DetailLink
@@ -40,4 +43,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

@@ -25,7 +25,7 @@ const List = ({ filters, pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <EntityCategoryCard key={index} item={ex} />}
+      {(ex) => <EntityCategoryCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

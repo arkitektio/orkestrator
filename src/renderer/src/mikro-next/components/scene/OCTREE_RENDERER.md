@@ -1723,8 +1723,12 @@ fullscreen composite quad shown. All decisions live in the pure, tested core
   key a cache) + `residencyVersion` + `poolsVersion` +
   `qualityGovernor.getVersion()` + the non-reactive
   `viewerStore.volumeInputs` bump tracker (fed at the uniform-write sites:
-  ray/step/channel/label uniforms, label LUT) + a structural key (tagged-mesh
-  count, material ids, world matrices). While `isStreaming()`, EVERY
+  ray/step/channel/label uniforms, label LUT, and the collection layers'
+  wrapped `invalidate`) + a structural key (`buildVolumeStructureKey`: count,
+  material ids and world matrices of the tagged volume meshes AND of the
+  depth-prepass OCCLUDERS — an occluder appearing or disappearing changes the
+  target's depth and so its pixels, and keying only the volume meshes served
+  the cached composite with a stale occlusion hole until the camera moved). While `isStreaming()`, EVERY
   invalidated frame re-renders — the streaming invalidates are already
   coalesced upstream, and `residencyVersion`'s separate throttle would
   otherwise let a streamed frame show stale bricks. Any doubt → render.
@@ -1748,7 +1752,11 @@ fullscreen composite quad shown. All decisions live in the pure, tested core
   occluders render with their OWN materials and `colorWrite = false`
   (`disableColorWrite`) — never `scene.overrideMaterial`: a plain override
   material corrupts BatchedMesh multi-draw ranges (out-of-range DrawIndexed
-  on the fabriks layer). Lines/points/sprites are never occluders.
+  on the fabriks layer). Lines/points/sprites are never occluders. The
+  occluder set comes from `collectPassSets`, which PRUNES invisible subtrees
+  (`Object3D.traverse` does not) — the collection layers hide by flipping
+  their group, and a leaf the renderer skips must not stay in the set or the
+  structure key cannot see the layer go.
 - *Settle refinement ladder* (`orkestrator.settleRefine`, default ON, live):
   after the camera settles and streaming drains, the compositor drives
   `qualityGovernor.setSettleRefineStage` 0→1→2 (200 ms of quiet between

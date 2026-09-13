@@ -9,6 +9,15 @@ import {
 } from "@/reaktion/api/graphql";
 import { FiPlay } from "react-icons/fi";
 import { useTrackRiver } from "../../context";
+import { latestEventPerSource } from "./latestEvents";
+
+/**
+ * Upper bound on the events kept in the cached `eventsBetween` list. The
+ * tracker only ever shows the latest event per source, so older entries are
+ * superseded long before this cap bites; without it a long-running flow grew
+ * the list (and the per-event reduce over it) without limit.
+ */
+const MAX_LIVE_EVENTS = 2000;
 
 export const LiveTracker = ({
   startT,
@@ -27,39 +36,26 @@ export const LiveTracker = ({
   });
 
   useEffect(() => {
-    let highest_t = 0;
-    const newEvents = events?.eventsBetween?.reduce((prev, event) => {
-      if (event) {
-        const prev_node = prev?.find((i) => i.source === event?.source);
-        if (prev_node) {
-          if (prev_node.t <= event.t) {
-            highest_t = Math.max(highest_t, event.t);
-
-            return prev.map((i) => (i.source === event.source ? event : i));
-          }
-          return prev;
-        }
-        return [...prev, event];
-      }
-      return prev;
-    }, [] as RunEventFragment[]);
-
-    console.log(newEvents);
-    setRunState({ t: highest_t, events: newEvents });
+    const { events: newEvents, highestT } = latestEventPerSource(
+      events?.eventsBetween,
+    );
+    setRunState({ t: highestT, events: newEvents });
   }, [events?.eventsBetween]);
 
   useEffect(() => {
-    console.log("fetching events");
-
     const unsubscripe = subscribeToMore<EventsSubscription>({
       document: EventsDocument,
       variables: { id: run.id },
       updateQuery: (prev, { subscriptionData }) => {
-        console.log("got new event", subscriptionData);
         if (!subscriptionData.data) return prev;
         const newEvent = subscriptionData.data.events;
         if (!newEvent) return prev;
-        return { eventsBetween: [...(prev.eventsBetween || []), newEvent] };
+        const previous = prev.eventsBetween || [];
+        const next: RunEventFragment[] =
+          previous.length >= MAX_LIVE_EVENTS
+            ? [...previous.slice(previous.length - MAX_LIVE_EVENTS + 1), newEvent]
+            : [...previous, newEvent];
+        return { eventsBetween: next };
       },
     });
 

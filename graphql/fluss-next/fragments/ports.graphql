@@ -10,6 +10,48 @@ fragment FlussSliderAssignWidget on SliderAssignWidget {
   kind
   min
   max
+  step
+}
+
+fragment FlussStateChoiceAssignWidget on StateChoiceAssignWidget {
+  __typename
+  kind
+  followValue
+  statePath
+  stateCall {
+    ...FlussPortCall
+  }
+  stateAccessors {
+    optionKey
+    path
+    call {
+      ...FlussPortCall
+    }
+  }
+  dependency
+  dependencies
+}
+
+fragment FlussProxyWidget on ProxyWidget {
+  __typename
+  kind
+  targetPort
+  targetAction
+  targetDependency
+}
+
+fragment FlussFilterPort on ArgPort {
+  __typename
+  kind
+  key
+  identifier
+  widget {
+    ... on SearchAssignWidget {
+      query
+    }
+  }
+  description
+  nullable
 }
 
 fragment FlussSearchAssignWidget on SearchAssignWidget {
@@ -17,22 +59,263 @@ fragment FlussSearchAssignWidget on SearchAssignWidget {
   kind
   query
   ward
+  filters {
+    ...FlussFilterPort
+  }
+  dependencies
 }
 
+# Custom widgets name a component from the UI catalog (`component`) and bind
+# its props like a blok node. `fallback` is the widget to use when the catalog
+# does not know the component; it cannot recurse into another custom widget,
+# so it is selected as the non-custom variants only.
 fragment FlussCustomAssignWidget on CustomAssignWidget {
   __typename
-  ward
-  hook
+  kind
+  followValue
+  component
+  props {
+    ...FlussBlokComponentProp
+  }
+  dependencies
+  fallback {
+    __typename
+    kind
+    ...FlussStringAssignWidget
+    ...FlussSearchAssignWidget
+    ...FlussSliderAssignWidget
+    ...FlussChoiceAssignWidget
+    ...FlussProxyWidget
+    ...FlussStateChoiceAssignWidget
+  }
 }
 
+# Choices live on the port (`ArgPort.choices` / `ReturnPort.choices`); the
+# widget only says how to present them.
 fragment FlussChoiceAssignWidget on ChoiceAssignWidget {
   __typename
   kind
+  followValue
+  placeholder
+}
+
+# Child ports (list items, dict values, union variants, model fields) carry
+# the same effects, validators and defaults as top-level ports; the client
+# renders and validates them at every depth. Fragments cannot recurse, so the
+# tree is selected three levels deep; the deepest level keeps enough to render
+# a leaf widget.
+fragment FlussArgChildPortDeep on ArgPort {
+  __typename
+  kind
+  key
+  label
+  identifier
+  referenceUnit
+  proposedUnits
+  dimension
   choices {
     value
     label
     description
   }
+  widget {
+    ...FlussAssignWidget
+  }
+  description
+  nullable
+  default
+  children {
+    __typename
+    kind
+    key
+    identifier
+    nullable
+    widget {
+      ...FlussAssignWidget
+    }
+  }
+}
+
+fragment FlussArgChildPortNested on ArgPort {
+  __typename
+  kind
+  key
+  label
+  identifier
+  referenceUnit
+  proposedUnits
+  dimension
+  children {
+    ...FlussArgChildPortDeep
+  }
+  choices {
+    value
+    label
+    description
+  }
+  widget {
+    ...FlussAssignWidget
+  }
+  effects {
+    ...FlussPortEffect
+  }
+  validators {
+    ...Validator
+  }
+  description
+  nullable
+  default
+}
+
+fragment FlussArgChildPort on ArgPort {
+  __typename
+  kind
+  key
+  label
+  identifier
+  referenceUnit
+  proposedUnits
+  dimension
+  children {
+    ...FlussArgChildPortNested
+  }
+  widget {
+    ...FlussAssignWidget
+  }
+  effects {
+    ...FlussPortEffect
+  }
+  validators {
+    ...Validator
+  }
+  choices {
+    value
+    label
+    description
+  }
+  nullable
+  description
+  default
+}
+
+fragment FlussReturnChildPortDeep on ReturnPort {
+  __typename
+  kind
+  key
+  label
+  identifier
+  referenceUnit
+  proposedUnits
+  dimension
+  choices {
+    value
+    label
+    description
+  }
+  widget {
+    ...FlussReturnWidget
+  }
+  description
+  nullable
+  children {
+    __typename
+    kind
+    key
+    identifier
+    nullable
+    widget {
+      ...FlussReturnWidget
+    }
+  }
+}
+
+fragment FlussReturnChildPortNested on ReturnPort {
+  __typename
+  kind
+  key
+  label
+  identifier
+  referenceUnit
+  proposedUnits
+  dimension
+  children {
+    ...FlussReturnChildPortDeep
+  }
+  choices {
+    value
+    label
+    description
+  }
+  widget {
+    ...FlussReturnWidget
+  }
+  effects {
+    ...FlussPortEffect
+  }
+  description
+  nullable
+}
+
+fragment FlussReturnChildPort on ReturnPort {
+  __typename
+  kind
+  key
+  label
+  identifier
+  referenceUnit
+  proposedUnits
+  dimension
+  children {
+    ...FlussReturnChildPortNested
+  }
+  widget {
+    ...FlussReturnWidget
+  }
+  effects {
+    ...FlussPortEffect
+  }
+  choices {
+    value
+    label
+    description
+  }
+  nullable
+  description
+}
+
+fragment FlussBaseEffect on Effect {
+  __typename
+  kind
+  dependencies
+  source
+  call {
+    ...FlussPortCall
+  }
+}
+
+fragment FlussCustomEffect on CustomEffect {
+  ...FlussBaseEffect
+  __typename
+  kind
+}
+
+fragment FlussMessageEffect on MessageEffect {
+  ...FlussBaseEffect
+  __typename
+  kind
+  message
+}
+
+fragment FlussHideEffect on HideEffect {
+  ...FlussBaseEffect
+  __typename
+  fade
+}
+
+fragment FlussPortEffect on Effect {
+  ...FlussCustomEffect
+  ...FlussMessageEffect
+  ...FlussHideEffect
 }
 
 fragment FlussAssignWidget on AssignWidget {
@@ -42,97 +325,19 @@ fragment FlussAssignWidget on AssignWidget {
   ...FlussSearchAssignWidget
   ...FlussSliderAssignWidget
   ...FlussChoiceAssignWidget
+  ...FlussProxyWidget
   ...FlussCustomAssignWidget
-}
-
-fragment FlussArgChildPortNested on ArgPort {
-  __typename
-  key
-  kind
-  identifier
-  children {
-    key
-    kind
-    identifier
-    widget {
-      ...FlussAssignWidget
-    }
-  }
-  widget {
-    ...FlussAssignWidget
-  }
-  nullable
-}
-fragment FlussReturnChildPortNested on ReturnPort {
-  __typename
-  key
-  kind
-  identifier
-  children {
-    key
-    kind
-    identifier
-    widget {
-      ...FlussReturnWidget
-    }
-  }
-  widget {
-    ...FlussReturnWidget
-  }
-  nullable
-}
-
-fragment FlussArgChildPort on ArgPort {
-  __typename
-  kind
-  identifier
-  key
-  children {
-    ...FlussArgChildPortNested
-  }
-  widget {
-    ...FlussAssignWidget
-  }
-  nullable
-}
-fragment FlussReturnChildPort on ReturnPort {
-  __typename
-  kind
-  identifier
-  key
-  children {
-    ...FlussReturnChildPortNested
-  }
-  widget {
-    ...FlussReturnWidget
-  }
-  nullable
-}
-
-fragment FlussCustomEffect on CustomEffect {
-  __typename
-  kind
-  hook
-  ward
-}
-
-fragment FlussMessageEffect on MessageEffect {
-  __typename
-  kind
-  message
-}
-
-fragment FlussPortEffect on Effect {
-  __typename
-  kind
-  dependencies
-  ...FlussCustomEffect
-  ...FlussMessageEffect
+  ...FlussStateChoiceAssignWidget
 }
 
 fragment Validator on Validator {
-  function
+  call {
+    ...FlussPortCall
+  }
   dependencies
+  label
+  errorMessage
+  source
 }
 
 fragment FlussArgPort on ArgPort {
@@ -147,15 +352,18 @@ fragment FlussArgPort on ArgPort {
   widget {
     ...FlussAssignWidget
   }
-  choices {
-    label
-    value
-    description
-  }
   kind
   identifier
+  referenceUnit
+  proposedUnits
+  dimension
   children {
     ...FlussArgChildPort
+  }
+  choices {
+    value
+    label
+    description
   }
   default
   nullable
@@ -181,39 +389,40 @@ fragment FlussReturnPort on ReturnPort {
   widget {
     ...FlussReturnWidget
   }
-  choices {
-    label
-    value
-    description
-  }
   kind
   identifier
+  referenceUnit
+  proposedUnits
+  dimension
   children {
     ...FlussReturnChildPort
   }
+  choices {
+    value
+    label
+    description
+  }
+  nullable
   provides {
     key
     operator
     value
   }
-  default
-  nullable
 }
+
 
 fragment FlussCustomReturnWidget on CustomReturnWidget {
   __typename
   kind
-  hook
-  ward
+  component
+  props {
+    ...FlussBlokComponentProp
+  }
 }
 
 fragment FlussChoiceReturnWidget on ChoiceReturnWidget {
   __typename
-  choices {
-    label
-    value
-    description
-  }
+  kind
 }
 
 fragment FlussReturnWidget on ReturnWidget {
@@ -221,4 +430,124 @@ fragment FlussReturnWidget on ReturnWidget {
   kind
   ...FlussCustomReturnWidget
   ...FlussChoiceReturnWidget
+}
+
+# --- Port calls -------------------------------------------------------------
+# `call` is a blok UtilCall. GraphQL fragments cannot recurse, so nesting is
+# selected to a fixed depth: a top-level call, whose arguments may hold one
+# nested call, whose arguments may hold one more (leaf) call. Deeper payloads
+# are rejected by the client's parser rather than silently truncated.
+
+fragment FlussPortCallLeafArgument on ActionArgument {
+  key
+  valueLiteral
+  valuePath
+}
+
+fragment FlussPortCallLeaf on UtilCall {
+  operation
+  arguments {
+    ...FlussPortCallLeafArgument
+  }
+}
+
+fragment FlussPortCallInnerArgument on ActionArgument {
+  ...FlussPortCallLeafArgument
+  utilCall {
+    ...FlussPortCallLeaf
+  }
+  valueList {
+    ...FlussPortCallLeafArgument
+  }
+  valueDict {
+    ...FlussPortCallLeafArgument
+  }
+}
+
+fragment FlussPortCallInner on UtilCall {
+  operation
+  arguments {
+    ...FlussPortCallInnerArgument
+  }
+}
+
+fragment FlussPortCallArgument on ActionArgument {
+  ...FlussPortCallLeafArgument
+  utilCall {
+    ...FlussPortCallInner
+  }
+  valueList {
+    ...FlussPortCallInnerArgument
+  }
+  valueDict {
+    ...FlussPortCallInnerArgument
+  }
+}
+
+fragment FlussPortCall on UtilCall {
+  operation
+  arguments {
+    ...FlussPortCallArgument
+  }
+}
+
+fragment FlussBlokAgentCallLeaf on AgentCall {
+  dependency
+  operation
+  arguments {
+    ...FlussPortCallLeafArgument
+  }
+}
+
+fragment FlussBlokArgumentInner on ActionArgument {
+  ...FlussPortCallInnerArgument
+  agentCall {
+    ...FlussBlokAgentCallLeaf
+  }
+}
+
+fragment FlussBlokArgument on ActionArgument {
+  ...FlussPortCallLeafArgument
+  utilCall {
+    operation
+    arguments {
+      ...FlussBlokArgumentInner
+    }
+  }
+  agentCall {
+    dependency
+    operation
+    arguments {
+      ...FlussBlokArgumentInner
+    }
+  }
+  valueList {
+    ...FlussBlokArgumentInner
+  }
+  valueDict {
+    ...FlussBlokArgumentInner
+  }
+}
+
+fragment FlussBlokComponentProp on ComponentProp {
+  key
+  staticValue
+  declaresValue
+  dynamicValue {
+    path
+    literal
+  }
+  agentCall {
+    dependency
+    operation
+    arguments {
+      ...FlussBlokArgument
+    }
+  }
+  utilCall {
+    operation
+    arguments {
+      ...FlussBlokArgument
+    }
+  }
 }

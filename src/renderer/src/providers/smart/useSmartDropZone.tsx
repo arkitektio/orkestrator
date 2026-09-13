@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
 
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { resolveSmartDrop } from "./dropUtils";
 import { SmartModelProps } from "./types";
 
@@ -46,7 +47,10 @@ export const useSmartDropZone = ({
 }: Pick<SmartModelProps, "identifier" | "object">): UseSmartDropZoneResult => {
   const self = React.useMemo(
     () => ({ identifier, object }),
-    [identifier, object],
+    // Keyed on the id (as in useSmartModel): a refetched fragment with the
+    // same id must not invalidate the drop target.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [identifier, object.id],
   );
   const [partners, setPartners] = useState<Structure[]>([]);
   const nodeRef = useRef<HTMLDivElement | null>(null);
@@ -89,6 +93,10 @@ export const useSmartDropZone = ({
     syncAttribute(nodeRef.current, "data-object", object.id);
   }, [canDrop, identifier, isOver, object]);
 
+  // Keep the ref callback stable across drag-state changes (see
+  // useSmartModel): the effect above re-syncs the attributes after mount.
+  const dndStateRef = useLatestRef({ isOver, canDrop });
+
   const ref = React.useCallback(
     (node: HTMLDivElement | null) => {
       nodeRef.current = node;
@@ -100,11 +108,11 @@ export const useSmartDropZone = ({
       }
 
       syncAttribute(node, "data-identifier", identifier);
-      syncAttribute(node, "data-object", object.id);
-      syncAttribute(node, "data-over", isOver ? "true" : "false");
-      syncAttribute(node, "data-can-drop", canDrop ? "true" : "false");
+      syncAttribute(node, "data-object", self.object.id);
+      syncAttribute(node, "data-over", dndStateRef.current.isOver ? "true" : "false");
+      syncAttribute(node, "data-can-drop", dndStateRef.current.canDrop ? "true" : "false");
     },
-    [canDrop, drop, identifier, isOver, object, refs],
+    [drop, identifier, self, refs],
   );
 
   useEffect(() => {

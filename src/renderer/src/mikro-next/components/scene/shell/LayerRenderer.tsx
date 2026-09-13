@@ -4,6 +4,7 @@ import { useViewerStore } from "../platform/stores/viewerStore";
 import { getInitialVolumeTextureBudgetBytes } from "../platform/quality/lodPlanning";
 import { selectLayersWithinBudget } from "../platform/quality/renderCost";
 import { LAYER_RENDERERS } from "./layerRegistry";
+import { isPlaceable } from "../platform/model/layerModel";
 
 // Draw-call backstop only — the primary display limit is the byte budget.
 const MAX_DISPLAYABLE_LAYERS = 64;
@@ -28,7 +29,9 @@ export const LayerRenderer = ({ mode }: { mode: "2D" | "3D" }) => {
   // the arrays via `getState()`. Children take only the stable `layerId`, so
   // a momentarily-stale read inside the memo is safe.
   const dispatchKey = useSceneStore((s) =>
-    s.sceneLayers.map((layer) => `${layer.id}:${layer.__typename}`).join("|"),
+    s.sceneLayers
+      .map((layer) => `${layer.id}:${layer.__typename}:${isPlaceable(layer) ? 1 : 0}`)
+      .join("|"),
   );
   const visibilityKey = useSceneStore((s) =>
     s.layers.map((layer) => (layer.visible === false ? "" : layer.id)).join("|"),
@@ -38,10 +41,14 @@ export const LayerRenderer = ({ mode }: { mode: "2D" | "3D" }) => {
   const selection = useMemo(() => {
     const { sceneLayers, layers: imageLayers } = sceneStoreApi.getState();
     // Hidden image layers neither render nor consume budget (visibility
-    // lives on the normalized image LayerState).
+    // lives on the normalized image LayerState). Unplaceable layers — no
+    // server `asAffine`, the only placement authority — are not dispatched
+    // for ANY kind (bricks, labels, points, tracks, meshes, annotations…):
+    // there is no world position to draw them at, and drawing them in their
+    // own frame would put them somewhere wrong. The layer panel shows why.
     const imageLayerById = new Map(imageLayers.map((layer) => [layer.id, layer]));
     const candidates = sceneLayers.filter(
-      (layer) => imageLayerById.get(layer.id)?.visible !== false,
+      (layer) => isPlaceable(layer) && imageLayerById.get(layer.id)?.visible !== false,
     );
 
     const entries = candidates.map((layer) => ({ id: layer.id, costBytes: 0, layer }));

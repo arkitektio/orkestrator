@@ -90,12 +90,18 @@ export type ListSearchFieldProps = {
   noOptionFoundPlaceholder?: string;
   createComponent?: React.ReactNode;
   className?: string;
+  /** Stored form value for the selected option values (default: the string[] itself). */
+  toFieldValue?: (values: string[]) => unknown;
+  /** Selected option values for a stored form value (inverse of `toFieldValue`). */
+  fromFieldValue?: (fieldValue: unknown) => string[] | undefined;
 } & FieldProps;
+
+const identityIn = (value: unknown): string[] | undefined =>
+  Array.isArray(value) ? (value as string[]) : undefined;
 
 export const ListSearchField = ({
   name,
   label,
-  validate,
   search,
   createComponent,
   className,
@@ -103,8 +109,11 @@ export const ListSearchField = ({
   commandPlaceholder = "Search...",
   noOptionFoundPlaceholder = "No options found",
   description,
+  toFieldValue,
+  fromFieldValue = identityIn,
 }: ListSearchFieldProps) => {
   const form = useFormContext();
+  const store = (values: string[]) => (toFieldValue ? toFieldValue(values) : values);
 
   const [options, setOptions] = useState<(Option | null | undefined)[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -112,17 +121,22 @@ export const ListSearchField = ({
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const query = (string: string) => {
-    search({ search: string })
-      .then((res) => {
-        setOptions(res || []);
-        setOpen(true);
-        setError(null);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setOptions([]);
-      });
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      search({ search: string })
+        .then((res) => {
+          setOptions(res || []);
+          setOpen(true);
+          setError(null);
+        })
+        .catch((err) => {
+          setError(err.message);
+          setOptions([]);
+        });
+    }, 200);
   };
 
   useEffect(() => {
@@ -161,8 +175,9 @@ export const ListSearchField = ({
     <FormField
       control={form.control}
       name={name}
-      rules={{ validate: validate }}
-      render={({ field }) => (
+      render={({ field }) => {
+        const selected = fromFieldValue(field.value);
+        return (
         <>
           <FormItem className={cn("flex flex-col dark:text-white", className)}>
             {label != undefined && <FormLabel>{label}</FormLabel>}
@@ -172,12 +187,12 @@ export const ListSearchField = ({
             >
               <div className="group rounded-md border border-input text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                 <div className="w-full relative flex flex-row flex-wrap w-full">
-                  {field.value && (
+                  {selected && (
                     <ListButtonLabel
                       search={search}
-                      value={field.value}
+                      value={selected}
                       setValue={(value) => {
-                        form.setValue(name, value, { shouldValidate: true });
+                        form.setValue(name, store(value), { shouldValidate: true });
                         setInputValue("");
                         inputRef.current?.focus();
                         setOpen(true);
@@ -228,46 +243,21 @@ export const ListSearchField = ({
                                 e.stopPropagation();
                               }}
                               onSelect={() => {
-                                if (
-                                  field.value &&
-                                  Array.isArray(field.value) &&
-                                  field.value.includes(option.value)
-                                ) {
-                                  form.setValue(
-                                    name,
-                                    field.value.filter(
-                                      (val) => val !== option.value,
-                                    ),
-                                    {
-                                      shouldValidate: true,
-                                    },
-                                  );
-                                  setInputValue("");
-                                } else {
-                                  form.setValue(
-                                    name,
-                                    [
-                                      ...(field.value &&
-                                        Array.isArray(field.value)
-                                        ? field.value
-                                        : []),
-                                      option.value,
-                                    ],
-                                    {
-                                      shouldValidate: false,
-                                    },
-                                  );
-                                  setInputValue("");
-                                }
+                                const current = selected ?? [];
+                                const next = current.includes(option.value)
+                                  ? current.filter((val) => val !== option.value)
+                                  : [...current, option.value];
+                                form.setValue(name, store(next), {
+                                  shouldValidate: true,
+                                });
+                                setInputValue("");
                               }}
                             >
                               {option.label}
                               <CheckIcon
                                 className={cn(
                                   "ml-auto h-4 w-4",
-                                  field.value &&
-                                    Array.isArray(field.value) &&
-                                    field.value.includes(option.value)
+                                  selected?.includes(option.value)
                                     ? "opacity-100"
                                     : "opacity-0",
                                 )}
@@ -285,7 +275,8 @@ export const ListSearchField = ({
             <FormMessage />
           </FormItem>
         </>
-      )}
+        );
+      }}
     />
   );
 };

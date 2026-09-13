@@ -25,7 +25,7 @@ const List = ({ filters, pagination }: Props) => {
       title={<span className="flex-0">Scatter Plots</span>}
       refetch={refetch}
     >
-      {(ex, index) => <ScatterPlotCard key={index} item={ex} />}
+      {(ex) => <ScatterPlotCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

@@ -23,7 +23,7 @@ const List = (_props: Props) => {
       }
       refetch={() => refetch()}
     >
-      {(ex, index) => <BlokCard key={index} item={ex} />}
+      {(ex) => <BlokCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

@@ -1,3 +1,4 @@
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { buildAssignInput } from "@/rekuest/assign";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,12 @@ export const AssignButton = (props: {
   );
 };
 
-const InstallDialog = (props: { item: { id: string } }) => {
+/**
+ * Rendered only inside the opened `DropdownMenuContent` (Radix unmounts it when
+ * closed), so the implementations query fires on open rather than once per
+ * card on mount.
+ */
+const InstallTargets = (props: { flavour: string }) => {
   const { data } = useImplementationsQuery({
     variables: {
       filters: {
@@ -89,6 +95,16 @@ const InstallDialog = (props: { item: { id: string } }) => {
   });
 
   return (
+    <>
+      {data?.implementations.map((t) => (
+        <AssignButton template={t} release={props.flavour} key={t.id} />
+      ))}
+    </>
+  );
+};
+
+const InstallDialog = (props: { item: { id: string } }) => {
+  return (
     <div className="flex flex-row gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger>
@@ -97,9 +113,7 @@ const InstallDialog = (props: { item: { id: string } }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right">
-          {data?.implementations.map((t) => (
-            <AssignButton template={t} release={props.item.id} />
-          ))}
+          <InstallTargets flavour={props.item.id} />
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -161,4 +175,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

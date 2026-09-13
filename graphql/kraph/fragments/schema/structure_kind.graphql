@@ -6,7 +6,7 @@ fragment StructureKind on StructureKind {
   purl
   color
   image {
-    presignedUrl
+    ...MediaStore
   }
   createdAt
 }
@@ -17,6 +17,6 @@ fragment ListStructureKind on StructureKind {
   label
   description
   image {
-    presignedUrl
+    ...MediaStore
   }
 }

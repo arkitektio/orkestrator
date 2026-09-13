@@ -1,5 +1,4 @@
 import type { StoreApi } from "zustand/vanilla";
-import { createDefaultWorker } from "@/lib/zarr/runner/index";
 import { workerPool } from "../../../../../workers/pool";
 import { createRepackDispatcher } from "../octree/repackDispatcher";
 import type { SceneState } from "../../../platform/stores/sceneStore";
@@ -48,8 +47,9 @@ export function createBrickSystem(stores: {
 
   // Module workers (zstd/blosc bundles) cost tens of ms each to spawn and
   // evaluate. Idempotent — `useDatalayerWarmup` normally got here first; this
-  // is the backstop for a scene mounted by some other route.
-  workerPool.prewarm(createDefaultWorker, 8);
+  // is the backstop for a scene mounted by some other route. Whole pool: a
+  // literal count left half of it cold on machines with more cores.
+  workerPool.prewarm();
 
   // Repack workers live exactly as long as the manager they serve.
   const repack = createRepackDispatcher();

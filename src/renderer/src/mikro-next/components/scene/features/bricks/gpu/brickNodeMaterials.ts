@@ -1352,6 +1352,12 @@ export function createPlaneNodeMaterial(
   const material = new NodeMaterial();
   commonMaterialSettings(material);
   material.depthTest = false;
+  // The quad wears the layer's placement verbatim (no client-side flips —
+  // COORDINATE_SYSTEMS.md §0). A reflected registration (negative determinant,
+  // e.g. a Visium bin lattice fitted upside-down onto its H&E) flips the
+  // triangle winding, and three.js' default FrontSide would cull the whole
+  // layer. The slab is screen-space with depth test off, so both sides is free.
+  material.side = THREE.DoubleSide;
 
   material.fragmentNode = Fn(() => {
     // Quad uv → base voxel space. Corner-anchored, no flip: voxel row 0 is at

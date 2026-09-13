@@ -2,7 +2,6 @@ import { buildAssignInput } from "@/rekuest/assign";
 import * as React from 'react';
 import BlokRenderer from '@/blok/renderer/BlokRenderer';
 import {
-  extractUiComponents,
   isRecord,
   splitPathSegments,
   useBlokRuntime,
@@ -11,11 +10,13 @@ import {
 import {toast} from 'sonner';
 import {useAssignMutation} from '@/rekuest/api/graphql';
 import {useAgentLiveState} from '@/rekuest/hooks/useLiveState';
+import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 
 type MaterializedBlokData = {
   id: string;
   blok: {
-    uiComponents: unknown;
+    /** Typed `ComponentNode` tree from the Blok fragment. */
+    components: ReadonlyArray<unknown>;
     demoState: unknown;
     dependencies?: Array<{key: string}> | null;
   };
@@ -63,8 +64,9 @@ const collectArgumentDemandPaths = (
   }
 };
 
+// Walks the runtime-shaped (snake_case) tree produced by `useBlokDocument`.
 const collectDemandedStateInterfaces = (
-  uiComponents: unknown,
+  roots: ReadonlyArray<unknown>,
   dependencyKeys: Set<string>,
 ): Map<string, Set<string>> => {
   const demandedInterfaces = new Map<string, Set<string>>();
@@ -111,7 +113,7 @@ const collectDemandedStateInterfaces = (
     }
   };
 
-  extractUiComponents(uiComponents).forEach(visitNode);
+  roots.forEach(visitNode);
 
   return demandedInterfaces;
 };
@@ -157,14 +159,17 @@ const MaterializedDependencyInterfaceSync = (props: {
   return null;
 };
 
-const MaterializedBlokRuntimeSync = (props: {materializedBlok: MaterializedBlokData}) => {
+const MaterializedBlokRuntimeSync = (props: {
+  materializedBlok: MaterializedBlokData;
+  roots: ReadonlyArray<unknown>;
+}) => {
   const dependencyKeys = React.useMemo(
     () => new Set(props.materializedBlok.agentMappings.map(mapping => mapping.key)),
     [props.materializedBlok.agentMappings],
   );
   const demandedStateInterfaces = React.useMemo(
-    () => collectDemandedStateInterfaces(props.materializedBlok.blok.uiComponents, dependencyKeys),
-    [dependencyKeys, props.materializedBlok.blok.uiComponents],
+    () => collectDemandedStateInterfaces(props.roots, dependencyKeys),
+    [dependencyKeys, props.roots],
   );
 
   return (
@@ -231,15 +236,17 @@ const useMaterializedDispatchAction = (
 export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) => {
   const {materializedBlok, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
+  const {roots, truncatedIds} = useBlokDocument(materializedBlok.blok.components);
 
   return (
     <BlokRenderer
       {...rendererProps}
-      uiComponents={materializedBlok.blok.uiComponents}
+      uiComponents={roots}
       initialState={materializedBlok.blok.demoState}
       dispatchAction={dispatchAction}
     >
-      <MaterializedBlokRuntimeSync materializedBlok={materializedBlok} />
+      <BlokTruncationNotice truncatedIds={truncatedIds} />
+      <MaterializedBlokRuntimeSync materializedBlok={materializedBlok} roots={roots} />
     </BlokRenderer>
   );
 };

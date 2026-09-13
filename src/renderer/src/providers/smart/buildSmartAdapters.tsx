@@ -46,12 +46,6 @@ export type SmartNewButtonProps = {
   [key: string]: any;
 };
 
-export type SmartEnhanceButtonProps<T extends Object = Object> = {
-  object: T;
-  children?: React.ReactNode;
-  [key: string]: any;
-};
-
 export interface SmartBuilderAdapters {
   renderKnowledge: (context: SmartObjectContext) => React.ReactNode;
   renderTinyKnowledge: (context: SmartObjectContext) => React.ReactNode;
@@ -68,12 +62,6 @@ export interface SmartBuilderAdapters {
   renderNewButton: (
     props: SmartNewButtonProps & { identifier: Identifier },
   ) => React.ReactNode;
-  renderEnhanceButton: (
-    props: SmartEnhanceButtonProps & { identifier: Identifier },
-  ) => React.ReactNode;
-  useNodes: (identifier: Identifier) => any;
-  useProgress: (identifier: Identifier, object: Object) => any;
-  useLive: (identifier: Identifier, object: Object) => any;
 }
 
 let smartBuilderAdapters: SmartBuilderAdapters = {
@@ -84,10 +72,6 @@ let smartBuilderAdapters: SmartBuilderAdapters = {
   renderListPage: ({ children }) => <>{children}</>,
   renderObjectButton: () => null,
   renderNewButton: () => null,
-  renderEnhanceButton: () => null,
-  useNodes: () => null,
-  useProgress: () => ({ latestProgress: undefined }),
-  useLive: () => ({ progress: undefined }),
 };
 
 export const configureSmartBuilder = (

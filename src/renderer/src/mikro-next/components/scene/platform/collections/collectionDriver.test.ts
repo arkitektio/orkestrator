@@ -10,7 +10,12 @@ import { CollectionDriver, type DrivableCollection } from "./collectionDriver";
  * unsubscribes.
  */
 const makeTarget = (indexGate?: Promise<void>) => {
-  const calls = { plans: 0, slabs: [] as unknown[], matrices: [] as unknown[] };
+  const calls = {
+    plans: 0,
+    slabs: [] as unknown[],
+    matrices: [] as unknown[],
+    visibility: [] as boolean[],
+  };
   const target: DrivableCollection = {
     ensureIndex: () => indexGate ?? Promise.resolve(),
     updatePlan: () => {
@@ -18,6 +23,7 @@ const makeTarget = (indexGate?: Promise<void>) => {
     },
     setVoxelToWorld: (m) => calls.matrices.push(m),
     setSlabClip: (s) => calls.slabs.push(s),
+    setVisible: (v) => calls.visibility.push(v),
     getPlanConfig: () => ({ pixelBudget: 4 }),
   };
   return { target, calls };
@@ -46,6 +52,7 @@ describe("CollectionDriver", () => {
     const d = new CollectionDriver(target, env, {
       matrix: new THREE.Matrix4(),
       slab: null,
+      visible: true,
     });
     // A settle BEFORE the index is ready must not plan over an empty index.
     env.viewApi.setState({ cameraMoving: true });
@@ -61,7 +68,7 @@ describe("CollectionDriver", () => {
   it("plans exactly once per moving -> still transition", async () => {
     const { target, calls } = makeTarget();
     const env = makeEnv();
-    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null });
+    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null, visible: true });
     await flush();
     expect(calls.plans).toBe(1); // the mount plan
 
@@ -81,7 +88,7 @@ describe("CollectionDriver", () => {
     const env = makeEnv();
     // cameraMoving starts false; the first bindField call must not count as
     // a falling edge (previous === undefined).
-    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null });
+    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null, visible: true });
     await flush();
     expect(calls.plans).toBe(1); // the mount plan only
     d.dispose();
@@ -93,6 +100,7 @@ describe("CollectionDriver", () => {
     const d = new CollectionDriver(target, env, {
       matrix: new THREE.Matrix4(),
       slab: { thickness: 2 },
+      visible: true,
     });
     await flush();
     const plansAfterMount = calls.plans;
@@ -108,7 +116,7 @@ describe("CollectionDriver", () => {
   it("3D clips nothing and does not track z", async () => {
     const { target, calls } = makeTarget();
     const env = makeEnv();
-    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null });
+    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null, visible: true });
     await flush();
     expect(calls.slabs).toEqual([null]);
     env.viewerApi.setState({ currentZ: 5 });
@@ -122,6 +130,7 @@ describe("CollectionDriver", () => {
     const d = new CollectionDriver(target, env, {
       matrix: new THREE.Matrix4(),
       slab: { thickness: 1 },
+      visible: true,
     });
     await flush();
     const plans = calls.plans;
@@ -142,17 +151,97 @@ describe("CollectionDriver", () => {
     const gate = new Promise<void>((r) => (release = r));
     const { target, calls } = makeTarget(gate);
     const env = makeEnv();
-    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null });
+    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null, visible: true });
     d.dispose();
     release();
     await flush();
     expect(calls.plans).toBe(0);
   });
 
+  it("applies the initial visibility to the target", async () => {
+    const { target, calls } = makeTarget();
+    const env = makeEnv();
+    const d = new CollectionDriver(target, env, {
+      matrix: new THREE.Matrix4(),
+      slab: null,
+      visible: false,
+    });
+    await flush();
+    expect(calls.visibility).toEqual([false]);
+    d.dispose();
+  });
+
+  it("the hidden -> visible edge replans; the reverse edge does not", async () => {
+    // A hidden collection stops planning, so the show edge is the only thing
+    // standing between a re-shown layer and an empty/stale group — without it
+    // the user has to pan to get the next camera settle.
+    const { target, calls } = makeTarget();
+    const env = makeEnv();
+    const d = new CollectionDriver(target, env, {
+      matrix: new THREE.Matrix4(),
+      slab: null,
+      visible: false,
+    });
+    await flush();
+    const mountPlans = calls.plans;
+
+    d.update({ visible: true });
+    expect(calls.visibility).toEqual([false, true]);
+    expect(calls.plans).toBe(mountPlans + 1);
+
+    // Idempotent: re-pushing the same value is not an edge.
+    d.update({ visible: true });
+    expect(calls.plans).toBe(mountPlans + 1);
+
+    d.update({ visible: false });
+    expect(calls.visibility).toEqual([false, true, false]);
+    expect(calls.plans).toBe(mountPlans + 1); // hiding never plans
+    d.dispose();
+  });
+
+  it("an index that lands while hidden still plans on the show edge", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const { target, calls } = makeTarget(gate);
+    const env = makeEnv();
+    const d = new CollectionDriver(target, env, {
+      matrix: new THREE.Matrix4(),
+      slab: null,
+      visible: false,
+    });
+    // The catalog lands while hidden: the manager drops that plan (konnektion)
+    // or plans into a hidden group (fabriks) — either way the show edge is
+    // what has to produce the visible content.
+    release();
+    await flush();
+    const plansWhileHidden = calls.plans;
+
+    d.update({ visible: true });
+    expect(calls.plans).toBe(plansWhileHidden + 1);
+    d.dispose();
+  });
+
+  it("a show edge after dispose does nothing", async () => {
+    const { target, calls } = makeTarget();
+    const env = makeEnv();
+    const d = new CollectionDriver(target, env, {
+      matrix: new THREE.Matrix4(),
+      slab: null,
+      visible: false,
+    });
+    await flush();
+    const plans = calls.plans;
+    const visibility = calls.visibility.length;
+    d.dispose();
+    d.update({ visible: true });
+    expect(calls.plans).toBe(plans);
+    expect(calls.visibility.length).toBe(visibility);
+  });
+
   it("update() pushes placement and slab through", async () => {
     const { target, calls } = makeTarget();
     const env = makeEnv();
-    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null });
+    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null, visible: true });
     await flush();
     const next = new THREE.Matrix4().makeTranslation(1, 2, 3);
     d.update({ matrix: next });

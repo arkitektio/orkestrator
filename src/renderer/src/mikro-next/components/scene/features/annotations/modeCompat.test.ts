@@ -184,3 +184,34 @@ describe("coerceModeState", () => {
     }
   });
 });
+
+describe("coerceModeState in DESIGN", () => {
+  const ctx2D = { displayMode: "2D" as const, hasProbeableLayer: true };
+
+  it("leaves a design-owned tool alone on the flat view (no guard ping-pong)", () => {
+    // MeshDesignToolbar forces BRUSH while in DESIGN; evicting it as 3D-only
+    // here made the two guards alternate BRUSH -> RECTANGLE -> BRUSH forever.
+    for (const tool of ["BRUSH", "BLOB"] as const) {
+      const requested = { interactionMode: "DESIGN" as const, activeTool: tool };
+      const next = coerceModeState(requested, ctx2D);
+      expect(next.interactionMode).toBe("DESIGN");
+      expect(next.activeTool).toBe(tool);
+      // Idempotent: a second pass changes nothing either.
+      expect(coerceModeState(next, ctx2D)).toEqual(next);
+    }
+  });
+
+  it("still swaps the brush for the rectangle once the mode is back to ANNOTATE", () => {
+    expect(
+      coerceModeState({ interactionMode: "ANNOTATE", activeTool: "BRUSH" }, ctx2D),
+    ).toEqual({ interactionMode: "ANNOTATE", activeTool: "RECTANGLE" });
+  });
+
+  it("does not shield the brush when DESIGN itself falls back to NAVIGATE", () => {
+    const next = coerceModeState(
+      { interactionMode: "DESIGN", activeTool: "BRUSH" },
+      { displayMode: "2D", hasProbeableLayer: false },
+    );
+    expect(next).toEqual({ interactionMode: "NAVIGATE", activeTool: "RECTANGLE" });
+  });
+});

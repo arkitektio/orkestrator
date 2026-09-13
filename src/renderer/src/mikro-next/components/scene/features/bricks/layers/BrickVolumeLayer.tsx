@@ -9,7 +9,7 @@ import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { coldOpenTimeline } from "../../../platform/perf/coldOpenTimeline";
 import { climToUnit } from "../../../platform/model/dataRange";
 import { identityOf } from "../../../platform/model/objectIdentity";
-import { layerPlanSignature } from "../../../platform/model/layerPlanKey";
+import { layerIndexOf, layerPlanSignature } from "../../../platform/model/layerPlanKey";
 import { intersectLocalVolumeBox } from "../probeMath";
 import { resolveProbeStrategy } from "../../../platform/probe/probeModes";
 import {
@@ -195,13 +195,16 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   // Unrelated structural changes (insert/remove elsewhere) shift the indices
   // in the key, so scene-order changes still re-render.
   const layersKey = useSceneStore((s) => {
+    // Runs on EVERY scene-store write, per volume layer: the id→index map is
+    // memoized per `layers` array so this is O(members), not O(members×layers).
+    const indexOf = layerIndexOf(s.layers);
     let key = "";
     for (const id of memberIds) {
-      const index = s.layers.findIndex((l) => l.id === id);
+      const index = indexOf.get(id) ?? -1;
       key += `${index}:${identityOf(index >= 0 ? s.layers[index] : undefined)},`;
     }
     if (!memberIds.includes(layerId)) {
-      const index = s.layers.findIndex((l) => l.id === layerId);
+      const index = indexOf.get(layerId) ?? -1;
       key += `${index}:${identityOf(index >= 0 ? s.layers[index] : undefined)}`;
     }
     return key;
@@ -283,9 +286,12 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   // above, before the layers-key subscription that depends on them.)
   // Scalar selector: a joined string only changes identity when a member's
   // target level actually moves, so this does not re-render per replan.
-  const memberLevelsKey = useBrickStore((s) =>
-    memberIds.map((id) => s.nodePlans[id]?.targetLevel ?? -1).join(","),
-  );
+  const memberLevelsKey = useBrickStore((s) => {
+    // Per brick-store write (streaming cadence): a string concat, no array.
+    let key = "";
+    for (const id of memberIds) key += (s.nodePlans[id]?.targetLevel ?? -1) + ",";
+    return key;
+  });
 
   // STRUCTURAL member key: `buildMergeMembers` reads each member's scene
   // order, typename (label guard), visibility, placement and target level —

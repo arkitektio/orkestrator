@@ -30,7 +30,7 @@ const List = ({ filters, pagination,  title }: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <SoloBroadcastCard key={index} item={ex} />}
+      {(ex) => <SoloBroadcastCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

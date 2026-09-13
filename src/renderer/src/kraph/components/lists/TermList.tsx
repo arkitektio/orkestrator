@@ -23,7 +23,7 @@ const List = ({ filters, pagination }: Props) => {
       title={<KraphTerm.ListLink className="flex-0">Terms</KraphTerm.ListLink>}
       refetch={refetch}
     >
-      {(ex, index) => <TermCard key={index} item={ex} />}
+      {(ex) => <TermCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

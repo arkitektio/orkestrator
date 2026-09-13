@@ -21,7 +21,9 @@ import {
  * Returns nothing: neither layer forces a replan of its own. A `detail` change
  * writes the plan config and takes effect at the next camera settle, which is
  * what both did before — handing out the driver to enable an immediate replan
- * would be a behaviour change, not a refactor.
+ * would be a behaviour change, not a refactor. VISIBILITY is the exception:
+ * the driver replans on the show edge, because a hidden collection plans
+ * nothing and would otherwise stay empty/stale until the user panned.
  */
 export function useCollectionDriver<M extends DrivableCollection>(
   target: M | null,
@@ -61,4 +63,10 @@ export function useCollectionDriver<M extends DrivableCollection>(
       slab: slabThickness === null ? null : { thickness: slabThickness },
     });
   }, [slabThickness]);
+
+  // Visibility: a deliberate toggle, never a render-cadence value. The driver
+  // applies it to the manager AND replans on the hidden -> visible edge.
+  useEffect(() => {
+    driverRef.current?.update({ visible: inputs.visible });
+  }, [inputs.visible]);
 }

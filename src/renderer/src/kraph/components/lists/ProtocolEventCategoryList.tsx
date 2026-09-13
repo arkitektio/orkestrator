@@ -25,7 +25,7 @@ const List = ({ filters, pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <ProtocolEventCategoryCard key={index} item={ex} />}
+      {(ex) => <ProtocolEventCategoryCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

@@ -1,3 +1,4 @@
+import React from "react";
 import { useDialog } from "@/app/dialog";
 import { cn } from "@/lib/utils";
 import { RekuestImplementation } from "@/linkers";
@@ -45,4 +46,4 @@ const AgentImplementationCard = ({ item }: Props) => {
   );
 };
 
-export default AgentImplementationCard;
+export default React.memo(AgentImplementationCard);

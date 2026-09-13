@@ -2,8 +2,7 @@ import { electronApp, is, optimizer } from "@electron-toolkit/utils";
 import { app, shell, IpcMainEvent } from "electron";
 import { resolve, join } from "path";
 import icon from "../../resources/icon.png?asset";
-import { machineIdSync } from "node-machine-id";
-import { writeFileSync } from "fs";
+import { machineId } from "node-machine-id";
 
 // Import custom modules
 import { AgentGateway } from "./gateway";
@@ -17,10 +16,12 @@ import { UploadService } from "./modules/UploadService";
 import { BigFileUploadService } from "./modules/BigFileUploadService";
 import { BigFileDownloadService } from "./modules/BigFileDownloadService";
 import { session, protocol } from "electron";
-import { readFile } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { stat, writeFile } from "node:fs/promises";
 import { normalize, sep } from "node:path";
+import { Readable } from "node:stream";
 import { ShellService } from "./modules/ShellService";
-import { APP_SCHEME } from "./scheme";
+import { APP_ORIGIN, APP_SCHEME } from "./scheme";
 
 // Minimal extension -> MIME map for the app:// static file handler. Kept inline
 // to avoid adding a dependency. text/javascript for .js/.mjs is mandatory (ES
@@ -52,6 +53,48 @@ function mimeForPath(filePath: string): string {
   const dot = filePath.lastIndexOf(".");
   const ext = dot >= 0 ? filePath.slice(dot).toLowerCase() : "";
   return MIME_TYPES[ext] ?? "application/octet-stream";
+}
+
+// Vite emits content-hashed filenames under /assets/ (and some plugins emit
+// `name.<hash>.ext` / `name-<hash>.ext` elsewhere); those bytes never change
+// for a given URL, so the session cache may keep them forever. index.html is
+// the one entry point whose content changes between app versions under the
+// same URL, so it must always be revalidated.
+const HASHED_ASSET_RE = /[.-][a-f0-9]{8,}\./;
+
+function cacheControlFor(pathname: string): string {
+  if (pathname === "/index.html") return "no-cache";
+  if (pathname.startsWith("/assets/") || HASHED_ASSET_RE.test(pathname)) {
+    return "public, max-age=31536000, immutable";
+  }
+  return "no-cache";
+}
+
+// Origin of the Vite dev server that serves the renderer document in
+// development (see WindowManager.createMainWindow), or null when packaged.
+function rendererDevOrigin(): string | null {
+  const devUrl = process.env["ELECTRON_RENDERER_URL"];
+  if (!is.dev || !devUrl) return null;
+  try {
+    return new URL(devUrl).origin;
+  } catch {
+    return null;
+  }
+}
+
+// The machine id is read via a child process (ioreg / wmic / dbus); resolve it
+// once and hand every `get-node-id` request the same promise instead of
+// blocking the main thread with `machineIdSync` per call.
+let nodeIdPromise: Promise<string> | null = null;
+function getNodeId(): Promise<string> {
+  if (!nodeIdPromise) {
+    nodeIdPromise = machineId(true).catch((error) => {
+      // Do not memoize a failure — let the next call retry.
+      nodeIdPromise = null;
+      throw error;
+    });
+  }
+  return nodeIdPromise;
 }
 
 // Register the custom `app://` scheme (see ./scheme) as standard + secure. This
@@ -142,8 +185,26 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     registerIssueIpc();
-    // Inside your app.whenReady() or before creating the window
-    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    // COOP/COEP injection for the renderer document + its same-origin assets.
+    //
+    // Only the app's OWN origin(s) go through this listener. COOP/COEP are
+    // document-level policies — a zarr chunk GET from S3 gains nothing from
+    // them — yet an unfiltered `onHeadersReceived` makes EVERY response in the
+    // session (every chunk fetch from every codec worker) take a main-process
+    // IPC round trip before the bytes are released. The URL filter confines
+    // that cost to the handful of document/asset requests.
+    //
+    // In development the document is served by Vite at ELECTRON_RENDERER_URL,
+    // not by the app:// handler, so the dev origin MUST be in the filter or
+    // the dev build silently loses crossOriginIsolated (and SharedArrayBuffer).
+    const devOrigin = rendererDevOrigin();
+    const coopCoepFilter: Electron.WebRequestFilter = {
+      urls: [`${APP_ORIGIN}/*`, ...(devOrigin ? [`${devOrigin}/*`] : [])],
+    };
+    const injectCoopCoep = (
+      details: Electron.OnHeadersReceivedListenerDetails,
+      callback: (response: Electron.HeadersReceivedResponse) => void,
+    ) => {
       // Strip any pre-existing COOP/COEP before re-adding: the app:// protocol
       // handler already sets them (lowercased by Headers), so a plain spread
       // would emit the header twice ("require-corp, require-corp"). COOP/COEP
@@ -162,7 +223,16 @@ if (!gotTheLock) {
           'Cross-Origin-Opener-Policy': ['same-origin']
         }
       })
-    })
+    };
+    try {
+      session.defaultSession.webRequest.onHeadersReceived(coopCoepFilter, injectCoopCoep);
+    } catch (error) {
+      // An unparseable URL pattern throws synchronously. Losing cross-origin
+      // isolation is far worse than paying the per-response tax, so fall back
+      // to the unfiltered listener rather than crash at startup.
+      console.warn("COOP/COEP header filter rejected; using unfiltered listener", error);
+      session.defaultSession.webRequest.onHeadersReceived(injectCoopCoep);
+    }
 
     // Serve the packaged renderer from the custom `app://` scheme (registered
     // as standard + secure above) instead of file://. Returning the COOP/COEP
@@ -183,21 +253,37 @@ if (!gotTheLock) {
         return new Response("Forbidden", { status: 403 })
       }
 
+      // Existence is checked up front: once the Response has been handed to
+      // Chromium a stream error can no longer become a 404.
+      let fileStat: Awaited<ReturnType<typeof stat>>
       try {
-        const data = await readFile(filePath)
-        const headers = new Headers({
-          "Content-Type": mimeForPath(filePath),
-          "Cross-Origin-Opener-Policy": "same-origin",
-          "Cross-Origin-Embedder-Policy": "require-corp",
-          "Cross-Origin-Resource-Policy": "same-origin",
-        })
-        return new Response(data, { status: 200, headers })
+        fileStat = await stat(filePath)
       } catch {
         return new Response("Not Found", { status: 404 })
       }
+      if (!fileStat.isFile()) {
+        return new Response("Not Found", { status: 404 })
+      }
+
+      const headers = new Headers({
+        "Content-Type": mimeForPath(filePath),
+        "Content-Length": String(fileStat.size),
+        "Cache-Control": cacheControlFor(pathname),
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+        "Cross-Origin-Resource-Policy": "same-origin",
+      })
+      // Stream the file instead of buffering it whole: the multi-MB wasm and
+      // JS bundles start flowing to the renderer immediately and never sit
+      // twice in main-process memory.
+      const body = Readable.toWeb(createReadStream(filePath)) as unknown as ReadableStream
+      return new Response(body, { status: 200, headers })
     })
 
     windowManager.createMainWindow(icon);
+
+    // Warm the memoized machine id so the first `get-node-id` is a cache hit.
+    void getNodeId().catch(() => {});
 
     if (!electronAgent) {
       // NOTE: AgentGateway assumes ipcMain is available, we could refactor it too,
@@ -263,17 +349,24 @@ app.whenReady().then(() => {
     shell.openExternal(msg);
   });
 
-  transport.onChannel("ondragstart", (event, structure) => {
-    writeFileSync(join(__dirname, "structure.md"), structure);
+  transport.onChannel("ondragstart", async (event, structure) => {
+    // Async write: a sync write here stalls the main process (and thus every
+    // IPC in flight) at the exact moment the user starts dragging.
+    const structurePath = join(__dirname, "structure.md");
+    try {
+      await writeFile(structurePath, structure);
+    } catch (error) {
+      console.error("Failed to write drag payload:", error);
+      return;
+    }
+    if (event.sender.isDestroyed()) return;
     event.sender.startDrag({
-      file: join(__dirname, "structure.md"),
+      file: structurePath,
       icon: icon as unknown as string | Electron.NativeImage,
     });
   });
 
-  transport.handleChannel("get-node-id", () => {
-    return machineIdSync(true);
-  });
+  transport.handleChannel("get-node-id", () => getNodeId());
 });
 
 if (process.platform == "darwin") {

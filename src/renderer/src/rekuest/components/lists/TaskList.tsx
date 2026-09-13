@@ -31,8 +31,8 @@ const List = ({ filters, order, pagination, title }: Props) => {
         refetch={refetch}
         error={error}
       >
-        {(ex, index) => (
-          <TaskCard key={index} item={ex} />
+        {(ex) => (
+          <TaskCard key={ex.id} item={ex} />
         )}
       </ListRender>
     </>

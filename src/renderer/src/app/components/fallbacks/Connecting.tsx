@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { useArkitekt } from "@/lib/arkitekt/provider";
+import { useArkitektActions } from "@/lib/arkitekt/provider";
 import { ArkitektLogo } from "../logos/ArkitektLogo";
 
 export const ConnectingFallback = () => {
-  const { cancelConnection } = useArkitekt();
+  const { cancelConnection } = useArkitektActions();
 
   return (
     <div className="flex flex-col w-full h-full bg-radial-[at_100%_100%] from-background to-backgroundpaired items-center justify-center px-4">

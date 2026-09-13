@@ -26,9 +26,15 @@ import { useKraph } from "@/app/Arkitekt";
  * `matchesDescriptor`, which is the same predicate the writer applies. The menu
  * therefore cannot offer a pairing that the write would then reject.
  *
- * The cost is one probe per candidate per side. A graph's categories are the size
- * of its schema rather than of its evidence, the probes run concurrently, and
- * Apollo caches them — so reopening the menu costs nothing.
+ * The cost is one probe per *distinct* descriptor per side: candidates that share
+ * a descriptor (common — many relation categories accept the same source) share
+ * one request, so a run costs at most `2 × distinct descriptors` rather than
+ * `2 × candidates`. A graph's categories are the size of its schema rather than
+ * of its evidence, the probes run concurrently, and Apollo caches them — so
+ * reopening the menu costs nothing. Folding a whole side into one request is not
+ * expressible against the current schema: `matchesDescriptor` takes a single
+ * descriptor, and the list argument (`ids` / `identifiers`) ranges over the
+ * ends, not the descriptors.
  */
 
 /** A candidate edge category, reduced to what admission depends on. */
@@ -49,6 +55,14 @@ const descriptorInput = <D extends object>(descriptor: D) =>
   Object.fromEntries(
     Object.entries(descriptor).filter(([key]) => key !== "__typename"),
   );
+
+/** Stable identity of a (end, descriptor) pair, so equal probes are shared. */
+const probeKey = (end: string, descriptor: object) =>
+  `${end}\u0000${JSON.stringify(
+    Object.entries(descriptorInput(descriptor)).sort(([a], [b]) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    ),
+  )}`;
 
 /**
  * Narrow `candidates` to those whose descriptors admit the given ends.
@@ -86,13 +100,26 @@ const useDescriptorProbe = <T extends DescriptorCandidate<any>>(
     let cancelled = false;
     setState((previous) => ({ ...previous, loading: true, error: undefined }));
 
+    // One in-flight probe per distinct (end, descriptor) pair for this run;
+    // candidates sharing a descriptor share the request (and its result).
+    const inflight = new Map<string, Promise<boolean>>();
+    const probeOnce = (end: string, descriptor: object) => {
+      const key = probeKey(end, descriptor ?? {});
+      let pending = inflight.get(key);
+      if (!pending) {
+        pending = probe(client, end, descriptor);
+        inflight.set(key, pending);
+      }
+      return pending;
+    };
+
     // Booleans rather than `T | null`, because `Promise.all` maps the element
     // type through `Awaited<T>` and a generic `T` does not survive that.
     Promise.all(
       candidates.map(async (candidate): Promise<boolean> => {
         const [source, target] = await Promise.all([
-          probe(client, sourceEnd, candidate.sourceDescriptor),
-          probe(client, targetEnd, candidate.targetDescriptor),
+          probeOnce(sourceEnd, candidate.sourceDescriptor),
+          probeOnce(targetEnd, candidate.targetDescriptor),
         ]);
         return source && target;
       }),

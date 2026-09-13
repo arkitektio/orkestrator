@@ -1,4 +1,7 @@
+import type * as THREE from "three";
+
 import type { QualityTier } from "../quality/qualityGovernor";
+import type { PassSets } from "../visibility/passVisibility";
 
 /**
  * Pure core of the volume compositor (R2 reduced-resolution volume target +
@@ -30,6 +33,39 @@ export const createVolumeInputsTracker = (): VolumeInputsTracker => {
     },
   };
   return tracker;
+};
+
+// ---------------------------------------------------------------------------
+// Structure key
+// ---------------------------------------------------------------------------
+
+/**
+ * Count + material ids + world matrices, over BOTH pass sets that reach the
+ * offscreen target: the tagged volume meshes AND the OCCLUDERS whose depth the
+ * prepass writes into it. Catches structural changes (mount/unmount, material
+ * rebuild, affine edit) that no version counter covers.
+ *
+ * Occluders are in the key because they are in the render. Keying only the
+ * volume meshes meant hiding or showing a mesh layer left `decideVolumeFrame`
+ * on "cached", so the old occlusion hole survived in the composited volume
+ * until the camera moved — the "I have to pan for it to update" bug.
+ * `collectPassSets` prunes invisible subtrees, so a hidden layer genuinely
+ * leaves this set.
+ */
+export function buildVolumeStructureKey(sets: PassSets): string {
+  let key = `${sets.volumeMeshes.length}/${sets.occluders.length}`;
+  for (let i = 0; i < sets.volumeMeshes.length; i++) key += objectKey(sets.volumeMeshes[i]);
+  for (let i = 0; i < sets.occluders.length; i++) key += objectKey(sets.occluders[i]);
+  return key;
+}
+
+const objectKey = (object: THREE.Object3D): string => {
+  const material = (object as THREE.Mesh).material as
+    | THREE.Material
+    | THREE.Material[]
+    | undefined;
+  const id = Array.isArray(material) ? material.map((m) => m.id).join("+") : material?.id;
+  return `|${id}:${object.matrixWorld.elements.join(",")}`;
 };
 
 // ---------------------------------------------------------------------------
@@ -120,9 +156,9 @@ export function ladderFeedforwardPassCount(
 /** Snapshot of every volume-image input the compositor can compare cheaply.
  * `cameraElements` are the 16 elements of projection × matrixWorldInverse
  * computed by the compositor itself (frame-accurate — viewStore's camera is
- * throttled and MUST NOT be used here); `structureKey` folds the tagged-mesh
- * count, material ids and world matrices collected during the visibility
- * traversal. */
+ * throttled and MUST NOT be used here); `structureKey` is
+ * `buildVolumeStructureKey` over the pass sets collected during the visibility
+ * traversal — tagged volume meshes AND depth-prepass occluders. */
 export type VolumeFrameKey = {
   cameraElements: readonly number[];
   /**

@@ -1,6 +1,7 @@
+import React from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { RekuestTask } from "@/linkers";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { MinimalTaskFragment } from "../../api/graphql";
 interface Props {
   item: MinimalTaskFragment;
@@ -25,4 +26,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

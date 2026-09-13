@@ -281,7 +281,7 @@ describe("round-trip: what we author is what evalTransform renders", () => {
    * `ByDimensionTransformation` whose children carry the payload and
    * self-describe the axis subset they act on — so that is the shape the
    * round-trip feeds back to the evaluator. The composite's own axes are the
-   * FULL system orders, exactly what `composePlacementPath` passes.
+   * FULL system orders, exactly what `composeLayerAffine`'s prefix evaluation passes.
    */
   const materialized = (
     childTypename: string,

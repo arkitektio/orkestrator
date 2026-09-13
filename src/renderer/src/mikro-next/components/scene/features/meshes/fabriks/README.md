@@ -300,11 +300,12 @@ Regenerate with `python __fixtures__/generate.py <out>` in an environment with
   file is the whole shim; when `MeshCollection.store: FabriksStore!` lands it
   becomes `collection.store.key` and grant kind `"fabriks"`, and nothing else
   changes.
-- **Axis slots are assumed to match axis names.** fabriks's `cellSize` and
-  `bbox_*` components are slots in the vertex order, while
-  `resolveCollectionMatrix` derives spatial axes from the coordinate system's
-  names. A collection whose components run `(z, y, x)` renders transposed with
-  no error anywhere. Needs one such collection to test against.
+- ~~Axis slots are assumed to match axis names.~~ **Closed** for stores that
+  declare `store.axes`: `resolveCollectionMatrix` now names the INPUT side of
+  the server's `asAffine` by the declared slot order and the OUTPUT side by
+  the world's axes, so a `(z, y, x)` store lands on world z/y/x by name
+  (pinned in `collectionPlacement.test.ts`). A store with no declaration
+  still assumes the CS's last three axes are slots 0, 1, 2 (warned once).
 - ~~Decode is main-thread.~~ **Closed**: the CPU half of a row-group read —
   hyparquet parse, per-blob decompress, meshopt decode, dequantize, ordinal
   expansion — runs in fabriks's **own** small worker pool

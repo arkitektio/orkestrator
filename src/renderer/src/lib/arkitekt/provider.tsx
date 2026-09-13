@@ -3,6 +3,7 @@ import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } f
 import { checkAliasHealth, resolveWorkingAlias } from "./alias/resolve";
 import { buildAliases } from "./builder";
 import { ArkitektContext } from "./context";
+import { useConnectionStatus } from "./hooks";
 import { flow } from "./fakts/flow";
 import { Manifest } from "./fakts/manifestSchema";
 import {
@@ -814,12 +815,15 @@ export const ConnectedGuard = ({
   connectingFallback = "Loading...",
   children,
 }: ConnectedGuardProps & { children: ReactNode }) => {
-  const { connection, connecting, storedSession, hasBootstrapped } = useArkitekt();
+  // Narrow, shallow-compared selection: this guard wraps every module route,
+  // so subscribing to the whole store rerendered them on every store tick.
+  const { hasSelfService, connecting, hasStoredSession, hasBootstrapped } =
+    useConnectionStatus();
 
-  if (!storedSession) return <>{notConnectedFallback}</>;
+  if (!hasStoredSession) return <>{notConnectedFallback}</>;
 
-  if (!connection?.selfService) {
-    if (connecting || (!hasBootstrapped && storedSession)) return <>{connectingFallback}</>;
+  if (!hasSelfService) {
+    if (connecting || (!hasBootstrapped && hasStoredSession)) return <>{connectingFallback}</>;
     return <>{notConnectedFallback}</>;
   }
 

@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/table";
 
 import { Sidebars } from "@/components/layout/Sidebars";
+import { useDebounce } from "@/hooks/use-debounce";
 import { MikroArrayDataset, MikroFile, MikroFolder, MikroTableDataset } from "@/linkers";
 import { Guard } from "@/app/Arkitekt";
 import { KnowledgeSidebar } from "@/kraph/components/sidebars/KnowledgeSidebar";
@@ -237,12 +238,35 @@ export const FolderTableExplorer = (props: {
     pageIndex: 0,
     pageSize: 20,
   });
+  // The search box is bound to `search`; the server only sees it once the
+  // user pauses, and every new term starts back on page 0.
+  const [search, setSearch] = React.useState("");
+  const debouncedSearch = useDebounce(search, 300);
 
-  const { data, loading, refetch } = useChildrenQuery({
+  const { data, loading } = useChildrenQuery({
     variables: {
       id: props.folder.id,
+      pagination: {
+        offset: pagination.pageIndex * pagination.pageSize,
+        limit: pagination.pageSize,
+      },
+      filters: {
+        search: debouncedSearch || undefined,
+      },
     },
   });
+
+  const handleSearchChange = React.useCallback((value: string) => {
+    setSearch(value);
+    setPagination((current) =>
+      current.pageIndex === 0 ? current : { ...current, pageIndex: 0 },
+    );
+  }, []);
+
+  // `children` has no total in the schema, so "there is a next page" means
+  // "this page came back full".
+  const rows = data?.children ?? [];
+  const hasNextPage = rows.length === pagination.pageSize;
 
   const [columns] = React.useState<ColumnDef<Item>[]>(() =>
     calculateColumns(),
@@ -257,7 +281,7 @@ export const FolderTableExplorer = (props: {
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data: data?.children ?? [],
+    data: rows,
     columns,
     pageCount: -1,
     manualPagination: true,
@@ -303,12 +327,8 @@ export const FolderTableExplorer = (props: {
           <div className="flex items-center py-4 gap-2">
             <Input
               placeholder="Search..."
-              value={
-                (table.getColumn("name")?.getFilterValue() as string) ?? ""
-              }
-              onChange={(event) =>
-                table.getColumn("name")?.setFilterValue(event.target.value)
-              }
+              value={search}
+              onChange={(event) => handleSearchChange(event.target.value)}
               className="max-w-sm w-full bg-background"
             />
             <DropdownMenu>
@@ -423,22 +443,16 @@ export const FolderTableExplorer = (props: {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                table.previousPage();
-                refetch();
-              }}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => table.previousPage()}
+              disabled={loading || !table.getCanPreviousPage()}
             >
               Previous
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                table.nextPage();
-                refetch();
-              }}
-              disabled={!table.getCanNextPage()}
+              onClick={() => table.nextPage()}
+              disabled={loading || !hasNextPage}
             >
               Next
             </Button>

@@ -4,7 +4,13 @@ import { Guard } from "@/app/Arkitekt";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import React, { createContext, useCallback, useContext, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 /**
  * Enhanced Dialog Provider with Sheet Support
@@ -145,8 +151,16 @@ export function createDialogProvider<
 
     const Component = modalState.id ? registry[modalState.id] : null;
 
+    // The three callbacks are stable, so the context value must be too:
+    // otherwise every dialog open/close republishes and rerenders all
+    // `useDialog()` consumers (mostly list cards).
+    const contextValue = useMemo(
+      () => ({ openDialog, openSheet, closeDialog }),
+      [openDialog, openSheet, closeDialog],
+    );
+
     return (
-      <DialogContext.Provider value={{ openDialog, openSheet, closeDialog }}>
+      <DialogContext.Provider value={contextValue}>
         <Dialog
           open={!!Component && modalState.type === "dialog"}
           onOpenChange={closeDialog}

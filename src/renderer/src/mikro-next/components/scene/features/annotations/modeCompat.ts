@@ -153,8 +153,23 @@ export function coerceModeState(
     ? requested.interactionMode
     : FALLBACK_MODE;
 
-  // The tool is coerced whatever the active mode is, so flipping back into
-  // ANNOTATE later never lands on a tool that cannot draw.
+  // In DESIGN the designer owns the tool: it arms BRUSH/BLOB by held key and
+  // `MeshDesignToolbar` insists on a design tool while the mode is active.
+  // Evicting one here as "3D-only" would swap it for a shape, the toolbar
+  // would put the brush back, and the two guards would loop until React gave
+  // up ("Maximum update depth exceeded"). Whether a given design gesture
+  // works on the flat view is the tool's own business (lift clicks the 2D
+  // plane), so the annotator's availability rule does not apply.
+  if (
+    interactionMode === "DESIGN" &&
+    requested.activeTool !== null &&
+    BRUSH_TOOLS.has(requested.activeTool)
+  ) {
+    return { interactionMode, activeTool: requested.activeTool };
+  }
+
+  // Otherwise the tool is coerced whatever the active mode is, so flipping
+  // back into ANNOTATE later never lands on a tool that cannot draw.
   const activeTool =
     requested.activeTool === null ||
     isAnnotateToolAvailable(requested.activeTool, ctx)

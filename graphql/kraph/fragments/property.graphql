@@ -4,12 +4,39 @@
 #
 # Select all of it. `UpdateEntityCategoryInput.propertyDefinitions` is a full
 # replace, so a field this fragment omits is a field every save silently wipes.
+
+# Which claims a rule admits. `when` conditions all have to hold; an `unless`
+# group subtracts. The same shape a category uses for its own rules.
+fragment ClaimCondition on ClaimCondition {
+  field
+  operator
+  value
+}
+
+fragment ClaimRule on ClaimRule {
+  when {
+    ...ClaimCondition
+  }
+  unless {
+    when {
+      ...ClaimCondition
+    }
+  }
+}
+
+# `conflictPolicy` is gone: which measurements a property folds is a rule list
+# now, and a rule here *replaces* the owning category's MEASUREMENT rules rather
+# than intersecting them.
 fragment DerivationRule on DerivationRule {
   sourceNode
   key
   sourceValueKind
   aggregation
-  conflictPolicy
+  evidence {
+    rules {
+      ...ClaimRule
+    }
+  }
   subjectPriority
   toolPriority
 }

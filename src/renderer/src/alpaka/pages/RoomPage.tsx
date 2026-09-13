@@ -29,6 +29,10 @@ export const RoomPage =  asDetailQueryRoute(
           if (!message) {
             return prev;
           }
+          // A redelivered message must not duplicate in the room.
+          if (prev.room.messages.some((existing) => existing.id === message.id)) {
+            return prev;
+          }
           return {
             room: {
               ...prev.room,

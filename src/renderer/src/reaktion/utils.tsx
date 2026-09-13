@@ -108,39 +108,58 @@ const flussEffectKindMap: Record<
   MessageEffect: EffectKind.Message,
 };
 
+// Choices live on the port now, not on the widget, so a widget round-trips by
+// dropping `__typename` at every depth (`fallback`, `filters`, `props`,
+// `stateCall`, `stateAccessors` are all nested output objects).
 const flussAssignWidgetToInput = (
   widget: FlussAssignWidgetFragment,
 ): AssignWidgetInput => {
-  const { __typename, ...rest } = widget;
-  const input: AssignWidgetInput = {
+  const { __typename, ...rest } = stripTypenames(widget);
+  return {
     ...rest,
-    kind: flussAssignWidgetKindMap[__typename],
-  };
-  if (input.choices)
-    input.choices = input.choices.map((c) => ({ ...c, __typename: undefined }));
-  return input;
+    kind: flussAssignWidgetKindMap[widget.__typename],
+  } as AssignWidgetInput;
 };
 
 const flussReturnWidgetToInput = (
   widget: FlussReturnWidgetFragment,
 ): ReturnWidgetInput => {
-  const { __typename, ...rest } = widget;
-  const input: ReturnWidgetInput = {
+  const { __typename, ...rest } = stripTypenames(widget);
+  return {
     ...rest,
-    kind: flussReturnWidgetKindMap[__typename],
-  };
-  if (input.choices)
-    input.choices = input.choices.map((c) => ({ ...c, __typename: undefined }));
-  return input;
+    kind: flussReturnWidgetKindMap[widget.__typename],
+  } as ReturnWidgetInput;
+};
+
+/**
+ * Recursively drop `__typename` markers so a fetched object can be sent back
+ * as its input type. Used for `call` (a nested `UtilCall` / `ActionArgument`
+ * tree whose input and output field names otherwise match).
+ */
+const stripTypenames = <T,>(value: T): T => {
+  if (Array.isArray(value)) {
+    return value.map(stripTypenames) as unknown as T;
+  }
+  if (value !== null && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      if (key === "__typename") continue;
+      out[key] = stripTypenames(entry);
+    }
+    return out as T;
+  }
+  return value;
 };
 
 const flussPortEffectToInput = (
   effect: FlussPortEffectFragment,
 ): EffectInput => {
-  const { __typename, ...rest } = effect;
-  // The fluss effect fragment doesn't select `function` (required on EffectInput);
-  // preserve the rest of the effect and let the backend supply/ignore it.
-  return { ...rest, kind: flussEffectKindMap[__typename] } as EffectInput;
+  const { __typename, call, ...rest } = effect;
+  return {
+    ...rest,
+    call: stripTypenames(call),
+    kind: flussEffectKindMap[__typename],
+  };
 };
 
 export const flussArgChildToInput = (
@@ -167,7 +186,10 @@ export const flussArgPortToInput = (
     children: children?.map(flussArgChildToInput),
     widget: widget ? flussAssignWidgetToInput(widget) : undefined,
     choices: choices?.map(({ __typename, ...c }) => c),
-    validators: validators?.map(({ __typename, ...v }) => v),
+    validators: validators?.map(({ __typename, call, ...v }) => ({
+      ...v,
+      call: stripTypenames(call),
+    })),
     requires: requires?.map(({ __typename, ...r }) => r),
   };
 };
@@ -204,12 +226,14 @@ export const flussReturnPortToInput = (
 // ArgNode emits its values as node *outs* (ReturnPort) which are semantically the
 // action's input args, and the ReturnNode consumes via node *ins* (ArgPort) which
 // are the action's returns. Only the structural signature matters here, so widgets/
-// validators are dropped. fluss inputs are structurally identical to rekuest inputs.
+// validators are dropped. The signatures are typed as *rekuest* inputs because
+// that is where they go (a rekuest DefinitionInput); the widget sub-unions of the
+// two services have drifted apart, so fluss inputs are no longer assignable as-is.
 
 type AnyFlussChild = FlussArgChildPortFragment | FlussReturnChildPortFragment;
 type AnyFlussPort = FlussArgPortFragment | FlussReturnPortFragment;
 
-const flowChildToArgSignature = (c: AnyFlussChild): ArgPortInput => ({
+const flowChildToArgSignature = (c: AnyFlussChild): RekuestArgPortInput => ({
   key: c.key,
   kind: c.kind,
   identifier: c.identifier,
@@ -217,7 +241,7 @@ const flowChildToArgSignature = (c: AnyFlussChild): ArgPortInput => ({
   children: c.children?.map((cc) => flowChildToArgSignature(cc as AnyFlussChild)),
 });
 
-const flowChildToReturnSignature = (c: AnyFlussChild): ReturnPortInput => ({
+const flowChildToReturnSignature = (c: AnyFlussChild): RekuestReturnPortInput => ({
   key: c.key,
   kind: c.kind,
   identifier: c.identifier,
@@ -225,26 +249,26 @@ const flowChildToReturnSignature = (c: AnyFlussChild): ReturnPortInput => ({
   children: c.children?.map((cc) => flowChildToReturnSignature(cc as AnyFlussChild)),
 });
 
-const flowPortToArgSignature = (port: AnyFlussPort): ArgPortInput => ({
+const flowPortToArgSignature = (port: AnyFlussPort): RekuestArgPortInput => ({
   key: port.key,
   label: port.label,
   nullable: port.nullable,
   description: port.description,
   kind: port.kind,
   identifier: port.identifier,
-  default: port.default,
+  // `default` is an ArgPort-only field; a ReturnPort never carries one.
+  default: "default" in port ? port.default : undefined,
   choices: port.choices?.map(({ __typename, ...c }) => c),
   children: port.children?.map((c) => flowChildToArgSignature(c as AnyFlussChild)),
 });
 
-const flowPortToReturnSignature = (port: AnyFlussPort): ReturnPortInput => ({
+const flowPortToReturnSignature = (port: AnyFlussPort): RekuestReturnPortInput => ({
   key: port.key,
   label: port.label,
   nullable: port.nullable,
   description: port.description,
   kind: port.kind,
   identifier: port.identifier,
-  default: port.default,
   choices: port.choices?.map(({ __typename, ...c }) => c),
   children: port.children?.map((c) => flowChildToReturnSignature(c as AnyFlussChild)),
 });

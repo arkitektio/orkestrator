@@ -7,10 +7,12 @@ import { usePortForm } from "@/rekuest/hooks/usePortForm";
 import { EffectWrapper } from "@/rekuest/widgets/EffectWrapper";
 import { ArgPort as RekuestArgPort } from "@/rekuest/widgets/types";
 import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
-import { submittedDataToRekuestFormat } from "@/rekuest/widgets/utils";
+import { portHash, submittedDataToRekuestFormat } from "@/rekuest/widgets/utils";
+import { useLatestRef } from "@/hooks/useLatestRef";
 
 import { ChevronUpIcon, DoubleArrowUpIcon } from "@radix-ui/react-icons";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { useWatch } from "react-hook-form";
 
 // The flow stores constants as fluss ArgPorts; the rekuest widget system renders
 // rekuest ArgPorts. The two are structurally compatible for rendering (kind,
@@ -18,11 +20,9 @@ import { useEffect } from "react";
 const asRekuestPort = (port: FlussArgPortFragment): RekuestArgPort =>
   port as unknown as RekuestArgPort;
 
-export const portHash = (port: FlussArgPortFragment[]) => {
-  return port
-    .map((port) => `${port.key}-${port.kind}-${port.identifier}`)
-    .join("-");
-};
+export { portHash };
+
+let unserializableCounter = 0;
 
 export const ArgsContainer = ({
   ports,
@@ -51,6 +51,7 @@ export const ArgsContainer = ({
             key={index}
             effects={asRekuestPort(port).effects || []}
             port={asRekuestPort(port)}
+            path={path.concat(port.key)}
             registry={registry}
           >
             <div className="flex flex-row gap-2 justify-between w-full min-w-[200px]">
@@ -107,27 +108,40 @@ export const Constants = (props: {
     overwrites: props.overwrites,
   });
 
-  const {
-    formState,
-    formState: { isValidating },
-  } = form;
-
-  const data = form.watch();
-
   const onSubmit = (data: any) => {
     props.onSubmit?.(data);
   };
 
-  useEffect(() => {
-    if (formState.isValid && !isValidating) {
-      props.onSubmit?.(
-        submittedDataToRekuestFormat(
-          data,
-          props.ports as unknown as RekuestArgPort[],
-        ),
-      );
+  // Push valid constants to the flow as the user edits: subscribe to the
+  // values, key on their content, and validate+submit after a short pause.
+  // (The previous `form.watch()` + `[formState, data]` effect fired on every
+  // render and re-ran the full transform per keystroke.)
+  const watched = useWatch({ control: form.control });
+  const watchedKey = useMemo(() => {
+    try {
+      return JSON.stringify(watched);
+    } catch {
+      return `unserializable:${++unserializableCounter}`;
     }
-  }, [formState, data, isValidating]);
+  }, [watched]);
+  const latest = useLatestRef({ form, ports: props.ports, onSubmit: props.onSubmit });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const { form: f, ports, onSubmit: submit } = latest.current;
+      void f.trigger().then((valid) => {
+        if (!valid) return;
+        submit?.(
+          submittedDataToRekuestFormat(
+            f.getValues(),
+            ports as unknown as RekuestArgPort[],
+          ),
+        );
+      });
+    }, 250);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedKey]);
 
   const { registry } = useWidgetRegistry();
 

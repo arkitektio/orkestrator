@@ -27,7 +27,7 @@ const List = ({ filters, pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <ShortcutCard key={index} item={ex} />}
+      {(ex) => <ShortcutCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

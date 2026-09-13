@@ -1,8 +1,153 @@
+# --- Blok component tree -----------------------------------------------------
+# `Blok.components` is the typed `ComponentNode` tree (the raw `uiComponents`
+# JSON is gone). Component props bind static values, data-model paths, agent
+# calls and util calls; `ActionArgument` nests (`utilCall`, `agentCall`,
+# `valueList`, `valueDict`). GraphQL fragments cannot recurse, so arguments are
+# selected to the same fixed depth as port calls (ports.graphql) and the node
+# tree to a fixed number of levels. The leaf level selects `children { id }`
+# only, so a deeper payload is detected client-side (see
+# `rekuest/components/blokDocument.tsx`) instead of silently vanishing.
 
+fragment BlokAgentCallLeaf on AgentCall {
+  dependency
+  operation
+  arguments {
+    ...PortCallLeafArgument
+  }
+}
+
+fragment BlokArgumentInner on ActionArgument {
+  ...PortCallInnerArgument
+  agentCall {
+    ...BlokAgentCallLeaf
+  }
+}
+
+fragment BlokArgument on ActionArgument {
+  ...PortCallLeafArgument
+  utilCall {
+    operation
+    arguments {
+      ...BlokArgumentInner
+    }
+  }
+  agentCall {
+    dependency
+    operation
+    arguments {
+      ...BlokArgumentInner
+    }
+  }
+  valueList {
+    ...BlokArgumentInner
+  }
+  valueDict {
+    ...BlokArgumentInner
+  }
+}
+
+fragment BlokComponentProp on ComponentProp {
+  key
+  staticValue
+  declaresValue
+  dynamicValue {
+    path
+    literal
+  }
+  agentCall {
+    dependency
+    operation
+    arguments {
+      ...BlokArgument
+    }
+  }
+  utilCall {
+    operation
+    arguments {
+      ...BlokArgument
+    }
+  }
+}
+
+fragment BlokNodeFields on ComponentNode {
+  id
+  component
+  props {
+    ...BlokComponentProp
+  }
+}
+
+fragment BlokNodeL8 on ComponentNode {
+  ...BlokNodeFields
+  children {
+    id
+  }
+}
+
+fragment BlokNodeL7 on ComponentNode {
+  ...BlokNodeFields
+  children {
+    ...BlokNodeL8
+  }
+}
+
+fragment BlokNodeL6 on ComponentNode {
+  ...BlokNodeFields
+  children {
+    ...BlokNodeL7
+  }
+}
+
+fragment BlokNodeL5 on ComponentNode {
+  ...BlokNodeFields
+  children {
+    ...BlokNodeL6
+  }
+}
+
+fragment BlokNodeL4 on ComponentNode {
+  ...BlokNodeFields
+  children {
+    ...BlokNodeL5
+  }
+}
+
+fragment BlokNodeL3 on ComponentNode {
+  ...BlokNodeFields
+  children {
+    ...BlokNodeL4
+  }
+}
+
+fragment BlokNodeL2 on ComponentNode {
+  ...BlokNodeFields
+  children {
+    ...BlokNodeL3
+  }
+}
+
+fragment BlokNodeL1 on ComponentNode {
+  ...BlokNodeFields
+  children {
+    ...BlokNodeL2
+  }
+}
+
+fragment BlokComponentTree on ComponentNode {
+  ...BlokNodeL1
+}
+
+fragment BlokDiagnostic on Diagnostic {
+  level
+  code
+  message
+  path
+}
 
 fragment Blok on Blok {
   id
   name
+  description
   materializedBloks {
     ...ListMaterializedBlok
   }
@@ -13,51 +158,16 @@ fragment Blok on Blok {
   catalog {
     id
     name
+    description
+    isRegistered
   }
   components {
-    id
-    component
-    props {
-      staticValue
-      dynamicValue {
-        path
-        literal
-      }
-      agentCall {
-         operation
-         dependency
-         arguments {
-          key
-          valueLiteral
-          valuePath
-          valueDict {
-            key
-            valueLiteral
-            valuePath
-          }
-         }
-      }
-      utilCall {
-          operation
-        arguments {
-          key
-          valueLiteral
-          valuePath
-          valueDict {
-            key
-            valueLiteral
-            valuePath
-          }
-         }
-      }
-    }
-    children {
-      id
-      component
-    }
+    ...BlokComponentTree
   }
-  uiComponents
   demoState
+  diagnostics {
+    ...BlokDiagnostic
+  }
 }
 
 fragment MaterializedBlok on MaterializedBlok {
@@ -76,15 +186,12 @@ fragment MaterializedBlok on MaterializedBlok {
 fragment ListBlok on Blok {
   id
   name
-
 }
-
 
 fragment ListMaterializedBlok on MaterializedBlok {
   id
   blok {
     id
     name
-
   }
 }

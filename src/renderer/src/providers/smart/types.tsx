@@ -22,31 +22,17 @@ export type SmartPaneLinkProps<T extends Object> = OmittedPaneLinkProps & {
   deeproute?: string;
 };
 
-export type ClassNameOptions = {
-  isOver: boolean;
-  isDragging: boolean;
-  canDrop: boolean;
-  progress: number | undefined;
-};
-
 export interface SmartModelProps {
   identifier: Identifier;
   object: Object;
-  as?: HTMLElement;
   children: React.ReactNode;
   containerClassName?: string;
-  dragStyle?: (props: ClassNameOptions) => React.CSSProperties;
-  dropStyle?: (props: ClassNameOptions) => React.CSSProperties;
   hover?: boolean;
-  showSelfMates?: boolean;
   className?: string;
-
 }
 
+/** Props of a `Smart` / `Drop` built for one model: the identifier is baked in. */
 export interface CreatedSmartSmartProps<T extends Object>
-  extends Omit<SmartModelProps, "accepts" | "identifier"> {
+  extends Omit<SmartModelProps, "identifier"> {
   object: T;
-  dragStyle?: (props: ClassNameOptions) => React.CSSProperties;
-  dropStyle?: (props: ClassNameOptions) => React.CSSProperties;
-  children: React.ReactNode;
 }

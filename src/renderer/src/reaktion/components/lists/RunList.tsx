@@ -25,7 +25,7 @@ const List = ({ pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(item, index) => <RunCard key={index} item={item} />}
+      {(item) => <RunCard key={item.id} item={item} />}
     </ListRender>
   );
 };

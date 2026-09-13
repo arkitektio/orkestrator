@@ -30,6 +30,28 @@ export const useArkitektStore = <T,>(selector: (state: AppContext) => T) => {
 
 export const useArkitektActions = (): AppFunctions => useArkitektContext().actions;
 
+/** The raw store, for imperative reads and subscriptions outside React. */
+export const useArkitektStoreApi = () => useArkitektContext().store;
+
+/**
+ * The connection status fields a guard needs, shallow-compared so token
+ * refreshes and service health ticks do not rerender the guarded tree.
+ */
+export const useConnectionStatus = () =>
+  useArkitektStore(
+    useShallow((state) => ({
+      hasSelfService: !!state.connection?.selfService,
+      connecting: state.connecting,
+      hasStoredSession: !!state.storedSession,
+      hasBootstrapped: state.hasBootstrapped,
+    })),
+  );
+
+/**
+ * Merged store state + actions. Subscribes to the WHOLE store: every store
+ * write rerenders the caller. Prefer a narrow hook (`useConnection`,
+ * `useArkitektActions`, `useConnectionStatus`, …) in anything mounted often.
+ */
 export const useArkitekt = () => {
   const state = useArkitektStore((currentState) => currentState) as AppContext;
   const actions = useArkitektActions();

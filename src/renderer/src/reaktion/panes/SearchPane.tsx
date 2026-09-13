@@ -9,7 +9,7 @@ import { FlussRun, FlussWorkspace } from "@/linkers";
 import { CubeIcon } from "@radix-ui/react-icons";
 import { Home, PlusIcon } from "lucide-react";
 import * as React from "react";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import {
   GlobalSearchQueryVariables,
   Ordering,
@@ -54,10 +54,10 @@ export const NavigationPane = () => {
           </DialogButton>
         }
       >
-        {data?.workspaces.map((workspace, index) => (
+        {data?.workspaces.map((workspace) => (
           <FlussWorkspace.PaneLink
             object={workspace}
-            key={index}
+            key={workspace.id}
             className="flex flex-row w-full gap-3 rounded-lg  text-muted-foreground transition-all hover:text-primary"
           >
             <CubeIcon className="h-4 w-4" />
@@ -68,10 +68,10 @@ export const NavigationPane = () => {
 
        <SidePaneGroup title={
         <FlussRun.ListLink>Runs</FlussRun.ListLink>}>
-        {rundata?.runs.map((run, index) => (
+        {rundata?.runs.map((run) => (
           <FlussRun.PaneLink
             object={run}
-            key={index}
+            key={run.id}
             className="flex flex-row w-full gap-3 rounded-lg  text-muted-foreground transition-all hover:text-primary"
           >
             <CubeIcon className="h-4 w-4 my-auto" />
@@ -126,7 +126,7 @@ const Pane: React.FunctionComponent = () => {
       ) : (
         <div className="h-full">
           <ListRender array={data?.workspaces}>
-            {(item, i) => <WorkspaceCard workspace={item} key={i} />}
+            {(item) => <WorkspaceCard workspace={item} key={item.id} />}
           </ListRender>
         </div>
       )}

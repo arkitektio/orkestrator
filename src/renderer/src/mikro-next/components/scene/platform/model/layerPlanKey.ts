@@ -65,9 +65,38 @@ export function layerPlanSignature(layer: LayerState): string {
 
 let unserializableCounter = 0;
 
-/** The whole list's planning identity, order included. */
-export const layersPlanKey = (layers: readonly LayerState[]): string =>
-  layers.map(layerPlanSignature).join("\n");
+/**
+ * The whole list's planning identity, order included.
+ *
+ * Memoized on the ARRAY's identity: half a dozen components use this as a raw
+ * zustand selector, and zustand runs every selector on every store write, so
+ * without the memo a contrast drag (which republishes `layers` per tick) ran
+ * six map+join passes per tick.
+ */
+const layersKeyCache = new WeakMap<readonly LayerState[], string>();
+export const layersPlanKey = (layers: readonly LayerState[]): string => {
+  let key = layersKeyCache.get(layers);
+  if (key === undefined) {
+    key = layers.map(layerPlanSignature).join("\n");
+    layersKeyCache.set(layers, key);
+  }
+  return key;
+};
+
+/**
+ * `id -> index` for a published `layers` array, memoized on the array's
+ * identity, for selectors that look members up per store write.
+ */
+const layerIndexCache = new WeakMap<readonly LayerState[], Map<string, number>>();
+export const layerIndexOf = (layers: readonly LayerState[]): Map<string, number> => {
+  let index = layerIndexCache.get(layers);
+  if (!index) {
+    index = new Map();
+    for (let i = 0; i < layers.length; i++) index.set(layers[i].id, i);
+    layerIndexCache.set(layers, index);
+  }
+  return index;
+};
 
 /**
  * Whether two published `layers` arrays hold the SAME elements in the same

@@ -27,7 +27,7 @@ const List = ({ filters, pagination }: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <MetricKindCard key={index} item={ex} />}
+      {(ex) => <MetricKindCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

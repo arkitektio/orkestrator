@@ -1,3 +1,4 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { ListTermFragment } from "@/kraph/api/graphql";
 import { KraphTerm } from "@/linkers";
@@ -37,4 +38,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

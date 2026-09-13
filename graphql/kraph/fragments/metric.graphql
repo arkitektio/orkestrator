@@ -17,7 +17,9 @@ fragment Metric on Metric {
   ...ListMetric
   confidence
   confidenceType
-  measuredAt
+  # World time: when the value was true, as distinct from `assertedAt`, when it
+  # was claimed. Unset means the two coincide.
+  observedAt
   assertedAt
   kind {
     id

@@ -5,7 +5,7 @@ import {
   UserUsername,
 } from "@/lok-next/components/UserAvatar";
 import { cn } from "@/lib/utils";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import {
   DescendantType,
   LeafType,

@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { GraphProjectionFragment, ProjectionStatus } from "../api/graphql";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 
 /**
  * Whether this view has drawn the log yet.

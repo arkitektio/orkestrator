@@ -1,13 +1,25 @@
 import { describe, expect, it } from "vitest";
-import type { AttributePlanLike } from "./attributeTypes";
+import type { AttributePlanLike, TableHopLike } from "./attributeTypes";
 import {
   buildHeld,
+  buildKeyValues,
   buildParams,
   isBackground,
   narrowHeld,
   probeCoordsFor,
   resolveSampleIndex,
 } from "./planExec";
+import { arraySample, tableHop, tablePlan } from "./__fixtures__/plans";
+
+const hopFor = (keyAxes: string[] = ["t", "i"]): TableHopLike =>
+  tableHop({
+    lookup: {
+      kind: "TABLE",
+      store: { id: "p", bucket: "b", key: "t.parquet" },
+      keyColumns: keyAxes.map((axis) => ({ axis, column: { name: axis, dtype: "BIGINT" } })),
+      attributes: [{ name: "area", dtype: "DOUBLE" }],
+    },
+  });
 
 const plan = (over: {
   consumes?: string[];
@@ -16,34 +28,24 @@ const plan = (over: {
   keyAxes?: string[];
   shape?: number[];
   axes?: { name: string; order: number }[];
-} = {}): AttributePlanLike => ({
-  edge: { id: "e", version: 1 },
-  table: { id: "t", name: "morphology" },
-  path: [],
-  sample: {
-    system: {
-      id: "sys",
-      axes: over.axes ?? [
-        { name: "t", order: 0 },
-        { name: "y", order: 1 },
-        { name: "x", order: 2 },
-      ],
-    },
-    store: { id: "z", bucket: "b", key: "k", shape: over.shape },
-    consumes: over.consumes ?? ["y", "x"],
-    produces: over.produces ?? ["i"],
-    passthrough: over.passthrough ?? ["t"],
-  },
-  lookup: {
-    store: { id: "p", bucket: "b", key: "t.parquet" },
-    keyColumns: (over.keyAxes ?? ["t", "i"]).map((axis) => ({
-      axis,
-      column: { name: axis, dtype: "BIGINT" },
-    })),
-    attributes: [{ name: "area", dtype: "DOUBLE" }],
-    sql: 'SELECT "area" FROM read_parquet(?) WHERE "t" = ? AND "i" = ?',
-  },
-});
+} = {}): AttributePlanLike =>
+  tablePlan({
+    sample: arraySample({
+      system: {
+        id: "sys",
+        axes: over.axes ?? [
+          { name: "t", order: 0 },
+          { name: "y", order: 1 },
+          { name: "x", order: 2 },
+        ],
+      },
+      store: { id: "z", bucket: "b", key: "k", shape: over.shape },
+      consumes: over.consumes ?? ["y", "x"],
+      produces: over.produces ?? ["i"],
+      passthrough: over.passthrough ?? ["t"],
+    }),
+    hops: [hopFor(over.keyAxes)],
+  });
 
 describe("buildHeld", () => {
   it("holds passthrough axes plus the value under the plan's produced name", () => {
@@ -77,15 +79,27 @@ describe("buildHeld", () => {
   });
 });
 
-describe("buildParams", () => {
+describe("buildParams / buildKeyValues", () => {
   it("binds the parquet URL first, then key values in keyColumns order", () => {
     expect(
-      buildParams(plan(), "s3://b/t.parquet", { t: 5, i: 7 }),
+      buildParams(hopFor(), "s3://b/t.parquet", { t: 5, i: 7 }),
     ).toEqual(["s3://b/t.parquet", 5, 7]);
   });
 
   it("never borrows a missing key axis", () => {
-    expect(buildParams(plan(), "s3://b/t.parquet", { i: 7 })).toBeNull();
+    expect(buildParams(hopFor(), "s3://b/t.parquet", { i: 7 })).toBeNull();
+  });
+
+  it("spreads a list-valued key and reports which key is MANY", () => {
+    expect(buildKeyValues(hopFor(), { t: 5, i: [7, 9, 11] })).toEqual({
+      params: [5, 7, 9, 11],
+      many: { axis: "i", count: 3 },
+    });
+  });
+
+  it("refuses an empty list and two lists (one IN per statement)", () => {
+    expect(buildKeyValues(hopFor(), { t: 5, i: [] })).toBeNull();
+    expect(buildKeyValues(hopFor(), { t: [1, 2], i: [7, 9] })).toBeNull();
   });
 });
 

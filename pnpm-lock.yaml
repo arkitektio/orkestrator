@@ -457,9 +457,6 @@ importers:
       shadcn:
         specifier: ^3.6.3
         version: 3.8.5(@types/node@22.19.19)(babel-plugin-macros@3.1.0)(supports-color@7.2.0)(typescript@5.9.3)
-      shadowrealm-api:
-        specifier: ^0.8.3
-        version: 0.8.3
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -8383,9 +8380,6 @@ packages:
   shadcn@3.8.5:
     resolution: {integrity: sha512-jPRx44e+eyeV7xwY3BLJXcfrks00+M0h5BGB9l6DdcBW4BpAj4x3lVmVy0TXPEs2iHEisxejr62sZAAw6B1EVA==}
     hasBin: true
-
-  shadowrealm-api@0.8.3:
-    resolution: {integrity: sha512-9m694bB4qhvM+GiEjOeXY228bK54TQutEAo94PiDkxAMN3Kz/2UWMTRKL7ytEHJ1eHVFD2rUuTj8CifXF3U1mA==}
 
   shebang-command@2.0.0:
     resolution: {integrity: sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==}
@@ -18462,8 +18456,6 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - typescript
-
-  shadowrealm-api@0.8.3: {}
 
   shebang-command@2.0.0:
     dependencies:

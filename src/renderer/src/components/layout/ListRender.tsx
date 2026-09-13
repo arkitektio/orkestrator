@@ -1,5 +1,5 @@
 import { OffsetPaginationInput } from "@/rekuest/api/graphql";
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { ListOffsetter, ListTitle } from "../ui/list";
 import { Refetcher } from "../ui/refetcher";
 import { ContainerGrid } from "./ContainerGrid";
@@ -41,13 +41,31 @@ export const ListRender = <T extends any>({
 }: ListRenderProps<T>) => {
   const [offset, setOffset] = useState(0);
 
+  // Pagination refetches. The parent's `useQuery` already issued the initial
+  // request, so on mount we only refetch when the parent evidently did not
+  // paginate (it returned more rows than one page); otherwise the mount-time
+  // refetch was a duplicate of the request that just completed. Afterwards
+  // only a real offset/limit change triggers a refetch — `array` identity
+  // changes (cache updates) must not.
+  const initialised = useRef(false);
+  const lastPage = useRef({ offset, limit });
   useEffect(() => {
-    if (refetch) {
-      refetch({ pagination: { limit: limit, offset: offset } });
+    if (!refetch) return;
+    if (!initialised.current) {
+      if (array === undefined || array === null) return; // parent still loading
+      initialised.current = true;
+      lastPage.current = { offset, limit };
+      if (array.length > limit) {
+        refetch({ pagination: { limit: limit, offset: offset } });
+      }
+      return;
     }
-    // Ideally 'refetch' should be in dependencies, but be careful of infinite loops
-    // if the parent creates the function on every render without useCallback.
-  }, [offset, limit]);
+    if (lastPage.current.offset === offset && lastPage.current.limit === limit) {
+      return;
+    }
+    lastPage.current = { offset, limit };
+    refetch({ pagination: { limit: limit, offset: offset } });
+  }, [offset, limit, array, refetch]);
 
   // FIX: Removed useMemo.
   // This ensures that if the parent re-renders (changing the 'children' prop),

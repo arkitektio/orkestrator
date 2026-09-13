@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import {
   TaskEventKind,
   DetailImplementationFragment,
+  LiveTaskFragment,
   PostmanTaskFragment,
   useImplementationQuery,
 } from "../api/graphql";
@@ -23,8 +24,8 @@ export type UseImplementationActionReturn = {
   ) => Promise<PostmanTaskFragment>;
   reassign: () => Promise<PostmanTaskFragment>;
   cancel: () => void;
-  tasks?: PostmanTaskFragment[];
-  latestTask?: PostmanTaskFragment;
+  tasks?: LiveTaskFragment[];
+  latestTask?: LiveTaskFragment;
 };
 
 export type UseImplementationAction = {

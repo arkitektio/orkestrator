@@ -16,7 +16,7 @@ import {
   useInterruptMutation,
 } from "@/rekuest/api/graphql";
 import { ChevronDown, Clock, ListChecks } from "lucide-react";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { ChildTaskUpdater } from "../components/updaters/ChildTaskUpdater";
 import {
   DefaultRenderer,

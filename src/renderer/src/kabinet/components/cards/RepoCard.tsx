@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Card,
   CardDescription,
@@ -44,4 +45,4 @@ const RepoCard = ({ item }: Props) => {
   );
 };
 
-export default RepoCard;
+export default React.memo(RepoCard);

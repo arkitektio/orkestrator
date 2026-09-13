@@ -32,7 +32,7 @@ const TList = ({ filters, pagination }: Props) => {
         ><Button>x</Button></DokumentsFile.NewButton>
       }
     >
-      {(ex, index) => <FileCard key={index} item={ex} />}
+      {(ex) => <FileCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

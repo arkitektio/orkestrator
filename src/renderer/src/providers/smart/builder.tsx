@@ -2,7 +2,6 @@ import { PaneLink } from "@/components/ui/sidepane";
 import { NavLink } from "react-router-dom";
 import {
   getSmartBuilderAdapters,
-  SmartEnhanceButtonProps,
   SmartListPageProps,
   SmartModelPage,
   SmartNewButtonProps,
@@ -84,7 +83,6 @@ export const buildModelLink = <T extends Object>(to: string) => {
   };
 };
 
-
 export const buildPaneLink = <T extends Object>(to: string) => {
   return ({
     children,
@@ -97,7 +95,6 @@ export const buildPaneLink = <T extends Object>(to: string) => {
       <PaneLink
         {...props}
         to={`/${to}/${encodeURIComponent(props.object.id)}${subroute ? `/${subroute}` : ""}${subobject ? `/${subobject}` : ""}${deeproute ? `/${deeproute}` : ""}`}
-
       >
         {children}
       </PaneLink>
@@ -111,10 +108,6 @@ export const linkBuilder = (to: string) => (objectId: string | undefined) => {
   }
 
   return `/${to}/${encodeURIComponent(objectId)}`;
-};
-
-export const listLinkBuilder = (to: string) => () => {
-  return `/${to}/`;
 };
 
 export const buildSmartModel = <T extends Object>(
@@ -153,11 +146,17 @@ const buildSelfActions = (_model: Identifier) => {
 
 /**
  * The claims made about this object and the discussion about it are one
- * surface (`KnowledgeSidebar`), so there is one builder for them. The old
- * `Komments` half is gone — pages ask for `Knowledge` and get both.
+ * surface (`KnowledgeSidebar`), so there is one builder for them.
+ *
+ * Only a *datum* has knowledge in this sense — see `SmartConfig.datum`. For
+ * every other model this renders nothing, so a page that hands in
+ * `<X.Knowledge>` for an action or a category shows no half-empty claim form.
  */
 const buildKnowledge = <T extends Object>(model: Identifier) => {
   return ({ ...props }: ObjectProps<T>) => {
+    if (!smartRegistry.isDatum(model)) {
+      return null;
+    }
     return getSmartBuilderAdapters().renderKnowledge({
       identifier: model,
       object: props.object,
@@ -165,10 +164,13 @@ const buildKnowledge = <T extends Object>(model: Identifier) => {
   };
 };
 
-const buildTinyKnowledge = <T extends Object>(_model: Identifier) => {
+const buildTinyKnowledge = <T extends Object>(model: Identifier) => {
   return ({ ...props }: ObjectProps<T>) => {
+    if (!smartRegistry.isDatum(model)) {
+      return null;
+    }
     return getSmartBuilderAdapters().renderTinyKnowledge({
-      identifier: _model,
+      identifier: model,
       object: props.object,
     });
   };
@@ -192,18 +194,6 @@ const buildListPage = (model: Identifier) => {
   };
 };
 
-const buildUseNodesQuery = (model: Identifier) => {
-  return getSmartBuilderAdapters().useNodes(model);
-};
-
-const buildUseProgress = (model: Identifier, object: Object) => {
-  return getSmartBuilderAdapters().useProgress(model, object);
-};
-
-const buildUseLive = (model: Identifier, object: Object) => {
-  return getSmartBuilderAdapters().useLive(model, object);
-};
-
 const buildObjectButton = (model: Identifier) => {
   return ({ object, ...props }: SmartObjectButtonProps) => {
     return getSmartBuilderAdapters().renderObjectButton({
@@ -214,15 +204,6 @@ const buildObjectButton = (model: Identifier) => {
   };
 };
 
-const buildEnhanceButton = (model: Identifier) => {
-  return ({ ...props }: SmartEnhanceButtonProps) => {
-    return getSmartBuilderAdapters().renderEnhanceButton({
-      identifier: model,
-      ...props,
-    });
-  };
-}
-
 const buildNewButton = (model: Identifier) => {
   return ({ ...props }: SmartNewButtonProps) => {
     return getSmartBuilderAdapters().renderNewButton({
@@ -232,53 +213,64 @@ const buildNewButton = (model: Identifier) => {
   };
 };
 
+/**
+ * What a smart model is, in one place. The identifier is the wire name every
+ * structure carries (`@mikro/arraydataset`); `path` is the route segment its
+ * detail and list pages live under.
+ */
+export type SmartConfig = {
+  identifier: Identifier;
+  /** Route segment for the model's pages, e.g. `"mikro/arraydatasets"`. */
+  path: string;
+  /** Descriptive name used in labels and validation messages. */
+  name?: string;
+  description?: string;
+  search?: SearchFunction;
+  /**
+   * A datum is an object a scientist makes claims *about*: an image, an ROI, a
+   * trace, a document. Claims ("this is an AIS", "same as that entity"),
+   * measurements and comments — the whole Knowledge sidebar — only make sense
+   * for those. Infrastructure (an action, an agent, a user, a category) is not
+   * a datum, and gets no Knowledge tab. Defaults to `false`.
+   */
+  datum?: boolean;
+};
 
+export const buildSmart = <T extends Object>(config: SmartConfig) => {
+  const { identifier, path } = config;
 
-
-
-
-export const buildSmart = <T extends Object>(
-  model: Identifier,
-  to: string,
-  options?: {
-    /** Descriptive name used in labels and validation messages. */
-    name?: string;
-    description?: string;
-    searchFunction?: SearchFunction;
-    describeQuery?: string;
-  },
-) => {
   smartRegistry.register({
-    identifier: model,
-    path: to,
-    name: options?.name,
-    search: options?.searchFunction,
-    description: options?.description || "A smart model",
+    identifier,
+    path,
+    name: config.name,
+    search: config.search,
+    description: config.description || "A smart model",
+    datum: config.datum ?? false,
   });
 
   return {
-    DetailLink: buildModelLink<T>(to),
-    PaneLink: buildPaneLink<T>(to),
-    ListLink: buildBaseLink(to),
-    linkBuilder: linkBuilder(to),
-    listlinkBuilder: listLinkBuilder(to),
-    Smart: buildSmartModel<T>(model),
-    Drop: buildDropModel<T>(model),
-    Actions: buildSelfActions(model),
-    Knowledge: buildKnowledge(model),
-    EnhanceButton: buildEnhanceButton(model),
-    TinyKnowledge: buildTinyKnowledge(model),
-    identifier: model,
-    ModelPage: buildModelPage<T>(model),
-    ListPage: buildListPage(model),
-    useNodes: () => buildUseNodesQuery(model),
-    ObjectButton: buildObjectButton(model),
-    NewButton: buildNewButton(model),
-    useProgress: ({ object }: { object: string }) =>
-      buildUseProgress(model, { id: object }),
-    useLive: ({ object }: { object: string }) =>
-      buildUseLive(model, { id: object }),
+    DetailLink: buildModelLink<T>(path),
+    PaneLink: buildPaneLink<T>(path),
+    ListLink: buildBaseLink(path),
+    linkBuilder: linkBuilder(path),
+    Smart: buildSmartModel<T>(identifier),
+    Drop: buildDropModel<T>(identifier),
+    Actions: buildSelfActions(identifier),
+    Knowledge: buildKnowledge<T>(identifier),
+    TinyKnowledge: buildTinyKnowledge<T>(identifier),
+    identifier,
+    ModelPage: buildModelPage<T>(identifier),
+    ListPage: buildListPage(identifier),
+    ObjectButton: buildObjectButton(identifier),
+    NewButton: buildNewButton(identifier),
   };
+};
+
+export type ScopedSmartConfig = Omit<SmartConfig, "path"> & {
+  /** Where a bare id of this kind goes when no scope is known: the claim page. */
+  claimPath: string;
+  /** Where the same id goes when its scope (the graph drawing it) is known. */
+  scopedPath: (scope: string) => string;
 };
 
 /**
@@ -294,27 +286,22 @@ export const buildSmart = <T extends Object>(
  *
  * So `scope` is optional, and the fallback is the point: a call site that knows
  * its graph gets the view page; one that does not — the command palette, a drop
- * from another module, a rekuest return port — gets `claimTo`, the claim page,
+ * from another module, a rekuest return port — gets `claimPath`, the claim page,
  * which lists `drawnIn` and links onward. No caller is ever forced to invent a
  * graph, and nothing re-encodes `graph:id` back into one string, which is
  * precisely the `GraphID` scalar the backend deleted.
  */
-export const buildScopedSmart = <T extends Object>(
-  model: Identifier,
-  scopedTo: (scope: string) => string,
-  claimTo: string,
-  options?: {
-    name?: string;
-    description?: string;
-    searchFunction?: SearchFunction;
-  },
-) => {
-  const pathFor = (scope?: string) => (scope ? scopedTo(scope) : claimTo);
+export const buildScopedSmart = <T extends Object>({
+  claimPath,
+  scopedPath,
+  ...config
+}: ScopedSmartConfig) => {
+  const pathFor = (scope?: string) => (scope ? scopedPath(scope) : claimPath);
 
-  // Registers under `claimTo`: the registry answers "where does a bare id of
+  // Registers under `claimPath`: the registry answers "where does a bare id of
   // this kind go", and that is the claim page. Generic navigate/popout actions
   // resolve through it.
-  const base = buildSmart<T>(model, claimTo, options);
+  const base = buildSmart<T>({ ...config, path: claimPath });
 
   return {
     ...base,

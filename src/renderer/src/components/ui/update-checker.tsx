@@ -91,15 +91,20 @@ export const UpdateChecker: React.FC = () => {
       setShowAlert(true);
     };
 
-    // Register event listeners
-    window.updates.onStatus(handleStatus);
-    window.updates.onAvailable(handleUpdateAvailable);
-    window.updates.onNone(handleUpdateNone);
-    window.updates.onProgress(handleProgress);
-    window.updates.onError(handleError);
+    // Register event listeners; each returns its disposer.
+    const disposers = [
+      window.updates.onStatus(handleStatus),
+      window.updates.onAvailable(handleUpdateAvailable),
+      window.updates.onNone(handleUpdateNone),
+      window.updates.onProgress(handleProgress),
+      window.updates.onError(handleError),
+    ];
 
-    // Note: electron-updater doesn't provide a way to remove listeners,
-    // so we can't properly clean up. This is a limitation of the current setup.
+    return () => {
+      for (const dispose of disposers) {
+        if (typeof dispose === "function") dispose();
+      }
+    };
   }, []);
 
   const checkForUpdates = useCallback(async () => {

@@ -5,7 +5,6 @@ import { SmartModelProps } from "./types";
 import { useSmartDropZone } from "./useSmartDropZone";
 
 export const SmartDropZone = ({
-  showSelfMates: _showSelfMates = true,
   hover: _hover = false,
   className,
   ...props
@@ -14,7 +13,6 @@ export const SmartDropZone = ({
     ref,
     self,
     isOver,
-    canDrop,
     partners,
     floatingRef,
     floatingStyles,
@@ -28,12 +26,6 @@ export const SmartDropZone = ({
         "group relative over:shadow-xl over:ring-2 over:ring-gray-300 over:rounded-md can-drop:border-gray-200",
         className,
       )}
-      style={props.dropStyle?.({
-        isOver,
-        isDragging: false,
-        canDrop,
-        progress: undefined,
-      })}
     >
       {props.children}
       {isOver && <CombineButton />}

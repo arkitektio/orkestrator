@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { DragZone } from "@/components/upload/drag";
 import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
-import { useResolve } from "@/datalayer/hooks/useResolve";
 import {
   KraphStructureRelationCategory
 } from "@/linkers";
@@ -14,14 +13,13 @@ import {
   useUpdateStructureRelationCategoryMutation
 } from "../api/graphql";
 import UpdateStructureRelationCategoryForm from "../forms/UpdateStructureRelationCategoryForm";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 const Page = asDetailQueryRoute(
   useGetStructureRelationCategoryQuery,
   ({ data, refetch }) => {
     const uploadFile = useKraphMediaUpload();
     const [update] = useUpdateStructureRelationCategoryMutation();
-
-    const resolve = useResolve();
 
     const createFile = async (file: File) => {
       const response = await uploadFile(file);
@@ -75,14 +73,16 @@ const Page = asDetailQueryRoute(
             </p>
           </div>
           <div className="w-full h-full flex-row relative">
-            {data.structureRelationCategory?.image?.presignedUrl && (
-              <Image
-                src={resolve(
-                  data.structureRelationCategory?.image.presignedUrl,
+            {data.structureRelationCategory?.image && (
+              <WithKraphMediaUrl media={data.structureRelationCategory.image}>
+                {(url) => (
+                  <Image
+                    src={url}
+                    style={{ filter: "brightness(0.7)" }}
+                    className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
+                  />
                 )}
-                style={{ filter: "brightness(0.7)" }}
-                className="object-cover h-full w-full absolute top-0 left-0 rounded rounded-lg"
-              />
+              </WithKraphMediaUrl>
             )}
           </div>
         </div>

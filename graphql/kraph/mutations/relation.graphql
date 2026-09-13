@@ -1,5 +1,6 @@
 mutation AssertRelationExists($input: AssertRelationExistsInput!) {
   assertRelationExists(input: $input) {
+    pending
     assertion {
       ...Assertion
     }
@@ -12,8 +13,12 @@ mutation AssertRelationExists($input: AssertRelationExistsInput!) {
   }
 }
 
-mutation UpdateRelation($input: UpdateRelationInput!) {
-  updateRelation(input: $input) {
+# `updateRelation` is gone. A relation is not edited in place: superseding it
+# records a second assertion that retracts the old one, so both positions stay
+# on the record. The payload reports the one that now stands.
+mutation SupersedeRelation($input: SupersedeRelationInput!) {
+  supersedeRelation(input: $input) {
+    pending
     assertion {
       ...Assertion
     }
@@ -28,6 +33,7 @@ mutation UpdateRelation($input: UpdateRelationInput!) {
 
 mutation RetractRelation($id: ID!) {
   retractRelation(input: { id: $id }) {
+    pending
     assertion {
       ...Assertion
     }

@@ -1,13 +1,16 @@
 // @vitest-environment jsdom
 // (the generated `graphql.ts` enums are runtime values, and importing that
 // module pulls in the Apollo hooks barrel, which touches `window` on load)
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro-next/api/graphql";
 import {
   getAnnotationSelectionPoints,
   getWorldExtent,
+  resolveCollectionMatrix,
   worldExtentToBox3,
+  type AnnotationCollectionRef,
+  type AnnotationLayerVariant,
 } from "./annotationBounds";
 
 const annotation = (
@@ -140,5 +143,59 @@ describe("worldExtentToBox3", () => {
     );
     expect(box.min.toArray()).toEqual([0, 0, 3]);
     expect(box.max.toArray()).toEqual([10, 8, 5]);
+  });
+});
+
+describe("resolveCollectionMatrix (annotations)", () => {
+  const WORLD_CYX = {
+    id: "cs:world",
+    axes: [
+      { name: "c", type: "CHANNEL", order: 0 },
+      { name: "y", type: "SPACE", order: 1 },
+      { name: "x", type: "SPACE", order: 2 },
+    ],
+  };
+  const collection = (id: string, axes: string[]): AnnotationCollectionRef =>
+    ({
+      id,
+      coordinateSystem: { id: `cs:${id}`, axes: axes.map((name) => ({ name })) },
+    }) as unknown as AnnotationCollectionRef;
+  const layerWith = (asAffine: unknown): AnnotationLayerVariant =>
+    ({ __typename: "AnnotationLayer", id: "layer:1", asAffine }) as unknown as AnnotationLayerVariant;
+
+  it("reduces the server's asAffine, output side named by the world", () => {
+    // Drawn in (z, row, col); placed into a (y, x) world with a reflection.
+    const m = resolveCollectionMatrix(
+      layerWith({
+        matrix: [
+          [0, -2, 0, 100], // y ← row
+          [0, 0, 2, 5], // x ← col
+        ],
+        inputAxes: ["z", "row", "col"],
+        outputAxes: ["y", "x"],
+        total: false,
+      }),
+      collection("ann:rowcol", ["z", "row", "col"]),
+      { worldCoordinateSystem: WORLD_CYX },
+    );
+    expect(m.elements[0]).toBeCloseTo(2); // x ← col
+    expect(m.elements[12]).toBeCloseTo(5);
+    expect(m.elements[5]).toBeCloseTo(-2); // y ← row
+    expect(m.elements[13]).toBeCloseTo(100);
+    expect(m.elements[10]).toBe(1); // z unconstrained → identity
+  });
+
+  it("never walks pathToWorld: a null asAffine is identity, warned once", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const col = collection("ann:none", ["z", "y", "x"]);
+      const m = resolveCollectionMatrix(layerWith(null), col, { worldCoordinateSystem: WORLD_CYX });
+      expect(m.elements).toEqual([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+      resolveCollectionMatrix(layerWith(null), col, { worldCoordinateSystem: WORLD_CYX });
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("asAffine is null"));
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

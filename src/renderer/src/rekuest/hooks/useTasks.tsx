@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   TaskEventKind,
   PortKind,
-  PostmanTaskFragment,
+  LiveTaskFragment,
   useMyTasksQuery,
 } from "../api/graphql";
 
@@ -21,8 +21,10 @@ export const useTasks = () => {
 
 export const useTask = (options: { task?: string }) => {
   const { data } = useTasks();
-  const task = data?.myTasks.find(
-    (a) => a.id === options.task,
+  const tasks = data?.myTasks;
+  const task = useMemo(
+    () => tasks?.find((a) => a.id === options.task),
+    [tasks, options.task],
   );
 
   return task;
@@ -132,7 +134,7 @@ export const useLatestTask = (options: FilterOptions) => {
 };
 
 export const deriveLiveState = (
-  task: PostmanTaskFragment | undefined,
+  task: LiveTaskFragment | undefined,
 ) => {
   const latestProgress = task?.events
     .filter((x) => x.kind == TaskEventKind.Progress)

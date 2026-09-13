@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { ArgsContainer } from "@/components/widgets/ArgsContainer";
-import { ActionDescription } from "@/lib/rekuest/ActionDescription";
+import { FormActionDescription } from "@/lib/rekuest/ActionDescription";
 import { v4 as uuidv4 } from "uuid";
 import { useHooksSearchLazyQuery } from "../api/graphql";
 import { useAction } from "../hooks/useAction";
@@ -57,9 +57,9 @@ export const ActionAssignForm = (props: {
     dialog.closeDialog();
   };
 
-  const data = form.watch();
+  // Subscribing to `isValid` makes react-hook-form run the whole-form
+  // resolver on every keystroke; submit-time errors are reported per field.
   const isSubmitting = form.formState.isSubmitting;
-  const isValid = form.formState.isValid;
 
   const { registry } = useWidgetRegistry();
 
@@ -70,9 +70,9 @@ export const ActionAssignForm = (props: {
       </DialogHeader>
       <DialogDescription className="mt2">
         {action?.description && (
-          <ActionDescription
+          <FormActionDescription
             description={action?.description}
-            variables={data}
+            control={form.control}
           />
         )}
         <Form {...form}>
@@ -92,7 +92,7 @@ export const ActionAssignForm = (props: {
             />
 
             <DialogFooter>
-              <Button type="submit" variant={"outline"} disabled={!isValid}>
+              <Button type="submit" variant={"outline"} disabled={isSubmitting}>
                 {" "}
                 Do {isSubmitting && "ing"}
               </Button>

@@ -11,7 +11,6 @@ import { Card } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import ScatterPlotCard from "../components/cards/ScatterPlotCard";
 import { RenderGraphQueryTable } from "../components/renderers/table/GraphTable";
-import { CypherSidebar } from "../components/sidebars/CypherSidebar";
 import CreateScatterPlotForm from "../forms/CreateScatterPlotForm";
 
 const Page = asDetailQueryRoute(
@@ -57,9 +56,6 @@ const Page = asDetailQueryRoute(
           <Sidebars>
             <Sidebars.Tab label="Knowledge">
               <KraphGraphView.Knowledge object={{ id: data.graphTableQuery.id }} />
-            </Sidebars.Tab>
-            <Sidebars.Tab label="Cypher">
-              <CypherSidebar cypher={data.graphTableQuery.query || ""} />
             </Sidebars.Tab>
             <Sidebars.Tab label="Plots">
               <div className="px-6 py-4">

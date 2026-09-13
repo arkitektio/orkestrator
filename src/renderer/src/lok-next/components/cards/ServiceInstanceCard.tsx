@@ -1,3 +1,4 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { LokServiceInstance } from "@/linkers";
 import { ListServiceInstanceFragment } from "../../api/graphql";
@@ -20,4 +21,4 @@ const TheCard = ({ item }: Props) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

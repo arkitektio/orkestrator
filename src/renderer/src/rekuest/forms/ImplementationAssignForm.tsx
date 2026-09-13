@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { useDialog } from "@/app/dialog";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { ArgsContainer } from "@/components/widgets/ArgsContainer";
 import { useActionDescription } from "@/lib/rekuest/ActionDescription";
@@ -41,9 +41,14 @@ export const ImplementationAssignForm = (
     description: implementation?.action.description || "",
   });
 
+  const overwrites = useMemo(
+    () => ({ ...latestTask?.args, ...props.args }),
+    [latestTask?.args, props.args],
+  );
+
   const form = useImplementationForm({
     implementation: implementation,
-    overwrites: { ...latestTask?.args, ...props.args },
+    overwrites,
     reValidateMode: "onChange",
   });
 

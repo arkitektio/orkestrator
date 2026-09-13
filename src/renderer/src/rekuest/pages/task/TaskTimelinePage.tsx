@@ -9,7 +9,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { ChildTaskUpdater } from "@/rekuest/components/updaters/ChildTaskUpdater";
 import { GanttTimeline } from "@/rekuest/components/timeline/GanttTimeline";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { useReassign } from "@/rekuest/hooks/useReassign";
 import { isCancelable, isInterruptable } from "@/rekuest/lib/taskStatus";
 

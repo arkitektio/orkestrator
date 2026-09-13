@@ -2,6 +2,7 @@ import { DisplayWidgetProps } from "@/lib/display/registry";
 import { KraphProtocolEventCategory } from "@/linkers";
 import { TermBadge } from "../components/TermBadge";
 import { useGetProtocolEventCategoryQuery } from "../api/graphql";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 export const ProtocolEventCategoryDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetProtocolEventCategoryQuery({ variables: { id: props.object } });
@@ -28,8 +29,12 @@ export const ProtocolEventCategoryDisplay = (props: DisplayWidgetProps) => {
   return (
     <KraphProtocolEventCategory.DetailLink object={{ id: props.object }}>
       <div className="w-full rounded-lg border border-border/60 bg-card p-3 space-y-1">
-        {cat.image?.presignedUrl && (
-          <img src={cat.image.presignedUrl} alt={cat.label} className="w-full h-20 object-cover rounded" />
+        {cat.image && (
+          <WithKraphMediaUrl media={cat.image}>
+            {(url) => (
+              <img src={url} alt={cat.label} loading="lazy" height={80} className="w-full h-20 object-cover rounded" />
+            )}
+          </WithKraphMediaUrl>
         )}
         <div className="font-semibold text-sm">{cat.label}</div>
         <TermBadge term={cat.term} />

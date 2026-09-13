@@ -1,12 +1,24 @@
 # One executable answer to "what is under this point?" — the read side of a
 # FIELD edge. The server returns instructions (which array to sample, which
-# parquet to query), never values, credentials, or coordinates: the same plan
-# serves every probed point, so it is fetched once and executed locally.
+# parquet or matrix to read, in which order), never values, credentials, or
+# coordinates: the same plan serves every probed point, so it is fetched once
+# and executed locally.
+#
+# A plan is a CHAIN of hops. `hops[0]` is the landing — the table or matrix the
+# FIELD edge's id keys, bound from `sample`. Every later hop crosses one
+# declared reference from its `parent` (a `Column.references`, a matrix axis a
+# table identifies, or the same axis walked into the matrix) and is bound from
+# what the parent returned. The server describes the chain and reads nothing;
+# the client runs it hop by hop with grants it already holds. There is no SQL
+# in a plan any more: a TABLE lookup is `keyColumns` + `attributes`, and the
+# statement is derived from them locally (`lib/attributes/planSql.ts`).
 
-# A column as the lookup returns it. `references` is a declared foreign key:
-# the target table is keyed by its single INDEX coordinate column, and we
-# select enough of it (store + columns) to run the one-hop follow-up lookup
-# without another GraphQL round-trip.
+# A column as a lookup returns it. `references` is a declared foreign key: the
+# target table is keyed by its single INDEX coordinate column, and we select
+# enough of it (store + columns) to run the one-hop follow-up lookup the HUD
+# offers on expand without another GraphQL round-trip. (A plan's own later
+# hops cross the same fact eagerly; the expand stays for hops the user left
+# switched off.)
 fragment AttributePlanColumn on Column {
   id
   name
@@ -31,6 +43,107 @@ fragment AttributePlanColumn on Column {
   }
 }
 
+# The matrix a SPARSE hop lands in. `axisReferences` says which table names
+# the positions along a value axis — the same fact the plan's next hop
+# crosses, kept here so a hop the user switched off can still be labelled.
+fragment AttributePlanSparseDataset on SparseDataset {
+  id
+  name
+  axisNames
+  shape
+  axisReferences {
+    axis
+    references {
+      id
+      name
+    }
+  }
+}
+
+fragment AttributePlanHop on Hop {
+  index
+  parent
+  # ONE: bind each key as a scalar. MANY: bind a list (every position a
+  # SPARSE parent returned) and expect the keys back per row.
+  cardinality
+  # The declared reference this hop crosses; null on the landing, whose
+  # crossing is the plan's `edge`. Whichever of `column`/`axis` is set is the
+  # name the hop's lookup binds under.
+  via {
+    column {
+      id
+      name
+      longName
+      role
+      axisType
+    }
+    axis
+  }
+  table {
+    id
+    name
+  }
+  sparseDataset {
+    ...AttributePlanSparseDataset
+  }
+  # The picker's name for this hop (`colorBys[].joinPath`); empty on the
+  # landing and once the chain has crossed a matrix.
+  joinPath {
+    table {
+      id
+      name
+    }
+    column {
+      id
+      name
+    }
+  }
+  lookup {
+    # `TABLE` (rows of a parquet) or `SPARSE` (one object's whole profile, a
+    # slice of the object-major layout). The fields of the other shape are
+    # null — a flat discriminator, not an interface.
+    kind
+    # (TABLE) The parquet store. Ask it for an accessGrant to read it.
+    store {
+      ...ParquetStore
+    }
+    # (TABLE) Bind order after the parquet path: these, in order. `axis` is
+    # the name the worker holds the value under — a sampled/passthrough axis
+    # on the landing, the parent's column or axis name on a later hop.
+    keyColumns {
+      axis
+      column {
+        ...AttributePlanColumn
+      }
+    }
+    # (TABLE) What the statement selects — every declared non-coordinate
+    # column, never `*`.
+    attributes {
+      ...AttributePlanColumn
+    }
+    # (SPARSE) The layout to open: `path` within `store`'s prefix names which
+    # of the store's `layouts` this is (both layouts share the prefix).
+    sparseArray {
+      id
+      indexedAxis
+      indexedAxisName
+      path
+      store {
+        ...SparseStoreRead
+      }
+    }
+    # (SPARSE) The axis the held id binds — always the one `sparseArray`'s
+    # `indptr` indexes, which is what makes the read one contiguous range.
+    keyAxis
+    # (SPARSE) The name the worker holds that id under: `keyAxis` on a
+    # landing, the parent row's column name on a hop into a matrix.
+    keyHeld
+    # (SPARSE) What comes back is indexed by: one axis at rank two, two at
+    # rank three (unravelled through the layout's `indexOrder`).
+    valueAxes
+  }
+}
+
 fragment AttributePlan on AttributePlan {
   # The FIELD edge the plan was built from. Its (id, version) — together with
   # every path step's — is the plan's only staleness vector: parquet contents
@@ -38,10 +151,6 @@ fragment AttributePlan on AttributePlan {
   edge {
     id
     version
-  }
-  table {
-    id
-    name
   }
   # Steps from the PROBED system to the plan's root; compose in order,
   # inverting flagged steps (the pathToWorld contract). `version` is added on
@@ -92,21 +201,8 @@ fragment AttributePlan on AttributePlan {
       }
     }
   }
-  lookup {
-    store {
-      ...ParquetStore
-    }
-    # Bind order: parquet path first (the read_parquet(?) argument), then these
-    # key values in order.
-    keyColumns {
-      axis
-      column {
-        ...AttributePlanColumn
-      }
-    }
-    attributes {
-      ...AttributePlanColumn
-    }
-    sql
+  # The chain, in execution order; a hop's parent always precedes it.
+  hops {
+    ...AttributePlanHop
   }
 }

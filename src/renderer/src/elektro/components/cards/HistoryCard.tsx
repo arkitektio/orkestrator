@@ -1,3 +1,4 @@
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -9,7 +10,7 @@ import {
 import { RekuestTask } from "@/linkers";
 import { AppInfo } from "@/lok-next/components/protected/AppInfo";
 import { UserInfo } from "@/lok-next/components/protected/UserInfo";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
 
 interface HistoryCardProps {
@@ -75,4 +76,4 @@ const HistoryCard = ({ history }: HistoryCardProps) => {
   );
 };
 
-export default HistoryCard;
+export default React.memo(HistoryCard);

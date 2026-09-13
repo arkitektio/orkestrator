@@ -21,7 +21,7 @@ const List = (_props: Props) => {
       }
       refetch={refetch}
     >
-      {(ex, index) => <TraceCard key={index} item={ex} />}
+      {(ex) => <TraceCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

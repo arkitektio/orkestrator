@@ -1,20 +1,15 @@
-import { EnhanceButton } from "@/alpaka/components/EnhanceButton";
 import { Guard } from "@/app/Arkitekt";
 import { ListPageLayout } from "@/components/layout/ListPageLayout";
 import { ModelPageLayout } from "@/components/layout/ModelPageLayout";
 import { PageVariant } from "@/components/layout/PageLayout";
 import {
   configureSmartBuilder,
-  SmartEnhanceButtonProps,
   SmartListPageProps,
   SmartModelPage,
   SmartNewButtonProps,
   SmartObjectButtonProps,
 } from "@/providers/smart/buildSmartAdapters";
 import { ObjectButton } from "@/providers/smart/extensions/context";
-import { usePrimaryActionsQuery } from "@/rekuest/api/graphql";
-import { useLiveTask } from "@/rekuest/hooks/useTasks";
-import { useAssignProgress } from "@/rekuest/hooks/useAssignProgress";
 import { ComponentType, ReactNode } from "react";
 import { KnowledgeSidebar } from "@/kraph/components/sidebars/KnowledgeSidebar";
 import ArrayDatasetHoverCard from "@/mikro-next/components/hovers/ArrayDatasetHoverCard";
@@ -134,27 +129,5 @@ configureSmartBuilder({
   },
   renderNewButton: ({ identifier, ...props }: SmartNewButtonProps & { identifier: string }) => {
     return <ObjectButton returns={[identifier]} objects={[]} {...props} />;
-  },
-  renderEnhanceButton: ({ identifier, ...props }: SmartEnhanceButtonProps & { identifier: string }) => {
-    return <EnhanceButton identifier={identifier} object={props.object} />;
-  },
-  useNodes: (identifier) => {
-    return usePrimaryActionsQuery({
-      variables: {
-        identifier,
-      },
-    });
-  },
-  useProgress: (identifier, object) => {
-    return useAssignProgress({
-      identifier,
-      object: object.id,
-    });
-  },
-  useLive: (identifier, object) => {
-    return useLiveTask({
-      identifier,
-      object: object.id,
-    });
   },
 });

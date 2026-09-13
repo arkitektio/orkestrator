@@ -15,7 +15,7 @@ import {
   DeleteMeasurementCategoryDocument,
   DeleteNaturalEventCategoryDocument,
   DeleteProtocolEventCategoryDocument,
-  LinkStructureToEntityDocument,
+  AssertInformsDocument,
 } from "./api/graphql";
 import { Link2, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
 
@@ -81,7 +81,7 @@ export const LinkStructureToEntityAction: Action = {
 
     for (const structure of structures) {
       await client.mutate({
-        mutation: LinkStructureToEntityDocument,
+        mutation: AssertInformsDocument,
         variables: {
           input: {
             structureIdentifier: String(structure.object.identifier ?? structure.identifier),

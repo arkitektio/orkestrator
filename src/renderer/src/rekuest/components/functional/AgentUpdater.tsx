@@ -1,11 +1,9 @@
 import { useRekuest } from "@/app/Arkitekt";
-import type { ApolloClient } from "@apollo/client";
+import type { ApolloClient, Reference } from "@apollo/client";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import {
   AgentChangeFragment,
-  AgentsDocument,
-  AgentsQuery,
   HydrateAgentDocument,
   HydrateAgentQuery,
   HydrateAgentQueryVariables,
@@ -60,10 +58,22 @@ const hydrateAndInsertAgent = async (client: RekuestClient, id: string) => {
   }
   if (!agent) return;
 
-  client.cache.updateQuery<AgentsQuery>({ query: AgentsDocument }, (data) => {
-    if (!data) return { agents: [agent!] };
-    if (data.agents.some((a) => a.id === agent!.id)) return data;
-    return { agents: data.agents.concat([agent!]) };
+  // `cache.modify` on the root field reaches EVERY cached `agents(...)`
+  // variant (the list pages query with pagination variables). `updateQuery`
+  // without variables only touched the unpaginated entry, which nothing
+  // displays.
+  const hydrated = agent;
+  client.cache.modify({
+    fields: {
+      agents(existing, { readField, toReference }) {
+        const list: readonly Reference[] = Array.isArray(existing) ? existing : [];
+        if (list.some((ref) => readField("id", ref) === hydrated.id)) {
+          return list;
+        }
+        const ref = toReference(hydrated, true);
+        return ref ? [...list, ref] : list;
+      },
+    },
   });
 };
 
@@ -83,7 +93,6 @@ export const AgentUpdater = (_props: {}) => {
 
   useEffect(() => {
     if (client) {
-      console.log("Subscribing to Postman Agents");
       const subscription = client
         ?.subscribe<WatchAgentsSubscription, WatchAgentsSubscriptionVariables>({
           query: WatchAgentsDocument,
@@ -110,13 +119,14 @@ export const AgentUpdater = (_props: {}) => {
           }
 
           if (deleted) {
-            client.cache.updateQuery<AgentsQuery>(
-              { query: AgentsDocument },
-              (data) =>
-                data
-                  ? { agents: data.agents.filter((a) => a.id !== deleted) }
-                  : data,
-            );
+            client.cache.modify({
+              fields: {
+                agents(existing, { readField }) {
+                  const list: readonly Reference[] = Array.isArray(existing) ? existing : [];
+                  return list.filter((ref) => readField("id", ref) !== deleted);
+                },
+              },
+            });
           }
         });
 

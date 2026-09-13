@@ -258,7 +258,6 @@ export const ReactiveTrackNodeWidget: React.FC<ReactiveNodeProps> = ({
   const latestEvent = useLatestNodeEvent(id);
 
   const Shape = shapeForImplementation(data.implementation);
-  console.log("SHAPE", data.implementation, Shape);
 
 
   return (

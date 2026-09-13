@@ -21,7 +21,7 @@ export type BlokPreflightResult = {
   errors: BlokValidationError[];
 };
 
-const isRequiredField = (fieldSchema: z.ZodTypeAny): boolean =>
+export const isRequiredField = (fieldSchema: z.ZodTypeAny): boolean =>
   fieldSchema.safeParse(undefined).success === false;
 
 /**

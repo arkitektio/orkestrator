@@ -25,7 +25,7 @@ const List = (_props: Props) => {
       }
       refetch={() => refetch()}
     >
-      {(ex, index) => <DashboardCard key={index} item={ex} />}
+      {(ex) => <DashboardCard key={ex.id} item={ex} />}
     </ListRender>
   );
 };

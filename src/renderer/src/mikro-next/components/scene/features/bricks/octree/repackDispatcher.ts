@@ -17,8 +17,14 @@ import type { RepackWorkerRequest, RepackWorkerResponse } from "./repack-worker"
  *   construction-failure safety net; behaviorally identical because both call
  *   the same pure, golden-buffer-tested `repackBrick`.
  *
- * No cancellation: jobs are a few ms; out-of-plan results are landed into
- * free slots (or counted as `planDrops`) by `drainUploads`.
+ * Scheduling: a job goes to an IDLE worker, else the least-loaded one under
+ * `MAX_IN_FLIGHT_PER_WORKER`, else it waits in a FIFO here. Round-robin used
+ * to post to the next worker regardless of load, so a brick could queue in a
+ * busy worker's mailbox while a sibling sat idle (head-of-line blocking: the
+ * measured 80 ms wall vs ~13 ms exec). Jobs in flight on a worker cannot be
+ * recalled — jobs are a few ms and out-of-plan results are landed into free
+ * slots (or counted as `planDrops`) by `drainUploads` — but a job still in
+ * this dispatcher's queue is dropped, not posted, if its `signal` aborts.
  */
 
 export type RepackJob = {
@@ -26,6 +32,10 @@ export type RepackJob = {
   /** storedX·storedY·storedZ·channelCount — the output brick's length. */
   elementCount: number;
   input: Omit<RepackBrickInput, "output">;
+  /** Optional: abort while the job is still queued here drops it (rejects
+   * with an AbortError) instead of posting it to a worker. Once posted the
+   * worker runs it regardless, exactly as before. */
+  signal?: AbortSignal;
 };
 
 export type RepackOutcome = RepackResult & { data: BrickArray };
@@ -140,7 +150,7 @@ export function createBufferFreeList(maxBuffers: number = MAX_FREE_BUFFERS) {
  * small pool suffices; but the fetch pipeline (12 in-flight bricks) queues
  * here, and an undersized pool inflates per-brick WALL time (measured 80 ms
  * wall vs ~13 ms exec on an M2 with 2 workers). Scale mildly with cores. */
-const REPACK_WORKER_COUNT = Math.min(
+export const REPACK_WORKER_COUNT = Math.min(
   4,
   Math.max(
     2,
@@ -150,107 +160,218 @@ const REPACK_WORKER_COUNT = Math.min(
   ),
 );
 
+/**
+ * Jobs a worker may hold at once. Two, not one: a repack is a few ms, and
+ * with exactly one in flight the worker idles for a main-thread hop (the
+ * completion message, then the next post — behind whatever frame work the UI
+ * thread is doing) between every brick. A second job queued at the worker
+ * covers that gap; a third would just reintroduce head-of-line blocking. The
+ * fetch pipeline keeps up to 12 bricks in flight, so the dispatcher's own
+ * queue still absorbs the rest and hands each out to the first worker that
+ * comes under the cap.
+ */
+export const MAX_IN_FLIGHT_PER_WORKER = 2;
+
 type Pending = {
   resolve: (outcome: RepackOutcome) => void;
   reject: (error: Error) => void;
   kind: AtlasKind;
+  slot: WorkerSlot;
 };
 
-function createWorkerRepackDispatcher(): RepackDispatcher {
+type WorkerSlot = { worker: Worker; inFlight: number };
+
+type Queued = {
+  id: number;
+  job: RepackJob;
+  resolve: (outcome: RepackOutcome) => void;
+  reject: (error: Error) => void;
+  /** Detaches the abort listener; set when the job carries a signal. */
+  unlisten: (() => void) | null;
+};
+
+const abortError = (): Error => {
+  if (typeof DOMException !== "undefined") return new DOMException("Aborted", "AbortError");
+  const error = new Error("Aborted");
+  error.name = "AbortError";
+  return error;
+};
+
+export type WorkerRepackDispatcherOptions = {
+  /** Worker factory — production spawns the bundled `repack-worker`; tests
+   * inject fakes. Must throw when workers are unavailable. */
+  spawn?: () => Worker;
+  workerCount?: number;
+  maxInFlightPerWorker?: number;
+};
+
+const spawnRepackWorker = (): Worker =>
+  // Single-expression `new Worker(new URL(...))` so the bundler detects
+  // and bundles the worker entry (same pattern as the zarr codec worker).
+  new Worker(new URL("./repack-worker.js", import.meta.url), { type: "module" });
+
+/** Exported for the fake-worker scheduling tests; production goes through
+ * `createRepackDispatcher`. */
+export function createWorkerRepackDispatcher(
+  options: WorkerRepackDispatcherOptions = {},
+): RepackDispatcher {
+  const spawn = options.spawn ?? spawnRepackWorker;
+  const workerCount = Math.max(1, options.workerCount ?? REPACK_WORKER_COUNT);
+  const maxInFlight = Math.max(1, options.maxInFlightPerWorker ?? MAX_IN_FLIGHT_PER_WORKER);
+
   // Lazy: no worker exists until the first brick repacks.
-  const workers: Worker[] = [];
+  const slots: WorkerSlot[] = [];
   const pending = new Map<number, Pending>();
+  const queue: Queued[] = [];
   const freeList = createBufferFreeList();
   let nextId = 1;
-  let nextWorker = 0;
   let disposed = false;
+  /** Set once `spawn` throws: no further attempts, the live pool (if any)
+   * carries on, and with no pool at all jobs run inline. */
+  let spawnBroken = false;
+
+  const settle = (id: number): Pending | undefined => {
+    const entry = pending.get(id);
+    if (!entry) return undefined;
+    pending.delete(id);
+    entry.slot.inFlight -= 1;
+    return entry;
+  };
 
   const handleMessage = (event: MessageEvent<RepackWorkerResponse>) => {
     const response = event.data;
-    const entry = pending.get(response.id);
+    const entry = settle(response.id);
     if (!entry) return;
-    pending.delete(response.id);
     if ("error" in response) {
       entry.reject(new Error(response.error));
-      return;
+    } else {
+      const data: BrickArray =
+        entry.kind === "r8" || entry.kind === "rgba8"
+          ? new Uint8Array(response.buffer)
+          : entry.kind === "r16f"
+            ? new Uint16Array(response.buffer)
+            : new Float32Array(response.buffer);
+      entry.resolve({
+        min: response.min,
+        max: response.max,
+        uniformValue: response.uniformValue,
+        slabRanges: response.slabMin.map((lo, s) => [lo, response.slabMax[s]] as const),
+        data,
+      });
     }
-    const data: BrickArray =
-      entry.kind === "r8" || entry.kind === "rgba8"
-        ? new Uint8Array(response.buffer)
-        : entry.kind === "r16f"
-          ? new Uint16Array(response.buffer)
-          : new Float32Array(response.buffer);
-    entry.resolve({
-      min: response.min,
-      max: response.max,
-      uniformValue: response.uniformValue,
-      slabRanges: response.slabMin.map((lo, s) => [lo, response.slabMax[s]] as const),
-      data,
-    });
+    pump();
   };
 
-  const acquireWorker = (): Worker => {
-    if (workers.length < REPACK_WORKER_COUNT) {
-      // Single-expression `new Worker(new URL(...))` so the bundler detects
-      // and bundles the worker entry (same pattern as the zarr codec worker).
-      const worker = new Worker(new URL("./repack-worker.js", import.meta.url), {
-        type: "module",
-      });
+  const failAllInFlight = (error: Error) => {
+    for (const [id, entry] of [...pending]) {
+      pending.delete(id);
+      entry.reject(error);
+    }
+    for (const slot of slots) slot.inFlight = 0;
+  };
+
+  const trySpawn = (): WorkerSlot | null => {
+    if (spawnBroken || slots.length >= workerCount) return null;
+    try {
+      const worker = spawn();
       worker.onmessage = handleMessage;
       worker.onerror = (event) => {
         // A worker-level error fails every job in flight on this dispatcher —
         // simplest correct behavior; callers count it as a fetch error and the
-        // brick is re-planned like any other failed fetch.
-        const error = new Error(`repack worker error: ${event.message}`);
-        for (const [id, entry] of [...pending]) {
-          pending.delete(id);
-          entry.reject(error);
-        }
+        // brick is re-planned like any other failed fetch. Queued jobs are
+        // untouched and go out on the next pump.
+        failAllInFlight(new Error(`repack worker error: ${event.message}`));
+        pump();
       };
-      workers.push(worker);
-      return worker;
+      const slot = { worker, inFlight: 0 };
+      slots.push(slot);
+      return slot;
+    } catch {
+      spawnBroken = true;
+      return null;
     }
-    const worker = workers[nextWorker];
-    nextWorker = (nextWorker + 1) % workers.length;
-    return worker;
+  };
+
+  /** An idle worker, else a fresh one while the pool is under size, else the
+   * least-loaded one under the cap, else null (queue). */
+  const pickSlot = (): WorkerSlot | null => {
+    let best: WorkerSlot | null = null;
+    for (const slot of slots) {
+      if (slot.inFlight === 0) return slot;
+      if (slot.inFlight < maxInFlight && (best === null || slot.inFlight < best.inFlight)) best = slot;
+    }
+    return trySpawn() ?? best;
+  };
+
+  const post = (slot: WorkerSlot, queued: Queued) => {
+    const { id, job } = queued;
+    pending.set(id, { resolve: queued.resolve, reject: queued.reject, kind: job.kind, slot });
+    slot.inFlight += 1;
+    // The free-list buffer is taken at POST time, not enqueue time, so a
+    // queued job never pins one.
+    const recycled = freeList.take(repackOutputBytes(job));
+    const request: RepackWorkerRequest = {
+      id,
+      kind: job.kind,
+      elementCount: job.elementCount,
+      input: job.input,
+      recycled,
+    };
+    // Only `recycled` transfers; SAB-backed chunks stay shared and the
+    // rare non-SAB chunk structured-clones, exactly as before.
+    slot.worker.postMessage(request, recycled ? [recycled] : []);
+  };
+
+  const pump = () => {
+    if (disposed) return;
+    while (queue.length > 0) {
+      const slot = pickSlot();
+      if (!slot) return;
+      const queued = queue.shift()!;
+      queued.unlisten?.();
+      post(slot, queued);
+    }
   };
 
   return {
     prewarm: () => {
       if (disposed) return;
-      // Idempotent by construction: acquireWorker only creates while the pool
-      // is under REPACK_WORKER_COUNT, and round-robins once it is full.
-      try {
-        while (workers.length < REPACK_WORKER_COUNT) acquireWorker();
-      } catch {
-        // Worker construction unavailable — repack falls back to the sync path
-        // per job, exactly as it does today.
+      // Idempotent: trySpawn only creates while the pool is under size, and
+      // gives up for good once construction fails.
+      while (trySpawn()) {
+        /* fill the pool */
       }
     },
     repack: (job) => {
       if (disposed) return Promise.reject(new Error("repack dispatcher disposed"));
-      let worker: Worker;
-      try {
-        worker = acquireWorker();
-      } catch {
-        // Worker construction failed (constructor is lazy, so this is where a
-        // missing/blocked Worker surfaces) — run the same pure repack inline.
+      if (job.signal?.aborted) return Promise.reject(abortError());
+      if (slots.length === 0 && !trySpawn()) {
+        // Worker construction failed (the constructor is lazy, so this is
+        // where a missing/blocked Worker surfaces) — run the same pure repack
+        // inline.
         return createSyncRepackDispatcher().repack(job);
       }
       const id = nextId++;
       return new Promise<RepackOutcome>((resolve, reject) => {
-        pending.set(id, { resolve, reject, kind: job.kind });
-        const recycled = freeList.take(repackOutputBytes(job));
-        const request: RepackWorkerRequest = {
-          id,
-          kind: job.kind,
-          elementCount: job.elementCount,
-          input: job.input,
-          recycled,
-        };
-        // Only `recycled` transfers; SAB-backed chunks stay shared and the
-        // rare non-SAB chunk structured-clones, exactly as before.
-        worker.postMessage(request, recycled ? [recycled] : []);
+        const queued: Queued = { id, job, resolve, reject, unlisten: null };
+        const slot = queue.length === 0 ? pickSlot() : null;
+        if (slot) {
+          post(slot, queued);
+          return;
+        }
+        if (job.signal) {
+          const signal = job.signal;
+          const onAbort = () => {
+            const index = queue.indexOf(queued);
+            if (index === -1) return; // already posted
+            queue.splice(index, 1);
+            queued.unlisten?.();
+            reject(abortError());
+          };
+          signal.addEventListener("abort", onAbort, { once: true });
+          queued.unlisten = () => signal.removeEventListener("abort", onAbort);
+        }
+        queue.push(queued);
       });
     },
     release: (data) => {
@@ -260,12 +381,13 @@ function createWorkerRepackDispatcher(): RepackDispatcher {
     dispose: () => {
       disposed = true;
       const error = new Error("repack dispatcher disposed");
-      for (const [id, entry] of [...pending]) {
-        pending.delete(id);
-        entry.reject(error);
+      failAllInFlight(error);
+      for (const queued of queue.splice(0)) {
+        queued.unlisten?.();
+        queued.reject(error);
       }
-      for (const worker of workers) worker.terminate();
-      workers.length = 0;
+      for (const slot of slots) slot.worker.terminate();
+      slots.length = 0;
       freeList.clear();
     },
   };

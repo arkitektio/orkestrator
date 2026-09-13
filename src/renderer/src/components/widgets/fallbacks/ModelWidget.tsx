@@ -1,40 +1,24 @@
-import { AssignWidgetFragment, PortKind } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
-import { InputWidgetProps, MappablePort, Port } from "@/rekuest/widgets/types";
+import { notEmpty } from "@/lib/utils";
+import { PortKind } from "@/rekuest/api/graphql";
+import { InputWidgetProps } from "@/rekuest/widgets/types";
+import { pathToName } from "@/rekuest/widgets/utils";
 import React from "react";
+import { ChildWidget } from "../ChildWidget";
 
-export type UnionValue = {
-  use: number;
-  value: any;
-};
-
-const ModelWidget: React.FC<InputWidgetProps> = ({
-  port,
-  path,
-  bound,
-}) => {
+const ModelWidget: React.FC<InputWidgetProps> = ({ port, path, bound, options }) => {
+  const pathKey = pathToName(path);
   return (
     <>
-      {port.children?.map((port) => {
-        const Widget = useWidgetRegistry().registry.getInputWidgetForPort(
-          port as unknown as MappablePort,
-        );
-
-        return (
-          <Widget
-            port={
-              {
-                ...port,
-                __typename: "Port",
-              } as unknown as Port
-            }
-            path={path.concat(port.key)}
-            widget={port.widget as unknown as AssignWidgetFragment}
-            bound={bound}
-            parentKind={PortKind.Model}
-          />
-        );
-      })}
+      {port.children?.filter(notEmpty).map((child) => (
+        <ChildWidget
+          key={child.key}
+          child={child}
+          pathKey={`${pathKey}.${child.key}`}
+          parentKind={PortKind.Model}
+          bound={bound}
+          options={options}
+        />
+      ))}
     </>
   );
 };

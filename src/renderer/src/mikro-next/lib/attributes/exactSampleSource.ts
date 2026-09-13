@@ -1,5 +1,6 @@
 import { open, type Array as ZarrArray, type DataType } from "zarrita";
 import { getChunkWorker } from "@/lib/zarr/runner";
+import { ByteBudgetChunkCache } from "@/lib/zarr/caches/byteBudgetChunkCache";
 import { INTERACTIVE_FETCH_PRIORITY } from "@/lib/zarr/pool/types";
 import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
 import type { MikroClient, ZarrStore } from "@/lib/zarr/store/types";
@@ -24,6 +25,12 @@ import { readTypedValue } from "./sampleSource";
  *
  * Requires SharedArrayBuffer (cross-origin isolation) for the worker read.
  */
+
+// Probed chunks are promoted (float32) and the scene's pool budget knows nothing
+// about them, so they get their own byte-bounded cache rather than the runner's
+// shared default — a probe sweep must not evict what a one-off reader holds.
+const PROBE_CHUNK_CACHE_BYTES = 128 * 1024 * 1024;
+const PROBE_CHUNK_CACHE = new ByteBudgetChunkCache(PROBE_CHUNK_CACHE_BYTES);
 
 export type OpenedZarrArray = ZarrArray<DataType, ZarrStore>;
 
@@ -112,6 +119,7 @@ export function createExactSampler(options: ExactSamplerOptions): ExactSampler {
         pool: workerPool,
         priority: INTERACTIVE_FETCH_PRIORITY,
         useSharedArrayBuffer: true,
+        cache: PROBE_CHUNK_CACHE,
       });
       const flat = index.reduce(
         (acc, v, d) => acc + (v - chunkCoords[d] * chunkShape[d]) * (chunk.stride[d] ?? 0),

@@ -3,49 +3,25 @@ import { ContainerGrid } from "@/components/layout/ContainerGrid";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TooltipButton } from "@/components/ui/tooltip-button";
-import { ArgChildPortFragment, AssignWidgetFragment, PortKind } from "@/rekuest/api/graphql";
-import { usePortValidate } from "@/rekuest/hooks/usePortValidator";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
-import { InputWidgetProps, MappablePort, Port } from "@/rekuest/widgets/types";
+import { ArgChildPortFragment, PortKind } from "@/rekuest/api/graphql";
+import { InputWidgetProps } from "@/rekuest/widgets/types";
 import { pathToName } from "@/rekuest/widgets/utils";
 import { Plus, X } from "lucide-react";
 import { useFieldArray, useFormContext } from "react-hook-form";
-
-const RenderDownWidget = ({
-  port,
-  path,
-  bound,
-}: {
-  port: ArgChildPortFragment;
-  path: string[];
-  bound?: string;
-}) => {
-  const { registry } = useWidgetRegistry();
-  const Widget = registry.getInputWidgetForPort(port as unknown as MappablePort);
-
-  return (
-    <div className="mt-2">
-      <Widget
-        port={{ ...port, __typename: "Port" } as unknown as Port}
-        parentKind={PortKind.Dict}
-        widget={port.widget as unknown as AssignWidgetFragment}
-        bound={bound}
-        path={path}
-      />
-    </div>
-  );
-};
+import { ChildWidget } from "../ChildWidget";
 
 export const SideBySideWidget = ({
   valuetype,
   path,
   bound,
+  options,
 }: InputWidgetProps & { valuetype: ArgChildPortFragment }) => {
   const control = useFormContext().control;
+  const name = pathToName(path);
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: pathToName(path),
+    name,
   });
 
   return (
@@ -57,20 +33,22 @@ export const SideBySideWidget = ({
             className="p-3 relative overflow-visible focus-within:z-50"
           >
             <StringField
-              name={pathToName(path.concat(index.toString(), "__key"))}
+              name={`${name}.${index}.__key`}
               label="The Key"
               description="The key of this entry"
             />
-            <RenderDownWidget
-              port={valuetype}
-              path={path.concat(index.toString(), "__value")}
+            <ChildWidget
+              child={valuetype}
+              pathKey={`${name}.${index}.__value`}
+              parentKind={PortKind.Dict}
               bound={bound}
+              options={options}
             />
             <Button
               variant="outline"
               size={"icon"}
               className="absolute top-0 right-0 mr-2 mt-2"
-              onClick={() => remove(index)}
+              onClick={(e) => { remove(index); e.preventDefault(); }}
             >
               <X />
             </Button>
@@ -79,7 +57,7 @@ export const SideBySideWidget = ({
         <TooltipButton
           variant="outline"
           size="icon"
-          onClick={() => append({ __value: undefined })}
+          onClick={(e) => { append({ __key: "", __value: undefined }); e.preventDefault(); }}
           tooltip="Add new item"
         >
           <Plus />
@@ -90,8 +68,6 @@ export const SideBySideWidget = ({
 };
 
 export const DictWidget = (props: InputWidgetProps) => {
-  usePortValidate(props.port);
-
   if (!props.port.children) {
     return <>Faulty port config. no children</>;
   }

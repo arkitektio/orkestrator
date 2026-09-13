@@ -193,7 +193,7 @@ export const PageLayout = ({
               <ButtonGroup className="flex-initial">
                 <Button variant="ghost" onClick={togglePageSidebar} className="!pl-2 !pr-2 my-auto"><PanelRight /></Button>
                 <DropdownMenu>
-                  <DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="!pl-2 !pr-2">
                       <ChevronDownIcon />
                     </Button>

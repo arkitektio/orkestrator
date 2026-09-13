@@ -23,23 +23,30 @@ import {
   Table2,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  ProjectionMode,
+  Blending,
+  ColorMap,
   ColumnRole,
+  PhasorColorMode,
+  ProjectionMode,
   useAddLayerLensCapabilitiesQuery,
+  useAddLayerLineageQuery,
   useAddLayerReachableQuery,
+  useAddLayerWorldGraphQuery,
   useCreateAnnotationLayerMutation,
   useCreateIntensityLayerMutation,
   useCreateLabelLayerMutation,
-  useCreateVectorLayerMutation,
   useCreateMeshLayerMutation,
   useCreateNetworkLayerMutation,
+  useCreatePhasorLayerMutation,
   useCreatePointLayerMutation,
   useCreateRgbLayerMutation,
   useCreateTrackLayerMutation,
+  useCreateVectorLayerMutation,
   useCreateVolumeLayerMutation,
+  useGetLensPhasorQuery,
 } from "../api/graphql";
 import {
   AnnotationEntry,
@@ -58,6 +65,20 @@ import {
   TableKind,
   buildSections,
 } from "./addLayer/candidates";
+import {
+  stagedFromLayers,
+  suggestLensKinds,
+  suggestTableKinds,
+  type Evidence,
+  type LensSuggestion,
+  type Relation,
+} from "./addLayer/engine";
+import {
+  graphFromComponent,
+  graphFromLineage,
+  mergeGraphs,
+  type DerivationGraph,
+} from "./addLayer/spaceGraph";
 
 // The mutation options every layer creation submits with: the scene view
 // reinitializes its stores when the GetScene result changes, so the new layer
@@ -88,17 +109,65 @@ const SpaceCaption = (props: { space: SpaceRef }) =>
   );
 
 /**
+ * Why the engine chose what it chose: one line per piece of evidence for the
+ * chosen kind, then what it saw but could not act on — a lineage that says
+ * "mask" where the server will not draw one, or a parent it has not reached
+ * yet. Muted, because it is a justification and not a control.
+ */
+const EvidenceList = (props: {
+  evidence: readonly Evidence[];
+  notes: readonly Evidence[];
+  loading?: boolean;
+}) => {
+  if (!props.evidence.length && !props.notes.length && !props.loading) return null;
+  return (
+    <ul className="flex flex-col gap-0.5 border-t border-input pt-2 text-xs text-muted-foreground">
+      {props.evidence.map((item, index) => (
+        <li key={`${item.rule}-${index}`} className="flex gap-1.5">
+          <span aria-hidden className="text-primary/70">·</span>
+          <span>{item.summary}</span>
+        </li>
+      ))}
+      {props.notes.map((item, index) => (
+        <li key={`note-${item.rule}-${index}`} className="flex gap-1.5 italic">
+          <span aria-hidden>·</span>
+          <span>
+            {item.summary}
+            {item.kind && item.kind in LAYER_KIND_INFO
+              ? ` — but it cannot be drawn as ${LAYER_KIND_INFO[item.kind as LayerKind].title.toLowerCase()} here`
+              : ""}
+          </span>
+        </li>
+      ))}
+      {props.loading && (
+        <li className="flex gap-1.5 italic">
+          <span aria-hidden>·</span>
+          <span>looking further up its lineage…</span>
+        </li>
+      )}
+    </ul>
+  );
+};
+
+/**
  * What a thing becomes, stated rather than asked.
  *
  * The inferred kind is the answer; the alternatives exist for the case where the
  * inference is not what someone wanted, and stay folded away until then. A
  * source with only one possible kind shows a sentence and no control at all.
+ * The evidence behind the answer sits under it, so a surprising default can be
+ * read before it is overridden.
  */
 const InferredKind = <K extends string>(props: {
   kinds: readonly K[];
   info: Record<K, { title: string; description: string }>;
   value: K;
   onChange: (kind: K) => void;
+  evidence?: readonly Evidence[];
+  notes?: readonly Evidence[];
+  loading?: boolean;
+  /** Kinds the evidence argued for but the server would refuse, with why. */
+  blocked?: readonly { kind: K; reason: string }[];
 }) => {
   const [open, setOpen] = useState(false);
   const chosen = props.info[props.value];
@@ -112,7 +181,7 @@ const InferredKind = <K extends string>(props: {
             {chosen.description}
           </div>
         </div>
-        {props.kinds.length > 1 && (
+        {(props.kinds.length > 1 || !!props.blocked?.length) && (
           <button
             type="button"
             onClick={() => setOpen((was) => !was)}
@@ -138,9 +207,36 @@ const InferredKind = <K extends string>(props: {
               {props.info[kind].title}
             </button>
           ))}
+          {props.blocked?.map((item) => (
+            <button
+              key={`blocked-${item.kind}`}
+              type="button"
+              disabled
+              className={`${kindButton(false)} cursor-not-allowed opacity-50`}
+              title={item.reason}
+            >
+              {props.info[item.kind].title}
+            </button>
+          ))}
         </div>
       )}
+      <EvidenceList
+        evidence={props.evidence ?? []}
+        notes={props.notes ?? []}
+        loading={props.loading}
+      />
     </div>
+  );
+};
+
+/** How a row relates to what the scene already draws, as a caption. */
+const RelationCaption = (props: { relation: Relation | null }) => {
+  if (!props.relation) return null;
+  const emphasised = props.relation.kind !== "staged";
+  return (
+    <span className={emphasised ? "text-primary/80" : ""}>
+      {props.relation.summary}
+    </span>
   );
 };
 
@@ -156,6 +252,8 @@ const EntryRow = (props: {
   title: string;
   subtitle?: React.ReactNode;
   badge?: string;
+  /** How it relates to the scene — a second caption line, when there is one. */
+  relation?: Relation | null;
   onClick: () => void;
   /** Rendered before the badge — the expander on a multi-lens dataset. */
   trailing?: React.ReactNode;
@@ -174,7 +272,13 @@ const EntryRow = (props: {
             {props.subtitle}
           </div>
         )}
+        {props.relation && (
+          <div className="truncate text-xs text-muted-foreground">
+            <RelationCaption relation={props.relation} />
+          </div>
+        )}
       </div>
+      {props.relation?.kind === "staged" && <Badge>in scene</Badge>}
       {props.badge && <Badge>{props.badge}</Badge>}
     </button>
     {props.trailing}
@@ -216,6 +320,7 @@ const DatasetEntryView = (props: {
           </>
         }
         badge={LAYER_KIND_INFO[primary.kinds[0]].title.toLowerCase()}
+        relation={entry.relation}
         onClick={() =>
           props.onSelect({ kind: "lens", dataset: entry, option: primary })
         }
@@ -282,6 +387,7 @@ const EntryView = (props: {
             </>
           }
           badge="mesh"
+          relation={entry.relation}
           onClick={() => props.onSelect({ kind: "mesh", entry })}
         />
       );
@@ -297,6 +403,7 @@ const EntryView = (props: {
             </>
           }
           badge="network"
+          relation={entry.relation}
           onClick={() => props.onSelect({ kind: "network", entry })}
         />
       );
@@ -312,6 +419,7 @@ const EntryView = (props: {
             </>
           }
           badge={TABLE_KIND_INFO[entry.kinds[0]].title.toLowerCase()}
+          relation={entry.relation}
           onClick={() => props.onSelect({ kind: "table", entry })}
         />
       );
@@ -327,6 +435,7 @@ const EntryView = (props: {
             </>
           }
           badge="annotations"
+          relation={entry.relation}
           onClick={() => props.onSelect({ kind: "annotation", entry })}
         />
       );
@@ -347,48 +456,119 @@ const SectionView = (props: {
   </div>
 );
 
+/** The choices a phasor layer asks for up front. */
+const PHASOR_MODES = [
+  { value: PhasorColorMode.Phase, label: "Phase lifetime (τφ)" },
+  { value: PhasorColorMode.Modulation, label: "Modulation lifetime (τm)" },
+  { value: PhasorColorMode.Average, label: "Average of both" },
+];
+
 /**
  * Step 2a: a lens becomes an image layer.
  *
- * Which kind is not asked — `inferLensKinds` already answered, from what the
- * server says the lens qualifies for and from its z extent — so this step states
- * the answer and asks only what the answer itself needs (a projection mode for a
- * volume). The other kinds live behind the disclosure.
+ * Which kind is not asked — the engine already answered, from the server's
+ * capability sets, the lens's structure and its lineage — so this step states
+ * the answer, shows the evidence, and asks only what the answer itself needs
+ * (a projection mode for a volume, a harmonic for a phasor). The other kinds
+ * live behind the disclosure. The deeper lineage arrives a moment after the
+ * step opens; the stated kind follows it unless someone has already chosen
+ * otherwise by hand.
+ *
+ * The first frame's styling is the engine's too: the next unstaged channel of
+ * a multichannel source in the composite's next colour, or the look a staged
+ * sibling over the same values already has.
  */
 const LensLayerForm = (props: {
   scene: string;
   source: Extract<Source, { kind: "lens" }>;
+  suggestion: LensSuggestion;
+  lineageLoading: boolean;
   onBack: () => void;
 }) => {
   const { option } = props.source;
-  const [kind, setKind] = useState<LayerKind>(option.kinds[0]);
+  const { suggestion } = props;
+  const [kind, setKind] = useState<LayerKind>(suggestion.kinds[0]);
+  const [touched, setTouched] = useState(false);
+  useEffect(() => {
+    if (!touched && suggestion.kinds[0]) setKind(suggestion.kinds[0]);
+  }, [suggestion, touched]);
+
+  const chosen = suggestion.suggestions.find((entry) => entry.kind === kind);
+  const blocked = useMemo(() => {
+    const seen = new Map<LayerKind, string>();
+    for (const note of suggestion.notes) {
+      if (note.kind && note.kind in LAYER_KIND_INFO && !seen.has(note.kind as LayerKind)) {
+        seen.set(note.kind as LayerKind, `${note.summary} — the server will not draw it that way here`);
+      }
+    }
+    return [...seen].map(([blockedKind, reason]) => ({ kind: blockedKind, reason }));
+  }, [suggestion.notes]);
+  const notes = suggestion.notes.filter((note) => !note.kind || !(note.kind in LAYER_KIND_INFO));
 
   const [createIntensity] = useCreateIntensityLayerMutation();
   const [createRgb] = useCreateRgbLayerMutation();
   const [createVolume] = useCreateVolumeLayerMutation();
   const [createLabel] = useCreateLabelLayerMutation();
   const [createVector] = useCreateVectorLayerMutation();
+  const [createPhasor] = useCreatePhasorLayerMutation();
 
   const submitIntensity = useGraphQLDialog(createIntensity, DIALOG_OPTIONS);
   const submitRgb = useGraphQLDialog(createRgb, DIALOG_OPTIONS);
   const submitVolume = useGraphQLDialog(createVolume, DIALOG_OPTIONS);
   const submitLabel = useGraphQLDialog(createLabel, DIALOG_OPTIONS);
   const submitVector = useGraphQLDialog(createVector, DIALOG_OPTIONS);
+  const submitPhasor = useGraphQLDialog(createPhasor, DIALOG_OPTIONS);
 
+  const { defaults } = suggestion;
   const form = useForm({
-    defaultValues: { mode: ProjectionMode.Mip as string },
+    defaultValues: {
+      mode: ProjectionMode.Mip as string,
+      harmonic: String(defaults.phasor?.harmonic ?? 1),
+      phasorMode: (defaults.phasor?.mode ?? PhasorColorMode.Phase) as string,
+    },
   });
+  const harmonic = Number.parseInt(form.watch("harmonic"), 10) || 1;
+
+  // The phasor's own context — bin count, axis type, calibration — is per
+  // (axis, harmonic) and lives on the lens; it is fetched here and not by the
+  // picker, which would otherwise walk it for every reachable lens.
+  const { data: phasorData } = useGetLensPhasorQuery({
+    variables: { id: option.lens.id, axis: defaults.phasor?.phasorAxis, harmonic },
+    skip: kind !== "PHASOR" || !defaults.phasor,
+  });
+  const phasorContext = phasorData?.lens.phasor;
+
+  const intensityInput = () => {
+    const intensity = defaults.intensity;
+    if (!intensity) return {};
+    return {
+      intensityIndex: intensity.intensityIndex,
+      colormap: intensity.colormap as ColorMap,
+      blending: intensity.blending as Blending,
+      climMin: intensity.climMin ?? undefined,
+      climMax: intensity.climMax ?? undefined,
+      gamma: intensity.gamma ?? undefined,
+    };
+  };
 
   const onSubmit = form.handleSubmit(async (data) => {
     const base = { lens: option.lens.id, scene: props.scene };
     switch (kind) {
       case "INTENSITY":
-        return submitIntensity({ variables: { input: base }, ...REFETCH_SCENE });
+        return submitIntensity({
+          variables: { input: { ...base, ...intensityInput() } },
+          ...REFETCH_SCENE,
+        });
       case "RGB":
-        return submitRgb({ variables: { input: base }, ...REFETCH_SCENE });
+        return submitRgb({
+          variables: { input: { ...base, ...(defaults.rgb ?? {}) } },
+          ...REFETCH_SCENE,
+        });
       case "VOLUME":
         return submitVolume({
-          variables: { input: { ...base, mode: data.mode as ProjectionMode } },
+          variables: {
+            input: { ...base, ...intensityInput(), mode: data.mode as ProjectionMode },
+          },
           ...REFETCH_SCENE,
         });
       case "LABEL":
@@ -398,18 +578,59 @@ const LensLayerForm = (props: {
         // from the lens' DISPLACEMENT axis, the way point coordinates come from
         // the table's declared roles.
         return submitVector({ variables: { input: base }, ...REFETCH_SCENE });
+      case "PHASOR": {
+        const phasor = defaults.phasor;
+        if (!phasor) return;
+        return submitPhasor({
+          variables: {
+            input: {
+              ...base,
+              phasorAxis: phasor.phasorAxis,
+              harmonic,
+              intensityAxis: phasor.intensityAxis ?? undefined,
+              intensityIndex: phasor.intensityIndex,
+              blending: phasor.blending as Blending,
+              transfer: {
+                colormap: phasor.colormap as ColorMap,
+                mode: data.phasorMode as PhasorColorMode,
+                weightByIntensity: phasor.weightByIntensity,
+              },
+            },
+          },
+          ...REFETCH_SCENE,
+        });
+      }
     }
   });
+
+  const styling = defaults.intensity;
+  const showsStyling = kind === "INTENSITY" || kind === "VOLUME";
 
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
         <InferredKind
-          kinds={option.kinds}
+          kinds={suggestion.kinds}
           info={LAYER_KIND_INFO}
           value={kind}
-          onChange={setKind}
+          onChange={(next) => {
+            setTouched(true);
+            setKind(next);
+          }}
+          evidence={chosen?.evidence ?? []}
+          notes={notes}
+          blocked={blocked}
+          loading={props.lineageLoading && !suggestion.resolved}
         />
+
+        {showsStyling && styling && (
+          <div className="text-xs text-muted-foreground">
+            Channel {styling.intensityIndex} through {styling.colormap.toLowerCase()},{" "}
+            {styling.blending.toLowerCase()} blending
+            {styling.inheritedFrom ? ` — the look of ${styling.inheritedFrom}` : ""}.
+            Adjust it on the layer card once it is drawn.
+          </div>
+        )}
 
         {kind === "VOLUME" && (
           <ChoicesField
@@ -423,6 +644,34 @@ const LensLayerForm = (props: {
               { value: ProjectionMode.Isosurface, label: "Isosurface" },
             ]}
           />
+        )}
+
+        {kind === "PHASOR" && defaults.phasor && (
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-2">
+              <ChoicesField
+                name="harmonic"
+                label="Harmonic"
+                description="Which harmonic of the transform to take"
+                options={[
+                  { value: "1", label: "First" },
+                  { value: "2", label: "Second" },
+                  { value: "3", label: "Third" },
+                ]}
+              />
+              <ChoicesField
+                name="phasorMode"
+                label="Colour by"
+                description="Which phasor quantity each pixel's hue follows"
+                options={PHASOR_MODES}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {phasorContext
+                ? `${phasorContext.bins} bins along ${phasorContext.axis} (${phasorContext.axisType.toLowerCase()})${phasorContext.calibration ? ", calibrated" : ", uncalibrated"}`
+                : `Along its ${defaults.phasor.phasorAxis} axis`}
+            </div>
+          </div>
         )}
 
         <DialogFooter className="mt-2">
@@ -445,6 +694,7 @@ const LensLayerForm = (props: {
 const TableLayerForm = (props: {
   scene: string;
   entry: TableEntry;
+  graph: DerivationGraph;
   onBack: () => void;
 }) => {
   const columns = props.entry.table.columns;
@@ -466,6 +716,20 @@ const TableLayerForm = (props: {
   );
 
   const form = useForm({ defaultValues: defaults });
+
+  // The ramp follows the colour column's role: a measure gets a continuous
+  // colormap, a category keeps the server's qualitative default.
+  const colorColumn = form.watch("colorColumn");
+  const suggestion = useMemo(
+    () =>
+      suggestTableKinds(
+        props.graph,
+        props.entry.table,
+        columns.find((column) => column.name === colorColumn)?.role ?? null,
+      ),
+    [props.graph, props.entry.table, columns, colorColumn],
+  );
+  const colormap = suggestion.defaults.colormap as ColorMap | undefined;
 
   const columnOptions = [
     { value: "", label: "None" },
@@ -492,6 +756,7 @@ const TableLayerForm = (props: {
             ...base,
             sizeColumn: orUndefined(data.sizeColumn),
             colorColumn: orUndefined(data.colorColumn),
+            colormap,
             pointSize: data.pointSize ?? undefined,
           },
         },
@@ -503,6 +768,7 @@ const TableLayerForm = (props: {
         input: {
           ...base,
           colorByColumn: orUndefined(data.colorColumn),
+          colormap,
           lineWidth: data.lineWidth ?? undefined,
         },
       },
@@ -518,6 +784,7 @@ const TableLayerForm = (props: {
           info={TABLE_KIND_INFO}
           value={kind}
           onChange={setKind}
+          evidence={suggestion.evidence}
         />
 
         <div className="grid grid-cols-2 gap-2">
@@ -771,14 +1038,31 @@ const AddLayerFormInner = (props: { scene: string }) => {
   const [search, setSearch] = useState("");
   const [source, setSource] = useState<Source | null>(null);
 
-  // Everything composable in this scene, in one round trip: the world, and every
-  // space with a traversable path into it, each reporting who lives in it. The
-  // set `placedSystems` answers with is the set `placeableIn` answers with, so
-  // the picker and the create mutations cannot disagree about what is offerable.
+  // The scene: its world, the server's own placeability answer (the set
+  // `placeableIn` answers with, so the picker and the create mutations cannot
+  // disagree about what is offerable), and what is already staged.
   const { data, loading } = useAddLayerReachableQuery({
     variables: { scene: props.scene },
   });
   const world = data?.scene.worldCoordinateSystem;
+
+  // The world's component — every space it relates to, every edge between
+  // them, who lives where — from which the picker walks the CHILDREN down
+  // from the world: the grids registered into it, the derived datasets, crops
+  // and levels landing in those, and so on. The structure every row and every
+  // ranking is read off.
+  const { data: componentData, loading: componentLoading } = useAddLayerWorldGraphQuery({
+    variables: { world: world?.id ?? "", maxDepth: 6 },
+    skip: !world,
+  });
+  const graph = useMemo(
+    () => (componentData ? graphFromComponent(componentData.coordinateGraph) : undefined),
+    [componentData],
+  );
+  const placeable = useMemo(
+    () => new Set(world?.placedSystems.map((space) => space.id) ?? []),
+    [world],
+  );
 
   // Which of those lenses the server would draw, and which of them are labels.
   // Asked of the SPACE, not the scene: every scene over one world offers the
@@ -800,17 +1084,47 @@ const AddLayerFormInner = (props: { scene: string }) => {
     [capabilityData],
   );
 
+  const staged = useMemo(
+    () => stagedFromLayers(data?.scene.layers ?? []),
+    [data?.scene.layers],
+  );
+
   const sections = useMemo(
     () =>
-      world
+      world && graph
         ? buildSections({
-            world,
-            placedSystems: world.placedSystems,
+            world: { id: world.id, name: world.name },
+            graph,
+            placeable,
             capabilities,
             search,
+            staged,
           })
         : [],
-    [world, capabilities, search],
+    [world, graph, placeable, staged, capabilities, search],
+  );
+
+  // Once a lens is chosen, its full provenance component: the ancestors the
+  // reachable set could not see, and everything below. Merged into the
+  // one-hop graph, so the same rules simply run again over more.
+  const lens = source?.kind === "lens" ? source.option.lens : null;
+  const rootSpace = lens?.dataset.intrinsicSystem?.id ?? lens?.lensSpace?.id;
+  const { data: lineageData, loading: lineageLoading } = useAddLayerLineageQuery({
+    variables: { coordinateSystem: rootSpace ?? "", maxDepth: 4 },
+    skip: !rootSpace,
+  });
+  const merged = useMemo(() => {
+    if (!graph) return undefined;
+    return lineageData
+      ? mergeGraphs(graph, graphFromLineage(lineageData.lineageGraph))
+      : graph;
+  }, [graph, lineageData]);
+  const lensSuggestion = useMemo(
+    () =>
+      lens && merged
+        ? suggestLensKinds(merged, lens, capabilities, staged)
+        : null,
+    [lens, merged, capabilities, staged],
   );
 
   return (
@@ -841,7 +1155,7 @@ const AddLayerFormInner = (props: { scene: string }) => {
                 onSelect={setSource}
               />
             ))}
-            {!loading && !sections.length && (
+            {!loading && !componentLoading && !sections.length && (
               <div className="text-xs text-muted-foreground">
                 {search
                   ? "Nothing reachable matches that"
@@ -854,12 +1168,15 @@ const AddLayerFormInner = (props: { scene: string }) => {
         <LensLayerForm
           scene={props.scene}
           source={source}
+          suggestion={lensSuggestion ?? source.option.suggestion}
+          lineageLoading={lineageLoading}
           onBack={() => setSource(null)}
         />
       ) : source.kind === "table" ? (
         <TableLayerForm
           scene={props.scene}
           entry={source.entry}
+          graph={merged ?? graph!}
           onBack={() => setSource(null)}
         />
       ) : source.kind === "mesh" ? (

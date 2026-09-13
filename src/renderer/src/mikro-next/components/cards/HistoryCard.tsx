@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { MikroHistory } from "@/linkers";
 import { ProvenanceEntryFragment } from "../../api/graphql";
@@ -28,4 +29,4 @@ const TheCard = ({ history }: HistoryCardProps) => {
   );
 };
 
-export default TheCard;
+export default React.memo(TheCard);

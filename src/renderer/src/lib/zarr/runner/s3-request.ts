@@ -113,7 +113,7 @@ function fingerprint(secret: string): string {
   return `${fnv1a(0x811c9dc5)}${fnv1a(0xdeadbeef)}`
 }
 
-function deriveSigningKeyCached(
+export function deriveSigningKeyCached(
   config: S3FetchConfig,
   dateStamp: string,
 ): Promise<Uint8Array<ArrayBuffer>> {
@@ -448,6 +448,20 @@ function presignedS3UrlCached(config: S3FetchConfig, url: URL): Promise<string> 
   presignedUrlMemo.set(memoKey, presigned)
   presigned.catch(() => presignedUrlMemo.delete(memoKey))
   return presigned
+}
+
+/**
+ * The memoized presigned GET URL for one whole object — the same URL
+ * `fetchS3Path` would fetch, handed out for consumers that want the browser
+ * to load it itself (`<img src>`, three.js loaders). Because the URL is the
+ * HTTP cache key, two consumers of one object within the same hour share one
+ * cache entry. The wire path is normalized to the signed form first (see
+ * `normalizeWirePath`).
+ */
+export function presignS3ObjectUrl(config: S3FetchConfig, objectUrl: string | URL): Promise<string> {
+  const url = typeof objectUrl === 'string' ? new URL(objectUrl) : new URL(objectUrl.href)
+  normalizeWirePath(url)
+  return presignedS3UrlCached(config, url)
 }
 
 export function resolveStoreUrl(root: string | URL, path: AbsolutePath): URL {

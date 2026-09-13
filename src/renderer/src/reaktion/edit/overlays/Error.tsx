@@ -1,13 +1,14 @@
 import { ErrorBox } from '@/reaktion/edit/components/boxes/ErrorBox'
 import { SolvedErrorBox } from '@/reaktion/edit/components/boxes/SolvedErrorBox'
-import { useEditRiver } from '@/reaktion/edit/context'
+import { useEditFlowStore } from '@/reaktion/edit/context'
 import { AnimatePresence } from 'framer-motion'
 
 
 
 
 export const ErrorOverlay = () => {
-  const { remainingErrors, solvedErrors, } = useEditRiver();
+  const remainingErrors = useEditFlowStore((s) => s.remainingErrors);
+  const solvedErrors = useEditFlowStore((s) => s.solvedErrors);
 
 
     return <AnimatePresence>

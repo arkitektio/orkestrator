@@ -7,7 +7,7 @@ import { Environment, Float, OrbitControls, useGLTF } from "@react-three/drei";
 import type { } from "@react-three/fiber";
 import { Canvas } from "@react-three/fiber";
 import { createElement, Suspense } from "react";
-import Timestamp from "react-timestamp";
+import Timestamp from "@/components/ui/timestamp";
 
 const toyCarUrl = new URL(
   "../../../../../../resources/Box.glb",

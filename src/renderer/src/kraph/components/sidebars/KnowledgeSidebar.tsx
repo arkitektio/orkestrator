@@ -5,8 +5,8 @@ import {
   StructureFragment,
   TermKind,
   useAssertEntityExistsMutation,
-  useEnsureStructureMutation,
-  useLinkStructureToEntityMutation,
+  useAssertInformsMutation,
+  useAssertStructureExistsMutation,
 } from "@/kraph/api/graphql";
 import { ObjectButton } from "@/rekuest/buttons/ObjectButton";
 import { Identifier, Object } from "@/types";
@@ -101,7 +101,7 @@ const Section = ({
  *   directly as supporting evidence, so it needs no graph, no category and no
  *   pre-existing entity. The entity it produces is new.
  * - **Same as** names an *entity that already exists*
- *   (`linkStructureToEntity`). It says this object informs that entity — the
+ *   (`assertInforms`). It says this object informs that entity — the
  *   identity claim, not a fresh one. Entities are graph-scoped, so this one
  *   does need a concrete row picked out of a specific graph.
  *
@@ -114,7 +114,7 @@ const Section = ({
 export const KnowledgeSidebar = ({ identifier, object }: KnowledgeSidebarProps) => {
   // There is no organization-wide read for a structure by identifier + object
   // (`structureByIdentifier` still takes a graph), so the evidence already
-  // recorded is fetched through the idempotent `ensureStructure` rather than on
+  // recorded is fetched through the idempotent `assertStructureExists` rather than on
   // mount — viewing an object should not write one.
   const [structure, setStructure] = useState<StructureFragment | null>(null);
   const [claimed, setClaimed] = useState<{
@@ -131,17 +131,16 @@ export const KnowledgeSidebar = ({ identifier, object }: KnowledgeSidebarProps) 
   const [sameAs, setSameAs] = useState<AssignedEntity | null>(null);
 
   const [ensureStructure, { loading: loadingEvidence }] =
-    useEnsureStructureMutation();
+    useAssertStructureExistsMutation();
   const [assertEntity, { loading: claiming }] = useAssertEntityExistsMutation();
-  const [linkStructure, { loading: linking }] =
-    useLinkStructureToEntityMutation();
+  const [linkStructure, { loading: linking }] = useAssertInformsMutation();
 
   const loadEvidence = async () => {
     try {
       const result = await ensureStructure({
         variables: { input: { identifier, object: object.id } },
       });
-      setStructure(result.data?.ensureStructure.structure ?? null);
+      setStructure(result.data?.assertStructureExists.structure ?? null);
     } catch (e) {
       toast.error(`Could not load evidence: ${(e as Error).message}`);
     }
@@ -187,7 +186,7 @@ export const KnowledgeSidebar = ({ identifier, object }: KnowledgeSidebarProps) 
           },
         },
       });
-      const assertion = result.data?.linkStructureToEntity.assertion;
+      const assertion = result.data?.assertInforms.assertion;
       if (assertion) {
         setLinked({ entity: sameAs, assertionId: assertion.id });
       }

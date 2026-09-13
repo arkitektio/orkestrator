@@ -14,7 +14,7 @@ fragment StructureRelationCategory on StructureRelationCategory {
   label
   description
   image {
-    presignedUrl
+    ...MediaStore
   }
   pinned
 }

@@ -43,19 +43,24 @@ const Page = asGraphDetailQueryRoute(
           className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6"
         >
           <div>
+            {/* A view draws an event under every category that admits it, so
+                the heading is the drawn labels and the links below are one per
+                category. */}
             <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-              {data.protocolEvent.category?.label ?? data.protocolEvent.label}
+              {data.protocolEvent.categories.map((c) => c.label).join(" · ") ||
+                data.protocolEvent.label}
             </h1>
 
             <p className="mt-3 text-xl text-muted-foreground"></p>
-            <p className="mt-3 text-xl text-muted-foreground">
-              {data.protocolEvent.category && (
+            <p className="mt-3 text-xl text-muted-foreground flex flex-row gap-2">
+              {data.protocolEvent.categories.map((category) => (
                 <KraphProtocolEventCategory.DetailLink
-                  object={{ id: data.protocolEvent.category.id }}
+                  key={category.id}
+                  object={{ id: category.id }}
                 >
-                  {data.protocolEvent.category.label}
+                  {category.label}
                 </KraphProtocolEventCategory.DetailLink>
-              )}
+              ))}
             </p>
           </div>
         </KraphEntity.Drop>

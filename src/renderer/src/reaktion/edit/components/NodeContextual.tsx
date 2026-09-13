@@ -1,5 +1,5 @@
 import { NodeContextualParams } from "../../types";
-import { useEditRiver } from "../context";
+import { useEditFlowStore } from "../context";
 import { ContextualContainer } from "./ContextualContainer";
 import { ConstantActionDocument, ConstantActionQuery, useAllActionsQuery, ListActionFragment } from "@/rekuest/api/graphql";
 import { rekuestActionToMatchingNode } from "@/reaktion/plugins/rekuest";
@@ -40,7 +40,8 @@ const ActionSearch = ({ appIdentifier, onSelect }: { appIdentifier: string, onSe
 };
 
 export const NodeContextual = (props: { params: NodeContextualParams }) => {
-  const { clearPanels, addNode } = useEditRiver();
+  const clearPanels = useEditFlowStore((s) => s.clearPanels);
+  const addNode = useEditFlowStore((s) => s.addNode);
   const client = useRekuest();
 
   const handleImplementationSelect = (action: ListActionFragment) => {

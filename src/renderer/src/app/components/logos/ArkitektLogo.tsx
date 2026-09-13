@@ -31,22 +31,22 @@ export const ArkitektLogo = ({
           <path
             d="M1298.49 183.894C1300.35 182.813 1302.65 182.813 1304.52 183.894L2268.13 743.095C2269.98 744.168 2271.12 746.146 2271.12 748.284V1866.74C2271.12 1868.88 2269.98 1870.86 2268.13 1871.93L1304.3 2431.26C1302.55 2432.27 1300.42 2432.34 1298.61 2431.44L335.215 1952.23C333.176 1951.22 331.887 1949.14 331.887 1946.86V748.284C331.887 746.145 333.025 744.168 334.875 743.095L1298.49 183.894Z"
             stroke={strokeColor}
-            stroke-width="74"
+            strokeWidth="74"
           />
           <path
             d="M1288.49 1301.01L325.375 1951.51"
             stroke={strokeColor}
-            stroke-width="74"
+            strokeWidth="74"
           />
           <path
             d="M2264.6 1873.45L1288.47 1301.01"
             stroke={strokeColor}
-            stroke-width="74"
+            strokeWidth="74"
           />
           <path
             d="M1301.5 182.146V883.673"
             stroke={strokeColor}
-            stroke-width="74"
+            strokeWidth="74"
           />
           <g filter="url(#filter1_f_235_111)">
             <path
@@ -56,7 +56,7 @@ export const ArkitektLogo = ({
             <path
               d="M1888.67 990.073L1326.01 686.481C1318.3 682.323 1309.02 682.323 1301.31 686.481L738.654 990.073C730.243 994.611 725 1003.4 725 1012.95V1662.71C725 1672.84 730.888 1682.06 740.086 1686.31L1302.4 1946.37C1309.84 1949.81 1318.45 1949.54 1325.66 1945.65L1888.67 1641.88C1897.08 1637.34 1902.32 1628.55 1902.32 1619V1012.95C1902.32 1003.4 1897.08 994.611 1888.67 990.073Z"
               stroke={cubeColor}
-              stroke-width="32"
+              strokeWidth="32"
             />
           </g>
           <g filter="url(#filter2_bd_235_111)">
@@ -74,9 +74,9 @@ export const ArkitektLogo = ({
             width="2021.23"
             height="2330.98"
             filterUnits="userSpaceOnUse"
-            color-interpolation-filters="sRGB"
+            colorInterpolationFilters="sRGB"
           >
-            <feFlood flood-opacity="0" result="BackgroundImageFix" />
+            <feFlood floodOpacity="0" result="BackgroundImageFix" />
             <feColorMatrix
               in="SourceAlpha"
               type="matrix"
@@ -109,9 +109,9 @@ export const ArkitektLogo = ({
             width="1211.32"
             height="1299.41"
             filterUnits="userSpaceOnUse"
-            color-interpolation-filters="sRGB"
+            colorInterpolationFilters="sRGB"
           >
-            <feFlood flood-opacity="0" result="BackgroundImageFix" />
+            <feFlood floodOpacity="0" result="BackgroundImageFix" />
             <feBlend
               mode="normal"
               in="SourceGraphic"
@@ -130,9 +130,9 @@ export const ArkitektLogo = ({
             width="626.078"
             height="718.984"
             filterUnits="userSpaceOnUse"
-            color-interpolation-filters="sRGB"
+            colorInterpolationFilters="sRGB"
           >
-            <feFlood flood-opacity="0" result="BackgroundImageFix" />
+            <feFlood floodOpacity="0" result="BackgroundImageFix" />
             <feGaussianBlur in="BackgroundImageFix" stdDeviation="4" />
             <feComposite
               in2="SourceAlpha"

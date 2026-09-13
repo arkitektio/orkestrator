@@ -1,9 +1,9 @@
 import type { useDialog } from "@/app/dialog";
 import type { DownloadProps } from "@/providers/download/DownloadProvider";
-import type { TaskQuery } from "@/rekuest/api/graphql";
+import type { FullTaskQuery } from "@/rekuest/api/graphql";
 import type { ApolloClient } from "@apollo/client";
 
-export type HookTask = NonNullable<TaskQuery["task"]>;
+export type HookTask = NonNullable<FullTaskQuery["task"]>;
 
 /**
  * Everything a task-hook handler needs, assembled by the `TaskHookRunner` (which

@@ -299,8 +299,15 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
     // The box is in the DATA's own space, because the layer's affine sits between it and the
     // world -- testing in world space would need the inverse per point. Unbounded until a
     // viewport box is threaded through, at which point this is the one place to set it.
-    culling.bounds.min.value = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
-    culling.bounds.max.value = new THREE.Vector3(Infinity, Infinity, Infinity);
+    // Mutate the uniform vectors in place: assigning a NEW object to a
+    // uniform's `.value` makes the backend re-resolve the binding on every
+    // cull (view move / time scrub), and these are constants.
+    const min = culling.bounds.min.value as THREE.Vector3 | undefined;
+    if (min && typeof min.set === "function") min.set(-Infinity, -Infinity, -Infinity);
+    else culling.bounds.min.value = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+    const max = culling.bounds.max.value as THREE.Vector3 | undefined;
+    if (max && typeof max.set === "function") max.set(Infinity, Infinity, Infinity);
+    else culling.bounds.max.value = new THREE.Vector3(Infinity, Infinity, Infinity);
     void renderer.computeAsync(culling.node as never).then(() => invalidate());
   }, [renderer, invalidate]);
 

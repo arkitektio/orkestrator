@@ -25,6 +25,11 @@ const focus = () =>
     window.dispatchEvent(new Event("focus"));
   });
 
+const blur = () =>
+  act(() => {
+    window.dispatchEvent(new Event("blur"));
+  });
+
 const visible = () =>
   act(() => {
     document.dispatchEvent(new Event("visibilitychange"));
@@ -33,6 +38,7 @@ const visible = () =>
 afterEach(() => {
   connectionRef.current = undefined;
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe("useRefetchOnReactivate", () => {
@@ -45,8 +51,65 @@ describe("useRefetchOnReactivate", () => {
     focus();
 
     expect(a.client.refetchQueries).toHaveBeenCalledTimes(1);
-    expect(a.client.refetchQueries).toHaveBeenCalledWith({ include: "active" });
+    expect(a.client.refetchQueries).toHaveBeenCalledWith(
+      expect.objectContaining({ include: "active" }),
+    );
     expect(b.client.refetchQueries).toHaveBeenCalledTimes(1);
+  });
+
+  it("excludes the subscription-maintained MyTasks query from the sweep", () => {
+    const a = makeApolloService();
+    connectionRef.current = { serviceMap: { rekuest: a } };
+
+    render(<Harness />);
+    focus();
+
+    const { onQueryUpdated } = a.client.refetchQueries.mock.calls[0][0] as {
+      onQueryUpdated: (obs: { queryName?: string }) => boolean;
+    };
+    expect(onQueryUpdated({ queryName: "MyTasks" })).toBe(false);
+    expect(onQueryUpdated({ queryName: "ListImages" })).toBe(true);
+    expect(onQueryUpdated({})).toBe(true);
+  });
+
+  it("skips the sweep when the window was away for less than 2 s", () => {
+    vi.useFakeTimers();
+    const a = makeApolloService();
+    connectionRef.current = { serviceMap: { mikro: a } };
+
+    render(<Harness />);
+    blur();
+    vi.advanceTimersByTime(500);
+    focus();
+
+    expect(a.client.refetchQueries).not.toHaveBeenCalled();
+
+    // A real absence does sweep.
+    blur();
+    vi.advanceTimersByTime(2_500);
+    focus();
+
+    expect(a.client.refetchQueries).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not sweep again within the 10 s cooldown", () => {
+    vi.useFakeTimers();
+    const a = makeApolloService();
+    connectionRef.current = { serviceMap: { mikro: a } };
+
+    render(<Harness />);
+    focus();
+    expect(a.client.refetchQueries).toHaveBeenCalledTimes(1);
+
+    blur();
+    vi.advanceTimersByTime(5_000);
+    focus();
+    expect(a.client.refetchQueries).toHaveBeenCalledTimes(1);
+
+    blur();
+    vi.advanceTimersByTime(6_000);
+    focus();
+    expect(a.client.refetchQueries).toHaveBeenCalledTimes(2);
   });
 
   it("skips non-apollo services", () => {

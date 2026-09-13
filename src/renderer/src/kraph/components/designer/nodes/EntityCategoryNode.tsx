@@ -1,6 +1,5 @@
 import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
 import { KraphEntityCategory } from "@/linkers";
 import { NodeProps, NodeResizer } from "@xyflow/react";
 import { memo } from "react";
@@ -8,10 +7,9 @@ import { Handles } from "../components/Handles";
 import { NodeQueryControls } from "../components/NodeQueryControls";
 import { PathMarker } from "../components/PathMarker";
 import { GenericNode } from "../types";
+import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
 
 export const EntityCategoryNode = memo(({ data, id, selected }: NodeProps<GenericNode>) => {
-  const resolve = useResolve();
-
   return (
     <>
       <NodeResizer
@@ -33,11 +31,15 @@ export const EntityCategoryNode = memo(({ data, id, selected }: NodeProps<Generi
         {/* If handles are conditionally rendered and not present initially, you need to update the node internals https://reactflow.dev/docs/api/hooks/use-update-node-internals/ */}
         {/* In this case we don't need to use useUpdateNodeInternals, since !isConnecting is true at the beginning and all handles are rendered initially. */}
 
-        {data.image?.presignedUrl && (
-          <Image
-            src={resolve(data?.image.presignedUrl)}
-            className="object-cover h-full w-full"
-          />
+        {data.image && (
+          <WithKraphMediaUrl media={data.image}>
+            {(url) => (
+              <Image
+                src={url}
+                className="object-cover h-full w-full"
+              />
+            )}
+          </WithKraphMediaUrl>
         )}
         <div className="absolute top-0 left-0 right-0 bottom-0 z-10 flex items-center justify-center flex-col gap-2 ">
           <KraphEntityCategory.DetailLink object={data}>

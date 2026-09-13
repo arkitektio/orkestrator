@@ -2,9 +2,9 @@
 #
 # Richer than the shared `Resident` fragment, which fetches a `__typename` and a
 # name — enough for a breadcrumb, not enough to submit. This one also carries
-# what the picker infers from (a lens's render axes and shape, a dataset's spec,
-# a table's declared column roles), so neither choosing a row nor deciding what
-# kind of layer it becomes costs a second round trip.
+# what the picker infers from (a lens's render axes and shape, a dataset's spec
+# and lineage, a table's declared column roles), so neither choosing a row nor
+# deciding what kind of layer it becomes costs a second round trip.
 #
 # The picker is organised by *source* — a dataset, a mesh collection, a table, a
 # collection of annotations — not by resident, so a lens carries its dataset and
@@ -12,6 +12,71 @@
 # entry, whether or not they live in the same space. DataArrays are selected
 # only to be dropped: a pyramid level is an implementation detail of its
 # dataset, never something anyone adds to a scene.
+#
+# The picker walks the coordinate-system CHILDREN graph rooted at the scene's
+# world (`AddLayerWorldGraph`): an edge lands in its `output`, so a space's
+# children are the spaces whose edges land in it — the grids registered into
+# the world, then the derived datasets, crops and pyramid levels landing in
+# each grid, and so on down. The derivation engine
+# (`forms/addLayer/engine.ts`) reads a candidate's kind off that tree: a
+# CATEGORIZED edge makes a mask, an object table keyed by a FIELD edge confirms
+# one, a PNG source makes a colour image. Each resident also carries its own
+# `derivedFrom`, which is how an edge in the tree is told apart from a
+# registration — a derivation is one the child's resident lists — and how a
+# parent outside this world's tree is known to exist at all. That parent comes
+# from `AddLayerLineage`, the provenance helper fetched lazily in step 2.
+
+# One derivation edge, as the engine reads it: which spaces it joins, what it
+# did to the values, and — for a FIELD edge — which array is the map, because a
+# mask keying an object table is a FIELD edge whose field IS its input.
+fragment DerivationEdge on Transformation {
+  __typename
+  id
+  kind
+  valueRelation
+  input {
+    id
+  }
+  output {
+    id
+  }
+  ... on FieldTransformation {
+    field {
+      id
+    }
+  }
+  ... on UnmappableTransformation {
+    reason
+  }
+}
+
+# A dataset's lineage-bearing facts. Selected on a Lens's nested dataset as well
+# as on an ArrayDataset resident, so an entry reachable only through a lens is
+# still explained.
+fragment DatasetLineage on ArrayDataset {
+  id
+  name
+  description
+  # What the dataset structurally is — 3D, timelapse, multichannel. The entry's
+  # icon and its one-line subtitle, in place of a shape nobody reads.
+  spec
+  intrinsicSystem {
+    id
+  }
+  derivedFrom {
+    ...DerivationEdge
+  }
+  # Which BYTES the arrays were read out of. A PNG or a JPEG is the server's own
+  # evidence for an RGB layer, and the one ingest fact a picker can read back.
+  sourceFiles {
+    id
+    file {
+      id
+      contentType
+    }
+  }
+}
+
 fragment AddLayerCandidate on Resident {
   __typename
   ... on Lens {
@@ -21,27 +86,46 @@ fragment AddLayerCandidate on Resident {
     slices {
       ...DimSlice
     }
-    # Which axis is x, y, z and intensity — derived server-side from the axis
-    # types. The picker infers a volume from a z axis of more than one plane
-    # (`spec: VOLUME` holds for a single-plane stack too, so it cannot answer
-    # this), and offers RGB only where there is a channel axis to index into.
+    # The space this lens's selection is expressed in: the intrinsic grid for an
+    # unsliced lens, its own crop space otherwise. What a derivation edge names.
+    # Aliased because it is nullable here and non-null on every collection arm,
+    # and one selection set may not carry both under one name.
+    lensSpace: coordinateSystem {
+      id
+    }
+    # Which axis is x, y, z, intensity, vector and phasor — derived server-side
+    # from the axis types. The picker infers a volume from a z axis of more than
+    # one plane (`spec: VOLUME` holds for a single-plane stack too, so it cannot
+    # answer this), offers RGB only where there is a channel axis to index into,
+    # and a phasor only where a MICROTIME or SPECTRUM axis exists.
     renderAxes {
       x
       y
       z
       intensity
       vector
+      phasor
+    }
+    # The crop edge from this lens's space back into its dataset's grid — the
+    # child edge the tree shows for a sliced lens, tagged here as a derivation
+    # that keeps the values (a crop is IDENTICAL by construction).
+    toParent {
+      id
     }
     dataset {
-      id
-      name
-      description
+      ...DatasetLineage
     }
   }
   ... on TableDataset {
     ...ListTableDataset
     columns {
       ...TableDatasetColumn
+    }
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      ...DerivationEdge
     }
   }
   # A MeshCollection has no name of its own — `version` is all it can honestly
@@ -50,23 +134,36 @@ fragment AddLayerCandidate on Resident {
     id
     version
     specVersion
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      ...DerivationEdge
+    }
   }
   ... on AnnotationCollection {
     id
     name
     description
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      ...DerivationEdge
+    }
   }
   ... on ArrayDataset {
-    id
-    name
-    description
-    # What the dataset structurally is — 3D, timelapse, multichannel. The entry's
-    # icon and its one-line subtitle, in place of a shape nobody reads.
-    spec
+    ...DatasetLineage
   }
   ... on DataArray {
     id
     level
+    # A pyramid level's space is a child of its dataset's grid through this
+    # edge; the level has no back-reference to the dataset, so the edge is
+    # how its space is filed under the dataset's container.
+    toParent {
+      id
+    }
   }
   # A konnektion collection — a traced arbor, a vessel tree, a connectome.
   # Nameless like a MeshCollection, so the picker shows the version and the spec.
@@ -74,5 +171,230 @@ fragment AddLayerCandidate on Resident {
     id
     version
     specVersion
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      ...DerivationEdge
+    }
+  }
+  # Never a row, but a space owner: a derivation may land in a sparse dataset's
+  # space, and the engine has to know who lives there.
+  ... on SparseDataset {
+    id
+    name
+    coordinateSystem {
+      id
+    }
+  }
+}
+
+# The source of a layer already staged in the scene, as far as relating a
+# candidate to it cares: which container, and which space.
+fragment AddLayerStagedLens on Lens {
+  id
+  coordinateSystem {
+    id
+  }
+  dataset {
+    id
+    intrinsicSystem {
+      id
+    }
+  }
+}
+
+# One layer of the scene, for ranking candidates by their relation to what is
+# already there ("segmented from dapi.zarr, which is in this scene") and for
+# defaulting a new channel's styling from a sibling that is. Deliberately not
+# `SceneLayer`: that one carries the whole pyramid and every anchor's histogram.
+fragment AddLayerStagedLayer on Layer {
+  __typename
+  id
+  name
+  blending
+  ... on ImageLayer {
+    lens {
+      ...AddLayerStagedLens
+    }
+  }
+  ... on IntensityLayer {
+    lens {
+      ...AddLayerStagedLens
+    }
+    intensityIndex
+    colormap
+    climMin
+    climMax
+    gamma
+  }
+  ... on RgbLayer {
+    lens {
+      ...AddLayerStagedLens
+    }
+  }
+  ... on PhasorLayer {
+    lens {
+      ...AddLayerStagedLens
+    }
+  }
+  ... on VectorLayer {
+    lens {
+      ...AddLayerStagedLens
+    }
+  }
+  ... on LabelLayer {
+    lens {
+      ...AddLayerStagedLens
+    }
+  }
+  ... on AnnotationLayer {
+    annotationCollection {
+      id
+      coordinateSystem {
+        id
+      }
+    }
+  }
+  ... on PointLayer {
+    tableDataset {
+      id
+      coordinateSystem {
+        id
+      }
+    }
+  }
+  ... on TrackLayer {
+    tableDataset {
+      id
+      coordinateSystem {
+        id
+      }
+    }
+  }
+  ... on MeshLayer {
+    collection {
+      id
+      coordinateSystem {
+        id
+      }
+    }
+  }
+  ... on NetworkLayer {
+    collection {
+      id
+      coordinateSystem {
+        id
+      }
+    }
+  }
+}
+
+# Who lives at the far end of a lineage edge. An edge names a SPACE, and the
+# container is whatever resides there — a dataset's grid directly, or a lens
+# whose `dataset` is the container.
+fragment AddLayerSpaceOwner on Resident {
+  __typename
+  ... on ArrayDataset {
+    id
+  }
+  ... on Lens {
+    id
+    dataset {
+      id
+    }
+  }
+  ... on TableDataset {
+    id
+  }
+  ... on MeshCollection {
+    id
+  }
+  ... on NetworkCollection {
+    id
+  }
+  ... on AnnotationCollection {
+    id
+  }
+  ... on SparseDataset {
+    id
+  }
+}
+
+# One node of a lineage component. `lineageGraph.edges` are ordered by id, so
+# each node's own `derivedFrom { id }` is selected to recover which edge is its
+# PRIMARY parent — the one that places it, and the one the value-domain walk
+# follows.
+fragment AddLayerLineageNode on Resident {
+  __typename
+  ... on ArrayDataset {
+    ...DatasetLineage
+  }
+  ... on TableDataset {
+    id
+    name
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      id
+    }
+    columns {
+      role
+    }
+  }
+  ... on MeshCollection {
+    id
+    version
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      id
+    }
+  }
+  ... on NetworkCollection {
+    id
+    version
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      id
+    }
+  }
+  ... on AnnotationCollection {
+    id
+    name
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      id
+    }
+  }
+  ... on SparseDataset {
+    id
+    name
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      id
+    }
+  }
+}
+
+# One space of the world's component: who lives here. The edges between the
+# spaces come flat, as `coordinateGraph.transformations`, and the client walks
+# them from the world to find its children — a nested `registrations { input
+# { … } }` tree cannot be generated, because the generator expands every
+# Transformation selection into all ten implementing types and nests them, so
+# six levels of that is a heap the codegen does not have.
+fragment AddLayerSpace on CoordinateSystem {
+  id
+  name
+  residents {
+    ...AddLayerCandidate
   }
 }

@@ -63,13 +63,13 @@ export const CreateNewRelation = (props: {
 
   const form = useForm<FormData>({
     defaultValues: {
+      // A structure descriptor is `identifiers` plus a default category key —
+      // `keys`, `tags` and `ontologyTerms` are gone from the schema.
       source: {
         identifiers: uniqueIdentifiers(props.left),
-        tags: [],
       },
       target: {
         identifiers: uniqueIdentifiers(props.right),
-        tags: [],
       },
     },
   });

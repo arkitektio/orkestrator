@@ -1,3 +1,4 @@
+import React from "react";
 import { Badge } from '@/components/ui/badge'
 import { Card, CardTitle } from '@/components/ui/card'
 import { MikroArrayDataset, MikroScene } from '@/linkers'
@@ -141,4 +142,4 @@ const TheCard = ({ item: arrayDataset, fill }: Props) => {
   )
 }
 
-export default TheCard
+export default React.memo(TheCard);

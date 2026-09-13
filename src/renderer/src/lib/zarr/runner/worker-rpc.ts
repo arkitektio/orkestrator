@@ -2,6 +2,7 @@
  * Main-thread helpers for communicating with the read-only codec worker.
  */
 
+import { zarrTimingEnabled } from './timing.js'
 import type { DataType, TypedArray } from 'zarrita'
 import { get_ctr } from './internals/util.js'
 import type { CodecChunkMeta, TextureChunkBounds, TexturedChunk } from './types.js'
@@ -61,6 +62,31 @@ interface PendingRequest {
   reject: (err: Error) => void
 }
 
+/**
+ * The worker itself failed (uncaught error / script load failure) as opposed
+ * to one request failing — the ONLY error class that should retire a worker.
+ * Several requests share one worker, so a per-request failure (a 403, a
+ * corrupt chunk) must not terminate the siblings in flight beside it.
+ */
+export class WorkerCrashedError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'WorkerCrashedError'
+  }
+}
+
+export const isWorkerCrashedError = (error: unknown): error is WorkerCrashedError =>
+  error instanceof Error && error.name === 'WorkerCrashedError'
+
+function createAbortError(): Error {
+  if (typeof DOMException !== 'undefined') {
+    return new DOMException('Aborted', 'AbortError')
+  }
+  const error = new Error('Aborted')
+  error.name = 'AbortError'
+  return error
+}
+
 class WorkerDispatcher {
   private pending = new Map<number, PendingRequest>()
   private sentMetas = new Set<number>()
@@ -84,12 +110,28 @@ class WorkerDispatcher {
   }
 
   private onError = (err: ErrorEvent): void => {
-    this.rejectAll(new Error(err.message ?? 'Worker error'))
+    this.rejectAll(new WorkerCrashedError(err.message ?? 'Worker error'))
   }
 
-  send(id: number, message: unknown): Promise<unknown> {
+  /**
+   * Post `message` and await the reply for `id`. With `signal`, an abort
+   * rejects locally at once and posts `{type:'cancel', id}` so the worker
+   * aborts that one fetch — the worker stays alive for its other requests.
+   */
+  send(id: number, message: unknown, signal?: AbortSignal): Promise<unknown> {
+    if (signal?.aborted) return Promise.reject(createAbortError())
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject })
+      const onAbort = () => {
+        if (!this.pending.delete(id)) return
+        this.worker.postMessage({ type: 'cancel', id })
+        reject(createAbortError())
+      }
+      const settle = <T>(fn: (value: T) => void) => (value: T) => {
+        signal?.removeEventListener('abort', onAbort)
+        fn(value)
+      }
+      this.pending.set(id, { resolve: settle(resolve), reject: settle(reject) })
+      signal?.addEventListener('abort', onAbort, { once: true })
       this.worker.postMessage(message)
     })
   }
@@ -143,14 +185,21 @@ export function disposeWorker(
 
 let nextMetaId = 0
 const metaKeyToId = new Map<string, number>()
+// Identity fast path: codec metadata objects come from the per-array
+// metadata cache and are reused across every chunk of that array, so the
+// stringify (main thread, once per chunk request) only runs on a new object.
+const metaObjectToId = new WeakMap<CodecChunkMeta, number>()
 
 export function getMetaId(meta: CodecChunkMeta): number {
+  const cached = metaObjectToId.get(meta)
+  if (cached !== undefined) return cached
   const key = JSON.stringify(meta)
   let id = metaKeyToId.get(key)
   if (id === undefined) {
     id = nextMetaId++
     metaKeyToId.set(key, id)
   }
+  metaObjectToId.set(meta, id)
   return id
 }
 
@@ -190,6 +239,7 @@ export async function workerFetchDecodeMulti<D extends DataType>(
   requestInit?: SerializedRequestInit,
   textureFidelity: TextureFidelity = 'default',
   useSharedArrayBuffer = false,
+  signal?: AbortSignal,
 ): Promise<WorkerFetchDecodeMultiResult<D>> {
   const dispatcher = getDispatcher(worker)
   let inlineMeta: CodecChunkMeta | undefined
@@ -211,7 +261,8 @@ export async function workerFetchDecodeMulti<D extends DataType>(
     requestInit,
     textureFidelity,
     useSharedArrayBuffer,
-  })) as {
+    timing: zarrTimingEnabled(),
+  }, signal)) as {
     parts: ({
       promotedType?: TextureCompatibleDataType
       textureBounds?: TextureChunkBounds
@@ -260,13 +311,17 @@ export async function workerFetchDecode<D extends DataType>(
   actualChunkShape?: number[],
   textureFidelity: TextureFidelity = 'default',
   useSharedArrayBuffer = false,
+  signal?: AbortSignal,
 ): Promise<WorkerFetchDecodeResult<D>> {
   const dispatcher = getDispatcher(worker)
   // Piggyback the codec meta on the first fetch_decode this worker sees for
   // this metaId instead of a separate serial `init` round-trip (which used to
   // cost one full worker RT per cold worker — the dominant fixed cost on a
-  // cold pool). Marking BEFORE the send is race-free: the pool checks workers
-  // out exclusively, so no other request can interleave on this worker.
+  // cold pool). Marking BEFORE the send is race-free even though several
+  // requests are now in flight per worker: `postMessage` order is preserved
+  // and the worker registers a piggybacked meta synchronously, before its
+  // first `await` — so a later request sent without the meta always finds it
+  // registered.
   let inlineMeta: CodecChunkMeta | undefined
   if (!dispatcher.hasMeta(metaId)) {
     inlineMeta = meta
@@ -287,7 +342,8 @@ export async function workerFetchDecode<D extends DataType>(
     actualChunkShape,
     textureFidelity,
     useSharedArrayBuffer,
-  }) as {
+    timing: zarrTimingEnabled(),
+  }, signal) as {
     missing?: boolean
     promotedType?: TextureCompatibleDataType
     textureBounds?: TextureChunkBounds

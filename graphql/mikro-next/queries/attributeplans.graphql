@@ -1,5 +1,11 @@
-query AttributePlans($system: ID!, $maxDepth: Int) {
-  attributePlans(system: $system, maxDepth: $maxDepth) {
+# `maxJoinDepth` bounds the chain of hops after the landing (server default 1,
+# at most 4; 0 is the landing alone). The client asks for two so a matrix's
+# feature names are reachable in BOTH directions — a mask landing on a matrix
+# then its axis table (depth 1), or a mask landing on a table, into the matrix
+# it indexes, then that matrix's feature table (depth 2). Which hops actually
+# run is the user's choice (`attributeSelection`), not the query's.
+query AttributePlans($system: ID!, $maxDepth: Int, $maxJoinDepth: Int! = 2) {
+  attributePlans(system: $system, maxDepth: $maxDepth, maxJoinDepth: $maxJoinDepth) {
     ...AttributePlan
   }
 }

@@ -14,12 +14,10 @@ fragment EntityDescriptor on EntityDescriptor {
 }
 
 # A structure kind has no key, no tags and no ontology references — those
-# descriptor fields are tombstones. `identifiers` is what actually selects one.
+# descriptor fields are gone from the schema entirely now, not just unused.
+# `identifiers` is what actually selects one.
 fragment StructureDescriptor on StructureDescriptor {
-  # All four, because the whole descriptor is what gets handed back to the server
-  # as `matchesDescriptor` when asking whether a structure kind is admitted.
-  keys
-  tags
-  ontologyTerms
+  # The whole descriptor is what gets handed back to the server as
+  # `matchesDescriptor` when asking whether a structure kind is admitted.
   defaultCategoryKey
 }

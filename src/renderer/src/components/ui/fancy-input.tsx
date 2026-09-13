@@ -14,12 +14,19 @@ const FancyInput = React.forwardRef<HTMLInputElement, InputProps>(
 
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
+    // Cache the element rect for the duration of a hover so mousemove doesn't
+    // force a layout on every event. Refreshed on each mouseenter.
+    const rectRef = React.useRef<DOMRect | null>(null);
 
-    function handleMouseMove({ currentTarget, clientX, clientY }: any) {
-      const { left, top } = currentTarget.getBoundingClientRect();
+    function handleMouseMove({
+      currentTarget,
+      clientX,
+      clientY,
+    }: React.MouseEvent<HTMLDivElement>) {
+      const rect = (rectRef.current ??= currentTarget.getBoundingClientRect());
 
-      mouseX.set(clientX - left);
-      mouseY.set(clientY - top);
+      mouseX.set(clientX - rect.left);
+      mouseY.set(clientY - rect.top);
     }
     return (
       <motion.div
@@ -33,8 +40,14 @@ const FancyInput = React.forwardRef<HTMLInputElement, InputProps>(
       `,
         }}
         onMouseMove={handleMouseMove}
-        onMouseEnter={() => setVisible(true)}
-        onMouseLeave={() => setVisible(false)}
+        onMouseEnter={(event) => {
+          rectRef.current = event.currentTarget.getBoundingClientRect();
+          setVisible(true);
+        }}
+        onMouseLeave={() => {
+          rectRef.current = null;
+          setVisible(false);
+        }}
         className="p-[2px] rounded-lg transition duration-300 group/input w-full h-full relative"
       >
         <input
