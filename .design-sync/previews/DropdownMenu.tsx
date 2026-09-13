@@ -14,7 +14,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuGroup,
   Button,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Pencil, Copy, Trash2, Share2, Tag, MoreHorizontal } from 'lucide-react';
 
 export function RowActions() {

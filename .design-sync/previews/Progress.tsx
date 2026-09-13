@@ -1,4 +1,4 @@
-import { Progress } from 'orkestrator-next';
+import { Progress } from 'orkestrator';
 
 const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, width: 300 };
 const row: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };

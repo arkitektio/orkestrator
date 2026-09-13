@@ -1,4 +1,4 @@
-import { Slider, Label } from 'orkestrator-next';
+import { Slider, Label } from 'orkestrator';
 
 const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 16 };
 const fieldRow: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6 };

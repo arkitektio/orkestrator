@@ -1,4 +1,4 @@
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from 'orkestrator-next';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from 'orkestrator';
 
 export function Faq() {
   return (

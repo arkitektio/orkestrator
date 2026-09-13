@@ -2,7 +2,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
   PopoverHeader, PopoverTitle, PopoverDescription,
   Button, Input, Label,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Share2, Copy, Check } from 'lucide-react';
 
 const field: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };

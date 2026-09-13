@@ -1,4 +1,4 @@
-import { Toggle } from 'orkestrator-next';
+import { Toggle } from 'orkestrator';
 import { Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 const row: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' };

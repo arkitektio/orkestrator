@@ -1,4 +1,4 @@
-import { FancyInput } from 'orkestrator-next';
+import { FancyInput } from 'orkestrator';
 
 const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, width: 280 };
 

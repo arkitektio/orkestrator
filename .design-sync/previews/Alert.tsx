@@ -1,4 +1,4 @@
-import { Alert, AlertTitle, AlertDescription, AlertAction, Button } from 'orkestrator-next';
+import { Alert, AlertTitle, AlertDescription, AlertAction, Button } from 'orkestrator';
 import { Info, TriangleAlert } from 'lucide-react';
 
 export function Default() {

@@ -1,4 +1,4 @@
-import { Checkbox, Label } from 'orkestrator-next';
+import { Checkbox, Label } from 'orkestrator';
 
 const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 10 };
 const row: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 6 };

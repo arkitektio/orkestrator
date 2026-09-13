@@ -2,7 +2,7 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerFooter,
   DrawerTitle, DrawerDescription, DrawerTrigger, DrawerClose,
   Button,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Download } from 'lucide-react';
 
 const option: React.CSSProperties = {

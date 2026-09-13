@@ -1,4 +1,4 @@
-import { Button } from 'orkestrator-next';
+import { Button } from 'orkestrator';
 import { Download, Plus, Trash2 } from 'lucide-react';
 
 const row: React.CSSProperties = { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' };

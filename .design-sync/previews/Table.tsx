@@ -2,7 +2,7 @@ import {
   Table, TableHeader, TableBody, TableFooter,
   TableHead, TableRow, TableCell, TableCaption,
   Badge,
-} from 'orkestrator-next';
+} from 'orkestrator';
 
 export function Deployments() {
   const rows = [

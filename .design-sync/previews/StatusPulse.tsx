@@ -1,4 +1,4 @@
-import { StatusPulse } from 'orkestrator-next';
+import { StatusPulse } from 'orkestrator';
 
 const row: React.CSSProperties = {
   display: 'flex',

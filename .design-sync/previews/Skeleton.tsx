@@ -1,4 +1,4 @@
-import { Skeleton } from 'orkestrator-next';
+import { Skeleton } from 'orkestrator';
 
 export function LoadingCard() {
   return (

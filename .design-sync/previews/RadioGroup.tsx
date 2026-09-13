@@ -1,4 +1,4 @@
-import { RadioGroup, RadioGroupItem, Label } from 'orkestrator-next';
+import { RadioGroup, RadioGroupItem, Label } from 'orkestrator';
 
 const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 8 };
 const row: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8 };

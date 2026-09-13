@@ -7,7 +7,7 @@ import {
   SelectGroup,
   SelectLabel,
   SelectSeparator,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Globe } from 'lucide-react';
 
 export function RegionSelect() {

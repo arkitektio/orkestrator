@@ -2,7 +2,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetFooter,
   SheetTitle, SheetDescription, SheetTrigger, SheetClose,
   Button, Label, Switch,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Bell } from 'lucide-react';
 
 const row: React.CSSProperties = {

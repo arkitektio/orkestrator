@@ -2,7 +2,7 @@ import {
   Pagination, PaginationContent, PaginationItem,
   PaginationLink, PaginationPrevious, PaginationNext,
   PaginationEllipsis,
-} from 'orkestrator-next';
+} from 'orkestrator';
 
 export function Basic() {
   return (

@@ -1,4 +1,4 @@
-import { ToggleGroup, ToggleGroupItem } from 'orkestrator-next';
+import { ToggleGroup, ToggleGroupItem } from 'orkestrator';
 import { Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, LayoutGrid, Table2 } from 'lucide-react';
 
 const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 16 };

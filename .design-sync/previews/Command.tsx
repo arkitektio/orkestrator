@@ -7,7 +7,7 @@ import {
   CommandItem,
   CommandSeparator,
   CommandShortcut,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Play, Plus, Search, Settings, Download, Trash2, FileText } from 'lucide-react';
 
 export function CommandPalette() {

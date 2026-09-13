@@ -1,7 +1,7 @@
 import {
   Avatar, AvatarImage, AvatarFallback,
   AvatarBadge, AvatarGroup, AvatarGroupCount,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Bot } from 'lucide-react';
 
 const row: React.CSSProperties = { display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' };

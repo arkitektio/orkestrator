@@ -1,4 +1,4 @@
-import { Badge } from 'orkestrator-next';
+import { Badge } from 'orkestrator';
 import { CheckCircle2, AlertTriangle, Clock, XCircle, Tag } from 'lucide-react';
 
 const row: React.CSSProperties = { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' };

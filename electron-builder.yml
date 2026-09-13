@@ -1,4 +1,4 @@
-appId: live.arkitekt.orkestrator.next
+appId: live.arkitekt.orkestrator
 productName: Orkestrator
 electronVersion: 43.1.0  # Use your specific version here
 electronLanguages: ["en", "en-US"]

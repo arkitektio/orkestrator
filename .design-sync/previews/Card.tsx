@@ -1,7 +1,7 @@
 import {
   Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardAction,
   Button, Badge,
-} from 'orkestrator-next';
+} from 'orkestrator';
 
 export function Basic() {
   return (

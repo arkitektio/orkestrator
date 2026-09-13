@@ -1,7 +1,7 @@
 import {
   Item, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemMedia, ItemGroup,
   Button,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { FileText, Image, Archive, MoreHorizontal } from 'lucide-react';
 
 export function FileList() {

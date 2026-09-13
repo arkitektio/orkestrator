@@ -1,4 +1,4 @@
-import { SidebarLayout, Item, ItemContent, ItemTitle, ItemDescription, ItemMedia, Input } from 'orkestrator-next';
+import { SidebarLayout, Item, ItemContent, ItemTitle, ItemDescription, ItemMedia, Input } from 'orkestrator';
 import { Search, Box, GitBranch, Database, Settings } from 'lucide-react';
 
 const navItems = [

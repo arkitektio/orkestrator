@@ -1,4 +1,4 @@
-import { Kbd, KbdGroup } from 'orkestrator-next';
+import { Kbd, KbdGroup } from 'orkestrator';
 
 const row: React.CSSProperties = { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' };
 const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12 };

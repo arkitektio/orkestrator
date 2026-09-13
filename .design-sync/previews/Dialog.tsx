@@ -2,7 +2,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogFooter,
   DialogTitle, DialogDescription, DialogTrigger, DialogClose,
   Button, Input, Label,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Settings2 } from 'lucide-react';
 
 const field: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };

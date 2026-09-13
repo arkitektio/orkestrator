@@ -1,4 +1,4 @@
-import { Textarea } from 'orkestrator-next';
+import { Textarea } from 'orkestrator';
 
 const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 8, width: 300 };
 

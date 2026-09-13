@@ -1,7 +1,7 @@
 import {
   Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia,
   Button,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Rocket, SearchX } from 'lucide-react';
 
 export function NoDeployments() {

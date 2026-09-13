@@ -1,4 +1,4 @@
-import { HoverBorderGradient } from 'orkestrator-next';
+import { HoverBorderGradient } from 'orkestrator';
 import { Zap, ArrowRight } from 'lucide-react';
 
 export function Default() {

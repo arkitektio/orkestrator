@@ -1,7 +1,7 @@
 import {
   Tooltip, TooltipContent, TooltipTrigger, TooltipProvider,
   Button,
-} from 'orkestrator-next';
+} from 'orkestrator';
 import { Play, RotateCcw, Trash2, Settings } from 'lucide-react';
 
 export function ActionTooltips() {

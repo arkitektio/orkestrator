@@ -2,7 +2,7 @@ import {
   Breadcrumb, BreadcrumbList, BreadcrumbItem,
   BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator,
   BreadcrumbEllipsis,
-} from 'orkestrator-next';
+} from 'orkestrator';
 
 export function Simple() {
   return (

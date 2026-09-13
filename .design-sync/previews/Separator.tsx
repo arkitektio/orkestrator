@@ -1,4 +1,4 @@
-import { Separator } from 'orkestrator-next';
+import { Separator } from 'orkestrator';
 
 export function Horizontal() {
   return (

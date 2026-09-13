@@ -1,4 +1,4 @@
-# design-sync notes — orkestrator-next
+# design-sync notes — orkestrator
 
 This repo is an **Electron app**, not a packaged component library. The synced
 "design system" is the shadcn/Radix component layer in `src/renderer/src/components`.
@@ -7,7 +7,7 @@ driven by `--brand-hue` / `--brand-chroma` master controls in `src/renderer/src/
 
 ## Build model (package shape, synth-entry)
 
-There is no `dist/` component library and `node_modules/orkestrator-next` does not
+There is no `dist/` component library and `node_modules/orkestrator` does not
 exist. The converter runs in **synth-entry-via-`--entry`** mode:
 
 - `.design-sync/entry.tsx` — AUTO-GENERATED synthetic barrel that `export *`s every

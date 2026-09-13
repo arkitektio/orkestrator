@@ -1,4 +1,4 @@
-import { Tabs, TabsList, TabsTrigger, TabsContent } from 'orkestrator-next';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from 'orkestrator';
 
 const panel: React.CSSProperties = {
   padding: '8px 2px',

@@ -1,4 +1,4 @@
-import { Calendar } from 'orkestrator-next';
+import { Calendar } from 'orkestrator';
 
 const selected = new Date(2026, 5, 15); // June 15 2026
 
