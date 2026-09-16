@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/arkitektio/orkestrator/compare/v2.2.0...v2.2.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* ci workflow ([a6a3051](https://github.com/arkitektio/orkestrator/commit/a6a3051dc486b7005e46cdab0b3781efca8f7547))
+
 # [2.2.0](https://github.com/arkitektio/orkestrator/compare/v2.1.2...v2.2.0) (2026-09-16)
 
 
