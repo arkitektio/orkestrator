@@ -1,26 +1,17 @@
 import { useCommandPalette } from "@/command/CommandPaletteProvider";
-import { breadcrumbText } from "@/lib/breadcrumbText";
+import { CyclingPlaceholder } from "@/command/CyclingPlaceholder";
 import { cn } from "@/lib/utils";
 import { Search } from "lucide-react";
-import React, { useEffect, useRef } from "react";
-import useReactRouterBreadcrumbs from "use-react-router-breadcrumbs";
+import { useEffect, useRef } from "react";
 
 /**
- * The rail's search field — a browser's URL bar, in the place a browser puts it.
+ * The rail's search field. Clicking it (or ⌘K) unfolds it into the palette.
  *
- * At rest it shows where you are, which is why it reads as an address bar rather
- * than as a button: the palette is how you go somewhere, so the control that
- * opens it should say where "here" is. Clicking it (or ⌘K) unfolds it into the
- * palette.
- *
- * The trail is deliberately minimal — the last two crumbs, not the whole path.
- * `PageLayout` already renders the full breadcrumbs in its own header a few
- * pixels below, and repeating them in full would read as a bug; two crumbs is
- * enough to say "which thing, inside which module" at a glance.
+ * It deliberately does NOT show the current path — `PageLayout` already renders
+ * breadcrumbs — only the cycling "Search… / Ask… / Do…" prompt.
  */
 export const TitleSearchBar = () => {
   const { open, togglePalette } = useCommandPalette();
-  const breadcrumbs = useReactRouterBreadcrumbs();
   const ref = useRef<HTMLButtonElement | null>(null);
   const publishRef = useRef<(() => void) | null>(null);
 
@@ -64,23 +55,13 @@ export const TitleSearchBar = () => {
     if (open) publishRef.current?.();
   }, [open]);
 
-  const trail = React.useMemo(() => {
-    const labels = breadcrumbs
-      .map(({ breadcrumb }) => breadcrumbText(breadcrumb))
-      // Component crumbs (a fetched entity's name, still loading) have no
-      // text; skip rather than render a React element into the pill.
-      .filter((label): label is string => Boolean(label));
-
-    return labels.slice(-2);
-  }, [breadcrumbs]);
-
   return (
     <button
       ref={ref}
       type="button"
       aria-expanded={open}
       aria-label="Search and run commands"
-      title={trail.join(" / ") || "Search and run commands"}
+      title="Search and run commands"
       onClick={() => togglePalette({ fresh: true })}
       className={cn(
         // `app-no-drag` is mandatory: the zone around this is the window's only
@@ -98,30 +79,7 @@ export const TitleSearchBar = () => {
     >
       <Search className="h-3.5 w-3.5 shrink-0 opacity-70" />
 
-      <span className="flex min-w-0 flex-1 items-center gap-1 truncate text-left">
-        {trail.length > 0 ? (
-          trail.map((label, index) => (
-            <React.Fragment key={`${label}-${index}`}>
-              {index > 0 && (
-                <span aria-hidden className="shrink-0 opacity-40">
-                  /
-                </span>
-              )}
-              <span
-                className={cn(
-                  "truncate",
-                  // The leaf is where you are; its ancestor is context.
-                  index === trail.length - 1 ? "text-foreground/80" : "opacity-60",
-                )}
-              >
-                {label}
-              </span>
-            </React.Fragment>
-          ))
-        ) : (
-          <span className="truncate opacity-70">Search Orkestrator</span>
-        )}
-      </span>
+      <CyclingPlaceholder className="min-w-0 flex-1 text-left opacity-70" />
 
       <kbd className="shrink-0 rounded border border-border/50 px-1 py-px text-[10px] tracking-wider opacity-0 transition-opacity group-hover:opacity-60">
         ⌘K

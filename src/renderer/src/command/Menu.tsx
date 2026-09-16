@@ -26,6 +26,7 @@ import { Search, Sparkles } from "lucide-react";
 import { createElement, Suspense, useMemo } from "react";
 import { useCommandPalette } from "./CommandPaletteProvider";
 import { resolveContextObjects } from "./contextObjects";
+import { CyclingPlaceholder } from "./CyclingPlaceholder";
 import { ApplicableNavigation } from "./sources/ApplicableNavigation";
 import { ApplicableRecents } from "./sources/ApplicableRecents";
 import { ApplicableEntitySearch } from "./sources/entity/ApplicableEntitySearch";
@@ -290,13 +291,23 @@ export const CommandMenu = (props: {
                 transition from control to panel has nothing to give it away. */}
             <div className="flex h-8 shrink-0 items-center gap-2 px-2.5">
               <Search className="h-3.5 w-3.5 shrink-0 opacity-70" />
-              <CommandPrimitive.Input
-                data-slot="command-input"
-                placeholder={newTab ? "Open in a new tab…" : "Search or run a command…"}
-                onValueChange={updateQuery}
-                value={context.query}
-                className="h-8 w-full min-w-0 flex-1 bg-transparent text-xs outline-hidden placeholder:text-muted-foreground"
-              />
+              <div className="relative flex h-8 min-w-0 flex-1 items-center">
+                <CommandPrimitive.Input
+                  data-slot="command-input"
+                  // The visible placeholder is the fading overlay below; this
+                  // one stays for assistive tech.
+                  placeholder={newTab ? "Open in a new tab…" : "Search, ask or do…"}
+                  onValueChange={updateQuery}
+                  value={context.query}
+                  className="h-8 w-full min-w-0 flex-1 bg-transparent text-xs outline-hidden placeholder:text-transparent"
+                />
+                {!context.query && (
+                  <CyclingPlaceholder
+                    words={newTab ? ["Open in a new tab…"] : undefined}
+                    className="absolute inset-0 flex items-center text-xs text-muted-foreground"
+                  />
+                )}
+              </div>
               {newTab && (
                 <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
                   New tab
