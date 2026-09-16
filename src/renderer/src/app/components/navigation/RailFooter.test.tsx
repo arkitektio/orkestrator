@@ -13,6 +13,7 @@ vi.mock("@/app/Arkitekt", () => ({
 
 vi.mock("@/app/components/profile/ProfileSwitcher", () => ({
   default: () => <div>switcher</div>,
+  AddProfileActions: () => <div data-testid="add-actions">add</div>,
 }));
 
 // `DroppableNavLink` is a react-dnd drop target and needs a DndProvider; this

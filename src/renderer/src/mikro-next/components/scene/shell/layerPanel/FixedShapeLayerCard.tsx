@@ -343,8 +343,8 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
               )}
             </CardSection>
           )}
-          {/* The metadata + placement chrome every layer card offers. Passing
-              no editor is what keeps the graph section out. */}
+          {/* The placement chrome every layer card offers. Passing no editor
+              is what keeps the graph section out. */}
           <LayerGraphFlyout inline layer={layer} onUpdate={onUpdate} onClose={onClose} />
         </div>
       </CollapsibleContent>

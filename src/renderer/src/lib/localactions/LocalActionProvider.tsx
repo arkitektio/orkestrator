@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
 import { useDialog } from "@/app/dialog";
+import { matchesFilter, scoreFilter } from "@/command/filter";
 import type { PinsValue } from "@/command/PinsProvider";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
 import { smartRegistry } from "@/providers/smart/registry";
@@ -318,20 +319,39 @@ export const getActionEntriesForState = <TRegistry extends Record<string, Action
   );
 };
 
+/** The palette's matcher, so local actions are found the way pages are. */
 const matchesActionSearch = <TAppOrServices = ServiceMap>(
   action: Action<TAppOrServices>,
   search?: string,
-) => {
-  if (!search) {
-    return true;
-  }
+) => matchesFilter([action.title, action.description], search);
 
-  const loweredSearch = search.toLowerCase();
-
-  return (
-    action.title.toLowerCase().includes(loweredSearch) ||
-    action.description.toLowerCase().includes(loweredSearch)
+/**
+ * The order the palette shows actions in: pinned first, then how well each
+ * fits what was typed, then by name. With nothing typed every fit is equal, so
+ * it is pinned-then-alphabetical, as before.
+ */
+export const orderActionEntries = <
+  TEntry extends { id: string; action: { title: string; description: string } },
+>(
+  entries: readonly TEntry[],
+  pinnedActionIds: readonly string[],
+  search?: string,
+): TEntry[] => {
+  const pinned = new Set(pinnedActionIds);
+  const scores = new Map(
+    entries.map((e) => [e.id, scoreFilter([e.action.title, e.action.description], search)]),
   );
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => {
+      const ap = pinned.has(a.entry.id);
+      const bp = pinned.has(b.entry.id);
+      if (ap !== bp) return ap ? -1 : 1;
+      const byScore = (scores.get(b.entry.id) ?? 0) - (scores.get(a.entry.id) ?? 0);
+      if (byScore !== 0) return byScore;
+      return a.entry.action.title.localeCompare(b.entry.action.title) || a.index - b.index;
+    })
+    .map(({ entry }) => entry);
 };
 
 export const  createLocalActionProvider = <TAppOrServices = ServiceMap, TRegistry extends Record<string, Action<TAppOrServices>> = Record<string,Action<TAppOrServices>>>(registry: TRegistry) => {

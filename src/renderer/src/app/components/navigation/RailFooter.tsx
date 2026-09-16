@@ -1,10 +1,11 @@
 import { Arkitekt } from "@/app/Arkitekt";
-import ProfileSwitcher from "@/app/components/profile/ProfileSwitcher";
+import ProfileSwitcher, { AddProfileActions } from "@/app/components/profile/ProfileSwitcher";
 import { ProfileBrandAvatar } from "@/app/components/profile/ProfileBrandAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DroppableNavLink } from "@/components/ui/link";
@@ -60,9 +61,13 @@ export const RailFooter = () => {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent side="top" align="start" className="w-64 border-border">
-          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-            Switch organization
+          {/* The menu's title bar: what the list is, and — at its right — the
+              two ways to add to it. */}
+          <DropdownMenuLabel className="flex items-center justify-between gap-2 py-1 pr-1 text-xs font-normal text-muted-foreground">
+            <span>Switch organization</span>
+            <AddProfileActions />
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
 
           {/* Only organizations here: signing out, debug mode and configuration
               issues live in Settings. */}

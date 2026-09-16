@@ -200,3 +200,31 @@ describe("Back and Forward are greyed honestly", () => {
     expect(screen.getByLabelText("Forward")).toBeEnabled();
   });
 });
+
+describe("share", () => {
+  const original = navigator.clipboard;
+  afterEach(() => {
+    Object.defineProperty(navigator, "clipboard", { value: original, configurable: true });
+  });
+
+  it("copies the active tab's universal link", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(
+      <Shell>
+        <Driver />
+        <RailChrome />
+      </Shell>,
+    );
+    act(() => screen.getByText("drive-forward").click());
+    await act(async () => {
+      screen.getByLabelText("Share").click();
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      `https://arkitekt.live/deeplink?orkestrator=${encodeURIComponent("/somewhere")}`,
+    );
+    // It says so, for a moment.
+    expect(screen.getByLabelText("Share").getAttribute("title")).toBe("Link copied");
+  });
+});
+

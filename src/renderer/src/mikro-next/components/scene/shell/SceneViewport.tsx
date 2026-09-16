@@ -40,6 +40,7 @@ import { SceneModeControls } from "./chrome/SceneModeControls";
 import { SceneShortcuts } from "./keyboard/SceneShortcuts";
 import { CenterLodReadout } from "../features/bricks/CenterLodReadout";
 import { DrawSizeReadout } from "../features/annotations/DrawSizeReadout";
+import { MetadataOverlay } from "../features/annotations/MetadataOverlay";
 import { RoiToolbar } from "../features/annotations/RoiToolbar";
 import { MeshDesignToolbar } from "../features/meshDesign/ui/MeshDesignToolbar";
 import { SceneScreenshot } from "./chrome/SceneScreenshot";
@@ -453,6 +454,10 @@ export const SceneViewport = (props: { children?: ReactNode }) => {
           {/* Bottom-left, under the scale bar: both answer "what am I
               actually looking at" — one in world units, one in pixels. */}
           <CenterLodReadout />
+          {/* Bottom-right, above the mode controls: what was RECORDED about
+              what you are looking at — the active layer's anchored acquisition
+              metadata, folded to a single unfold button until asked. */}
+          <MetadataOverlay />
           <DrawSizeReadout />
           {/* Both dock bottom-right: the probe readout sits directly above the
               mode controls that turn probing on. */}

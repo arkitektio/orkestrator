@@ -21,6 +21,7 @@ vi.mock("@/providers/smart/registry", () => ({
 
 import type { Action, ActionState, Condition, Structure } from "./LocalActionProvider";
 import { getActionEntriesForState, getActionsForState } from "./LocalActionProvider";
+import { orderActionEntries } from "./LocalActionProvider";
 
 const structure = (identifier: string, id = "1"): Structure =>
   ({ identifier, object: { id } }) as Structure;
@@ -168,5 +169,32 @@ describe("getActionEntriesForState", () => {
     const entries = getActionEntriesForState(registry, state({ left: [structure("@x/a")] }));
     expect(entries.map((e) => e.id)).toEqual(["onA"]);
     expect(entries[0].action).toBe(registry.onA);
+  });
+});
+
+describe("orderActionEntries", () => {
+  const entry = (id: string, title: string, description = "") => ({ id, action: { title, description } });
+  const ids = (entries: ReturnType<typeof entry>[], pinned: string[], search?: string) =>
+    orderActionEntries(entries, pinned, search).map((e) => e.id);
+
+  it("puts pinned actions first, then the rest by name, when nothing is typed", () => {
+    const entries = [entry("b", "Beta"), entry("a", "Alpha"), entry("z", "Zip")];
+    expect(ids(entries, ["z"])).toEqual(["z", "a", "b"]);
+  });
+
+  it("orders by how well each fits what was typed", () => {
+    // "a": Alpha is a prefix hit, Beta only a substring hit.
+    const entries = [entry("b", "Beta"), entry("a", "Alpha")];
+    expect(ids(entries, [], "a")).toEqual(["a", "b"]);
+  });
+
+  it("keeps pinned actions above better fits", () => {
+    const entries = [entry("b", "Beta"), entry("a", "Alpha")];
+    expect(ids(entries, ["b"], "a")).toEqual(["b", "a"]);
+  });
+
+  it("finds an action fuzzily, as the palette does", () => {
+    const entries = [entry("s", "Create shortcut", "Pin this action")];
+    expect(ids(entries, [], "shrtcut")).toEqual(["s"]);
   });
 });

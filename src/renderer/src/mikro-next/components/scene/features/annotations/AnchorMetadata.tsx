@@ -5,11 +5,9 @@ import type {
 } from "@/mikro-next/api/graphql";
 import { useGetLensAnchorsQuery } from "@/mikro-next/api/graphql";
 import { LightPathListView } from "@/mikro-next/components/lightpath/LightPathListView";
-import { Tags } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import {
   type AnchorMatch,
-  describePins,
   layerCoverage,
   matchAnchor,
 } from "./anchorVisibility";
@@ -28,17 +26,18 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
  * a light path, just not for this timepoint" is a different answer from "no light
  * path was ever recorded".
  *
- * This sits in the card body, unfolded with the card, rather than behind a
- * click: which channel a layer is and what light made it is the first thing you
- * want when a layer looks wrong, unlike the placement chain next to it, which is
- * only interesting when a layer lands somewhere unexpected.
+ * This is the body of the viewport's metadata overlay
+ * (`MetadataOverlay.tsx`, bottom-left), which describes the ACTIVE layer —
+ * not a section of every layer card: which channel a layer is and what light
+ * made it is a question about what is on screen, and the answer belongs next
+ * to the picture rather than folded into a list in the sidebar.
  *
  * The scene payload already carries a thin projection of these anchors (the
- * histogram the clim comes from, the label the row shows), so the section draws
- * the instant the card unfolds; `GetLensAnchors` then fills in the microscope
- * state and phasor facts that are far too heavy to ride along with every scene
- * load. The query mounts with the section, and `CollapsibleContent` unmounts a
- * folded card — so a scene of twenty layers still fetches only what is open.
+ * histogram the clim comes from, the label the row shows), so the panel draws
+ * the instant it unfolds; `GetLensAnchors` then fills in the microscope state
+ * and phasor facts that are far too heavy to ride along with every scene load.
+ * The query mounts with the unfolded overlay only, and only for the one layer
+ * it describes — so a scene of twenty layers fetches exactly one.
  */
 
 /**
@@ -240,14 +239,7 @@ const PhasorSpoke = ({ anchor }: { anchor: PanelAnchor }) => {
 };
 
 /** One in-view anchor: its pins, then whichever metadata spokes it carries. */
-const ActiveAnchor = ({
-  anchor,
-  match,
-}: {
-  anchor: PanelAnchor;
-  match: AnchorMatch;
-}) => {
-  const pins = describePins(match.pins);
+const ActiveAnchor = ({ anchor }: { anchor: PanelAnchor }) => {
   const hasSpokes =
     Boolean(anchor.channelLabel) ||
     Boolean(anchor.valueHistogram) ||
@@ -257,17 +249,14 @@ const ActiveAnchor = ({
     (anchor.phasorHistograms?.length ?? 0) > 0;
 
   return (
-    <div className="flex flex-col gap-1.5 rounded border border-white/10 bg-white/[0.03] p-1.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="font-mono text-[10px] text-white/85">
-          {pins || "everywhere"}
+    <div className="flex flex-col items-end gap-1.5 rounded border border-white/10 bg-white/[0.03] p-1.5 text-right">
+      {/* Which slice the anchor pins is not shown — `match` decided it is in
+          view, and that is all the reader needs; the coordinates are noise. */}
+      {anchor.channelLabel?.label && (
+        <span className="shrink-0 rounded border border-white/15 bg-white/5 px-1 py-px text-[9px] text-white/85">
+          {anchor.channelLabel.label}
         </span>
-        {anchor.channelLabel?.label && (
-          <span className="shrink-0 rounded border border-white/15 bg-white/5 px-1 py-px text-[9px] text-white/85">
-            {anchor.channelLabel.label}
-          </span>
-        )}
-      </div>
+      )}
 
       {anchor.valueHistogram && (
         <ValueHistogramSpoke histogram={anchor.valueHistogram} />
@@ -311,39 +300,53 @@ const OutOfView = ({
   return (
     <div className="flex flex-col gap-1">
       <button
-        className="self-start text-[9px] uppercase tracking-widest text-white/40 transition-colors hover:text-white/70"
+        className="self-end text-[9px] uppercase tracking-widest text-white/40 transition-colors hover:text-white/70"
         onClick={() => setOpen((previous) => !previous)}
       >
-        {entries.length} anchor{entries.length === 1 ? "" : "s"} out of view
+        {entries.length} more out of view
       </button>
       {open &&
         entries.map(({ anchor, match }) => (
-          <div key={anchor.id} className="flex flex-wrap gap-1 pl-1">
-            {match.pins.map((pin) => (
-              <span
-                key={pin.axis}
-                className={
-                  pin.met
-                    ? "rounded border border-white/10 px-1 font-mono text-[9px] text-white/45"
-                    : "rounded border border-amber-400/30 bg-amber-400/10 px-1 font-mono text-[9px] text-amber-300/90"
-                }
-                title={pin.met ? undefined : `showing ${pin.current}`}
-              >
-                {pin.axis}={pin.value ?? "?"}
-                {!pin.met && (
-                  <span className="text-amber-300/60"> ≠ {pin.current}</span>
-                )}
-              </span>
-            ))}
-            {anchor.channelLabel?.label && (
-              <span className="text-[9px] text-white/40">
-                {anchor.channelLabel.label}
-              </span>
-            )}
+          // The coordinates are not shown; the mismatch rides on the tooltip.
+          <div
+            key={anchor.id}
+            className="flex flex-wrap justify-end gap-1 pr-1"
+            title={match.pins
+              .filter((pin) => !pin.met)
+              .map((pin) => `${pin.axis}: showing ${pin.current}`)
+              .join(", ") || undefined}
+          >
+            <span className="text-[9px] text-white/40">
+              {anchor.channelLabel?.label ?? "unlabelled"}
+            </span>
           </div>
         ))}
     </div>
   );
+};
+
+/**
+ * Split a layer's anchors into the ones describing what it currently shows and
+ * the ones pinned elsewhere (`anchorVisibility.ts` owns the rule). Exported so
+ * the overlay's collapsed pill can say "3 in view" from the same partition the
+ * unfolded panel renders.
+ */
+export const partitionAnchors = (
+  layer: LayerState,
+  anchors: readonly PanelAnchor[],
+  dimSelections: Parameters<typeof layerCoverage>[1],
+): {
+  active: { anchor: PanelAnchor; match: AnchorMatch }[];
+  hidden: { anchor: PanelAnchor; match: AnchorMatch }[];
+} => {
+  const coverage = layerCoverage(layer, dimSelections);
+  const active: { anchor: PanelAnchor; match: AnchorMatch }[] = [];
+  const hidden: { anchor: PanelAnchor; match: AnchorMatch }[] = [];
+  for (const anchor of anchors) {
+    const match = matchAnchor(anchor.coordinates, coverage);
+    (match.satisfied ? active : hidden).push({ anchor, match });
+  }
+  return { active, hidden };
 };
 
 export const AnchorMetadata = ({
@@ -359,31 +362,23 @@ export const AnchorMetadata = ({
   // the panel never claims metadata for a slice that scrolled off.
   const dimSelections = useViewerStore((state) => state.dimSelections);
 
-  const { active, hidden } = useMemo(() => {
-    const coverage = layerCoverage(layer, dimSelections);
-    const active: { anchor: PanelAnchor; match: AnchorMatch }[] = [];
-    const hidden: { anchor: PanelAnchor; match: AnchorMatch }[] = [];
-    for (const anchor of anchors) {
-      const match = matchAnchor(anchor.coordinates, coverage);
-      (match.satisfied ? active : hidden).push({ anchor, match });
-    }
-    return { active, hidden };
-  }, [anchors, layer, dimSelections]);
+  const { active, hidden } = useMemo(
+    () => partitionAnchors(layer, anchors, dimSelections),
+    [anchors, layer, dimSelections],
+  );
 
   // A dataset with no anchors is the common case, not a fault worth a row of
   // chrome on every layer card. Say nothing.
   if (anchors.length === 0) return null;
 
   return (
-    <div className="flex max-h-64 min-w-0 flex-col gap-1.5 overflow-y-auto text-[10px]">
+    <div className="flex max-h-64 min-w-0 flex-col items-end gap-1.5 overflow-y-auto text-right text-[10px]">
       {active.length === 0 ? (
         <span className="text-white/40">
           Nothing anchored to what this layer is showing.
         </span>
       ) : (
-        active.map(({ anchor, match }) => (
-          <ActiveAnchor key={anchor.id} anchor={anchor} match={match} />
-        ))
+        active.map(({ anchor }) => <ActiveAnchor key={anchor.id} anchor={anchor} />)
       )}
       {hidden.length > 0 && <OutOfView entries={hidden} />}
       {loading && <span className="text-[9px] text-white/30">Loading…</span>}
@@ -392,42 +387,21 @@ export const AnchorMetadata = ({
 };
 
 /**
- * The metadata section of an unfolded layer card. The full payload (microscope
- * state, phasor facts) is fetched when the card unfolds; until it lands, the
- * thin `SceneLens` projection already in the scene stands in, so the section
- * never flashes empty and then fills.
+ * A layer's anchors, full payload when it has landed and the scene's thin
+ * projection until then — so a consumer never flashes empty and then fills.
+ * Cache-first: the anchors of a dataset do not change while it is on screen.
  */
-export const MetadataSection = memo(
-  ({ layer }: { layer: LayerState }) => {
-    const { data, loading } = useGetLensAnchorsQuery({
-      variables: { id: layer.lens.id },
-      fetchPolicy: "cache-first",
-    });
+export const useLayerAnchors = (
+  layer: LayerState,
+): { anchors: readonly PanelAnchor[]; loading: boolean } => {
+  const { data, loading } = useGetLensAnchorsQuery({
+    variables: { id: layer.lens.id },
+    fetchPolicy: "cache-first",
+  });
+  return {
+    anchors: data?.lens.activeAnchors ?? layer.lens.activeAnchors,
+    loading,
+  };
+};
 
-    const anchors: readonly PanelAnchor[] =
-      data?.lens.activeAnchors ?? layer.lens.activeAnchors;
-
-    if (anchors.length === 0) return null;
-
-    return (
-      <div className="flex min-w-0 flex-col gap-1 px-1 py-1">
-        <Header>
-          <span className="flex items-center gap-1">
-            <Tags className="h-2.5 w-2.5" />
-            Metadata
-          </span>
-        </Header>
-        <AnchorMetadata layer={layer} anchors={anchors} loading={loading} />
-      </div>
-    );
-  },
-  // The section reads only `lens` (anchors, dataset axes) and `phasorAxis`
-  // (anchorVisibility's coverage) — both spread-preserved by the cards' live
-  // preview folds, so a contrast drag must not re-render the anchor table
-  // per tick inside an unfolded card.
-  (prev, next) =>
-    prev.layer.lens === next.layer.lens && prev.layer.phasorAxis === next.layer.phasorAxis,
-);
-MetadataSection.displayName = "MetadataSection";
-
-export default MetadataSection;
+export type { PanelAnchor };

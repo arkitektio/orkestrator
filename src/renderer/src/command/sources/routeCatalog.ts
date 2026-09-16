@@ -1,4 +1,6 @@
-import { matchesFilter } from "../filter";
+import { ADATASET_SPECS, arrayDatasetSpecLink } from "@/mikro-next/specs";
+
+import { rankByFilter } from "../filter";
 
 /** A page inside a module, as its rail pane links to it. */
 export type CatalogRoute = {
@@ -18,11 +20,22 @@ export type CatalogRoute = {
  * finds Rekuest › Tasks without opening a module first. `routeCatalog.test.ts`
  * parses the panes' source and fails the moment one of them adds, renames or
  * drops a link that is not mirrored here — the two cannot drift silently.
+ *
+ * Sections a pane GENERATES from data (Mikro's one-link-per-spec list:
+ * Images, Volumes, …) are generated here from the same data, so those cannot
+ * drift at all.
  */
 export const ROUTE_CATALOG: CatalogRoute[] = [
   // mikro
   { module: "mikro", label: "Dashboard", route: "/mikro/home", keywords: ["images", "home"] },
   { module: "mikro", label: "Array Datasets", route: "/mikro/arraydatasets", keywords: ["images", "stacks"] },
+  // One page per array-dataset spec, exactly as the pane lists them.
+  ...ADATASET_SPECS.map<CatalogRoute>((spec) => ({
+    module: "mikro",
+    label: spec.label,
+    route: arrayDatasetSpecLink(spec.slug),
+    keywords: ["array datasets", "spec", spec.slug],
+  })),
   { module: "mikro", label: "Coordinate Systems", route: "/mikro/coordinatesystems" },
   { module: "mikro", label: "Table Datasets", route: "/mikro/tabledatasets", keywords: ["tables"] },
   { module: "mikro", label: "Annotations", route: "/mikro/annotations", keywords: ["rois", "labels"] },
@@ -105,7 +118,7 @@ export const ROUTE_CATALOG: CatalogRoute[] = [
  * dead end — and only once something is typed: sixty-odd pages with nothing
  * typed is noise, not navigation. Matched on the page's name, its route and
  * its keywords, and on the module's name, so "rekuest tasks" and "tasks" both
- * find it.
+ * find it — fuzzily, and best match first, so "taks" finds Tasks at the top.
  */
 export const searchRoutes = (
   catalog: readonly CatalogRoute[],
@@ -116,8 +129,10 @@ export const searchRoutes = (
   const term = filter?.trim();
   if (!term) return [];
   const ready = new Map(readyModules.map((m) => [m.key, m.label ?? m.key]));
-  return catalog
-    .filter((r) => ready.has(r.module))
-    .filter((r) => matchesFilter([r.label, r.route, ready.get(r.module), ...(r.keywords ?? [])], term))
-    .slice(0, limit);
+  return rankByFilter(
+    catalog.filter((r) => ready.has(r.module)),
+    (r) => [r.label, r.route, ready.get(r.module), ...(r.keywords ?? [])],
+    term,
+    limit,
+  );
 };

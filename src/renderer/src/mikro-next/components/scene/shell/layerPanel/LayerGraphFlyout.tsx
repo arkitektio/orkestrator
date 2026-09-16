@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { LayerState } from "../../platform/stores/sceneStore";
-import { MetadataSection } from "../../features/annotations/AnchorMetadata";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { PlacementPopover } from "../../platform/layerui/PlacementChain";
 import {
@@ -14,11 +13,12 @@ import {
  * colormap, projection — the single rendering truth). Rendered inline inside
  * the layer card, or as a standalone flyout beside the Layers panel.
  *
- * Below it, the acquisition metadata anchored to what the layer is currently
- * showing (`MetadataSection`) — reference rather than editing, but the first
- * thing you want when a layer looks wrong, so it unfolds with the card. The
- * placement chain stays behind a popover: which coordinate systems a layer
- * passes through only matters when it lands somewhere unexpected.
+ * The acquisition metadata anchored to what the layer is showing is NOT here:
+ * it is the viewport's bottom-left overlay (`features/annotations/
+ * MetadataOverlay.tsx`), which describes the active layer next to the picture
+ * instead of folding a copy into every card. The placement chain stays behind
+ * a popover: which coordinate systems a layer passes through only matters when
+ * it lands somewhere unexpected.
  */
 export const LayerGraphFlyout = ({
   layer,
@@ -33,8 +33,8 @@ export const LayerGraphFlyout = ({
    *
    * OMITTED by the fixed-shape kinds: an intensity, rgb or phasor layer has no
    * render graph, so there is no graph section to mount — what it wants from
-   * this component is the metadata and the placement chain, which every
-   * lens-backed layer answers the same way.
+   * this component is the placement chain, which every lens-backed layer
+   * answers the same way.
    */
   editor?: RenderGraphEditor;
   onUpdate: (updated: LayerState) => void;
@@ -48,9 +48,9 @@ export const LayerGraphFlyout = ({
 }) => {
   const label = layerDisplayLabel(layer);
 
-  // The render graph, then the anchored metadata; placement is one click away
-  // rather than occupying the bottom of every unfolded card. `min-w-0` so a
-  // long colormap or dimension name truncates instead of widening the card.
+  // The render graph; placement is one click away rather than occupying the
+  // bottom of every unfolded card. `min-w-0` so a long colormap or dimension
+  // name truncates instead of widening the card.
   const body = (
     <div
       className={
@@ -60,8 +60,6 @@ export const LayerGraphFlyout = ({
       }
     >
       {editor && <RenderGraphSection editor={editor} layer={layer} />}
-
-      <MetadataSection layer={layer} />
 
       <PlacementPopover layer={layer} />
     </div>

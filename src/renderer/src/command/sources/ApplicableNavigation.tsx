@@ -12,7 +12,7 @@ import { useMemo } from "react";
 import useReactRouterBreadcrumbs from "use-react-router-breadcrumbs";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { matchesFilter } from "../filter";
+import { matchesFilter, rankByFilter } from "../filter";
 import { useOpenTarget } from "../useOpenTarget";
 import { usePins } from "../PinsProvider";
 import { APP_COMMANDS } from "./appCommands";
@@ -47,11 +47,13 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
 
   const moduleRows = useMemo(
     () =>
-      modules
+      rankByFilter(
         // A module whose service is not ready routes to a fallback screen;
         // offering it as a destination is offering a dead end.
-        .filter((m) => m.status === "ready")
-        .filter((m) => matchesFilter([m.definition.label, m.key], filter)),
+        modules.filter((m) => m.status === "ready"),
+        (m) => [m.definition.label, m.key],
+        filter,
+      ),
     [modules, filter],
   );
 
@@ -70,10 +72,12 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
       // 129 list pages with nothing typed is noise, not navigation.
       return [];
     }
-    return smartRegistry
-      .registeredModels()
-      .filter((model) => matchesFilter([model.name, model.identifier], filter))
-      .slice(0, 8);
+    return rankByFilter(
+      smartRegistry.registeredModels(),
+      (model) => [model.name, model.identifier],
+      filter,
+      8,
+    );
   }, [filter]);
 
   // Mirrors the rail's "+" so the same thing is reachable without the pointer.
@@ -90,8 +94,10 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
 
   const commandRows = useMemo(
     () =>
-      APP_COMMANDS.filter((c) => !c.electronOnly || isElectron()).filter((c) =>
-        matchesFilter([c.title, c.description, ...(c.keywords ?? [])], filter),
+      rankByFilter(
+        APP_COMMANDS.filter((c) => !c.electronOnly || isElectron()),
+        (c) => [c.title, c.description, ...(c.keywords ?? [])],
+        filter,
       ),
     [filter],
   );

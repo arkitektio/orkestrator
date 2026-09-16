@@ -189,8 +189,7 @@ const EmptyStore = () => (
     <div>
       <h2 className="text-xl font-semibold">The shelves are empty</h2>
       <p className="mt-1 max-w-md text-sm text-muted-foreground">
-        Apps appear here once a GitHub repository with an Arkitekt manifest has been
-        added and scanned.
+        Add a repository to see apps registered with your organization.
       </p>
     </div>
     <DialogButton name="createrepo" dialogProps={{}} size="sm">
@@ -247,8 +246,7 @@ export const AppStorePage = () => {
             <div>
               <h1 className="text-4xl font-bold tracking-tight">Discover apps</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Everything registered with your organization — ready to deploy on your
-                engines.
+                Browse the apps registered with your organization, and deploy them to on a running engine.
               </p>
             </div>
             {apps.length > 0 && (

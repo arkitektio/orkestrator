@@ -1,8 +1,9 @@
 import { getChromeMode, trafficLightGutter, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight, RotateCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, RotateCw, Share2 } from "lucide-react";
 
 import { useActiveTabNavigation } from "@/command/tabs/useActiveTabNavigation";
+import { useCopyUniversalLink } from "@/hooks/use-copy-universal-link";
 import { TitleSearchBar } from "./TitleSearchBar";
 import { WindowControls } from "./WindowControls";
 
@@ -26,14 +27,17 @@ const navButtonClass =
   "app-no-drag flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent";
 
 /**
- * Back, forward, reload — the row above the search, as a browser has.
+ * Back, forward, reload, share — the row above the search, as a browser has.
  *
  * Each tab has a memory history of its own, which — unlike the old
  * `HashRouter` — knows its depth. So Back and Forward are greyed at the ends
- * rather than silently doing nothing.
+ * rather than silently doing nothing. Share copies the active tab's universal
+ * link (`lib/universalLink.ts`): the one URL that opens this page from a chat
+ * or an email, whatever machine it is read on.
  */
 const NavButtons = () => {
-  const { back, forward, canGoBack, canGoForward } = useActiveTabNavigation();
+  const { back, forward, canGoBack, canGoForward, location } = useActiveTabNavigation();
+  const { copy, copied } = useCopyUniversalLink(location);
 
   const reload = () => {
     if (window.api) {
@@ -70,6 +74,15 @@ const NavButtons = () => {
         onClick={reload}
       >
         <RotateCw className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        aria-label="Share"
+        title={copied ? "Link copied" : "Copy a link to this page"}
+        className={navButtonClass}
+        onClick={() => void copy()}
+      >
+        {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Share2 className="h-3.5 w-3.5" />}
       </button>
     </>
   );
