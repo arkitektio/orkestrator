@@ -1,3 +1,20 @@
+# [2.2.0](https://github.com/arkitektio/orkestrator/compare/v2.1.2...v2.2.0) (2026-09-16)
+
+
+### Bug Fixes
+
+* more tab helpers ([ab400b1](https://github.com/arkitektio/orkestrator/commit/ab400b11f699b6aae059e19bac1cc514fd17982b))
+
+
+### Features
+
+* better layout ([69c1f50](https://github.com/arkitektio/orkestrator/commit/69c1f503c0a419b9f0cfd57c2661cccaf226c648))
+* better tabs ([2f9252a](https://github.com/arkitektio/orkestrator/commit/2f9252a7d1449df5347d1821821fd9c9d1ef28f9))
+* less intrusive search ([a29da5b](https://github.com/arkitektio/orkestrator/commit/a29da5be627f0795dae67f8ddae61deb726ebb0d))
+* nice more zenish design ([cedbb3d](https://github.com/arkitektio/orkestrator/commit/cedbb3d178e8225e2a59171e0e965bbf2cfa71c2))
+* with multi org switcher ([eba5e5a](https://github.com/arkitektio/orkestrator/commit/eba5e5add4471bbe68f598f0a7883eb690d35358))
+* with nicer per object actions ([dba2bef](https://github.com/arkitektio/orkestrator/commit/dba2befe66906331461fdde4e9347bc560c0b2d9))
+
 ## [2.1.2](https://github.com/arkitektio/orkestrator/compare/v2.1.1...v2.1.2) (2026-09-13)
 
 
