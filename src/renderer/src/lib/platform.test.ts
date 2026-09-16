@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getChromeMode, getPlatform, isElectron, trafficLightGutter } from "./platform";
+import { dragZoneDoubleClick, getChromeMode, getPlatform, isElectron, trafficLightGutter } from "./platform";
 
 const setElectron = (platform?: string) => {
   if (platform === undefined) {
@@ -75,5 +75,49 @@ describe("trafficLightGutter", () => {
   it("collapses in fullscreen, where macOS removes the lights", () => {
     // Otherwise the centred search bar sits permanently off-centre.
     expect(trafficLightGutter("mac", true)).toBe(0);
+  });
+});
+
+describe("dragZoneDoubleClick", () => {
+  const withBridge = () => {
+    const toggleMaximize = vi.fn();
+    // @ts-expect-error - stand in for the preload injection
+    window.api = { windowControls: { toggleMaximize } };
+    return toggleMaximize;
+  };
+  afterEach(() => {
+    // @ts-expect-error - clean up the injected global
+    delete window.api;
+  });
+
+  it("only exists where the frame is ours to replace (Linux)", () => {
+    // macOS and Windows keep a real frame that already handles the bar.
+    expect(dragZoneDoubleClick("mac")).toBeUndefined();
+    expect(dragZoneDoubleClick("overlay")).toBeUndefined();
+    expect(dragZoneDoubleClick("none")).toBeUndefined();
+    expect(dragZoneDoubleClick("buttons")).toBeTypeOf("function");
+  });
+
+  it("toggles maximise from the bar itself", () => {
+    const toggleMaximize = withBridge();
+    const zone = document.createElement("div");
+    dragZoneDoubleClick("buttons")!({ target: zone });
+    expect(toggleMaximize).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a double-click on a control to the control", () => {
+    // A double-clicked search pill or nav button must not fling the window
+    // into maximise as a side effect.
+    const toggleMaximize = withBridge();
+    const zone = document.createElement("div");
+    const control = document.createElement("button");
+    control.className = "app-no-drag";
+    zone.appendChild(control);
+    dragZoneDoubleClick("buttons")!({ target: control });
+    expect(toggleMaximize).not.toHaveBeenCalled();
+  });
+
+  it("is inert without the bridge", () => {
+    expect(() => dragZoneDoubleClick("buttons")!({ target: null })).not.toThrow();
   });
 });

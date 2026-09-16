@@ -1,6 +1,6 @@
 import { WindowsOverlayStrip } from "@/app/components/chrome/RailChrome";
 import { WindowControls } from "@/app/components/chrome/WindowControls";
-import { getChromeMode, useWindowState } from "@/lib/platform";
+import { dragZoneDoubleClick, getChromeMode, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 
@@ -46,6 +46,7 @@ export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
       <div
         data-testid="welcome-drag-strip"
         className={cn("flex h-10 shrink-0 items-center px-2", mode !== "none" && "app-drag")}
+        onDoubleClick={dragZoneDoubleClick(mode)}
       >
         <div className="flex-1" />
         {mode === "buttons" && <WindowControls maximized={maximized} compact />}

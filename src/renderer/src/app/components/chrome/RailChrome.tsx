@@ -1,4 +1,4 @@
-import { getChromeMode, trafficLightGutter, useWindowState } from "@/lib/platform";
+import { dragZoneDoubleClick, getChromeMode, trafficLightGutter, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, ArrowRight, Check, RotateCw, Share2 } from "lucide-react";
 
@@ -95,7 +95,10 @@ export const RailChrome = () => {
   const gutter = trafficLightGutter(mode, fullscreen);
 
   return (
-    <div className={cn("flex shrink-0 flex-col gap-1.5 px-2 pb-2 pt-2", mode !== "none" && "app-drag")}>
+    <div
+      className={cn("flex shrink-0 flex-col gap-1.5 px-2 pb-2 pt-2", mode !== "none" && "app-drag")}
+      onDoubleClick={dragZoneDoubleClick(mode)}
+    >
       <div className="flex h-7 items-center gap-0.5">
         {/* Horizontal room for the real traffic lights, which macOS draws over
             this surface. Collapses in fullscreen, where it removes them —

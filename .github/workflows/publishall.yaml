@@ -15,7 +15,9 @@ env:
 
 jobs:
   release:
-    continue-on-error: true
+    # Deliberately NOT `continue-on-error`: with `fail-fast: false` below the
+    # other platforms already keep building, and a Windows or Linux package
+    # that fails to build must show up red, not be swallowed.
     runs-on: ${{ matrix.os }}
 
     strategy:

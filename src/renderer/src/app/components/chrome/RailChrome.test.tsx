@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
@@ -115,6 +115,29 @@ describe("RailChrome drag regions", () => {
     const { container } = render(<Shell><RailChrome /></Shell>);
     expect(screen.getByText("search")).toBeInTheDocument();
     expect(container.querySelector(".app-drag")).toBeNull();
+  });
+});
+
+describe("double-clicking the bar", () => {
+  it("maximises on Linux, whose frameless window lost that along with its frame", () => {
+    setElectron("linux");
+    const { container } = render(<Shell><RailChrome /></Shell>);
+    fireEvent.doubleClick(container.querySelector(".app-drag")!);
+    expect(window.api.windowControls.toggleMaximize).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not double up on a control on Linux", () => {
+    setElectron("linux");
+    render(<Shell><RailChrome /></Shell>);
+    fireEvent.doubleClick(screen.getByLabelText("Reload"));
+    expect(window.api.windowControls.toggleMaximize).not.toHaveBeenCalled();
+  });
+
+  it.each(["darwin", "win32"])("is left to the real frame on %s", (platform) => {
+    setElectron(platform);
+    const { container } = render(<Shell><RailChrome /></Shell>);
+    fireEvent.doubleClick(container.querySelector(".app-drag")!);
+    expect(window.api.windowControls.toggleMaximize).not.toHaveBeenCalled();
   });
 });
 

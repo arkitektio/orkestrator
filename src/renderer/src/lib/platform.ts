@@ -103,6 +103,26 @@ export const useWindowState = (): WindowChromeState => {
   return state;
 };
 
+/**
+ * Double-clicking a title bar maximises the window — a frame behaviour that
+ * only the frameless platform (Linux) loses along with its frame, so only there
+ * do we supply it. macOS and Windows keep their own handling of the drag zone.
+ *
+ * Returns a handler for the `app-drag` zone, or nothing where the frame already
+ * does this. Double-clicks that land on a control (`app-no-drag`) are the
+ * control's, not the bar's.
+ */
+export const dragZoneDoubleClick = (
+  mode: ChromeMode,
+): ((event: { target: EventTarget | null }) => void) | undefined => {
+  if (mode !== "buttons") return undefined;
+  return (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest(".app-no-drag")) return;
+    window.api?.windowControls?.toggleMaximize();
+  };
+};
+
 /** Height of the title bar. Must match `TITLE_BAR_HEIGHT` in WindowManager. */
 export const TITLE_BAR_HEIGHT = 40;
 
