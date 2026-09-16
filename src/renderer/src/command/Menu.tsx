@@ -25,7 +25,6 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { Search, Sparkles } from "lucide-react";
 import { createElement, Suspense, useMemo } from "react";
 import { useCommandPalette } from "./CommandPaletteProvider";
-import { usePins } from "./PinsProvider";
 import { ApplicableNavigation } from "./sources/ApplicableNavigation";
 import { ApplicableRecents } from "./sources/ApplicableRecents";
 import { ApplicableEntitySearch } from "./sources/entity/ApplicableEntitySearch";
@@ -188,10 +187,9 @@ export const CommandMenu = (props: {
   // literal per render, defeating their memos.
   const objects = useMemo(() => props.objects ?? [], [props.objects]);
 
-  // ⌘T still navigates when signed out, but it cannot leave a pin behind, so
-  // the panel must not claim otherwise.
-  const { canPin } = usePins();
-  const newTab = intent === "new-tab" && canPin;
+  // ⌘T opens a new tab — with its own history — which works signed in or out,
+  // so the chip shows whenever that is the intent.
+  const newTab = intent === "new-tab";
 
   return (
     <Dialog

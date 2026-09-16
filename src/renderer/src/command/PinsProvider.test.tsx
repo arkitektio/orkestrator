@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const profileId = vi.fn<[], string | null>(() => "org-a");
 vi.mock("@/app/Arkitekt", () => ({
   Arkitekt: { useActiveProfileId: () => profileId() },
 }));
+
+vi.mock("@/constants", () => ({ baseName: "" }));
 
 vi.mock("@/providers/smart/registry", () => ({
   smartRegistry: {
@@ -18,6 +20,8 @@ vi.mock("@/providers/smart/registry", () => ({
 
 import { PinsProvider, usePins } from "./PinsProvider";
 import { pinsStorageKey } from "./pins";
+import { ActiveTabRouter } from "./tabs/ActiveTabRouter";
+import { TabsProvider } from "./tabs/TabsProvider";
 
 const Probe = () => {
   const { pins, activeKey, isCurrentPinned, canPin, pin, unpin, select } = usePins();
@@ -47,22 +51,27 @@ const Probe = () => {
   );
 };
 
-const renderAt = (initial = "/") =>
-  render(
-    <MemoryRouter initialEntries={[initial]}>
-      <PinsProvider>
-        <Routes>
-          <Route path="*" element={<Probe />} />
-        </Routes>
-      </PinsProvider>
-    </MemoryRouter>,
+// The tab store boots its first tab from the URL hash, so that is where the
+// starting route goes; `ActiveTabRouter` then makes `useLocation` that tab's.
+const renderAt = (initial = "/") => {
+  window.location.hash = `#${initial}`;
+  return render(
+    <TabsProvider>
+      <ActiveTabRouter>
+        <PinsProvider>
+          <Probe />
+        </PinsProvider>
+      </ActiveTabRouter>
+    </TabsProvider>,
   );
+};
 
 const click = (label: string) => act(() => screen.getByText(label).click());
 
 beforeEach(() => {
   localStorage.clear();
   profileId.mockReturnValue("org-a");
+  window.location.hash = "";
 });
 
 describe("pinning", () => {
@@ -73,7 +82,7 @@ describe("pinning", () => {
     expect(screen.getByTestId("path").textContent).toBe("/kraph/graphs");
   });
 
-  it("navigates only when a pin is selected", () => {
+  it("opens the pin's tab only when it is selected", () => {
     renderAt("/kraph/graphs");
     click("pin1");
     click("select1");

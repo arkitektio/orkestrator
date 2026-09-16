@@ -43,6 +43,21 @@ export const notify = (id: string) => {
   emit();
 };
 
+/**
+ * Show notifications for several tasks at once (one emit). `ids` are ordered
+ * newest first, like the stack; dismissed and already-active ids are skipped.
+ * Used to restore the running tasks after a reload, where the store starts
+ * empty and the subscription only reports tasks created from then on.
+ */
+export const notifyMany = (ids: string[]) => {
+  const fresh = ids.filter((id) => !dismissed.has(id) && !active.includes(id));
+  if (fresh.length === 0) {
+    return;
+  }
+  active = [...active, ...fresh];
+  emit();
+};
+
 /** Hide a task's notification and remember it so it isn't re-shown. */
 export const dismiss = (id: string) => {
   rememberDismissed(id);

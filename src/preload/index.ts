@@ -46,6 +46,14 @@ const api = {
     onStateChanged: (cb: (state: WindowChromeState) => void) =>
       subscribe<WindowChromeState>("window:state-changed", cb),
   },
+  /**
+   * Deep links land here: main asks the renderer to open a path as a tab
+   * rather than spawning a window. Returns a disposer, like every listener.
+   */
+  tabs: {
+    onOpen: (cb: (payload: { path: string }) => void) =>
+      subscribe<{ path: string }>("tabs:open", cb),
+  },
   reloadWindow: () => ipcRenderer.invoke("reload-window"),
   forceReloadWindow: () => ipcRenderer.invoke("force-reload-window"),
   openDevTools: () => ipcRenderer.invoke("open-devtools"),

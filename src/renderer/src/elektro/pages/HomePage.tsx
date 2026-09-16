@@ -33,7 +33,7 @@ import {
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
-} from "nuqs";
+} from "@/hooks/use-search-param-state";
 import { HomePageQuery, Ordering, useHomePageQuery } from "../api/graphql";
 import BlockList from "../components/lists/BlockList";
 import ExperimentList from "../components/lists/ExperimentList";

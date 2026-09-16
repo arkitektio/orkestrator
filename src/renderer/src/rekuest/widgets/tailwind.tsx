@@ -23,6 +23,11 @@ export type ReturnContainerProps = {
   options?: PortOptions | undefined;
   showKeys?: boolean;
   className?: string;
+  /**
+   * Just the widgets: no per-port border or fill, no description, no
+   * constraint badges. For ambient surfaces like the rail's task island.
+   */
+  minimal?: boolean;
 };
 
 export type OutputContainer = (props: ReturnContainerProps) => React.ReactNode;
@@ -89,6 +94,7 @@ export const WrappedReturnsContainer = ({
   registry,
   showKeys = false,
   className,
+  minimal = false,
 }: ReturnContainerProps) => {
   return (
     <div className={cn("flex flex-row flex-wrap gap-2 w-full h-full", className)}>
@@ -101,7 +107,10 @@ export const WrappedReturnsContainer = ({
         return (
           <div
             key={key}
-            className="@container flex flex-col rounded-md border flex-1"
+            className={cn(
+              "@container flex flex-col flex-1",
+              !minimal && "rounded-md border",
+            )}
           >
             {showKeys && (
               <label
@@ -111,7 +120,12 @@ export const WrappedReturnsContainer = ({
                 {port.label || port.key}
               </label>
             )}
-            <div className="flex-grow bg-muted rounded-md max-h-[300px]">
+            <div
+              className={cn(
+                "flex-grow rounded-md max-h-[300px]",
+                !minimal && "bg-muted",
+              )}
+            >
               <EffectWrapper
                 effects={port.effects || []}
                 port={port}
@@ -126,7 +140,7 @@ export const WrappedReturnsContainer = ({
                 />
               </EffectWrapper>
             </div>
-            {port.description && (
+            {!minimal && port.description && (
               <div
                 id={`${port.key}-help`}
                 className="text-xs mb-4 font-light flex-initial text-muted-foreground"
@@ -134,7 +148,9 @@ export const WrappedReturnsContainer = ({
                 {port.description}
               </div>
             )}
-            <PortConstraintBadges items={port.provides} className="mt-1" />
+            {!minimal && (
+              <PortConstraintBadges items={port.provides} className="mt-1" />
+            )}
           </div>
         );
       })}

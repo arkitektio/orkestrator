@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { usePins } from "@/command/PinsProvider";
 import { useConnection } from "@/lib/arkitekt/provider";
 import { Action, ActionState } from "@/lib/localactions/LocalActionProvider";
 import type { ServiceMap } from "@/lib/arkitekt/provider";
@@ -42,6 +43,7 @@ export const usePerformAction = (props: {
   const connection = useConnection();
   const dialog = useDialog();
   const navigate = useNavigate();
+  const { pin, canPin } = usePins();
   const setSelection = useSelectionSelector((state) => state.setSelection);
   const setBSelection = useSelectionSelector((state) => state.setBSelection);
 
@@ -80,6 +82,7 @@ export const usePerformAction = (props: {
         services: (connection?.serviceMap || {}) as ServiceMap,
         dialog,
         navigate,
+        pins: { pin, canPin },
         // Read from the shared window-level tracker instead of per-row listeners.
         modifiers: getModifierState(),
         confirm,

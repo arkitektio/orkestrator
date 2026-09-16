@@ -1,5 +1,6 @@
 import { Arkitekt } from "@/app/Arkitekt";
 import { smartRegistry } from "@/providers/smart/registry";
+import { useTabs } from "./tabs/TabsProvider";
 import React, {
   createContext,
   useCallback,
@@ -7,7 +8,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import {
   activePinKey,
@@ -74,8 +75,8 @@ const buildModelPath = (identifier: string, id: string) =>
 
 export const PinsProvider = ({ children }: { children: React.ReactNode }) => {
   const profileId = Arkitekt.useActiveProfileId();
-  const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { focusOrOpenForPin } = useTabs();
 
   // Read once, lazily. No effect is needed to follow the organization: pins hold
   // tenant-scoped entity ids, and `ProfileScope` in `AppProvider` already keys
@@ -141,9 +142,12 @@ export const PinsProvider = ({ children }: { children: React.ReactNode }) => {
       // deployment — has no path; do nothing rather than go to `/undefined`.
       if (!to) return;
       setSelectedKey(key);
-      navigate(to);
+      // A pin is a bookmark; clicking it lands in the tab it opened last time,
+      // history intact, rather than navigating whichever tab happens to be
+      // active — which is what makes a pin feel like a place and not a link.
+      focusOrOpenForPin(key, to, { label: entry.label });
     },
-    [state.pins, navigate],
+    [state.pins, focusOrOpenForPin],
   );
 
   const activeKey = useMemo(

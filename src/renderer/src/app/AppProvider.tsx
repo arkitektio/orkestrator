@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { baseName, Router } from "@/constants";
 import { useFatalReport } from "@/hooks/use-report";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { DebugProvider } from "@/providers/debug/DebugProvider";
@@ -21,7 +20,6 @@ import { TaskHookRunner } from "@/lib/taskhooks/TaskHookRunner";
 import { AgentUpdater } from "@/rekuest/components/functional/AgentUpdater";
 import { UiCatalogRegistrar } from "@/rekuest/catalog/UiCatalogRegistrar";
 import { WidgetRegistryProvider } from "@/rekuest/widgets/WidgetsProvider";
-import { NuqsAdapter } from "nuqs/adapters/react-router"; // <--- Specific adapter
 import React from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { useNavigate } from "react-router-dom";
@@ -107,9 +105,10 @@ import { LatestTasksDashboardWidget } from "@/providers/dashboard/widgets/Latest
 import { LatestArrayDatasetsDashboardWidget } from "@/providers/dashboard/widgets/LatestArrayDatasetsDashboardWidget";
 import { OrganizationBrandSync } from "@/lok-next/components/OrganizationBrandSync";
 import { ProfileIdentitySync } from "@/lok-next/components/ProfileIdentitySync";
-import { ProfileSwitchEffects } from "@/app/components/profile/ProfileSwitchEffects";
 import { CommandPaletteProvider } from "@/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/command/Host";
+import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
+import { TabsProvider } from "@/command/tabs/TabsProvider";
 import { PinsProvider } from "@/command/PinsProvider";
 
 
@@ -136,12 +135,16 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       <UploadProvider>
         <DownloadProvider>
             <DebugProvider>
-              <Router basename={baseName}>
-                <NuqsAdapter>
                   <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                   {/* This is where we configure the application automatically based on facts */}
 
                   <Arkitekt.Provider>
+                    {/* Tabs live above ProfileScope (per membership, re-booted on
+                        switch) and the chrome router below them always reflects
+                        the ACTIVE tab, so every useNavigate/useLocation in this
+                        tree keeps working unchanged. */}
+                    <TabsProvider>
+                    <ActiveTabRouter>
                     <LocalActionProvider>
                       <TooltipProvider>
                         <DisplayProvider>
@@ -154,7 +157,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     <CommandPaletteProvider>
                                     <PinsProvider>
                                     <WardRegistrar />
-                                    <ProfileSwitchEffects />
                                     {/* One palette for the whole app. It used to
                                         be mounted per page, so it was missing on
                                         the dashboard and double-bound wherever
@@ -195,10 +197,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                         </DisplayProvider>
                       </TooltipProvider>
                     </LocalActionProvider>
+                    </ActiveTabRouter>
+                    </TabsProvider>
                   </Arkitekt.Provider>
                 </ThemeProvider>
-              </NuqsAdapter>
-            </Router>
           </DebugProvider>
       </DownloadProvider>
     </UploadProvider>

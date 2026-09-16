@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { aliasToHttpPath } from "@/lib/arkitekt/alias/helpers";
 import {
   ChevronUp,
+  Home,
   RefreshCw,
   Settings,
   CheckCircle,
@@ -34,6 +35,7 @@ import { IconContext } from "react-icons/lib";
 import { matchIcon } from "./moduleIcons";
 import ModuleNavHover from "./ModuleNavHover";
 import RailPins from "./RailPins";
+import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
 import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
 
@@ -371,7 +373,30 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
       {/* Modules as a wrapping icon grid rather than a tall column: in a wide
           rail the vertical run is worth more to the module's own navigation and
           to the open tabs below than to twelve stacked icons. */}
-      <div className="hidden md:flex flex-wrap gap-1 px-2 pb-3 shrink-0">
+      <div className="hidden md:flex flex-wrap gap-1 px-2 pb-3 shrink-0 mt-1">
+        {/* The dashboard, first. The logo that used to double as "home" is
+            gone from the rail, so this is now the one place to reach it. */}
+        <DroppableNavLink to="/" end aria-label="Home">
+          {({ isActive }) => (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  data-active={isActive}
+                  className={cn(
+                    "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg ring-1 transition-colors",
+                    "shadow-[inset_0_1px_2px_rgb(0_0_0/0.10)]",
+                    isActive
+                      ? "bg-background/80 text-foreground ring-primary/35 shadow-none"
+                      : "bg-background/25 text-muted-foreground ring-border/30 hover:bg-background/55 hover:text-foreground",
+                  )}
+                >
+                  <Home className="h-4 w-4" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right">Home</TooltipContent>
+            </Tooltip>
+          )}
+        </DroppableNavLink>
         {moduleOrder.map((moduleKey) => (
           <ModuleNavItem
             key={moduleKey}
@@ -385,6 +410,8 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           above, not here — the vertical run belongs to what the user chose to
           keep. */}
       <div className="hidden md:block flex-1 min-h-0 overflow-y-auto">
+        {/* What is open now, then what is kept: one list, two tenses. */}
+        <RailTabs />
         <RailPins />
       </div>
 

@@ -38,9 +38,10 @@ export type CommandPageContext = {
 /**
  * What picking a result should DO.
  *
- * `navigate` just goes there. `new-tab` also pins it into the rail, which is
- * what ⌘T means: the palette is the "address bar" of a tab that does not exist
- * yet, and the thing you choose is what fills it.
+ * `navigate` goes there in the active tab. `new-tab` opens the result in a
+ * new tab with its own history, which is what ⌘T means: the palette is the
+ * address bar of a tab that does not exist yet, and the thing you choose is
+ * what fills it.
  */
 export type CommandIntent = "navigate" | "new-tab";
 
@@ -204,8 +205,7 @@ export const CommandPaletteProvider = ({ children }: { children: React.ReactNode
       }
 
       // ⌘T is "new tab": the palette becomes the address bar of a tab that does
-      // not exist yet, and whatever is chosen is pinned into the rail as well
-      // as navigated to.
+      // not exist yet, and whatever is chosen opens in it.
       if (e.key === "t") {
         e.preventDefault();
         togglePalette({ fresh: true, intent: "new-tab" });

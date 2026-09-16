@@ -9,7 +9,7 @@ import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
 import { JustUsername } from "@/lok-next/components/UserAvatar";
 import { Database } from "lucide-react";
-import { parseAsBoolean, parseAsIsoDateTime, useQueryState } from "nuqs";
+import { parseAsBoolean, parseAsIsoDateTime, useQueryState } from "@/hooks/use-search-param-state";
 import { usePeerHomePageQuery } from "../api/graphql";
 import FolderList from "../components/lists/FolderList";
 import FileList from "../components/lists/FileList";

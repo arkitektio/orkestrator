@@ -4,17 +4,13 @@ import { ProfileBrandAvatar } from "@/app/components/profile/ProfileBrandAvatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DroppableNavLink } from "@/components/ui/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useDebug } from "@/providers/debug/DebugContext";
 import { cn } from "@/lib/utils";
-import { Bug, ChevronsUpDown, Settings } from "lucide-react";
-import { TbBugOff } from "react-icons/tb";
+import { ChevronsUpDown, Settings } from "lucide-react";
 
 /**
  * The foot of the rail: which organization you are in, and a way out of it.
@@ -29,8 +25,6 @@ import { TbBugOff } from "react-icons/tb";
  */
 export const RailFooter = () => {
   const activeProfile = Arkitekt.useActiveProfile();
-  const configurationIssues = Arkitekt.useConfigurationIssues();
-  const { debug, setDebug } = useDebug();
 
   const organization =
     activeProfile?.label.organizationName ||
@@ -70,28 +64,9 @@ export const RailFooter = () => {
             Switch organization
           </DropdownMenuLabel>
 
-          {configurationIssues.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-              <div className="px-2 py-1 text-xs text-amber-600 dark:text-amber-400">
-                Configuration issues detected
-              </div>
-              {configurationIssues.slice(0, 3).map((issue) => (
-                <div key={issue} className="px-2 py-1 text-xs text-muted-foreground">
-                  {issue}
-                </div>
-              ))}
-            </>
-          )}
-
-          {/* The switcher owns the account list, adding, and signing out. */}
+          {/* Only organizations here: signing out, debug mode and configuration
+              issues live in Settings. */}
           <ProfileSwitcher />
-
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setDebug(!debug)}>
-            {debug ? <Bug className="mr-2 h-4 w-4" /> : <TbBugOff className="mr-2 h-4 w-4" />}
-            <span>Debug Mode</span>
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

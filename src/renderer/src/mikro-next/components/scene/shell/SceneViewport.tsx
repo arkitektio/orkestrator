@@ -4,6 +4,7 @@ import {
   useStore as useThreeStore,
   useThree,
 } from "@react-three/fiber";
+import { useTabVisible } from "@/command/tabs/TabVisibilityContext";
 import { useEffect, type ReactNode } from "react";
 import { LongCommitProfiler } from "../platform/perf/commitProfiler";
 import { useViewStoreApi } from "../platform/stores/viewStore";
@@ -150,7 +151,27 @@ const ToneMappingSync = () => {
   return null;
 };
 
+/**
+ * Draw the first frame after a tab comes back on screen.
+ *
+ * With `frameloop="never"` while hidden, nothing has been scheduled; on
+ * refocus the canvas would otherwise sit on its last frame until something
+ * else invalidates it.
+ */
+const TabVisibilitySync = () => {
+  const visible = useTabVisible();
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => {
+    if (visible) invalidate();
+  }, [visible, invalidate]);
+  return null;
+};
+
 const SceneWrapper = ({ children }: { children: ReactNode }) => {
+  // A tab that is mounted but not on screen must not schedule frames. In
+  // demand mode a scene at rest already draws nothing; "never" also stops the
+  // odd frame a chunk arriving in the background would otherwise trigger.
+  const visible = useTabVisible();
   // `select-none` on the canvas surface stops a drag (pan / ROI draw / probe)
   // from ever turning into a text selection. Overlays keep normal selection.
   //
@@ -160,7 +181,7 @@ const SceneWrapper = ({ children }: { children: ReactNode }) => {
   // ANGLE texSubImage3D upload stalls (P19).
   return <Canvas
         className="select-none [-webkit-user-select:none]"
-        frameloop="demand"
+        frameloop={visible ? "demand" : "never"}
         events={sceneEvents}
         gl={async (props) => {
           const renderer = new WebGPURenderer({
@@ -383,6 +404,7 @@ export const SceneViewport = (props: { children?: ReactNode }) => {
           <AnimationPlayer />
           <QualityAdapter />
           <CanvasSync />
+          <TabVisibilitySync />
           {/* Annotation outlines are hairline-thin to pick without this. */}
           <LinePickTuning />
           <SceneScreenshot />

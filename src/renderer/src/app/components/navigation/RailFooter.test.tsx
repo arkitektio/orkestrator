@@ -8,7 +8,6 @@ const activeProfile = vi.fn();
 vi.mock("@/app/Arkitekt", () => ({
   Arkitekt: {
     useActiveProfile: () => activeProfile(),
-    useConfigurationIssues: () => [],
   },
 }));
 
@@ -31,10 +30,6 @@ vi.mock("@/components/ui/link", () => ({
       {children({ isActive: false })}
     </a>
   ),
-}));
-
-vi.mock("@/providers/debug/DebugContext", () => ({
-  useDebug: () => ({ debug: false, setDebug: vi.fn() }),
 }));
 
 import { RailFooter } from "./RailFooter";

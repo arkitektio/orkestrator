@@ -163,17 +163,13 @@ export class WindowManager implements AppModule {
 
     handleOrkestratorUrl(url: string) {
         try {
-            console.log(url);
             const parsedUrl = new URL(url);
             // Remove the protocol and get everything after orkestrator://
-            const fullPath = parsedUrl.hostname + parsedUrl.pathname;
+            const fullPath = "/" + parsedUrl.hostname + parsedUrl.pathname + parsedUrl.search;
 
-            if (this.mainWindow) {
-                if (this.mainWindow.isMinimized()) this.mainWindow.restore();
-                this.mainWindow.focus();
-            }
-
-            this.createSecondaryWindow(fullPath, "");
+            // A deep link opens a TAB in the main window, not a new window:
+            // the renderer holds the tabs, so this is one message across.
+            this.openInTab(fullPath);
         } catch (err) {
             console.error("Invalid orkestrator URL", url);
             dialog.showErrorBox(
@@ -260,10 +256,14 @@ export class WindowManager implements AppModule {
         });
 
         // HMR for renderer
+        // A deep link that arrived before the window existed rides in on the
+        // hash; the renderer's boot rule turns it into the active tab.
+        const hash = this.pendingPath ? `#${this.pendingPath}` : "";
+        this.pendingPath = null;
         if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-            this.mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
+            this.mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + hash);
         } else {
-            this.mainWindow.loadURL(`${APP_ORIGIN}/index.html`);
+            this.mainWindow.loadURL(`${APP_ORIGIN}/index.html${hash}`);
         }
 
         const currentWindow = this.mainWindow;
@@ -400,6 +400,39 @@ export class WindowManager implements AppModule {
     }
 
     /** Persist the main window's normal (non-maximized) bounds and maximized flag. */
+    /**
+     * A path to open once the main window exists — for a deep link that
+     * arrives before the window does (macOS `open-url` on launch, or after the
+     * window was closed). Consumed by `createMainWindow` into the load URL, so
+     * the renderer's boot rule opens it as a tab.
+     */
+    private pendingPath: string | null = null;
+
+    /**
+     * Ask the main window's renderer to open a path as a tab, creating the
+     * window first if there is none. A link arriving mid-boot is held until the
+     * renderer has loaded rather than being sent into the void.
+     */
+    private openInTab(path: string) {
+        const win = this.mainWindow;
+
+        if (!win || win.isDestroyed()) {
+            this.pendingPath = path;
+            this.createMainWindow(this.iconPath);
+            return;
+        }
+
+        if (win.isMinimized()) win.restore();
+        win.focus();
+
+        const send = () => this.ipcTransport.sendTo(win.webContents, "tabs:open", { path });
+        if (win.webContents.isLoading()) {
+            win.webContents.once("did-finish-load", send);
+        } else {
+            send();
+        }
+    }
+
     /** The frame state the renderer's title bar lays itself out from. */
     getChromeState(): WindowChromeState {
         const win = this.mainWindow;
@@ -629,7 +662,12 @@ export class WindowManager implements AppModule {
             },
             // Standard Window menu — Minimize/Zoom/(Bring All to Front)/Close.
             // Gives users the native surface for managing and resurfacing windows.
-            { role: "windowMenu" },
+            // The stock window menu binds Ctrl+W to Close Window on win32/linux,
+            // which would beat the renderer's ⌘W close-tab. macOS has no File
+            // menu here, so ⌘W is already free there.
+            isMac
+                ? { role: "windowMenu" }
+                : { label: "Window", submenu: [{ role: "minimize" }, { role: "zoom" }] },
         ];
 
         Menu.setApplicationMenu(Menu.buildFromTemplate(template));

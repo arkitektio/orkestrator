@@ -27,7 +27,7 @@ import {
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
-} from "nuqs";
+} from "@/hooks/use-search-param-state";
 import { useMemo } from "react";
 import {
   ArrayDatasetFilter,

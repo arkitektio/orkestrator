@@ -38,6 +38,9 @@ declare global {
         getState: () => Promise<WindowChromeState>;
         onStateChanged: (cb: (state: WindowChromeState) => void) => () => void;
       };
+      tabs: {
+        onOpen: (cb: (payload: { path: string }) => void) => () => void;
+      };
       openFilePicker: () => Promise<string | undefined>;
       uploadBigFile: (opts: { uploadId: string; path: string; grant: any; endpointUrl: string }) => Promise<string>;
       cancelBigFile: (opts: { uploadId: string }) => Promise<void>;

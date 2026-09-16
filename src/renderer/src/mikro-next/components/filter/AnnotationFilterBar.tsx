@@ -18,7 +18,7 @@ import {
   RotateCcw,
   Shapes,
 } from "lucide-react";
-import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "@/hooks/use-search-param-state";
 import { useMemo } from "react";
 
 import {

@@ -13,7 +13,7 @@ import {
   TASK_DONE_FILTER_OPTIONS as DONE_OPTIONS,
   TASK_STATE_FILTER_OPTIONS as STATE_OPTIONS,
 } from "@/rekuest/lib/taskStatus";
-import { parseAsBoolean, parseAsIsoDateTime, parseAsStringLiteral, useQueryState, parseAsArrayOf } from "nuqs";
+import { parseAsBoolean, parseAsIsoDateTime, parseAsStringLiteral, useQueryState, parseAsArrayOf } from "@/hooks/use-search-param-state";
 import Timestamp from "@/components/ui/timestamp";
 import { X } from "lucide-react";
 

@@ -1,8 +1,8 @@
 import { getChromeMode, trafficLightGutter, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, ArrowRight, RotateCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
+import { useActiveTabNavigation } from "@/command/tabs/useActiveTabNavigation";
 import { TitleSearchBar } from "./TitleSearchBar";
 import { WindowControls } from "./WindowControls";
 
@@ -28,13 +28,12 @@ const navButtonClass =
 /**
  * Back, forward, reload — the row above the search, as a browser has.
  *
- * `history.length` is the only thing a `HashRouter` exposes about depth and it
- * never shrinks, so there is no honest way to grey these out per-direction;
- * they are always enabled and simply do nothing at the ends, which is what
- * every browser does anyway.
+ * Each tab has a memory history of its own, which — unlike the old
+ * `HashRouter` — knows its depth. So Back and Forward are greyed at the ends
+ * rather than silently doing nothing.
  */
 const NavButtons = () => {
-  const navigate = useNavigate();
+  const { back, forward, canGoBack, canGoForward } = useActiveTabNavigation();
 
   const reload = () => {
     if (window.api) {
@@ -50,7 +49,8 @@ const NavButtons = () => {
         type="button"
         aria-label="Back"
         className={navButtonClass}
-        onClick={() => navigate(-1)}
+        disabled={!canGoBack}
+        onClick={back}
       >
         <ArrowLeft className="h-3.5 w-3.5" />
       </button>
@@ -58,7 +58,8 @@ const NavButtons = () => {
         type="button"
         aria-label="Forward"
         className={navButtonClass}
-        onClick={() => navigate(1)}
+        disabled={!canGoForward}
+        onClick={forward}
       >
         <ArrowRight className="h-3.5 w-3.5" />
       </button>

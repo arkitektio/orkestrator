@@ -2,8 +2,6 @@ import React from "react";
 import { Identifier } from "@/types";
 import { PageLayout, PageVariant } from "./PageLayout";
 import { CommandContext } from "@/command/CommandContext";
-import { Sidebars } from "./Sidebars";
-import { HelpSidebar } from "../sidebars/help";
 
 export type ListPageLayoutProps = {
   children: React.ReactNode;
@@ -19,6 +17,7 @@ export type ListPageLayoutProps = {
 
 export const ListPageLayout = ({
   sidebars,
+  help,
   title,
   children,
   identifier,
@@ -33,12 +32,8 @@ export const ListPageLayout = ({
     <div className="h-full w-full">
       <PageLayout
         title={title}
-        sidebars={sidebars || (
-          <Sidebars>
-            <Sidebars.Tab label="Help"><HelpSidebar /></Sidebars.Tab>
-          </Sidebars>
-        )}
-
+        sidebars={sidebars}
+        help={help}
         variant={variant}
         pageActions={pageActions}
       >

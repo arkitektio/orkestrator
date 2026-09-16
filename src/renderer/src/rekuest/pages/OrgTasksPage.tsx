@@ -16,7 +16,7 @@ import {
   parseAsIsoDateTime,
   parseAsStringLiteral,
   useQueryState,
-} from "nuqs";
+} from "@/hooks/use-search-param-state";
 
 /**
  * Org-wide tasks view: every root task across the organization (the `tasks`

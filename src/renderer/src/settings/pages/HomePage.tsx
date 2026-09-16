@@ -35,11 +35,13 @@ import {
   useTogglePinnedAction,
 } from "@/app/localactions";
 import type { Action } from "@/lib/localactions/LocalActionProvider";
+import { useDebug } from "@/providers/debug/DebugContext";
 import { useSettings } from "@/providers/settings/SettingsContext";
 import {
   Bug,
   CheckCircle,
   Globe,
+  LogOut,
   Minus,
   Plus,
   Search,
@@ -49,6 +51,8 @@ import {
   Pin,
   XCircle,
   Sparkles,
+  Trash2,
+  User,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -253,6 +257,11 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
   const services = Arkitekt.useAvailableServices();
   const configurationIssues = Arkitekt.useConfigurationIssues();
   const reportStatus = Arkitekt.useReportStatus();
+  const activeProfile = Arkitekt.useActiveProfile();
+  const profiles = Arkitekt.useProfiles();
+  const disconnect = Arkitekt.useDisconnect();
+  const forgetAllProfiles = Arkitekt.useForgetAllProfiles();
+  const { debug, setDebug } = useDebug();
   const localActionEntries = useLocalActionEntries();
   const pinnedActionIds = usePinnedActionIds();
   const togglePinnedAction = useTogglePinnedAction();
@@ -360,6 +369,47 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
     >
       <div className="space-y-8">
 
+        {/* Account — what used to sit below the organization switcher. The
+            switcher only picks organizations now. */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Account
+            </CardTitle>
+            <CardDescription>
+              {activeProfile
+                ? `Signed in as ${activeProfile.label.username || "unknown user"} in ${activeProfile.label.organizationName || activeProfile.label.deploymentName || "an organization"}.`
+                : "Not signed in."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {/* Parks rather than wipes: the login stays in the switcher. */}
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={!activeProfile}
+              onClick={() => void disconnect()}
+            >
+              <LogOut className="w-4 h-4" />
+              Sign out
+            </Button>
+            <Button
+              variant="destructive"
+              className="gap-2"
+              disabled={profiles.length === 0}
+              onClick={() => {
+                void forgetAllProfiles().then(() =>
+                  toast.success("Forgot every account on this computer."),
+                );
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
+              Forget all accounts
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* App Updates Section */}
         <Card>
           <CardHeader>
@@ -385,7 +435,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
               logs, and debug issues.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               className="gap-2"
@@ -393,6 +443,14 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
             >
               <Bug className="w-4 h-4" />
               Open DevTools
+            </Button>
+            <Button
+              variant={debug ? "default" : "outline"}
+              className="gap-2"
+              onClick={() => setDebug(!debug)}
+            >
+              <Bug className="w-4 h-4" />
+              Debug Mode: {debug ? "On" : "Off"}
             </Button>
           </CardContent>
         </Card>

@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
 import { useDialog } from "@/app/dialog";
+import type { PinsValue } from "@/command/PinsProvider";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
 import type { Structure as AppStructure } from "@/types";
 import type { InferedServiceMap, ServiceBuilderMap } from "../arkitekt/types";
@@ -116,6 +117,8 @@ export type ActionParams<TAppOrServices = ServiceMap> = {
   }) => Promise<boolean>;
   dialog: ReturnType<typeof useDialog>;
   navigate: ReturnType<typeof useNavigate>;
+  /** The rail's pins — pinning something is what opens it as a new tab. */
+  pins: Pick<PinsValue, "pin" | "canPin">;
 };
 
 export type SetAction = ActionState;

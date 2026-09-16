@@ -11,7 +11,7 @@ import {
   type StoredProfile,
 } from "@/lib/arkitekt/fakts/profileStorageSchema";
 import { describeRefreshFailure } from "@/lib/arkitekt/runtime/profileAuth";
-import { Building2, LogOut, Plus, Trash2 } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
 
@@ -28,6 +28,9 @@ import ProfileRow from "./ProfileRow";
  * A row is a *login*, not an organization: the same person in two organizations
  * is two rows, because the organization lives in the token. Rows are grouped by
  * deployment, so two organizations on one server read as what they are.
+ *
+ * Only switching and adding live here. Signing out and forgetting accounts are
+ * not choices of organization, so they sit in Settings → Account.
  */
 export const ProfileSwitcher = () => {
   const profiles = Arkitekt.useProfiles();
@@ -35,8 +38,6 @@ export const ProfileSwitcher = () => {
   const switchingProfileId = Arkitekt.useSwitchingProfileId();
   const switchProfile = Arkitekt.useSwitchProfile();
   const removeProfile = Arkitekt.useRemoveProfile();
-  const forgetAllProfiles = Arkitekt.useForgetAllProfiles();
-  const disconnect = Arkitekt.useDisconnect();
   const connection = Arkitekt.useConnection();
   const { openDialog } = useDialog();
 
@@ -150,30 +151,6 @@ export const ProfileSwitcher = () => {
         <span>Add account…</span>
       </DropdownMenuItem>
 
-      <DropdownMenuSeparator />
-
-      {activeProfileId && (
-        <DropdownMenuItem className="cursor-pointer" onSelect={() => void disconnect()}>
-          <LogOut className="mr-2 h-4 w-4" />
-          {/* "Sign out" now parks rather than wipes — the login stays in the
-              list, which is the whole point of the switcher. */}
-          <span>Sign out</span>
-        </DropdownMenuItem>
-      )}
-
-      {profiles.length > 0 && (
-        <DropdownMenuItem
-          className="cursor-pointer text-destructive focus:text-destructive"
-          onSelect={() => {
-            void forgetAllProfiles().then(() =>
-              toast.success("Forgot every account on this computer."),
-            );
-          }}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          <span>Forget all accounts</span>
-        </DropdownMenuItem>
-      )}
     </>
   );
 };

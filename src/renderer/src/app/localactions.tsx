@@ -11,7 +11,7 @@ import { MIKRO_ACTIONS } from "@/lib/mikro/actions";
 import { REKUEST_ACTIONS } from "@/lib/rekuest/actions";
 import { linkBuilder } from "@/providers/smart/builder";
 import { smartRegistry } from "@/providers/smart/registry";
-import { ExternalLink, FolderOpen } from "lucide-react";
+import { ExternalLink, FolderOpen, PanelLeftOpen } from "lucide-react";
 
 const NavigateAction: Action = {
   title: "Open",
@@ -38,6 +38,49 @@ const NavigateAction: Action = {
   },
   collections: ["smart"],
 };
+const OpenInNewTabAction: Action = {
+  title: "Open in new tab",
+  description: "Pin the structure to the rail and open it",
+  icon: PanelLeftOpen,
+  conditions: [
+    {
+      type: "nopartner",
+    },
+  ],
+  execute: async ({ state, navigate, pins }) => {
+    if (!pins.canPin) {
+      throw new Error("Sign in to an organization to open tabs");
+    }
+
+    let last: string | undefined;
+    for (const item of state.left) {
+      const { identifier, object } = item;
+      const path = smartRegistry.buildModelPath(identifier, object.id);
+      if (!path) {
+        throw new Error(`No path found for identifier ${identifier}`);
+      }
+
+      const named = object.label ?? object.name;
+      pins.pin({
+        kind: "entity",
+        identifier,
+        id: object.id,
+        label:
+          typeof named === "string" && named
+            ? named
+            : `${smartRegistry.getDisplayName(identifier)} ${object.id}`,
+      });
+      last = path.startsWith("/") ? path : `/${path}`;
+    }
+
+    // Every selected structure gets a tab; the last one is the one shown.
+    if (last) {
+      navigate(last);
+    }
+  },
+  collections: ["smart"],
+};
+
 const PopOutAction: Action = {
   title: "Open in new window",
   description: "Open the structure in a new window",
@@ -88,5 +131,6 @@ export const {
     ...ELEKTRO_ACTIONS,
     ...ALPAKA_ACTIONS,
     popout: PopOutAction,
+    newtab: OpenInNewTabAction,
     navigate: NavigateAction,
   } as const);

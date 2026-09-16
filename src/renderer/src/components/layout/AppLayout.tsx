@@ -27,7 +27,11 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
 
       <div className="flex-1 min-h-0 flex flex-col md:flex-row">
       {/* Desktop rail — the only chrome this window has. */}
-      <div className="relative flex-initial hidden md:flex md:flex-col md:w-(--rail-width) shrink-0">
+      <div
+        // A shade off the window surface, with a hairline, so the rail reads
+        // as a pane rather than dissolving into the chrome around it.
+        className="relative flex-initial hidden md:flex md:flex-col md:w-(--rail-width) shrink-0 bg-background/25 dark:bg-background/10 border-r border-border/30"
+      >
         <RailChrome />
         {/* A plain `nav`, deliberately NOT shadcn's `NavigationMenu`. That
             primitive's root is `max-w-max … items-center justify-center`: it
@@ -47,7 +51,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
 
       {/* The floating content card. `min-h-0`/`min-w-0` keep its own scroll
           containers scrolling instead of growing the card past the window. */}
-      <div className="flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background md:rounded-xl md:border md:border-border/60 md:shadow-sm md:m-2 md:ml-0">
+      <div className="flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background md:rounded-xl md:border md:border-border/60 md:shadow-sm md:m-2">
         {children}
       </div>
       </div>
