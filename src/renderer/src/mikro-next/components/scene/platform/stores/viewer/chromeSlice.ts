@@ -38,7 +38,9 @@ export const createChromeSlice = (
   setShowScaleBar: (show) => set({ showScaleBar: show }),
   showScaleGrid: false,
   setShowScaleGrid: (show) => set({ showScaleGrid: show }),
-  showSceneAxis: true,
+  // Off by default: the crosshair reads as data in a screenshot and most scenes
+  // are looked at, not aligned. Flip it on from the view-settings popover.
+  showSceneAxis: false,
   setShowSceneAxis: (show) => set({ showSceneAxis: show }),
   showLodReadout: true,
   setShowLodReadout: (show) => set({ showLodReadout: show }),

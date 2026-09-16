@@ -1,7 +1,6 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { ElektroSimulation } from "@/linkers";
-import { RefetchProvider } from "@/providers/refetch/RefetchContext";
 import React, { useCallback } from "react";
 import { useDetailSimulationQuery } from "../api/graphql";
 import { SimulationInfoSidebar } from "../components/sidebars/SimulationInfoSidebar";
@@ -36,9 +35,6 @@ export const SimulationPage = asDetailQueryRoute(
     );
 
     return (
-      // Publish no refetch: the plot owns wheel/drag for zoom and pan, and the
-      // layout's pull-to-refetch gesture would fight it.
-      <RefetchProvider>
         <ElektroSimulation.ModelPage
           object={simulation}
           title={simulation.name}
@@ -75,7 +71,6 @@ export const SimulationPage = asDetailQueryRoute(
             </div>
           </div>
         </ElektroSimulation.ModelPage>
-      </RefetchProvider>
     );
   },
 );

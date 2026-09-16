@@ -1,13 +1,10 @@
 import { useTabTitle } from "@/command/tabs/useTabTitle";
 import { useCopyUniversalLink } from "@/hooks/use-copy-universal-link";
-import { usePullToRefetch } from "@/hooks/use-pull-to-refetch";
 import { useReport } from "@/hooks/use-report";
 import { cn } from "@/lib/utils";
-import { useRefetch } from "@/providers/refetch/RefetchContext";
 import { ChevronDownIcon, PanelRight } from "lucide-react";
 import { useCallback } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { PullToRefetchIndicator } from "./PullToRefetchIndicator";
 import BreadCrumbs from "../navigation/BreadCrumbs";
 import { Button } from "../ui/button";
 import { ButtonGroup } from "../ui/button-group";
@@ -67,14 +64,6 @@ export const PageLayout = ({
   });
 
   const location = useLocation();
-
-  const refetch = useRefetch();
-  const {
-    ref: pullRef,
-    pull,
-    progress,
-    refreshing,
-  } = usePullToRefetch(refetch);
 
   const reportBug = useReport();
 
@@ -179,22 +168,9 @@ export const PageLayout = ({
             </div>
           </div>
 
-          <div
-            ref={pullRef}
-            className={cn(
-              "p-3 flex-grow @container flex flex-col overflow-y-auto",
-              "transition-[filter,opacity] duration-200 ease-out",
-              refreshing && "blur-[3px] opacity-60",
-            )}
-          >
+          <div className="p-3 flex-grow @container flex flex-col overflow-y-auto">
             {children}
           </div>
-
-          <PullToRefetchIndicator
-            pull={pull}
-            progress={progress}
-            refreshing={refreshing}
-          />
         </div>
       </ResizablePanel>
       {params.get("pageSidebar") == "true" && (

@@ -2,7 +2,6 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { buttonVariants } from "@/components/ui/button";
 import { ElektroNeuronModel } from "@/linkers";
-import { RefetchProvider } from "@/providers/refetch/RefetchContext";
 import { useDetailNeuronModelQuery } from "../api/graphql";
 import { NeuronVisualizer } from "../components/NeuronRenderer";
 import { NeuronModelTitleOverlay } from "../components/neuronmodel/NeuronModelTitleOverlay";
@@ -23,10 +22,6 @@ export const NeuronModelPage = asDetailQueryRoute(
     const model = data.neuronModel;
 
     return (
-      // Publish no refetch: this is a canvas page whose content area is the
-      // viewport, so the layout's pull-to-refetch gesture would fight the
-      // orbit controls' wheel/drag handling. Overrides the route's provider.
-      <RefetchProvider>
         <ElektroNeuronModel.ModelPage
           object={model}
           title={model.name}
@@ -74,7 +69,6 @@ export const NeuronModelPage = asDetailQueryRoute(
             <NeuronModelTitleOverlay model={model} />
           </div>
         </ElektroNeuronModel.ModelPage>
-      </RefetchProvider>
     );
   },
 );
