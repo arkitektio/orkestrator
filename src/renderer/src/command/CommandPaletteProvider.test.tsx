@@ -180,36 +180,17 @@ describe("opening fresh", () => {
   });
 });
 
-describe("⌘T opens the palette as a new tab", () => {
-  const intent = () => screen.getByTestId("intent").textContent;
-
-  it("carries the new-tab intent", () => {
+describe("⌘T is not the palette's", () => {
+  it("leaves ⌘T alone — the tab store opens a real tab on it", () => {
     renderWith();
     press("t");
-    expect(isOpen()).toBe(true);
-    expect(intent()).toBe("new-tab");
+    expect(isOpen()).toBe(false);
   });
 
-  it("leaves ⌘K meaning plain navigation", () => {
+  it("still opens with ⌘K, meaning plain navigation", () => {
     renderWith();
     press("k");
-    expect(intent()).toBe("navigate");
-  });
-
-  it("does not let the intent leak into the next opening", () => {
-    // Otherwise a ⌘T followed by a plain ⌘K would silently keep pinning things.
-    renderWith();
-    press("t");
-    expect(intent()).toBe("new-tab");
-    press("t"); // closes
-    press("k");
     expect(isOpen()).toBe(true);
-    expect(intent()).toBe("navigate");
-  });
-
-  it("opens clean, so it never resumes a previous search", () => {
-    renderWith();
-    press("t");
-    expect(screen.getByTestId("query").textContent).toBe("");
+    expect(screen.getByTestId("intent").textContent).toBe("navigate");
   });
 });

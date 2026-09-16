@@ -1,0 +1,123 @@
+import { matchesFilter } from "../filter";
+
+/** A page inside a module, as its rail pane links to it. */
+export type CatalogRoute = {
+  /** The module's key in `moduleRegistry` — gates the row on the service being up. */
+  module: string;
+  label: string;
+  route: string;
+  /** Extra words that should find the page but need not be shown. */
+  keywords?: string[];
+};
+
+/**
+ * Every static page each module's pane links to, as data.
+ *
+ * The panes themselves are bespoke JSX (icons, groups, live sections), so the
+ * palette cannot read them; this is the same list written down, so "tasks"
+ * finds Rekuest › Tasks without opening a module first. `routeCatalog.test.ts`
+ * parses the panes' source and fails the moment one of them adds, renames or
+ * drops a link that is not mirrored here — the two cannot drift silently.
+ */
+export const ROUTE_CATALOG: CatalogRoute[] = [
+  // mikro
+  { module: "mikro", label: "Dashboard", route: "/mikro/home", keywords: ["images", "home"] },
+  { module: "mikro", label: "Array Datasets", route: "/mikro/arraydatasets", keywords: ["images", "stacks"] },
+  { module: "mikro", label: "Coordinate Systems", route: "/mikro/coordinatesystems" },
+  { module: "mikro", label: "Table Datasets", route: "/mikro/tabledatasets", keywords: ["tables"] },
+  { module: "mikro", label: "Annotations", route: "/mikro/annotations", keywords: ["rois", "labels"] },
+  { module: "mikro", label: "Folders", route: "/mikro/folders" },
+  { module: "mikro", label: "Files", route: "/mikro/files" },
+  { module: "mikro", label: "Scenes", route: "/mikro/scenes", keywords: ["3d", "viewer"] },
+  // rekuest
+  { module: "rekuest", label: "Home", route: "/rekuest/home" },
+  { module: "rekuest", label: "Actions", route: "/rekuest/actions", keywords: ["nodes", "functions"] },
+  { module: "rekuest", label: "Tasks", route: "/rekuest/tasks", keywords: ["assignations", "runs"] },
+  { module: "rekuest", label: "Org Tasks", route: "/rekuest/org-tasks", keywords: ["organization"] },
+  { module: "rekuest", label: "Implementations", route: "/rekuest/implementations", keywords: ["templates"] },
+  { module: "rekuest", label: "Toolboxes", route: "/rekuest/toolboxes" },
+  { module: "rekuest", label: "Spaces", route: "/rekuest/spaces" },
+  { module: "rekuest", label: "Dashboards", route: "/rekuest/dashboards" },
+  { module: "rekuest", label: "Bloks", route: "/rekuest/bloks" },
+  { module: "rekuest", label: "Shortcuts", route: "/rekuest/shortcuts" },
+  // kraph
+  { module: "kraph", label: "Dashboard", route: "/kraph/home", keywords: ["knowledge", "graph"] },
+  { module: "kraph", label: "Terms", route: "/kraph/terms" },
+  { module: "kraph", label: "Graphs", route: "/kraph/graphs" },
+  { module: "kraph", label: "Structures", route: "/kraph/structurekinds" },
+  { module: "kraph", label: "Entities", route: "/kraph/entitycategories" },
+  { module: "kraph", label: "Protocol Events", route: "/kraph/protocoleventcategories" },
+  { module: "kraph", label: "Natural Events", route: "/kraph/naturaleventcategories" },
+  { module: "kraph", label: "Relations", route: "/kraph/relationcategories" },
+  { module: "kraph", label: "Structure Relations", route: "/kraph/structurerelationcategories" },
+  { module: "kraph", label: "Metrics", route: "/kraph/metrickinds" },
+  { module: "kraph", label: "Measurement", route: "/kraph/measurementcategories", keywords: ["measurements"] },
+  // elektro
+  { module: "elektro", label: "Home", route: "/elektro" },
+  { module: "elektro", label: "Simulations", route: "/elektro/simulations" },
+  { module: "elektro", label: "Experiments", route: "/elektro/experiments" },
+  { module: "elektro", label: "Neuron models", route: "/elektro/neuronmodels" },
+  { module: "elektro", label: "Model Collections", route: "/elektro/modelcollections" },
+  { module: "elektro", label: "Workspaces", route: "/elektro/modelworkspaces" },
+  { module: "elektro", label: "Blocks", route: "/elektro/blocks" },
+  { module: "elektro", label: "Datasets", route: "/elektro/datasets" },
+  { module: "elektro", label: "Files", route: "/elektro/files" },
+  // kabinet
+  { module: "kabinet", label: "Dashboard", route: "/kabinet/home" },
+  { module: "kabinet", label: "App Store", route: "/kabinet/app-store", keywords: ["install", "apps"] },
+  { module: "kabinet", label: "Repos", route: "/kabinet/repos", keywords: ["repositories"] },
+  { module: "kabinet", label: "Pods", route: "/kabinet/pods", keywords: ["containers"] },
+  // alpaka
+  { module: "alpaka", label: "Home", route: "/alpaka" },
+  { module: "alpaka", label: "Rooms", route: "/alpaka/rooms", keywords: ["chat", "talk"] },
+  { module: "alpaka", label: "Collections", route: "/alpaka/collections" },
+  { module: "alpaka", label: "Models", route: "/alpaka/llmmodels", keywords: ["llm"] },
+  { module: "alpaka", label: "Providers", route: "/alpaka/providers" },
+  // lok
+  { module: "lok", label: "Home", route: "/lok" },
+  { module: "lok", label: "Me", route: "/lok/me", keywords: ["profile", "account"] },
+  { module: "lok", label: "Users", route: "/lok/users" },
+  { module: "lok", label: "Apps", route: "/lok/apps", keywords: ["clients"] },
+  { module: "lok", label: "Services", route: "/lok/services" },
+  { module: "lok", label: "Instances", route: "/lok/instances" },
+  { module: "lok", label: "Redeem Tokens", route: "/lok/redeemtokens" },
+  { module: "lok", label: "Devices", route: "/lok/computenodes", keywords: ["compute", "nodes"] },
+  // lovekit
+  { module: "lovekit", label: "Dashboard", route: "/lovekit" },
+  { module: "lovekit", label: "Streams", route: "/lovekit/streams" },
+  { module: "lovekit", label: "Solo Broadcasts", route: "/lovekit/solobroadcasts" },
+  // omero_ark
+  { module: "omero_ark", label: "Dashboard", route: "/omero_ark" },
+  { module: "omero_ark", label: "Datasets", route: "/omero_ark/datasets" },
+  { module: "omero_ark", label: "Projects", route: "/omero_ark/projects" },
+  // blok
+  { module: "blok", label: "Dashboard", route: "/blok" },
+  { module: "blok", label: "Dashboards", route: "/blok/dashboards" },
+  { module: "blok", label: "Bloks", route: "/blok/bloks" },
+  // fluss
+  { module: "fluss", label: "Dashboard", route: "/fluss/home", keywords: ["workflows", "flows"] },
+];
+
+/**
+ * The pages worth offering for what was typed.
+ *
+ * Only for modules whose service is up — a page in a module that is down is a
+ * dead end — and only once something is typed: sixty-odd pages with nothing
+ * typed is noise, not navigation. Matched on the page's name, its route and
+ * its keywords, and on the module's name, so "rekuest tasks" and "tasks" both
+ * find it.
+ */
+export const searchRoutes = (
+  catalog: readonly CatalogRoute[],
+  readyModules: readonly { key: string; label?: string }[],
+  filter: string | undefined,
+  limit = 10,
+): CatalogRoute[] => {
+  const term = filter?.trim();
+  if (!term) return [];
+  const ready = new Map(readyModules.map((m) => [m.key, m.label ?? m.key]));
+  return catalog
+    .filter((r) => ready.has(r.module))
+    .filter((r) => matchesFilter([r.label, r.route, ready.get(r.module), ...(r.keywords ?? [])], term))
+    .slice(0, limit);
+};

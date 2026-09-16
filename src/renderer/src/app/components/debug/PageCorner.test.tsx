@@ -40,12 +40,30 @@ const renderCorner = (path = "/mikro/arraydatasets/5") =>
     </MemoryRouter>,
   );
 
-beforeEach(() => setElectron(true));
+beforeEach(() => {
+  setElectron(true);
+  Element.prototype.hasPointerCapture ??= () => false;
+  Element.prototype.scrollIntoView ??= () => {};
+  window.ResizeObserver ??= class {
+    observe = () => undefined;
+    unobserve = () => undefined;
+    disconnect = () => undefined;
+  } as never;
+});
 afterEach(() => setElectron(false));
 
 describe("the page corner", () => {
-  it("files a bug report for the page being looked at", () => {
+  it("is empty outside debug mode — no report button either", () => {
+    renderCorner();
+    expect(screen.queryByLabelText("Debug: page state")).toBeNull();
+    expect(screen.queryByLabelText("Report a bug on this page")).toBeNull();
+  });
+
+  it("carries the bug report inside the debug badge", () => {
     renderCorner("/mikro/arraydatasets/5");
+    act(() => screen.getByText("toggle-debug").click());
+    expect(screen.queryByLabelText("Report a bug on this page")).toBeNull(); // not on the page itself
+    act(() => screen.getByLabelText("Debug: page state").click());
     act(() => screen.getByLabelText("Report a bug on this page").click());
     expect(window.api.reportIssue).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Issue in /mikro/arraydatasets/5", includeScreenshot: true }),
@@ -55,14 +73,9 @@ describe("the page corner", () => {
   it("has no report button in a browser, where there is no bridge to file it", () => {
     setElectron(false);
     renderCorner();
-    expect(screen.queryByLabelText("Report a bug on this page")).toBeNull();
-  });
-
-  it("adds the debug badge only in debug mode", () => {
-    renderCorner();
-    expect(screen.queryByLabelText("Debug: page state")).toBeNull();
     act(() => screen.getByText("toggle-debug").click());
-    expect(screen.getByLabelText("Debug: page state")).toBeInTheDocument();
-    expect(screen.getByLabelText("Report a bug on this page")).toBeInTheDocument();
+    act(() => screen.getByLabelText("Debug: page state").click());
+    expect(screen.getByText("Page state")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Report a bug on this page")).toBeNull();
   });
 });

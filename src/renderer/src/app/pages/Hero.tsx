@@ -47,7 +47,7 @@ const WidgetPanel = (
   const widget = widgets[props.params.widgetKey];
 
   return (
-    <div className="h-full overflow-auto p-3 @container">
+    <div className="h-full overflow-auto px-5 pb-5 pt-2 @container">
       {widget?.component()}
     </div>
   );
@@ -63,12 +63,12 @@ const WidgetTab = (
   const widget = widgets[props.params.widgetKey];
 
   return (
-    <div className="group flex items-center gap-1.5 px-2 py-1 text-muted-foreground">
+    <div className="group flex items-center gap-2 px-3 py-1 text-muted-foreground">
       {widget?.icon}
       <span>{widget?.label ?? props.api.title}</span>
       {editing && (
         <button
-          className="ml-1 rounded-sm p-0.5 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:bg-muted transition-opacity"
+          className="ml-1 rounded-full p-0.5 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:bg-muted transition-opacity"
           onClick={(e) => {
             e.stopPropagation();
             props.api.close();
@@ -169,17 +169,18 @@ const AddWidgetButton = ({ api }: { api: DockviewApi | null }) => {
       <Button
         variant="ghost"
         size="sm"
+        className="rounded-full"
         onClick={() => setOpen(!open)}
       >
         <Plus className="w-3.5 h-3.5 mr-1.5" />
         Add widget
       </Button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-popover border rounded-lg shadow-lg py-1 min-w-[160px]">
+        <div className="absolute right-0 top-full mt-1 z-50 bg-popover border rounded-2xl shadow-lg p-1.5 min-w-[160px]">
           {missing.map((w) => (
             <button
               key={w.key}
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted transition-colors"
+              className="w-full text-left rounded-xl px-3 py-1.5 text-sm hover:bg-muted transition-colors"
               onClick={() => {
                 if (api) addWidgetPanel(api, w);
                 setOpen(false);
@@ -382,33 +383,33 @@ export const Home = () => {
             {editing ? (
               <>
                 <AddWidgetButton api={api} />
-                <Button onClick={resetLayout} variant="ghost" size="sm">
+                <Button onClick={resetLayout} variant="ghost" size="sm" className="rounded-full">
                   <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                   Reset
                 </Button>
-                <Button onClick={() => setEditing(false)} variant="default" size="sm">
+                <Button onClick={() => setEditing(false)} variant="default" size="sm" className="rounded-full">
                   <Check className="w-3.5 h-3.5 mr-1.5" />
                   Done
                 </Button>
               </>
             ) : (
               <>
-                <Button onClick={() => setEditing(true)} variant="ghost" size="sm">
+                <Button onClick={() => setEditing(true)} variant="ghost" size="sm" className="rounded-full">
                   <Pencil className="w-3.5 h-3.5 mr-1.5" />
                   Edit
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="rounded-full">
                       <Users className="w-3.5 h-3.5 mr-1.5" />
                       Switch
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-72">
+                  <DropdownMenuContent align="end" className="w-72 rounded-2xl">
                     <ProfileSwitcher />
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button onClick={disconnect} variant="ghost" size="sm">
+                <Button onClick={disconnect} variant="ghost" size="sm" className="rounded-full">
                   <ArrowRight className="w-3.5 h-3.5 mr-1.5" />
                   Sign out
                 </Button>
@@ -419,7 +420,7 @@ export const Home = () => {
 
         {/* Service health strip */}
         {availableServices.length > 0 && (
-          <div className="flex items-center gap-4 flex-wrap shrink-0">
+          <div className="flex items-center gap-4 flex-wrap shrink-0 self-start rounded-full border bg-card px-4 py-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Services
             </span>
@@ -430,12 +431,12 @@ export const Home = () => {
         )}
 
         {/* DockView dashboard */}
-        <div className="flex-1 min-h-0 rounded-2xl overflow-hidden">
+        <div className="flex-1 min-h-0 rounded-3xl overflow-hidden">
           <DockviewReact
             components={components}
             defaultTabComponent={WidgetTab}
             onReady={onReady}
-            className="dockview-theme-abyss h-full w-full"
+            className="dockview-theme-abyss dockview-dashboard h-full w-full"
           />
         </div>
       </div>

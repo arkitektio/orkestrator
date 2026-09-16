@@ -1,5 +1,5 @@
-import { useCommandPalette } from "@/command/CommandPaletteProvider";
 import { useTabs } from "@/command/tabs/TabsProvider";
+import { NEW_TAB_PATH } from "@/command/tabs/tabs";
 import { SMART_MODEL_DROP_TYPE } from "@/constants";
 import {
   ContextMenu,
@@ -60,8 +60,7 @@ const TabRow = ({
   tab: { id: string; label: string };
   active: boolean;
 }) => {
-  const { focus, close, closeOthers } = useTabs();
-  const { togglePalette } = useCommandPalette();
+  const { focus, close, closeOthers, open } = useTabs();
   const { isOver, drop } = useSpringLoadedTab(tab.id, active, focus);
 
   return (
@@ -126,9 +125,7 @@ const TabRow = ({
         <ContextMenuItem onSelect={() => close(tab.id)}>Close</ContextMenuItem>
         <ContextMenuItem onSelect={() => closeOthers(tab.id)}>Close others</ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem onSelect={() => togglePalette({ fresh: true, intent: "new-tab" })}>
-          New tab
-        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => open(NEW_TAB_PATH)}>New tab</ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
   );
@@ -142,12 +139,11 @@ const TabRow = ({
  * The two look alike on purpose (same row, same dot, same hover-revealed
  * close) so the rail reads as one list with two tenses, not two widgets.
  *
- * The "+" opens the palette in new-tab mode — exactly what ⌘T does — so the
+ * The "+" opens a tab on the new-tab page — exactly what ⌘T does — so the
  * mouse and the keyboard create tabs through one path.
  */
 export const RailTabs = () => {
-  const { tabs, activeId } = useTabs();
-  const { togglePalette } = useCommandPalette();
+  const { tabs, activeId, open } = useTabs();
 
   return (
     <div className="flex min-w-0 flex-col gap-0.5 px-2 pb-2">
@@ -159,7 +155,7 @@ export const RailTabs = () => {
           type="button"
           aria-label="New tab"
           title="New tab (⌘T)"
-          onClick={() => togglePalette({ fresh: true, intent: "new-tab" })}
+          onClick={() => open(NEW_TAB_PATH)}
           className="rounded p-0.5 text-muted-foreground/70 transition-colors hover:bg-background hover:text-foreground"
         >
           <Plus className="h-3 w-3" />

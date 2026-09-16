@@ -4,8 +4,12 @@ query Flow($id: ID!) {
   }
 }
 
-query Flows($limit: Int) {
-  flows(pagination: { limit: $limit }) {
+query Flows(
+  $filters: FlowFilter
+  $pagination: OffsetPaginationInput
+  $ordering: [FlowOrder!]
+) {
+  flows(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListFlow
   }
 }

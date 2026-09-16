@@ -61,7 +61,10 @@ fragment ListRun on Run {
   createdAt
   status
   flow {
+    id
+    title
     workspace {
+      id
       title
     }
   }

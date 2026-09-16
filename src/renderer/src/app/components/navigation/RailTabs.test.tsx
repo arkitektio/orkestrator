@@ -10,12 +10,8 @@ import { SMART_MODEL_DROP_TYPE } from "@/constants";
 const tabsValue = vi.fn();
 vi.mock("@/command/tabs/TabsProvider", () => ({ useTabs: () => tabsValue() }));
 
-const togglePalette = vi.fn();
-vi.mock("@/command/CommandPaletteProvider", () => ({
-  useCommandPalette: () => ({ togglePalette }),
-}));
-
 import RailTabs, { TAB_SPRING_DELAY_MS } from "./RailTabs";
+import { NEW_TAB_PATH } from "@/command/tabs/tabs";
 
 /**
  * The smallest react-dnd backend there is: it records which DOM node each drop
@@ -82,11 +78,11 @@ const value = (over: Record<string, unknown> = {}) => ({
   focus: vi.fn(),
   close: vi.fn(),
   closeOthers: vi.fn(),
+  open: vi.fn(),
   ...over,
 });
 
 beforeEach(() => {
-  togglePalette.mockClear();
   tabsValue.mockReturnValue(value());
 });
 
@@ -117,12 +113,14 @@ describe("the Open strip", () => {
     expect(v.focus).not.toHaveBeenCalled();
   });
 
-  it("creates a tab through the same path as ⌘T", () => {
-    // Mouse and keyboard make tabs through one door — the palette in
-    // new-tab mode — so there is one behaviour to get right.
+  it("creates a tab at once, on the new-tab page — the same path as ⌘T", () => {
+    // Mouse and keyboard make tabs through one door, so there is one
+    // behaviour to get right.
+    const v = value();
+    tabsValue.mockReturnValue(v);
     renderStrip();
     act(() => screen.getByLabelText("New tab").click());
-    expect(togglePalette).toHaveBeenCalledWith({ fresh: true, intent: "new-tab" });
+    expect(v.open).toHaveBeenCalledWith(NEW_TAB_PATH);
   });
 
   it("clips a long title instead of widening the rail", () => {

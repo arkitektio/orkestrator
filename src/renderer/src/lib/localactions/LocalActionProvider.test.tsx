@@ -12,6 +12,13 @@ vi.mock("@/lib/generic/createScopedStore", () => ({
   }),
 }));
 
+// `datum` / `pdatum` ask the smart registry; drive it with a fixed set so the
+// test does not depend on which linkers are registered.
+const datums = new Set(["@x/datum"]);
+vi.mock("@/providers/smart/registry", () => ({
+  smartRegistry: { isDatum: (identifier: string) => datums.has(identifier) },
+}));
+
 import type { Action, ActionState, Condition, Structure } from "./LocalActionProvider";
 import { getActionEntriesForState, getActionsForState } from "./LocalActionProvider";
 
@@ -82,6 +89,28 @@ describe("getActionsForState — single conditions", () => {
     const registry = { a: action([{ type: "partner", partner: "@x/p" }]) };
     expect(getActionsForState(registry, state({ right: [structure("@x/p")] }))).toHaveLength(1);
     expect(getActionsForState(registry, state({ right: [structure("@x/q")] }))).toHaveLength(0);
+  });
+
+  it("datum matches when any left structure is a registered datum", () => {
+    const registry = { a: action([{ type: "datum" }]) };
+    expect(getActionsForState(registry, state({ left: [structure("@x/datum")] }))).toHaveLength(1);
+    expect(
+      getActionsForState(registry, state({ left: [structure("@x/a"), structure("@x/datum", "2")] })),
+    ).toHaveLength(1);
+    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ left: [] }))).toHaveLength(0);
+  });
+
+  it("pdatum matches only when the partner selection holds a datum", () => {
+    const registry = { a: action([{ type: "pdatum" }]) };
+    expect(
+      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/datum")] })),
+    ).toHaveLength(1);
+    expect(
+      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/b")] })),
+    ).toHaveLength(0);
+    // No partner at all is not a partner datum.
+    expect(getActionsForState(registry, state({ left: [structure("@x/datum")] }))).toHaveLength(0);
   });
 
   it("command matches the isCommand flag", () => {

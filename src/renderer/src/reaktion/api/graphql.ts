@@ -2149,9 +2149,9 @@ export type FlowFragment = { __typename: 'Flow', id: string, title: string, desc
     & GraphFragment
   ), workspace: { __typename?: 'Workspace', id: string } };
 
-export type ListFlowFragment = { __typename?: 'Flow', id: string, title: string, createdAt: any, workspace: { __typename?: 'Workspace', id: string } };
+export type ListFlowFragment = { __typename?: 'Flow', id: string, title: string, description?: string | null, createdAt: any, workspace: { __typename?: 'Workspace', id: string, title: string } };
 
-export type ListWorkspaceFragment = { __typename?: 'Workspace', id: string, title: string, description?: string | null, latestFlow?: (
+export type ListWorkspaceFragment = { __typename?: 'Workspace', id: string, title: string, description?: string | null, createdAt: any, latestFlow?: (
     { __typename?: 'Flow' }
     & ListFlowFragment
   ) | null };
@@ -2670,7 +2670,7 @@ export type DetailRunFragment = { __typename?: 'Run', id: string, taskId: string
     & FlowFragment
   ) };
 
-export type ListRunFragment = { __typename?: 'Run', id: string, taskId: string, createdAt: any, status: RunStatus, flow: { __typename?: 'Flow', workspace: { __typename?: 'Workspace', title: string } } };
+export type ListRunFragment = { __typename?: 'Run', id: string, taskId: string, createdAt: any, status: RunStatus, flow: { __typename?: 'Flow', id: string, title: string, workspace: { __typename?: 'Workspace', id: string, title: string } } };
 
 export type CarouselRunFragment = { __typename?: 'Run', id: string, taskId: string, createdAt: any, status: RunStatus, snapshots: Array<{ __typename?: 'Snapshot', id: string, status?: string | null, t: number, createdAt: any }>, latestSnapshot?: { __typename?: 'Snapshot', createdAt: any, t: number, events: Array<(
       { __typename?: 'RunEvent' }
@@ -2712,7 +2712,9 @@ export type FlowQuery = { __typename?: 'Query', flow: (
   ) };
 
 export type FlowsQueryVariables = Exact<{
-  limit?: InputMaybe<Scalars['Int']['input']>;
+  filters?: InputMaybe<FlowFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<FlowOrder> | FlowOrder>;
 }>;
 
 
@@ -2842,7 +2844,9 @@ export type WorkspaceQuery = { __typename?: 'Query', workspace: (
   ) };
 
 export type WorkspacesQueryVariables = Exact<{
+  filters?: InputMaybe<WorkspaceFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<WorkspaceOrder> | WorkspaceOrder>;
 }>;
 
 
@@ -2877,9 +2881,11 @@ export const ListFlowFragmentDoc = gql`
     fragment ListFlow on Flow {
   id
   title
+  description
   createdAt
   workspace {
     id
+    title
   }
 }
     `;
@@ -2888,6 +2894,7 @@ export const ListWorkspaceFragmentDoc = gql`
   id
   title
   description
+  createdAt
   latestFlow {
     ...ListFlow
   }
@@ -3816,7 +3823,10 @@ export const ListRunFragmentDoc = gql`
   createdAt
   status
   flow {
+    id
+    title
     workspace {
+      id
       title
     }
   }
@@ -3950,8 +3960,8 @@ export type FlowQueryHookResult = ReturnType<typeof useFlowQuery>;
 export type FlowLazyQueryHookResult = ReturnType<typeof useFlowLazyQuery>;
 export type FlowQueryResult = Apollo.QueryResult<FlowQuery, FlowQueryVariables>;
 export const FlowsDocument = gql`
-    query Flows($limit: Int) {
-  flows(pagination: {limit: $limit}) {
+    query Flows($filters: FlowFilter, $pagination: OffsetPaginationInput, $ordering: [FlowOrder!]) {
+  flows(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListFlow
   }
 }
@@ -3969,7 +3979,9 @@ export const FlowsDocument = gql`
  * @example
  * const { data, loading, error } = useFlowsQuery({
  *   variables: {
- *      limit: // value for 'limit'
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *      ordering: // value for 'ordering'
  *   },
  * });
  */
@@ -4410,8 +4422,8 @@ export type WorkspaceQueryHookResult = ReturnType<typeof useWorkspaceQuery>;
 export type WorkspaceLazyQueryHookResult = ReturnType<typeof useWorkspaceLazyQuery>;
 export type WorkspaceQueryResult = Apollo.QueryResult<WorkspaceQuery, WorkspaceQueryVariables>;
 export const WorkspacesDocument = gql`
-    query Workspaces($pagination: OffsetPaginationInput) {
-  workspaces(pagination: $pagination) {
+    query Workspaces($filters: WorkspaceFilter, $pagination: OffsetPaginationInput, $ordering: [WorkspaceOrder!]) {
+  workspaces(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListWorkspace
   }
 }
@@ -4429,7 +4441,9 @@ export const WorkspacesDocument = gql`
  * @example
  * const { data, loading, error } = useWorkspacesQuery({
  *   variables: {
+ *      filters: // value for 'filters'
  *      pagination: // value for 'pagination'
+ *      ordering: // value for 'ordering'
  *   },
  * });
  */

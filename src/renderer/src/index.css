@@ -571,3 +571,97 @@
   background-color: var(--primary) !important;
   height: 2px !important;
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   HOMEPAGE DASHBOARD — rounder, softer cards
+   Scoped with `.dockview-dashboard` so the rekuest dashboard scene keeps the
+   tighter default radius.
+   ══════════════════════════════════════════════════════════ */
+.dockview-theme-abyss.dockview-dashboard {
+  --dv-border-radius: var(--radius-3xl);
+  --dv-tabs-and-actions-container-height: 56px;
+}
+
+/* Wider gutter so the larger radius has room to breathe */
+.dockview-theme-abyss.dockview-dashboard .dv-view:has(> .dv-groupview) {
+  padding: 8px;
+  border-radius: var(--dv-border-radius);
+}
+
+/* Card: a hairline edge so the rounded corners read against the page, plus a
+   softer, lifted shadow. Inactive cards stay fully opaque. */
+.dockview-theme-abyss.dockview-dashboard .dv-groupview {
+  outline: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 8px 24px -12px rgb(0 0 0 / 0.12) !important;
+}
+.dockview-theme-abyss.dockview-dashboard .dv-groupview.dv-inactive-group {
+  opacity: 1;
+}
+.dockview-theme-abyss.dockview-dashboard .dv-groupview.dv-active-group {
+  outline-color: color-mix(in srgb, var(--border) 85%, var(--primary));
+}
+
+/* Header strip: padded away from the card edge and vertically centred */
+.dockview-theme-abyss.dockview-dashboard .dv-groupview .dv-tabs-and-actions-container {
+  align-items: center;
+  padding: 12px 12px 0;
+  border-top-left-radius: var(--dv-border-radius);
+  border-top-right-radius: var(--dv-border-radius);
+}
+.dockview-theme-abyss.dockview-dashboard .dv-tabs-container {
+  align-items: center;
+  height: auto;
+}
+
+/* Tabs default to pills (used when several widgets share a card) */
+.dockview-theme-abyss.dockview-dashboard .dv-tab {
+  display: flex;
+  align-items: center;
+  height: 32px !important;
+  margin: 0 4px 0 0 !important;
+  border-radius: 9999px !important;
+}
+.dockview-theme-abyss.dockview-dashboard .dv-active-group .dv-tabs-container > .dv-active-tab,
+.dockview-theme-abyss.dockview-dashboard .dv-inactive-group .dv-tabs-container > .dv-active-tab {
+  box-shadow: none;
+  background-color: var(--muted) !important;
+}
+.dockview-theme-abyss.dockview-dashboard .dv-tab:hover {
+  background-color: color-mix(in srgb, var(--muted) 60%, transparent) !important;
+}
+
+/* A card holding a single widget shows its title as a plain card heading,
+   not a chip hugging the corner. */
+.dockview-theme-abyss.dockview-dashboard .dv-single-tab .dv-tab,
+.dockview-theme-abyss.dockview-dashboard .dv-single-tab .dv-tab:hover,
+.dockview-theme-abyss.dockview-dashboard .dv-single-tab .dv-tab.dv-active-tab {
+  background-color: transparent !important;
+  color: var(--foreground) !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  cursor: default;
+}
+
+/* Dividers between floating cards are invisible until hovered or dragged.
+   Selectors mirror the base sash rules above so they win on specificity. */
+.dockview-theme-abyss.dockview-dashboard .dv-horizontal > .dv-sash-container > .dv-sash::after,
+.dockview-theme-abyss.dockview-dashboard .dv-vertical > .dv-sash-container > .dv-sash::after {
+  background-color: transparent;
+}
+.dockview-theme-abyss.dockview-dashboard .dv-horizontal > .dv-sash-container > .dv-sash:hover::after,
+.dockview-theme-abyss.dockview-dashboard .dv-horizontal > .dv-sash-container > .dv-sash.dv-active-sash::after,
+.dockview-theme-abyss.dockview-dashboard .dv-vertical > .dv-sash-container > .dv-sash:hover::after,
+.dockview-theme-abyss.dockview-dashboard .dv-vertical > .dv-sash-container > .dv-sash.dv-active-sash::after {
+  background-color: var(--primary) !important;
+}
+
+/* Rounded drop indicators to match the cards */
+.dockview-theme-abyss.dockview-dashboard .dv-drop-target-anchor {
+  border-radius: calc(var(--dv-border-radius) / 2);
+}
+.dockview-theme-abyss.dockview-dashboard .dv-drop-target-anchor.dv-drop-target-content {
+  border-radius: var(--dv-border-radius);
+}

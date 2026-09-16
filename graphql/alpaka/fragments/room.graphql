@@ -2,6 +2,23 @@ fragment Room on Room {
   id
   title
   description
+  createdAt
+  creator {
+    id
+    preferredUsername
+  }
+  organization {
+    id
+    slug
+  }
+  agents {
+    id
+    name
+    user {
+      id
+      preferredUsername
+    }
+  }
   messages {
     ...ListMessage
   }

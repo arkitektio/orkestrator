@@ -23,7 +23,7 @@ const Page = asDetailQueryRoute(useGetOmeroImageQuery, ({ data, id }) => {
             <Guard.Kraph>
               {data?.image ? (
                 <KnowledgeSidebar
-                  identifier="@omero-ark/image"
+                  identifier="@omeroark/image"
                   object={data.image}
                 />
               ) : null}

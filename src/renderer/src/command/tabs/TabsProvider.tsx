@@ -25,6 +25,7 @@ import {
   setTabLabel,
   warmIds as warmIdsOf,
   type LabelSource,
+  NEW_TAB_PATH,
   type OpenOptions,
   type TabRecord,
   type TabsState,
@@ -228,7 +229,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   }, [open]);
 
   // Hotkeys. Capture phase on `window`, like the palette's, so they win over
-  // whatever has focus. ⌘T belongs to the palette (new-tab intent) already.
+  // whatever has focus.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.repeat || e.defaultPrevented) return;
@@ -240,6 +241,15 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
       if (meta && !e.shiftKey && e.key === "w") {
         e.preventDefault();
         close(store.get().activeId);
+        return;
+      }
+
+      // ⌘T makes the tab NOW, on the new-tab page, and the search is that
+      // page — as a browser does — rather than a palette that would only make
+      // a tab once something was chosen in it.
+      if (meta && !e.shiftKey && e.key === "t") {
+        e.preventDefault();
+        open(NEW_TAB_PATH);
         return;
       }
 
@@ -255,7 +265,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [store, close, focus]);
+  }, [store, close, focus, open]);
 
   const actions = useMemo(
     () => ({ open, focus, close, closeOthers, move, setLabel, focusOrOpenForPin: focusOrOpen }),

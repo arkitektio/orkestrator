@@ -541,8 +541,11 @@ export const NeuronVisualizer = ({ model }: { model: DetailNeuronModelFragment }
 
       <PanelOverlay sectionMap={sectionMap} compartmentMap={compartmentMap} nodes={nodes} />
 
+      {/* Bottom-left, not top-left: the page floats its title card in the
+          top-left corner (NeuronModelTitleOverlay), the way the dataset page
+          does, so the HUD takes the corner beneath it. */}
       {(importance.hasData || network.hasData) && (
-        <div className="pointer-events-auto absolute left-3 top-3 flex flex-col gap-2">
+        <div className="pointer-events-auto absolute bottom-3 left-3 flex flex-col gap-2">
           {importance.hasData && (
             <ImportanceControl
               variant="dark"

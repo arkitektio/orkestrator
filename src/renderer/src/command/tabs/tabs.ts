@@ -39,6 +39,12 @@ export type TabsState = {
 };
 
 /** Past this the strip stops being scannable and starts being a list. */
+/**
+ * Where a fresh tab starts: the new-tab page — a search field and the modules,
+ * as a browser's new tab is an address bar and your top sites.
+ */
+export const NEW_TAB_PATH = "/new";
+
 export const MAX_TABS = 12;
 /**
  * How many tabs stay MOUNTED. A tab is either warm (mounted, hidden if not

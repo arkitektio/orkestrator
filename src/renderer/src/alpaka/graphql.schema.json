@@ -117,7 +117,7 @@
           },
           {
             "name": "room",
-            "description": null,
+            "description": "The room this agent participates in",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -6469,7 +6469,7 @@
         "fields": [
           {
             "name": "agents",
-            "description": null,
+            "description": "The room this agent participates in",
             "args": [
               {
                 "name": "filters",

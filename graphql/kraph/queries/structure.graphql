@@ -15,12 +15,16 @@ query SearchStructures($id: ID, $search: String, $values: [ID!]) {
   }
 }
 
-query GetInformedStructure(
+# The Knowledge sidebar's one read. Organization-scoped: no graph is needed to
+# address a datum. `structureByIdentifier` is still non-null server-side, so an
+# unseen datum answers with a GraphQL error rather than null — the sidebar
+# treats that error as "nothing known yet" (see `kraph/lib/knowledgeErrors.ts`).
+query KnowledgeForStructure(
   $identifier: StructureIdentifier!
   $object: StructureObject!
 ) {
   structureByIdentifier(identifier: $identifier, object: $object) {
-    ...InformedStructure
+    ...KnowledgeStructure
   }
 }
 

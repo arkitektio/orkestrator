@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 
 import { TabIdContext } from "@/command/tabs/TabContext";
 import { useDebug } from "@/providers/debug/DebugContext";
@@ -34,13 +35,16 @@ beforeEach(() => {
   } as never;
 });
 
+// The badge's popover carries the bug report, which reads the router's path.
 const renderApp = (children: React.ReactNode) =>
   render(
-    <DebugProvider>
-      <Toggle />
-      {children}
-      <DebugBadge />
-    </DebugProvider>,
+    <MemoryRouter>
+      <DebugProvider>
+        <Toggle />
+        {children}
+        <DebugBadge />
+      </DebugProvider>
+    </MemoryRouter>,
   );
 
 describe("DebugBadge", () => {
@@ -105,10 +109,12 @@ describe("DebugBadge", () => {
     expect(badge()!.textContent).toContain("1");
     // Same provider, page gone: the badge stays (debug is on) but reports nothing.
     rerender(
-      <DebugProvider>
-        <Toggle />
-        <DebugBadge />
-      </DebugProvider>,
+      <MemoryRouter>
+        <DebugProvider>
+          <Toggle />
+          <DebugBadge />
+        </DebugProvider>
+      </MemoryRouter>,
     );
     expect(badge()!.textContent).toContain("0");
   });

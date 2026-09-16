@@ -16,6 +16,8 @@ import { matchesFilter } from "../filter";
 import { useOpenTarget } from "../useOpenTarget";
 import { usePins } from "../PinsProvider";
 import { APP_COMMANDS } from "./appCommands";
+import { ROUTE_CATALOG, searchRoutes } from "./routeCatalog";
+import { breadcrumbText } from "@/lib/breadcrumbText";
 import { isElectron } from "@/lib/platform";
 
 /**
@@ -25,10 +27,11 @@ import { isElectron } from "@/lib/platform";
  * the source that still works on a fresh install with no backend configured, and
  * on the dashboard, where until now the palette did not exist at all.
  *
- * Two kinds of destination, from two registries that already exist: modules from
- * `moduleRegistry` (filtered to the ones whose service is actually ready, so we
- * never offer a route that renders a "not configured" screen) and the 129 entity
- * list pages from `smartRegistry`.
+ * Three kinds of destination: modules from `moduleRegistry` (filtered to the
+ * ones whose service is actually ready, so we never offer a route that renders a
+ * "not configured" screen), the pages inside them from `ROUTE_CATALOG` — so
+ * typing "tasks" finds Rekuest › Tasks — and the 129 entity list pages from
+ * `smartRegistry`.
  */
 export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   const navigate = useNavigate();
@@ -49,6 +52,16 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
         // offering it as a destination is offering a dead end.
         .filter((m) => m.status === "ready")
         .filter((m) => matchesFilter([m.definition.label, m.key], filter)),
+    [modules, filter],
+  );
+
+  const pageRows = useMemo(
+    () =>
+      searchRoutes(
+        ROUTE_CATALOG,
+        modules.filter((m) => m.status === "ready").map((m) => ({ key: m.key, label: m.definition.label })),
+        filter,
+      ),
     [modules, filter],
   );
 
@@ -106,6 +119,25 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
                     route: module.route,
                     label: module.definition.label || module.key,
                   });
+                })
+              }
+            />
+          ))}
+        </CommandGroup>
+      )}
+
+      {pageRows.length > 0 && (
+        <CommandGroup heading={<GroupHeading>Pages</GroupHeading>}>
+          {pageRows.map((page) => (
+            <CommandActionRow
+              key={`page-${page.route}`}
+              title={page.label}
+              description={`${moduleLabel(modules, page.module)} · ${page.route}`}
+              trailing={moduleIcon(page.module)}
+              icon={ArrowRight}
+              onSelect={() =>
+                run(() => {
+                  openTarget({ kind: "route", route: page.route, label: page.label });
                 })
               }
             />
@@ -177,14 +209,19 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   );
 };
 
-/** The deepest crumb that is a plain string — an entity name still loading comes
- * back as a component, which is not a label. */
+const moduleLabel = (
+  modules: { key: string; definition: { label?: string | null } }[],
+  key: string,
+): string => modules.find((m) => m.key === key)?.definition.label || key;
+
+/** The deepest crumb with text — an entity name still loading comes back as a
+ * component, which is not a label. */
 const currentPageLabel = (
   breadcrumbs: { breadcrumb: React.ReactNode }[],
 ): string =>
   [...breadcrumbs]
     .reverse()
-    .map(({ breadcrumb }) => (typeof breadcrumb === "string" ? breadcrumb : undefined))
+    .map(({ breadcrumb }) => breadcrumbText(breadcrumb))
     .find(Boolean) ?? "This page";
 
 const GroupHeading = ({ children }: { children: React.ReactNode }) => (

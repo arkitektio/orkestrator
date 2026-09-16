@@ -5,6 +5,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 import { useDialog } from "@/app/dialog";
 import type { PinsValue } from "@/command/PinsProvider";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
+import { smartRegistry } from "@/providers/smart/registry";
 import type { Structure as AppStructure } from "@/types";
 import type { InferedServiceMap, ServiceBuilderMap } from "../arkitekt/types";
 import type { ServiceMap } from "../arkitekt/provider";
@@ -62,6 +63,21 @@ export type CommandSelect = {
   command: boolean;
 };
 
+/**
+ * At least one selected structure is a *datum* — something a scientist makes
+ * claims about (see `SmartRegistry.isDatum`). The organization-scoped claims
+ * (labelling, sameness) apply to every datum alike, so an action over them
+ * would otherwise have to enumerate every datum identifier in the registry.
+ */
+export type DatumActive = {
+  type: "datum";
+};
+
+/** The partner (right) side holds at least one datum. */
+export type PartnerDatumActive = {
+  type: "pdatum";
+};
+
 export type Condition =
   | IdentifierActive
   | PartnerActive
@@ -73,7 +89,9 @@ export type Condition =
   | PartnerIdentifierActive
   | PartnerHomogenous
   | MixtureActive
-  | PartnerMixtureActive;
+  | PartnerMixtureActive
+  | DatumActive
+  | PartnerDatumActive;
 
 export type Structure = AppStructure;
 
@@ -265,6 +283,18 @@ const matchesConditionsForState = (
 
       if (condition.type === "command") {
         return state.isCommand === condition.command;
+      }
+      // `some`, like `identifier` / `pidentifier`: an action's `execute` is
+      // where "exactly one on each side" gets enforced.
+      if (condition.type === "datum") {
+        return state.left.some((structure) =>
+          smartRegistry.isDatum(structure.identifier),
+        );
+      }
+      if (condition.type === "pdatum") {
+        return !!state.right?.some((structure) =>
+          smartRegistry.isDatum(structure.identifier),
+        );
       }
       return false;
   });

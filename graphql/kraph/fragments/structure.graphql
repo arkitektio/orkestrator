@@ -27,9 +27,14 @@ fragment Structure on Structure {
   }
 }
 
-fragment InformedStructure on Structure {
+# Everything the Knowledge sidebar shows about a datum in one read: its
+# measurements and every instance it is evidence for.
+fragment KnowledgeStructure on Structure {
   ...ListStructure
   metrics {
     ...ListMetric
+  }
+  informs {
+    ...KnowledgeInstance
   }
 }

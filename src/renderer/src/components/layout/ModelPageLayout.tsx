@@ -105,6 +105,11 @@ export type ModelPageLayoutProps = {
    * rest of the app's.
    */
   sidebarKey?: string;
+  /**
+   * Whether to fold the Chat tab into the rail (default true). A room page IS
+   * the conversation, so it opts out rather than offering a chat about a chat.
+   */
+  chat?: boolean;
   callback?: (object: Object) => void;
 };
 
@@ -121,6 +126,7 @@ export const ModelPageLayout = ({
   sidebarKey,
   actions,
   pageActions,
+  chat = true,
 }: ModelPageLayoutProps) => {
   const objects = useMemo(() => [{ identifier, object }], [identifier, object]);
   const datum = smartRegistry.isDatum(identifier);
@@ -139,7 +145,7 @@ export const ModelPageLayout = ({
   return (
     <PageLayout
       title={title}
-      sidebars={sidebars ? withChatTab(sidebars, chatTab, sidebarKey ?? "DetailModel", datum) : (
+      sidebars={sidebars ? withChatTab(sidebars, chat ? chatTab : null, sidebarKey ?? "DetailModel", datum) : (
         <Sidebars
           sidebarKey={sidebarKey ?? "DetailModel"}
           defaultTab={defaultSidebar}
@@ -151,7 +157,7 @@ export const ModelPageLayout = ({
             </Sidebars.Tab>
           )}
           {additionalSidebars}
-          {chatTab}
+          {chat && chatTab}
         </Sidebars>
       )}
       variant={variant}

@@ -69,6 +69,12 @@ export const useSmartDropZone = ({
     () => ({
       accept: [SMART_MODEL_DROP_TYPE, NativeTypes.TEXT, NativeTypes.URL],
       drop: (item: unknown, monitor) => {
+        // A nested target inside this zone (a label card's own drop target,
+        // say) already handled the drop: opening the partner panel on top of
+        // that would offer the same act twice.
+        if (monitor.didDrop()) {
+          return;
+        }
         const resolvedDrop = resolveSmartDrop(item, monitor.getItemType());
         if (!resolvedDrop) {
           alert(`Drop unkonwn ${String(item)}`);

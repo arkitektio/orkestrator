@@ -7,11 +7,10 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { FlussWorkspace } from "@/linkers";
-import { useWorkspaceCarouselQuery } from "@/reaktion/api/graphql";
+import { Ordering, useWorkspaceCarouselQuery } from "@/reaktion/api/graphql";
 import { ShowFlow } from "@/reaktion/show/ShowFlow";
-import { Ordering } from "@/rekuest/api/graphql";
 
-export const WorkspaceCarousel = ({ }) => {
+export const WorkspaceCarousel = () => {
   const { data, error } = useWorkspaceCarouselQuery({
     variables: {
       pagination: {

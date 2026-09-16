@@ -169,9 +169,11 @@ fragment Flow on Flow {
 fragment ListFlow on Flow {
   id
   title
+  description
   createdAt
   workspace {
     id
+    title
   }
 }
 
@@ -179,6 +181,7 @@ fragment ListWorkspace on Workspace {
   id
   title
   description
+  createdAt
   latestFlow {
     ...ListFlow
   }
