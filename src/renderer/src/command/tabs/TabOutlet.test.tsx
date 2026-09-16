@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import React from "react";
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ import { ActiveTabRouter } from "./ActiveTabRouter";
 import { TabOutlet } from "./TabOutlet";
 import { TabsProvider, useTabs } from "./TabsProvider";
 import { useTabVisible } from "./TabVisibilityContext";
+import { useTabTitle } from "./useTabTitle";
 import { MAX_WARM } from "./tabs";
 
 /** Rendered INSIDE each tab's own router. */
@@ -31,6 +33,13 @@ const PageProbe = () => {
   );
 };
 
+/** A page that knows its own name, as `PageLayout` does through `title`. */
+const TitledPage = ({ title }: { title: React.ReactNode }) => {
+  useTabTitle(title);
+  const navigate = useNavigate();
+  return <button onClick={() => navigate("/plain")}>leave</button>;
+};
+
 /** Rendered in the CHROME, outside the outlet. */
 const Chrome = () => {
   const { tabs, activeId, open, focus } = useTabs();
@@ -39,6 +48,8 @@ const Chrome = () => {
       <span data-testid="labels">{tabs.map((t) => t.label).join(",")}</span>
       <button onClick={() => open("/b")}>open-b</button>
       <button onClick={() => open("/c")}>open-c</button>
+      <button onClick={() => open("/dataset/5")}>open-dataset</button>
+      <button onClick={() => open("/widget")}>open-widget</button>
       <button onClick={() => focus(tabs[0].id)}>focus-first</button>
       {tabs.map((t, i) => (
         <button key={t.id} onClick={() => focus(t.id)}>{`focus-${i}`}</button>
@@ -50,6 +61,8 @@ const Chrome = () => {
 
 const routes = (
   <Routes>
+    <Route path="/dataset/:id" element={<TitledPage title="HeLa s3" />} />
+    <Route path="/widget" element={<TitledPage title={<b>not text</b>} />} />
     <Route path="*" element={<PageProbe />} />
   </Routes>
 );
@@ -124,5 +137,25 @@ describe("TabOutlet", () => {
   it("names each tab from its own breadcrumbs", () => {
     renderApp();
     expect(screen.getByTestId("labels").textContent).toBe("Page");
+  });
+
+  it("names a tab after the page's own title, not the path leaf", () => {
+    // An entity page would otherwise be titled by its id.
+    renderApp();
+    click("open-dataset");
+    expect(screen.getByTestId("labels").textContent).toBe("Page,HeLa s3");
+  });
+
+  it("falls back to the path once the page navigates away", () => {
+    renderApp();
+    click("open-dataset");
+    click("leave");
+    expect(screen.getByTestId("labels").textContent).toBe("Page,Page");
+  });
+
+  it("keeps the path label when the title is not text", () => {
+    renderApp();
+    click("open-widget");
+    expect(screen.getByTestId("labels").textContent).toBe("Page,Page");
   });
 });

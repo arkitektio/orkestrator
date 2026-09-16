@@ -1,3 +1,4 @@
+import { useTabTitle } from "@/command/tabs/useTabTitle";
 import { usePullToRefetch } from "@/hooks/use-pull-to-refetch";
 import { useReport } from "@/hooks/use-report";
 import { cn } from "@/lib/utils";
@@ -55,7 +56,10 @@ export const PageLayout = ({
   pageActions,
   variant = "default",
   overlay = false,
+  title,
 }: PageLayoutProps) => {
+  // The tab shows the page's own name ("HeLa s3"), not the path's leaf ("5").
+  useTabTitle(title);
   const [params, setParams] = useSearchParams({
     pageSidebar: "true",
     sidebar: "true",
