@@ -1,0 +1,149 @@
+// @vitest-environment jsdom
+import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { MemoryRouter } from "react-router-dom";
+
+import { RailChrome } from "./RailChrome";
+
+vi.mock("./TitleSearchBar", () => ({
+  TitleSearchBar: () => (
+    <button type="button" className="app-no-drag">
+      search
+    </button>
+  ),
+}));
+
+const setElectron = (platform?: string) => {
+  if (platform === undefined) {
+    // @ts-expect-error - removing the injected global is the point
+    delete window.electron;
+    return;
+  }
+  // @ts-expect-error - stand in for the preload injection
+  window.electron = { process: { platform } };
+};
+
+const setWindowState = (state: Partial<{ maximized: boolean; fullscreen: boolean }> = {}) => {
+  // @ts-expect-error - stand in for the preload injection
+  window.api = {
+    windowControls: {
+      minimize: vi.fn(),
+      toggleMaximize: vi.fn(),
+      close: vi.fn(),
+      getState: vi.fn(async () => ({
+        maximized: false,
+        fullscreen: false,
+        focused: true,
+        ...state,
+      })),
+      onStateChanged: vi.fn(() => () => {}),
+    },
+  };
+};
+
+beforeEach(() => setWindowState());
+afterEach(() => {
+  setElectron(undefined);
+  // @ts-expect-error - clean up the injected global
+  delete window.api;
+  vi.restoreAllMocks();
+});
+
+/** Is this element, or any ancestor within the zone, opted out of dragging? */
+const isClickable = (el: Element, root: Element): boolean => {
+  let node: Element | null = el;
+  while (node && node !== root.parentElement) {
+    if (node.classList.contains("app-no-drag")) return true;
+    node = node.parentElement;
+  }
+  return false;
+};
+
+describe("RailChrome drag regions", () => {
+  // With no title bar, this zone is the ONLY way to move the window — which
+  // makes the `app-no-drag` on its one control load-bearing rather than
+  // defensive. A drag region swallows clicks silently: no error, the button
+  // just never fires.
+  it.each(["darwin", "win32", "linux"])(
+    "drags the window while leaving its controls clickable on %s",
+    (platform) => {
+      setElectron(platform);
+      const { container } = render(<MemoryRouter><RailChrome /></MemoryRouter>);
+
+      const zone = container.querySelector(".app-drag");
+      expect(zone, "the rail's chrome zone must be draggable").not.toBeNull();
+
+      const interactive = zone!.querySelectorAll("button, input, a, [role='button']");
+      expect(interactive.length).toBeGreaterThan(0);
+      interactive.forEach((el) => {
+        expect(
+          isClickable(el, zone!),
+          `${el.textContent} sits in a drag region with no app-no-drag, so it cannot be clicked`,
+        ).toBe(true);
+      });
+    },
+  );
+
+  it("still offers the search pill in a browser, where there is nothing to drag", () => {
+    setElectron(undefined);
+    const { container } = render(<MemoryRouter><RailChrome /></MemoryRouter>);
+    expect(screen.getByText("search")).toBeInTheDocument();
+    expect(container.querySelector(".app-drag")).toBeNull();
+  });
+});
+
+describe("the traffic-light gutter", () => {
+  it("reserves room beside the lights on macOS, where they sit on the rail", () => {
+    // The nav buttons share this row with the lights, so the gutter is
+    // horizontal: without it they would be drawn underneath them.
+    setElectron("darwin");
+    render(<MemoryRouter><RailChrome /></MemoryRouter>);
+    expect(screen.getByTestId("traffic-light-gutter").style.width).toBe("78px");
+  });
+
+  it("reserves none off macOS, where there are no lights to avoid", () => {
+    setElectron("win32");
+    render(<MemoryRouter><RailChrome /></MemoryRouter>);
+    expect(screen.queryByTestId("traffic-light-gutter")).not.toBeInTheDocument();
+  });
+
+  // The fullscreen collapse itself is pinned on the pure function in
+  // `lib/platform.test.ts`; asserting it here would only prove that jsdom
+  // resolves an async getState, which is not the behaviour worth pinning.
+});
+
+describe("navigation controls", () => {
+  it("offers back, forward and reload above the search", () => {
+    setElectron("darwin");
+    render(<MemoryRouter><RailChrome /></MemoryRouter>);
+    expect(screen.getByLabelText("Back")).toBeInTheDocument();
+    expect(screen.getByLabelText("Forward")).toBeInTheDocument();
+    expect(screen.getByLabelText("Reload")).toBeInTheDocument();
+  });
+});
+
+describe("window controls", () => {
+  it.each(["darwin", "win32"])("draws none of its own on %s", (platform) => {
+    // macOS has real traffic lights; Windows keeps its own overlay buttons,
+    // which is what preserves Snap Layouts.
+    setElectron(platform);
+    render(<MemoryRouter><RailChrome /></MemoryRouter>);
+    expect(screen.queryByLabelText("Close")).not.toBeInTheDocument();
+  });
+
+  it("puts them inline with the nav controls on Linux", () => {
+    // The one genuinely frameless platform, and with no title bar there is no
+    // top-right corner to put them in.
+    setElectron("linux");
+    render(<MemoryRouter><RailChrome /></MemoryRouter>);
+    expect(screen.getByLabelText("Minimize")).toBeInTheDocument();
+    expect(screen.getByLabelText("Close")).toBeInTheDocument();
+  });
+
+  it("draws none in a browser", () => {
+    setElectron(undefined);
+    render(<MemoryRouter><RailChrome /></MemoryRouter>);
+    expect(screen.queryByLabelText("Close")).not.toBeInTheDocument();
+  });
+});

@@ -2,6 +2,7 @@ import { Assign } from "@/app/agent/message";
 import { AppContext, AvailableService } from "@/lib/arkitekt/provider";
 import { ImplementationInput } from "@/rekuest/api/graphql";
 import { ElectronAPI } from "@electron-toolkit/preload";
+import type { WindowChromeState } from "../main/modules/WindowManager";
 
 declare global {
   interface Window {
@@ -30,6 +31,13 @@ declare global {
         template?: string;
       }) => Promise<void>;
       getNodeId: () => Promise<string>;
+      windowControls: {
+        minimize: () => void;
+        toggleMaximize: () => void;
+        close: () => void;
+        getState: () => Promise<WindowChromeState>;
+        onStateChanged: (cb: (state: WindowChromeState) => void) => () => void;
+      };
       openFilePicker: () => Promise<string | undefined>;
       uploadBigFile: (opts: { uploadId: string; path: string; grant: any; endpointUrl: string }) => Promise<string>;
       cancelBigFile: (opts: { uploadId: string }) => Promise<void>;

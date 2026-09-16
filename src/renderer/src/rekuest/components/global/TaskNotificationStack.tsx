@@ -3,6 +3,11 @@ import { cn } from "@/lib/utils";
 import { useLiveTask, useTask } from "@/rekuest/hooks/useTasks";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { useEffect, useState } from "react";
 import {
   dismiss,
@@ -43,7 +48,11 @@ const TaskNotificationCard = ({ id }: { id: string }) => {
   return (
     <div
       className={cn(
-        "relative flex w-80 flex-col gap-2 rounded-md border bg-background p-3 shadow-lg",
+        // `w-full`, not a fixed width: the card used to be `w-80` inside a
+        // `w-80` container with padding, so it overflowed by exactly that
+        // padding. The container owns the width; the card fills it.
+        // `min-w-0` lets the truncation inside actually engage.
+        "relative flex w-full min-w-0 flex-col gap-2 overflow-hidden rounded-md border bg-background p-3 shadow-lg",
         borderColorForLiveState(live),
       )}
     >
@@ -56,18 +65,26 @@ const TaskNotificationCard = ({ id }: { id: string }) => {
       >
         <X className="h-4 w-4" />
       </Button>
-      <div className="pr-7">
+      <div className="min-w-0 pr-7">
         <TaskStatusLine task={task} showCancel showLink />
       </div>
 
       {live.error && (
-        <div className="w-full rounded bg-red-500/10 p-2 text-xs text-red-500">
+        // Server errors arrive as arbitrary text: a stack trace, or a single
+        // unbroken token like a URL or a UUID, which would otherwise push the
+        // card wider than its container. Break anywhere, and cap the height so
+        // one long failure cannot bury the tasks underneath it.
+        <div className="max-h-32 w-full min-w-0 overflow-y-auto break-words whitespace-pre-wrap rounded bg-red-500/10 p-2 text-xs text-red-500">
           {live.error}
         </div>
       )}
 
       {live.yield && live.actionId && (
-        <DynamicYieldDisplay values={live.yield} actionId={live.actionId} />
+        // A yield is a rendered widget — an image, a table — sized by its own
+        // registry entry, not by this card. Contain it rather than trust it.
+        <div className="min-w-0 overflow-hidden">
+          <DynamicYieldDisplay values={live.yield} actionId={live.actionId} />
+        </div>
       )}
     </div>
   );
@@ -99,8 +116,13 @@ const TaskNotificationPill = ({
       type="button"
       onClick={onClick}
       aria-label="Show tasks"
+      // The rail is 240px and an action name can be any length, so every part
+      // of this row is either `shrink-0` or allowed to truncate. `min-w-0` on
+      // the flexible one is what makes `truncate` engage at all — without it a
+      // flex item's automatic minimum size is its content, and the row grows
+      // past the rail instead of clipping.
       className={cn(
-        "flex max-w-[18rem] items-center gap-2 rounded-full border bg-background/95 px-4 py-2 shadow-2xl shadow-black/25 ring-1 ring-black/5 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-accent hover:shadow-2xl dark:shadow-black/50 dark:ring-white/10",
+        "flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg border bg-background/70 px-2.5 py-1.5 text-left transition-colors hover:bg-background",
         borderColorForLiveState(live),
       )}
     >
@@ -132,14 +154,20 @@ const LEAVE = { opacity: 0, y: -10, scale: 0.95 };
 const SPRING = { type: "spring", bounce: 0.3, duration: 0.35 } as const;
 
 /**
- * Global, animated notification stack for current tasks. Anchored bottom-center.
+ * Running tasks, as a strip at the foot of the rail.
  *
- * Collapsed (default): a small pill summarizing the latest task. Hovering /
- * focusing / clicking it fans every active task out into a full column above.
+ * Deliberately where a browser puts its now-playing control: tasks are ambient
+ * and long-running, so they belong in the chrome that is always there rather
+ * than floating over the page, where they covered content and moved with
+ * nothing.
+ *
+ * Collapsed is a single row summarising the latest task; hover or focus fans
+ * every active task out into a card list to the RIGHT of the rail. Popping out
+ * rather than expanding in place matters here — growing inside a 240px column
+ * would shove the pinned routes above it around every time a task started.
  *
  * Reads its ids from the `taskNotifications` store, which `TaskUpdater` feeds
- * from the WatchMyTasks subscription — so a fresh task still pops in on create,
- * exactly like the old toast.
+ * from the WatchMyTasks subscription, so a fresh task still pops in on create.
  */
 export const TaskNotificationStack = () => {
   const ids = useTaskNotifications();
@@ -150,44 +178,63 @@ export const TaskNotificationStack = () => {
   }
 
   return (
-    <div
-      className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2"
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-      onFocusCapture={() => setExpanded(true)}
-      onBlurCapture={() => setExpanded(false)}
-    >
-      <AnimatePresence initial={false}>
-        {expanded &&
-          ids.map((id) => (
-            <motion.div
-              key={id}
-              layout
-              initial={ENTER}
-              animate={SHOWN}
-              exit={LEAVE}
-              transition={SPRING}
-            >
-              <TaskNotificationCard id={id} />
-            </motion.div>
-          ))}
-      </AnimatePresence>
+    // `min-w-0` so this section can be narrower than the pill's content wants
+    // to be; without it the rail's own flex column would be widened by a long
+    // action name rather than the name being truncated. `shrink-0` so a long
+    // pin list above squeezes the scrolling list, not this.
+    <div className="min-w-0 shrink-0 px-2 pb-2">
+      <HoverCard
+        open={expanded}
+        onOpenChange={setExpanded}
+        openDelay={80}
+        closeDelay={180}
+      >
+        <HoverCardTrigger asChild>
+          <motion.div
+            layout
+            initial={ENTER}
+            animate={SHOWN}
+            transition={SPRING}
+            className="w-full min-w-0"
+          >
+            <TaskNotificationPill
+              id={ids[0]}
+              count={ids.length}
+              onClick={() => setExpanded((current) => !current)}
+            />
+          </motion.div>
+        </HoverCardTrigger>
 
-      {!expanded && (
-        <motion.div
-          key={ids[0]}
-          layout
-          initial={ENTER}
-          animate={SHOWN}
-          transition={SPRING}
+        <HoverCardContent
+          side="right"
+          align="end"
+          sideOffset={8}
+          // Capped against the viewport, not just given a width: at 320px plus
+          // the rail plus the gaps, a narrow window would otherwise push this
+          // off-screen. Radix flips it on collision, and this keeps it fitting
+          // whichever side it lands on.
+          className="flex max-h-[70vh] w-80 max-w-[calc(100vw-var(--rail-width)-2.5rem)] flex-col gap-2 overflow-y-auto overflow-x-hidden p-2"
         >
-          <TaskNotificationPill
-            id={ids[0]}
-            count={ids.length}
-            onClick={() => setExpanded(true)}
-          />
-        </motion.div>
-      )}
+          <AnimatePresence initial={false}>
+            {ids.map((id) => (
+              <motion.div
+                key={id}
+                layout
+                initial={ENTER}
+                animate={SHOWN}
+                exit={LEAVE}
+                transition={SPRING}
+                // `shrink-0`: this is a scrolling flex column, and without it
+                // the cards compress into each other as tasks pile up instead
+                // of the list scrolling.
+                className="w-full min-w-0 shrink-0"
+              >
+                <TaskNotificationCard id={id} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </HoverCardContent>
+      </HoverCard>
     </div>
   );
 };

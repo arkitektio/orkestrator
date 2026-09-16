@@ -2,7 +2,6 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Separator } from "@/components/ui/separator";
 
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { CommandMenu } from "@/command/Menu";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { HelpSidebar } from "@/components/sidebars/help";
 import { Button } from "@/components/ui/button";
@@ -79,7 +78,6 @@ const Page = asDetailQueryRoute(usePeerHomePageQuery, ({ id }) => {
         </>
       }
     >
-      <CommandMenu />
       <div className="space-y-8 p-3">
         {/* Welcome Header */}
         <CardHeader>

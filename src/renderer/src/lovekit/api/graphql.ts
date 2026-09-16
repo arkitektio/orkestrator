@@ -18,17 +18,19 @@ export type Scalars = {
   Float: { input: number; output: number; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
+  _Any: { input: any; output: any; }
 };
 
 export type App = {
   __typename?: 'App';
-  id: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
   identifier: Scalars['String']['output'];
 };
 
 export type Client = {
   __typename?: 'Client';
   clientId: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   release?: Maybe<Release>;
 };
@@ -120,12 +122,14 @@ export type OffsetPaginationInput = {
 
 export type Organization = {
   __typename?: 'Organization';
-  id: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
   slug: Scalars['String']['output'];
 };
 
 export type Query = {
   __typename?: 'Query';
+  _entities: Array<Maybe<_Entity>>;
+  _service: _Service;
   /** Get a collaborative broadcast by ID */
   collaborativeBroadcast: CollaborativeBroadcast;
   /** Get all collaborative broadcasts */
@@ -138,6 +142,11 @@ export type Query = {
   stream: Stream;
   /** Get a stream */
   streams: Array<Stream>;
+};
+
+
+export type Query_EntitiesArgs = {
+  representations: Array<Scalars['_Any']['input']>;
 };
 
 
@@ -176,7 +185,7 @@ export type QueryStreamsArgs = {
 export type Release = {
   __typename?: 'Release';
   app: App;
-  id: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
   version: Scalars['String']['output'];
 };
 
@@ -273,15 +282,32 @@ export type SubscriptionStreamsArgs = {
 export type User = {
   __typename?: 'User';
   activeOrganization?: Maybe<Organization>;
+  id: Scalars['ID']['output'];
   preferredUsername: Scalars['String']['output'];
   sub: Scalars['String']['output'];
 };
 
-export type SoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, streamer: { __typename?: 'Streamer', user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } } };
+export type _Entity = App | Client | Organization | Release | User;
 
-export type ListSoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, streamer: { __typename?: 'Streamer', user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } } };
+export type _Service = {
+  __typename?: '_Service';
+  sdl: Scalars['String']['output'];
+};
 
-export type CollaborativeBroadcastFragment = { __typename?: 'CollaborativeBroadcast', id: string, title: string, streamers: Array<{ __typename?: 'Streamer', user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } }> };
+export type SoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, streamer: (
+    { __typename?: 'Streamer' }
+    & StreamerFragment
+  ) };
+
+export type ListSoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, streamer: (
+    { __typename?: 'Streamer' }
+    & StreamerFragment
+  ) };
+
+export type CollaborativeBroadcastFragment = { __typename?: 'CollaborativeBroadcast', id: string, title: string, streamers: Array<(
+    { __typename?: 'Streamer' }
+    & StreamerFragment
+  )> };
 
 export type StreamFragment = { __typename?: 'Stream', id: string };
 
@@ -294,7 +320,10 @@ export type EnsureSoloBroadcastMutationVariables = Exact<{
 }>;
 
 
-export type EnsureSoloBroadcastMutation = { __typename?: 'Mutation', ensureSoloBroadcast: { __typename?: 'SoloBroadcast', id: string, title: string, streamer: { __typename?: 'Streamer', user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } } } };
+export type EnsureSoloBroadcastMutation = { __typename?: 'Mutation', ensureSoloBroadcast: (
+    { __typename?: 'SoloBroadcast' }
+    & SoloBroadcastFragment
+  ) };
 
 export type JoinBroadcastMutationVariables = Exact<{
   input: JoinBroadcastInput;
@@ -315,7 +344,10 @@ export type GetCollaborativeBroadcastQueryVariables = Exact<{
 }>;
 
 
-export type GetCollaborativeBroadcastQuery = { __typename?: 'Query', collaborativeBroadcast: { __typename?: 'CollaborativeBroadcast', id: string, title: string, streamers: Array<{ __typename?: 'Streamer', user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } }> } };
+export type GetCollaborativeBroadcastQuery = { __typename?: 'Query', collaborativeBroadcast: (
+    { __typename?: 'CollaborativeBroadcast' }
+    & CollaborativeBroadcastFragment
+  ) };
 
 export type SearchollaborativeBroadcastsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -331,21 +363,30 @@ export type ListCollaborativeBroadcastsQueryVariables = Exact<{
 }>;
 
 
-export type ListCollaborativeBroadcastsQuery = { __typename?: 'Query', collaborativeBroadcasts: Array<{ __typename?: 'CollaborativeBroadcast', id: string, title: string, streamers: Array<{ __typename?: 'Streamer', user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } }> }> };
+export type ListCollaborativeBroadcastsQuery = { __typename?: 'Query', collaborativeBroadcasts: Array<(
+    { __typename?: 'CollaborativeBroadcast' }
+    & CollaborativeBroadcastFragment
+  )> };
 
 export type GlobalSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', streams: Array<{ __typename?: 'Stream', id: string }> };
+export type GlobalSearchQuery = { __typename?: 'Query', streams: Array<(
+    { __typename?: 'Stream' }
+    & ListStreamFragment
+  )> };
 
 export type GetSoloBroadcastQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetSoloBroadcastQuery = { __typename?: 'Query', soloBroadcast: { __typename?: 'SoloBroadcast', id: string, title: string, streamer: { __typename?: 'Streamer', user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } } } };
+export type GetSoloBroadcastQuery = { __typename?: 'Query', soloBroadcast: (
+    { __typename?: 'SoloBroadcast' }
+    & SoloBroadcastFragment
+  ) };
 
 export type SearchSoloBroadcastQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -361,14 +402,20 @@ export type ListSoloBroadcastsQueryVariables = Exact<{
 }>;
 
 
-export type ListSoloBroadcastsQuery = { __typename?: 'Query', soloBroadcasts: Array<{ __typename?: 'SoloBroadcast', id: string, title: string, streamer: { __typename?: 'Streamer', user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } } }> };
+export type ListSoloBroadcastsQuery = { __typename?: 'Query', soloBroadcasts: Array<(
+    { __typename?: 'SoloBroadcast' }
+    & SoloBroadcastFragment
+  )> };
 
 export type GetStreamQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetStreamQuery = { __typename?: 'Query', stream: { __typename?: 'Stream', id: string } };
+export type GetStreamQuery = { __typename?: 'Query', stream: (
+    { __typename?: 'Stream' }
+    & StreamFragment
+  ) };
 
 export type SearchStreamsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -384,7 +431,10 @@ export type ListStreamsQueryVariables = Exact<{
 }>;
 
 
-export type ListStreamsQuery = { __typename?: 'Query', streams: Array<{ __typename?: 'Stream', id: string }> };
+export type ListStreamsQuery = { __typename?: 'Query', streams: Array<(
+    { __typename?: 'Stream' }
+    & StreamFragment
+  )> };
 
 export const StreamerFragmentDoc = gql`
     fragment Streamer on Streamer {

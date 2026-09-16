@@ -1,6 +1,5 @@
 import { asParamlessRoute, HookFunction } from "@/app/routes/ParamlessRoute";
 import { OperationVariables } from "@apollo/client";
-import { CommandMenu } from "@/command/Menu";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { HelpSidebar } from "@/components/sidebars/help";
@@ -187,7 +186,6 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
         </Sidebars>
       }
     >
-      <CommandMenu />
 
       {data?.blocks.length == 0 && data?.models.length == 0 ? (
         // Empty State with Hero Design

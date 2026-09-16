@@ -17,6 +17,9 @@ generates:
       withHooks: true
       reactApolloVersion: 3
       apolloReactHooksImportFrom: "@/lib/kraph/funcs"
+      # Reference fragment types by name instead of inlining them: deep fragments
+      # otherwise blow graphql.ts up to many MB and stall tsc.
+      inlineFragmentTypes: combine
       # No `scalars:` mapping. `GraphID` and `LocalID` were custom scalars that
       # packed a graph and a per-graph id into one opaque string; every id in the
       # API is a bare uuid now, so `ID` is the whole story.

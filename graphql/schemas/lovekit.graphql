@@ -1,10 +1,11 @@
 type App {
-  id: String!
+  id: ID!
   identifier: String!
 }
 
 type Client {
   clientId: String!
+  id: ID!
   name: String!
   release: Release
 }
@@ -74,11 +75,14 @@ input OffsetPaginationInput {
 }
 
 type Organization {
-  id: String!
+  id: ID!
   slug: String!
 }
 
 type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service!
+
   """Get a collaborative broadcast by ID"""
   collaborativeBroadcast(id: ID!): CollaborativeBroadcast!
 
@@ -100,7 +104,7 @@ type Query {
 
 type Release {
   app: App!
-  id: String!
+  id: ID!
   version: String!
 }
 
@@ -182,6 +186,15 @@ type Subscription {
 
 type User {
   activeOrganization: Organization
+  id: ID!
   preferredUsername: String!
   sub: String!
+}
+
+scalar _Any
+
+union _Entity = App | Client | Organization | Release | User
+
+type _Service {
+  sdl: String!
 }

@@ -4,7 +4,6 @@ import { UploadWrapper } from "@/components/upload/wrapper";
 import { useCreateFile } from "@/lib/mikro/hooks";
 
 import { asParamlessRoute } from "@/app/routes/ParamlessRoute";
-import { CommandMenu } from "@/command/Menu";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { HelpSidebar } from "@/components/sidebars/help";
 import { Badge } from "@/components/ui/badge";
@@ -224,7 +223,6 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
       }
       title="Home"
     >
-      <CommandMenu />
 
 
 

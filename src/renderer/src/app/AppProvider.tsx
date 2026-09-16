@@ -18,7 +18,6 @@ import { SmartProvider } from "@/providers/smart/provider";
 import { SmartSurface } from "@/providers/smart/SmartSurface";
 import { TaskUpdater } from "@/rekuest/components/functional/TaskUpdater";
 import { TaskHookRunner } from "@/lib/taskhooks/TaskHookRunner";
-import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
 import { AgentUpdater } from "@/rekuest/components/functional/AgentUpdater";
 import { UiCatalogRegistrar } from "@/rekuest/catalog/UiCatalogRegistrar";
 import { WidgetRegistryProvider } from "@/rekuest/widgets/WidgetsProvider";
@@ -109,6 +108,9 @@ import { LatestArrayDatasetsDashboardWidget } from "@/providers/dashboard/widget
 import { OrganizationBrandSync } from "@/lok-next/components/OrganizationBrandSync";
 import { ProfileIdentitySync } from "@/lok-next/components/ProfileIdentitySync";
 import { ProfileSwitchEffects } from "@/app/components/profile/ProfileSwitchEffects";
+import { CommandPaletteProvider } from "@/command/CommandPaletteProvider";
+import { CommandMenuHost } from "@/command/Host";
+import { PinsProvider } from "@/command/PinsProvider";
 
 
 /**
@@ -149,15 +151,21 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                               <DialogProvider>
                                 <SelectionProvider>
                                   <AgentProvider disabled={false}>
+                                    <CommandPaletteProvider>
+                                    <PinsProvider>
                                     <WardRegistrar />
                                     <ProfileSwitchEffects />
+                                    {/* One palette for the whole app. It used to
+                                        be mounted per page, so it was missing on
+                                        the dashboard and double-bound wherever
+                                        two pages nested. */}
+                                    <CommandMenuHost />
                                     <SmartSurface />
                                     <RefetchOnReactivate />
                                     <GcOnNavigate />
                                     <BuiltinDashboardWidgets />
                                     <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
                                       <TaskUpdater />
-                                      <TaskNotificationStack />
                                       <AgentUpdater />
                                       <UiCatalogRegistrar />
                                       <RekuestDashboardWidgets />
@@ -176,6 +184,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     <BackNavigationErrorCatcher>
                                       {children}
                                     </BackNavigationErrorCatcher>
+                                    </PinsProvider>
+                                    </CommandPaletteProvider>
                                   </AgentProvider>
                                 </SelectionProvider>
                               </DialogProvider>

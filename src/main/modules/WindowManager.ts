@@ -39,6 +39,69 @@ const DEFAULT_WINDOW_STATE: WindowState = {
 
 const WINDOW_STATE_KEY = "windowState";
 
+/**
+ * How much room Windows' Controls Overlay gets.
+ *
+ * This app has no title bar — the rail carries the chrome — so on Windows the
+ * renderer draws a matching empty strip across the top for these buttons to sit
+ * in (`WindowsOverlayStrip`). Change one and you must change the other.
+ */
+const WINDOWS_OVERLAY_HEIGHT = 32;
+
+/**
+ * The renderer draws the title bar, so the frame has to get out of the way —
+ * but each platform gets out of the way differently, and the differences are
+ * not cosmetic.
+ *
+ * **macOS** keeps `hiddenInset`: the traffic lights stay REAL, so close, zoom,
+ * fullscreen, Stage Manager and the window menu all keep behaving exactly as
+ * the OS intends and we only draw around them. With no title bar they sit
+ * directly on the sidebar rail's surface, and `trafficLightPosition` places
+ * them in the gap the rail reserves above its search pill.
+ *
+ * **Windows** uses `hidden` + `titleBarOverlay` (Window Controls Overlay) rather
+ * than `frame: false`. A frameless window has no native non-client area, so
+ * Chromium never answers `HTMAXBUTTON` to `WM_NCHITTEST` and **Snap Layouts —
+ * the Win11 hover-the-maximise-button flyout — silently stop working**, with no
+ * hook in Electron to fake it. WCO keeps the real system buttons (and with them
+ * Snap Layouts, high-contrast themes, RTL mirroring) while still letting us
+ * paint the rest of the bar. The renderer reserves their space through the
+ * `env(titlebar-area-*)` CSS variables, which stay correct on their own. The
+ * price is system-styled buttons on Windows; nobody notices those, everybody
+ * notices broken Snap Layouts.
+ *
+ * **Linux** goes frameless: `titleBarOverlay` is inconsistent across
+ * GNOME/KDE/tiling WMs and there is no Snap-Layouts equivalent to lose. Note
+ * this also removes the application menu entirely — see `setupApplicationMenu`
+ * — so Reload / Force Reload / DevTools MUST stay reachable from the command
+ * palette's app commands, which is where they now live.
+ */
+const CHROME_OPTIONS: Partial<Electron.BrowserWindowConstructorOptions> =
+    process.platform === "darwin"
+        ? {
+            titleBarStyle: "hiddenInset",
+            trafficLightPosition: { x: 12, y: 14 },
+        }
+        : process.platform === "win32"
+            ? {
+                titleBarStyle: "hidden",
+                titleBarOverlay: {
+                    // Transparent so our own bar shows through; the symbol colour
+                    // is a neutral that reads on both themes.
+                    color: "#00000000",
+                    symbolColor: "#9b9b9b",
+                    height: WINDOWS_OVERLAY_HEIGHT,
+                },
+            }
+            : { frame: false };
+
+/** What the renderer needs to lay the bar out. */
+export interface WindowChromeState {
+    maximized: boolean;
+    fullscreen: boolean;
+    focused: boolean;
+}
+
 export class WindowManager implements AppModule {
     private mainWindow: BrowserWindow | null = null;
     private windows: Set<BrowserWindow> = new Set();
@@ -134,6 +197,7 @@ export class WindowManager implements AppModule {
             title: "Orkestrator",
             icon: iconPath,
             autoHideMenuBar: true,
+            ...CHROME_OPTIONS,
             ...(process.platform === "linux" ? { icon: iconPath } : {}),
             webPreferences: {
                 preload: join(__dirname, "../preload/index.mjs"),
@@ -168,6 +232,16 @@ export class WindowManager implements AppModule {
         });
 
         this.mainWindow.on("move", () => this.debouncedSaveWindowState());
+
+        // Tell the renderer what the frame is doing. It draws the title bar, so
+        // it has to know: the maximise button must show the right glyph, and on
+        // macOS fullscreen the traffic lights disappear, which means the gutter
+        // reserved for them has to collapse or the centred search bar sits
+        // permanently off-centre.
+        (["maximize", "unmaximize", "enter-full-screen", "leave-full-screen", "focus", "blur"] as const)
+            .forEach((event) => {
+                this.mainWindow?.on(event, () => this.broadcastChromeState());
+            });
 
         // Persist synchronously on close: by the time 'closed' fires the window
         // is already destroyed and its bounds are unreadable.
@@ -326,6 +400,30 @@ export class WindowManager implements AppModule {
     }
 
     /** Persist the main window's normal (non-maximized) bounds and maximized flag. */
+    /** The frame state the renderer's title bar lays itself out from. */
+    getChromeState(): WindowChromeState {
+        const win = this.mainWindow;
+        if (!win || win.isDestroyed()) {
+            return { maximized: false, fullscreen: false, focused: false };
+        }
+        return {
+            maximized: win.isMaximized(),
+            fullscreen: win.isFullScreen(),
+            focused: win.isFocused(),
+        };
+    }
+
+    private broadcastChromeState() {
+        if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+            return;
+        }
+        this.ipcTransport.sendTo(
+            this.mainWindow.webContents,
+            "window:state-changed",
+            this.getChromeState(),
+        );
+    }
+
     private saveWindowState() {
         const win = this.mainWindow;
         if (!win || win.isDestroyed()) return;
@@ -345,6 +443,39 @@ export class WindowManager implements AppModule {
     }
 
     private setupIpcHandlers() {
+        // ── Window controls, for the renderer-drawn title bar ──
+        //
+        // These resolve the window that SENT the message, not the focused one.
+        // The surrounding handlers use `getFocusedWindow()`, which is right for
+        // a menu accelerator and wrong for a title-bar button: a secondary
+        // window's own close button must close that window, never whichever one
+        // happens to hold focus.
+        const senderWindow = (event: { sender: Electron.WebContents }) =>
+            BrowserWindow.fromWebContents(event.sender) ?? this.mainWindow;
+
+        this.ipcTransport.onChannel("window:minimize", (event) => {
+            senderWindow(event)?.minimize();
+        });
+
+        this.ipcTransport.onChannel("window:maximize-toggle", (event) => {
+            const win = senderWindow(event);
+            if (!win) return;
+            // Unmaximise restores the pre-maximise bounds, which
+            // `getStoredWindowState` already tracks via `getNormalBounds()`.
+            if (win.isMaximized()) {
+                win.unmaximize();
+            } else {
+                win.maximize();
+            }
+        });
+
+        this.ipcTransport.onChannel("window:close", (event) => {
+            senderWindow(event)?.close();
+        });
+
+        // Seeds the renderer's first paint, so the bar is never briefly wrong.
+        this.ipcTransport.handleChannel("window:get-state", () => this.getChromeState());
+
         this.ipcTransport.handleChannel("reload-window", () => {
             const focusedWindow = BrowserWindow.getFocusedWindow();
             if (focusedWindow) {

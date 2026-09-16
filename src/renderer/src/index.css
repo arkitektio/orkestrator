@@ -12,6 +12,124 @@
 @custom-variant isdropping (&[data-isdropping="true"]);
 @custom-variant can-drop (&[data-can-drop="true"]);
 
+/* Window-drag regions for the renderer-drawn title bar.
+ *
+ * `app-drag` makes an area behave like a native title bar: dragging it moves the
+ * window, double-clicking it zooms. The catch, and it is the bug everyone ships
+ * once, is that the region swallows pointer events from everything inside it —
+ * so EVERY interactive child of a dragging area needs `app-no-drag` or it simply
+ * cannot be clicked. `RailChrome.test.tsx` asserts that invariant.
+ *
+ * Utilities rather than inline styles so the rule is greppable and the test can
+ * assert on a class name. */
+/* Height of the renderer-drawn title bar. Kept as a variable because the
+ * command palette anchors underneath it, and because the browser build has no
+ * bar at all — `TitleBar` sets this to 0 there. Must match `TITLE_BAR_HEIGHT`
+ * in `lib/platform.ts` and in the main process's WindowManager. */
+:root {
+  /* The palette opens on top of the rail's search pill and is animated out of
+   * its footprint. `TitleSearchBar` measures itself and overwrites all four at
+   * runtime; these are only the first-paint fallback. */
+  --palette-origin-top: 5.5rem;
+  --palette-origin-left: 0.5rem;
+  --palette-origin-width: 14rem;
+  --palette-origin-height: 2rem;
+  /* The rail holds the module grid, the active module's navigation and the open
+   * tabs, so it is a real sidebar rather than an icon strip. One token so the
+   * width is changed in one place. */
+  --rail-width: 15rem;
+}
+
+/* The command palette opening out of the rail's search pill.
+ *
+ * Two phases, in the order the user asked for and in the order that reads as
+ * one motion: the panel first grows to the RIGHT at the pill's own height, then
+ * drops DOWN to reveal the results. Doing both at once looks like a box being
+ * scaled; doing them in sequence looks like a field being used.
+ *
+ * `clip-path` rather than a transform, because scaling would squash the text on
+ * the way in — this reveals the real, already-laid-out panel. The `from` inset
+ * is exactly the pill's footprint, published by `TitleSearchBar`, and the panel
+ * is positioned on the pill's own coordinates, so there is nothing to line up.
+ *
+ * Both properties are compositor-friendly, so it stays smooth while the
+ * palette's own queries are still settling. */
+@keyframes palette-unfold {
+  0% {
+    opacity: 0;
+    clip-path: inset(
+      0
+      calc(100% - var(--palette-origin-width, 14rem))
+      calc(100% - var(--palette-origin-height, 2rem))
+      0
+      round 0.5rem
+    );
+  }
+  40% {
+    opacity: 1;
+    /* Full width, still only as tall as the pill. */
+    clip-path: inset(0 0 calc(100% - var(--palette-origin-height, 2rem)) 0 round 0.5rem);
+  }
+  100% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0 round 0.5rem);
+  }
+}
+
+@keyframes palette-fold {
+  0% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0 round 0.5rem);
+  }
+  55% {
+    opacity: 1;
+    /* Back to the pill's height, still full width. */
+    clip-path: inset(0 0 calc(100% - var(--palette-origin-height, 2rem)) 0 round 0.5rem);
+  }
+  100% {
+    opacity: 0;
+    /* And back into the pill's footprint it came from. */
+    clip-path: inset(
+      0
+      calc(100% - var(--palette-origin-width, 14rem))
+      calc(100% - var(--palette-origin-height, 2rem))
+      0
+      round 0.5rem
+    );
+  }
+}
+
+@utility animate-palette-in {
+  animation: palette-unfold 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-palette-out {
+  /* Quicker than the way in — a close should feel decisive — but not so quick
+   * that the two phases blur into a flicker. */
+  animation: palette-fold 200ms cubic-bezier(0.32, 0, 0.67, 0) both;
+}
+
+/* Honour a stated preference for less motion: the palette still appears, it
+ * just does not travel. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes palette-unfold {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes palette-fold {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+}
+
+@utility app-drag {
+  -webkit-app-region: drag;
+}
+
+@utility app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
 /* The two master controls are REGISTERED so they are typed numbers rather than
  * opaque token streams. That is what makes them animatable: with `.brand-animating`
  * on <html>, the browser interpolates the number per frame and every derived

@@ -3,7 +3,6 @@ import { Separator } from "@/components/ui/separator";
 
 import { asParamlessRoute, HookFunction } from "@/app/routes/ParamlessRoute";
 import { OperationVariables } from "@apollo/client";
-import { CommandMenu } from "@/command/Menu";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { HelpSidebar } from "@/components/sidebars/help";
 import { Button } from "@/components/ui/button";
@@ -80,7 +79,6 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
       }
       title="Home"
     >
-      <CommandMenu />
 
       {data?.repos?.length == 0 ? (
         // Empty State with Hero Design

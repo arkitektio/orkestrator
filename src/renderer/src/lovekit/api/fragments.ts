@@ -5,7 +5,15 @@
         }
       }
       const result: PossibleTypesResultData = {
-  "possibleTypes": {}
+  "possibleTypes": {
+    "_Entity": [
+      "App",
+      "Client",
+      "Organization",
+      "Release",
+      "User"
+    ]
+  }
 };
       export default result;
     

@@ -1,6 +1,6 @@
 import { Guard } from "@/app/Arkitekt";
 import { StructureRoomsSidebar } from "@/alpaka/sidebars/StructureRoomsSidebar";
-import { CommandMenu } from "@/command/Menu";
+import { CommandContext } from "@/command/CommandContext";
 import { ObjectButton } from "@/rekuest/buttons/ObjectButton";
 import { Identifier, Object } from "@/types";
 import {
@@ -159,7 +159,7 @@ export const ModelPageLayout = ({
       actions={actions}
       pageActions={pageActions || <ObjectButton objects={objects} />}
     >
-      <CommandMenu objects={objects} />
+      <CommandContext objects={objects} />
       {children}
     </PageLayout>
   );

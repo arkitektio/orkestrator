@@ -3477,67 +3477,154 @@ export type _Service = {
   sdl: Scalars['String']['output'];
 };
 
-export type StimulusFragment = { __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } };
+export type StimulusFragment = { __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: (
+      { __typename?: 'ZarrStore' }
+      & ZarrStoreFragment
+    ) } };
 
-export type DetailStimulusFragment = { __typename?: 'Stimulus', id: string, label: string, simulation: { __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, model: { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, mechanismGlobals: Array<{ __typename?: 'MechanismGlobalParam', mechanism: string, param: string, value: GenericQuantity, description?: string | null }>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<{ __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> }> }, topology: { __typename?: 'Topology', sections: Array<{ __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<{ __typename?: 'Coord', x: Length, y: Length, z: Length }> | null, parent?: { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number } | null }> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<{ __typename?: 'SectionDominance', cellId: string, sectionId: string, category?: string | null, globalScore: number, conductanceLoad: number, electrotonicDistance: number }>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } }>, environment: { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> }, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, recordings: Array<{ __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null }, rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } }>, stimuli: Array<{ __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type DetailStimulusFragment = { __typename?: 'Stimulus', id: string, label: string, simulation: (
+    { __typename?: 'Simulation' }
+    & DetailSimulationFragment
+  ) };
 
 export type ListStimulusFragment = { __typename?: 'Stimulus', id: string, label: string, cell: string, simulation: { __typename?: 'Simulation', id: string } };
 
 export type BlockGroupFragment = { __typename?: 'BlockGroup', id: string, name: string };
 
-export type AnalogSignalChannelFragment = { __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } };
+export type AnalogSignalChannelFragment = { __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: (
+    { __typename?: 'Trace' }
+    & DetailTraceFragment
+  ) };
 
-export type DetailAnalogSignalChannelFragment = { __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, signal: { __typename?: 'AnalogSignal', id: string, name: string, unit?: string | null, channels: Array<{ __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } } };
+export type DetailAnalogSignalChannelFragment = { __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: (
+    { __typename?: 'Trace' }
+    & DetailTraceFragment
+  ), signal: (
+    { __typename?: 'AnalogSignal' }
+    & AnalogSignalFragment
+  ) };
 
-export type AnalogSignalFragment = { __typename?: 'AnalogSignal', id: string, name: string, unit?: string | null, channels: Array<{ __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } };
+export type AnalogSignalFragment = { __typename?: 'AnalogSignal', id: string, name: string, unit?: string | null, channels: Array<(
+    { __typename?: 'AnalogSignalChannel' }
+    & AnalogSignalChannelFragment
+  )>, timeTrace: (
+    { __typename?: 'Trace' }
+    & DetailTraceFragment
+  ) };
 
 export type ListAnalogSignalFragment = { __typename?: 'AnalogSignal', id: string, name: string, segment: { __typename?: 'BlockSegment', id: string } };
 
 export type ListAnalogSignalChannelFragment = { __typename?: 'AnalogSignalChannel', id: string, name?: string | null, signal: { __typename?: 'AnalogSignal', id: string } };
 
-export type BlockSegmentFragment = { __typename?: 'BlockSegment', id: string, analogSignals: Array<{ __typename?: 'AnalogSignal', id: string, name: string, unit?: string | null, channels: Array<{ __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }> };
+export type BlockSegmentFragment = { __typename?: 'BlockSegment', id: string, analogSignals: Array<(
+    { __typename?: 'AnalogSignal' }
+    & AnalogSignalFragment
+  )> };
 
-export type BlockFragment = { __typename?: 'Block', id: string, name: string, description?: string | null, segments: Array<{ __typename?: 'BlockSegment', id: string, analogSignals: Array<{ __typename?: 'AnalogSignal', id: string, name: string, unit?: string | null, channels: Array<{ __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }> }>, groups: Array<{ __typename?: 'BlockGroup', id: string, name: string }> };
+export type BlockFragment = { __typename?: 'Block', id: string, name: string, description?: string | null, segments: Array<(
+    { __typename?: 'BlockSegment' }
+    & BlockSegmentFragment
+  )>, groups: Array<(
+    { __typename?: 'BlockGroup' }
+    & BlockGroupFragment
+  )> };
 
 export type ListBlockFragment = { __typename?: 'Block', id: string, name: string };
 
 export type BigFileAccessGrantFragment = { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string };
 
-export type DatasetFragment = { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }>, traces: Array<{ __typename?: 'Trace', id: string, name: string }>, files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }>, children: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }>, creator?: { __typename?: 'User', sub: string } | null };
+export type DatasetFragment = { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<(
+    { __typename?: 'ProvenanceEntry' }
+    & ProvenanceEntryFragment
+  )>, traces: Array<(
+    { __typename?: 'Trace' }
+    & ListTraceFragment
+  )>, files: Array<(
+    { __typename?: 'File' }
+    & ListFileFragment
+  )>, children: Array<(
+    { __typename?: 'Dataset' }
+    & ListDatasetFragment
+  )>, creator?: { __typename?: 'User', sub: string } | null };
 
 export type ListDatasetFragment = { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean };
 
-export type ModEnvironmentFragment = { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> };
+export type ModEnvironmentFragment = { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<(
+    { __typename?: 'Mechanism' }
+    & MechanismFragment
+  )> };
 
-export type ListModEnvironmentFragment = { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> };
+export type ListModEnvironmentFragment = { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<(
+    { __typename?: 'Mechanism' }
+    & MechanismFragment
+  )> };
 
-export type ExperimentFragment = { __typename?: 'Experiment', id: string, name: string, description?: string | null, createdAt: any, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, stimulusViews: Array<{ __typename?: 'ExperimentStimulusView', id: string, label?: string | null, stimulus: { __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } } }>, recordingViews: Array<{ __typename?: 'ExperimentRecordingView', id: string, label?: string | null, recording: { __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null }, rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } } }> };
+export type ExperimentFragment = { __typename?: 'Experiment', id: string, name: string, description?: string | null, createdAt: any, timeTrace: { __typename?: 'Trace', id: string, name: string, store: (
+      { __typename?: 'ZarrStore' }
+      & ZarrStoreFragment
+    ) }, stimulusViews: Array<{ __typename?: 'ExperimentStimulusView', id: string, label?: string | null, stimulus: (
+      { __typename?: 'Stimulus' }
+      & StimulusFragment
+    ) }>, recordingViews: Array<{ __typename?: 'ExperimentRecordingView', id: string, label?: string | null, recording: (
+      { __typename?: 'Recording' }
+      & RecordingFragment
+    ) }> };
 
 export type ListExperimentFragment = { __typename?: 'Experiment', id: string, name: string };
 
-export type FileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<{ __typename?: 'Trace', id: string, name: string }>, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> };
+export type FileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<(
+    { __typename?: 'Trace' }
+    & ListTraceFragment
+  )>, store: (
+    { __typename?: 'BigFileStore' }
+    & BigFileStoreFragment
+  ), provenanceEntries: Array<(
+    { __typename?: 'ProvenanceEntry' }
+    & ProvenanceEntryFragment
+  )> };
 
 export type ListFileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null };
 
 export type ParameterFragment = { __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null };
 
-export type MechanismFragment = { __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> };
+export type MechanismFragment = { __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<(
+    { __typename?: 'Parameter' }
+    & ParameterFragment
+  )> };
 
-export type ListMechanismFragment = { __typename?: 'Mechanism', id: string, name: string, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> };
+export type ListMechanismFragment = { __typename?: 'Mechanism', id: string, name: string, parameters: Array<(
+    { __typename?: 'Parameter' }
+    & ParameterFragment
+  )> };
 
-export type ModelCollectionFragment = { __typename?: 'ModelCollection', id: string, name: string, models: Array<{ __typename?: 'NeuronModel', id: string, name: string }> };
+export type ModelCollectionFragment = { __typename?: 'ModelCollection', id: string, name: string, models: Array<(
+    { __typename?: 'NeuronModel' }
+    & ListNeuronModelFragment
+  )> };
 
 export type ListModelCollectionFragment = { __typename?: 'ModelCollection', id: string, name: string };
 
 export type ListModelWorkspaceFragment = { __typename?: 'ModelWorkspace', id: string, name: string, pinned: boolean };
 
-export type WorkspaceMappingFragment = { __typename?: 'WorkspaceMapping', id: string, workspaceGroup: string, model: { __typename?: 'NeuronModel', id: string, name: string } };
+export type WorkspaceMappingFragment = { __typename?: 'WorkspaceMapping', id: string, workspaceGroup: string, model: (
+    { __typename?: 'NeuronModel' }
+    & ListNeuronModelFragment
+  ) };
 
-export type DetailModelWorkspaceFragment = { __typename?: 'ModelWorkspace', id: string, name: string, description?: string | null, pinned: boolean, mappings: Array<{ __typename?: 'WorkspaceMapping', id: string, workspaceGroup: string, model: { __typename?: 'NeuronModel', id: string, name: string } }> };
+export type DetailModelWorkspaceFragment = { __typename?: 'ModelWorkspace', id: string, name: string, description?: string | null, pinned: boolean, mappings: Array<(
+    { __typename?: 'WorkspaceMapping' }
+    & WorkspaceMappingFragment
+  )> };
 
 export type CoordFragment = { __typename?: 'Coord', x: Length, y: Length, z: Length };
 
-export type SectionFragment = { __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<{ __typename?: 'Coord', x: Length, y: Length, z: Length }> | null, parent?: { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number } | null };
+export type SectionFragment = { __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<(
+    { __typename?: 'Coord' }
+    & CoordFragment
+  )> | null, parent?: (
+    { __typename?: 'Connection' }
+    & ConnectionFragment
+  ) | null };
 
 export type ConnectionFragment = { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number };
 
@@ -3547,21 +3634,66 @@ export type IonFragment = { __typename?: 'Ion', ion: string, style: IonStyle, re
 
 export type MechanismGlobalParamFragment = { __typename?: 'MechanismGlobalParam', mechanism: string, param: string, value: GenericQuantity, description?: string | null };
 
-export type CompartmentFragment = { __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> };
+export type CompartmentFragment = { __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<(
+    { __typename?: 'Ion' }
+    & IonFragment
+  )>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> };
 
 export type ProvenanceEntryFragment = { __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> };
 
-export type DetailNeuronModelFragment = { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, mechanismGlobals: Array<{ __typename?: 'MechanismGlobalParam', mechanism: string, param: string, value: GenericQuantity, description?: string | null }>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<{ __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> }> }, topology: { __typename?: 'Topology', sections: Array<{ __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<{ __typename?: 'Coord', x: Length, y: Length, z: Length }> | null, parent?: { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number } | null }> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<{ __typename?: 'SectionDominance', cellId: string, sectionId: string, category?: string | null, globalScore: number, conductanceLoad: number, electrotonicDistance: number }>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } }>, environment: { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> };
+export type DetailNeuronModelFragment = { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<(
+      { __typename?: 'Ion' }
+      & IonFragment
+    )>, mechanismGlobals: Array<(
+      { __typename?: 'MechanismGlobalParam' }
+      & MechanismGlobalParamFragment
+    )>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<(
+          { __typename?: 'Compartment' }
+          & CompartmentFragment
+        )> }, topology: { __typename?: 'Topology', sections: Array<(
+          { __typename?: 'Section' }
+          & SectionFragment
+        )> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<(
+    { __typename?: 'SectionDominance' }
+    & SectionDominanceFragment
+  )>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<(
+    { __typename?: 'Simulation' }
+    & ListSimulationFragment
+  )>, environment: (
+    { __typename?: 'ModEnvironment' }
+    & ModEnvironmentFragment
+  ), provenanceEntries: Array<(
+    { __typename?: 'ProvenanceEntry' }
+    & ProvenanceEntryFragment
+  )> };
 
 export type ListNeuronModelFragment = { __typename?: 'NeuronModel', id: string, name: string };
 
-export type RecordingFragment = { __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null }, rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } };
+export type RecordingFragment = { __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: (
+      { __typename?: 'ZarrStore' }
+      & ZarrStoreFragment
+    ), rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } };
 
-export type DetailRecordingFragment = { __typename?: 'Recording', id: string, label: string, simulation: { __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, model: { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, mechanismGlobals: Array<{ __typename?: 'MechanismGlobalParam', mechanism: string, param: string, value: GenericQuantity, description?: string | null }>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<{ __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> }> }, topology: { __typename?: 'Topology', sections: Array<{ __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<{ __typename?: 'Coord', x: Length, y: Length, z: Length }> | null, parent?: { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number } | null }> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<{ __typename?: 'SectionDominance', cellId: string, sectionId: string, category?: string | null, globalScore: number, conductanceLoad: number, electrotonicDistance: number }>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } }>, environment: { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> }, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, recordings: Array<{ __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null }, rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } }>, stimuli: Array<{ __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type DetailRecordingFragment = { __typename?: 'Recording', id: string, label: string, simulation: (
+    { __typename?: 'Simulation' }
+    & DetailSimulationFragment
+  ) };
 
 export type ListRecordingFragment = { __typename?: 'Recording', id: string, label: string, cell: string, simulation: { __typename?: 'Simulation', id: string } };
 
-export type DetailSimulationFragment = { __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, model: { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, mechanismGlobals: Array<{ __typename?: 'MechanismGlobalParam', mechanism: string, param: string, value: GenericQuantity, description?: string | null }>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<{ __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> }> }, topology: { __typename?: 'Topology', sections: Array<{ __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<{ __typename?: 'Coord', x: Length, y: Length, z: Length }> | null, parent?: { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number } | null }> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<{ __typename?: 'SectionDominance', cellId: string, sectionId: string, category?: string | null, globalScore: number, conductanceLoad: number, electrotonicDistance: number }>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } }>, environment: { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> }, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, recordings: Array<{ __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null }, rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } }>, stimuli: Array<{ __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, creator?: { __typename?: 'User', sub: string } | null };
+export type DetailSimulationFragment = { __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, model: (
+    { __typename?: 'NeuronModel' }
+    & DetailNeuronModelFragment
+  ), timeTrace: { __typename?: 'Trace', id: string, name: string, store: (
+      { __typename?: 'ZarrStore' }
+      & ZarrStoreFragment
+    ) }, recordings: Array<(
+    { __typename?: 'Recording' }
+    & RecordingFragment
+  )>, stimuli: Array<(
+    { __typename?: 'Stimulus' }
+    & StimulusFragment
+  )>, creator?: { __typename?: 'User', sub: string } | null };
 
 export type ListSimulationFragment = { __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } };
 
@@ -3569,7 +3701,10 @@ export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: str
 
 export type BigFileStoreFragment = { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string };
 
-export type DetailTraceFragment = { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } };
+export type DetailTraceFragment = { __typename?: 'Trace', id: string, name: string, store: (
+    { __typename?: 'ZarrStore' }
+    & ZarrStoreFragment
+  ) };
 
 export type ListTraceFragment = { __typename?: 'Trace', id: string, name: string };
 
@@ -3585,14 +3720,20 @@ export type FinishBigfileUploadMutationVariables = Exact<{
 }>;
 
 
-export type FinishBigfileUploadMutation = { __typename?: 'Mutation', finishBigfileUpload: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string } };
+export type FinishBigfileUploadMutation = { __typename?: 'Mutation', finishBigfileUpload: (
+    { __typename?: 'BigFileStore' }
+    & BigFileStoreFragment
+  ) };
 
 export type RequestBigfileAccessMutationVariables = Exact<{
   input: RequestBigFileAccessInput;
 }>;
 
 
-export type RequestBigfileAccessMutation = { __typename?: 'Mutation', requestBigfileAccess: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } };
+export type RequestBigfileAccessMutation = { __typename?: 'Mutation', requestBigfileAccess: (
+    { __typename?: 'BigFileAccessGrant' }
+    & BigFileAccessGrantFragment
+  ) };
 
 export type CreateDatasetMutationVariables = Exact<{
   input: CreateDatasetInput;
@@ -3615,7 +3756,10 @@ export type PinDatasetMutationVariables = Exact<{
 }>;
 
 
-export type PinDatasetMutation = { __typename?: 'Mutation', pinDataset: { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }>, traces: Array<{ __typename?: 'Trace', id: string, name: string }>, files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }>, children: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type PinDatasetMutation = { __typename?: 'Mutation', pinDataset: (
+    { __typename?: 'Dataset' }
+    & DatasetFragment
+  ) };
 
 export type PutDatasetsInDatasetMutationVariables = Exact<{
   selfs: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -3623,7 +3767,10 @@ export type PutDatasetsInDatasetMutationVariables = Exact<{
 }>;
 
 
-export type PutDatasetsInDatasetMutation = { __typename?: 'Mutation', putDatasetsInDataset: { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }>, traces: Array<{ __typename?: 'Trace', id: string, name: string }>, files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }>, children: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type PutDatasetsInDatasetMutation = { __typename?: 'Mutation', putDatasetsInDataset: (
+    { __typename?: 'Dataset' }
+    & DatasetFragment
+  ) };
 
 export type ReleaseDatasetsFromDatasetMutationVariables = Exact<{
   selfs: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -3631,7 +3778,10 @@ export type ReleaseDatasetsFromDatasetMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseDatasetsFromDatasetMutation = { __typename?: 'Mutation', releaseDatasetsFromDataset: { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }>, traces: Array<{ __typename?: 'Trace', id: string, name: string }>, files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }>, children: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type ReleaseDatasetsFromDatasetMutation = { __typename?: 'Mutation', releaseDatasetsFromDataset: (
+    { __typename?: 'Dataset' }
+    & DatasetFragment
+  ) };
 
 export type PutImagesInDatasetMutationVariables = Exact<{
   selfs: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -3639,7 +3789,10 @@ export type PutImagesInDatasetMutationVariables = Exact<{
 }>;
 
 
-export type PutImagesInDatasetMutation = { __typename?: 'Mutation', putImagesInDataset: { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }>, traces: Array<{ __typename?: 'Trace', id: string, name: string }>, files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }>, children: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type PutImagesInDatasetMutation = { __typename?: 'Mutation', putImagesInDataset: (
+    { __typename?: 'Dataset' }
+    & DatasetFragment
+  ) };
 
 export type ReleaseImagesFromDatasetMutationVariables = Exact<{
   selfs: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -3647,7 +3800,10 @@ export type ReleaseImagesFromDatasetMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseImagesFromDatasetMutation = { __typename?: 'Mutation', releaseImagesFromDataset: { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }>, traces: Array<{ __typename?: 'Trace', id: string, name: string }>, files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }>, children: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type ReleaseImagesFromDatasetMutation = { __typename?: 'Mutation', releaseImagesFromDataset: (
+    { __typename?: 'Dataset' }
+    & DatasetFragment
+  ) };
 
 export type PutFilesInDatasetMutationVariables = Exact<{
   selfs: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -3655,7 +3811,10 @@ export type PutFilesInDatasetMutationVariables = Exact<{
 }>;
 
 
-export type PutFilesInDatasetMutation = { __typename?: 'Mutation', putFilesInDataset: { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }>, traces: Array<{ __typename?: 'Trace', id: string, name: string }>, files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }>, children: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type PutFilesInDatasetMutation = { __typename?: 'Mutation', putFilesInDataset: (
+    { __typename?: 'Dataset' }
+    & DatasetFragment
+  ) };
 
 export type ReleaseFilesFromDatasetMutationVariables = Exact<{
   selfs: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -3663,7 +3822,10 @@ export type ReleaseFilesFromDatasetMutationVariables = Exact<{
 }>;
 
 
-export type ReleaseFilesFromDatasetMutation = { __typename?: 'Mutation', releaseFilesFromDataset: { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }>, traces: Array<{ __typename?: 'Trace', id: string, name: string }>, files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }>, children: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type ReleaseFilesFromDatasetMutation = { __typename?: 'Mutation', releaseFilesFromDataset: (
+    { __typename?: 'Dataset' }
+    & DatasetFragment
+  ) };
 
 export type RevertDatasetMutationVariables = Exact<{
   dataset: Scalars['ID']['input'];
@@ -3688,7 +3850,10 @@ export type From_File_LikeMutationVariables = Exact<{
 }>;
 
 
-export type From_File_LikeMutation = { __typename?: 'Mutation', fromFileLike: { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<{ __typename?: 'Trace', id: string, name: string }>, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> } };
+export type From_File_LikeMutation = { __typename?: 'Mutation', fromFileLike: (
+    { __typename?: 'File' }
+    & FileFragment
+  ) };
 
 export type DeleteFileMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3702,21 +3867,30 @@ export type CreateModelWorkspaceMutationVariables = Exact<{
 }>;
 
 
-export type CreateModelWorkspaceMutation = { __typename?: 'Mutation', createModelWorkspace: { __typename?: 'ModelWorkspace', id: string, name: string, description?: string | null, pinned: boolean, mappings: Array<{ __typename?: 'WorkspaceMapping', id: string, workspaceGroup: string, model: { __typename?: 'NeuronModel', id: string, name: string } }> } };
+export type CreateModelWorkspaceMutation = { __typename?: 'Mutation', createModelWorkspace: (
+    { __typename?: 'ModelWorkspace' }
+    & DetailModelWorkspaceFragment
+  ) };
 
 export type AddModelsToWorkspaceMutationVariables = Exact<{
   input: AddModelsToWorkspaceInput;
 }>;
 
 
-export type AddModelsToWorkspaceMutation = { __typename?: 'Mutation', addModelsToWorkspace: { __typename?: 'ModelWorkspace', id: string, name: string, description?: string | null, pinned: boolean, mappings: Array<{ __typename?: 'WorkspaceMapping', id: string, workspaceGroup: string, model: { __typename?: 'NeuronModel', id: string, name: string } }> } };
+export type AddModelsToWorkspaceMutation = { __typename?: 'Mutation', addModelsToWorkspace: (
+    { __typename?: 'ModelWorkspace' }
+    & DetailModelWorkspaceFragment
+  ) };
 
 export type RemoveModelsFromWorkspaceMutationVariables = Exact<{
   input: DesociateInput;
 }>;
 
 
-export type RemoveModelsFromWorkspaceMutation = { __typename?: 'Mutation', removeModelsFromWorkspace: { __typename?: 'ModelWorkspace', id: string, name: string, description?: string | null, pinned: boolean, mappings: Array<{ __typename?: 'WorkspaceMapping', id: string, workspaceGroup: string, model: { __typename?: 'NeuronModel', id: string, name: string } }> } };
+export type RemoveModelsFromWorkspaceMutation = { __typename?: 'Mutation', removeModelsFromWorkspace: (
+    { __typename?: 'ModelWorkspace' }
+    & DetailModelWorkspaceFragment
+  ) };
 
 export type DeleteModelWorkspaceMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3746,14 +3920,20 @@ export type RequestGeneralZarrAccessMutationVariables = Exact<{
 }>;
 
 
-export type RequestGeneralZarrAccessMutation = { __typename?: 'Mutation', requestGeneralZarrAccess: { __typename?: 'GeneralZarrAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string } };
+export type RequestGeneralZarrAccessMutation = { __typename?: 'Mutation', requestGeneralZarrAccess: (
+    { __typename?: 'GeneralZarrAccessGrant' }
+    & GeneralZarrAccessGrantFragment
+  ) };
 
 export type DetailBlockQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailBlockQuery = { __typename?: 'Query', block: { __typename?: 'Block', id: string, name: string, description?: string | null, segments: Array<{ __typename?: 'BlockSegment', id: string, analogSignals: Array<{ __typename?: 'AnalogSignal', id: string, name: string, unit?: string | null, channels: Array<{ __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }> }>, groups: Array<{ __typename?: 'BlockGroup', id: string, name: string }> } };
+export type DetailBlockQuery = { __typename?: 'Query', block: (
+    { __typename?: 'Block' }
+    & BlockFragment
+  ) };
 
 export type ListBlocksQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3762,14 +3942,20 @@ export type ListBlocksQueryVariables = Exact<{
 }>;
 
 
-export type ListBlocksQuery = { __typename?: 'Query', blocks: Array<{ __typename?: 'Block', id: string, name: string }> };
+export type ListBlocksQuery = { __typename?: 'Query', blocks: Array<(
+    { __typename?: 'Block' }
+    & ListBlockFragment
+  )> };
 
 export type GetDatasetQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetDatasetQuery = { __typename?: 'Query', dataset: { __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }>, traces: Array<{ __typename?: 'Trace', id: string, name: string }>, files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }>, children: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type GetDatasetQuery = { __typename?: 'Query', dataset: (
+    { __typename?: 'Dataset' }
+    & DatasetFragment
+  ) };
 
 export type GetDatasetsQueryVariables = Exact<{
   filters?: InputMaybe<DatasetFilter>;
@@ -3778,14 +3964,20 @@ export type GetDatasetsQueryVariables = Exact<{
 }>;
 
 
-export type GetDatasetsQuery = { __typename?: 'Query', datasets: Array<{ __typename?: 'Dataset', id: string, name: string, description?: string | null, isDefault: boolean }> };
+export type GetDatasetsQuery = { __typename?: 'Query', datasets: Array<(
+    { __typename?: 'Dataset' }
+    & ListDatasetFragment
+  )> };
 
 export type DetailModEnvironmentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailModEnvironmentQuery = { __typename?: 'Query', modEnvironment: { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> } };
+export type DetailModEnvironmentQuery = { __typename?: 'Query', modEnvironment: (
+    { __typename?: 'ModEnvironment' }
+    & ModEnvironmentFragment
+  ) };
 
 export type ListModEnvironmentsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3794,14 +3986,20 @@ export type ListModEnvironmentsQueryVariables = Exact<{
 }>;
 
 
-export type ListModEnvironmentsQuery = { __typename?: 'Query', modEnvironments: Array<{ __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> }> };
+export type ListModEnvironmentsQuery = { __typename?: 'Query', modEnvironments: Array<(
+    { __typename?: 'ModEnvironment' }
+    & ListModEnvironmentFragment
+  )> };
 
 export type DetailExperimentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailExperimentQuery = { __typename?: 'Query', experiment: { __typename?: 'Experiment', id: string, name: string, description?: string | null, createdAt: any, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, stimulusViews: Array<{ __typename?: 'ExperimentStimulusView', id: string, label?: string | null, stimulus: { __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } } }>, recordingViews: Array<{ __typename?: 'ExperimentRecordingView', id: string, label?: string | null, recording: { __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null }, rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } } }> } };
+export type DetailExperimentQuery = { __typename?: 'Query', experiment: (
+    { __typename?: 'Experiment' }
+    & ExperimentFragment
+  ) };
 
 export type ListExperimentsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3810,14 +4008,20 @@ export type ListExperimentsQueryVariables = Exact<{
 }>;
 
 
-export type ListExperimentsQuery = { __typename?: 'Query', experiments: Array<{ __typename?: 'Experiment', id: string, name: string }> };
+export type ListExperimentsQuery = { __typename?: 'Query', experiments: Array<(
+    { __typename?: 'Experiment' }
+    & ListExperimentFragment
+  )> };
 
 export type GetFileQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetFileQuery = { __typename?: 'Query', file: { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, origins: Array<{ __typename?: 'Trace', id: string, name: string }>, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> } };
+export type GetFileQuery = { __typename?: 'Query', file: (
+    { __typename?: 'File' }
+    & FileFragment
+  ) };
 
 export type GetFilesQueryVariables = Exact<{
   filters?: InputMaybe<FileFilter>;
@@ -3826,12 +4030,21 @@ export type GetFilesQueryVariables = Exact<{
 }>;
 
 
-export type GetFilesQuery = { __typename?: 'Query', files: Array<{ __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator?: { __typename?: 'User', sub: string } | null }> };
+export type GetFilesQuery = { __typename?: 'Query', files: Array<(
+    { __typename?: 'File' }
+    & ListFileFragment
+  )> };
 
 export type HomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type HomePageQuery = { __typename?: 'Query', blocks: Array<{ __typename?: 'Block', id: string, name: string }>, models: Array<{ __typename?: 'NeuronModel', id: string, name: string }> };
+export type HomePageQuery = { __typename?: 'Query', blocks: Array<(
+    { __typename?: 'Block' }
+    & ListBlockFragment
+  )>, models: Array<(
+    { __typename?: 'NeuronModel' }
+    & ListNeuronModelFragment
+  )> };
 
 export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3843,7 +4056,10 @@ export type DetailMechanismQueryVariables = Exact<{
 }>;
 
 
-export type DetailMechanismQuery = { __typename?: 'Query', mechanism: { __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> } };
+export type DetailMechanismQuery = { __typename?: 'Query', mechanism: (
+    { __typename?: 'Mechanism' }
+    & MechanismFragment
+  ) };
 
 export type ListMechanismsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3852,14 +4068,20 @@ export type ListMechanismsQueryVariables = Exact<{
 }>;
 
 
-export type ListMechanismsQuery = { __typename?: 'Query', mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> };
+export type ListMechanismsQuery = { __typename?: 'Query', mechanisms: Array<(
+    { __typename?: 'Mechanism' }
+    & ListMechanismFragment
+  )> };
 
 export type DetailModelCollectionQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailModelCollectionQuery = { __typename?: 'Query', modelCollection: { __typename?: 'ModelCollection', id: string, name: string, models: Array<{ __typename?: 'NeuronModel', id: string, name: string }> } };
+export type DetailModelCollectionQuery = { __typename?: 'Query', modelCollection: (
+    { __typename?: 'ModelCollection' }
+    & ModelCollectionFragment
+  ) };
 
 export type ListModelCollectionsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3868,14 +4090,20 @@ export type ListModelCollectionsQueryVariables = Exact<{
 }>;
 
 
-export type ListModelCollectionsQuery = { __typename?: 'Query', modelCollections: Array<{ __typename?: 'ModelCollection', id: string, name: string }> };
+export type ListModelCollectionsQuery = { __typename?: 'Query', modelCollections: Array<(
+    { __typename?: 'ModelCollection' }
+    & ListModelCollectionFragment
+  )> };
 
 export type DetailModelWorkspaceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailModelWorkspaceQuery = { __typename?: 'Query', modelWorkspace: { __typename?: 'ModelWorkspace', id: string, name: string, description?: string | null, pinned: boolean, mappings: Array<{ __typename?: 'WorkspaceMapping', id: string, workspaceGroup: string, model: { __typename?: 'NeuronModel', id: string, name: string } }> } };
+export type DetailModelWorkspaceQuery = { __typename?: 'Query', modelWorkspace: (
+    { __typename?: 'ModelWorkspace' }
+    & DetailModelWorkspaceFragment
+  ) };
 
 export type ListModelWorkspacesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3884,14 +4112,20 @@ export type ListModelWorkspacesQueryVariables = Exact<{
 }>;
 
 
-export type ListModelWorkspacesQuery = { __typename?: 'Query', modelWorkspaces: Array<{ __typename?: 'ModelWorkspace', id: string, name: string, pinned: boolean }> };
+export type ListModelWorkspacesQuery = { __typename?: 'Query', modelWorkspaces: Array<(
+    { __typename?: 'ModelWorkspace' }
+    & ListModelWorkspaceFragment
+  )> };
 
 export type DetailNeuronModelQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailNeuronModelQuery = { __typename?: 'Query', neuronModel: { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, mechanismGlobals: Array<{ __typename?: 'MechanismGlobalParam', mechanism: string, param: string, value: GenericQuantity, description?: string | null }>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<{ __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> }> }, topology: { __typename?: 'Topology', sections: Array<{ __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<{ __typename?: 'Coord', x: Length, y: Length, z: Length }> | null, parent?: { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number } | null }> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<{ __typename?: 'SectionDominance', cellId: string, sectionId: string, category?: string | null, globalScore: number, conductanceLoad: number, electrotonicDistance: number }>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } }>, environment: { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> } };
+export type DetailNeuronModelQuery = { __typename?: 'Query', neuronModel: (
+    { __typename?: 'NeuronModel' }
+    & DetailNeuronModelFragment
+  ) };
 
 export type SectionDominanceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3901,7 +4135,10 @@ export type SectionDominanceQueryVariables = Exact<{
 }>;
 
 
-export type SectionDominanceQuery = { __typename?: 'Query', neuronModel: { __typename?: 'NeuronModel', id: string, sectionDominance: Array<{ __typename?: 'SectionDominance', cellId: string, sectionId: string, category?: string | null, globalScore: number, conductanceLoad: number, electrotonicDistance: number }> } };
+export type SectionDominanceQuery = { __typename?: 'Query', neuronModel: { __typename?: 'NeuronModel', id: string, sectionDominance: Array<(
+      { __typename?: 'SectionDominance' }
+      & SectionDominanceFragment
+    )> } };
 
 export type ListNeuronModelsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3910,14 +4147,20 @@ export type ListNeuronModelsQueryVariables = Exact<{
 }>;
 
 
-export type ListNeuronModelsQuery = { __typename?: 'Query', neuronModels: Array<{ __typename?: 'NeuronModel', id: string, name: string }> };
+export type ListNeuronModelsQuery = { __typename?: 'Query', neuronModels: Array<(
+    { __typename?: 'NeuronModel' }
+    & ListNeuronModelFragment
+  )> };
 
 export type DetailRecordingQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailRecordingQuery = { __typename?: 'Query', recording: { __typename?: 'Recording', id: string, label: string, simulation: { __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, model: { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, mechanismGlobals: Array<{ __typename?: 'MechanismGlobalParam', mechanism: string, param: string, value: GenericQuantity, description?: string | null }>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<{ __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> }> }, topology: { __typename?: 'Topology', sections: Array<{ __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<{ __typename?: 'Coord', x: Length, y: Length, z: Length }> | null, parent?: { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number } | null }> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<{ __typename?: 'SectionDominance', cellId: string, sectionId: string, category?: string | null, globalScore: number, conductanceLoad: number, electrotonicDistance: number }>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } }>, environment: { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> }, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, recordings: Array<{ __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null }, rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } }>, stimuli: Array<{ __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, creator?: { __typename?: 'User', sub: string } | null } } };
+export type DetailRecordingQuery = { __typename?: 'Query', recording: (
+    { __typename?: 'Recording' }
+    & DetailRecordingFragment
+  ) };
 
 export type ListRecordingsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3926,7 +4169,10 @@ export type ListRecordingsQueryVariables = Exact<{
 }>;
 
 
-export type ListRecordingsQuery = { __typename?: 'Query', recordings: Array<{ __typename?: 'Recording', id: string, label: string, cell: string, simulation: { __typename?: 'Simulation', id: string } }> };
+export type ListRecordingsQuery = { __typename?: 'Query', recordings: Array<(
+    { __typename?: 'Recording' }
+    & ListRecordingFragment
+  )> };
 
 export type GlobalSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -3934,14 +4180,20 @@ export type GlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', traces: Array<{ __typename?: 'Trace', id: string, name: string }> };
+export type GlobalSearchQuery = { __typename?: 'Query', traces: Array<(
+    { __typename?: 'Trace' }
+    & ListTraceFragment
+  )> };
 
 export type DetailAnalogSignalQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailAnalogSignalQuery = { __typename?: 'Query', analogSignal: { __typename?: 'AnalogSignal', id: string, name: string, unit?: string | null, channels: Array<{ __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } } };
+export type DetailAnalogSignalQuery = { __typename?: 'Query', analogSignal: (
+    { __typename?: 'AnalogSignal' }
+    & AnalogSignalFragment
+  ) };
 
 export type ListAnalogSignalQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3950,14 +4202,20 @@ export type ListAnalogSignalQueryVariables = Exact<{
 }>;
 
 
-export type ListAnalogSignalQuery = { __typename?: 'Query', analogSignals: Array<{ __typename?: 'AnalogSignal', id: string, name: string, segment: { __typename?: 'BlockSegment', id: string } }> };
+export type ListAnalogSignalQuery = { __typename?: 'Query', analogSignals: Array<(
+    { __typename?: 'AnalogSignal' }
+    & ListAnalogSignalFragment
+  )> };
 
 export type DetailAnalogSignalChannelQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailAnalogSignalChannelQuery = { __typename?: 'Query', analogSignalChannel: { __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, signal: { __typename?: 'AnalogSignal', id: string, name: string, unit?: string | null, channels: Array<{ __typename?: 'AnalogSignalChannel', id: string, name?: string | null, index: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } } } };
+export type DetailAnalogSignalChannelQuery = { __typename?: 'Query', analogSignalChannel: (
+    { __typename?: 'AnalogSignalChannel' }
+    & DetailAnalogSignalChannelFragment
+  ) };
 
 export type ListAnalogSignalChannelQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3966,14 +4224,20 @@ export type ListAnalogSignalChannelQueryVariables = Exact<{
 }>;
 
 
-export type ListAnalogSignalChannelQuery = { __typename?: 'Query', analogSignalChannels: Array<{ __typename?: 'AnalogSignalChannel', id: string, name?: string | null, signal: { __typename?: 'AnalogSignal', id: string } }> };
+export type ListAnalogSignalChannelQuery = { __typename?: 'Query', analogSignalChannels: Array<(
+    { __typename?: 'AnalogSignalChannel' }
+    & ListAnalogSignalChannelFragment
+  )> };
 
 export type DetailSimulationQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailSimulationQuery = { __typename?: 'Query', simulation: { __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, model: { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, mechanismGlobals: Array<{ __typename?: 'MechanismGlobalParam', mechanism: string, param: string, value: GenericQuantity, description?: string | null }>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<{ __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> }> }, topology: { __typename?: 'Topology', sections: Array<{ __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<{ __typename?: 'Coord', x: Length, y: Length, z: Length }> | null, parent?: { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number } | null }> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<{ __typename?: 'SectionDominance', cellId: string, sectionId: string, category?: string | null, globalScore: number, conductanceLoad: number, electrotonicDistance: number }>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } }>, environment: { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> }, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, recordings: Array<{ __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null }, rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } }>, stimuli: Array<{ __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, creator?: { __typename?: 'User', sub: string } | null } };
+export type DetailSimulationQuery = { __typename?: 'Query', simulation: (
+    { __typename?: 'Simulation' }
+    & DetailSimulationFragment
+  ) };
 
 export type ListSimulationsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3982,14 +4246,20 @@ export type ListSimulationsQueryVariables = Exact<{
 }>;
 
 
-export type ListSimulationsQuery = { __typename?: 'Query', simulations: Array<{ __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } }> };
+export type ListSimulationsQuery = { __typename?: 'Query', simulations: Array<(
+    { __typename?: 'Simulation' }
+    & ListSimulationFragment
+  )> };
 
 export type DetailStimulusQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailStimulusQuery = { __typename?: 'Query', stimulus: { __typename?: 'Stimulus', id: string, label: string, simulation: { __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, model: { __typename?: 'NeuronModel', id: string, name: string, description?: string | null, config: { __typename?: 'ModelConfig', temperature: Temperature, vInit: ElectricPotential, label?: string | null, ra?: Resistivity | null, cm?: SpecificCapacitance | null, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, mechanismGlobals: Array<{ __typename?: 'MechanismGlobalParam', mechanism: string, param: string, value: GenericQuantity, description?: string | null }>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<{ __typename?: 'Compartment', id: string, color?: RGBAColor | null, mechanisms: Array<string>, ions: Array<{ __typename?: 'Ion', ion: string, style: IonStyle, reversalPotential?: ElectricPotential | null, internalConcentration?: Concentration | null, externalConcentration?: Concentration | null }>, sectionParams: Array<{ __typename?: 'SectionParamMap', mechanism: string, param: string, description?: string | null, distribution: { __typename?: 'Distribution', value?: GenericQuantity | null } }> }> }, topology: { __typename?: 'Topology', sections: Array<{ __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<{ __typename?: 'Coord', x: Length, y: Length, z: Length }> | null, parent?: { __typename?: 'Connection', parent: string, parentLocation: number, childEnd: number } | null }> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<{ __typename?: 'SectionDominance', cellId: string, sectionId: string, category?: string | null, globalScore: number, conductanceLoad: number, electrotonicDistance: number }>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, duration: Duration, dt: Duration, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } }>, environment: { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<{ __typename?: 'Mechanism', id: string, name: string, description?: string | null, parameters: Array<{ __typename?: 'Parameter', key: string, label?: string | null, kind: ParameterKind, description?: string | null, default?: any | null, nullable: boolean, referenceUnit?: Unit | null, proposedUnits?: Array<Unit> | null, dimension?: Dimension | null }> }> }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string, assigner?: { __typename?: 'User', sub: string } | null } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string }> }> }, timeTrace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } }, recordings: Array<{ __typename?: 'Recording', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null }, rois: Array<{ __typename?: 'ROI', id: string, vectors: Array<any>, label?: string | null, kind: RoiKind }> } }>, stimuli: Array<{ __typename?: 'Stimulus', id: string, label: string, cell: string, location: string, position: number, trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } }>, creator?: { __typename?: 'User', sub: string } | null } } };
+export type DetailStimulusQuery = { __typename?: 'Query', stimulus: (
+    { __typename?: 'Stimulus' }
+    & DetailStimulusFragment
+  ) };
 
 export type ListStimuliQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -3998,14 +4268,20 @@ export type ListStimuliQueryVariables = Exact<{
 }>;
 
 
-export type ListStimuliQuery = { __typename?: 'Query', stimuli: Array<{ __typename?: 'Stimulus', id: string, label: string, cell: string, simulation: { __typename?: 'Simulation', id: string } }> };
+export type ListStimuliQuery = { __typename?: 'Query', stimuli: Array<(
+    { __typename?: 'Stimulus' }
+    & ListStimulusFragment
+  )> };
 
 export type DetailTraceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailTraceQuery = { __typename?: 'Query', trace: { __typename?: 'Trace', id: string, name: string, store: { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null } } };
+export type DetailTraceQuery = { __typename?: 'Query', trace: (
+    { __typename?: 'Trace' }
+    & DetailTraceFragment
+  ) };
 
 export type TracesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -4014,7 +4290,10 @@ export type TracesQueryVariables = Exact<{
 }>;
 
 
-export type TracesQuery = { __typename?: 'Query', traces: Array<{ __typename?: 'Trace', id: string, name: string }> };
+export type TracesQuery = { __typename?: 'Query', traces: Array<(
+    { __typename?: 'Trace' }
+    & ListTraceFragment
+  )> };
 
 export const IonFragmentDoc = gql`
     fragment Ion on Ion {
