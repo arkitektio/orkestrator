@@ -75,11 +75,7 @@ const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
     <KraphEntity.ModelPage
       variant="black"
       object={{ id: data.entity.id }}
-      title={<>
-        <div className="flex flex-row">
-          {categoryTitle} <div className="ml-2 text-md font-light">{data.entity.label}</div>
-        </div>
-      </>}
+      title={data.entity.label || categoryTitle}
       sidebars={
         <Sidebars>
           <Sidebars.Tab label="Knowledge">

@@ -3066,6 +3066,45 @@ export type CudaSelectorFragment = { __typename?: 'CudaSelector', cudaVersion?: 
 
 export type RocmSelectorFragment = { __typename?: 'RocmSelector', apiVersion?: string | null, apiThing?: string | null };
 
+type StoreSelector_CpuSelector_Fragment = { __typename: 'CPUSelector', arch?: string | null, minCount?: number | null, kind: string, required: boolean };
+
+type StoreSelector_CudaSelector_Fragment = { __typename: 'CudaSelector', computeCapability?: string | null, memory?: number | null, count?: number | null, cudaVersion?: string | null, kind: string, required: boolean };
+
+type StoreSelector_LabelSelector_Fragment = { __typename: 'LabelSelector', kind: string, required: boolean };
+
+type StoreSelector_OneApiSelector_Fragment = { __typename: 'OneApiSelector', kind: string, required: boolean };
+
+type StoreSelector_RamSelector_Fragment = { __typename: 'RAMSelector', kind: string, required: boolean };
+
+type StoreSelector_RocmSelector_Fragment = { __typename: 'RocmSelector', apiVersion?: string | null, kind: string, required: boolean };
+
+export type StoreSelectorFragment = StoreSelector_CpuSelector_Fragment | StoreSelector_CudaSelector_Fragment | StoreSelector_LabelSelector_Fragment | StoreSelector_OneApiSelector_Fragment | StoreSelector_RamSelector_Fragment | StoreSelector_RocmSelector_Fragment;
+
+export type StoreFlavourFragment = { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }>, selectors: Array<(
+    { __typename?: 'CPUSelector' }
+    & StoreSelector_CpuSelector_Fragment
+  ) | (
+    { __typename?: 'CudaSelector' }
+    & StoreSelector_CudaSelector_Fragment
+  ) | (
+    { __typename?: 'LabelSelector' }
+    & StoreSelector_LabelSelector_Fragment
+  ) | (
+    { __typename?: 'OneApiSelector' }
+    & StoreSelector_OneApiSelector_Fragment
+  ) | (
+    { __typename?: 'RAMSelector' }
+    & StoreSelector_RamSelector_Fragment
+  ) | (
+    { __typename?: 'RocmSelector' }
+    & StoreSelector_RocmSelector_Fragment
+  )>, repo?: { __typename?: 'GithubRepo', id: string, name: string, user: string, repo: string, url: string } | null, definitions: Array<{ __typename?: 'Definition', id: string, name: string, description?: string | null, kind: ActionKind }>, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }> };
+
+export type StoreReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, entrypoint: string, app: { __typename?: 'App', id: string, identifier: string }, flavours: Array<(
+    { __typename?: 'Flavour' }
+    & StoreFlavourFragment
+  )> };
+
 export type DeleteBackendMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -3281,6 +3320,16 @@ export type GlobalSearchQuery = { __typename?: 'Query', definitions: Array<(
   )>, flavours: Array<(
     { __typename?: 'Flavour' }
     & ListFlavourFragment
+  )> };
+
+export type AppStoreQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type AppStoreQuery = { __typename?: 'Query', releases: Array<(
+    { __typename?: 'Release' }
+    & StoreReleaseFragment
   )> };
 
 export const ListBackendFragmentDoc = gql`
@@ -4159,6 +4208,82 @@ export const ResourceFragmentDoc = gql`
   }
 }
     ${ListPodFragmentDoc}`;
+export const StoreSelectorFragmentDoc = gql`
+    fragment StoreSelector on Selector {
+  __typename
+  kind
+  required
+  ... on CudaSelector {
+    computeCapability
+    memory
+    count
+    cudaVersion
+  }
+  ... on RocmSelector {
+    apiVersion
+  }
+  ... on CPUSelector {
+    arch
+    minCount
+  }
+}
+    `;
+export const StoreFlavourFragmentDoc = gql`
+    fragment StoreFlavour on Flavour {
+  id
+  name
+  logo
+  originalLogo
+  image {
+    imageString
+    buildAt
+  }
+  requirements {
+    key
+    service
+    optional
+    description
+  }
+  selectors {
+    ...StoreSelector
+  }
+  repo {
+    id
+    name
+    user
+    repo
+    url
+  }
+  definitions {
+    id
+    name
+    description
+    kind
+  }
+  deployments {
+    id
+    status
+  }
+}
+    ${StoreSelectorFragmentDoc}`;
+export const StoreReleaseFragmentDoc = gql`
+    fragment StoreRelease on Release {
+  id
+  name
+  version
+  logo
+  originalLogo
+  scopes
+  entrypoint
+  app {
+    id
+    identifier
+  }
+  flavours {
+    ...StoreFlavour
+  }
+}
+    ${StoreFlavourFragmentDoc}`;
 export const DeleteBackendDocument = gql`
     mutation DeleteBackend($id: ID!) {
   deleteBackend(id: $id)
@@ -4993,3 +5118,38 @@ export function useGlobalSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
 export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
 export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
+export const AppStoreDocument = gql`
+    query AppStore($pagination: OffsetPaginationInput) {
+  releases(ordering: [{releasedAt: DESC}], pagination: $pagination) {
+    ...StoreRelease
+  }
+}
+    ${StoreReleaseFragmentDoc}`;
+
+/**
+ * __useAppStoreQuery__
+ *
+ * To run a query within a React component, call `useAppStoreQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAppStoreQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAppStoreQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useAppStoreQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<AppStoreQuery, AppStoreQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<AppStoreQuery, AppStoreQueryVariables>(AppStoreDocument, options);
+      }
+export function useAppStoreLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<AppStoreQuery, AppStoreQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<AppStoreQuery, AppStoreQueryVariables>(AppStoreDocument, options);
+        }
+export type AppStoreQueryHookResult = ReturnType<typeof useAppStoreQuery>;
+export type AppStoreLazyQueryHookResult = ReturnType<typeof useAppStoreLazyQuery>;
+export type AppStoreQueryResult = Apollo.QueryResult<AppStoreQuery, AppStoreQueryVariables>;

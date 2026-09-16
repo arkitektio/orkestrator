@@ -1,0 +1,5 @@
+query AppStore($pagination: OffsetPaginationInput) {
+  releases(ordering: [{ releasedAt: DESC }], pagination: $pagination) {
+    ...StoreRelease
+  }
+}

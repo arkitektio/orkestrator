@@ -1,4 +1,4 @@
-import { lazy, type LazyExoticComponent } from "react";
+import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 
 /**
  * Each module's in-module navigation, hoisted into the rail.
@@ -12,25 +12,54 @@ import { lazy, type LazyExoticComponent } from "react";
  * Lazily imported, one chunk per module, so opening the app does not pull in
  * every module's pane code for the one rail section that will be shown.
  */
-type NavComponent = LazyExoticComponent<() => JSX.Element | null>;
+// Panes take no props they require; `blok`'s declares an unused props object.
+type NavComponent = LazyExoticComponent<ComponentType>;
+type PaneLoader = () => Promise<{ NavigationPane: ComponentType<Record<string, never>> }>;
 
-const fromStandardPane = (loader: () => Promise<{ NavigationPane: () => JSX.Element }>): NavComponent =>
-  lazy(async () => ({ default: (await loader()).NavigationPane })) as NavComponent;
-
-export const MODULE_NAV: Record<string, NavComponent> = {
-  mikro: fromStandardPane(() => import("@/mikro-next/panes/StandardPane")),
-  rekuest: fromStandardPane(() => import("@/rekuest/panes/StandardPane")),
-  kraph: fromStandardPane(() => import("@/kraph/panes/StandardPane")),
-  elektro: fromStandardPane(() => import("@/elektro/panes/StandardPane")),
-  kabinet: fromStandardPane(() => import("@/kabinet/panes/StandardPane")),
-  alpaka: fromStandardPane(() => import("@/alpaka/panes/StandardPane")),
-  lok: fromStandardPane(() => import("@/lok-next/panes/StandardPane")),
-  lovekit: fromStandardPane(() => import("@/lovekit/panes/StandardPane")),
-  dokuments: fromStandardPane(() => import("@/dokuments/panes/StandardPane")),
-  omero_ark: fromStandardPane(() => import("@/omero-ark/panes/StandardPane")),
-  fluss: fromStandardPane(() => import("@/reaktion/panes/SearchPane")),
-  blok: fromStandardPane(() => import("@/blok/panes/StandardPane")),
+const LOADERS: Record<string, PaneLoader> = {
+  mikro: () => import("@/mikro-next/panes/StandardPane"),
+  rekuest: () => import("@/rekuest/panes/StandardPane"),
+  kraph: () => import("@/kraph/panes/StandardPane"),
+  elektro: () => import("@/elektro/panes/StandardPane"),
+  kabinet: () => import("@/kabinet/panes/StandardPane"),
+  alpaka: () => import("@/alpaka/panes/StandardPane"),
+  lok: () => import("@/lok-next/panes/StandardPane"),
+  lovekit: () => import("@/lovekit/panes/StandardPane"),
+  dokuments: () => import("@/dokuments/panes/StandardPane"),
+  omero_ark: () => import("@/omero-ark/panes/StandardPane"),
+  fluss: () => import("@/reaktion/panes/SearchPane"),
+  blok: () => import("@/blok/panes/StandardPane"),
 };
+
+/**
+ * One promise per module, shared by `lazy` and `preloadModuleNav`: a chunk
+ * warmed ahead of the hover is the very one `lazy` then resolves with, so the
+ * card renders without suspending.
+ */
+const pending = new Map<string, ReturnType<PaneLoader>>();
+const load = (key: string) => {
+  let promise = pending.get(key);
+  if (!promise) {
+    promise = LOADERS[key]();
+    // A failed fetch (offline, a redeploy) should be retried on the next hover,
+    // not cached as a permanent failure.
+    promise.catch(() => pending.delete(key));
+    pending.set(key, promise);
+  }
+  return promise;
+};
+
+/** Fetch a module's pane chunk ahead of its card opening. */
+export const preloadModuleNav = (key: string): void => {
+  if (key in LOADERS) void load(key).catch(() => undefined);
+};
+
+export const MODULE_NAV: Record<string, NavComponent> = Object.fromEntries(
+  Object.keys(LOADERS).map((key) => [
+    key,
+    lazy(async () => ({ default: (await load(key)).NavigationPane as ComponentType })),
+  ]),
+);
 
 /**
  * Which module a path belongs to.

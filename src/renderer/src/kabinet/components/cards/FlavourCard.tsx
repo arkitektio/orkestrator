@@ -62,7 +62,7 @@ export const AssignButton = (props: {
  * closed), so the implementations query fires on open rather than once per
  * card on mount.
  */
-const InstallTargets = (props: { flavour: string }) => {
+export const FlavourInstallTargets = (props: { flavour: string }) => {
   const { data } = useImplementationsQuery({
     variables: {
       filters: {
@@ -96,6 +96,11 @@ const InstallTargets = (props: { flavour: string }) => {
 
   return (
     <>
+      {data?.implementations.length === 0 && (
+        <div className="px-2 py-1.5 text-xs text-muted-foreground">
+          No installers found. Install an engine first.
+        </div>
+      )}
       {data?.implementations.map((t) => (
         <AssignButton template={t} release={props.flavour} key={t.id} />
       ))}
@@ -103,7 +108,7 @@ const InstallTargets = (props: { flavour: string }) => {
   );
 };
 
-const InstallDialog = (props: { item: { id: string } }) => {
+export const FlavourInstallButton = (props: { item: { id: string } }) => {
   return (
     <div className="flex flex-row gap-2">
       <DropdownMenu>
@@ -113,7 +118,7 @@ const InstallDialog = (props: { item: { id: string } }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right">
-          <InstallTargets flavour={props.item.id} />
+          <FlavourInstallTargets flavour={props.item.id} />
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -167,7 +172,7 @@ const TheCard = ({ item }: Props) => {
           </div>
 
           <CardTitle>
-            <InstallDialog item={item} />
+            <FlavourInstallButton item={item} />
           </CardTitle>
         </CardHeader>
       </Card>

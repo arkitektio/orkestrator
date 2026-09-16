@@ -186,7 +186,7 @@ export const PageLayout = ({
           >
             {/* `min-w-0` lets this actually shrink below its content width so
                 the trail truncates instead of wrapping. */}
-            <div className="flex-grow min-w-0 flex flex-col truncate">
+            <div className="p-3 flex-grow min-w-0 flex flex-col truncate">
               <div className="flex-shrink min-w-0">
                 <BreadCrumbs />
               </div>

@@ -7,7 +7,7 @@ export const RedeemTokenPage = asDetailQueryRoute(useGetRedeemTokenQuery, ({ dat
     <LokRedeemToken.ModelPage
       object={data.redeemToken}
       actions={<LokRedeemToken.Actions object={data?.redeemToken} />}
-      title={data?.redeemToken?.token}
+      title="Redeem Token"
       sidebars={<LokRedeemToken.Knowledge object={data?.redeemToken} />}
     >
       <div className="grid grid-cols-6">

@@ -30,16 +30,7 @@ export const DocumentPage = asDetailQueryRoute(
 
     return (
       <DokumentsDocument.ModelPage
-        title={
-          <div className="flex items-center gap-3">
-            <span>{document.title || `Document ${document.id}`}</span>
-            <Badge variant="outline" className="text-xs">
-              {document.pages.length} {document.pages.length === 1 ? 'page' : 'pages'}
-            </Badge>
-            <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">ID: {document.id}</span>
-          </div>
-        }
+        title={document.title || `Document ${document.id}`}
         object={document}
         pageActions={
           <div className="flex flex-row gap-2">

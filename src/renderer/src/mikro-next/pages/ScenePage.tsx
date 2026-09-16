@@ -7,6 +7,7 @@ import {
   useGetSceneQuery
 } from "../api/graphql";
 import { Scene } from "../components/scene/Scene";
+import { SceneTitleOverlay } from "../components/scene/SceneTitleOverlay";
 import { coldOpenTimeline } from "../components/scene/platform/perf/coldOpenTimeline";
 import { useSceneOpen } from "../lib/zarr/useDatalayerWarmup";
 
@@ -50,6 +51,7 @@ const DetailPage = asDetailQueryRoute(
         >
           <div className="w-full h-full relative">
             <Scene.Viewport />
+            <SceneTitleOverlay scene={data.scene} />
           </div>
         </MikroScene.ModelPage>
         </RefetchProvider>

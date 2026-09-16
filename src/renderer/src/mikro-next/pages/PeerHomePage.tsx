@@ -71,12 +71,7 @@ const Page = asDetailQueryRoute(usePeerHomePageQuery, ({ id }) => {
         <Sidebars.Tab label="Statistics"><PeerStatisticsSidebar sub={id} /></Sidebars.Tab>
         <Sidebars.Tab label="Help"><HelpSidebar /></Sidebars.Tab>
       </Sidebars>}
-      title={
-        <>
-          <JustUsername sub={id} />
-          {"'s Home"}
-        </>
-      }
+      title="Peer Home"
     >
       <div className="space-y-8 p-3">
         {/* Welcome Header */}

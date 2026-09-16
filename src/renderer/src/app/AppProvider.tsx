@@ -161,7 +161,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                         be mounted per page, so it was missing on
                                         the dashboard and double-bound wherever
                                         two pages nested. */}
-                                    <CommandMenuHost />
+                                    {/* No palette signed out: there is no pill for it to unfold
+                                        from and nothing for it to open. Same guard as `AppShell`. */}
+                                    <Arkitekt.Guard notConnectedFallback={null} connectingFallback={null}>
+                                      <CommandMenuHost />
+                                    </Arkitekt.Guard>
                                     <SmartSurface />
                                     <RefetchOnReactivate />
                                     <GcOnNavigate />

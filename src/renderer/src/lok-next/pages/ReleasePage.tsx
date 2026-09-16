@@ -13,11 +13,7 @@ export const ReleasePage = asDetailQueryRoute(useDetailReleaseQuery, ({ data }) 
     <LokApp.ModelPage
       object={data.release}
       actions={<LokApp.Actions object={data?.release} />}
-      title={
-        <div className="flex flex-row gap-2 items-baseline">
-          {data?.release?.app?.identifier} <div className="font-light text-muted-foreground">{data?.release?.version}</div>
-        </div>
-      }
+      title={data?.release && `${data.release.app?.identifier} ${data.release.version}`}
     >
       <div className="grid grid-cols-6">
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">

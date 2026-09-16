@@ -15,7 +15,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
 
   return (
     <RekuestBlok.ModelPage
-      title={data.blok.name || "New Dasboard"}
+      title={data.blok.name || "New Blok"}
       object={data.blok}
       pageActions={(
         <>

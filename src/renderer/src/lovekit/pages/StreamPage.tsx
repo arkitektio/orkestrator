@@ -8,7 +8,7 @@ export default asDetailQueryRoute(
   ({ data }) => {
     return (
       <LovekitStream.ModelPage
-        title={data?.stream.id}
+        title="Stream"
         object={data.stream}
         pageActions={
           <div className="flex flex-row gap-2">

@@ -7,7 +7,6 @@ import { Environment, Float, OrbitControls, useGLTF } from "@react-three/drei";
 import type { } from "@react-three/fiber";
 import { Canvas } from "@react-three/fiber";
 import { createElement, Suspense } from "react";
-import Timestamp from "@/components/ui/timestamp";
 
 const toyCarUrl = new URL(
   "../../../../../../resources/Box.glb",
@@ -93,14 +92,7 @@ export const AgentSpacePage = asDetailQueryRoute(
 
     return (
       <RekuestAgent.ModelPage
-        title={
-          <div className="flex flex-row gap-2">
-            {data?.agent?.name}
-            <p className="text-md font-light text-muted-foreground">
-              <Timestamp date={data.agent.lastSeen} relative />
-            </p>
-          </div>
-        }
+        title={`${data?.agent?.name} — Space`}
         object={data.agent}
         pageActions={<> </>
         }

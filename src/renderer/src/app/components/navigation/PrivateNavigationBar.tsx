@@ -33,7 +33,7 @@ import {
 import React from "react";
 import { IconContext } from "react-icons/lib";
 import { matchIcon } from "./moduleIcons";
-import ModuleNavHover from "./ModuleNavHover";
+import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHover";
 import RailPins from "./RailPins";
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
@@ -209,7 +209,10 @@ const ModuleNavItem = React.memo(({
    */
   const tileClass = (active: boolean) =>
     cn(
-      "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors",
+      // In the rail a tile fills its grid cell; in the mobile drawer it sits
+      // beside a label, so it keeps a fixed square.
+      "flex cursor-pointer items-center justify-center rounded-lg transition-colors",
+      mobile ? "h-8 w-8" : "h-9 w-full",
       "text-muted-foreground shadow-[inset_0_1px_2px_rgb(0_0_0/0.10)] ring-1",
       active
         ? "bg-background/80 text-foreground ring-primary/35 shadow-none"
@@ -220,23 +223,36 @@ const ModuleNavItem = React.memo(({
     return (
       <ContextMenu key={moduleKey}>
         <ContextMenuTrigger asChild>
-          <ModuleNavHover moduleKey={moduleKey} ready={moduleState.status === "ready"}>
-          <DroppableNavLink to={moduleState.route} className={mobile ? "cursor-pointer" : undefined}>
-            {({ isActive }) => (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    data-active={isActive}
-                    className={cn(tileClass(isActive), isChecking && "opacity-80")}
-                  >
-                    {buttonContent}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side={mobile ? "top" : "right"}>
-                  {moduleState.definition.label || moduleState.key}
-                </TooltipContent>
-              </Tooltip>
-            )}
+          <ModuleNavHover
+            moduleKey={moduleKey}
+            ready={moduleState.status === "ready"}
+            label={moduleState.definition.label || moduleState.key}
+            icon={icon}
+          >
+          <DroppableNavLink to={moduleState.route} className={mobile ? "cursor-pointer" : "block"}>
+            {({ isActive }) => {
+              const tile = (
+                <span
+                  data-active={isActive}
+                  className={cn(tileClass(isActive), isChecking && "opacity-80")}
+                >
+                  {buttonContent}
+                </span>
+              );
+              // The hover card already names the module in its header; a
+              // tooltip on top of it would say the same thing in the same spot.
+              if (!mobile && hasModuleNav(moduleKey, moduleState.status === "ready")) {
+                return tile;
+              }
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>{tile}</TooltipTrigger>
+                  <TooltipContent side={mobile ? "top" : "right"}>
+                    {moduleState.definition.label || moduleState.key}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }}
           </DroppableNavLink>
           </ModuleNavHover>
         </ContextMenuTrigger>
@@ -367,23 +383,31 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
     [availableModules],
   );
 
+  const readyModules = React.useMemo(
+    () => availableModules.filter((entry) => entry.status === "ready").map((entry) => entry.key),
+    [availableModules],
+  );
+
   return (
     <>
 
       {/* Modules as a wrapping icon grid rather than a tall column: in a wide
           rail the vertical run is worth more to the module's own navigation and
-          to the open tabs below than to twelve stacked icons. */}
-      <div className="hidden md:flex flex-wrap gap-1 px-2 pb-3 shrink-0 mt-1">
+          to the open tabs below than to twelve stacked icons. `auto-fit` with a
+          `1fr` max stretches the tiles across the full rail width and wraps to
+          a new row only once a tile would drop below its minimum size. */}
+      <ModuleNavHoverGroup preload={readyModules}>
+      <div className="hidden md:grid grid-cols-[repeat(auto-fit,minmax(2.25rem,1fr))] gap-1 px-2 pb-3 shrink-0 mt-1">
         {/* The dashboard, first. The logo that used to double as "home" is
             gone from the rail, so this is now the one place to reach it. */}
-        <DroppableNavLink to="/" end aria-label="Home">
+        <DroppableNavLink to="/" end aria-label="Home" className="block">
           {({ isActive }) => (
             <Tooltip>
               <TooltipTrigger asChild>
                 <span
                   data-active={isActive}
                   className={cn(
-                    "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg ring-1 transition-colors",
+                    "flex h-9 w-full cursor-pointer items-center justify-center rounded-lg ring-1 transition-colors",
                     "shadow-[inset_0_1px_2px_rgb(0_0_0/0.10)]",
                     isActive
                       ? "bg-background/80 text-foreground ring-primary/35 shadow-none"
@@ -405,6 +429,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           />
         ))}
       </div>
+      </ModuleNavHoverGroup>
 
       {/* Pinned routes. A module's own links live on the hover over its icon
           above, not here — the vertical run belongs to what the user chose to

@@ -19,7 +19,7 @@ export const AnalogSignalPage = asDetailQueryRoute(
     return (
       <ElektroAnalogSignal.ModelPage
         variant="black"
-        title={data?.analogSignal?.id}
+        title={data?.analogSignal?.name || "Analog Signal"}
         object={data?.analogSignal}
         pageActions={
           <div className="flex flex-row gap-2">

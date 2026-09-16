@@ -14,7 +14,7 @@ export const PagePage = asDetailQueryRoute(
 
     return (
       <DokumentsPage.ModelPage
-        title={data?.page.id}
+        title={data?.page && `Page ${data.page.index + 1}`}
         object={data?.page}
         pageActions={
           <div className="flex flex-row gap-2">

@@ -1,0 +1,72 @@
+fragment StoreSelector on Selector {
+  __typename
+  kind
+  required
+  ... on CudaSelector {
+    computeCapability
+    memory
+    count
+    cudaVersion
+  }
+  ... on RocmSelector {
+    apiVersion
+  }
+  ... on CPUSelector {
+    arch
+    minCount
+  }
+}
+
+fragment StoreFlavour on Flavour {
+  id
+  name
+  logo
+  originalLogo
+  image {
+    imageString
+    buildAt
+  }
+  requirements {
+    key
+    service
+    optional
+    description
+  }
+  selectors {
+    ...StoreSelector
+  }
+  repo {
+    id
+    name
+    user
+    repo
+    url
+  }
+  definitions {
+    id
+    name
+    description
+    kind
+  }
+  deployments {
+    id
+    status
+  }
+}
+
+fragment StoreRelease on Release {
+  id
+  name
+  version
+  logo
+  originalLogo
+  scopes
+  entrypoint
+  app {
+    id
+    identifier
+  }
+  flavours {
+    ...StoreFlavour
+  }
+}
