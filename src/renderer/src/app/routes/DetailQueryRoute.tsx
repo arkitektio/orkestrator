@@ -1,4 +1,4 @@
-import { useDebug } from "@/providers/debug/DebugContext";
+import { useDebugReport } from "@/providers/debug/useDebugReport";
 import { RefetchProvider } from "@/providers/refetch/RefetchContext";
 import {
   ApolloQueryResult,
@@ -12,7 +12,6 @@ import {
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useGraphScope } from "@/kraph/providers/GraphScopeProvider";
-import { DebugPage } from "../components/fallbacks/DebugPage";
 import { ErrorPage } from "../components/fallbacks/ErrorPage";
 import { LoadingPage } from "../components/fallbacks/LoadingPage";
 
@@ -78,8 +77,24 @@ export const asDetailQueryRoute = <T extends any>(
   } = { fallback: <></> },
 ) => {
   return ({ direct }: { direct?: any | undefined }) => {
-    const { debug } = useDebug();
     const { id } = useParams<{ id: string }>();
+    const passyProps =
+      direct ||
+      hook({
+        variables: { id: id ?? "" },
+        ...options.queryOptions,
+        // A missing id is a misconfigured route, not a query to run. The hook
+        // is still CALLED (with skip) so the hook order is the same on every
+        // render — the report hook below runs regardless.
+        skip: Boolean(options.queryOptions?.skip) || (!id && direct == undefined),
+      });
+    useDebugReport(Component.displayName ?? Component.name ?? "page", {
+      variables: { id: id ?? "" },
+      data: passyProps.data,
+      error: passyProps.error,
+      loading: passyProps.loading,
+    });
+
     if (!id && direct == undefined) {
       if (options.fallback) {
         return options.fallback;
@@ -87,13 +102,6 @@ export const asDetailQueryRoute = <T extends any>(
         return <> This route is illconfigured</>;
       }
     }
-
-    const passyProps =
-      direct ||
-      hook({
-        variables: { id: id ?? "" },
-        ...options.queryOptions,
-      });
 
     // Only bail to the error page when there is genuinely nothing to render.
     // Under the default `errorPolicy: "none"` Apollo discards `data` whenever
@@ -104,10 +112,6 @@ export const asDetailQueryRoute = <T extends any>(
     // layer, which errors rather than returning null) nulls that one field
     // instead of blanking the whole page, and the consumer degrades.
     if (passyProps.error && !passyProps.data) {
-      if (debug) {
-        return <DebugPage data={passyProps.error} />;
-      }
-
       return <ErrorPage error={passyProps.error} />;
     }
 
@@ -116,10 +120,6 @@ export const asDetailQueryRoute = <T extends any>(
     if (passyProps.loading && !passyProps.data) return <LoadingPage />;
 
     if (passyProps && passyProps.data) {
-      if (debug) {
-        return <DebugPage data={passyProps.data} />;
-      }
-
       return (
         <RefetchProvider refetch={passyProps.refetch}>
           <Component {...passyProps} id={id ?? ""} />
@@ -158,7 +158,6 @@ export const asGraphScopeQueryRoute = <T extends any>(
   } = { fallback: <></> },
 ) => {
   return () => {
-    const { debug } = useDebug();
     const scope = useGraphScope();
     const graphId = scope?.graphId;
 
@@ -167,20 +166,23 @@ export const asGraphScopeQueryRoute = <T extends any>(
       skip: !graphId,
       ...options.queryOptions,
     });
+    useDebugReport(Component.displayName ?? Component.name ?? "page", {
+      variables: { id: graphId ?? "" },
+      data: query.data,
+      error: query.error,
+      loading: query.loading,
+    });
 
     if (!graphId) {
       return options.fallback ?? <> This route is illconfigured</>;
     }
 
     if (query.error) {
-      if (debug) return <DebugPage data={query.error} />;
       return <ErrorPage error={query.error} />;
     }
 
     const data = query.data;
     if (!data) return <LoadingPage />;
-
-    if (debug) return <DebugPage data={data} />;
 
     return (
       <RefetchProvider refetch={query.refetch}>
@@ -223,31 +225,35 @@ export const asGraphDetailQueryRoute = <T extends any>(
   } = { fallback: <></> },
 ) => {
   return ({ direct }: { direct?: any | undefined }) => {
-    const { debug } = useDebug();
     const { id } = useParams<{ id: string }>();
     const scope = useGraphScope();
-
-    if ((!id || !scope) && direct == undefined) {
-      return options.fallback ?? <> This route is illconfigured</>;
-    }
+    const misconfigured = (!id || !scope) && direct == undefined;
 
     const passyProps =
       direct ||
       hook({
         variables: { id: id ?? "", graph: scope?.graphId ?? "" },
         ...options.queryOptions,
+        skip: Boolean(options.queryOptions?.skip) || misconfigured,
       });
+    useDebugReport(Component.displayName ?? Component.name ?? "page", {
+      variables: { id: id ?? "", graph: scope?.graphId ?? "" },
+      data: passyProps.data,
+      error: passyProps.error,
+      loading: passyProps.loading,
+    });
+
+    if (misconfigured) {
+      return options.fallback ?? <> This route is illconfigured</>;
+    }
 
     if (passyProps.error) {
-      if (debug) return <DebugPage data={passyProps.error} />;
       return <ErrorPage error={passyProps.error} />;
     }
 
     if (passyProps.loading && !passyProps.data) return <LoadingPage />;
 
     if (passyProps && passyProps.data) {
-      if (debug) return <DebugPage data={passyProps.data} />;
-
       return (
         <RefetchProvider refetch={passyProps.refetch}>
           <Component

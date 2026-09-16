@@ -2,6 +2,7 @@ import { SwitchField } from "@/components/fields/SwitchField";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ColorModeField } from "../components/ColorModeField";
 import { ThemeCustomizer } from "../components/ThemeCustomizer";
 import {
   Card,
@@ -469,6 +470,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <ColorModeField />
                 <SwitchField
                   name="sceneThemeSync"
                   label="Scene Theme Sync"

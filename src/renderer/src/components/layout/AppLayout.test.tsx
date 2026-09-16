@@ -62,3 +62,15 @@ describe("the rail container", () => {
     expect(screen.getAllByTestId("rail-content").length).toBeGreaterThan(0);
   });
 });
+
+describe("the rail surface", () => {
+  it("paints no fill or edge of its own, so it is the window surface", () => {
+    // A tint a few percent off `bg-sidebar` (and a hairline) read as a seam
+    // beside the chrome around the page. Nothing in the rail may set a
+    // surface colour; only the sticky headers repaint `bg-sidebar` itself.
+    renderLayout();
+    const rail = screen.getByLabelText("Modules and pinned pages").parentElement!;
+    expect(rail.className).not.toMatch(/\bbg-/);
+    expect(rail.className).not.toMatch(/\bborder/);
+  });
+});

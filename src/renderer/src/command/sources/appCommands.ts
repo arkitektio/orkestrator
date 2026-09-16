@@ -1,12 +1,17 @@
+import type { Theme } from "@/providers/ThemeProvider";
 import type { LucideIcon } from "lucide-react";
 import {
   Bug,
   Home,
+  Laptop,
   MonitorCog,
+  Moon,
   RefreshCw,
   RotateCcw,
   Search,
   Settings,
+  Sun,
+  SunMoon,
   UserPlus,
   ZoomIn,
   ZoomOut,
@@ -18,6 +23,8 @@ export type AppCommandContext = {
   toggleDebug: () => void;
   reconnect: () => void;
   clearCaches: () => void;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
 };
 
 export type AppCommand = {
@@ -69,6 +76,35 @@ export const APP_COMMANDS: AppCommand[] = [
     icon: UserPlus,
     keywords: ["sign in", "login", "connect"],
     run: ({ openDialog }) => openDialog("addprofile", {}, { size: "small" }),
+  },
+  {
+    id: "toggle-theme",
+    title: "Toggle Light / Dark Mode",
+    icon: SunMoon,
+    keywords: ["theme", "appearance", "colour", "color"],
+    run: ({ toggleTheme }) => toggleTheme(),
+  },
+  {
+    id: "theme-light",
+    title: "Use Light Mode",
+    icon: Sun,
+    keywords: ["theme", "appearance", "bright"],
+    run: ({ setTheme }) => setTheme("light"),
+  },
+  {
+    id: "theme-dark",
+    title: "Use Dark Mode",
+    icon: Moon,
+    keywords: ["theme", "appearance"],
+    run: ({ setTheme }) => setTheme("dark"),
+  },
+  {
+    id: "theme-system",
+    title: "Follow System Theme",
+    description: "Light or dark, whichever the OS is using",
+    icon: Laptop,
+    keywords: ["theme", "appearance", "auto"],
+    run: ({ setTheme }) => setTheme("system"),
   },
   {
     id: "toggle-debug",

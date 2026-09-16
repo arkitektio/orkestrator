@@ -28,9 +28,11 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
       <div className="flex-1 min-h-0 flex flex-row">
       {/* The rail — the only chrome this window has. */}
       <div
-        // A shade off the window surface, with a hairline, so the rail reads
-        // as a pane rather than dissolving into the chrome around it.
-        className="relative flex-initial flex flex-col w-(--rail-width) shrink-0 bg-background/25 dark:bg-background/10 border-r border-border/30"
+        // No fill and no hairline of its own: the rail IS the window surface,
+        // and a tint a few percent off `bg-sidebar` read as a seam beside the
+        // chrome around the page. What sets the rail apart is the content
+        // card floating next to it, not a colour.
+        className="relative flex-initial flex flex-col w-(--rail-width) shrink-0"
       >
         <RailChrome />
         {/* A plain `nav`, deliberately NOT shadcn's `NavigationMenu`. That
@@ -51,7 +53,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
 
       {/* The floating content card. `min-h-0`/`min-w-0` keep its own scroll
           containers scrolling instead of growing the card past the window. */}
-      <div className="flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background rounded-xl border border-border/60 shadow-sm m-2">
+      <div className="relative flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background rounded-xl border border-border/60 shadow-sm m-2">
         {children}
       </div>
       </div>

@@ -41,6 +41,7 @@ vi.mock("./components/navigation/PrivateNavigationBar", () => ({
 }));
 vi.mock("@/command/tabs/TabOutlet", () => ({ TabOutlet: () => <div>tabs</div> }));
 vi.mock("./AppRoutes", () => ({ AppRoutes: () => null }));
+vi.mock("./components/debug/PageCorner", () => ({ PageCorner: () => <div>corner</div> }));
 vi.mock("./components/fallbacks/NotConnected", () => ({
   NotConnected: () => <div>Welcome to Arkitekt</div>,
 }));
@@ -61,6 +62,7 @@ describe("AppShell", () => {
     expect(screen.getByTestId("welcome-layout")).toBeInTheDocument();
     expect(screen.queryByLabelText("Modules and pinned pages")).toBeNull();
     expect(screen.queryByText("tabs")).toBeNull();
+    expect(screen.queryByText("corner")).toBeNull();
   });
 
   it("keeps the rail away while a session is still being proven", () => {
@@ -75,6 +77,7 @@ describe("AppShell", () => {
     render(<AppShell />);
     expect(screen.getByLabelText("Modules and pinned pages")).toBeInTheDocument();
     expect(screen.getByText("tabs")).toBeInTheDocument();
+    expect(screen.getByText("corner")).toBeInTheDocument();
     expect(screen.queryByText("Welcome to Arkitekt")).toBeNull();
   });
 });

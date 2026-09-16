@@ -1,4 +1,4 @@
-import { useDebug } from "@/providers/debug/DebugContext";
+import { useDebugReport } from "@/providers/debug/useDebugReport";
 import {
   ApolloQueryResult,
   DocumentNode,
@@ -9,7 +9,6 @@ import {
   useQuery,
 } from "@apollo/client";
 import React from "react";
-import { DebugPage } from "../components/fallbacks/DebugPage";
 import { ErrorPage } from "../components/fallbacks/ErrorPage";
 import { LoadingPage } from "../components/fallbacks/LoadingPage";
 
@@ -72,29 +71,25 @@ export const asParamlessRoute = <T extends unknown>(
   } = { fallback: <></> },
 ) => {
   return ({ direct }: { direct?: any | undefined }) => {
-    const { debug } = useDebug();
-
     const passyProps =
       direct ||
       hook({
         ...options.queryOptions,
       });
+    useDebugReport(Component.displayName ?? Component.name ?? "page", {
+      variables: options.queryOptions?.variables,
+      data: passyProps.data,
+      error: passyProps.error,
+      loading: passyProps.loading,
+    });
 
     if (passyProps.error) {
-      if (debug) {
-        return <DebugPage data={passyProps.error} />;
-      }
-
       return <ErrorPage error={passyProps.error} />;
     }
 
     if (passyProps.loading) return <LoadingPage />;
 
     if (passyProps && passyProps.data) {
-      if (debug) {
-        return <DebugPage data={passyProps.data} />;
-      }
-
       return <Component {...passyProps} />;
     }
 

@@ -1,4 +1,5 @@
 import { TabOutlet } from "@/command/tabs/TabOutlet";
+import { PageCorner } from "./components/debug/PageCorner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { WelcomeLayout } from "@/components/layout/WelcomeLayout";
 
@@ -33,6 +34,8 @@ export const AppShell = () => (
     <AppLayout navigationBar={<PrivateNavigationBar />}>
       {/* One copy of the routes per open tab, each with its own history. */}
       <TabOutlet routes={<AppRoutes />} />
+      {/* Over the page's bottom-right corner: report a bug, and the debug badge. */}
+      <PageCorner />
     </AppLayout>
   </Arkitekt.Guard>
 );

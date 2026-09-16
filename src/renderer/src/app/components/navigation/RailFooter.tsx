@@ -70,7 +70,8 @@ export const RailFooter = () => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Settings is a destination, not a menu item — one gear, no nesting. */}
+      {/* Settings is a destination, not a menu item — one gear, no nesting.
+          Appearance (light / dark) lives there too, not here. */}
       <Tooltip>
         <TooltipTrigger asChild>
           <DroppableNavLink to="/settings" aria-label="Settings">

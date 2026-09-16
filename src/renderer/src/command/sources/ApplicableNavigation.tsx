@@ -2,6 +2,7 @@ import { Arkitekt } from "@/app/Arkitekt";
 import { useDialog } from "@/app/dialog";
 import { moduleIcon } from "@/app/components/navigation/moduleIcons";
 import { useDebug } from "@/providers/debug/DebugContext";
+import { useTheme } from "@/providers/ThemeProvider";
 import { smartRegistry } from "@/providers/smart/registry";
 import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
 import type { PassDownProps } from "@/providers/smart/extensions/types";
@@ -35,6 +36,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   const { openDialog } = useDialog();
   const breadcrumbs = useReactRouterBreadcrumbs();
   const { debug, setDebug } = useDebug();
+  const { setTheme, toggleTheme } = useTheme();
   const actions = Arkitekt.useActions();
   const openTarget = useOpenTarget();
   const { pin, isCurrentPinned, canPin } = usePins();
@@ -162,6 +164,8 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
                     toggleDebug: () => setDebug(!debug),
                     reconnect: () => void actions.reconnect(),
                     clearCaches: () => void actions.clearAllServiceCaches(),
+                    setTheme,
+                    toggleTheme,
                   }),
                 )
               }

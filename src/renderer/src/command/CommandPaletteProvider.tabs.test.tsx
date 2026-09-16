@@ -12,7 +12,6 @@ import { CommandPaletteProvider, useCommandContext, useCommandPalette } from "./
 import { ActiveTabRouter } from "./tabs/ActiveTabRouter";
 import { TabOutlet } from "./tabs/TabOutlet";
 import { TabsProvider, useTabs } from "./tabs/TabsProvider";
-import { TitleSearchBar } from "@/app/components/chrome/TitleSearchBar";
 
 /** A page that offers one object to the palette, named after its path. */
 const Page = ({ name }: { name: string }) => {
@@ -42,7 +41,6 @@ const Chrome = () => {
       {tabs.map((t, i) => (
         <button key={t.id} onClick={() => focus(t.id)}>{`focus-${i}`}</button>
       ))}
-      <TitleSearchBar />
     </div>
   );
 };
@@ -86,18 +84,5 @@ describe("the palette follows the active tab", () => {
     click("open-alpha");
     click("focus-0"); // the boot tab at "/"
     expect(context()).toBe("");
-  });
-
-  it("moves the search pill's breadcrumbs along with it", () => {
-    // The pill lives in the chrome, under the router that always reflects the
-    // active tab; this pins that it actually re-reads on a switch.
-    renderApp();
-    const pill = () => screen.getByLabelText("Search and run commands").textContent ?? "";
-    click("open-alpha");
-    click("open-beta");
-    expect(pill()).toContain("Beta");
-    click("focus-1");
-    expect(pill()).toContain("Alpha");
-    expect(pill()).not.toContain("Beta");
   });
 });
