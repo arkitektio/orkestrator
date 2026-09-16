@@ -1,0 +1,81 @@
+import { useEffect } from "react";
+
+import { Arkitekt } from "@/app/Arkitekt";
+import { useMyContextQuery } from "../api/graphql";
+import { resolveContextBrand } from "../lib/membershipBrand";
+
+/**
+ * Tells the profile book who the active login actually is.
+ *
+ * A device grant cannot know which user or organization it just produced — the
+ * token carries the claim, but only lok can name it — so a freshly granted
+ * profile starts on a provisional id and an endpoint-only label. This component
+ * closes that gap: on the first `mycontext` it hands the provider the real
+ * identity, which re-keys the profile to `baseUrl::user::org` (collapsing it onto
+ * the existing row if that organization was already stored) and caches the label
+ * the switcher draws parked profiles from.
+ *
+ * Renders nothing — it exists only to own that one write, exactly like its
+ * sibling `OrganizationBrandSync`, and like that one it must be mounted inside
+ * `Guard.Lok`: `useMyContextQuery` needs lok's Apollo client, which only exists
+ * once the service is ready.
+ */
+export const ProfileIdentitySync = () => {
+  const { data } = useMyContextQuery({ fetchPolicy: "cache-and-network" });
+  const activeProfileId = Arkitekt.useActiveProfileId();
+  const setProfileIdentity = Arkitekt.useSetProfileIdentity();
+  const connection = Arkitekt.useConnection();
+
+  const baseUrl = connection?.endpoint?.base_url;
+  const context = data?.mycontext;
+  const userId = context?.user?.id;
+  const username = context?.user?.username;
+  const organizationId = context?.organization?.id;
+  const organizationName = context?.organization?.name;
+  const organizationSlug = context?.organization?.slug;
+
+  // The membership's own override wins over the organization default, resolved
+  // field by field — reusing the one function that already knows that rule.
+  const brand = resolveContextBrand(context);
+
+  // Depending on the resolved scalars rather than on `data` keeps this to one
+  // write per actual change: the query is `cache-and-network` and refetches on
+  // reactivate, which would otherwise re-persist an identical identity (and
+  // re-key the book) on every refetch.
+  useEffect(() => {
+    if (!activeProfileId || !baseUrl || !userId) {
+      return;
+    }
+
+    setProfileIdentity(activeProfileId, {
+      identity: {
+        baseUrl,
+        userId,
+        organizationId: organizationId ?? null,
+      },
+      label: {
+        username,
+        organizationName,
+        organizationSlug,
+        brandHue: brand.hue ?? null,
+        brandChroma: brand.chroma ?? null,
+        refreshedAt: Date.now(),
+      },
+    });
+  }, [
+    activeProfileId,
+    baseUrl,
+    userId,
+    username,
+    organizationId,
+    organizationName,
+    organizationSlug,
+    brand.hue,
+    brand.chroma,
+    setProfileIdentity,
+  ]);
+
+  return null;
+};
+
+export default ProfileIdentitySync;

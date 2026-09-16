@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 import { Assign } from "../main/message";
+import type { WindowChromeState } from "../main/modules/WindowManager";
 
 // Subscribe `cb` to an ipcRenderer channel and return the disposer. Every
 // event listener exposed to the renderer must be removable, otherwise each
@@ -31,6 +32,28 @@ const api = {
     ipcRenderer.send("open-second-window", path);
   },
   getNodeId: () => ipcRenderer.invoke("get-node-id"),
+  /**
+   * The renderer draws the title bar, so it needs the frame's controls and its
+   * state. `onStateChanged` returns a disposer for the reason `subscribe`
+   * documents: without it every React remount stacks another listener on the
+   * shared ipcRenderer.
+   */
+  windowControls: {
+    minimize: () => ipcRenderer.send("window:minimize"),
+    toggleMaximize: () => ipcRenderer.send("window:maximize-toggle"),
+    close: () => ipcRenderer.send("window:close"),
+    getState: () => ipcRenderer.invoke("window:get-state"),
+    onStateChanged: (cb: (state: WindowChromeState) => void) =>
+      subscribe<WindowChromeState>("window:state-changed", cb),
+  },
+  /**
+   * Deep links land here: main asks the renderer to open a path as a tab
+   * rather than spawning a window. Returns a disposer, like every listener.
+   */
+  tabs: {
+    onOpen: (cb: (payload: { path: string }) => void) =>
+      subscribe<{ path: string }>("tabs:open", cb),
+  },
   reloadWindow: () => ipcRenderer.invoke("reload-window"),
   forceReloadWindow: () => ipcRenderer.invoke("force-reload-window"),
   openDevTools: () => ipcRenderer.invoke("open-devtools"),

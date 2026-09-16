@@ -1,40 +1,27 @@
-import { ScrollArea } from "@radix-ui/react-scroll-area";
-import { useSearchParams } from "react-router-dom";
 import {
-  ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "../ui/resizable";
 
 export type ModuleLayoutProps = {
   children: React.ReactNode;
+  /**
+   * Accepted but no longer rendered.
+   *
+   * Each module's navigation now lives in the app rail (`ActiveModuleNav`),
+   * which is what removed the sidebar-beside-a-sidebar this layout used to
+   * create — and with it the per-module search box, superseded by ⌘K searching
+   * every module at once. The prop is kept so the twelve module files that pass
+   * it need not all change at once; `moduleNavRegistry.ts` is where a module's
+   * pane is wired up now.
+   */
   pane?: React.ReactNode;
 };
 
-export const ModuleLayout = ({ pane, children }: ModuleLayoutProps) => {
-  const [params] = useSearchParams({ sidebar: "true" });
-
+export const ModuleLayout = ({ children }: ModuleLayoutProps) => {
   return (
     <ResizablePanelGroup autoSaveId="module" direction="horizontal">
-      {pane && params.get("sidebar") == "true" && (
-        <>
-          <ResizablePanel
-            defaultSize={10}
-            minSize={10}
-            maxSize={80}
-            order={1}
-            className=""
-            id="sidebar-module"
-          >
-            <ScrollArea className="flex flex-col h-full overflow-y-hidden bg-pane">
-              {pane}
-            </ScrollArea>
-          </ResizablePanel>
-          <ResizableHandle />
-        </>
-      )}
-
-      <ResizablePanel defaultSize={90} id="module" order={2}>
+      <ResizablePanel defaultSize={100} id="module" order={2}>
         {children}
       </ResizablePanel>
     </ResizablePanelGroup>

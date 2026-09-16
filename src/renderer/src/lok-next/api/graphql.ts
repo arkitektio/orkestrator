@@ -1729,15 +1729,24 @@ export type InstanceAliasFragment = { __typename?: 'InstanceAlias', host?: strin
 
 export type ListInstanceAliasFragment = { __typename?: 'InstanceAlias', host?: string | null, port?: number | null, ssl: boolean, challenge: string, kind: string };
 
-export type DetailAppFragment = { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, releases: Array<{ __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> };
+export type DetailAppFragment = { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, releases: Array<(
+    { __typename?: 'Release' }
+    & ListReleaseFragment
+  )> };
 
 export type ListAppFragment = { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
-export type DetailClientFragment = { __typename?: 'Client', id: string, clientId: string, name: string, public: boolean, kind: ClientKind, role: ClientRole, issueUrl?: string | null, user?: { __typename?: 'User', id: string, username: string } | null, release?: { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, publicSources: Array<{ __typename?: 'PublicSource', kind: string, url: string }> };
+export type DetailClientFragment = { __typename?: 'Client', id: string, clientId: string, name: string, public: boolean, kind: ClientKind, role: ClientRole, issueUrl?: string | null, user?: { __typename?: 'User', id: string, username: string } | null, release?: (
+    { __typename?: 'Release' }
+    & ListReleaseFragment
+  ) | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, publicSources: Array<{ __typename?: 'PublicSource', kind: string, url: string }> };
 
 export type ListClientFragment = { __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null };
 
-export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }> };
+export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceGroups: Array<(
+    { __typename?: 'DeviceGroup' }
+    & ListDeviceGroupFragment
+  )> };
 
 export type ListDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string };
 
@@ -1745,25 +1754,43 @@ export type ContextFragment = { __typename?: 'Context', roles: Array<string>, sc
 
 export type PresignedPostCredentialsFragment = { __typename?: 'PresignedPostCredentials', xAmzAlgorithm: string, xAmzCredential: string, xAmzDate: string, xAmzSignature: string, key: string, bucket: string, datalayer: string, policy: string, store: string };
 
-export type DetailDeviceGroupFragment = { __typename?: 'DeviceGroup', id: string, name: string, devices: Array<{ __typename?: 'Device', id: string, name?: string | null, nodeId: string }> };
+export type DetailDeviceGroupFragment = { __typename?: 'DeviceGroup', id: string, name: string, devices: Array<(
+    { __typename?: 'Device' }
+    & ListDeviceFragment
+  )> };
 
 export type ListDeviceGroupFragment = { __typename?: 'DeviceGroup', id: string, name: string };
 
-export type DetailGroupFragment = { __typename?: 'Group', id: string, name: string, users: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, profile?: { __typename?: 'GroupProfile', id: string, name?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null };
+export type DetailGroupFragment = { __typename?: 'Group', id: string, name: string, users: Array<(
+    { __typename?: 'User' }
+    & ListUserFragment
+  )>, profile?: (
+    { __typename?: 'GroupProfile' }
+    & GroupProfileFragment
+  ) | null };
 
 export type ListGroupFragment = { __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null };
 
 export type GroupProfileFragment = { __typename?: 'GroupProfile', id: string, name?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
-export type ListInviteFragment = { __typename?: 'Invite', id: string, token: string, status: string, createdAt: any, expiresAt?: any | null, createdBy: { __typename?: 'User', id: string, username: string }, createdFor: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type ListInviteFragment = { __typename?: 'Invite', id: string, token: string, status: string, createdAt: any, expiresAt?: any | null, createdBy: { __typename?: 'User', id: string, username: string }, createdFor: (
+    { __typename?: 'Organization' }
+    & ListOrganizationFragment
+  ) };
 
-export type InviteFragment = { __typename?: 'Invite', id: string, token: string, status: string, createdAt: any, expiresAt?: any | null, createdBy: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }, createdFor: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> }, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null };
+export type InviteFragment = { __typename?: 'Invite', id: string, token: string, status: string, createdAt: any, expiresAt?: any | null, createdBy: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }, createdFor: (
+    { __typename?: 'Organization' }
+    & OrganizationFragment
+  ), acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null };
 
 export type LayerFragment = { __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
 export type ListLayerFragment = { __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
-export type MembershipFragment = { __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', identifier: string, id: string }>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type MembershipFragment = { __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', identifier: string, id: string }>, organization: (
+    { __typename?: 'Organization' }
+    & ListOrganizationFragment
+  ) };
 
 export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
 
@@ -1773,11 +1800,23 @@ export type ProfileFragment = { __typename?: 'Profile', id: string, name?: strin
 
 export type ListRedeemTokenFragment = { __typename?: 'RedeemToken', id: string, token: string, user: { __typename?: 'User', id: string, email?: string | null }, client?: { __typename?: 'Client', id: string, name: string, release?: { __typename?: 'Release', version: any, app: { __typename?: 'App', identifier: any } } | null } | null };
 
-export type DetailRedeemTokenFragment = { __typename?: 'RedeemToken', id: string, token: string, user: { __typename?: 'User', id: string, email?: string | null }, client?: { __typename?: 'Client', id: string, name: string, release?: { __typename?: 'Release', version: any, app: { __typename?: 'App', identifier: any } } | null } | null };
+export type DetailRedeemTokenFragment = (
+  { __typename?: 'RedeemToken' }
+  & ListRedeemTokenFragment
+);
 
-export type DetailReleaseFragment = { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null }, clients: Array<{ __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
+export type DetailReleaseFragment = { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: (
+    { __typename?: 'App' }
+    & ListAppFragment
+  ), clients: Array<(
+    { __typename?: 'Client' }
+    & ListClientFragment
+  )> };
 
-export type ListReleaseFragment = { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type ListReleaseFragment = { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: (
+    { __typename?: 'App' }
+    & ListAppFragment
+  ) };
 
 export type RoleFragment = { __typename?: 'Role', id: string, identifier: string, description: string };
 
@@ -1787,15 +1826,54 @@ export type ListServiceFragment = { __typename?: 'Service', identifier: any, id:
 
 export type ServiceFragment = { __typename?: 'Service', identifier: any, id: string, name: string, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
-export type ServiceInstanceFragment = { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, allowedGroups: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }>, deniedGroups: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }>, mappings: Array<{ __typename?: 'ServiceInstanceMapping', id: string, key: string, optional: boolean, instance: { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> }, client: { __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null } }>, aliases: Array<{ __typename?: 'InstanceAlias', host?: string | null, port?: number | null, ssl: boolean, challenge: string, kind: string }>, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
+export type ServiceInstanceFragment = { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<(
+    { __typename?: 'User' }
+    & ListUserFragment
+  )>, deniedUsers: Array<(
+    { __typename?: 'User' }
+    & ListUserFragment
+  )>, allowedGroups: Array<(
+    { __typename?: 'Group' }
+    & ListGroupFragment
+  )>, deniedGroups: Array<(
+    { __typename?: 'Group' }
+    & ListGroupFragment
+  )>, mappings: Array<(
+    { __typename?: 'ServiceInstanceMapping' }
+    & ListServiceInstanceMappingFragment
+  )>, aliases: Array<(
+    { __typename?: 'InstanceAlias' }
+    & ListInstanceAliasFragment
+  )>, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
-export type ListServiceInstanceFragment = { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> };
+export type ListServiceInstanceFragment = { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<(
+    { __typename?: 'User' }
+    & ListUserFragment
+  )>, deniedUsers: Array<(
+    { __typename?: 'User' }
+    & ListUserFragment
+  )> };
 
-export type ListServiceInstanceMappingFragment = { __typename?: 'ServiceInstanceMapping', id: string, key: string, optional: boolean, instance: { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> }, client: { __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null } };
+export type ListServiceInstanceMappingFragment = { __typename?: 'ServiceInstanceMapping', id: string, key: string, optional: boolean, instance: (
+    { __typename?: 'ServiceInstance' }
+    & ListServiceInstanceFragment
+  ), client: (
+    { __typename?: 'Client' }
+    & ListClientFragment
+  ) };
 
-export type ListUserFragment = { __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type ListUserFragment = { __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: (
+    { __typename?: 'Profile' }
+    & ProfileFragment
+  ) };
 
-export type DetailUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null, groups: Array<{ __typename?: 'Group', id: string, name: string }>, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', identifier: string, id: string }>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> };
+export type DetailUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null, groups: Array<{ __typename?: 'Group', id: string, name: string }>, profile: (
+    { __typename?: 'Profile' }
+    & ProfileFragment
+  ), memberships: Array<(
+    { __typename?: 'Membership' }
+    & MembershipFragment
+  )> };
 
 export type MeUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null };
 
@@ -1814,49 +1892,70 @@ export type UpdateDeviceMutationVariables = Exact<{
 }>;
 
 
-export type UpdateDeviceMutation = { __typename?: 'Mutation', updateDevice: { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }> } };
+export type UpdateDeviceMutation = { __typename?: 'Mutation', updateDevice: (
+    { __typename?: 'Device' }
+    & DetailDeviceFragment
+  ) };
 
 export type CreateGroupProfileMutationVariables = Exact<{
   input: CreateGroupProfileInput;
 }>;
 
 
-export type CreateGroupProfileMutation = { __typename?: 'Mutation', createGroupProfile: { __typename?: 'GroupProfile', id: string, name?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type CreateGroupProfileMutation = { __typename?: 'Mutation', createGroupProfile: (
+    { __typename?: 'GroupProfile' }
+    & GroupProfileFragment
+  ) };
 
 export type UpdateGroupProfileMutationVariables = Exact<{
   input: UpdateGroupProfileInput;
 }>;
 
 
-export type UpdateGroupProfileMutation = { __typename?: 'Mutation', updateGroupProfile: { __typename?: 'GroupProfile', id: string, name?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type UpdateGroupProfileMutation = { __typename?: 'Mutation', updateGroupProfile: (
+    { __typename?: 'GroupProfile' }
+    & GroupProfileFragment
+  ) };
 
 export type UpdateServiceInstanceMutationVariables = Exact<{
   input: UpdateServiceInstanceInput;
 }>;
 
 
-export type UpdateServiceInstanceMutation = { __typename?: 'Mutation', updateServiceInstance: { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, allowedGroups: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }>, deniedGroups: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }>, mappings: Array<{ __typename?: 'ServiceInstanceMapping', id: string, key: string, optional: boolean, instance: { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> }, client: { __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null } }>, aliases: Array<{ __typename?: 'InstanceAlias', host?: string | null, port?: number | null, ssl: boolean, challenge: string, kind: string }>, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type UpdateServiceInstanceMutation = { __typename?: 'Mutation', updateServiceInstance: (
+    { __typename?: 'ServiceInstance' }
+    & ServiceInstanceFragment
+  ) };
 
 export type CreateServiceInstanceMutationVariables = Exact<{
   input: CreateServiceInstanceInput;
 }>;
 
 
-export type CreateServiceInstanceMutation = { __typename?: 'Mutation', createServiceInstance: { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, allowedGroups: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }>, deniedGroups: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }>, mappings: Array<{ __typename?: 'ServiceInstanceMapping', id: string, key: string, optional: boolean, instance: { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> }, client: { __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null } }>, aliases: Array<{ __typename?: 'InstanceAlias', host?: string | null, port?: number | null, ssl: boolean, challenge: string, kind: string }>, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type CreateServiceInstanceMutation = { __typename?: 'Mutation', createServiceInstance: (
+    { __typename?: 'ServiceInstance' }
+    & ServiceInstanceFragment
+  ) };
 
 export type CreateInviteMutationVariables = Exact<{
   input: CreateInviteInput;
 }>;
 
 
-export type CreateInviteMutation = { __typename?: 'Mutation', createInvite: { __typename?: 'Invite', id: string, token: string, status: string, createdAt: any, expiresAt?: any | null, createdBy: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }, createdFor: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> }, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null } };
+export type CreateInviteMutation = { __typename?: 'Mutation', createInvite: (
+    { __typename?: 'Invite' }
+    & InviteFragment
+  ) };
 
 export type UpdateMembershipColorsMutationVariables = Exact<{
   input: UpdateMembershipColorsInput;
 }>;
 
 
-export type UpdateMembershipColorsMutation = { __typename?: 'Mutation', updateMembershipColors: { __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', identifier: string, id: string }>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } };
+export type UpdateMembershipColorsMutation = { __typename?: 'Mutation', updateMembershipColors: (
+    { __typename?: 'Membership' }
+    & MembershipFragment
+  ) };
 
 export type NotifyUserMutationVariables = Exact<{
   input: NotifyUserInput;
@@ -1870,28 +1969,40 @@ export type UpdateOrganizationMutationVariables = Exact<{
 }>;
 
 
-export type UpdateOrganizationMutation = { __typename?: 'Mutation', updateOrganization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> } };
+export type UpdateOrganizationMutation = { __typename?: 'Mutation', updateOrganization: (
+    { __typename?: 'Organization' }
+    & OrganizationFragment
+  ) };
 
 export type CreateOrganizationMutationVariables = Exact<{
   input: CreateOrganizationInput;
 }>;
 
 
-export type CreateOrganizationMutation = { __typename?: 'Mutation', createOrganization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> } };
+export type CreateOrganizationMutation = { __typename?: 'Mutation', createOrganization: (
+    { __typename?: 'Organization' }
+    & OrganizationFragment
+  ) };
 
 export type CreateUserProfileMutationVariables = Exact<{
   input: CreateProfileInput;
 }>;
 
 
-export type CreateUserProfileMutation = { __typename?: 'Mutation', createProfile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type CreateUserProfileMutation = { __typename?: 'Mutation', createProfile: (
+    { __typename?: 'Profile' }
+    & ProfileFragment
+  ) };
 
 export type UpdateUserProfileMutationVariables = Exact<{
   input: UpdateProfileInput;
 }>;
 
 
-export type UpdateUserProfileMutation = { __typename?: 'Mutation', updateProfile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type UpdateUserProfileMutation = { __typename?: 'Mutation', updateProfile: (
+    { __typename?: 'Profile' }
+    & ProfileFragment
+  ) };
 
 export type CreateRedeemTokenMutationVariables = Exact<{
   input: RedeemTokenInput;
@@ -1906,7 +2017,10 @@ export type RequestMediaUploadMutationVariables = Exact<{
 }>;
 
 
-export type RequestMediaUploadMutation = { __typename?: 'Mutation', requestMediaUpload: { __typename?: 'PresignedPostCredentials', xAmzAlgorithm: string, xAmzCredential: string, xAmzDate: string, xAmzSignature: string, key: string, bucket: string, datalayer: string, policy: string, store: string } };
+export type RequestMediaUploadMutation = { __typename?: 'Mutation', requestMediaUpload: (
+    { __typename?: 'PresignedPostCredentials' }
+    & PresignedPostCredentialsFragment
+  ) };
 
 export type AddUserToOrganizationMutationVariables = Exact<{
   input: AddUserToOrganizationInput;
@@ -1921,7 +2035,10 @@ export type AppsQueryVariables = Exact<{
 }>;
 
 
-export type AppsQuery = { __typename?: 'Query', apps: Array<{ __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null }> };
+export type AppsQuery = { __typename?: 'Query', apps: Array<(
+    { __typename?: 'App' }
+    & ListAppFragment
+  )> };
 
 export type AppQueryVariables = Exact<{
   identifier?: InputMaybe<Scalars['AppIdentifier']['input']>;
@@ -1930,14 +2047,20 @@ export type AppQueryVariables = Exact<{
 }>;
 
 
-export type AppQuery = { __typename?: 'Query', app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, releases: Array<{ __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> } };
+export type AppQuery = { __typename?: 'Query', app: (
+    { __typename?: 'App' }
+    & DetailAppFragment
+  ) };
 
 export type DetailAppQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailAppQuery = { __typename?: 'Query', app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, releases: Array<{ __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> } };
+export type DetailAppQuery = { __typename?: 'Query', app: (
+    { __typename?: 'App' }
+    & DetailAppFragment
+  ) };
 
 export type ClientsQueryVariables = Exact<{
   filters?: InputMaybe<ClientFilter>;
@@ -1945,33 +2068,48 @@ export type ClientsQueryVariables = Exact<{
 }>;
 
 
-export type ClientsQuery = { __typename?: 'Query', clients: Array<{ __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
+export type ClientsQuery = { __typename?: 'Query', clients: Array<(
+    { __typename?: 'Client' }
+    & ListClientFragment
+  )> };
 
 export type DetailClientQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailClientQuery = { __typename?: 'Query', client: { __typename?: 'Client', id: string, clientId: string, name: string, public: boolean, kind: ClientKind, role: ClientRole, issueUrl?: string | null, user?: { __typename?: 'User', id: string, username: string } | null, release?: { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, publicSources: Array<{ __typename?: 'PublicSource', kind: string, url: string }> } };
+export type DetailClientQuery = { __typename?: 'Query', client: (
+    { __typename?: 'Client' }
+    & DetailClientFragment
+  ) };
 
 export type MyManagedClientsQueryVariables = Exact<{
   kind: ClientKind;
 }>;
 
 
-export type MyManagedClientsQuery = { __typename?: 'Query', myManagedClients: Array<{ __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
+export type MyManagedClientsQuery = { __typename?: 'Query', myManagedClients: Array<(
+    { __typename?: 'Client' }
+    & ListClientFragment
+  )> };
 
 export type ClientQueryVariables = Exact<{
   clientId: Scalars['ID']['input'];
 }>;
 
 
-export type ClientQuery = { __typename?: 'Query', client: { __typename?: 'Client', id: string, clientId: string, name: string, public: boolean, kind: ClientKind, role: ClientRole, issueUrl?: string | null, user?: { __typename?: 'User', id: string, username: string } | null, release?: { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, publicSources: Array<{ __typename?: 'PublicSource', kind: string, url: string }> } };
+export type ClientQuery = { __typename?: 'Query', client: (
+    { __typename?: 'Client' }
+    & DetailClientFragment
+  ) };
 
 export type MyContextQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyContextQuery = { __typename?: 'Query', mycontext: { __typename?: 'Context', roles: Array<string>, scope: Array<string>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null }, user: { __typename?: 'User', id: string, username: string, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, organization: { __typename?: 'Organization', id: string } }> } } };
+export type MyContextQuery = { __typename?: 'Query', mycontext: (
+    { __typename?: 'Context' }
+    & ContextFragment
+  ) };
 
 export type ListDevicesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -1979,21 +2117,30 @@ export type ListDevicesQueryVariables = Exact<{
 }>;
 
 
-export type ListDevicesQuery = { __typename?: 'Query', devices: Array<{ __typename?: 'Device', id: string, name?: string | null, nodeId: string }> };
+export type ListDevicesQuery = { __typename?: 'Query', devices: Array<(
+    { __typename?: 'Device' }
+    & ListDeviceFragment
+  )> };
 
 export type GetDeviceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetDeviceQuery = { __typename?: 'Query', device: { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }> } };
+export type GetDeviceQuery = { __typename?: 'Query', device: (
+    { __typename?: 'Device' }
+    & DetailDeviceFragment
+  ) };
 
 export type GetDeviceByDeviceIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetDeviceByDeviceIdQuery = { __typename?: 'Query', deviceByDeviceId: { __typename?: 'Device', id: string, name?: string | null, nodeId: string, deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }> } };
+export type GetDeviceByDeviceIdQuery = { __typename?: 'Query', deviceByDeviceId: (
+    { __typename?: 'Device' }
+    & DetailDeviceFragment
+  ) };
 
 export type ListDeviceGroupQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -2001,14 +2148,20 @@ export type ListDeviceGroupQueryVariables = Exact<{
 }>;
 
 
-export type ListDeviceGroupQuery = { __typename?: 'Query', deviceGroups: Array<{ __typename?: 'DeviceGroup', id: string, name: string }> };
+export type ListDeviceGroupQuery = { __typename?: 'Query', deviceGroups: Array<(
+    { __typename?: 'DeviceGroup' }
+    & ListDeviceGroupFragment
+  )> };
 
 export type GetDeviceGroupQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetDeviceGroupQuery = { __typename?: 'Query', deviceGroup: { __typename?: 'DeviceGroup', id: string, name: string, devices: Array<{ __typename?: 'Device', id: string, name?: string | null, nodeId: string }> } };
+export type GetDeviceGroupQuery = { __typename?: 'Query', deviceGroup: (
+    { __typename?: 'DeviceGroup' }
+    & DetailDeviceGroupFragment
+  ) };
 
 export type GroupOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -2023,7 +2176,10 @@ export type DetailGroupQueryVariables = Exact<{
 }>;
 
 
-export type DetailGroupQuery = { __typename?: 'Query', group: { __typename?: 'Group', id: string, name: string, users: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, profile?: { __typename?: 'GroupProfile', id: string, name?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null } };
+export type DetailGroupQuery = { __typename?: 'Query', group: (
+    { __typename?: 'Group' }
+    & DetailGroupFragment
+  ) };
 
 export type GroupsQueryVariables = Exact<{
   filters?: InputMaybe<GroupFilter>;
@@ -2031,7 +2187,10 @@ export type GroupsQueryVariables = Exact<{
 }>;
 
 
-export type GroupsQuery = { __typename?: 'Query', groups: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }> };
+export type GroupsQuery = { __typename?: 'Query', groups: Array<(
+    { __typename?: 'Group' }
+    & ListGroupFragment
+  )> };
 
 export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2044,14 +2203,20 @@ export type LayersQueryVariables = Exact<{
 }>;
 
 
-export type LayersQuery = { __typename?: 'Query', layers: Array<{ __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null }> };
+export type LayersQuery = { __typename?: 'Query', layers: Array<(
+    { __typename?: 'Layer' }
+    & ListLayerFragment
+  )> };
 
 export type DetailLayerQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailLayerQuery = { __typename?: 'Query', layer: { __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type DetailLayerQuery = { __typename?: 'Query', layer: (
+    { __typename?: 'Layer' }
+    & LayerFragment
+  ) };
 
 export type MyActiveMessagesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2063,7 +2228,10 @@ export type OrganizationQueryVariables = Exact<{
 }>;
 
 
-export type OrganizationQuery = { __typename?: 'Query', organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> } };
+export type OrganizationQuery = { __typename?: 'Query', organization: (
+    { __typename?: 'Organization' }
+    & OrganizationFragment
+  ) };
 
 export type ListOrganizationsQueryVariables = Exact<{
   filters?: InputMaybe<OrganizationFilter>;
@@ -2071,7 +2239,10 @@ export type ListOrganizationsQueryVariables = Exact<{
 }>;
 
 
-export type ListOrganizationsQuery = { __typename?: 'Query', organizations: Array<{ __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }> };
+export type ListOrganizationsQuery = { __typename?: 'Query', organizations: Array<(
+    { __typename?: 'Organization' }
+    & ListOrganizationFragment
+  )> };
 
 export type OrganizationOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -2087,19 +2258,28 @@ export type RedeemTokensQueryVariables = Exact<{
 }>;
 
 
-export type RedeemTokensQuery = { __typename?: 'Query', redeemTokens: Array<{ __typename?: 'RedeemToken', id: string, token: string, user: { __typename?: 'User', id: string, email?: string | null }, client?: { __typename?: 'Client', id: string, name: string, release?: { __typename?: 'Release', version: any, app: { __typename?: 'App', identifier: any } } | null } | null }> };
+export type RedeemTokensQuery = { __typename?: 'Query', redeemTokens: Array<(
+    { __typename?: 'RedeemToken' }
+    & ListRedeemTokenFragment
+  )> };
 
 export type GetRedeemTokenQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetRedeemTokenQuery = { __typename?: 'Query', redeemToken: { __typename?: 'RedeemToken', id: string, token: string, user: { __typename?: 'User', id: string, email?: string | null }, client?: { __typename?: 'Client', id: string, name: string, release?: { __typename?: 'Release', version: any, app: { __typename?: 'App', identifier: any } } | null } | null } };
+export type GetRedeemTokenQuery = { __typename?: 'Query', redeemToken: (
+    { __typename?: 'RedeemToken' }
+    & DetailRedeemTokenFragment
+  ) };
 
 export type ReleasesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ReleasesQuery = { __typename?: 'Query', releases: Array<{ __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> };
+export type ReleasesQuery = { __typename?: 'Query', releases: Array<(
+    { __typename?: 'Release' }
+    & ListReleaseFragment
+  )> };
 
 export type ReleaseQueryVariables = Exact<{
   identifier?: InputMaybe<Scalars['AppIdentifier']['input']>;
@@ -2109,21 +2289,30 @@ export type ReleaseQueryVariables = Exact<{
 }>;
 
 
-export type ReleaseQuery = { __typename?: 'Query', release: { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null }, clients: Array<{ __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> } };
+export type ReleaseQuery = { __typename?: 'Query', release: (
+    { __typename?: 'Release' }
+    & DetailReleaseFragment
+  ) };
 
 export type DetailReleaseQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailReleaseQuery = { __typename?: 'Query', release: { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null }, clients: Array<{ __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> } };
+export type DetailReleaseQuery = { __typename?: 'Query', release: (
+    { __typename?: 'Release' }
+    & DetailReleaseFragment
+  ) };
 
 export type RoleQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type RoleQuery = { __typename?: 'Query', role: { __typename?: 'Role', id: string, identifier: string, description: string } };
+export type RoleQuery = { __typename?: 'Query', role: (
+    { __typename?: 'Role' }
+    & RoleFragment
+  ) };
 
 export type ListRolesQueryVariables = Exact<{
   filters?: InputMaybe<RoleFilter>;
@@ -2131,7 +2320,10 @@ export type ListRolesQueryVariables = Exact<{
 }>;
 
 
-export type ListRolesQuery = { __typename?: 'Query', roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }> };
+export type ListRolesQuery = { __typename?: 'Query', roles: Array<(
+    { __typename?: 'Role' }
+    & ListRoleFragment
+  )> };
 
 export type RoleOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -2159,7 +2351,13 @@ export type GlobalSearchQueryVariables = Exact<{
 }>;
 
 
-export type GlobalSearchQuery = { __typename?: 'Query', users?: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, groups?: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }> };
+export type GlobalSearchQuery = { __typename?: 'Query', users?: Array<(
+    { __typename?: 'User' }
+    & ListUserFragment
+  )>, groups?: Array<(
+    { __typename?: 'Group' }
+    & ListGroupFragment
+  )> };
 
 export type ListServiceInstancesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -2167,14 +2365,20 @@ export type ListServiceInstancesQueryVariables = Exact<{
 }>;
 
 
-export type ListServiceInstancesQuery = { __typename?: 'Query', serviceInstances: Array<{ __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> }> };
+export type ListServiceInstancesQuery = { __typename?: 'Query', serviceInstances: Array<(
+    { __typename?: 'ServiceInstance' }
+    & ListServiceInstanceFragment
+  )> };
 
 export type GetServiceInstanceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetServiceInstanceQuery = { __typename?: 'Query', serviceInstance: { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, allowedGroups: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }>, deniedGroups: Array<{ __typename?: 'Group', id: string, name: string, profile?: { __typename?: 'GroupProfile', id: string, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } | null }>, mappings: Array<{ __typename?: 'ServiceInstanceMapping', id: string, key: string, optional: boolean, instance: { __typename?: 'ServiceInstance', id: string, release: { __typename?: 'ServiceRelease', version: string, service: { __typename?: 'Service', identifier: any, id: string, description?: string | null, name: string } }, allowedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }>, deniedUsers: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> }, client: { __typename?: 'Client', id: string, name: string, kind: ClientKind, user?: { __typename?: 'User', id: string, username: string } | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, node?: { __typename?: 'Device', id: string, name?: string | null } | null, release?: { __typename?: 'Release', version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: { __typename?: 'App', id: string, identifier: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null } }>, aliases: Array<{ __typename?: 'InstanceAlias', host?: string | null, port?: number | null, ssl: boolean, challenge: string, kind: string }>, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type GetServiceInstanceQuery = { __typename?: 'Query', serviceInstance: (
+    { __typename?: 'ServiceInstance' }
+    & ServiceInstanceFragment
+  ) };
 
 export type ListServicesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -2182,33 +2386,48 @@ export type ListServicesQueryVariables = Exact<{
 }>;
 
 
-export type ListServicesQuery = { __typename?: 'Query', services: Array<{ __typename?: 'Service', identifier: any, id: string, name: string, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null }> };
+export type ListServicesQuery = { __typename?: 'Query', services: Array<(
+    { __typename?: 'Service' }
+    & ListServiceFragment
+  )> };
 
 export type GetServiceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetServiceQuery = { __typename?: 'Query', service: { __typename?: 'Service', identifier: any, id: string, name: string, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+export type GetServiceQuery = { __typename?: 'Query', service: (
+    { __typename?: 'Service' }
+    & ServiceFragment
+  ) };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null, groups: Array<{ __typename?: 'Group', id: string, name: string }>, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', identifier: string, id: string }>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> } };
+export type MeQuery = { __typename?: 'Query', me: (
+    { __typename?: 'User' }
+    & DetailUserFragment
+  ) };
 
 export type UserQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type UserQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null, groups: Array<{ __typename?: 'Group', id: string, name: string }>, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', identifier: string, id: string }>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> } };
+export type UserQuery = { __typename?: 'Query', user: (
+    { __typename?: 'User' }
+    & DetailUserFragment
+  ) };
 
 export type DetailUserQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DetailUserQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null, groups: Array<{ __typename?: 'Group', id: string, name: string }>, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', identifier: string, id: string }>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> } };
+export type DetailUserQuery = { __typename?: 'Query', user: (
+    { __typename?: 'User' }
+    & DetailUserFragment
+  ) };
 
 export type UsersQueryVariables = Exact<{
   filters?: InputMaybe<UserFilter>;
@@ -2216,7 +2435,10 @@ export type UsersQueryVariables = Exact<{
 }>;
 
 
-export type UsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', username: string, firstName?: string | null, lastName?: string | null, email?: string | null, avatar?: string | null, id: string, profile: { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } }> };
+export type UsersQuery = { __typename?: 'Query', users: Array<(
+    { __typename?: 'User' }
+    & ListUserFragment
+  )> };
 
 export type UserOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -2229,7 +2451,10 @@ export type UserOptionsQuery = { __typename?: 'Query', options: Array<{ __typena
 export type ProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProfileQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null } };
+export type ProfileQuery = { __typename?: 'Query', me: (
+    { __typename?: 'User' }
+    & MeUserFragment
+  ) };
 
 export const InstanceAliasFragmentDoc = gql`
     fragment InstanceAlias on InstanceAlias {

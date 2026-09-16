@@ -157,12 +157,7 @@ export const AgentStatesPage = asDetailQueryRoute(useAgentQuery, ({ data, id }) 
 
   return (
     <RekuestAgent.ModelPage
-      title={
-        <div className="flex flex-row items-center gap-2">
-          {data?.agent?.name}
-          <span className="text-sm font-light text-muted-foreground">- States</span>
-        </div>
-      }
+      title={`${data?.agent?.name} — States`}
       object={data.agent}
     >
       <div className="flex h-full flex-col gap-4 p-6">

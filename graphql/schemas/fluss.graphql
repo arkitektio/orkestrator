@@ -906,10 +906,10 @@ input GraphNodeInput {
   appFilter: String = null
   autoResolvable: Boolean! = false
   constants: [ArgPortInput!] = null
-  constantsMap: ValueMap
+  constantsMap: ValueMap = null
   description: String = null
   deviceFilter: String = null
-  globalsMap: ValueMap
+  globalsMap: ValueMap = null
   hash: String = null
   hello: String = null
   id: String!

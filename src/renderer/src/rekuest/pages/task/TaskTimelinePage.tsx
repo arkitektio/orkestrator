@@ -9,7 +9,6 @@ import {
 } from "@/rekuest/api/graphql";
 import { ChildTaskUpdater } from "@/rekuest/components/updaters/ChildTaskUpdater";
 import { GanttTimeline } from "@/rekuest/components/timeline/GanttTimeline";
-import Timestamp from "@/components/ui/timestamp";
 import { useReassign } from "@/rekuest/hooks/useReassign";
 import { isCancelable, isInterruptable } from "@/rekuest/lib/taskStatus";
 
@@ -24,14 +23,7 @@ export const TaskTimelinePage = asDetailQueryRoute(
 
     return (
       <RekuestTask.ModelPage
-        title={
-          <div className="flex flex-row gap-2">
-            {data?.task?.action.name}
-            <p className="text-md font-light text-muted-foreground">
-              <Timestamp date={data.task.createdAt} relative />
-            </p>
-          </div>
-        }
+        title={data?.task?.action.name}
         object={data.task}
         pageActions={
           <div className="flex gap-2">

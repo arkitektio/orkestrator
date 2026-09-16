@@ -1,4 +1,3 @@
-import { CommandMenu } from "@/command/Menu";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { HelpSidebar } from "@/components/sidebars/help";
@@ -50,7 +49,6 @@ const Page = () => {
         </Sidebars.Tab>
       </Sidebars>
     }>
-      <CommandMenu />
       <ProjectList />
     </PageLayout>
   );

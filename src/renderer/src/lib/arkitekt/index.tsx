@@ -19,7 +19,13 @@ import {
   useService,
   useServiceState,
 } from "@/lib/arkitekt/provider";
-import { useSelfService } from "./hooks";
+import {
+  useActiveProfile,
+  useActiveProfileId,
+  useProfiles,
+  useSelfService,
+  useSwitchingProfileId,
+} from "./hooks";
 // When using the Tauri API npm package:
 
 export const buildGuard =
@@ -100,6 +106,16 @@ export const buildArkitekt = <T extends ServiceBuilderMap, S extends ServiceBuil
     useConnect: () => useArkitektActions().connect,
     useDisconnect: () => useArkitektActions().disconnect,
     useReconnect: () => useArkitektActions().reconnect,
+    // Profiles: several approved logins, parked side by side. Switching between
+    // them is local — see `fakts/profileStorageSchema.ts`.
+    useProfiles,
+    useActiveProfile,
+    useActiveProfileId,
+    useSwitchingProfileId,
+    useSwitchProfile: () => useArkitektActions().switchProfile,
+    useRemoveProfile: () => useArkitektActions().removeProfile,
+    useForgetAllProfiles: () => useArkitektActions().forgetAllProfiles,
+    useSetProfileIdentity: () => useArkitektActions().setProfileIdentity,
     useReportStatus: () => useArkitektActions().reportStatus,
     useCancelConnection: () => useArkitektActions().cancelConnection,
     useManifest: () => realManifest,

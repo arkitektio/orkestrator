@@ -14,7 +14,7 @@ export default asDetailQueryRoute(
     const broadcast = data?.soloBroadcast?.id;
     return (
       <LovekitSoloBroadcast.ModelPage
-        title={data?.soloBroadcast.id}
+        title={data?.soloBroadcast.title || "Broadcast"}
         object={data.soloBroadcast}
         pageActions={
           <div className="flex flex-row gap-2">

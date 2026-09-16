@@ -1,5 +1,5 @@
 import { useRekuest } from "@/app/Arkitekt";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   MyTasksDocument,
   MyTasksQuery,
@@ -22,7 +22,10 @@ import {
   hydrateAndInsertMyTask,
   writeTaskEventToCache,
 } from "../../lib/taskCache";
-import { notify as notifyTask } from "../../lib/taskNotifications";
+import {
+  notify as notifyTask,
+  notifyMany as notifyTasks,
+} from "../../lib/taskNotifications";
 
 export { registeredCallbacks } from "../../lib/taskTracker";
 
@@ -34,7 +37,29 @@ export const TaskUpdater = () => {
   // a full reload) to seed the list before any view renders. The subscription
   // below keeps the cache live afterwards, and every consumer reads from cache
   // (`useTasks` is cache-first) so they never re-query and clobber it.
-  useMyTasksQuery({ fetchPolicy: "cache-and-network" });
+  const { data, loading } = useMyTasksQuery({
+    fetchPolicy: "cache-and-network",
+  });
+
+  // The notification store lives in memory and the subscription only reports
+  // tasks created from now on, so after a reload the rail's task island was
+  // empty even with tasks still running. Seed it ONCE from the first settled
+  // result: re-seeding on every cache change would re-surface tasks that a
+  // component deliberately tracks locally (see the `registeredCallbacks` skip
+  // below).
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (seeded.current || loading || !data) return;
+    seeded.current = true;
+    const running = data.myTasks
+      .filter((task) => !task.isDone && !isTerminalEvent(task.latestEventKind))
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
+      .map((task) => task.id);
+    notifyTasks(running);
+  }, [data, loading]);
 
   useEffect(() => {
     if (!client) return undefined;

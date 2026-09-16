@@ -17,6 +17,9 @@ generates:
       withHooks: true
       reactApolloVersion: 3
       apolloReactHooksImportFrom: "@/lib/lok/hooks"
+      # Reference fragment types by name instead of inlining them: deep fragments
+      # otherwise blow graphql.ts up to many MB and stall tsc.
+      inlineFragmentTypes: combine
   src/renderer/src/lok-next/graphql.schema.json:
     plugins:
       - "introspection"

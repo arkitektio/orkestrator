@@ -613,11 +613,7 @@ const TPage = asDetailQueryRoute(
 
     return (
       <RekuestImplementation.ModelPage
-        title={
-          <>
-            {data.implementation.action.name} @ {data.implementation.interface}
-          </>
-        }
+        title={`${data.implementation.action.name} @ ${data.implementation.interface}`}
         object={data.implementation}
         additionalSidebars={
           <Sidebars.Tab label="Stats">

@@ -1,16 +1,6 @@
-import { Arkitekt, moduleRegistry } from "@/app/Arkitekt";
+import { Arkitekt, Guard, moduleRegistry } from "@/app/Arkitekt";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { DroppableNavLink } from "@/components/ui/link";
-import { NavigationMenuLink } from "@/components/ui/navigation-menu";
 import {
   Popover,
   PopoverContent,
@@ -30,71 +20,27 @@ import {
 } from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import { aliasToHttpPath } from "@/lib/arkitekt/alias/helpers";
-import { Me, Username } from "@/lok-next/components/Me";
-import { useDebug } from "@/providers/debug/DebugContext";
-import { useMyContextQuery } from "@/lok-next/api/graphql";
-import { ChatBubbleIcon, DashIcon, HomeIcon, ReloadIcon } from "@radix-ui/react-icons";
 import {
-  Bug,
-  ChevronUp,
-  Database,
-  Podcast,
+  Home,
   RefreshCw,
-  Settings,
-  ShoppingBasket,
-  Users2,
-  Workflow,
   CheckCircle,
   XCircle,
   Clock,
 } from "lucide-react";
 import React from "react";
-import { BsLightning } from "react-icons/bs";
-import { GoWorkflow } from "react-icons/go";
-import { IconContext } from "react-icons/lib";
-import { MdStream } from "react-icons/md";
-import { PiDatabaseLight, PiGraph } from "react-icons/pi";
-import { TbBugOff } from "react-icons/tb";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ArkitektLogo } from "../logos/ArkitektLogo";
-import { BackLogo } from "../logos/BackLogo";
-import { Badge } from "@/components/ui/badge";
+import { matchIcon } from "./moduleIcons";
+import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHover";
+import RailPins from "./RailPins";
+import RailTabs from "./RailTabs";
+import RailFooter from "./RailFooter";
+import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
 
 
 export type INavigationBarProps = {
   children?: React.ReactNode;
 };
 
-const matchIcon = (key: string) => {
-  switch (key) {
-    case "rekuest":
-      return <Podcast className="w-8 h-8 mx-auto text-foreground" />;
-    case "mikro":
-      return <Database className="w-8 h-8 mx-auto text-foreground" />;
-    case "omero_ark":
-      return <PiDatabaseLight className="w-8 h-8 mx-auto text-foreground" />;
-    case "fluss":
-      return <Workflow className="w-8 h-8 mx-auto text-foreground" />;
-    case "lok":
-      return <Users2 className="w-8 h-8 mx-auto text-foreground" />;
-    case "settings":
-      return <GoWorkflow className="w-8 h-8 mx-auto text-foreground" />;
-    case "kabinet":
-      return <ShoppingBasket className="w-8 h-8 mx-auto text-foreground" />;
-    case "kraph":
-      return <PiGraph className="w-8 h-8 mx-auto text-foreground" />;
-    case "alpaka":
-      return <ChatBubbleIcon className="w-8 h-8 mx-auto text-foreground p-[0.5]" />;
-    case "dokuments":
-      return <DashIcon className="w-8 h-8 mx-auto text-foreground" />;
-    case "lovekit":
-      return <MdStream className="w-8 h-8 mx-auto text-foreground p-[0.5]" />;
-    case "elektro":
-      return <BsLightning className="w-8 h-8 mx-auto text-foreground" />;
-    default:
-      return <HomeIcon className="w-8 h-8 mx-auto text-foreground" />;
-  }
-};
+
 
 const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
   const availableServices = Arkitekt.useAvailableServices();
@@ -225,11 +171,9 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
 const ModuleNavItem = React.memo(({
   moduleKey,
   moduleState,
-  mobile = false,
 }: {
   moduleKey: string;
   moduleState?: ReturnType<typeof Arkitekt.useAvailableModules>[number];
-  mobile?: boolean;
 }) => {
   const { retryModule } = Arkitekt.useActions();
 
@@ -243,37 +187,66 @@ const ModuleNavItem = React.memo(({
   const isInvalid = moduleState.status === "invalid";
 
   const buttonContent = (
-    <div className="relative flex items-center justify-center">
-      <div className={cn(isInvalid ? "opacity-35 grayscale" : "")}>{icon}</div>
+    <div className={cn("flex items-center justify-center", isInvalid && "opacity-35 grayscale")}>
+      {icon}
     </div>
   );
+
+  /**
+   * A small recessed tile, as a browser gives its pinned sites.
+   *
+   * Inset rather than raised on purpose: the rail is the window's own surface,
+   * and a tile pressed INTO it reads as part of the chrome, where a raised chip
+   * would read as content sitting on top of it. The active one lifts out of the
+   * recess — lighter fill, brand ring — which is the same language the pinned
+   * rows below use, so "where I am" looks the same wherever it appears.
+   */
+  const tileClass = (active: boolean) =>
+    cn(
+      // Fills its grid cell, so the tiles line up whatever the rail's width.
+      "flex h-9 w-full cursor-pointer items-center justify-center rounded-lg transition-colors",
+      "text-muted-foreground shadow-[inset_0_1px_2px_rgb(0_0_0/0.10)] ring-1",
+      active
+        ? "bg-background/80 text-foreground ring-primary/35 shadow-none"
+        : "bg-background/25 ring-border/30 hover:bg-background/55 hover:text-foreground",
+    );
 
   if (isInteractive) {
     return (
       <ContextMenu key={moduleKey}>
         <ContextMenuTrigger asChild>
-          <DroppableNavLink to={moduleState.route} className={mobile ? "cursor-pointer" : undefined}>
-            {({ isActive }) => (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <NavigationMenuLink
-                    asChild
-                    active={isActive}
-                    className={cn(
-                      "flex-1 cursor-pointer",
-                      isActive ? "bg-primary" : "",
-                      isChecking ? "opacity-80" : "",
-                    )}
-                  >
-                    {buttonContent}
-                  </NavigationMenuLink>
-                </TooltipTrigger>
-                <TooltipContent side={mobile ? "top" : "right"}>
-                  {moduleState.definition.label || moduleState.key}
-                </TooltipContent>
-              </Tooltip>
-            )}
+          <ModuleNavHover
+            moduleKey={moduleKey}
+            ready={moduleState.status === "ready"}
+            label={moduleState.definition.label || moduleState.key}
+            icon={icon}
+          >
+          <DroppableNavLink to={moduleState.route} className="block">
+            {({ isActive }) => {
+              const tile = (
+                <span
+                  data-active={isActive}
+                  className={cn(tileClass(isActive), isChecking && "opacity-80")}
+                >
+                  {buttonContent}
+                </span>
+              );
+              // The hover card already names the module in its header; a
+              // tooltip on top of it would say the same thing in the same spot.
+              if (hasModuleNav(moduleKey, moduleState.status === "ready")) {
+                return tile;
+              }
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>{tile}</TooltipTrigger>
+                  <TooltipContent side="right">
+                    {moduleState.definition.label || moduleState.key}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }}
           </DroppableNavLink>
+          </ModuleNavHover>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-auto">
           <ContextMenuLabel>{moduleState.definition.label || moduleState.key}</ContextMenuLabel>
@@ -302,19 +275,19 @@ const ModuleNavItem = React.memo(({
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                 className={cn("data-[active=true]:focus:bg-muted data-[active=true]:hover:bg-primary data-[active=true]:bg-muted/50 focus-visible:ring-ring/30 hover:bg-muted focus:bg-muted flex items-center gap-1.5 rounded-lg p-2 text-xs/relaxed transition-all outline-none focus-visible:ring-[2px] focus-visible:outline-1 [&_svg:not([class*='size-'])]:size-4")}
-                disabled={!isInteractive}
+                  className={cn(tileClass(false), "outline-none focus-visible:ring-2 focus-visible:ring-ring/30")}
+                  disabled={!isInteractive}
                 >
                   {buttonContent}
                 </button>
               </PopoverTrigger>
             </ContextMenuTrigger>
           </TooltipTrigger>
-        <TooltipContent side={mobile ? "top" : "right"}>
+        <TooltipContent side="right">
           {moduleState.definition.label || moduleState.key}
         </TooltipContent>
       </Tooltip>
-      <PopoverContent side={mobile ? "top" : "right"}>
+      <PopoverContent side="right">
         <PopoverHeader>
           <PopoverTitle>{moduleState.definition.label || moduleState.key}</PopoverTitle>
           <PopoverDescription>
@@ -361,109 +334,8 @@ const ModuleNavItem = React.memo(({
 });
 ModuleNavItem.displayName = "ModuleNavItem";
 
-const SettingsNavItem = ({ mobile = false }: { mobile?: boolean }) => {
-  return (
-    <DroppableNavLink to="/settings" className={mobile ? "cursor-pointer" : undefined}>
-      {({ isActive }) => (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <NavigationMenuLink
-              asChild
-              active={isActive}
-              className={cn(
-                "flex-1 cursor-pointer",
-                isActive ? "bg-primary" : "",
-              )}
-            >
-              <div className="relative flex items-center justify-center">
-                <Settings className="w-8 h-8 mx-auto text-foreground" />
-              </div>
-            </NavigationMenuLink>
-          </TooltipTrigger>
-          <TooltipContent side={mobile ? "top" : "right"}>
-            Settings
-          </TooltipContent>
-        </Tooltip>
-      )}
-    </DroppableNavLink>
-  );
-};
-
-const ActiveProfileMenuLabel = ({ fakts }: { fakts: any }) => {
-  const { data: contextData } = useMyContextQuery();
-
-  return (
-    <div className="flex flex-col space-y-2.5">
-      <div className="flex items-center justify-between">
-        <span className="font-semibold text-sm">
-          <Username />
-        </span>
-        <NavLink
-          to="lok"
-          className="text-[10px] text-muted-foreground hover:text-foreground border rounded px-1.5 py-0.5 transition-colors"
-        >
-          Manage
-        </NavLink>
-      </div>
-
-      <div className="flex flex-col gap-1.5 pt-1.5 border-t border-border/40">
-        {fakts?.self?.deployment_name && (
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="font-medium text-foreground/80">Composition:</span>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal truncate max-w-[120px]" title={fakts.self.deployment_name}>
-              {fakts.self.deployment_name}
-            </Badge>
-          </div>
-        )}
-        {contextData?.mycontext?.organization && (
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="font-medium text-foreground/80">Organization:</span>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal truncate max-w-[120px]" title={contextData.mycontext.organization.name}>
-              {contextData.mycontext.organization.name}
-            </Badge>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const ProfileMenuLabel = ({ hasLokProfile, fakts }: { hasLokProfile: boolean; fakts: any }) => {
-  if (!hasLokProfile) {
-    return (
-      <div className="flex flex-col space-y-2.5">
-        <div className="flex items-center justify-between">
-          <span className="font-semibold text-sm">Guest</span>
-        </div>
-        {fakts?.self?.deployment_name && (
-          <div className="flex flex-col gap-1.5 pt-1.5 border-t border-border/40">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-medium text-foreground/80">Composition:</span>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal truncate max-w-[120px]" title={fakts.self.deployment_name}>
-                {fakts.self.deployment_name}
-              </Badge>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return <ActiveProfileMenuLabel fakts={fakts} />;
-};
-
 const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
-  const disconnect = Arkitekt.useDisconnect();
-  const reconnect = Arkitekt.useReconnect();
-  const configurationIssues = Arkitekt.useConfigurationIssues();
   const availableModules = Arkitekt.useAvailableModules();
-  const connection = Arkitekt.useConnection();
-  const hasLokProfile = Boolean(connection?.selfService);
-  const { debug, setDebug } = useDebug();
-  const fakts = Arkitekt.useFakts()
-
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const moduleOrder = React.useMemo(
     () =>
@@ -473,48 +345,44 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
     [availableModules],
   );
 
-  const onClick = () => {
-    if (window.electron) {
-      navigate(-1);
-    } else {
-      navigate("/");
-    }
-  };
-
-  const reload = () => {
-    if (window.api) {
-      window.api.reloadWindow();
-    } else {
-      window.location.reload();
-    }
-  };
+  const readyModules = React.useMemo(
+    () => availableModules.filter((entry) => entry.status === "ready").map((entry) => entry.key),
+    [availableModules],
+  );
 
   return (
     <>
-      <div
-        className="flex-initial h-10 w-10 justify-center items-center flex cursor-pointer mb-3"
-        onClick={onClick}
-      >
-        {location.pathname === "/" ? (
-          <ArkitektLogo
-            width={"100%"}
-            height={"100%"}
-            cubeColor={"var(--primary)"}
-            aColor={"var(--foreground)"}
-            strokeColor={"var(--foreground)"}
-          />
-        ) : (
-          <BackLogo
-            width={"100%"}
-            height={"100%"}
-            cubeColor={"var(--primary)"}
-            aColor={"var(--foreground)"}
-            strokeColor={"var(--foreground)"}
-          />
-        )}
-      </div>
 
-      <div className="flex-grow flex-row md:flex-col flex justify-start md:gap-2 items-center gap-2 overflow-hidden md:flex hidden">
+      {/* Modules as a wrapping icon grid rather than a tall column: in a wide
+          rail the vertical run is worth more to the module's own navigation and
+          to the open tabs below than to twelve stacked icons. `auto-fit` with a
+          `1fr` max stretches the tiles across the full rail width and wraps to
+          a new row only once a tile would drop below its minimum size. */}
+      <ModuleNavHoverGroup preload={readyModules}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(2.25rem,1fr))] gap-1 px-2 pb-3 shrink-0 mt-1">
+        {/* The dashboard, first. The logo that used to double as "home" is
+            gone from the rail, so this is now the one place to reach it. */}
+        <DroppableNavLink to="/" end aria-label="Home" className="block">
+          {({ isActive }) => (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  data-active={isActive}
+                  className={cn(
+                    "flex h-9 w-full cursor-pointer items-center justify-center rounded-lg ring-1 transition-colors",
+                    "shadow-[inset_0_1px_2px_rgb(0_0_0/0.10)]",
+                    isActive
+                      ? "bg-background/80 text-foreground ring-primary/35 shadow-none"
+                      : "bg-background/25 text-muted-foreground ring-border/30 hover:bg-background/55 hover:text-foreground",
+                  )}
+                >
+                  <Home className="h-4 w-4" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right">Home</TooltipContent>
+            </Tooltip>
+          )}
+        </DroppableNavLink>
         {moduleOrder.map((moduleKey) => (
           <ModuleNavItem
             key={moduleKey}
@@ -523,93 +391,24 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           />
         ))}
       </div>
+      </ModuleNavHoverGroup>
 
-      <div className="flex-grow block md:hidden">
-
-        <Drawer>
-          <DrawerTrigger asChild>
-            <Button variant="ghost" className="w-full h-full flex justify-start items-start">
-              <IconContext.Provider value={{ className: "w-8 h-8 mx-auto text-foreground" }}>
-                <ChevronUp />
-              </IconContext.Provider>
-            </Button>
-          </DrawerTrigger>
-          <DrawerContent className="p-2 mb-2 border-seperator grid grid-cols-1 gap-2">
-            {moduleOrder.map((moduleKey) => (
-              <div key={moduleKey} className="flex flex-col rounded-md border p-2">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-medium">
-                    {moduleRegistry[moduleKey]?.label || moduleKey}
-                  </div>
-                  <ModuleNavItem
-                    moduleKey={moduleKey}
-                    moduleState={availableModules.find((entry) => entry.key === moduleKey)}
-                    mobile
-                  />
-                </div>
-              </div>
-            ))}
-            <div className="flex flex-col rounded-md border p-2">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-medium">
-                  Settings
-                </div>
-                <SettingsNavItem mobile />
-              </div>
-            </div>
-          </DrawerContent>
-        </Drawer>
+      {/* Pinned routes. A module's own links live on the hover over its icon
+          above, not here — the vertical run belongs to what the user chose to
+          keep. */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* What is open now, then what is kept: one list, two tenses. */}
+        <RailTabs />
+        <RailPins />
       </div>
 
-      <div className="flex-initial w-12 items-center flex flex-col justify-center">
-        <SettingsNavItem />
-        <DropdownMenu>
-          <DropdownMenuTrigger className="text-foreground h-12 w-12">
-            {hasLokProfile ? <Me /> : <div className="h-12 w-12 rounded-full border" />}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" className="w-64 mb-2 border-border">
-            <DropdownMenuLabel className="font-normal">
-              <ProfileMenuLabel hasLokProfile={hasLokProfile} fakts={fakts} />
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {configurationIssues.length > 0 && (
-              <>
-                <div className="px-2 py-1 text-xs text-amber-600 dark:text-amber-400">
-                  Configuration issues detected
-                </div>
-                {configurationIssues.slice(0, 3).map((issue) => (
-                  <div key={issue} className="px-2 py-1 text-xs text-muted-foreground">
-                    {issue}
-                  </div>
-                ))}
-                <DropdownMenuSeparator />
-              </>
-            )}
-            <DropdownMenuItem onClick={() => setDebug(!debug)}>
-              {debug ? <Bug className="mr-2 h-4 w-4" /> : <TbBugOff className="mr-2 h-4 w-4" />}
-              <span>Debug Mode</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <DroppableNavLink key={"Settings"} to={"settings"} className="w-full cursor-pointer flex items-center">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DroppableNavLink>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <div className="flex flex-row gap-2 w-full p-2">
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => void disconnect()}>
-                Disconnect
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => void reconnect()}>
-                Reconnect
-              </Button>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Button variant="ghost" className="h-8 w-8" onClick={reload}>
-          <ReloadIcon />
-        </Button>
-      </div>
+      {/* Running tasks, where a browser puts its now-playing control: in the
+          chrome that is always there, rather than floating over the page. */}
+      <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
+        <TaskNotificationStack />
+      </Guard.Rekuest>
+
+      <RailFooter />
     </>
   );
 };

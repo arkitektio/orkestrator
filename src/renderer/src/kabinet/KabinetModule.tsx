@@ -2,6 +2,8 @@ import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
+import AppStoreDetailPage from "./pages/AppStoreDetailPage";
+import AppStorePage from "./pages/AppStorePage";
 import BackendPage from "./pages/BackendPage";
 import DefinitionPage from "./pages/DefinitionPage";
 import FlavourPage from "./pages/FlavourPage";
@@ -21,6 +23,8 @@ export const KabinetModule: React.FC<Props> = () => {
     <Guard.Kabinet unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
+          <Route path="app-store" element={<AppStorePage />} />
+          <Route path="app-store/:identifier" element={<AppStoreDetailPage />} />
           <Route path="repos" element={<ReposPage />} />
           <Route path="repos/:id" element={<RepoPage />} />
           <Route path="pods" element={<PodsPage />} />

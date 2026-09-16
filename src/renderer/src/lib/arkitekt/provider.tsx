@@ -9,15 +9,25 @@ import { Manifest } from "./fakts/manifestSchema";
 import {
   clearStoredArkitektStorage,
   StoredArkitektSession,
-  StoredArkitektSessionSchema,
-  loadStoredArkitektSession,
-  loadStoredEndpoint,
-  writeStoredAliasMap,
-  writeStoredArkitektSession,
-  writeStoredEndpoint,
-  writeStoredFakts,
-  writeStoredToken,
 } from "./fakts/sessionStorageSchema";
+import {
+  emptyProfileBook,
+  createProfileFromSession,
+  getActiveProfile,
+  loadStoredProfileBook,
+  markProfileOk,
+  markProfileStale,
+  reidentifyProfile,
+  removeProfile as removeProfileFromBook,
+  setActiveProfile,
+  setLastEndpoint,
+  updateProfileLabel,
+  updateProfileSession,
+  upsertProfile,
+  writeStoredProfileBook,
+  deriveProfileId,
+  type StoredProfileBook,
+} from "./fakts/profileStorageSchema";
 import {
   useArkitekt,
   useArkitektActions,
@@ -50,6 +60,10 @@ import {
   shouldRefreshToken,
 } from "./runtime/auth";
 import { disposeConnection, instantiateConnection, type ServiceMap } from "./runtime/connection";
+import {
+  describeRefreshFailure,
+  refreshProfileToken,
+} from "./runtime/profileAuth";
 import {
   buildConfigurationIssues,
   buildModuleStates,
@@ -125,8 +139,33 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         buildServiceStates(serviceBuilderMap, null),
       ),
       storedSession: null,
+      profileBook: emptyProfileBook(),
+      switchingProfileId: null,
     });
   });
+
+  /**
+   * The single writer of the profile book.
+   *
+   * Takes an updater rather than a value so concurrent writers compose off the
+   * latest book instead of clobbering each other — a token refresh and a
+   * `validateService` alias update routinely land within milliseconds. Note it
+   * deliberately does NOT touch `storedSession`: that stays owned by
+   * `hydrateConnection` (and the rotation), so the session and the live
+   * connection are only ever swapped together.
+   */
+  const persistBook = useCallback(
+    async (
+      update: (book: StoredProfileBook) => StoredProfileBook,
+    ): Promise<StoredProfileBook> => {
+      const next = update(store.getState().profileBook);
+      store.setState({ profileBook: next });
+      const storage = await storageProviderRef.current();
+      writeStoredProfileBook(next, storage);
+      return next;
+    },
+    [store],
+  );
 
   // Wire up the locked refreshToken now that store exists
   if (!refreshInitialized.current) {
@@ -136,7 +175,18 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     // The coalescing + forced-vs-raced rule lives in TokenRotation
     // (runtime/tokenRotation.ts); this callback is just the round-trip.
     const rotation = new TokenRotation(async () => {
-      const session = store.getState().storedSession;
+      const { storedSession: session, activeProfileId } = (() => {
+        const state = store.getState();
+        return {
+          storedSession: state.storedSession,
+          // Captured HERE, not read back after the round-trip: a switchProfile
+          // can land while this refresh is in flight, and the rotated token
+          // belongs to the profile it was minted for, not to whichever profile
+          // happens to be active when the response arrives.
+          activeProfileId: state.profileBook.activeProfileId,
+        };
+      })();
+
       if (!session) {
         console.error("[ArkitektProvider] No stored session available to refresh");
         throw new Error("No stored session available");
@@ -159,25 +209,35 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         // No envelope on the response means the server could not re-render it,
         // not that our config went away.
         const nextFakts = refreshedFakts ?? session.fakts;
-        const storage = await storageProviderRef.current();
 
         dlog("[ArkitektProvider] Token refresh succeeded");
         const nextSession = { ...session, token: nextToken, fakts: nextFakts };
-        writeStoredToken(nextToken, storage);
-        writeStoredArkitektSession(nextSession, storage);
 
-        const connection = store.getState().connection;
-        store.setState({
-          storedSession: nextSession,
-          connection: connection
-            ? {
-                ...connection,
-                token: nextToken,
-                fakts: nextFakts,
-                serviceInstanceMap: nextFakts.instances,
-              }
-            : connection,
-        });
+        if (activeProfileId) {
+          // `updateProfileSession` drops the write if the profile is gone —
+          // the user can remove a profile while its refresh is in flight.
+          await persistBook((book) =>
+            updateProfileSession(book, activeProfileId, nextSession),
+          );
+        }
+
+        // Only patch the LIVE connection if the profile we refreshed is still
+        // the live one. Otherwise this token belongs to a parked profile now,
+        // and it has already been written to that profile's slot above.
+        if (store.getState().profileBook.activeProfileId === activeProfileId) {
+          const connection = store.getState().connection;
+          store.setState({
+            storedSession: nextSession,
+            connection: connection
+              ? {
+                  ...connection,
+                  token: nextToken,
+                  fakts: nextFakts,
+                  serviceInstanceMap: nextFakts.instances,
+                }
+              : connection,
+          });
+        }
 
         return nextToken;
       } catch (refreshError) {
@@ -222,6 +282,15 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       storedSession?: StoredSession;
       connection?: ConnectedContext<T, S>;
       serviceStateOverrides?: Record<string, Partial<ServiceRuntimeState>>;
+      /**
+       * Drop the previous run's per-service health instead of carrying it
+       * forward. `buildServiceStates` inherits `status`, `errors` and
+       * `lastCheckedAt` from the states it is handed, which is right for a
+       * re-check of the SAME session and wrong across a profile switch: a
+       * perfectly healthy organization would otherwise inherit the previous
+       * one's "invalid" badges and its stale error strings.
+       */
+      resetServiceStates?: boolean;
     } = {},
     ) => {
       const session = overrides.storedSession !== undefined ? overrides.storedSession : current.storedSession;
@@ -231,7 +300,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         serviceBuilderMap,
         session,
         connection?.serviceMap as ServiceMap | undefined,
-        current.serviceStates,
+        overrides.resetServiceStates ? undefined : current.serviceStates,
         overrides.serviceStateOverrides,
       );
 
@@ -249,6 +318,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       storedSession?: StoredSession;
       connection?: ConnectedContext<T, S>;
       serviceStateOverrides?: Record<string, Partial<ServiceRuntimeState>>;
+      resetServiceStates?: boolean;
     } = {}) => deriveRuntimeState(store.getState(), overrides),
     [store, deriveRuntimeState],
   );
@@ -258,6 +328,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       session: StoredSession,
       manifestOverride?: EnhancedManifest,
       extras: Partial<AppContext<T, S>> = {},
+      { resetServiceStates = false }: { resetServiceStates?: boolean } = {},
     ) => {
       dlog("[ArkitektProvider] hydrateConnection called, session:", session ? "present" : "null");
       const activeManifest = manifestOverride ?? store.getState().manifest;
@@ -277,26 +348,11 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         storedSession: session,
         connection,
         manifest: activeManifest,
-        ...recompute({ storedSession: session, connection }),
+        ...recompute({ storedSession: session, connection, resetServiceStates }),
         ...extras,
       });
     },
     [store, serviceBuilderMap, selfServiceBuilder, recompute],
-  );
-
-  const stageStoredSession = useCallback(
-    (
-      session: StoredSession,
-      extras: Partial<AppContext<T, S>> = {},
-    ) => {
-      store.setState({
-        storedSession: session,
-        connection: undefined,
-        ...recompute({ storedSession: session, connection: undefined }),
-        ...extras,
-      });
-    },
-    [store, recompute],
   );
 
   const setBootstrapped = useCallback(
@@ -312,13 +368,17 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
 
   const setBootstrapError = useCallback(
     (message: string) => {
+      // `profileBook` is deliberately untouched: failing to bring ONE profile up
+      // is not a reason to forget the user's other logins, and the switcher
+      // renders from the book alone, so they stay one click away.
       store.setState({
         storedSession: null,
         connection: undefined,
         connecting: false,
         hasBootstrapped: true,
+        switchingProfileId: null,
         autoLoginError: message,
-        ...recompute({ storedSession: null, connection: undefined }),
+        ...recompute({ storedSession: null, connection: undefined, resetServiceStates: true }),
       });
     },
     [store, recompute],
@@ -341,33 +401,6 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     return enhancedManifest;
   }, [store, manifest]);
 
-  const loadValidatedStoredSession = useCallback(async (): Promise<StoredSession> => {
-    const storage = await storageProviderRef.current();
-    const loadedSession = loadStoredArkitektSession(storage);
-
-    if (!loadedSession) {
-      return null;
-    }
-
-    const parsedSession = StoredArkitektSessionSchema.safeParse(loadedSession);
-    if (parsedSession.success) {
-      return parsedSession.data;
-    }
-
-    // A session we can no longer read is a session we no longer have. Chiefly
-    // this is the fakts protocol-2 migration: sessions written by the old
-    // start/challenge/claim flow carry an `auth` block and no `client_id`, and
-    // nothing can be salvaged from them. Throwing here would strand the user on
-    // an error screen that survives reload, because the unreadable entries
-    // would stay in storage — so drop them and fall back to a fresh connect.
-    console.warn(
-      "[ArkitektProvider] Discarding unreadable stored session:",
-      parsedSession.error.issues,
-    );
-    clearStoredArkitektStorage(undefined, storage);
-    return null;
-  }, []);
-
   const validateService = useCallback(
     async (serviceKey: string) => {
       dlog("[ArkitektProvider] validateService started:", serviceKey);
@@ -376,6 +409,10 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
 
       const state = store.getState();
       const session = state.storedSession;
+      // Captured up front, like the token rotation: a switchProfile can land
+      // mid-validation, and a resolved alias belongs to the profile whose
+      // instance it was probed against.
+      const profileId = state.profileBook.activeProfileId;
       const serviceState = state.serviceStates[serviceKey];
       const instance = session?.fakts.instances[serviceKey];
 
@@ -414,6 +451,9 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
           const currentSession = current.storedSession;
           const currentInstance = currentSession?.fakts.instances[serviceKey];
           if (!currentSession || !currentInstance || currentInstance !== instance) {
+            return current;
+          }
+          if (current.profileBook.activeProfileId !== profileId) {
             return current;
           }
 
@@ -492,9 +532,11 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
           return;
         }
 
-        const storage = await storageProviderRef.current();
-        writeStoredAliasMap(nextPersistedSession.aliasMap, storage);
-        writeStoredArkitektSession(nextPersistedSession, storage);
+        if (profileId) {
+          await persistBook((book) =>
+            updateProfileSession(book, profileId, nextPersistedSession),
+          );
+        }
 
         dlog("[ArkitektProvider] validateService succeeded:", serviceKey, "alias:", alias);
       } catch (error) {
@@ -510,6 +552,9 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
 
           const currentInstance = current.storedSession?.fakts.instances[serviceKey];
           if (!currentInstance || currentInstance !== instance) {
+            return current;
+          }
+          if (current.profileBook.activeProfileId !== profileId) {
             return current;
           }
 
@@ -544,7 +589,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         removedService?.dispose?.();
       }
     },
-    [store, serviceBuilderMap, selfServiceBuilder, deriveRuntimeState],
+    [store, serviceBuilderMap, selfServiceBuilder, deriveRuntimeState, persistBook],
   );
 
   // ── actions ──
@@ -558,9 +603,10 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
 
       try {
         const enhancedManifest = await resolveEnhancedManifest();
-        const storage = await storageProviderRef.current();
         dlog("[ArkitektProvider] connect: manifest enhanced, node_id:", enhancedManifest.node_id);
-        writeStoredEndpoint(endpoint, storage);
+        // Recorded before the grant so a half-finished connect still leaves
+        // `reconnect()` somewhere to point.
+        await persistBook((book) => setLastEndpoint(book, endpoint));
 
         // One grant, one response: tokens and the rendered instances together.
         const { fakts, token: grantToken } = await flow({
@@ -569,7 +615,6 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
           manifest: enhancedManifest,
         });
         dlog("[ArkitektProvider] connect: fakts resolved, services:", Object.keys(fakts.instances || {}));
-        writeStoredFakts(fakts, storage);
 
         const token = normalizeToken(grantToken);
         const { aliasReports, aliasMap } = await buildAliases({
@@ -580,33 +625,44 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         });
         dlog("[ArkitektProvider] connect: aliases built, keys:", Object.keys(aliasMap));
 
-        writeStoredAliasMap({ aliasMap }, storage);
         await report(endpoint.base_url, token.access_token, {
           alias_reports: aliasReports,
           functional: Object.values(aliasReports).every((r) => r.valid),
         });
 
         const nextSession = { endpoint, fakts, token, aliasMap: { aliasMap } };
-        writeStoredToken(token, storage);
-        writeStoredArkitektSession(nextSession, storage);
+
+        // The grant cannot know which user or organization it just produced —
+        // that comes from lok's `mycontext` — so the profile starts on a
+        // provisional id and `setProfileIdentity` re-keys it (collapsing any
+        // duplicate) once lok answers.
+        const profile = createProfileFromSession(nextSession);
+        await persistBook((book) =>
+          setActiveProfile(upsertProfile(book, profile), profile.id),
+        );
 
         dlog("[ArkitektProvider] connect: session stored, hydrating connection...");
-        hydrateConnection(nextSession, enhancedManifest, {
-          connecting: false,
-          hasBootstrapped: true,
-          autoLoginError: undefined,
-        });
+        hydrateConnection(
+          nextSession,
+          enhancedManifest,
+          {
+            connecting: false,
+            hasBootstrapped: true,
+            switchingProfileId: null,
+            autoLoginError: undefined,
+          },
+          // A fresh grant is a different login: nothing the previous one learned
+          // about service health applies to it.
+          { resetServiceStates: true },
+        );
 
         dlog("[ArkitektProvider] connect: starting background health checks");
         // Background health checks
         void Promise.all(Object.keys(serviceBuilderMap).map((k) => validateService(k)));
       } catch (error) {
         console.error("[ArkitektProvider] connect failed:", error);
-        if (!prev.storedSession) {
-          const storage = await storageProviderRef.current();
-          clearStoredArkitektStorage(undefined, storage);
-        }
-
+        // Nothing to clean up: the grant only writes a profile once it has
+        // succeeded, and every other profile is none of this failure's business.
         store.setState({
           storedSession: prev.storedSession,
           connection: prev.connection,
@@ -624,31 +680,218 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         controllerRef.current = null;
       }
     },
-    [store, serviceBuilderMap, hydrateConnection, validateService, recompute, resolveEnhancedManifest],
+    [store, serviceBuilderMap, hydrateConnection, validateService, recompute, resolveEnhancedManifest, persistBook],
   );
 
+  /**
+   * Sign out of the CURRENT profile, keeping it in the book.
+   *
+   * This used to wipe the credentials outright. Now that the app can hold
+   * several logins, "sign out" means "stop acting as this one" — the profile
+   * stays one click away in the switcher, and `forgetAllProfiles` is the
+   * destructive door, worded as such.
+   */
   const disconnect = useCallback<AppFunctions["disconnect"]>(async () => {
-    dlog("[ArkitektProvider] disconnect called");
+    dlog("[ArkitektProvider] disconnect called (parking active profile)");
     controllerRef.current = null;
-    const storage = await storageProviderRef.current();
-    clearStoredArkitektStorage(undefined, storage);
-    hydrateConnection(null, store.getState().manifest, {
-      connecting: false,
-      hasBootstrapped: true,
-      autoLoginError: undefined,
-    });
-  }, [store, hydrateConnection]);
+    await persistBook((book) => setActiveProfile(book, null));
+    hydrateConnection(
+      null,
+      store.getState().manifest,
+      {
+        connecting: false,
+        hasBootstrapped: true,
+        switchingProfileId: null,
+        autoLoginError: undefined,
+      },
+      { resetServiceStates: true },
+    );
+  }, [store, hydrateConnection, persistBook]);
 
   const reconnect = useCallback<AppFunctions["reconnect"]>(async () => {
     dlog("[ArkitektProvider] reconnect called");
-    const storage = await storageProviderRef.current();
-    const endpoint = store.getState().storedSession?.endpoint || loadStoredEndpoint(storage);
+    const state = store.getState();
+    const endpoint = state.storedSession?.endpoint || state.profileBook.lastEndpoint;
     if (!endpoint) {
       console.error("[ArkitektProvider] reconnect failed: no endpoint found");
       throw new Error("No endpoint found in local storage");
     }
     await connect({ endpoint, controller: new AbortController() });
   }, [store, connect]);
+
+  /**
+   * Make an already-approved profile the live one.
+   *
+   * The ordering here is load-bearing, in two places:
+   *
+   *  1. The parked credential is PROVEN before anything is torn down. A parked
+   *     refresh token can have expired, been revoked, or already been rotated
+   *     away, and the deployment can simply be unreachable — tearing the live
+   *     connection down first would leave the user with a dead app and a browser
+   *     round-trip to get back. So the current profile keeps running (only the
+   *     switcher row spins) until the new token is in hand.
+   *  2. The rotated refresh token is PERSISTED before the connection is swapped.
+   *     Refresh tokens rotate on every use, so if the hydrate threw after a
+   *     successful refresh and we had not written, the parked profile would have
+   *     just lost its only refresh token and be permanently dead.
+   */
+  const switchProfile = useCallback<AppFunctions["switchProfile"]>(
+    async (profileId) => {
+      const state = store.getState();
+
+      if (state.switchingProfileId) {
+        dlog("[ArkitektProvider] switchProfile ignored, a switch is already running");
+        return;
+      }
+      if (state.profileBook.activeProfileId === profileId && state.connection) {
+        return;
+      }
+
+      const profile = state.profileBook.profiles[profileId];
+      if (!profile) {
+        throw new Error(`Unknown profile ${profileId}`);
+      }
+
+      dlog("[ArkitektProvider] switchProfile:", profileId);
+      store.setState({ switchingProfileId: profileId, autoLoginError: undefined });
+
+      try {
+        const manifest = await resolveEnhancedManifest();
+        const nextSession = await refreshProfileToken(profile);
+
+        // (2) — persist the rotation before the swap can throw.
+        await persistBook((book) =>
+          setActiveProfile(
+            updateProfileSession(markProfileOk(book, profileId), profileId, nextSession),
+            profileId,
+          ),
+        );
+
+        // The profile may have been removed while its refresh was in flight.
+        if (!store.getState().profileBook.profiles[profileId]) {
+          store.setState({ switchingProfileId: null });
+          return;
+        }
+
+        hydrateConnection(
+          nextSession,
+          manifest,
+          {
+            connecting: false,
+            hasBootstrapped: true,
+            switchingProfileId: null,
+            autoLoginError: undefined,
+          },
+          { resetServiceStates: true },
+        );
+
+        void Promise.all(Object.keys(serviceBuilderMap).map((k) => validateService(k)));
+      } catch (error) {
+        const { kind, message } = describeRefreshFailure(error, profile);
+        console.error("[ArkitektProvider] switchProfile failed:", kind, error);
+
+        // Only an answer from the token endpoint marks a profile stale. A
+        // network blip says nothing about the credential, and marking on one
+        // would greet a user coming back from a tunnel with a list of
+        // organizations all claiming to be signed out.
+        if (kind === "expired") {
+          await persistBook((book) => markProfileStale(book, profileId, message));
+        }
+
+        store.setState({ switchingProfileId: null, autoLoginError: message });
+        throw error;
+      }
+    },
+    [
+      store,
+      persistBook,
+      hydrateConnection,
+      validateService,
+      serviceBuilderMap,
+      resolveEnhancedManifest,
+    ],
+  );
+
+  const removeProfile = useCallback<AppFunctions["removeProfile"]>(
+    async (profileId) => {
+      dlog("[ArkitektProvider] removeProfile:", profileId);
+      const wasActive = store.getState().profileBook.activeProfileId === profileId;
+
+      // Local only: the fakts discovery document has no `revocation_endpoint`,
+      // so the refresh token stays valid server-side until it expires.
+      const book = await persistBook((current) => removeProfileFromBook(current, profileId));
+
+      if (wasActive) {
+        hydrateConnection(
+          null,
+          store.getState().manifest,
+          {
+            connecting: false,
+            hasBootstrapped: true,
+            switchingProfileId: null,
+            autoLoginError: undefined,
+          },
+          { resetServiceStates: true },
+        );
+      }
+
+      return void book;
+    },
+    [store, persistBook, hydrateConnection],
+  );
+
+  const forgetAllProfiles = useCallback<AppFunctions["forgetAllProfiles"]>(async () => {
+    dlog("[ArkitektProvider] forgetAllProfiles called");
+    controllerRef.current = null;
+    const storage = await storageProviderRef.current();
+    // Keep the last endpoint: forgetting the logins should not also forget
+    // which deployment this machine talks to.
+    const lastEndpoint = store.getState().profileBook.lastEndpoint;
+    await persistBook(() => setLastEndpoint(emptyProfileBook(), lastEndpoint));
+    clearStoredArkitektStorage(undefined, storage);
+    hydrateConnection(
+      null,
+      store.getState().manifest,
+      {
+        connecting: false,
+        hasBootstrapped: true,
+        switchingProfileId: null,
+        autoLoginError: undefined,
+      },
+      { resetServiceStates: true },
+    );
+  }, [store, persistBook, hydrateConnection]);
+
+  /**
+   * Attach lok's answer to a profile.
+   *
+   * Generic on purpose: `lib/arkitekt` is a deployment-agnostic fakts client and
+   * must not import lok's generated GraphQL, so the caller
+   * (`ProfileIdentitySync`) lives in the app layer and hands the identity down.
+   * When the derived id differs from the current one — the normal case, since a
+   * grant starts provisional — the entry is re-keyed, which is also what
+   * collapses a re-approved organization onto the row it already had.
+   */
+  const setProfileIdentity = useCallback<AppFunctions["setProfileIdentity"]>(
+    (profileId, patch) => {
+      void persistBook((book) => {
+        const profile = book.profiles[profileId];
+        if (!profile) {
+          return book;
+        }
+
+        const identity = patch.identity ?? profile.identity;
+        const nextId = deriveProfileId(identity);
+
+        if (nextId !== profileId) {
+          return reidentifyProfile(book, profileId, identity, patch.label);
+        }
+
+        return patch.label ? updateProfileLabel(book, profileId, patch.label) : book;
+      });
+    },
+    [persistBook],
+  );
 
   const cancelConnection = useCallback<AppFunctions["cancelConnection"]>(() => {
     dlog("[ArkitektProvider] cancelConnection called");
@@ -728,56 +971,78 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       clearServiceCache,
       clearAllServiceCaches,
       reportStatus,
+      switchProfile,
+      removeProfile,
+      forgetAllProfiles,
+      setProfileIdentity,
     }),
-    [connect, disconnect, reconnect, cancelConnection, retryService, retryModule, clearServiceCache, clearAllServiceCaches, reportStatus],
+    [connect, disconnect, reconnect, cancelConnection, retryService, retryModule, clearServiceCache, clearAllServiceCaches, reportStatus, switchProfile, removeProfile, forgetAllProfiles, setProfileIdentity],
   );
 
-  // ── ONE useEffect: detect cached fakts, hydrate, then run health checks ──
+  // ── ONE useEffect: load the profile book, activate the live one, health-check ──
   useEffect(() => {
     const run = async () => {
       try {
-        const [enhancedManifest, session] = await Promise.all([
-          resolveEnhancedManifest(),
-          loadValidatedStoredSession(),
-        ]);
+        const storage = await storageProviderRef.current();
+        // Handles the migration off the four flat keys, and validates profiles
+        // one at a time so a single corrupt entry cannot sign the user out of
+        // the rest. Never throws.
+        const book = loadStoredProfileBook(storage);
+        store.setState({ profileBook: book });
 
-        dlog("[ArkitektProvider]: Bootstrapping ArkitektProvider with session:", session);
+        const enhancedManifest = await resolveEnhancedManifest();
+        const active = getActiveProfile(book);
 
-        if (!session) {
-          dlog("[ArkitektProvider] Bootstrap: no cached session, marking bootstrapped");
-          setBootstrapped();
+        dlog("[ArkitektProvider]: Bootstrapping with profile:", active?.id ?? "none");
+
+        if (!active) {
+          dlog("[ArkitektProvider] Bootstrap: nothing active, marking bootstrapped");
+          setBootstrapped({ manifest: enhancedManifest });
           return;
         }
 
-        stageStoredSession(session, {
-          manifest: enhancedManifest,
-          autoLoginError: undefined,
-        });
+        // The same path a switch takes — prove the credential, persist the
+        // rotation, then hydrate — so there is one implementation of "bring a
+        // profile up" rather than two that drift.
+        const nextSession = await refreshProfileToken(active);
+        await persistBook((current) =>
+          updateProfileSession(markProfileOk(current, active.id), active.id, nextSession),
+        );
 
-        dlog("[ArkitektProvider] Bootstrap: refreshing token...");
-        await refreshTokenRef.current();
-        dlog("[ArkitektProvider] Bootstrap: token refresh complete");
-
-        const refreshedSession = store.getState().storedSession;
-        if (!refreshedSession) {
-          throw new Error("Stored session missing after refresh");
-        }
-
-        hydrateConnection(refreshedSession, enhancedManifest, {
-          connecting: false,
-          hasBootstrapped: true,
-          autoLoginError: undefined,
-        });
-        dlog("[ArkitektProvider] Hydrated connection from stored session:", store.getState().connection);
+        hydrateConnection(
+          nextSession,
+          enhancedManifest,
+          {
+            connecting: false,
+            hasBootstrapped: true,
+            switchingProfileId: null,
+            autoLoginError: undefined,
+          },
+          { resetServiceStates: true },
+        );
+        dlog("[ArkitektProvider] Hydrated connection from stored profile");
 
         dlog("[ArkitektProvider] Bootstrap: starting background health checks");
         void Promise.all(Object.keys(serviceBuilderMap).map((k) => validateService(k)));
       } catch (error) {
-        const message = error instanceof Error
-          ? error.message
-          : "Auto-login failed";
+        const message = error instanceof Error ? error.message : "Auto-login failed";
 
         console.error("[ArkitektProvider] Bootstrap error:", error);
+
+        // Mark the profile stale only if the server actually refused its
+        // credential, so an offline start does not present every login as
+        // signed out. `setBootstrapError` leaves the book itself alone.
+        const activeId = store.getState().profileBook.activeProfileId;
+        const activeProfile = activeId
+          ? store.getState().profileBook.profiles[activeId]
+          : null;
+        if (activeProfile) {
+          const { kind, message: described } = describeRefreshFailure(error, activeProfile);
+          if (kind === "expired") {
+            await persistBook((book) => markProfileStale(book, activeProfile.id, described));
+          }
+        }
+
         setBootstrapError(message);
       }
     };

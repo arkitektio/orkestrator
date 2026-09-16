@@ -16,6 +16,9 @@ generates:
       withHooks: true
       reactApolloVersion: 3
       apolloReactHooksImportFrom: "@/lib/elektro/funcs"
+      # Reference fragment types by name instead of inlining them: deep fragments
+      # otherwise blow graphql.ts up to many MB and stall tsc.
+      inlineFragmentTypes: combine
       scalars:
         # Pint-like quantity scalars: unit-bearing strings ("100 ms", "1 µm").
         # Mapped to named types in ./scalars.ts so generated fields read as

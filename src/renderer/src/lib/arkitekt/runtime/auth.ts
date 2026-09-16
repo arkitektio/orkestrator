@@ -17,6 +17,28 @@ export const shouldRefreshToken = (token: TokenResponse): boolean => {
   return Date.now() >= expiresAt - TOKEN_REFRESH_SKEW_MS;
 };
 
+/**
+ * A token endpoint that answered, and said no.
+ *
+ * Switching to a parked profile has to tell three failures apart: a refresh
+ * token the server has retired (the profile is dead until re-approved), a
+ * deployment we simply could not reach (the credential is fine), and everything
+ * else. Only the first is worth marking a profile stale over, and a bare
+ * `Error` message cannot carry that distinction reliably.
+ */
+export class RefreshTokenError extends Error {
+  readonly status: number;
+  /** The OAuth2 `error` member, e.g. `invalid_grant`. */
+  readonly code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "RefreshTokenError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export const isAbortLikeError = (error: unknown): boolean => {
   if (!(error instanceof Error)) {
     return false;
@@ -63,10 +85,12 @@ export const refreshAccessToken = async (
     signal: controller?.signal,
   });
 
-  const json = await response.json();
+  const json = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(
+    throw new RefreshTokenError(
       `Failed to refresh token: ${response.status} ${response.statusText}\n${JSON.stringify(json)}`,
+      response.status,
+      typeof json?.error === "string" ? json.error : undefined,
     );
   }
 

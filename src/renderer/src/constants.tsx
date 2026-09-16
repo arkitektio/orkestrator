@@ -1,6 +1,5 @@
 // Constants used in the app
 
-import { HashRouter } from "react-router-dom";
 import { Manifest } from "./lib/arkitekt/fakts/manifestSchema";
 
 declare global {
@@ -9,7 +8,6 @@ declare global {
   }
 }
 
-export const Router = HashRouter
 
 export const baseName = window.electron ? "" : "orkestrator";
 

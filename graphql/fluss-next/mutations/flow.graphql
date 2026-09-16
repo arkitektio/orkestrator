@@ -6,6 +6,6 @@ mutation UpdateWorkspace($id: ID!, $graph: GraphInput!) {
 
 mutation CreateWorkspace($name: String) {
   createWorkspace(input: { title: $name }) {
-    ...Workspace
+    ...ListWorkspace
   }
 }

@@ -4,7 +4,6 @@ import { UploadWrapper } from "@/components/upload/wrapper";
 import { useCreateFile } from "@/lib/mikro/hooks";
 
 import { asParamlessRoute } from "@/app/routes/ParamlessRoute";
-import { CommandMenu } from "@/command/Menu";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { HelpSidebar } from "@/components/sidebars/help";
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +60,7 @@ import FileList from "../components/lists/FileList";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { StatisticsSidebar } from "../components/sidebars/StatisticsSidebar";
 import { useMikroBigFileUpload } from "@/datalayer/hooks/useMikroBigFileUpload";
-import { parseAsIsoDateTime, parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsIsoDateTime, parseAsString, parseAsStringLiteral, useQueryState } from "@/hooks/use-search-param-state";
 
 
 export interface IRepresentationScreenProps { }
@@ -224,7 +223,6 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
       }
       title="Home"
     >
-      <CommandMenu />
 
 
 

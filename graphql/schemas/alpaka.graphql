@@ -35,10 +35,80 @@ type App {
   identifier: String!
 }
 
+"""Text to append to a streaming message"""
+input AppendMessageInput {
+  delta: String!
+  message: ID!
+}
+
 """
 Base64EncodedString represents an untyped options object returned by the Dask Gateway API.
 """
 scalar Base64EncodedString
+
+"""A cap on LLM consumption per period"""
+type Budget {
+  createdAt: DateTime!
+  creator: User
+
+  """Block calls once exceeded; otherwise only log a warning"""
+  hard: Boolean!
+  id: ID!
+
+  """Maximum cost in USD per period"""
+  limitCost: Decimal
+
+  """Maximum total tokens per period"""
+  limitTokens: Int
+
+  """The model this budget is restricted to, or null for every model"""
+  model: LLMModel
+  period: BudgetPeriod!
+
+  """How much of this budget is used in the current period"""
+  status: BudgetStatus!
+
+  """
+  The user this budget is restricted to, or null for the whole organization
+  """
+  user: User
+}
+
+"""Filter for budgets"""
+input BudgetFilter {
+  AND: BudgetFilter
+  DISTINCT: Boolean
+  NOT: BudgetFilter
+  OR: BudgetFilter
+  ids: [ID!]
+  model: ID
+  period: BudgetPeriod
+  user: ID
+}
+
+input BudgetOrder @oneOf {
+  createdAt: Ordering
+}
+
+"""The window a budget is measured over"""
+enum BudgetPeriod {
+  DAY
+  MONTH
+  WEEK
+}
+
+"""How much of a budget is used in the current period"""
+type BudgetStatus {
+  exceeded: Boolean!
+  limitCost: Decimal
+  limitTokens: Int
+  periodEnd: DateTime!
+  periodStart: DateTime!
+  remainingCost: Decimal
+  remainingTokens: Int
+  usedCost: Decimal!
+  usedTokens: Int!
+}
 
 """A chat completion request"""
 input ChatInput {
@@ -151,6 +221,16 @@ type Client {
   release: Release
 }
 
+"""A budget to create"""
+input CreateBudgetInput {
+  hard: Boolean! = true
+  limitCost: Decimal = null
+  limitTokens: Int = null
+  model: ID = null
+  period: BudgetPeriod! = MONTH
+  user: ID = null
+}
+
 """The room to create"""
 input CreateRoomInput {
   description: String = null
@@ -160,6 +240,9 @@ input CreateRoomInput {
 
 """Date with time (isoformat)"""
 scalar DateTime
+
+"""Decimal (fixed-point)"""
+scalar Decimal
 
 """A task a model can be made the default for"""
 enum DefaultKind {
@@ -187,6 +270,11 @@ input DefaultUseFilter {
 
 input DefaultUseOrder @oneOf {
   kind: Ordering
+}
+
+"""The budget to delete"""
+input DeleteBudgetInput {
+  id: ID!
 }
 
 """The collection to delete"""
@@ -230,6 +318,13 @@ enum FeatureType {
   CHAT
   EMBEDDING
   VISION
+}
+
+"""Close a streaming message"""
+input FinishMessageInput {
+  attachStructures: [StructureInput!] = null
+  message: ID!
+  text: String = null
 }
 
 """The type of the tool"""
@@ -378,8 +473,18 @@ type Mutation {
   """Embed documents and add them to a collection"""
   addDocumentsToCollection(input: AddDocumentsToCollectionInput!): [Document!]!
 
+  """
+  Append a delta to a streaming message. Batch deltas (every ~100-250 ms or ~30 characters) and await each call before sending the next, so they arrive in order.
+  """
+  appendMessage(input: AppendMessageInput!): Message!
+
   """Send a chat completion request"""
   chat(input: ChatInput!): ChatResponse!
+
+  """
+  Cap this organization's LLM consumption, optionally for one user and/or model
+  """
+  createBudget(input: CreateBudgetInput!): Budget!
 
   """Create a searchable collection of documents"""
   createCollection(input: ChromaCollectionInput!): ChromaCollection!
@@ -389,6 +494,9 @@ type Mutation {
 
   """Open a new room"""
   createRoom(input: CreateRoomInput!): Room!
+
+  """Remove a budget"""
+  deleteBudget(input: DeleteBudgetInput!): ID!
 
   """Delete a collection and its documents"""
   deleteCollection(input: DeleteCollectionInput!): ID!
@@ -402,6 +510,11 @@ type Mutation {
   """Create a collection, or update it if it already exists"""
   ensureCollection(input: ChromaCollectionInput!): ChromaCollection!
 
+  """
+  Close a streaming message. Pass the full final text so any delta lost on the way is repaired; call it in a finally block so a crashed stream never stays open.
+  """
+  finishMessage(input: FinishMessageInput!): Message!
+
   """Generate an image from a text description"""
   generateImage(input: ImageInput!): ImageResponse!
 
@@ -411,8 +524,16 @@ type Mutation {
   """Re-list the models a provider offers"""
   refreshProvider(input: RefreshProviderInput!): Provider!
 
-  """Post a message into a room"""
+  """Post a complete message into a room"""
   send(input: SendMessageInput!): Message!
+
+  """
+  Open a message to stream text into. Only the starting agent (same user and client) can append to or finish it.
+  """
+  startMessage(input: StartMessageInput!): Message!
+
+  """Change a budget's period, limits or hardness"""
+  updateBudget(input: UpdateBudgetInput!): Budget!
 
   """Update a provider in place, e.g. to rotate its credential"""
   updateProvider(input: UpdateProviderInput!): Provider!
@@ -525,6 +646,15 @@ type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
 
+  """Get a single budget by ID"""
+  budget(id: ID!): Budget!
+
+  """How much of a budget is used in the current period"""
+  budgetStatus(id: ID!): BudgetStatus!
+
+  """This organization's budgets"""
+  budgets(filters: BudgetFilter, ordering: [BudgetOrder!]! = [], pagination: OffsetPaginationInput): [Budget!]!
+
   """Get a single Chroma collection by ID"""
   chromaCollection(id: ID!): ChromaCollection!
 
@@ -566,13 +696,29 @@ type Query {
 
   """List the rooms in this organization"""
   rooms(filters: RoomFilter, ordering: [RoomOrder!]! = [], pagination: OffsetPaginationInput): [Room!]!
+
+  """This organization's recorded LLM calls"""
+  usageRecords(filters: UsageRecordFilter, ordering: [UsageRecordOrder!]! = [], pagination: OffsetPaginationInput): [UsageRecord!]!
+
+  """
+  Aggregate token, cost and latency statistics over this organization's LLM calls
+  """
+  usageStats(filters: UsageRecordFilter = null): UsageStats!
 }
 
 """A similarity query against a collection"""
 input QueryInput {
   collection: ID!
+
+  """Results per query text"""
   nResults: Int! = 3
+
+  """
+  One or more query texts; the union of their results is returned, deduplicated by document
+  """
   queryTexts: [String!]!
+
+  """Chroma metadata filter applied to every query"""
   where: JSON = null
 }
 
@@ -617,9 +763,24 @@ type Room {
 
 """Something that happened in a room"""
 type RoomEvent {
+  """The agent that joined, for JOIN events"""
   join: Agent
+  kind: RoomEventKind!
+
+  """The agent that left, for LEAVE events"""
   leave: Agent
+
+  """The message, for MESSAGE_* events"""
   message: Message
+}
+
+"""What happened in a room"""
+enum RoomEventKind {
+  JOIN
+  LEAVE
+  MESSAGE_CREATED
+  MESSAGE_FINISHED
+  MESSAGE_UPDATED
 }
 
 """Numeric/aggregatable fields of Room"""
@@ -675,10 +836,17 @@ enum RoomTimestampField {
 input SendMessageInput {
   agentId: String!
   attachStructures: [StructureInput!] = null
-  notify: Boolean = null
   parent: ID = null
   room: ID!
   text: String!
+}
+
+"""Open a message that text will be streamed into"""
+input StartMessageInput {
+  agentId: String!
+  parent: ID = null
+  room: ID!
+  text: String! = ""
 }
 
 """A reference to an object held by another Arkitekt service"""
@@ -695,7 +863,9 @@ input StructureInput {
 
 """The root subscription type"""
 type Subscription {
-  """Join a room and receive its messages as they are posted"""
+  """
+  Join a room and receive its events: messages created, streamed into and finished, and agents joining or leaving
+  """
   room(agentId: ID!, filterOwn: Boolean! = true, room: ID!): RoomEvent!
 }
 
@@ -745,6 +915,17 @@ enum ToolType {
   FUNCTION
 }
 
+"""
+Changes to a budget; omitted fields are left as they are, explicit nulls clear a limit
+"""
+input UpdateBudgetInput {
+  hard: Boolean
+  id: ID!
+  limitCost: Decimal
+  limitTokens: Int
+  period: BudgetPeriod
+}
+
 """The provider to update, and the fields to change"""
 input UpdateProviderInput {
   additionalConfig: JSON = null
@@ -761,6 +942,114 @@ type Usage {
   promptTokenDetails: JSON
   promptTokens: Int!
   totalTokens: Int!
+}
+
+"""The entry point an LLM call came through"""
+enum UsageEndpoint {
+  GRAPHQL_CHAT
+  GRAPHQL_IMAGE
+  REST_CHAT
+  REST_COMPLETION
+  REST_EMBEDDING
+  VECTOR_EMBEDDING
+}
+
+"""Numeric/aggregatable fields of UsageRecord"""
+enum UsageField {
+  COMPLETION_TOKENS
+  COST
+  LATENCY_MS
+  PROMPT_TOKENS
+  TOTAL_TOKENS
+}
+
+"""One LLM call, as recorded by the gateway"""
+type UsageRecord {
+  """The client the call came through"""
+  client: Client
+  completionTokens: Int!
+
+  """
+  Cost in USD as reported or estimated by litellm; null when the model is not in its price map
+  """
+  cost: Decimal
+  createdAt: DateTime!
+  endpoint: UsageEndpoint!
+  errorType: String!
+  id: ID!
+  latencyMs: Int
+  llmString: String!
+
+  """The model that was called, if it still exists"""
+  model: LLMModel
+
+  """The provider-side model id at the time of the call"""
+  modelIdentifier: String!
+  promptTokens: Int!
+  providerKind: String!
+  status: UsageStatus!
+  totalTokens: Int!
+
+  """The user who made the call"""
+  user: User
+}
+
+"""Filter for usage records"""
+input UsageRecordFilter {
+  AND: UsageRecordFilter
+  DISTINCT: Boolean
+  NOT: UsageRecordFilter
+  OR: UsageRecordFilter
+  createdAfter: DateTime
+  createdBefore: DateTime
+  endpoint: UsageEndpoint
+  endpoints: [UsageEndpoint!]
+  ids: [ID!]
+  model: ID
+  status: UsageStatus
+  user: ID
+}
+
+input UsageRecordOrder @oneOf {
+  cost: Ordering
+  createdAt: Ordering
+  latencyMs: Ordering
+  totalTokens: Ordering
+}
+
+type UsageStats {
+  """Average"""
+  avg(field: UsageField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: UsageField!): Int!
+
+  """Maximum"""
+  max(field: UsageField!): Float
+
+  """Minimum"""
+  min(field: UsageField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: UsageField!, timestampField: UsageTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: UsageField!): Float
+}
+
+"""Whether an LLM call succeeded"""
+enum UsageStatus {
+  ABORTED
+  ERROR
+  OK
+}
+
+"""Datetime fields of UsageRecord for bucketing"""
+enum UsageTimestampField {
+  CREATED_AT
 }
 
 """The input for using a model for a specific task"""

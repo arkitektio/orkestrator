@@ -1,8 +1,9 @@
+import { useTabTitle } from "@/command/tabs/useTabTitle";
 import { usePullToRefetch } from "@/hooks/use-pull-to-refetch";
 import { useReport } from "@/hooks/use-report";
 import { cn } from "@/lib/utils";
 import { useRefetch } from "@/providers/refetch/RefetchContext";
-import { ChevronDownIcon, PanelLeft, PanelRight } from "lucide-react";
+import { ChevronDownIcon, PanelRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { PullToRefetchIndicator } from "./PullToRefetchIndicator";
@@ -20,14 +21,21 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "../ui/resizable";
-import { Separator } from "../ui/separator";
+import { HelpSidebar } from "../sidebars/help";
+import { Sidebars } from "./Sidebars";
 
 export type PageVariant = "black" | "default";
 
 export type PageLayoutProps = {
   title: React.ReactNode | undefined;
   children: React.ReactNode;
+  /**
+   * The page rail. Pages without a rail of their own fall back to a Help tab,
+   * so the right-hand panel is never an empty column.
+   */
   sidebars?: React.ReactNode;
+  /** Page-specific help shown in the fallback Help tab. */
+  help?: React.ReactNode;
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
   variant?: "black" | "default";
@@ -42,12 +50,16 @@ export type PageLayoutProps = {
 
 export const PageLayout = ({
   sidebars,
+  help,
   children,
   actions,
   pageActions,
   variant = "default",
   overlay = false,
+  title,
 }: PageLayoutProps) => {
+  // The tab shows the page's own name ("HeLa s3"), not the path's leaf ("5").
+  useTabTitle(title);
   const [params, setParams] = useSearchParams({
     pageSidebar: "true",
     sidebar: "true",
@@ -151,7 +163,7 @@ export const PageLayout = ({
   }, [params, setSidebarParam]);
 
   return (
-    <ResizablePanelGroup autoSaveId="page" direction="horizontal">
+    <ResizablePanelGroup autoSaveId="page" direction="horizontal" className="text-sm">
       <ResizablePanel className="h-full w-full" defaultSize={80} id="page" order={1}>
         <div
           className={cn(
@@ -172,14 +184,9 @@ export const PageLayout = ({
                 : "border-0 bg-black bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-20 ",
             )}
           >
-            <Button onClick={toggleSidebar} variant={"ghost"}>
-              <PanelLeft />
-              <span className="sr-only">Toggle ModulePane</span>
-            </Button>
-            <Separator orientation="vertical" className="h-6 my-auto mr-3" />
             {/* `min-w-0` lets this actually shrink below its content width so
                 the trail truncates instead of wrapping. */}
-            <div className="flex-grow min-w-0 flex flex-col truncate">
+            <div className="p-3 flex-grow min-w-0 flex flex-col truncate">
               <div className="flex-shrink min-w-0">
                 <BreadCrumbs />
               </div>
@@ -265,7 +272,13 @@ export const PageLayout = ({
             id="sidebar"
 
           >
-            {sidebars}
+            {sidebars || (
+              <Sidebars sidebarKey="HelpSidebar">
+                <Sidebars.Tab label="Help">
+                  <HelpSidebar help={help} />
+                </Sidebars.Tab>
+              </Sidebars>
+            )}
           </ResizablePanel>
         </>
       )}

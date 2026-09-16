@@ -8,7 +8,7 @@ import { DashboardBlokSidebar, DashboardScene, DashboardSceneProvider } from "..
 export const DashboardPage = asDetailQueryRoute(useGetDashboardQuery, ({ data, refetch }) => {
   return (
     <RekuestDashboard.ModelPage
-      title={data.dashboard.name || "New Dasboard"}
+      title={data.dashboard.name || "New Dashboard"}
       object={data.dashboard}
       pageActions={(
         <LocalActionButton

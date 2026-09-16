@@ -16,7 +16,6 @@ import {
   useInterruptMutation,
 } from "@/rekuest/api/graphql";
 import { ChevronDown, Clock, ListChecks } from "lucide-react";
-import Timestamp from "@/components/ui/timestamp";
 import { ChildTaskUpdater } from "../components/updaters/ChildTaskUpdater";
 import {
   DefaultRenderer,
@@ -99,14 +98,7 @@ export const TPage = asDetailQueryRoute(
 
     return (
       <RekuestTask.ModelPage
-        title={
-          <div className="flex flex-row gap-2">
-            {data?.task?.action.name}
-            <p className="text-md font-light text-muted-foreground">
-              <Timestamp date={data.task.createdAt} relative />
-            </p>
-          </div>
-        }
+        title={data?.task?.action.name}
         additionalSidebars={<Sidebars.Tab label="Stats"><TaskStatsSidebar task={data.task} /></Sidebars.Tab>}
         object={data.task}
         pageActions={

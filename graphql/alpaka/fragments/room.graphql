@@ -12,3 +12,19 @@ fragment ListRoom on Room {
   title
   description
 }
+
+fragment RecentRoom on Room {
+  id
+  title
+  description
+  createdAt
+  latest: messages(ordering: [{ createdAt: DESC }], pagination: { limit: 1 }) {
+    id
+    text
+    createdAt
+    attachedStructures {
+      identifier
+      object
+    }
+  }
+}

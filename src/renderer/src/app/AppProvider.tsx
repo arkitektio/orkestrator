@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { baseName, Router } from "@/constants";
 import { useFatalReport } from "@/hooks/use-report";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { DebugProvider } from "@/providers/debug/DebugProvider";
@@ -18,11 +17,9 @@ import { SmartProvider } from "@/providers/smart/provider";
 import { SmartSurface } from "@/providers/smart/SmartSurface";
 import { TaskUpdater } from "@/rekuest/components/functional/TaskUpdater";
 import { TaskHookRunner } from "@/lib/taskhooks/TaskHookRunner";
-import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
 import { AgentUpdater } from "@/rekuest/components/functional/AgentUpdater";
 import { UiCatalogRegistrar } from "@/rekuest/catalog/UiCatalogRegistrar";
 import { WidgetRegistryProvider } from "@/rekuest/widgets/WidgetsProvider";
-import { NuqsAdapter } from "nuqs/adapters/react-router"; // <--- Specific adapter
 import React from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { useNavigate } from "react-router-dom";
@@ -107,7 +104,30 @@ import { MikroDashboardWidgets } from "@/providers/dashboard/widgets/MikroDashbo
 import { LatestTasksDashboardWidget } from "@/providers/dashboard/widgets/LatestTasksDashboardWidget";
 import { LatestArrayDatasetsDashboardWidget } from "@/providers/dashboard/widgets/LatestArrayDatasetsDashboardWidget";
 import { OrganizationBrandSync } from "@/lok-next/components/OrganizationBrandSync";
+import { ProfileIdentitySync } from "@/lok-next/components/ProfileIdentitySync";
+import { CommandPaletteProvider } from "@/command/CommandPaletteProvider";
+import { CommandMenuHost } from "@/command/Host";
+import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
+import { TabsProvider } from "@/command/tabs/TabsProvider";
+import { PinsProvider } from "@/command/PinsProvider";
 
+
+/**
+ * Remounts everything tenant-scoped when the live profile changes.
+ *
+ * A switch changes organization, and organization ids are threaded through
+ * selection state, open dialogs, agent state and widget registrations — all of
+ * which would otherwise keep pointing at rows the new profile cannot see.
+ * Keying the subtree throws that state away wholesale, which is exactly right
+ * for a switch and needs no per-provider reset logic.
+ *
+ * Deliberately INSIDE `Arkitekt.Provider`: keying above it would remount the
+ * provider itself and re-run bootstrap, i.e. the switch would fight itself.
+ */
+const ProfileScope = ({ children }: { children: React.ReactNode }) => {
+  const activeProfileId = Arkitekt.useActiveProfileId();
+  return <React.Fragment key={activeProfileId ?? "guest"}>{children}</React.Fragment>;
+};
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -115,28 +135,43 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       <UploadProvider>
         <DownloadProvider>
             <DebugProvider>
-              <Router basename={baseName}>
-                <NuqsAdapter>
                   <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                   {/* This is where we configure the application automatically based on facts */}
 
                   <Arkitekt.Provider>
+                    {/* Tabs live above ProfileScope (per membership, re-booted on
+                        switch) and the chrome router below them always reflects
+                        the ACTIVE tab, so every useNavigate/useLocation in this
+                        tree keeps working unchanged. */}
+                    <TabsProvider>
+                    <ActiveTabRouter>
                     <LocalActionProvider>
                       <TooltipProvider>
                         <DisplayProvider>
                           <WidgetRegistryProvider registry={THE_WIDGET_REGISTRY}>
+                            <ProfileScope>
                             <SmartProvider>
                               <DialogProvider>
                                 <SelectionProvider>
                                   <AgentProvider disabled={false}>
+                                    <CommandPaletteProvider>
+                                    <PinsProvider>
                                     <WardRegistrar />
+                                    {/* One palette for the whole app. It used to
+                                        be mounted per page, so it was missing on
+                                        the dashboard and double-bound wherever
+                                        two pages nested. */}
+                                    {/* No palette signed out: there is no pill for it to unfold
+                                        from and nothing for it to open. Same guard as `AppShell`. */}
+                                    <Arkitekt.Guard notConnectedFallback={null} connectingFallback={null}>
+                                      <CommandMenuHost />
+                                    </Arkitekt.Guard>
                                     <SmartSurface />
                                     <RefetchOnReactivate />
                                     <GcOnNavigate />
                                     <BuiltinDashboardWidgets />
                                     <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
                                       <TaskUpdater />
-                                      <TaskNotificationStack />
                                       <AgentUpdater />
                                       <UiCatalogRegistrar />
                                       <RekuestDashboardWidgets />
@@ -145,6 +180,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     </Guard.Rekuest>
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
                                       <OrganizationBrandSync />
+                                      <ProfileIdentitySync />
                                     </Guard.Lok>
                                     <Toaster />
                                     <Guard.Mikro unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
@@ -154,18 +190,21 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     <BackNavigationErrorCatcher>
                                       {children}
                                     </BackNavigationErrorCatcher>
+                                    </PinsProvider>
+                                    </CommandPaletteProvider>
                                   </AgentProvider>
                                 </SelectionProvider>
                               </DialogProvider>
                             </SmartProvider>
+                            </ProfileScope>
                           </WidgetRegistryProvider>
                         </DisplayProvider>
                       </TooltipProvider>
                     </LocalActionProvider>
+                    </ActiveTabRouter>
+                    </TabsProvider>
                   </Arkitekt.Provider>
                 </ThemeProvider>
-              </NuqsAdapter>
-            </Router>
           </DebugProvider>
       </DownloadProvider>
     </UploadProvider>

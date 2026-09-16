@@ -22,14 +22,7 @@ export const TPage = asDetailQueryRoute(
 
     return (
       <RekuestTask.ModelPage
-        title={
-          <div className="flex flex-row gap-2">
-            {data?.task?.action.name}
-            <p className="text-md font-light text-muted-foreground">
-              <Timestamp date={data.task.createdAt} relative />
-            </p>
-          </div>
-        }
+        title={`${data?.task?.action.name} — Log`}
         object={data.task}
         pageActions={
           <div className="flex gap-2">

@@ -1,8 +1,7 @@
+import React from "react";
 import { Identifier } from "@/types";
 import { PageLayout, PageVariant } from "./PageLayout";
-import { CommandMenu } from "@/command/Menu";
-import { Sidebars } from "./Sidebars";
-import { HelpSidebar } from "../sidebars/help";
+import { CommandContext } from "@/command/CommandContext";
 
 export type ListPageLayoutProps = {
   children: React.ReactNode;
@@ -18,26 +17,27 @@ export type ListPageLayoutProps = {
 
 export const ListPageLayout = ({
   sidebars,
+  help,
   title,
   children,
   identifier,
   variant,
   pageActions,
 }: ListPageLayoutProps) => {
+  // Memoised because the palette registers on the array's identity: a fresh
+  // `[identifier]` literal per render would re-register on every render.
+  const returnsForCommand = React.useMemo(() => [identifier], [identifier]);
+
   return (
     <div className="h-full w-full">
       <PageLayout
         title={title}
-        sidebars={sidebars || (
-          <Sidebars>
-            <Sidebars.Tab label="Help"><HelpSidebar /></Sidebars.Tab>
-          </Sidebars>
-        )}
-
+        sidebars={sidebars}
+        help={help}
         variant={variant}
         pageActions={pageActions}
       >
-        <CommandMenu returns={[identifier]} />
+        <CommandContext returns={returnsForCommand} />
         {children}
       </PageLayout>
     </div>

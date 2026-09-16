@@ -17,14 +17,7 @@ export const Page = asDetailQueryRoute(useWorkspaceQuery, ({ data }) => {
 
   return (
     <FlussWorkspace.ModelPage
-      title={
-        <div className="flex flex-row gap-2">
-          {data?.workspace?.title}
-          <p className="text-md font-light text-muted-foreground">
-            {data?.workspace.latestFlow?.title}
-          </p>
-        </div>
-      }
+      title={data?.workspace?.title}
       object={data.workspace}
       sidebars={
         <Sidebars>

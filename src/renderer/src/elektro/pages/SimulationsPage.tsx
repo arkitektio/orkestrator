@@ -36,7 +36,7 @@ import {
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
-} from "nuqs";
+} from "@/hooks/use-search-param-state";
 import React, { useState } from "react";
 import SimulationList from "../components/lists/SimulationList";
 import {

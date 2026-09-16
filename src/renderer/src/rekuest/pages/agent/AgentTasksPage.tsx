@@ -13,8 +13,7 @@ import {
   TASK_DONE_FILTER_OPTIONS as DONE_OPTIONS,
   TASK_STATE_FILTER_OPTIONS as STATE_OPTIONS,
 } from "@/rekuest/lib/taskStatus";
-import { parseAsBoolean, parseAsIsoDateTime, parseAsStringLiteral, useQueryState, parseAsArrayOf } from "nuqs";
-import Timestamp from "@/components/ui/timestamp";
+import { parseAsBoolean, parseAsIsoDateTime, parseAsStringLiteral, useQueryState, parseAsArrayOf } from "@/hooks/use-search-param-state";
 import { X } from "lucide-react";
 
 export const AgentTasksPage = asDetailQueryRoute(
@@ -54,15 +53,7 @@ export const AgentTasksPage = asDetailQueryRoute(
 
     return (
       <RekuestAgent.ModelPage
-        title={
-          <div className="flex flex-row gap-2 items-center">
-            {data?.agent?.name}
-            <span className="text-sm font-light text-muted-foreground">— Tasks</span>
-            <p className="text-md font-light text-muted-foreground">
-              <Timestamp date={data.agent.lastSeen} relative />
-            </p>
-          </div>
-        }
+        title={`${data?.agent?.name} — Tasks`}
         object={data.agent}
         pageActions={
           <DateTimeRangePicker

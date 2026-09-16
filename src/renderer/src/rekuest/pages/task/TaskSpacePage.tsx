@@ -21,7 +21,6 @@ import { ChildTaskUpdater } from '@/rekuest/components/updaters/ChildTaskUpdater
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import type {} from '@react-three/fiber'
 import { useEffect, useState } from 'react'
-import Timestamp from 'react-timestamp'
 import { useReassign } from '@/rekuest/hooks/useReassign'
 import { isCancelable, isInterruptable } from '@/rekuest/lib/taskStatus'
 
@@ -51,14 +50,7 @@ export const TaskSpacePage = asDetailQueryRoute(useDetailTaskQuery, ({ data, id 
       <StoreRefresher task={data.task} />
       <LiveTicker />
       <RekuestTask.ModelPage
-        title={
-          <div className="flex flex-row gap-2">
-            {data?.task?.action.name}
-            <p className="text-md font-light text-muted-foreground">
-              <Timestamp date={data.task.createdAt} relative />
-            </p>
-          </div>
-        }
+        title={`${data?.task?.action.name} — Space`}
         object={data.task}
         pageActions={
           <div className="flex gap-2">
