@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { unstable_HistoryRouter as HistoryRouter, useLocation } from "react-router-dom";
 import useReactRouterBreadcrumbs from "use-react-router-breadcrumbs";
 
+import { breadcrumbText } from "@/lib/breadcrumbText";
+
 import { RouterBoundary } from "./RouterBoundary";
 import { TabIdContext } from "./TabContext";
 import { TabVisibilityContext } from "./TabVisibilityContext";
@@ -23,12 +25,13 @@ const TabTitleReporter = ({ tabId }: { tabId: string }) => {
 
   const label = [...breadcrumbs]
     .reverse()
-    .map(({ breadcrumb }) => (typeof breadcrumb === "string" ? breadcrumb : undefined))
+    .map(({ breadcrumb }) => breadcrumbText(breadcrumb))
     .find(Boolean);
 
   // The FALLBACK source. With no route config the breadcrumb hook only
-  // humanises path segments, so an entity page yields its id ("5"); the page's
-  // own `useTabTitle` overrides this for the location it reports.
+  // humanises path segments (as a `<span>`, which `breadcrumbText` unwraps),
+  // so an entity page yields its id ("5"); the page's own `useTabTitle`
+  // overrides this for the location it reports.
   useEffect(() => {
     if (label) setLabel(tabId, label, { source: "path", pathname });
   }, [label, tabId, pathname, setLabel]);

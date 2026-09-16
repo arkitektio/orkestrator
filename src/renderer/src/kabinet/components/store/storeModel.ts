@@ -60,7 +60,7 @@ export const selectorLabel = (selector: StoreSelector): string => {
     case "LabelSelector":
       return "Label";
     default:
-      return selector.kind;
+      return (selector as { kind: string }).kind;
   }
 };
 

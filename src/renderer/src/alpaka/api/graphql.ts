@@ -1395,6 +1395,8 @@ export type RoomFragment = { __typename?: 'Room', id: string, title: string, des
 
 export type ListRoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null };
 
+export type RecentRoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, latest: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> }> };
+
 export type ChatMutationVariables = Exact<{
   input: ChatInput;
 }>;
@@ -1646,6 +1648,17 @@ export type RoomsQuery = { __typename?: 'Query', rooms: Array<{ __typename?: 'Ro
       & ListMessageFragment
     )> }> };
 
+export type RecentRoomsQueryVariables = Exact<{
+  filter?: InputMaybe<RoomFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type RecentRoomsQuery = { __typename?: 'Query', rooms: Array<(
+    { __typename?: 'Room' }
+    & RecentRoomFragment
+  )> };
+
 export type GlobalSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   noRooms: Scalars['Boolean']['input'];
@@ -1839,6 +1852,23 @@ export const ListRoomFragmentDoc = gql`
   id
   title
   description
+}
+    `;
+export const RecentRoomFragmentDoc = gql`
+    fragment RecentRoom on Room {
+  id
+  title
+  description
+  createdAt
+  latest: messages(ordering: [{createdAt: DESC}], pagination: {limit: 1}) {
+    id
+    text
+    createdAt
+    attachedStructures {
+      identifier
+      object
+    }
+  }
 }
     `;
 export const ChatDocument = gql`
@@ -2837,6 +2867,42 @@ export function useRoomsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOp
 export type RoomsQueryHookResult = ReturnType<typeof useRoomsQuery>;
 export type RoomsLazyQueryHookResult = ReturnType<typeof useRoomsLazyQuery>;
 export type RoomsQueryResult = Apollo.QueryResult<RoomsQuery, RoomsQueryVariables>;
+export const RecentRoomsDocument = gql`
+    query RecentRooms($filter: RoomFilter, $pagination: OffsetPaginationInput) {
+  rooms(filters: $filter, pagination: $pagination, ordering: [{createdAt: DESC}]) {
+    ...RecentRoom
+  }
+}
+    ${RecentRoomFragmentDoc}`;
+
+/**
+ * __useRecentRoomsQuery__
+ *
+ * To run a query within a React component, call `useRecentRoomsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRecentRoomsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRecentRoomsQuery({
+ *   variables: {
+ *      filter: // value for 'filter'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useRecentRoomsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<RecentRoomsQuery, RecentRoomsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RecentRoomsQuery, RecentRoomsQueryVariables>(RecentRoomsDocument, options);
+      }
+export function useRecentRoomsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RecentRoomsQuery, RecentRoomsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RecentRoomsQuery, RecentRoomsQueryVariables>(RecentRoomsDocument, options);
+        }
+export type RecentRoomsQueryHookResult = ReturnType<typeof useRecentRoomsQuery>;
+export type RecentRoomsLazyQueryHookResult = ReturnType<typeof useRecentRoomsLazyQuery>;
+export type RecentRoomsQueryResult = Apollo.QueryResult<RecentRoomsQuery, RecentRoomsQueryVariables>;
 export const GlobalSearchDocument = gql`
     query GlobalSearch($search: String, $noRooms: Boolean!, $pagination: OffsetPaginationInput) {
   rooms: rooms(filters: {search: $search}, pagination: $pagination) @skip(if: $noRooms) {

@@ -25,6 +25,7 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { Search, Sparkles } from "lucide-react";
 import { createElement, Suspense, useMemo } from "react";
 import { useCommandPalette } from "./CommandPaletteProvider";
+import { resolveContextObjects } from "./contextObjects";
 import { ApplicableNavigation } from "./sources/ApplicableNavigation";
 import { ApplicableRecents } from "./sources/ApplicableRecents";
 import { ApplicableEntitySearch } from "./sources/entity/ApplicableEntitySearch";
@@ -184,8 +185,51 @@ export const CommandMenu = (props: {
   // definitions ×2). The raw `context.query` stays on the input itself.
   const searchFilter = debouncedContext.query;
   // One stable array: `props.objects || []` inline handed every child a fresh
-  // literal per render, defeating their memos.
-  const objects = useMemo(() => props.objects ?? [], [props.objects]);
+  // literal per render, defeating their memos. The page's objects, unless a
+  // search result was made context (⇧), which then takes over.
+  const objects = useMemo(
+    () => resolveContextObjects(debouncedContext.modifiers, props.objects ?? []),
+    [debouncedContext.modifiers, props.objects],
+  );
+  const hasSmartModifier = context.modifiers.some((m) => m.type === "smart");
+  // With something in context, what you can DO with it leads the list.
+  const hasContext = objects.length > 0;
+
+  // Everything that acts on the context. Local actions come first: they are
+  // synchronous, so they are on screen the moment the palette opens.
+  const actionSources = (
+    <>
+      <ApplicableLocalActions
+        filter={searchFilter}
+        objects={objects}
+        partners={props.partners}
+        onDone={closePalette}
+      />
+      <Guard.Rekuest>
+        <ApplicableShortcuts
+          filter={searchFilter}
+          objects={objects}
+          partners={props.partners}
+          onDone={closePalette}
+        />
+        <ApplicableActions
+          filter={searchFilter}
+          objects={objects}
+          collection={props.collection}
+          partners={props.partners}
+          onDone={closePalette}
+        />
+      </Guard.Rekuest>
+      <Guard.Kabinet>
+        <ApplicableDefinitions
+          filter={searchFilter}
+          objects={objects}
+          partners={props.partners}
+          returns={props.returns || []}
+        />
+      </Guard.Kabinet>
+    </>
+  );
 
   // ⌘T opens a new tab — with its own history — which works signed in or out,
   // so the chip shows whenever that is the intent.
@@ -267,14 +311,14 @@ export const CommandMenu = (props: {
             {/* Everything below the pill's own height — revealed by the second
                 phase of the animation, which is the "drop down". */}
             <div className="border-t border-border/50">
-              {(context.modifiers.length > 0 || (props.objects && props.objects.length > 0)) && (
+              {(context.modifiers.length > 0 || (!hasSmartModifier && props.objects && props.objects.length > 0)) && (
                 <div className="space-y-1.5 border-b border-border/50 p-2">
                   {context.modifiers.map((m, index) => (
                     <ContextCard key={`modifier-${m.type}-${index}`} onRemove={() => removeModifier(index)}>
                       <ModifierRender modifier={m} context="widget" />
                     </ContextCard>
                   ))}
-                  {props.objects?.map((m) => (
+                  {!hasSmartModifier && props.objects?.map((m) => (
                     <div key={`object-${m.identifier}-${m.object.id}`}>
                       <DisplayWidget
                         identifier={m.identifier}
@@ -293,6 +337,7 @@ export const CommandMenu = (props: {
                   </CommandEmpty>
                 )}
                 <ExtensionContext.Provider value={extensionContextValue}>
+                  {hasContext && actionSources}
                   {/* Where you were, only while nothing is typed. */}
                   <ApplicableRecents
                     filter={searchFilter}
@@ -308,27 +353,7 @@ export const CommandMenu = (props: {
                     partners={props.partners}
                     onDone={closePalette}
                   />
-                  <Guard.Rekuest>
-                    <ApplicableShortcuts
-                      filter={searchFilter}
-                      objects={objects}
-                      partners={props.partners}
-                      onDone={closePalette}
-                    />
-                    <ApplicableActions
-                      filter={searchFilter}
-                      objects={objects}
-                      collection={props.collection}
-                      partners={props.partners}
-                      onDone={closePalette}
-                    />
-                  </Guard.Rekuest>
-                  <ApplicableLocalActions
-                    filter={searchFilter}
-                    objects={objects}
-                    partners={props.partners}
-                    onDone={closePalette}
-                  />
+                  {!hasContext && actionSources}
                   {/* Last: the only async source, so late results never shove
                       the synchronous rows out from under the cursor. */}
                   <ApplicableEntitySearch
@@ -337,14 +362,6 @@ export const CommandMenu = (props: {
                     partners={props.partners}
                     onDone={closePalette}
                   />
-                  <Guard.Kabinet>
-                    <ApplicableDefinitions
-                      filter={searchFilter}
-                      objects={objects}
-                      partners={props.partners}
-                      returns={props.returns || []}
-                    />
-                  </Guard.Kabinet>
                 </ExtensionContext.Provider>
               </CommandList>
 

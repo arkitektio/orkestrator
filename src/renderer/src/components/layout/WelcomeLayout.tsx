@@ -51,7 +51,7 @@ export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
         {mode === "buttons" && <WindowControls maximized={maximized} compact />}
       </div>
 
-      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background md:mx-2 md:mb-2 md:rounded-xl md:border md:border-border/60 md:shadow-sm">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background mx-2 mb-2 rounded-xl border border-border/60 shadow-sm">
         {children}
       </div>
     </div>

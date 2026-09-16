@@ -1,6 +1,5 @@
 import { Arkitekt, Guard, moduleRegistry } from "@/app/Arkitekt";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { DroppableNavLink } from "@/components/ui/link";
 import {
   Popover,
@@ -22,16 +21,13 @@ import {
 import { cn } from "@/lib/utils";
 import { aliasToHttpPath } from "@/lib/arkitekt/alias/helpers";
 import {
-  ChevronUp,
   Home,
   RefreshCw,
-  Settings,
   CheckCircle,
   XCircle,
   Clock,
 } from "lucide-react";
 import React from "react";
-import { IconContext } from "react-icons/lib";
 import { matchIcon } from "./moduleIcons";
 import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHover";
 import RailPins from "./RailPins";
@@ -175,11 +171,9 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
 const ModuleNavItem = React.memo(({
   moduleKey,
   moduleState,
-  mobile = false,
 }: {
   moduleKey: string;
   moduleState?: ReturnType<typeof Arkitekt.useAvailableModules>[number];
-  mobile?: boolean;
 }) => {
   const { retryModule } = Arkitekt.useActions();
 
@@ -209,10 +203,8 @@ const ModuleNavItem = React.memo(({
    */
   const tileClass = (active: boolean) =>
     cn(
-      // In the rail a tile fills its grid cell; in the mobile drawer it sits
-      // beside a label, so it keeps a fixed square.
-      "flex cursor-pointer items-center justify-center rounded-lg transition-colors",
-      mobile ? "h-8 w-8" : "h-9 w-full",
+      // Fills its grid cell, so the tiles line up whatever the rail's width.
+      "flex h-9 w-full cursor-pointer items-center justify-center rounded-lg transition-colors",
       "text-muted-foreground shadow-[inset_0_1px_2px_rgb(0_0_0/0.10)] ring-1",
       active
         ? "bg-background/80 text-foreground ring-primary/35 shadow-none"
@@ -229,7 +221,7 @@ const ModuleNavItem = React.memo(({
             label={moduleState.definition.label || moduleState.key}
             icon={icon}
           >
-          <DroppableNavLink to={moduleState.route} className={mobile ? "cursor-pointer" : "block"}>
+          <DroppableNavLink to={moduleState.route} className="block">
             {({ isActive }) => {
               const tile = (
                 <span
@@ -241,13 +233,13 @@ const ModuleNavItem = React.memo(({
               );
               // The hover card already names the module in its header; a
               // tooltip on top of it would say the same thing in the same spot.
-              if (!mobile && hasModuleNav(moduleKey, moduleState.status === "ready")) {
+              if (hasModuleNav(moduleKey, moduleState.status === "ready")) {
                 return tile;
               }
               return (
                 <Tooltip>
                   <TooltipTrigger asChild>{tile}</TooltipTrigger>
-                  <TooltipContent side={mobile ? "top" : "right"}>
+                  <TooltipContent side="right">
                     {moduleState.definition.label || moduleState.key}
                   </TooltipContent>
                 </Tooltip>
@@ -291,11 +283,11 @@ const ModuleNavItem = React.memo(({
               </PopoverTrigger>
             </ContextMenuTrigger>
           </TooltipTrigger>
-        <TooltipContent side={mobile ? "top" : "right"}>
+        <TooltipContent side="right">
           {moduleState.definition.label || moduleState.key}
         </TooltipContent>
       </Tooltip>
-      <PopoverContent side={mobile ? "top" : "right"}>
+      <PopoverContent side="right">
         <PopoverHeader>
           <PopoverTitle>{moduleState.definition.label || moduleState.key}</PopoverTitle>
           <PopoverDescription>
@@ -342,36 +334,6 @@ const ModuleNavItem = React.memo(({
 });
 ModuleNavItem.displayName = "ModuleNavItem";
 
-const SettingsNavItem = ({ mobile = false }: { mobile?: boolean }) => {
-  return (
-    <DroppableNavLink to="/settings" className={mobile ? "cursor-pointer" : undefined}>
-      {({ isActive }) => (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span
-              data-active={isActive}
-              className={cn(
-                "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg ring-1 transition-colors",
-                "shadow-[inset_0_1px_2px_rgb(0_0_0/0.10)]",
-                isActive
-                  ? "bg-background/80 text-foreground ring-primary/35 shadow-none"
-                  : "bg-background/25 text-muted-foreground ring-border/30 hover:bg-background/55 hover:text-foreground",
-              )}
-            >
-              <Settings className="h-4 w-4" />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side={mobile ? "top" : "right"}>
-            Settings
-          </TooltipContent>
-        </Tooltip>
-      )}
-    </DroppableNavLink>
-  );
-};
-
-
-
 const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
   const availableModules = Arkitekt.useAvailableModules();
 
@@ -397,7 +359,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           `1fr` max stretches the tiles across the full rail width and wraps to
           a new row only once a tile would drop below its minimum size. */}
       <ModuleNavHoverGroup preload={readyModules}>
-      <div className="hidden md:grid grid-cols-[repeat(auto-fit,minmax(2.25rem,1fr))] gap-1 px-2 pb-3 shrink-0 mt-1">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(2.25rem,1fr))] gap-1 px-2 pb-3 shrink-0 mt-1">
         {/* The dashboard, first. The logo that used to double as "home" is
             gone from the rail, so this is now the one place to reach it. */}
         <DroppableNavLink to="/" end aria-label="Home" className="block">
@@ -434,47 +396,10 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
       {/* Pinned routes. A module's own links live on the hover over its icon
           above, not here — the vertical run belongs to what the user chose to
           keep. */}
-      <div className="hidden md:block flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {/* What is open now, then what is kept: one list, two tenses. */}
         <RailTabs />
         <RailPins />
-      </div>
-
-      <div className="flex-grow block md:hidden">
-
-        <Drawer>
-          <DrawerTrigger asChild>
-            <Button variant="ghost" className="w-full h-full flex justify-start items-start">
-              <IconContext.Provider value={{ className: "w-8 h-8 mx-auto text-foreground" }}>
-                <ChevronUp />
-              </IconContext.Provider>
-            </Button>
-          </DrawerTrigger>
-          <DrawerContent className="p-2 mb-2 border-seperator grid grid-cols-1 gap-2">
-            {moduleOrder.map((moduleKey) => (
-              <div key={moduleKey} className="flex flex-col rounded-md border p-2">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-medium">
-                    {moduleRegistry[moduleKey]?.label || moduleKey}
-                  </div>
-                  <ModuleNavItem
-                    moduleKey={moduleKey}
-                    moduleState={availableModules.find((entry) => entry.key === moduleKey)}
-                    mobile
-                  />
-                </div>
-              </div>
-            ))}
-            <div className="flex flex-col rounded-md border p-2">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-medium">
-                  Settings
-                </div>
-                <SettingsNavItem mobile />
-              </div>
-            </div>
-          </DrawerContent>
-        </Drawer>
       </div>
 
       {/* Running tasks, where a browser puts its now-playing control: in the

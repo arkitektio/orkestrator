@@ -293,6 +293,25 @@ const useStore = (): Store => {
   return store;
 };
 
+const noSubscribe = () => () => {};
+const noTab = () => null;
+
+/**
+ * The active tab's id, or `null` when there is no tab store above.
+ *
+ * For chrome that must also work without tabs (the palette provider is
+ * rendered bare in tests, and the welcome screen has no tabs at all). Only
+ * re-renders when the ACTIVE id changes, not on every navigation.
+ */
+export const useActiveTabIdOrNull = (): string | null => {
+  const store = useContext(StoreContext);
+  return useSyncExternalStore(
+    store ? store.subscribe : noSubscribe,
+    store ? () => store.get().activeId : noTab,
+    store ? () => store.get().activeId : noTab,
+  );
+};
+
 /** The current tabs snapshot; re-renders on any tab or navigation change. */
 export const useTabsState = (): TabsState => {
   const store = useStore();

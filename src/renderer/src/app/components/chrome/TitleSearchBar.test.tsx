@@ -43,9 +43,12 @@ describe("the idle search pill", () => {
   });
 
   it("skips crumbs that are still-loading components rather than rendering them raw", () => {
+    // A route's own crumb component — an entity's name being fetched. (A bare
+    // `<span>text</span>` is the library's DEFAULT crumb and is read as text.)
+    const Name = () => <b>element</b>;
     breadcrumbs.mockReturnValue([
       { breadcrumb: "Mikro" },
-      { breadcrumb: <span>element</span> },
+      { breadcrumb: <Name /> },
     ]);
     renderBar();
     expect(screen.getByText("Mikro")).toBeInTheDocument();
@@ -65,5 +68,19 @@ describe("the idle search pill", () => {
     renderBar();
     screen.getByRole("button").click();
     expect(togglePalette).toHaveBeenCalledWith({ fresh: true });
+  });
+
+  it("reads the text out of the library's default crumbs, which are spans", () => {
+    // `use-react-router-breadcrumbs` never returns a bare string; a string
+    // filter left the pill saying "Search Orkestrator" on every page.
+    breadcrumbs.mockReturnValue([
+      { breadcrumb: <span>Home</span> },
+      { breadcrumb: <span>Mikro</span> },
+      { breadcrumb: <span>Datasets</span> },
+    ]);
+    render(<MemoryRouter><TitleSearchBar /></MemoryRouter>);
+    expect(screen.getByText("Mikro")).toBeInTheDocument();
+    expect(screen.getByText("Datasets")).toBeInTheDocument();
+    expect(screen.queryByText("Search Orkestrator")).toBeNull();
   });
 });

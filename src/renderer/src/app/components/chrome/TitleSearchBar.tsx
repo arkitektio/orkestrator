@@ -1,4 +1,5 @@
 import { useCommandPalette } from "@/command/CommandPaletteProvider";
+import { breadcrumbText } from "@/lib/breadcrumbText";
 import { cn } from "@/lib/utils";
 import { Search } from "lucide-react";
 import React, { useEffect, useRef } from "react";
@@ -65,9 +66,9 @@ export const TitleSearchBar = () => {
 
   const trail = React.useMemo(() => {
     const labels = breadcrumbs
-      .map(({ breadcrumb }) => (typeof breadcrumb === "string" ? breadcrumb : undefined))
-      // Non-string crumbs are components (a fetched entity's name, still
-      // loading); skip rather than render a React element into the pill.
+      .map(({ breadcrumb }) => breadcrumbText(breadcrumb))
+      // Component crumbs (a fetched entity's name, still loading) have no
+      // text; skip rather than render a React element into the pill.
       .filter((label): label is string => Boolean(label));
 
     return labels.slice(-2);

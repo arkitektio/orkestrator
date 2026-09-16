@@ -9,6 +9,9 @@ import React, {
   useState,
 } from "react";
 
+import { useTabId } from "./tabs/TabContext";
+import { useActiveTabIdOrNull } from "./tabs/TabsProvider";
+
 import { Modifier } from "./ExtensionContext";
 
 /**
@@ -79,7 +82,7 @@ const CommandPaletteContext = createContext<CommandPaletteValue>({
 export const useCommandPalette = () => useContext(CommandPaletteContext);
 
 const RegistryContext = createContext<{
-  register: (id: string, context: CommandPageContext) => void;
+  register: (id: string, context: CommandPageContext, tabId: string | null) => void;
   unregister: (id: string) => void;
 }>({ register: noop, unregister: noop });
 
@@ -89,9 +92,15 @@ const RegistryContext = createContext<{
  * Replaces `<CommandMenu objects={…} />`. Registrations form a stack and the
  * LAST one wins: a model page mounted inside a list page is the more specific
  * context, and it is the one mounted later.
+ *
+ * Each registration remembers the tab it was made in. Warm tabs stay MOUNTED
+ * while hidden, so their pages stay registered; without the tab id the palette
+ * would keep offering whichever tab's page happened to mount last, not the one
+ * being looked at.
  */
 export const useCommandContext = (context: CommandPageContext) => {
   const id = useId();
+  const tabId = useTabId();
   const { register, unregister } = useContext(RegistryContext);
 
   // Depend on the contents, not the object identity — callers construct the
@@ -107,9 +116,9 @@ export const useCommandContext = (context: CommandPageContext) => {
   );
 
   useEffect(() => {
-    register(id, stable);
+    register(id, stable, tabId);
     return () => unregister(id);
-  }, [id, stable, register, unregister]);
+  }, [id, stable, tabId, register, unregister]);
 };
 
 export const CommandPaletteProvider = ({ children }: { children: React.ReactNode }) => {
@@ -117,10 +126,13 @@ export const CommandPaletteProvider = ({ children }: { children: React.ReactNode
   const [query, setQueryState] = useState("");
   const [modifiers, setModifiers] = useState<Modifier[]>([]);
   const [intent, setIntent] = useState<CommandIntent>("navigate");
-  const [stack, setStack] = useState<{ id: string; context: CommandPageContext }[]>([]);
+  const [stack, setStack] = useState<
+    { id: string; tabId: string | null; context: CommandPageContext }[]
+  >([]);
+  const activeTabId = useActiveTabIdOrNull();
 
-  const register = useCallback((id: string, context: CommandPageContext) => {
-    setStack((current) => [...current.filter((e) => e.id !== id), { id, context }]);
+  const register = useCallback((id: string, context: CommandPageContext, tabId: string | null) => {
+    setStack((current) => [...current.filter((e) => e.id !== id), { id, tabId, context }]);
   }, []);
 
   const unregister = useCallback((id: string) => {
@@ -229,10 +241,12 @@ export const CommandPaletteProvider = ({ children }: { children: React.ReactNode
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [togglePalette]);
 
-  const pageContext = useMemo(
-    () => (stack.length > 0 ? stack[stack.length - 1].context : {}),
-    [stack],
-  );
+  // The innermost page of the tab being looked at. A registration made
+  // outside any tab (`tabId === null`) belongs to the chrome and always counts.
+  const pageContext = useMemo(() => {
+    const visible = stack.filter((e) => e.tabId === null || e.tabId === activeTabId);
+    return visible.length > 0 ? visible[visible.length - 1].context : {};
+  }, [stack, activeTabId]);
 
   const registry = useMemo(() => ({ register, unregister }), [register, unregister]);
 

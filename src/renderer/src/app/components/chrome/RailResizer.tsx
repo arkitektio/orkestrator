@@ -98,7 +98,6 @@ export const RailResizer = () => {
       // pointer and the handle would move the whole window instead of resizing.
       className={cn(
         "app-no-drag group absolute inset-y-0 -right-1 z-30 w-2 cursor-col-resize touch-none",
-        "hidden md:block",
       )}
       role="separator"
       aria-orientation="vertical"
