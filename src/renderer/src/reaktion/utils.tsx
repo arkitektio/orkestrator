@@ -162,65 +162,101 @@ const flussPortEffectToInput = (
   };
 };
 
-export const flussArgChildToInput = (
-  port: FlussArgChildPortFragment,
-): ArgPortInput => {
-  const { __typename, children, widget, ...rest } = port;
-  return {
-    ...rest,
-    children: children?.map((c) =>
-      flussArgChildToInput(c as FlussArgChildPortFragment),
-    ),
-    widget: widget ? flussAssignWidgetToInput(widget) : undefined,
-  };
+// A port can sit on either side of a node regardless of its fragment type:
+// reactive/transform nodes take a source's *return* ports as their *ins* (and
+// vice versa). The input types differ per side (`default`/`validators`/
+// `requires`/assign widget are arg-only; `provides`/return widget are
+// return-only), so the converters pick exactly the target input's fields and
+// drop what the other side carries instead of spreading the fragment.
+type AnyFlussPortLike = {
+  __typename?: string;
+  key: string;
+  kind: PortKind;
+  label?: string | null;
+  nullable?: boolean;
+  description?: string | null;
+  identifier?: string | null;
+  referenceUnit?: string | null;
+  proposedUnits?: string[] | null;
+  dimension?: string | null;
+  default?: unknown;
+  effects?: FlussPortEffectFragment[] | null;
+  children?: AnyFlussPortLike[] | null;
+  widget?: (FlussAssignWidgetFragment | FlussReturnWidgetFragment) | null;
+  choices?: ({ __typename?: string } & Record<string, unknown>)[] | null;
+  validators?: ({ __typename?: string; call?: unknown } & Record<string, unknown>)[] | null;
+  requires?: ({ __typename?: string } & Record<string, unknown>)[] | null;
+  provides?: ({ __typename?: string } & Record<string, unknown>)[] | null;
 };
+
+const pickCommonPortFields = (port: AnyFlussPortLike) => ({
+  key: port.key,
+  kind: port.kind,
+  label: port.label ?? undefined,
+  nullable: port.nullable ?? false,
+  description: port.description ?? undefined,
+  identifier: port.identifier ?? undefined,
+  referenceUnit: port.referenceUnit ?? undefined,
+  proposedUnits: port.proposedUnits ?? undefined,
+  dimension: port.dimension ?? undefined,
+  effects: port.effects?.map(flussPortEffectToInput),
+  choices: port.choices?.map((c) => stripTypenames(c)) as ArgPortInput["choices"],
+});
+
+const isAssignWidget = (
+  widget: FlussAssignWidgetFragment | FlussReturnWidgetFragment,
+): widget is FlussAssignWidgetFragment =>
+  !!widget.__typename && widget.__typename in flussAssignWidgetKindMap;
+
+const isReturnWidget = (
+  widget: FlussAssignWidgetFragment | FlussReturnWidgetFragment,
+): widget is FlussReturnWidgetFragment =>
+  !!widget.__typename && widget.__typename in flussReturnWidgetKindMap;
 
 export const flussArgPortToInput = (
-  port: FlussArgPortFragment,
+  port: FlussArgPortFragment | FlussArgChildPortFragment | FlussReturnPortFragment | FlussReturnChildPortFragment,
 ): ArgPortInput => {
-  const { __typename, children, widget, effects, choices, validators, requires, ...rest } =
-    port;
+  const p = port as unknown as AnyFlussPortLike;
+  const argSide = p.__typename !== "ReturnPort";
   return {
-    ...rest,
-    effects: effects?.map(flussPortEffectToInput),
-    children: children?.map(flussArgChildToInput),
-    widget: widget ? flussAssignWidgetToInput(widget) : undefined,
-    choices: choices?.map(({ __typename, ...c }) => c),
-    validators: validators?.map(({ __typename, call, ...v }) => ({
-      ...v,
-      call: stripTypenames(call),
-    })),
-    requires: requires?.map(({ __typename, ...r }) => r),
+    ...pickCommonPortFields(p),
+    children: p.children?.map((c) => flussArgPortToInput(c as FlussArgChildPortFragment)),
+    widget: p.widget && isAssignWidget(p.widget) ? flussAssignWidgetToInput(p.widget) : undefined,
+    default: argSide ? (p.default as ArgPortInput["default"]) : undefined,
+    validators: argSide
+      ? p.validators?.map(({ __typename: _t, call, ...v }) => ({
+          ...(v as object),
+          call: stripTypenames(call),
+        })) as ArgPortInput["validators"]
+      : undefined,
+    requires: argSide
+      ? (p.requires?.map((r) => stripTypenames(r)) as ArgPortInput["requires"])
+      : undefined,
   };
 };
 
-export const flussReturnChildToInput = (
-  port: FlussReturnChildPortFragment,
-): ReturnPortInput => {
-  const { __typename, children, widget, ...rest } = port;
-  return {
-    ...rest,
-    children: children?.map((c) =>
-      flussReturnChildToInput(c as FlussReturnChildPortFragment),
-    ),
-    widget: widget ? flussReturnWidgetToInput(widget) : undefined,
-  };
-};
+/** @deprecated use `flussArgPortToInput`; kept for callers that convert child ports explicitly. */
+export const flussArgChildToInput = (port: FlussArgChildPortFragment): ArgPortInput =>
+  flussArgPortToInput(port);
 
 export const flussReturnPortToInput = (
-  port: FlussReturnPortFragment,
+  port: FlussReturnPortFragment | FlussReturnChildPortFragment | FlussArgPortFragment | FlussArgChildPortFragment,
 ): ReturnPortInput => {
-  const { __typename, children, widget, effects, choices, provides, ...rest } =
-    port;
+  const p = port as unknown as AnyFlussPortLike;
+  const returnSide = p.__typename !== "ArgPort";
   return {
-    ...rest,
-    effects: effects?.map(flussPortEffectToInput),
-    children: children?.map(flussReturnChildToInput),
-    widget: widget ? flussReturnWidgetToInput(widget) : undefined,
-    choices: choices?.map(({ __typename, ...c }) => c),
-    provides: provides?.map(({ __typename, ...p }) => p),
+    ...pickCommonPortFields(p),
+    children: p.children?.map((c) => flussReturnPortToInput(c as FlussReturnChildPortFragment)),
+    widget: p.widget && isReturnWidget(p.widget) ? flussReturnWidgetToInput(p.widget) : undefined,
+    provides: returnSide
+      ? (p.provides?.map((r) => stripTypenames(r)) as ReturnPortInput["provides"])
+      : undefined,
   };
 };
+
+/** @deprecated use `flussReturnPortToInput`; kept for callers that convert child ports explicitly. */
+export const flussReturnChildToInput = (port: FlussReturnChildPortFragment): ReturnPortInput =>
+  flussReturnPortToInput(port);
 
 // For building a rekuest action DefinitionInput from a flow's IO nodes: the flow's
 // ArgNode emits its values as node *outs* (ReturnPort) which are semantically the
