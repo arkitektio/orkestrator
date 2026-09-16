@@ -1,32 +1,36 @@
 import { useEffect } from "react";
-import { useEditTemporal } from "../context";
+import { useEditFlowStoreApi } from "../context";
 
+const isEditableTarget = (target: EventTarget | null) => {
+  const element = target as HTMLElement | null;
+  if (!element) return false;
+  const tag = element.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || element.isContentEditable;
+};
+
+/** One keydown listener for the editor's lifetime; reads history state at fire time. */
 export const RedoUndoHandler = () => {
-  const { undo, redo, canUndo, canRedo } = useEditTemporal();
+  const store = useEditFlowStoreApi();
 
   useEffect(() => {
-    const onKeyUp = (event: KeyboardEvent) => {
-      const isPrimaryModifier = event.ctrlKey || event.metaKey;
-
-      if (!isPrimaryModifier) {
-        return;
-      }
-
-      if (event.key === "z" && canUndo) {
-        undo();
-      }
-
-      if ((event.key === "y" || (event.shiftKey && event.key === "Z")) && canRedo) {
-        redo();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (isEditableTarget(event.target)) return;
+      const temporal = store.temporal.getState();
+      const key = event.key.toLowerCase();
+      const isRedo = key === "y" || (key === "z" && event.shiftKey);
+      const isUndo = key === "z" && !event.shiftKey;
+      if (isRedo && temporal.futureStates.length > 0) {
+        event.preventDefault();
+        temporal.redo();
+      } else if (isUndo && temporal.pastStates.length > 0) {
+        event.preventDefault();
+        temporal.undo();
       }
     };
-
-    document.addEventListener("keyup", onKeyUp);
-
-    return () => {
-      document.removeEventListener("keyup", onKeyUp);
-    };
-  }, [canRedo, canUndo, redo, undo]);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [store]);
 
   return null;
 };

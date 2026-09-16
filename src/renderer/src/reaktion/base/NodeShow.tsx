@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { NodeResizeControl } from '@xyflow/react'
 import { motion } from 'framer-motion'
 import React from 'react'
-import { useEditNodeErrors, EditFlowStoreContext, useEditFlowStore } from '../edit/context'
+import { useFlowAdapter } from '../nodes/adapter'
 
 type NodeProps = {
   children: React.ReactNode
@@ -114,16 +114,15 @@ const BaseNodeShowLayout: React.FC<NodeProps & { showNodeErrors?: boolean; error
   )
 }
 
-const EditNodeShowLayout: React.FC<NodeProps> = (props) => {
-  const showNodeErrors = useEditFlowStore((s) => s.showNodeErrors);
-  const errors = useEditNodeErrors(props.id)
-  return <BaseNodeShowLayout {...props} showNodeErrors={showNodeErrors} errors={errors} />
+const NodeShowLayoutInner: React.FC<NodeProps> = (props) => {
+  const adapter = useFlowAdapter()
+  const showNodeErrors = adapter.useShowNodeErrors()
+  const errors = adapter.useNodeErrors(props.id)
+  return <BaseNodeShowLayout {...props} showNodeErrors={showNodeErrors} errors={errors as never[]} />
 }
 
-export const NodeShowLayout: React.FC<NodeProps> = (props) => {
-  const storeContext = React.useContext(EditFlowStoreContext)
-  if (storeContext) {
-    return <EditNodeShowLayout {...props} />
-  }
-  return <BaseNodeShowLayout {...props} />
-}
+/**
+ * Shared node chrome. Errors and the error toggle come from the surface's
+ * `FlowAdapter`, so the viewer and tracker get the no-error path for free.
+ */
+export const NodeShowLayout = React.memo(NodeShowLayoutInner)

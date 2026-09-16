@@ -3,15 +3,11 @@ import { useFlowQuery } from "@/reaktion/api/graphql";
 import { EditFlow } from "@/reaktion/edit/EditFlow";
 import { useParams } from "react-router-dom";
 
+/** A single (immutable) flow version: shown in the editor without a save path. */
 export const FlowDetail = (props: { id: string }) => {
-  const { data, error } = useFlowQuery({
-    variables: {
-      id: props.id,
-    },
-  });
+  const { data, error } = useFlowQuery({ variables: { id: props.id } });
 
-  console.log(error?.message, data);
-
+  if (error) return <div className="p-4 text-sm text-destructive">{error.message}</div>;
   return <>{data?.flow && <EditFlow flow={data.flow} />}</>;
 };
 
@@ -22,11 +18,9 @@ function Page() {
   }
 
   return (
-    <>
-      <Guard.Fluss>
-        <FlowDetail id={id} />
-      </Guard.Fluss>
-    </>
+    <Guard.Fluss>
+      <FlowDetail id={id} />
+    </Guard.Fluss>
   );
 }
 

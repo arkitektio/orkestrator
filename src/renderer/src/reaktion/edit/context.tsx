@@ -1,41 +1,34 @@
+import { FlowNode } from "@/reaktion/types";
+import { ValidationError } from "@/reaktion/validation/types";
 import React, { useContext } from "react";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import { createEditFlowStore, EditFlowState } from "./store";
+import { EditFlowState, EditFlowStore, EMPTY_ERRORS } from "./store";
 
-export type EditFlowStoreApi = ReturnType<typeof createEditFlowStore>;
+export type EditFlowStoreApi = EditFlowStore;
 
-export const EditFlowStoreContext =
-  React.createContext<EditFlowStoreApi | null>(null);
+export const EditFlowStoreContext = React.createContext<EditFlowStoreApi | null>(null);
 
 export const useEditFlowStoreApi = () => {
   const store = useContext(EditFlowStoreContext);
-
   if (!store) {
     throw new Error("useEditFlowStoreApi must be used within EditFlowStoreContext");
   }
-
   return store;
 };
 
+/**
+ * Select ONE field or action. The store's `nodes` array is replaced on every
+ * drag tick, so a selector returning the whole state (or a fresh object)
+ * would rerender at pointer rate. Actions are stable references.
+ */
 export const useEditFlowStore = <T,>(selector: (state: EditFlowState) => T) => {
   const store = useEditFlowStoreApi();
   return useStore(store, selector);
 };
 
-/**
- * Undo/redo state of the flow store's temporal (zundo) history.
- *
- * NOTE: there is deliberately no hook that returns the whole flow state. The
- * store's `nodes` array is replaced on every drag tick, so any component
- * subscribed to the whole state rerenders at pointer rate — with one such
- * subscription per node and per edge that was the entire graph. Select the
- * field or action you need with `useEditFlowStore((s) => s.field)`; actions
- * are stable references and never cause a rerender.
- */
 export const useEditTemporal = () => {
   const store = useEditFlowStoreApi();
-
   return useStore(
     store.temporal,
     useShallow((temporalState) => ({
@@ -47,18 +40,15 @@ export const useEditTemporal = () => {
   );
 };
 
-export const useEditNodeErrors = (id: string) =>
-  // Shallow-compared so the per-node array only changes when this node's
-  // errors change, not on every store write.
-  useEditFlowStore(
-    useShallow((state) =>
-      state.remainingErrors.filter((error) => error.id === id && error.type === "node"),
-    ),
-  );
+/** The live node for `id` (reference-stable until that node changes). */
+export const useEditNode = (id: string | null | undefined): FlowNode | undefined =>
+  useEditFlowStore((state) => (id ? state.nodeById.get(id) : undefined));
 
-export const useSubflowChildCount = (id: string) => {
-  return useEditFlowStore(
-    (state) => state.nodes.filter((node) => node.parentId === id).length,
-  );
-};
+/** O(1) lookup; the returned array is reference-stable across writes that don't touch this node. */
+export const useEditNodeErrors = (id: string): readonly ValidationError[] =>
+  useEditFlowStore((state) => state.errorsByNodeId.get(id) ?? EMPTY_ERRORS);
 
+export const useSubflowChildCount = (id: string): number =>
+  useEditFlowStore((state) => state.childCountByParent.get(id) ?? 0);
+
+export const useEditDirty = () => useEditFlowStore((state) => state.dirty);

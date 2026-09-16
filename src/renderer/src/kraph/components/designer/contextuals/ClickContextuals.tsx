@@ -1,6 +1,6 @@
 import { DialogButton } from "@/components/ui/dialogbutton";
 import { GraphFragment } from "@/kraph/api/graphql";
-import { ContextualContainer } from "@/reaktion/edit/components/ContextualContainer";
+import { ContextualContainer } from "@/reaktion/edit/contextuals/ContextualContainer";
 import { ClickContextualParams, StagingNodeParams } from "../types";
 
 export const ClickContextual = (props: {

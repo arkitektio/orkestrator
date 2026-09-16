@@ -13,7 +13,6 @@ import {
   nodeIdBuilder,
   reactiveFlowNode,
   singleToList,
-  streamToReadable,
 } from "../utils";
 import {
   ChangeEvent,
@@ -68,31 +67,10 @@ export const changeZip = (
   }
 };
 
-const logChallenge = (data: FlowNodeData, event: ChangeEvent) => {
-  if (event.type == "target")
-    console.log(
-      data.title,
-      "is challenged as a Target: Having input",
-      streamToReadable(data.ins.at(event.index)),
-      "and challenged by",
-      streamToReadable(event.stream),
-    );
-  if (event.type == "source")
-    console.log(
-      data.title,
-      "is challenged as a Source: Having output",
-      streamToReadable(data.outs.at(event.index)),
-      "and challenged by",
-      streamToReadable(event.stream),
-    );
-};
-
 export const onlyValid = (
   data: FlowNodeData,
   event: ChangeEvent,
 ): ChangeOutcome => {
-  logChallenge(data, event);
-  console.log(islistTransformable(event.stream, data.ins.at(event.index)));
   if (event.type == "target") {
     if (isSameStream(event.stream, data.ins.at(event.index))) return {}; // No change needed
     if (islistTransformable(event.stream, data.ins.at(event.index)))
@@ -125,7 +103,6 @@ export const argIsValid = (
   event: ChangeEvent,
 ): ChangeOutcome => {
   if (event.type == "source") {
-    console.log("Arg is challenged as a Source");
     return {
       data: {
         ...data,
@@ -289,7 +266,7 @@ export const getTransform = (
       description: "Transforms a stream into an item of chunks",
       ins: [instream],
       outs: [instream.map((p) => listPortToSingle(p as ArgPort, "Chunked" + p.key))],
-      implementation: ReactiveImplementation.ToList,
+      implementation: ReactiveImplementation.Chunk,
       position,
     });
   }
@@ -309,12 +286,22 @@ export const getTransform = (
   throw new Error("Unknown transform");
 };
 
+export const streamToItems = (
+  stream: readonly StreamPort[] | undefined,
+): FlowEdge["data"] extends { stream: infer S } ? S : never =>
+  (stream ?? []).map((port) => ({
+    __typename: "StreamItem" as const,
+    kind: port.kind,
+    label: port.label ?? port.key,
+  })) as never;
+
 export const createVanillaTransformEdge = (
   id: string,
   source: string,
   sourceStream: number,
   target: string,
   targetStream: number,
+  stream?: readonly StreamPort[],
 ): FlowEdge => {
   return {
     id: id,
@@ -327,7 +314,7 @@ export const createVanillaTransformEdge = (
       __typename: "VanillaEdge",
       id: id,
       kind: GraphEdgeKind.Vanilla,
-      stream: [],
+      stream: streamToItems(stream),
       source: source,
       sourceHandle: "return_" + sourceStream,
       target: target,
@@ -469,38 +456,27 @@ export const addTransform = (
     y: (targetNodePosition.y + sourceNodePostion.y) / 2,
   };
 
-  let transformNode: FlowNode;
+  const transformNode = getTransform(transform, options.stream, inbetweenPosition);
 
-  if (options.type == "source") {
-
-    transformNode = getTransform(
-      transform,
-      options.stream,
-      inbetweenPosition,
-    );
-  }
-  else  {
-    transformNode = getTransform(
-      transform,
-      options.stream,
-      inbetweenPosition,
-    );
-  }
-
+  // Fresh ids: the removed edge's id must not be reused, otherwise the solved
+  // error recorded for it points at a different, still-existing edge (and
+  // chained transforms would collide on `<id>-transform`).
   const toTransformEdge = createVanillaTransformEdge(
-    options.edgeID, //reusing the old id
+    nodeIdBuilder(),
     sourceNode.id,
     sourceStream,
     transformNode.id,
-    0, //transform ports are always 0
+    0, // transform ports are always 0
+    options.stream,
   );
 
   const toTargetEdge = createVanillaTransformEdge(
-    options.edgeID + "-transform", //adding suffix old id
+    nodeIdBuilder(),
     transformNode.id,
     0,
     targetNode.id,
-    targetStream, //transform ports are always 0
+    targetStream,
+    transformNode.data.outs.at(0),
   );
 
   removeEdgeAndSolve(state, options.edgeID, "Removed because of transform");
@@ -537,7 +513,6 @@ export const transitionOrCut = (
   }
 
   if (outcome.denied) {
-    console.log("Denied", outcome.denied);
     removeEdgeAndSolve(state, options.edgeID, outcome.denied);
     return;
   }
@@ -640,7 +615,7 @@ export const istriviallyIntegratable = (
   const targetStream = targetNode?.data.ins.at(targetStreamIndex);
 
   if (targetNode?.type == "ReactiveNode") {
-    const alreadyConnected = state.edges.find((e) => e.source == targetNode.id);
+    const alreadyConnected = state.edges.find((e) => e.target == targetNode.id);
     if (alreadyConnected) {
       return isSameStream(sourceStream, targetStream);
     }
@@ -720,7 +695,7 @@ export const integrate = (
       __typename: "VanillaEdge",
       id: newID,
       kind: GraphEdgeKind.Vanilla,
-      stream: [],
+      stream: streamToItems(sourceStream),
       source: sourceNodeID,
       sourceHandle: sourceHandle,
       target: targetNodeID,

@@ -29,9 +29,7 @@ export const Page = asDetailQueryRoute(useWorkspaceQuery, ({ data }) => {
               {data?.workspace.flows.map((fl) => (
                 <FlussFlow.Smart object={fl} key={fl.id}>
                   <Card className="p-4">
-                    <FlussFlow.DetailLink object={fl}>
-                      {fl.title}
-                    </FlussFlow.DetailLink>
+                    <FlussFlow.DetailLink object={fl}>{fl.title}</FlussFlow.DetailLink>
                   </Card>
                 </FlussFlow.Smart>
               ))}
@@ -42,21 +40,10 @@ export const Page = asDetailQueryRoute(useWorkspaceQuery, ({ data }) => {
     >
       {data?.workspace.latestFlow && (
         <EditFlow
-          flow={data?.workspace.latestFlow}
-          onSave={(e) => {
-            console.log("saving flow", e);
-            saveFlow({
-              variables: {
-                id: data.workspace.id,
-                graph: e,
-              },
-            })
-              .then((e) => {
-                console.log(e);
-              })
-              .catch((e) => {
-                console.log(e);
-              });
+          flow={data.workspace.latestFlow}
+          onSave={async (graph) => {
+            const result = await saveFlow({ variables: { id: data.workspace.id, graph } });
+            return result.data?.updateWorkspace.latestFlow ?? undefined;
           }}
         />
       )}

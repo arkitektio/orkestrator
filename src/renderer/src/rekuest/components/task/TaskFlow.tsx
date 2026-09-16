@@ -43,7 +43,6 @@ export const TaskFlow = (props: {
       {data?.runForTask && (
         <TrackFlow
           run={data.runForTask}
-          task={props.task}
         />
       )}
       {error && <div>Error: {error.message}</div>}

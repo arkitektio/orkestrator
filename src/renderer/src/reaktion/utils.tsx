@@ -279,15 +279,17 @@ export const nodes_to_flownodes = (nodes: ActionFragment[]): FlowNode[] => {
     nodes
       ?.map((node) => {
         if (node) {
-          const { id, position, __typename, ...rest } = node;
+          // `parentNode` is React Flow's `parentId`; it must not stay in `data`
+          // or it would shadow a later reparent on save (see flowNodeToInput).
+          const { id, position, __typename, parentNode, ...rest } = node;
           const node_: FlowNode = {
             type: __typename,
             id: id,
             position: { x: position.x, y: position.y },
             data: { ...rest },
             dragHandle: ".custom-drag-handle",
-            parentId: rest.parentNode ? rest.parentNode : undefined,
-            extent: rest.parentNode ? "parent" : undefined,
+            parentId: parentNode ? parentNode : undefined,
+            extent: parentNode ? "parent" : undefined,
           };
           return node_;
         }
@@ -341,18 +343,34 @@ export const flowNodeToInput = (
     data: { outs, constants, ins, voids, ...rest },
   } = node;
   try {
-
-
+    // Only schema fields may reach the mutation; the editor decorates node
+    // data with client-only keys (`extras`, legacy `app`/`binds`, a stale
+    // `parentNode` from older saves).
+    const {
+      extras: _extras,
+      app: _app,
+      binds: _binds,
+      parentNode: _parentNode,
+      __typename: _typename,
+      ...fields
+    } = rest as typeof rest & {
+      extras?: unknown;
+      app?: unknown;
+      binds?: unknown;
+      parentNode?: unknown;
+      __typename?: unknown;
+    };
 
     const node_: NodeInput = {
+      ...fields,
       ins: ins && ins.map((s) => s.map(flussArgPortToInput)),
       outs: outs && outs.map((s) => s.map(flussReturnPortToInput)),
       constants: constants && constants.map(flussArgPortToInput),
       voids: voids && voids.map(flussArgPortToInput),
       id,
       position: { x: position.x, y: position.y },
+      // The live React Flow parent wins over anything left in `data`.
       parentNode: parentId ? parentId : undefined,
-      ...rest,
     };
 
     return node_;
