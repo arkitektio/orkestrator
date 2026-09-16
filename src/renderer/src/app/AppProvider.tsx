@@ -107,7 +107,26 @@ import { MikroDashboardWidgets } from "@/providers/dashboard/widgets/MikroDashbo
 import { LatestTasksDashboardWidget } from "@/providers/dashboard/widgets/LatestTasksDashboardWidget";
 import { LatestArrayDatasetsDashboardWidget } from "@/providers/dashboard/widgets/LatestArrayDatasetsDashboardWidget";
 import { OrganizationBrandSync } from "@/lok-next/components/OrganizationBrandSync";
+import { ProfileIdentitySync } from "@/lok-next/components/ProfileIdentitySync";
+import { ProfileSwitchEffects } from "@/app/components/profile/ProfileSwitchEffects";
 
+
+/**
+ * Remounts everything tenant-scoped when the live profile changes.
+ *
+ * A switch changes organization, and organization ids are threaded through
+ * selection state, open dialogs, agent state and widget registrations — all of
+ * which would otherwise keep pointing at rows the new profile cannot see.
+ * Keying the subtree throws that state away wholesale, which is exactly right
+ * for a switch and needs no per-provider reset logic.
+ *
+ * Deliberately INSIDE `Arkitekt.Provider`: keying above it would remount the
+ * provider itself and re-run bootstrap, i.e. the switch would fight itself.
+ */
+const ProfileScope = ({ children }: { children: React.ReactNode }) => {
+  const activeProfileId = Arkitekt.useActiveProfileId();
+  return <React.Fragment key={activeProfileId ?? "guest"}>{children}</React.Fragment>;
+};
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -125,11 +144,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                       <TooltipProvider>
                         <DisplayProvider>
                           <WidgetRegistryProvider registry={THE_WIDGET_REGISTRY}>
+                            <ProfileScope>
                             <SmartProvider>
                               <DialogProvider>
                                 <SelectionProvider>
                                   <AgentProvider disabled={false}>
                                     <WardRegistrar />
+                                    <ProfileSwitchEffects />
                                     <SmartSurface />
                                     <RefetchOnReactivate />
                                     <GcOnNavigate />
@@ -145,6 +166,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     </Guard.Rekuest>
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
                                       <OrganizationBrandSync />
+                                      <ProfileIdentitySync />
                                     </Guard.Lok>
                                     <Toaster />
                                     <Guard.Mikro unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
@@ -158,6 +180,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                 </SelectionProvider>
                               </DialogProvider>
                             </SmartProvider>
+                            </ProfileScope>
                           </WidgetRegistryProvider>
                         </DisplayProvider>
                       </TooltipProvider>

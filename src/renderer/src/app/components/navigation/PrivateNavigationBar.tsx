@@ -32,7 +32,6 @@ import { cn } from "@/lib/utils";
 import { aliasToHttpPath } from "@/lib/arkitekt/alias/helpers";
 import { Me, Username } from "@/lok-next/components/Me";
 import { useDebug } from "@/providers/debug/DebugContext";
-import { useMyContextQuery } from "@/lok-next/api/graphql";
 import { ChatBubbleIcon, DashIcon, HomeIcon, ReloadIcon } from "@radix-ui/react-icons";
 import {
   Bug,
@@ -56,6 +55,7 @@ import { MdStream } from "react-icons/md";
 import { PiDatabaseLight, PiGraph } from "react-icons/pi";
 import { TbBugOff } from "react-icons/tb";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import ProfileSwitcher from "../profile/ProfileSwitcher";
 import { ArkitektLogo } from "../logos/ArkitektLogo";
 import { BackLogo } from "../logos/BackLogo";
 import { Badge } from "@/components/ui/badge";
@@ -390,8 +390,6 @@ const SettingsNavItem = ({ mobile = false }: { mobile?: boolean }) => {
 };
 
 const ActiveProfileMenuLabel = ({ fakts }: { fakts: any }) => {
-  const { data: contextData } = useMyContextQuery();
-
   return (
     <div className="flex flex-col space-y-2.5">
       <div className="flex items-center justify-between">
@@ -412,14 +410,6 @@ const ActiveProfileMenuLabel = ({ fakts }: { fakts: any }) => {
             <span className="font-medium text-foreground/80">Composition:</span>
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal truncate max-w-[120px]" title={fakts.self.deployment_name}>
               {fakts.self.deployment_name}
-            </Badge>
-          </div>
-        )}
-        {contextData?.mycontext?.organization && (
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="font-medium text-foreground/80">Organization:</span>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal truncate max-w-[120px]" title={contextData.mycontext.organization.name}>
-              {contextData.mycontext.organization.name}
             </Badge>
           </div>
         )}
@@ -453,8 +443,6 @@ const ProfileMenuLabel = ({ hasLokProfile, fakts }: { hasLokProfile: boolean; fa
 };
 
 const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
-  const disconnect = Arkitekt.useDisconnect();
-  const reconnect = Arkitekt.useReconnect();
   const configurationIssues = Arkitekt.useConfigurationIssues();
   const availableModules = Arkitekt.useAvailableModules();
   const connection = Arkitekt.useConnection();
@@ -595,15 +583,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
                 <span>Settings</span>
               </DroppableNavLink>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <div className="flex flex-row gap-2 w-full p-2">
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => void disconnect()}>
-                Disconnect
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => void reconnect()}>
-                Reconnect
-              </Button>
-            </div>
+            <ProfileSwitcher />
           </DropdownMenuContent>
         </DropdownMenu>
         <Button variant="ghost" className="h-8 w-8" onClick={reload}>

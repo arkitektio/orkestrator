@@ -20,6 +20,7 @@ import { TForm as CreateRelationCategoryForm } from "@/kraph/forms/CreateRelatio
 import { TForm as CreateStructureRelationCategoryForm } from "@/kraph/forms/CreateStructureRelationCategoryForm";
 import UpdateEntityCategoryForm from "@/kraph/forms/UpdateEntityCategoryForm";
 import { NeuronEditorHelp } from "@/elektro/components/NeuronEditorHelp";
+import { AddProfileDialog } from "@/app/components/profile/AddProfileDialog";
 import { createDialogProvider } from "@/lib/generic/providers/DialogProvider";
 import { CreateOrganizationForm } from "@/lok-next/dialogs/CreateOrganization";
 import { CreateRedeemTokenForm } from "@/lok-next/forms/CreateRedeemTokenForm";
@@ -43,6 +44,7 @@ import { UpdateAgentForm } from "@/rekuest/forms/UpdateAgentForm";
 
 export const { DialogProvider, useDialog, registry } = createDialogProvider({
   actionassign: ActionAssignForm,
+  addprofile: AddProfileDialog,
   alpakareplyerassign: AlpakaReplyerAssignForm,
   implementationassign: ImplementationAssignForm,
   relatestructure: RelateStructures,

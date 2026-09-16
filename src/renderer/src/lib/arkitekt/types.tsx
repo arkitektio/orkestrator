@@ -4,6 +4,11 @@ import { FaktsEndpoint } from "./fakts/endpointSchema";
 import { ActiveFakts, Alias, Instance } from "./fakts/faktsSchema";
 import { Manifest } from "./fakts/manifestSchema";
 import { StoredArkitektSession } from "./fakts/sessionStorageSchema";
+import {
+  ProfileIdentity,
+  ProfileLabel,
+  StoredProfileBook,
+} from "./fakts/profileStorageSchema";
 import { TokenResponse } from "./fakts/tokenSchema";
 import type { Ward } from "@/rekuest/widgets/types";
 
@@ -178,7 +183,21 @@ export type AppContext<
   configurationIssues: string[];
   serviceStates: Record<string, ServiceRuntimeState>;
   moduleStates: Record<string, ModuleRuntimeState>;
+  /**
+   * The ACTIVE profile's session, always mirrored from
+   * `profileBook.profiles[activeProfileId]`. Kept as its own field so every
+   * existing consumer (`ConnectedGuard`, `validateService`, `useToken`, …) reads
+   * exactly what it always did and is unaware profiles exist.
+   */
   storedSession: StoredArkitektSession | null;
+  /** Every login this app is holding, and which of them is live. */
+  profileBook: StoredProfileBook;
+  /**
+   * The profile a switch is currently proving. Deliberately NOT `connecting`:
+   * the whole point is that the app stays usable on the current profile while
+   * the new one's credential is checked, so only the switcher row spins.
+   */
+  switchingProfileId: string | null;
 };
 
 export type AppFunctions = {
@@ -191,6 +210,28 @@ export type AppFunctions = {
   clearServiceCache: (serviceKey: string) => Promise<void>;
   clearAllServiceCaches: () => Promise<void>;
   reportStatus: () => Promise<ReportResult | null>;
+  /**
+   * Make an already-approved profile the live one: refresh its parked token,
+   * then swap the connection. The current connection stays up until the new
+   * token is in hand, so a failure costs nothing.
+   */
+  switchProfile: (profileId: string) => Promise<void>;
+  /**
+   * Forget one profile locally. There is no `revocation_endpoint` in the fakts
+   * discovery document, so the token stays valid server-side until it expires.
+   */
+  removeProfile: (profileId: string) => Promise<void>;
+  /** Forget every profile — the old, destructive meaning of `disconnect`. */
+  forgetAllProfiles: () => Promise<void>;
+  /**
+   * Attach the server-side identity to a profile once lok has answered. This is
+   * how a provisional id becomes `baseUrl::user::org`; the caller lives in the
+   * app layer because `lib/arkitekt` must stay free of lok's GraphQL.
+   */
+  setProfileIdentity: (
+    profileId: string,
+    patch: { identity?: ProfileIdentity; label?: ProfileLabel },
+  ) => void;
 };
 
 export type ReportResult = {

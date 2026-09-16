@@ -16,6 +16,9 @@ generates:
       withHooks: true
       reactApolloVersion: 3
       apolloReactHooksImportFrom: "@/lib/fluss/hooks"
+      # Reference fragment types by name instead of inlining them: the deep port
+      # fragments otherwise blow graphql.ts up to tens of MB and stall tsc.
+      inlineFragmentTypes: combine
   src/renderer/src/reaktion/graphql.schema.json:
     plugins:
       - "introspection"

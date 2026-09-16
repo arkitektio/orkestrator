@@ -11,6 +11,11 @@ import {
   Service,
   ServiceRuntimeState,
 } from "./types";
+import {
+  getActiveProfile,
+  listProfiles,
+  type StoredProfile,
+} from "./fakts/profileStorageSchema";
 
 const useArkitektContext = () => {
   const context = useContext(ArkitektContext);
@@ -115,6 +120,26 @@ export const useToken = () => {
 };
 
 export const useConnection = () => useArkitektStore((state) => state.connection);
+
+/**
+ * Every login this app is holding, most recently used first.
+ *
+ * Reads the profile book and nothing else — no lok query, no live connection —
+ * so the switcher renders identically whether the user is signed in, signed out,
+ * or offline. Cached labels are what make that possible.
+ */
+export const useProfiles = (): StoredProfile[] =>
+  useArkitektStore(useShallow((state) => listProfiles(state.profileBook)));
+
+export const useActiveProfileId = (): string | null =>
+  useArkitektStore((state) => state.profileBook.activeProfileId);
+
+export const useActiveProfile = (): StoredProfile | null =>
+  useArkitektStore((state) => getActiveProfile(state.profileBook));
+
+/** The profile a switch is currently proving, if any. */
+export const useSwitchingProfileId = (): string | null =>
+  useArkitektStore((state) => state.switchingProfileId);
 
 export const useManifest = () => useArkitektStore((state) => state.manifest);
 

@@ -26,6 +26,15 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BreadCrumbs from "@/components/navigation/BreadCrumbs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import ProfileSwitcher from "@/app/components/profile/ProfileSwitcher";
+// The dashboard layout scope and the profile id are deliberately the same
+// string, so a profile switch re-scopes the dockview layout for free.
+import { buildScopeKey } from "@/lib/arkitekt/fakts/profileStorageSchema";
 
 
 
@@ -77,13 +86,6 @@ const components = {
 } as const;
 
 // ── Helpers ──
-
-/** Build a deterministic scope key from server + user + org */
-const buildScopeKey = (
-  baseUrl: string,
-  userId: string,
-  orgId: string,
-): string => `${baseUrl}::${userId}::${orgId}`;
 
 /** Add a widget as a new split panel — never as a tab, alternating right/below */
 let _nextDirection: "right" | "below" = "right";
@@ -196,7 +198,6 @@ const AddWidgetButton = ({ api }: { api: DockviewApi | null }) => {
 
 export const Home = () => {
   const disconnect = Arkitekt.useDisconnect();
-  const reconnect = Arkitekt.useReconnect();
   const { data: contextData } = useMyContextQuery({ fetchPolicy: "cache-and-network" });
   const connection = Arkitekt.useConnection();
   const availableServices = Arkitekt.useAvailableServices();
@@ -396,13 +397,20 @@ export const Home = () => {
                   <Pencil className="w-3.5 h-3.5 mr-1.5" />
                   Edit
                 </Button>
-                <Button onClick={reconnect} variant="outline" size="sm">
-                  <Users className="w-3.5 h-3.5 mr-1.5" />
-                  Switch
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Users className="w-3.5 h-3.5 mr-1.5" />
+                      Switch
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-72">
+                    <ProfileSwitcher />
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button onClick={disconnect} variant="ghost" size="sm">
                   <ArrowRight className="w-3.5 h-3.5 mr-1.5" />
-                  Disconnect
+                  Sign out
                 </Button>
               </>
             )}
