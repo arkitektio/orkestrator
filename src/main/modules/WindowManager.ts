@@ -5,6 +5,7 @@ import Store from 'electron-store';
 import { join } from 'path';
 import { AppModule } from './AppModule';
 import { IpcTransport } from './IpcTransport';
+import { deepLinkPath } from './deepLinkPath';
 import { APP_ORIGIN } from '../scheme';
 
 import { autoUpdater } from 'electron-updater';
@@ -96,12 +97,6 @@ const CHROME_OPTIONS: Partial<Electron.BrowserWindowConstructorOptions> =
             : { frame: false };
 
 /** What the renderer needs to lay the bar out. */
-export interface WindowChromeState {
-    maximized: boolean;
-    fullscreen: boolean;
-    focused: boolean;
-}
-
 export class WindowManager implements AppModule {
     private mainWindow: BrowserWindow | null = null;
     private windows: Set<BrowserWindow> = new Set();
@@ -162,10 +157,17 @@ export class WindowManager implements AppModule {
     }
 
     handleOrkestratorUrl(url: string) {
+        // (see `deepLinkPath` below for the shape of what comes in)
         try {
             const parsedUrl = new URL(url);
-            // Remove the protocol and get everything after orkestrator://
-            const fullPath = "/" + parsedUrl.hostname + parsedUrl.pathname + parsedUrl.search;
+            // Everything after `orkestrator://`, as one app path with exactly
+            // one leading slash. The URL parser splits it into host + path, and
+            // where the split falls depends on the link's shape:
+            //   orkestrator://mikro/x   → host "mikro", path "/x"
+            //   orkestrator:///mikro/x  → host "",      path "/mikro/x"
+            // Joining naively gave "//mikro/x" for the second — a route that
+            // matches nothing.
+            const fullPath = deepLinkPath(parsedUrl);
 
             // A deep link opens a TAB in the main window, not a new window:
             // the renderer holds the tabs, so this is one message across.

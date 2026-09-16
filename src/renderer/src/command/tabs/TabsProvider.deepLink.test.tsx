@@ -71,6 +71,14 @@ describe("deep links", () => {
     expect(screen.getByTestId("path").textContent).toBe("/mikro/arraydatasets/5");
   });
 
+  it("lands a link whose path arrived with a doubled slash", () => {
+    // `orkestrator:///mikro/x` used to reach here as "//mikro/x" — a route
+    // that matches nothing.
+    renderApp();
+    act(() => onOpenCallback?.({ path: "//mikro/arraydatasets/5" }));
+    expect(screen.getByTestId("path").textContent).toBe("/mikro/arraydatasets/5");
+  });
+
   it("lands even when the strip is full, evicting the least recent", () => {
     // A link the user clicked must go somewhere; a silent no-op would read as
     // the link being broken.

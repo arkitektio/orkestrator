@@ -35,42 +35,42 @@ export const SimulationPage = asDetailQueryRoute(
     );
 
     return (
-        <ElektroSimulation.ModelPage
-          object={simulation}
-          title={simulation.name}
-          variant="black"
-          overlay
-          actions={<ElektroSimulation.Actions object={simulation} />}
-          pageActions={
-            <div className="flex items-center gap-2">
-              <ElektroSimulation.ObjectButton object={simulation} />
-            </div>
-          }
-          additionalSidebars={
-            <Sidebars.Tab label="Info">
-              <SimulationInfoSidebar
-                simulation={simulation}
-                hidden={hidden}
-                hiddenStimuli={hiddenStimuli}
-                onToggleRecording={toggleRecording}
-                onToggleStimulus={toggleStimulus}
-              />
-            </Sidebars.Tab>
-          }
-          defaultSidebar="Info"
-          sidebarKey="SimulationDetail"
-        >
-          <div className="flex h-full w-full flex-col">
-            <SimulationTitleHeader simulation={simulation} />
-            <div className="flex min-h-0 w-full flex-1 overflow-hidden">
-              <SimulationRender
-                simulation={simulation}
-                hidden={hidden}
-                hiddenStimuli={hiddenStimuli}
-              />
-            </div>
+      <ElektroSimulation.ModelPage
+        object={simulation}
+        title={simulation.name}
+        variant="black"
+        overlay
+        actions={<ElektroSimulation.Actions object={simulation} />}
+        pageActions={
+          <div className="flex items-center gap-2">
+            <ElektroSimulation.ObjectButton object={simulation} />
           </div>
-        </ElektroSimulation.ModelPage>
+        }
+        additionalSidebars={
+          <Sidebars.Tab label="Info">
+            <SimulationInfoSidebar
+              simulation={simulation}
+              hidden={hidden}
+              hiddenStimuli={hiddenStimuli}
+              onToggleRecording={toggleRecording}
+              onToggleStimulus={toggleStimulus}
+            />
+          </Sidebars.Tab>
+        }
+        defaultSidebar="Info"
+        sidebarKey="SimulationDetail"
+      >
+        <div className="flex h-full w-full flex-col">
+          <SimulationTitleHeader simulation={simulation} />
+          <div className="flex min-h-0 w-full flex-1 overflow-hidden">
+            <SimulationRender
+              simulation={simulation}
+              hidden={hidden}
+              hiddenStimuli={hiddenStimuli}
+            />
+          </div>
+        </div>
+      </ElektroSimulation.ModelPage>
     );
   },
 );

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { hashFor, readBootPath } from "./hashMirror";
+import { hashFor, normalizeDeepLinkPath, readBootPath } from "./hashMirror";
 
 describe("hashFor", () => {
   it("writes the HashRouter shape in Electron, where the basename is empty", () => {
@@ -54,3 +54,15 @@ describe("readBootPath", () => {
     }
   });
 });
+
+describe("normalizeDeepLinkPath", () => {
+  it("collapses the doubled slash an older main process sent", () => {
+    expect(normalizeDeepLinkPath("//mikro/arraydatasets/5")).toBe("/mikro/arraydatasets/5");
+  });
+
+  it("leaves a proper path alone, and gives a bare one its slash", () => {
+    expect(normalizeDeepLinkPath("/mikro/x?y=1")).toBe("/mikro/x?y=1");
+    expect(normalizeDeepLinkPath("mikro/x")).toBe("/mikro/x");
+  });
+});
+

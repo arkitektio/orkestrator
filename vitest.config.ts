@@ -20,7 +20,12 @@ export default defineConfig({
     // docblock at the top of the file.
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["src/renderer/src/**/*.{test,spec}.{ts,tsx}"],
+    include: [
+      "src/renderer/src/**/*.{test,spec}.{ts,tsx}",
+      // Main-process code is mostly untestable here (it imports `electron`),
+      // but its pure helpers are — deep-link path parsing, for one.
+      "src/main/**/*.{test,spec}.ts",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],

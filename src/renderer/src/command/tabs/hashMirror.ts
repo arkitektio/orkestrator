@@ -15,6 +15,13 @@ import { createPath, parsePath, type Path } from "react-router-dom";
 
 const withLeadingSlash = (path: string) => (path.startsWith("/") ? path : `/${path}`);
 
+/**
+ * An app path as a deep link hands it over, made routable: exactly one leading
+ * slash. Older builds of the main process sent `//mikro/x` for a link whose
+ * path carried its own slash; collapsing here means such a link still lands.
+ */
+export const normalizeDeepLinkPath = (path: string): string => withLeadingSlash(path.replace(/^\/+/, ""));
+
 /** The hash to write for a location, e.g. `#/orkestrator/mikro/x?y=1`. */
 export const hashFor = (location: Partial<Path>, baseName: string): string => {
   const path = createPath({

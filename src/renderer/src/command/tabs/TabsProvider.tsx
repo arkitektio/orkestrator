@@ -11,7 +11,7 @@ import React, {
   useSyncExternalStore,
 } from "react";
 
-import { hashFor, readBootPath } from "./hashMirror";
+import { hashFor, normalizeDeepLinkPath, readBootPath } from "./hashMirror";
 import {
   activeTab as activeTabOf,
   bootTabs,
@@ -224,7 +224,9 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   // build has no bridge, hence the guards. `evict` because a link the user
   // clicked must land even when the strip is full.
   useEffect(() => {
-    const dispose = window.api?.tabs?.onOpen?.(({ path }) => open(path, { evict: true }));
+    const dispose = window.api?.tabs?.onOpen?.(({ path }) =>
+      open(normalizeDeepLinkPath(path), { evict: true }),
+    );
     return dispose;
   }, [open]);
 

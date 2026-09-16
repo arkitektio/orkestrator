@@ -49,10 +49,16 @@ export const FitCamera = ({
   points,
   target,
   margin = 1.4,
+  refit = 0,
 }: {
   points: THREE.Vector3[];
   target: THREE.Vector3;
   margin?: number;
+  /**
+   * Bump to re-frame the same geometry on demand (the F key). Part of the
+   * dedupe key below, so an unchanged model still re-fits when asked to.
+   */
+  refit?: number;
 }) => {
   const camera = useThree(s => s.camera);
   // OrbitControls registers itself here via `makeDefault`.
@@ -69,7 +75,7 @@ export const FitCamera = ({
     for (const p of points) radius = Math.max(radius, p.distanceTo(target));
     radius = Math.max(radius, 1);
 
-    const key = `${target.x.toFixed(1)}|${target.y.toFixed(1)}|${target.z.toFixed(1)}|${radius.toFixed(1)}`;
+    const key = `${target.x.toFixed(1)}|${target.y.toFixed(1)}|${target.z.toFixed(1)}|${radius.toFixed(1)}|${refit}`;
     if (key === lastKey.current) return;
     lastKey.current = key;
 
@@ -91,7 +97,7 @@ export const FitCamera = ({
 
     controls.target.copy(target);
     controls.update();
-  }, [points, target, margin, camera, controls]);
+  }, [points, target, margin, refit, camera, controls]);
 
   return null;
 };
