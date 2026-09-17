@@ -3,8 +3,10 @@ import type { LucideIcon } from "lucide-react";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
 import { useDialog } from "@/app/dialog";
-import type { PinsValue } from "@/command/PinsProvider";
+import { matchesFilter, scoreFilter } from "@/command/filter";
+import type { TabsValue } from "@/command/tabs/TabsProvider";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
+import { smartRegistry } from "@/providers/smart/registry";
 import type { Structure as AppStructure } from "@/types";
 import type { InferedServiceMap, ServiceBuilderMap } from "../arkitekt/types";
 import type { ServiceMap } from "../arkitekt/provider";
@@ -62,6 +64,21 @@ export type CommandSelect = {
   command: boolean;
 };
 
+/**
+ * At least one selected structure is a *datum* — something a scientist makes
+ * claims about (see `SmartRegistry.isDatum`). The organization-scoped claims
+ * (labelling, sameness) apply to every datum alike, so an action over them
+ * would otherwise have to enumerate every datum identifier in the registry.
+ */
+export type DatumActive = {
+  type: "datum";
+};
+
+/** The partner (right) side holds at least one datum. */
+export type PartnerDatumActive = {
+  type: "pdatum";
+};
+
 export type Condition =
   | IdentifierActive
   | PartnerActive
@@ -73,7 +90,9 @@ export type Condition =
   | PartnerIdentifierActive
   | PartnerHomogenous
   | MixtureActive
-  | PartnerMixtureActive;
+  | PartnerMixtureActive
+  | DatumActive
+  | PartnerDatumActive;
 
 export type Structure = AppStructure;
 
@@ -117,8 +136,8 @@ export type ActionParams<TAppOrServices = ServiceMap> = {
   }) => Promise<boolean>;
   dialog: ReturnType<typeof useDialog>;
   navigate: ReturnType<typeof useNavigate>;
-  /** The rail's pins — pinning something is what opens it as a new tab. */
-  pins: Pick<PinsValue, "pin" | "canPin">;
+  /** The rail's tabs, for an action that opens one rather than navigating. */
+  tabs: Pick<TabsValue, "open">;
 };
 
 export type SetAction = ActionState;
@@ -266,6 +285,18 @@ const matchesConditionsForState = (
       if (condition.type === "command") {
         return state.isCommand === condition.command;
       }
+      // `some`, like `identifier` / `pidentifier`: an action's `execute` is
+      // where "exactly one on each side" gets enforced.
+      if (condition.type === "datum") {
+        return state.left.some((structure) =>
+          smartRegistry.isDatum(structure.identifier),
+        );
+      }
+      if (condition.type === "pdatum") {
+        return !!state.right?.some((structure) =>
+          smartRegistry.isDatum(structure.identifier),
+        );
+      }
       return false;
   });
 };
@@ -288,20 +319,39 @@ export const getActionEntriesForState = <TRegistry extends Record<string, Action
   );
 };
 
+/** The palette's matcher, so local actions are found the way pages are. */
 const matchesActionSearch = <TAppOrServices = ServiceMap>(
   action: Action<TAppOrServices>,
   search?: string,
-) => {
-  if (!search) {
-    return true;
-  }
+) => matchesFilter([action.title, action.description], search);
 
-  const loweredSearch = search.toLowerCase();
-
-  return (
-    action.title.toLowerCase().includes(loweredSearch) ||
-    action.description.toLowerCase().includes(loweredSearch)
+/**
+ * The order the palette shows actions in: pinned first, then how well each
+ * fits what was typed, then by name. With nothing typed every fit is equal, so
+ * it is pinned-then-alphabetical, as before.
+ */
+export const orderActionEntries = <
+  TEntry extends { id: string; action: { title: string; description: string } },
+>(
+  entries: readonly TEntry[],
+  pinnedActionIds: readonly string[],
+  search?: string,
+): TEntry[] => {
+  const pinned = new Set(pinnedActionIds);
+  const scores = new Map(
+    entries.map((e) => [e.id, scoreFilter([e.action.title, e.action.description], search)]),
   );
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => {
+      const ap = pinned.has(a.entry.id);
+      const bp = pinned.has(b.entry.id);
+      if (ap !== bp) return ap ? -1 : 1;
+      const byScore = (scores.get(b.entry.id) ?? 0) - (scores.get(a.entry.id) ?? 0);
+      if (byScore !== 0) return byScore;
+      return a.entry.action.title.localeCompare(b.entry.action.title) || a.index - b.index;
+    })
+    .map(({ entry }) => entry);
 };
 
 export const  createLocalActionProvider = <TAppOrServices = ServiceMap, TRegistry extends Record<string, Action<TAppOrServices>> = Record<string,Action<TAppOrServices>>>(registry: TRegistry) => {

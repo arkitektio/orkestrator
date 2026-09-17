@@ -1,69 +1,273 @@
+import { Sidebars } from "@/components/layout/Sidebars";
+import { HelpSidebar } from "@/components/sidebars/help";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  parseAsBoolean,
+  parseAsIsoDateTime,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from "@/hooks/use-search-param-state";
 import { RekuestAction } from "@/linkers";
-import ActionList from "@/rekuest/components/lists/ActionList";
-import { parseAsIsoDateTime, useQueryState } from "@/hooks/use-search-param-state";
-import { toast } from "sonner";
-import { useCleanupActionsMutation } from "../api/graphql";
+import { ArrowUpDown, Layers, Wifi } from "lucide-react";
+import { useMemo } from "react";
+import { ActionKind } from "../api/graphql";
+import {
+  ActionFacetFilter,
+  ActionFacets,
+} from "../components/filter/ActionFacetFilter";
+import { StructureDemandFilter } from "../components/filter/StructureDemandFilter";
+import ActionBrowseList from "../components/lists/ActionBrowseList";
+import {
+  ACTION_GROUP_KEYS,
+  ACTION_GROUPINGS,
+  ActionGroupKey,
+  getActionGrouping,
+} from "../components/lists/actionGroupings";
+import {
+  ACTION_SORTS,
+  buildActionFilter,
+  buildActionOrdering,
+  isRunnable,
+} from "../lib/actionBrowse";
+import { ActionsManageSidebar } from "../sidebars/ActionsManageSidebar";
+import { ActionsStatisticsSidebar } from "../sidebars/ActionsStatisticsSidebar";
 
+const SORT_KEYS = ["default", ...ACTION_SORTS] as const;
+type SortKey = (typeof SORT_KEYS)[number];
+
+const SORT_LABELS: Record<SortKey, string> = {
+  default: "Default",
+  used: "Last used",
+  newest: "Newest",
+};
 
 const Page = () => {
-
-  const [clean] = useCleanupActionsMutation()
-
-  const [createdAfter, setCreatedAfter] = useQueryState(
-    " after",
-    parseAsIsoDateTime
+  const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
+  const [kind, setKind] = useQueryState(
+    "kind",
+    parseAsStringLiteral([ActionKind.Function, ActionKind.Generator] as const),
   );
-
-  const [createdBefore, setCreatedBefore] = useQueryState(
-    "before",
-    parseAsIsoDateTime
+  const [stateful, setStateful] = useQueryState("stateful", parseAsBoolean);
+  const [app, setApp] = useQueryState("app", parseAsString);
+  const [protocol, setProtocol] = useQueryState("protocol", parseAsString);
+  const [collection, setCollection] = useQueryState("collection", parseAsString);
+  const [structure, setStructure] = useQueryState("structure", parseAsString);
+  const [dir, setDir] = useQueryState(
+    "dir",
+    parseAsStringLiteral(["consumes", "produces"] as const).withDefault("consumes"),
   );
+  const [runnable, setRunnable] = useQueryState(
+    "runnable",
+    parseAsBoolean.withDefault(false),
+  );
+  const [sort, setSort] = useQueryState(
+    "sort",
+    parseAsStringLiteral(SORT_KEYS).withDefault("default"),
+  );
+  const [groupKey, setGroupKey] = useQueryState(
+    "group",
+    parseAsStringLiteral(ACTION_GROUP_KEYS).withDefault("none"),
+  );
+  const [usedAfter, setUsedAfter] = useQueryState("after", parseAsIsoDateTime);
+  const [usedBefore, setUsedBefore] = useQueryState("before", parseAsIsoDateTime);
 
-  const temporalFilter = {
-    usedAfter: createdAfter ?? undefined,
-    usedBefore: createdBefore ?? undefined,
+  const facets: ActionFacets = { kind, stateful, app, protocol, collection };
+  const setFacets = (next: Partial<ActionFacets>) => {
+    if ("kind" in next) setKind(next.kind ?? null);
+    if ("stateful" in next) setStateful(next.stateful ?? null);
+    if ("app" in next) setApp(next.app ?? null);
+    if ("protocol" in next) setProtocol(next.protocol ?? null);
+    if ("collection" in next) setCollection(next.collection ?? null);
   };
 
+  const afterKey = usedAfter?.getTime();
+  const beforeKey = usedBefore?.getTime();
+  const filters = useMemo(
+    () =>
+      buildActionFilter({
+        search,
+        kind,
+        stateful,
+        app,
+        protocol,
+        collection,
+        structure,
+        dir,
+        after: usedAfter,
+        before: usedBefore,
+      }),
+    // Dates are fresh objects on every parse; key them by value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [search, kind, stateful, app, protocol, collection, structure, dir, afterKey, beforeKey],
+  );
+  const ordering = useMemo(
+    () => buildActionOrdering(sort === "default" ? null : sort),
+    [sort],
+  );
+
+  const grouping = getActionGrouping(groupKey);
+  // Grouping is client-side over the loaded page — load more so groups aren't
+  // truncated to a single page's worth of items.
+  const limit = grouping ? 100 : 30;
+
+  const hasFilter = Boolean(
+    Object.keys(filters).length > 0 || runnable,
+  );
+  const clearAll = () => {
+    setSearch(null);
+    setFacets({ kind: null, stateful: null, app: null, protocol: null, collection: null });
+    setStructure(null);
+    setRunnable(null);
+    setUsedAfter(null);
+    setUsedBefore(null);
+  };
 
   return (
-    <RekuestAction.ListPage title={"Actions"} pageActions={<>
-      {/* 3. Picker updates the URL params */}
-      <DateTimeRangePicker
-        // Optional: bind value to keep picker UI in sync on page refresh
-        initialDateFrom={createdAfter ?? undefined}
-        initialDateTo={createdBefore ?? undefined}
-        onUpdate={({ range }) => {
-          setCreatedAfter(range.from || null);
-          setCreatedBefore(range.to || null);
-        }}
-      />
-      <Button variant="outline" onClick={() => {
-        clean({
-          variables: {
-          }
-        })
-          .then((e) => {
-            toast.success(`Cleanup ${e.data?.cleanupActions} Actions`)
-          }
-          )
-      }}>Cleanup Implementationless</Button>
-    </>} >
+    <RekuestAction.ListPage
+      title={"Actions"}
+      pageActions={
+        <>
+          <CollapsibleSearch
+            value={search}
+            onChange={(value) => setSearch(value || null)}
+            placeholder="Search actions…"
+          />
+          <Button
+            variant={runnable ? "default" : "outline"}
+            className="gap-2"
+            onClick={() => setRunnable(runnable ? null : true)}
+            aria-pressed={runnable}
+          >
+            <Wifi className="h-4 w-4" />
+            Runnable now
+          </Button>
+          <StructureDemandFilter
+            structure={structure}
+            direction={dir}
+            onChange={(next) => {
+              if ("structure" in next) setStructure(next.structure ?? null);
+              if (next.direction) setDir(next.direction);
+            }}
+          />
+          <ActionFacetFilter facets={facets} onChange={setFacets} />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <ArrowUpDown className="h-4 w-4" />
+                Sort
+                {sort !== "default" && (
+                  <Badge variant="secondary">{SORT_LABELS[sort]}</Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={sort}
+                onValueChange={(value) => setSort(value as SortKey)}
+              >
+                {SORT_KEYS.map((key) => (
+                  <DropdownMenuRadioItem key={key} value={key}>
+                    {SORT_LABELS[key]}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Layers className="h-4 w-4" />
+                Group
+                {grouping && <Badge variant="secondary">{grouping.label}</Badge>}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuLabel>Group by</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={groupKey}
+                onValueChange={(value) => setGroupKey(value as ActionGroupKey)}
+              >
+                <DropdownMenuRadioItem value="none">No grouping</DropdownMenuRadioItem>
+                {ACTION_GROUPINGS.map((group) => (
+                  <DropdownMenuRadioItem key={group.key} value={group.key}>
+                    {group.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DateTimeRangePicker
+            initialDateFrom={usedAfter ?? undefined}
+            initialDateTo={usedBefore ?? undefined}
+            onUpdate={({ range }) => {
+              setUsedAfter(range.from || null);
+              setUsedBefore(range.to || null);
+            }}
+          />
+        </>
+      }
+      sidebars={
+        <Sidebars>
+          <Sidebars.Tab label="Statistics">
+            <ActionsStatisticsSidebar filters={filters} />
+          </Sidebars.Tab>
+          <Sidebars.Tab label="Manage">
+            <ActionsManageSidebar />
+          </Sidebars.Tab>
+          <Sidebars.Tab label="Help">
+            <HelpSidebar />
+          </Sidebars.Tab>
+        </Sidebars>
+      }
+    >
       <div className="p-6">
-        <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center mb-3">
-          <div>
-            <h1 className="scroll-m-20 font-extrabold tracking-tight lg:text-5xl">
-              Your Actions
-            </h1>
-            <p className="mt-3 text-xl text-muted-foreground">
-              Actions are actions that can be executed by the system. When
-              assigning to a action, implementations are dynamically assigned :)
-            </p>
-          </div>
+        <div className="mb-6 max-w-3xl">
+          <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
+            Actions
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Everything your connected apps can do. Find one by what it works on,
+            check that an app providing it is online, and run it.
+          </p>
         </div>
 
-        <ActionList filters={{ ...temporalFilter }} />
+        {grouping && (
+          <p className="mb-3 text-xs text-muted-foreground">
+            Groups cover the {limit} actions loaded per page. Follow a group
+            title, or add filters, to see a whole group.
+          </p>
+        )}
+
+        <ActionBrowseList
+          filters={filters}
+          ordering={ordering}
+          groupBy={grouping}
+          defaultLimit={limit}
+          clientFilter={runnable ? isRunnable : undefined}
+          emptyActions={
+            hasFilter ? (
+              <Button variant="outline" onClick={clearAll}>
+                Clear filters
+              </Button>
+            ) : undefined
+          }
+        />
       </div>
     </RekuestAction.ListPage>
   );

@@ -16,7 +16,7 @@ const TheCard = ({ item }: Props) => {
     <RekuestAgent.Smart object={item} hover>
       <Card
         className={cn(
-          "aspect-square flex flex-col relative overflow-visible",
+          "group aspect-square flex flex-col relative overflow-visible",
           item.active && "dark:border-primary border ",
         )}
       >
@@ -34,7 +34,10 @@ const TheCard = ({ item }: Props) => {
 
         <UserAvatar sub={item.user.sub} className="absolute bottom-2 right-2 w-8 h-8" />
         {item.device && (
-          <DeviceImprint deviceId={item.device.deviceId} className="absolute bottom-0  w-[80%] translate-y-1/2" />
+          <DeviceImprint
+            deviceId={item.device.deviceId}
+            className="absolute bottom-0 left-1/2 mx-0 w-auto max-w-[80%] -translate-x-1/2 translate-y-1/2 justify-center"
+          />
         )}
       </Card>
     </RekuestAgent.Smart>

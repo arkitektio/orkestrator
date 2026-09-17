@@ -1,7 +1,5 @@
 
-import {
-  Images
-} from "lucide-react";
+import { Workflow } from "lucide-react";
 import { useHomePageStatsQuery } from "../api/graphql";
 
 export const HomePageStatisticsSidebar = () => {
@@ -15,7 +13,7 @@ export const HomePageStatisticsSidebar = () => {
       title: "Total Workspaces",
       value: loading ? "..." : totalGraphs,
       description: "Total number of workspaces in your collection",
-      icon: Images,
+      icon: Workflow,
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },

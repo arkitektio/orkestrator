@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useResolve } from "@/datalayer/hooks/useResolve";
 import { LokDevice, LokUser } from "@/linkers";
-import { useGetDeviceByDeviceIdQuery, useUserQuery } from "../api/graphql";
+import { useListDevicesQuery, useUserQuery } from "../api/graphql";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -23,27 +23,36 @@ export const UserAvatar = (props: { sub: string, className?: string }) => {
 
 
 
+/**
+ * Small hover-only badge naming the device an agent runs on.
+ *
+ * Rekuest reports the raw node id (`Agent.device.deviceId`), which matches lok's
+ * `Device.nodeId` (see `DevicePage`, which filters agents by it). We resolve the
+ * name from the org's device list — one shared query for every card instead of a
+ * per-card `deviceByDeviceId` lookup that hangs on "Loading" when the id cannot
+ * be resolved — and fall back to the raw id so the pill never stalls.
+ */
 export const DeviceImprint = (props: { deviceId: string, className?: string }) => {
-  const { data } = useGetDeviceByDeviceIdQuery({
-    variables: {
-      id: props.deviceId,
-    },
-  });
+  const { data, loading } = useListDevicesQuery();
 
-  if (!data) {
-    return <Badge className="animate-pule">
-      Loading
-    </Badge>;
-  }
+  if (loading && !data) return null;
 
-
-  return (
-    <LokDevice.DetailLink object={data?.deviceByDeviceId}>
-      <Badge className={cn("text-xs font-mono mx-3  truncate elipsis flex flex-wrap items-left align-left group-hover:opacity-100 opacity-0 transition-opacity", !data?.deviceByDeviceId && "animate-pulse ", props.className)}>
-        {data?.deviceByDeviceId?.name || "Unknown"}
-      </Badge>
-    </LokDevice.DetailLink>
+  const device = data?.devices.find((d) => d.nodeId === props.deviceId);
+  const badge = (
+    <Badge
+      className={cn(
+        "text-xs font-mono truncate group-hover:opacity-100 opacity-0 transition-opacity",
+        props.className,
+      )}
+      title={device?.name ?? props.deviceId}
+    >
+      {device?.name || props.deviceId}
+    </Badge>
   );
+
+  if (!device) return badge;
+
+  return <LokDevice.DetailLink object={device}>{badge}</LokDevice.DetailLink>;
 };
 
 export const UserUsername = (props: { sub: string }) => {

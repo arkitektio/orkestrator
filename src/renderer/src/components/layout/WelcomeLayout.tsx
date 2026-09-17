@@ -1,6 +1,6 @@
 import { WindowsOverlayStrip } from "@/app/components/chrome/RailChrome";
 import { WindowControls } from "@/app/components/chrome/WindowControls";
-import { getChromeMode, useWindowState } from "@/lib/platform";
+import { dragZoneDoubleClick, getChromeMode, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 
@@ -11,7 +11,7 @@ export type WelcomeLayoutProps = {
 /**
  * The window when nobody is signed in: the welcome screen, and nothing else.
  *
- * The rail is chrome for a session — modules, open tabs, pins, the org
+ * The rail is chrome for a session — modules, open tabs, the org
  * switcher — and every one of those is membership-scoped, so signed out it
  * would be a column of empty lists around a login form. This shell keeps only
  * what the WINDOW needs: the drag strip (the rail normally provides it, and
@@ -46,6 +46,7 @@ export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
       <div
         data-testid="welcome-drag-strip"
         className={cn("flex h-10 shrink-0 items-center px-2", mode !== "none" && "app-drag")}
+        onDoubleClick={dragZoneDoubleClick(mode)}
       >
         <div className="flex-1" />
         {mode === "buttons" && <WindowControls maximized={maximized} compact />}

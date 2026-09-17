@@ -9,6 +9,8 @@ type Agent {
   client: Client!
   id: ID!
   name: String
+
+  """The room this agent participates in"""
   room: Room!
 
   """The user this agent acts on behalf of"""
@@ -745,6 +747,7 @@ enum Role {
 
 """A room agents and users converse in"""
 type Room {
+  """The room this agent participates in"""
   agents(filters: AgentFilter, ordering: [AgentOrder!]! = [], pagination: OffsetPaginationInput): [Agent!]!
 
   """The time this room got created"""

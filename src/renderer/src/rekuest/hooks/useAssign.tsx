@@ -8,7 +8,11 @@ import {
   useAssignMutation,
   useCancelMutation,
 } from "../api/graphql";
-import { trackTask } from "../lib/taskTracker";
+import {
+  deliverHeldEvents,
+  mapReference,
+  trackTask,
+} from "../lib/taskTracker";
 
 /**
  * Canonical alias for the assign-mutation input. Import it from here — do not
@@ -49,6 +53,12 @@ export const useAssign = (): useActionReturn => {
         const errorMessages = mutation.errors || "Unknown error";
         throw Error(`Couldn't assign: ${errorMessages}`);
       }
+
+      // The subscription's `create` payload usually names the reference first,
+      // but it is a separate channel and can lag this response. Routing a
+      // task's events to its local tracker must not depend on that race.
+      mapReference(task.id, task.reference);
+      deliverHeldEvents(task.id);
 
       return task;
     },

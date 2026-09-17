@@ -3,15 +3,23 @@ import { Structure } from "@/types";
 import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react";
 import { createSelector } from "reselect";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { DragSourceMonitor, DropTargetMonitor, useDrag, useDrop } from "react-dnd";
-import { NativeTypes } from "react-dnd-html5-backend";
 import { toast } from "sonner";
 
-import { useLatestRef } from "@/hooks/useLatestRef";
+import { DropPayload } from "@/lib/dnd/engine";
+import { useDragSource, useDropTarget } from "@/lib/dnd/react";
 import { useSelectionStoreApi } from "../selection/SelectionContext";
 import { SelectionState } from "../selection/store";
 import { smartDropRegistryStore } from "./dropRegistry";
-import { getMatchingActions, getSmartDropObjects, resolveSmartDrop } from "./dropUtils";
+import { buildStackPreview } from "./dragPreview";
+import {
+  acceptsSmartDrag,
+  getMatchingActions,
+  getSmartDragStructures,
+  getSmartDropObjects,
+  resolveSmartDrop,
+  SmartDragItem,
+  smartExternalData,
+} from "./dropUtils";
 import { registerSmartNode, unregisterSmartNode } from "./nodeRegistry";
 import { SmartModelProps } from "./types";
 
@@ -76,15 +84,17 @@ export type UseSmartModelResult = {
   floatingStyles: React.CSSProperties;
   self: Structure;
   isOver: boolean;
-  isDragging: boolean;
-  canDrop: boolean;
+  /** What was dropped on this card; empty when the partner panel is closed. */
   partners: Structure[];
+  /** What the drop landed on: this card, or the selection it is part of. */
+  dropObjects: Structure[];
   clearPartners: () => void;
   handleClick: (event: React.MouseEvent<HTMLDivElement>) => void;
-  handleDragStart: (event: React.DragEvent<HTMLDivElement>) => void;
-  getCurrentSelection: () => Structure[];
-  getCurrentBSelection: () => Structure[];
 };
+
+const NO_STRUCTURES: Structure[] = [];
+
+type SmartDropState = { objects: Structure[]; partners: Structure[] };
 
 export const useSmartModel = ({
   identifier,
@@ -103,8 +113,10 @@ export const useSmartModel = ({
   const latestSelectionRef = useRef<Structure[]>(selectionStore.getState().selection);
   const latestBSelectionRef = useRef<Structure[]>(selectionStore.getState().bselection);
   const latestSnapshotRef = useRef({ selectedIndex: 0, bselectedIndex: 0 });
-  const omitDefaultDropBehaviourRef = useRef(false);
-  const [partners, setPartners] = useState<Structure[]>([]);
+  // Both sides of the drop the partner panel is open for, as they were when
+  // it landed — the selection may well change while the panel is up.
+  const [smartDrop, setSmartDrop] = useState<SmartDropState | null>(null);
+  const partners = smartDrop?.partners ?? NO_STRUCTURES;
   const { refs, floatingStyles } = useFloating({
     open: partners.length > 0,
     placement: "right-start",
@@ -114,24 +126,29 @@ export const useSmartModel = ({
     middleware: PARTNER_PANEL_MIDDLEWARE,
   });
 
-  const dropHandler = React.useCallback(async (
-    item: unknown,
-    monitor: DropTargetMonitor<unknown, unknown>,
-  ) => {
-    const resolvedDrop = resolveSmartDrop(item, monitor.getItemType());
-
+  const dropHandler = React.useCallback(async (payload: DropPayload) => {
+    const resolvedDrop = resolveSmartDrop(payload);
 
     if (!resolvedDrop) {
-      alert(`Drop unknown ${String(item)}`);
-      return {};
+      // A drag from outside only shows its types while it hovers; this one
+      // turned out not to hold a structure.
+      toast.error("Nothing droppable in that");
+      return;
+    }
+
+    const objects = getSmartDropObjects(
+      selectionStore.getState().selection,
+      self,
+      resolvedDrop.partners,
+    );
+    if (!objects) {
+      // Let go over a card that is part of what is being dragged.
+      return;
     }
 
     syncAttribute(nodeRef.current, "data-isdropping", "true");
 
     if (!resolvedDrop.omitDefaultBehaviour) {
-      const objects = getSmartDropObjects(selectionStore.getState().selection, self);
-
-
       try {
         const matchingActions = await getMatchingActions(objects, resolvedDrop.partners);
         const registration = smartDropRegistryStore
@@ -150,13 +167,13 @@ export const useSmartModel = ({
           });
 
           if (handled !== false) {
-            return {};
+            return;
           }
         }
       } catch (error) {
         console.error(error);
         toast.error(error instanceof Error ? error.message : String(error));
-        return {};
+        return;
       } finally {
         syncAttribute(nodeRef.current, "data-isdropping", "false");
       }
@@ -165,48 +182,33 @@ export const useSmartModel = ({
 
     syncAttribute(nodeRef.current, "data-isdropping", "false");
 
-    setPartners(resolvedDrop.partners);
-    return {};
+    setSmartDrop({ objects, partners: resolvedDrop.partners });
   }, [self, selectionStore]);
 
-  const collectDrop = React.useCallback(
-    (monitor: DropTargetMonitor<unknown, unknown>) => ({
-      isOver: !!monitor.isOver(),
-      canDrop: !!monitor.canDrop(),
-    }),
-    [],
-  );
+  // The engine marks the node itself — `data-over` while this card would take
+  // the drop, `data-dragging` while it is the one in the air — so neither is
+  // synced from here, and a drag starting elsewhere renders no card at all.
+  const { ref: drop, isOver } = useDropTarget({
+    accepts: acceptsSmartDrag,
+    onDrop: (payload) => {
+      void dropHandler(payload);
+    },
+  });
 
-  const [{ isOver, canDrop }, drop] = useDrop(
-    () => ({
-      accept: [SMART_MODEL_DROP_TYPE, NativeTypes.TEXT, NativeTypes.URL],
-      drop: (item, monitor) => {
-        void dropHandler(item, monitor);
-        return {};
-      },
-      collect: collectDrop,
-    }),
-    [dropHandler, collectDrop],
-  );
+  // A drag that begins on a selected card carries the selection. Read when
+  // the drag begins: a card does not re-render as the selection changes.
+  const dragStructures = () =>
+    getSmartDragStructures(selectionStore.getState().selection, self);
 
-  const collectDrag = React.useCallback(
-    (monitor: DragSourceMonitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-    [],
-  );
-
-  const [{ isDragging }, drag] = useDrag(
-    () => ({
-      type: SMART_MODEL_DROP_TYPE,
-      item: () => ({
-        structures: [self],
-        omitDefaultBehaviour: omitDefaultDropBehaviourRef.current,
-      }),
-      collect: collectDrag,
-    }),
-    [self, collectDrag],
-  );
+  const drag = useDragSource({
+    kind: SMART_MODEL_DROP_TYPE,
+    getData: (): SmartDragItem => ({ structures: dragStructures() }),
+    // What another window (or another app) receives.
+    getExternalData: () => smartExternalData(dragStructures()),
+    // Several things in hand look like several things: a stack, this card on top.
+    preview: ({ data, node, grab }) =>
+      buildStackPreview(node, (data as SmartDragItem).structures.length, grab),
+  });
 
   const syncSelectionState = React.useCallback(
     (node: HTMLDivElement | null, snapshot: SmartModelSelectionSnapshot) => {
@@ -272,26 +274,10 @@ export const useSmartModel = ({
     });
   }, [selectionStore, self, syncSelectionState]);
 
-  useEffect(() => {
-    syncAttribute(nodeRef.current, "data-over", isOver ? "true" : "false");
-    syncAttribute(
-      nodeRef.current,
-      "data-dragging",
-      isDragging ? "true" : "false",
-    );
-    syncAttribute(nodeRef.current, "data-can-drop", canDrop ? "true" : "false");
-
-  }, [isOver, isDragging, canDrop]);
-
   // The ref callback below must keep a stable identity for the lifetime of
   // the model: React detaches and re-attaches a ref whenever the callback
   // changes, and every re-attach re-registers the node with the selection
-  // store and react-dnd. Drag state lives in a ref so that a drag starting
-  // anywhere on the page (which flips `canDrop` on every card) does not churn
-  // every card's registration. The effect above remains the source of truth
-  // for those attributes after mount.
-  const dndStateRef = useLatestRef({ isOver, isDragging, canDrop });
-
+  // store and the dnd engine. `drag` and `drop` are stable for that reason.
   const registerNode = React.useCallback(
     (node: HTMLDivElement | null) => {
       const previousNode = registeredNodeRef.current;
@@ -342,10 +328,6 @@ export const useSmartModel = ({
         selectedIndex: latestSnapshotRef.current.selectedIndex,
         bselectedIndex: latestSnapshotRef.current.bselectedIndex,
       });
-      const dnd = dndStateRef.current;
-      syncAttribute(node, "data-over", dnd.isOver ? "true" : "false");
-      syncAttribute(node, "data-dragging", dnd.isDragging ? "true" : "false");
-      syncAttribute(node, "data-can-drop", dnd.canDrop ? "true" : "false");
     },
     [drag, drop, identifier, refs, selectionStore, self, syncSelectionState],
   );
@@ -368,7 +350,7 @@ export const useSmartModel = ({
   }, [selectionStore, self]);
 
   const clearPartners = React.useCallback(() => {
-    setPartners([]);
+    setSmartDrop(null);
   }, []);
 
   const floatingRef = React.useCallback(
@@ -428,32 +410,15 @@ export const useSmartModel = ({
     [selectionStore, self],
   );
 
-  const handleDragStart = React.useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      omitDefaultDropBehaviourRef.current = event.ctrlKey;
-      const data = JSON.stringify(self);
-      event.dataTransfer.setData("text/plain", data);
-      event.dataTransfer.setData(
-        "text/uri-list",
-        `arkitekt://${identifier}:${self.object.id}`,
-      );
-    },
-    [identifier, self],
-  );
-
   return {
     ref: registerNode,
     floatingRef,
     floatingStyles,
     self,
     isOver,
-    isDragging,
-    canDrop,
     partners,
+    dropObjects: smartDrop?.objects ?? NO_STRUCTURES,
     clearPartners,
     handleClick,
-    handleDragStart,
-    getCurrentSelection: () => latestSelectionRef.current,
-    getCurrentBSelection: () => latestBSelectionRef.current,
   };
 };

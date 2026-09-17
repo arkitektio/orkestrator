@@ -22,6 +22,7 @@ export const ExperimentDetailChart: React.FC = () => {
   const highlight = useExperimentViewerStore((s) => s.highlight);
   const detailData = useExperimentViewerStore((s) => s.detailData);
   const detailLoading = useExperimentViewerStore((s) => s.detailLoading);
+  const loadError = useExperimentViewerStore((s) => s.loadError);
 
   const chartInstanceRef = useRef<uPlot | null>(null);
   const { ref: chartRef, size: chartSize } = useElementSize<HTMLDivElement>();
@@ -158,6 +159,15 @@ export const ExperimentDetailChart: React.FC = () => {
       {detailLoading ? (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60">
           <span className="text-xs text-muted-foreground">Loading...</span>
+        </div>
+      ) : loadError ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 bg-background/60 px-6 text-center">
+          <span className="text-xs font-medium text-destructive">
+            Could not load the traces
+          </span>
+          <span className="break-all font-mono text-[0.625rem] text-muted-foreground">
+            {loadError}
+          </span>
         </div>
       ) : null}
       {mainOptions ? (

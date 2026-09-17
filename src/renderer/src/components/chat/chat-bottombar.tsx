@@ -126,7 +126,14 @@ export default function ChatBottombar({
           <Plate editor={editor} onChange={checkContent}>
             <div className="w-full overflow-hidden rounded-2xl border bg-background shadow-sm">
               {stagedStructures.length > 0 && (
-                <div className="flex flex-wrap gap-2 px-4 pt-3 pb-2 border-b border-border/30 bg-muted/10">
+                <div className="flex flex-wrap items-center gap-2 px-4 pt-3 pb-2 border-b border-border/30 bg-muted/10">
+                  <span
+                    className="flex items-center gap-1 text-[11px] text-muted-foreground select-none"
+                    title="Sent along with your message"
+                  >
+                    <Paperclip className="h-3 w-3" />
+                    Attached
+                  </span>
                   {stagedStructures.map((structure, idx) => (
                     <div
                       key={`${structure.identifier}-${structure.object}-${idx}`}
@@ -141,6 +148,8 @@ export default function ChatBottombar({
                       <button
                         type="button"
                         onClick={() => onRemoveStructure(idx)}
+                        aria-label="Remove attachment"
+                        title="Remove attachment"
                         className="h-4.5 w-4.5 rounded-lg flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       >
                         &times;

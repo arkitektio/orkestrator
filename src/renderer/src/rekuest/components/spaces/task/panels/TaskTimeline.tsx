@@ -23,19 +23,8 @@ import type {
 } from '../types'
 import { Button } from '@/components/ui/button'
 import { RekuestTask } from '@/linkers'
+import { formatDuration } from '@/rekuest/lib/taskTimeline'
 import { getStatusColor } from './statusColors'
-
-// ── formatting ───────────────────────────────────────────────────────
-
-const formatDuration = (ms: number) => {
-  if (!Number.isFinite(ms) || ms < 0) ms = 0
-  if (ms < 1000) return `${Math.round(ms)} ms`
-  const seconds = ms / 1000
-  if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 2 : 1)} s`
-  const m = Math.floor(seconds / 60)
-  const s = Math.round(seconds % 60)
-  return `${m}m ${s.toString().padStart(2, '0')}s`
-}
 
 // ── event tick clustering ────────────────────────────────────────────
 

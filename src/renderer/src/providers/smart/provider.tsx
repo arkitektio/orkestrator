@@ -1,22 +1,14 @@
-import { HTML5Backend } from "react-dnd-html5-backend";
-
-import { DndProvider, MouseTransition } from "react-dnd-multi-backend";
-
-export const HTML5toTouch = {
-  backends: [
-    {
-      id: "html5",
-      backend: HTML5Backend,
-      preview: false,
-      transition: MouseTransition,
-    },
-  ],
-};
+import { useDndEngine } from "@/lib/dnd/react";
 
 export type SmartProviderProps = {
   children: React.ReactNode;
 };
 
+/**
+ * Drag and drop for everything beneath. There is no context to provide — the
+ * engine listens on the document — so this only turns it on, once per window.
+ */
 export const SmartProvider = (props: SmartProviderProps) => {
-  return <DndProvider options={HTML5toTouch}>{props.children}</DndProvider>;
+  useDndEngine();
+  return <>{props.children}</>;
 };

@@ -247,6 +247,9 @@ fragment ChildTaskEvent on ChildTaskEvent {
   }
 }
 
+# List/card shape. `agent` and the newest few `events` let a card say who is
+# running the task and how far along it is; `OrgTasksUpdater` prepends live
+# events onto the same `events` field, so progress moves without a refetch.
 fragment ListTask on Task {
   id
   reference
@@ -262,7 +265,17 @@ fragment ListTask on Task {
     id
     interface
   }
-  createdAt
+  agent {
+    id
+    name
+  }
+  events(pagination: { limit: 3 }, ordering: { createdAt: DESC }) {
+    id
+    kind
+    progress
+    message
+    createdAt
+  }
 }
 
 fragment HoverTask on Task {

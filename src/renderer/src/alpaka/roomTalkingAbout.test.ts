@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { toStructureInput, toStructureInputs } from "./roomTalkingAbout";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  firstMessageAttachments,
+  storeRoomTalkingAbout,
+  toStructureInput,
+  toStructureInputs,
+} from "./roomTalkingAbout";
 
 // Alpaka's `StructureInput.object` is `Int!`, while the app-level `Structure`
 // carries `object.id` as a string. Everything handing a structure to alpaka
@@ -46,5 +51,48 @@ describe("toStructureInputs", () => {
     expect(
       toStructureInputs([{ identifier: "@kraph/graph", object: { id: "x" } }]),
     ).toEqual([]);
+  });
+});
+
+// A chat started about something ("Talk about", or "New chat" in a model's chat
+// tab) attaches that something to its opening message — and only that one.
+describe("firstMessageAttachments", () => {
+  const image = { identifier: "@mikro/image", object: 42 };
+
+  const stubStorage = () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => void store.set(key, value),
+      },
+    });
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("attaches what the surface says the chat is about", () => {
+    expect(firstMessageAttachments({ id: "1", messages: [] }, [image])).toEqual([
+      image,
+    ]);
+  });
+
+  it("falls back to what was remembered when the room was created", () => {
+    stubStorage();
+    storeRoomTalkingAbout("7", [image]);
+
+    expect(firstMessageAttachments({ id: "7", messages: [] })).toEqual([image]);
+    expect(firstMessageAttachments({ id: "8", messages: [] })).toEqual([]);
+  });
+
+  it("attaches nothing once the room has messages", () => {
+    stubStorage();
+    storeRoomTalkingAbout("7", [image]);
+
+    expect(firstMessageAttachments({ id: "7", messages: [{}] }, [image])).toEqual(
+      [],
+    );
   });
 });

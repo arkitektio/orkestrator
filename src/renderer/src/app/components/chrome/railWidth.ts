@@ -8,7 +8,7 @@
  *
  * Global rather than per-organization: this is a preference about this person's
  * screen, not about the tenant's data, so it should not reset when they switch
- * organizations (unlike pins and recents, which must).
+ * organizations (unlike tabs and recents, which must).
  */
 
 export const RAIL_WIDTH_STORAGE_KEY = "orkestrator:rail-width:v1";

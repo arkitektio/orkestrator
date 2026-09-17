@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { useDebug, type DebugEntry } from "@/providers/debug/DebugContext";
 import { Bug, Copy } from "lucide-react";
 
+import { ReportBugButton } from "./ReportBugButton";
+
 const serialize = (value: unknown): string => {
   if (value === undefined) return "—";
   if (value instanceof Error) {
@@ -68,7 +70,8 @@ const EntryView = ({ entry }: { entry: DebugEntry }) => {
  * you could not look at the page and its data at the same time — the one
  * thing debugging is. Now the page renders as always, and this badge sits over
  * its bottom-right corner; clicking it shows what the active tab's page
- * loaded: the query's variables, its data, and its error if it has one.
+ * loaded: the query's variables, its data, and its error if it has one — and
+ * a way to report the page, since this is where you are when it is wrong.
  *
  * Rendered only in debug mode, so it costs nothing otherwise.
  */
@@ -108,6 +111,8 @@ export const DebugBadge = () => {
           <span className="text-xs text-muted-foreground">
             {visible.length === 0 ? "nothing reported on this page" : `${visible.length} quer${visible.length === 1 ? "y" : "ies"}`}
           </span>
+          <span className="flex-1" />
+          <ReportBugButton />
         </div>
         <ScrollArea className="max-h-[60vh]">
           <div className="space-y-4 p-3">

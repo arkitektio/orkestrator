@@ -6,12 +6,12 @@ import { createTabHistory, type SerializedHistory, type TabHistory } from "./tab
 /**
  * The open tabs: what the rail shows as "Open", each with a history of its own.
  *
- * Tabs and pins are deliberately separate layers. Pins (`../pins.ts`) are
- * bookmarks — only what the user asked to keep, no history. Tabs are the
- * ephemeral working set, each carrying a full back/forward stack. They meet at
- * one optional field, `pinKey`: clicking a pin focuses the open tab that came
- * from it, else opens one. Same membership scoping as pins, same refusal to
- * persist anything for a signed-out user, same per-row salvage on read.
+ * There is one list. A tab the user wants to keep is PINNED — a flag on the tab
+ * itself, as in a browser — rather than copied into a second list of bookmarks
+ * beneath the first. A pinned tab sits at the top of the strip, survives "Close
+ * others" and is never the one evicted to make room. Tabs are per membership:
+ * nothing is persisted for a signed-out user, and a malformed row is dropped on
+ * read rather than taking the rest with it.
  *
  * Everything here is a pure function over `TabsState`; only `loadTabs`,
  * `saveTabs` and `bootTabs` touch storage.
@@ -27,8 +27,12 @@ export type TabRecord = {
    * knows its own name ("HeLa s3"); the path only knows an id ("5").
    */
   labelPath?: string;
-  /** The pin this tab was opened from, if any. */
-  pinKey?: string;
+  /**
+   * Kept. Pinned tabs form a block at the top of the strip — every transition
+   * below preserves that — so "pinned" reads off the position as well as the
+   * icon.
+   */
+  pinned?: boolean;
   lastActiveAt: number;
 };
 
@@ -39,6 +43,12 @@ export type TabsState = {
 };
 
 /** Past this the strip stops being scannable and starts being a list. */
+/**
+ * Where a fresh tab starts: the new-tab page — a search field and the modules,
+ * as a browser's new tab is an address bar and your top sites.
+ */
+export const NEW_TAB_PATH = "/new";
+
 export const MAX_TABS = 12;
 /**
  * How many tabs stay MOUNTED. A tab is either warm (mounted, hidden if not
@@ -65,7 +75,7 @@ export const labelForPath = (to: string): string => {
 
 export const createTab = (
   to: string,
-  options: { label?: string; pinKey?: string; now?: number; id?: string } = {},
+  options: { label?: string; now?: number; id?: string } = {},
 ): TabRecord => {
   const parsed = parsePath(to);
   const entry = {
@@ -77,7 +87,6 @@ export const createTab = (
     id: options.id ?? newId(),
     history: createTabHistory({ entries: [entry], index: 0 }),
     label: options.label ?? labelForPath(to),
-    ...(options.pinKey ? { pinKey: options.pinKey } : {}),
     lastActiveAt: options.now ?? Date.now(),
   };
 };
@@ -91,14 +100,13 @@ export const locationPathOf = (tab: TabRecord): string => createPath(tab.history
 
 export type OpenOptions = {
   label?: string;
-  pinKey?: string;
   /** Open without focusing, like a middle-click. */
   background?: boolean;
   /**
-   * At the cap, drop the least recently used non-active tab instead of
-   * refusing. Off by default — a refused ⌘T is a visible no-op the user can
-   * act on, whereas a silently discarded tab is not. Boot turns it on for deep
-   * links, which must land somewhere.
+   * At the cap, drop the least recently used tab that is neither active nor
+   * pinned instead of refusing. Off by default — a refused ⌘T is a visible
+   * no-op the user can act on, whereas a silently discarded tab is not. Boot
+   * turns it on for deep links, which must land somewhere.
    */
   evict?: boolean;
   now?: number;
@@ -111,13 +119,14 @@ export const openTab = (state: TabsState, to: string, options: OpenOptions = {})
   if (tabs.length >= MAX_TABS) {
     if (!options.evict) return state;
     const victim = [...tabs]
-      .filter((t) => t.id !== state.activeId)
+      // Never a pinned one: pinning is how the user said "not this".
+      .filter((t) => t.id !== state.activeId && !t.pinned)
       .sort((a, b) => a.lastActiveAt - b.lastActiveAt)[0];
     if (!victim) return state;
     tabs = tabs.filter((t) => t.id !== victim.id);
   }
 
-  const tab = createTab(to, { label: options.label, pinKey: options.pinKey, now });
+  const tab = createTab(to, { label: options.label, now });
   return {
     tabs: [...tabs, tab],
     activeId: options.background ? state.activeId : tab.id,
@@ -156,18 +165,44 @@ export const closeTab = (state: TabsState, id: string, now: number = Date.now())
   return focusTab({ tabs: remaining, activeId: next.id }, next.id, now);
 };
 
+/** Close every other tab — except the pinned ones, which is what pinning is for. */
 export const closeOtherTabs = (state: TabsState, id: string): TabsState => {
-  const keep = state.tabs.find((t) => t.id === id);
-  if (!keep) return state;
-  return { tabs: [keep], activeId: id };
+  if (!state.tabs.some((t) => t.id === id)) return state;
+  return { tabs: state.tabs.filter((t) => t.id === id || t.pinned), activeId: id };
 };
 
+const pinnedCount = (tabs: TabRecord[]): number => tabs.filter((t) => t.pinned).length;
+
+/** Move a tab within its own block: a pinned tab stays among the pinned. */
 export const moveTab = (state: TabsState, id: string, toIndex: number): TabsState => {
   const from = state.tabs.findIndex((t) => t.id === id);
   if (from === -1) return state;
   const tabs = [...state.tabs];
   const [moved] = tabs.splice(from, 1);
-  tabs.splice(Math.max(0, Math.min(toIndex, tabs.length)), 0, moved);
+  const boundary = pinnedCount(tabs);
+  const [min, max] = moved.pinned ? [0, boundary] : [boundary, tabs.length];
+  tabs.splice(Math.max(min, Math.min(toIndex, max)), 0, moved);
+  return { ...state, tabs };
+};
+
+/**
+ * Pin or unpin a tab.
+ *
+ * Either way it lands on the boundary between the two blocks — last of the
+ * pinned, or first of the rest — which is the shortest move that keeps the
+ * pinned block contiguous, so the row travels as little as possible from under
+ * the pointer that just clicked it.
+ */
+export const setTabPinned = (state: TabsState, id: string, pinned: boolean): TabsState => {
+  const tab = state.tabs.find((t) => t.id === id);
+  if (!tab || Boolean(tab.pinned) === pinned) return state;
+
+  const rest = state.tabs.filter((t) => t.id !== id);
+  const { pinned: _was, ...bare } = tab;
+  const next: TabRecord = pinned ? { ...bare, pinned: true } : bare;
+
+  const tabs = [...rest];
+  tabs.splice(pinnedCount(rest), 0, next);
   return { ...state, tabs };
 };
 
@@ -211,18 +246,6 @@ export const setTabLabel = (
   };
 };
 
-/** Focus the tab a pin opened, or open one for it. */
-export const focusOrOpenForPin = (
-  state: TabsState,
-  pinKey: string,
-  to: string,
-  options: Omit<OpenOptions, "pinKey"> = {},
-): TabsState => {
-  const existing = state.tabs.find((t) => t.pinKey === pinKey);
-  if (existing) return focusTab(state, existing.id, options.now);
-  return openTab(state, to, { ...options, pinKey });
-};
-
 /** The ids that stay mounted: the active one, then the most recent up to the cap. */
 export const warmIds = (state: TabsState): Set<string> => {
   const byRecency = [...state.tabs]
@@ -245,7 +268,7 @@ const SerializedEntrySchema = z.object({
 const PersistedTabSchema = z.object({
   id: z.string(),
   label: z.string(),
-  pinKey: z.string().optional(),
+  pinned: z.boolean().optional(),
   lastActiveAt: z.number(),
   history: z.object({
     entries: z.array(SerializedEntrySchema).min(1),
@@ -269,7 +292,7 @@ export const serializeTabs = (state: TabsState): TabsPersisted => ({
   tabs: state.tabs.map((t) => ({
     id: t.id,
     label: t.label,
-    ...(t.pinKey ? { pinKey: t.pinKey } : {}),
+    ...(t.pinned ? { pinned: true } : {}),
     lastActiveAt: t.lastActiveAt,
     history: t.history.serialize() as SerializedHistory,
   })),
@@ -279,7 +302,7 @@ const reviveTab = (row: z.infer<typeof PersistedTabSchema>): TabRecord => ({
   id: row.id,
   history: createTabHistory(row.history),
   label: row.label,
-  ...(row.pinKey ? { pinKey: row.pinKey } : {}),
+  ...(row.pinned ? { pinned: true } : {}),
   lastActiveAt: row.lastActiveAt,
 });
 

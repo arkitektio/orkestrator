@@ -1,98 +1,69 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ElektroEnvironment, ElektroModelCollection, ElektroNeuronModel } from "@/linkers";
+import { ElektroNeuronModel } from "@/linkers";
 import { useDetailNeuronModelQuery } from "../api/graphql";
+import { NeuronModelTitleOverlay } from "../components/neuronmodel/NeuronModelTitleOverlay";
+import { NeuronViewport } from "../components/neuronmodel/NeuronViewport";
+import { NeuronModelInfoSidebar } from "../components/sidebars/NeuronModelInfoSidebar";
 import { ExportModelButton } from "../forms/ExportModelForm";
-import NeuronModelSimulationCard from "../components/cards/NeuronModelSimulationCard";
-import { NeuronVisualizer } from "../components/NeuronRenderer";
-import { ProvenanceSidebar } from "../components/sidebars/ProvenanceSidebar";
 
 export type IRepresentationScreenProps = {};
 
+/**
+ * Laid out like `mikro-next`'s `ArrayDatasetPage`: the content area is the
+ * viewport and nothing else, the name floats over it in the top-left, and the
+ * facts (globals, ions, environment, comparisons, simulations, history) are
+ * one Info tab in the rail.
+ */
 export const NeuronModelPage = asDetailQueryRoute(
   useDetailNeuronModelQuery,
   ({ data }) => {
+    const model = data.neuronModel;
 
     return (
       <ElektroNeuronModel.ModelPage
+        object={model}
+        title={model.name}
         variant="black"
-        title={data?.neuronModel?.name}
-        object={data.neuronModel}
+        overlay
+        actions={<ElektroNeuronModel.Actions object={model} />}
+        pageActions={
+          <div className="flex items-center gap-2">
+            <ElektroNeuronModel.DetailLink
+              object={model}
+              subroute="edit"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Edit
+            </ElektroNeuronModel.DetailLink>
+            <ExportModelButton object={model} />
+            <ElektroNeuronModel.ObjectButton object={model} />
+          </div>
+        }
         additionalSidebars={
-          <Sidebars.Tab label="Provenance">
-            <ProvenanceSidebar items={data.neuronModel.provenanceEntries} />
+          // No separate Provenance tab: the history sits in Info, next to
+          // the facts it explains, as on the dataset page.
+          <Sidebars.Tab label="Info">
+            <NeuronModelInfoSidebar model={model} />
           </Sidebars.Tab>
         }
-        pageActions={
-          <div className="flex flex-row gap-2">
-            <ElektroNeuronModel.DetailLink object={data.neuronModel} subroute="edit" className={buttonVariants({ variant: "outline" })}>Edit</ElektroNeuronModel.DetailLink>
-            <ElektroNeuronModel.DetailLink object={data.neuronModel} subroute="tree" className={buttonVariants({ variant: "outline" })}>Tree View</ElektroNeuronModel.DetailLink>
-            <ExportModelButton object={data.neuronModel} />
-            <ElektroNeuronModel.ObjectButton object={data.neuronModel} />
-          </div>
-        }
+        defaultSidebar="Info"
+        sidebarKey="NeuronModelDetail"
       >
-        <div className="h-full w-full grid grid-cols-12 grid-reverse gap-4 pointers-events-none p-4 ">
+        <div className="relative h-full w-full">
+          {/* Keyed on the model id: the renderer's layout and panel store are
+              built per model, so navigating between models remounts rather
+              than feeding a new model into a scene primed for the old one.
+              The tree view is a display mode of the viewport, not a page
+              action — the switch sits in the viewport's bottom-right strip,
+              where the scene keeps its 2D/3D switch. */}
+          <NeuronViewport key={model.id} model={model} />
 
-          <div className="col-span-3  @container bg-black bg-clip-padding backdrop-filter backdrop-blur-2xl bg-opacity-10 z-100 overflow-hidden flex flex-col ">
-
-            <div className=" p-3">
-              <div>
-                <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-                  {data.neuronModel.name}
-                </h1>
-                <p className="mt-3 text-xl text-muted-foreground">
-                  {data.neuronModel.description}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 p-3">
-              {data.neuronModel.comparisons.map((comparison) => (
-                <Card className="col-span-1 p-4"  key={comparison.collection.id}>
-                  <ElektroModelCollection.DetailLink object={comparison.collection} className={"font-light text-xs"}>
-                    {comparison.collection.name}
-
-                  </ElektroModelCollection.DetailLink>
-                  {comparison.changes.map((change, idx) => (
-                    <div className="flex flex-col gap-2" key={idx}>
-                      <div className="flex-1 font-light">
-                        {change.path.join(".")}
-                      </div>
-                      <div className="flex-1">
-                        {JSON.stringify(change.valueA)} -  {JSON.stringify(change.valueB)}
-                      </div>
-
-                    </div>
-                  ))}
-                </Card>
-              ))}
-            </div>
-
-            <div className="mt-4 font-medium p-3">Simulations</div>
-
-            <div className="flex flex-col gap-2 mt-2 p-3">
-              {data.neuronModel.simulations.map((comparison) => (
-                <NeuronModelSimulationCard key={comparison.id} item={comparison} />
-              ))}
-            </div>
-            <div className="flex flex-col gap-2 mt-2 p-3">
-              {data.neuronModel.environment &&
-                <ElektroEnvironment.DetailLink object={data.neuronModel.environment}>
-                  {data.neuronModel.environment.name}
-                </ElektroEnvironment.DetailLink>
-              }
-            </div>
-
-          </div>
-          <div className="col-span-9">
-            <NeuronVisualizer model={data.neuronModel} />
-          </div>
-
+          {/* Page chrome, not renderer chrome: outside the visualizer so it
+              is the same card in the same place whatever the HUD shows. */}
+          <NeuronModelTitleOverlay model={model} />
         </div>
-
       </ElektroNeuronModel.ModelPage>
     );
   },

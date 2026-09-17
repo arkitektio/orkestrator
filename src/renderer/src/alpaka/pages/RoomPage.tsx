@@ -2,6 +2,7 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { ChatLayout } from "@/components/chat/chat-layout";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { AlpakaRoom } from "@/linkers";
+import { RoomInfoSidebar } from "../sidebars/RoomInfoSidebar";
 import { useEffect } from "react";
 import {
   WatchMessagesDocument,
@@ -52,10 +53,13 @@ export const RoomPage =  asDetailQueryRoute(
             <AlpakaRoom.ObjectButton object={data.room} />
           </div>
         }
+        // A room is the conversation, so it gets no Knowledge or Chat tab —
+        // just its own facts.
+        chat={false}
         sidebars={
-          <Sidebars>
-            <Sidebars.Tab label="Knowledge">
-              <AlpakaRoom.Knowledge object={data.room} />
+          <Sidebars sidebarKey="AlpakaRoom" defaultTab="Info">
+            <Sidebars.Tab label="Info">
+              <RoomInfoSidebar room={data.room} />
             </Sidebars.Tab>
           </Sidebars>
         }

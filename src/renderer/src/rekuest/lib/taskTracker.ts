@@ -39,6 +39,18 @@ export const isTerminalEvent = (kind: TaskEventKind) =>
   (TERMINAL_EVENT_KINDS as readonly TaskEventKind[]).includes(kind);
 
 /**
+ * A task that can still produce events: not flagged done and not ended by a
+ * terminal kind. `CANCELLING` / `INTERRUPTING` are still live — the task has
+ * been asked to stop, it has not stopped. The one definition every surface
+ * (rail island, status line, reload seed) shares, so none of them disagrees
+ * about whether a task is "still working".
+ */
+export const isTaskLive = (task: {
+  isDone?: boolean | null;
+  latestEventKind: TaskEventKind;
+}) => !task.isDone && !isTerminalEvent(task.latestEventKind);
+
+/**
  * Register a callback for an task reference. Call this BEFORE awaiting
  * the assign mutation so no early subscription events are missed. Returns an
  * unregister function for cleanup (also called automatically by the
@@ -78,6 +90,22 @@ export const referenceForId = (id: string): string | undefined =>
   idToReference.get(id);
 
 export const forgetId = (id: string) => idToReference.delete(id);
+
+/**
+ * Hand an event to whoever tracks its task locally. The terminal event is the
+ * last one a task produces, so it also ends the tracking: the callback is
+ * unregistered and the id → reference bridge forgotten.
+ */
+export const deliverToCallback = (
+  reference: string,
+  event: TaskEventFragment,
+) => {
+  registeredCallbacks.get(reference)?.(event);
+  if (isTerminalEvent(event.kind)) {
+    registeredCallbacks.delete(reference);
+    forgetId(event.task.id);
+  }
+};
 
 /**
  * Synthesize a cache-shaped `TaskEvent` from the thin `TaskEventChange` delta.
@@ -136,4 +164,43 @@ export const takeBufferedEvents = (
   const events = bufferedEvents[taskId] || [];
   delete bufferedEvents[taskId];
   return events;
+};
+
+/**
+ * Events no local tracker could be told about yet. An id-only event cannot be
+ * routed until its task's reference is known — from the subscription's `create`
+ * payload or the assign response, whichever lands first — and the buffer above
+ * feeds the cache alone. Held here separately so handing them over consumes
+ * them: both channels may call {@link deliverHeldEvents}, only the first
+ * delivers.
+ */
+const heldForCallback = new Map<string, TaskEventChangeFragment[]>();
+const MAX_HELD_PER_TASK = 50;
+
+export const holdForCallback = (
+  taskId: string,
+  event: TaskEventChangeFragment,
+) => {
+  if (!heldForCallback.has(taskId) && heldForCallback.size >= MAX_BUFFERED_TASKS) {
+    const oldest = heldForCallback.keys().next().value;
+    if (oldest !== undefined) heldForCallback.delete(oldest);
+  }
+  // Most held tasks are never claimed — anything not started from this window
+  // has no local tracker — so a chatty one must not grow without bound.
+  heldForCallback.set(
+    taskId,
+    [...(heldForCallback.get(taskId) ?? []), event].slice(-MAX_HELD_PER_TASK),
+  );
+};
+
+/** The task's reference is known now: hand over what was held, oldest first. */
+export const deliverHeldEvents = (taskId: string) => {
+  const reference = referenceForId(taskId);
+  if (!reference) return;
+
+  const held = heldForCallback.get(taskId) ?? [];
+  heldForCallback.delete(taskId);
+  for (const change of held) {
+    deliverToCallback(reference, taskEventChangeToEvent(change, reference));
+  }
 };

@@ -1,60 +1,65 @@
-import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from '@/components/ui/sheet'
-import { EyeOpenIcon, LetterCaseToggleIcon, QuestionMarkIcon } from '@radix-ui/react-icons'
-import { ChevronRight, ChevronsLeft } from 'lucide-react'
-import { useEditFlowStore, useEditTemporal } from '../context'
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { CircleHelp, Redo2, Tags, Undo2 } from "lucide-react";
+import React from "react";
+import { useEditFlowStore, useEditTemporal } from "../context";
 
+const ControlButton = ({
+  label,
+  active,
+  children,
+  ...props
+}: React.ComponentProps<typeof Button> & { label: string; active?: boolean }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={label}
+        aria-pressed={active}
+        className={cn(active && "bg-accent text-primary")}
+        {...props}
+      >
+        {children}
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent side="top">{label}</TooltipContent>
+  </Tooltip>
+);
+
+/** Undo/redo and the canvas display toggles; sits in the editor's bottom-right dock. */
 export const DefaultControls = () => {
-
-
   const { undo, redo, canUndo, canRedo } = useEditTemporal();
   const setShowEdgeLabels = useEditFlowStore((s) => s.setShowEdgeLabels);
   const setShowNodeErrors = useEditFlowStore((s) => s.setShowNodeErrors);
   const showEdgeLabels = useEditFlowStore((s) => s.showEdgeLabels);
   const showNodeErrors = useEditFlowStore((s) => s.showNodeErrors);
 
-
-  return <div className="flex flex-row bg-card gap-2 rounded rounded-md overflow-hidden px-2 h-10 absolute top-2 left-2 z-10">
-                <Button variant="outline" size="icon" onClick={() => undo()} disabled={!canUndo}>
-                  <ChevronsLeft />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => redo()} disabled={!canRedo}>
-                  <ChevronRight />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowEdgeLabels(!showEdgeLabels)}
-                >
-                  <LetterCaseToggleIcon />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowNodeErrors(!showNodeErrors)}
-                >
-                  <QuestionMarkIcon />
-                </Button>
-                <Sheet>
-                  <SheetTrigger>
-                    <Button variant="outline" size="icon">
-                      <EyeOpenIcon />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent>
-                    <SheetHeader>
-                      <SheetTitle>Debug Screen</SheetTitle>
-                      <SheetDescription />
-                    </SheetHeader>
-                  </SheetContent>
-                </Sheet>
-              </div>
-
-}
+  return (
+    <div className="flex h-9 items-center gap-0.5 rounded-lg border bg-card px-1 shadow-sm">
+      <ControlButton label="Undo" onClick={() => undo()} disabled={!canUndo}>
+        <Undo2 />
+      </ControlButton>
+      <ControlButton label="Redo" onClick={() => redo()} disabled={!canRedo}>
+        <Redo2 />
+      </ControlButton>
+      <Separator orientation="vertical" className="mx-1 my-auto h-4" />
+      <ControlButton
+        label={showEdgeLabels ? "Hide edge labels" : "Show edge labels"}
+        active={showEdgeLabels}
+        onClick={() => setShowEdgeLabels(!showEdgeLabels)}
+      >
+        <Tags />
+      </ControlButton>
+      <ControlButton
+        label={showNodeErrors ? "Hide node errors" : "Show node errors"}
+        active={showNodeErrors}
+        onClick={() => setShowNodeErrors(!showNodeErrors)}
+      >
+        <CircleHelp />
+      </ControlButton>
+    </div>
+  );
+};

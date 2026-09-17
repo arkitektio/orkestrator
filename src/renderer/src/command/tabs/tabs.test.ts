@@ -6,7 +6,6 @@ import {
   closeOtherTabs,
   closeTab,
   createTab,
-  focusOrOpenForPin,
   focusTab,
   labelForPath,
   loadTabs,
@@ -18,6 +17,7 @@ import {
   saveTabs,
   serializeTabs,
   setTabLabel,
+  setTabPinned,
   tabsStorageKey,
   warmIds,
   type TabsState,
@@ -154,19 +154,77 @@ describe("closeOtherTabs / moveTab / setTabLabel", () => {
   });
 });
 
-describe("focusOrOpenForPin", () => {
-  it("opens a tab carrying the pin key", () => {
-    const s = focusOrOpenForPin(stateOf("/a"), "route:/b", "/b");
-    expect(s.tabs).toHaveLength(2);
-    expect(activeTab(s).pinKey).toBe("route:/b");
+describe("pinned tabs", () => {
+  const pinnedIds = (s: TabsState) => s.tabs.filter((t) => t.pinned).map((t) => t.id);
+
+  it("gathers pinned tabs at the top, in the order they were pinned", () => {
+    let s = stateOf("/a", "/b", "/c", "/d");
+    s = setTabPinned(s, "t2", true);
+    expect(ids(s)).toEqual(["t2", "t0", "t1", "t3"]);
+    s = setTabPinned(s, "t3", true);
+    expect(ids(s)).toEqual(["t2", "t3", "t0", "t1"]);
+    expect(pinnedIds(s)).toEqual(["t2", "t3"]);
   });
 
-  it("focuses the existing tab for that pin instead of opening a second", () => {
-    let s = focusOrOpenForPin(stateOf("/a"), "route:/b", "/b");
-    s = focusTab(s, "t0");
-    s = focusOrOpenForPin(s, "route:/b", "/b");
-    expect(s.tabs).toHaveLength(2);
-    expect(activeTab(s).pinKey).toBe("route:/b");
+  it("unpins to the head of the rest — the shortest way out of the block", () => {
+    let s = stateOf("/a", "/b", "/c");
+    s = setTabPinned(setTabPinned(s, "t0", true), "t1", true);
+    s = setTabPinned(s, "t0", false);
+    expect(ids(s)).toEqual(["t1", "t0", "t2"]);
+    expect(pinnedIds(s)).toEqual(["t1"]);
+    expect(s.tabs.find((t) => t.id === "t0")).not.toHaveProperty("pinned");
+  });
+
+  it("changes neither the active tab nor anything when already so", () => {
+    const s = stateOf("/a", "/b");
+    expect(setTabPinned(s, "t0", true).activeId).toBe("t1");
+    expect(setTabPinned(s, "t0", false)).toBe(s);
+    expect(setTabPinned(s, "nope", true)).toBe(s);
+  });
+
+  it("survives Close others", () => {
+    let s = stateOf("/a", "/b", "/c");
+    s = setTabPinned(s, "t0", true);
+    s = closeOtherTabs(s, "t2");
+    expect(ids(s)).toEqual(["t0", "t2"]);
+    expect(s.activeId).toBe("t2");
+  });
+
+  it("is never the one evicted to make room", () => {
+    // t0 is the stalest by far, and pinned; the victim is the next stalest.
+    let s = stateOf(...Array.from({ length: MAX_TABS }, (_, i) => `/p${i}`));
+    s = setTabPinned(s, "t0", true);
+    s = openTab(s, "/new-one", { evict: true });
+    expect(ids(s)).toContain("t0");
+    expect(ids(s)).not.toContain("t1");
+  });
+
+  it("refuses rather than evict when everything else is pinned", () => {
+    let s = stateOf(...Array.from({ length: MAX_TABS }, (_, i) => `/p${i}`));
+    for (const id of ids(s).slice(0, -1)) s = setTabPinned(s, id, true);
+    expect(openTab(s, "/new-one", { evict: true })).toBe(s);
+  });
+
+  it("still closes when asked to by name", () => {
+    const s = closeTab(setTabPinned(stateOf("/a", "/b"), "t0", true), "t0");
+    expect(ids(s)).toEqual(["t1"]);
+  });
+
+  it("keeps a move inside the tab's own block", () => {
+    let s = stateOf("/a", "/b", "/c", "/d");
+    s = setTabPinned(setTabPinned(s, "t0", true), "t1", true); // [t0 t1 | t2 t3]
+    expect(ids(moveTab(s, "t0", 3))).toEqual(["t1", "t0", "t2", "t3"]);
+    expect(ids(moveTab(s, "t3", 0))).toEqual(["t0", "t1", "t3", "t2"]);
+  });
+
+  it("is remembered across a reload", () => {
+    const s = setTabPinned(stateOf("/a", "/b"), "t1", true);
+    saveTabs("org-a", s, storage);
+    const back = loadTabs("org-a", storage)!;
+    expect(back.tabs.map((t) => [t.id, Boolean(t.pinned)])).toEqual([
+      ["t1", true],
+      ["t0", false],
+    ]);
   });
 });
 
@@ -191,7 +249,7 @@ describe("persistence", () => {
     s.tabs[1].history.push("/b/deeper");
     s.tabs[1].history.go(-1);
     s = setTabLabel(s, "t1", "Bee");
-    s = focusOrOpenForPin(s, "route:/c", "/c");
+    s = openTab(s, "/c");
 
     saveTabs("org-a", s, storage);
     const back = loadTabs("org-a", storage);
@@ -202,7 +260,7 @@ describe("persistence", () => {
     expect(back!.tabs[1].label).toBe("Bee");
     expect(back!.tabs[1].history.canGoForward).toBe(true);
     expect(locationPathOf(back!.tabs[1])).toBe("/b");
-    expect(back!.tabs[2].pinKey).toBe("route:/c");
+    expect(locationPathOf(back!.tabs[2])).toBe("/c");
   });
 
   it("keeps memberships apart", () => {

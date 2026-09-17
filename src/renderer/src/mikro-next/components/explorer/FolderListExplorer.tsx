@@ -363,7 +363,6 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
         console.error("Failed to add dropped items to folder:", dropError);
       }
     },
-    [props.folder.id, putFolders, putFiles, putArrayDatasets, putTableDatasets, refetch],
   );
 
   const explorerDropRef = useCallback(

@@ -13,10 +13,11 @@ vi.mock("@/app/Arkitekt", () => ({
 
 vi.mock("@/app/components/profile/ProfileSwitcher", () => ({
   default: () => <div>switcher</div>,
+  AddProfileActions: () => <div data-testid="add-actions">add</div>,
 }));
 
-// `DroppableNavLink` is a react-dnd drop target and needs a DndProvider; this
-// test is about the footer, not drag-and-drop.
+// `DroppableNavLink` navigates, so it needs a router; this test is about the
+// footer, not navigation or drag-and-drop.
 vi.mock("@/components/ui/link", () => ({
   DroppableNavLink: ({
     to,

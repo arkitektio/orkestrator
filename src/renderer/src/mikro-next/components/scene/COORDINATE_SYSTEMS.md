@@ -87,6 +87,33 @@ the client still evaluates are WITHIN a dataset: the lens/level-0 `toParent`
 prefix (§3.1) and the per-level pyramid factors (§3.2). Do not compose
 matrices ad-hoc anywhere else.
 
+**R1a — A placement PREVIEW is `D · asAffine`, and nothing else.** A host
+workflow (the interactive registration workspace,
+`mikro-next/components/registration`) may draw layers somewhere other than
+where the server put them, for the length of a session. It does so by
+LEFT-MULTIPLYING a world-space delta onto the stored layer's `asAffine`
+(`platform/model/placementPreview.ts`, `sceneStore.setPlacementPreview`) —
+the same authority, moved — never by composing a path, anchoring to another
+layer, or keeping a second matrix beside it. Because it rewrites the one field
+every placement route already reduces, images, meshes, points, tracks and
+annotations follow with no per-feature code. The rules:
+
+- The server original is kept as the BASE; every preview is computed from it,
+  never from the previous preview, and clearing restores it exactly.
+- Session-only, never persisted, and never given to an unplaceable layer — a
+  null `asAffine` stays not drawn (R1). An unregistered layer is first seeded
+  with a real edge through the Register form.
+- `syncSceneLayers` keeps a previewed layer while its structure key (edge id +
+  version) is unchanged, and re-derives it from the server when the key moves —
+  which is exactly when the saved registration lands, so the preview drops in
+  the same `set` the new placement arrives in (no snap-back, no double apply).
+- AUTHORING evaluates exactly ONE edge — the final step of `pathToWorld` — in
+  its full named-axis space (`@/mikro-next/lib/coords/namedAffine.ts`), and
+  folds the delta into it: `E′ = embed(D)·E` forward, `E′ = E·embed(D⁻¹)`
+  inverted. It never walks a path either. Pivot / centre parametrization is
+  the gizmo's and the solver's business and is composed down to an
+  origin-anchored affine before anything is stored (§0).
+
 **R2 — Store what was authored or measured; derive everything else.**
 Server-derived (we consume, never re-implement): `Lens.renderAxes` (axis
 mapping from axis TYPES), `Lens.toParent` (crop translation from slice
@@ -511,6 +538,9 @@ the dim-slider follow-ups in OCTREE_RENDERER.md §2.2.
 | --- | --- |
 | Edge evaluation, `invert4`, placement-path composition (incl. inverted steps), layer prefix detection, unregistered degradation | `@/mikro-next/lib/coords/transformGraph.test.ts` |
 | Pixel-factor and legacy physical-scale level edges, identity/translation edges, fallback | `@/mikro-next/lib/coords/transformGraph.test.ts` ("level scale factors") |
+| Named-axis edge evaluation (all axes, not just spatial), world-delta × edge forward and inverted, axis extension, round-trip through `placementToSpatialAffine` | `@/mikro-next/lib/coords/namedAffine.test.ts` |
+| Placement preview (R1a): compute-from-base, atomic multi-layer apply, identity preservation, restore, drop on re-placement | `platform/model/placementPreview.test.ts`, `platform/stores/sceneStore.test.ts` ("setPlacementPreview") |
+| Registration save plan (update / replace / refuse), edge eligibility, landmark solvers, gizmo drag math | `@/mikro-next/components/registration/math/*.test.ts` |
 | Planner/geometry under true factors | `features/bricks/octree/nodePlanning.test.ts`, `levelGeometry` coverage via existing octree tests |
 | Mesh cell math, planning, decoding, cache | `features/meshes/fabriks/fabriksCore.test.ts` |
 

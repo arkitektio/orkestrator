@@ -6331,6 +6331,17 @@ export type DetailInstanceFragment = (
   & InstanceFragment
 );
 
+export type KnowledgeInstanceFragment = (
+  { __typename?: 'Instance', component: Array<string>, sameAs: Array<(
+    { __typename?: 'Link' }
+    & LinkFragment
+  )>, drawnIn: Array<(
+    { __typename?: 'NodeDrawing' }
+    & NodeDrawingFragment
+  )> }
+  & InstanceFragment
+);
+
 export type LinkFragment = { __typename?: 'Link', id: string, kind: LinkKind, role?: string | null, createdAt: any, sourceRef: string, targetRef: string, term?: (
     { __typename?: 'Term' }
     & ListTermFragment
@@ -7257,10 +7268,13 @@ export type StructureFragment = (
   & ListStructureFragment
 );
 
-export type InformedStructureFragment = (
+export type KnowledgeStructureFragment = (
   { __typename?: 'Structure', metrics: Array<(
     { __typename?: 'Metric' }
     & ListMetricFragment
+  )>, informs: Array<(
+    { __typename?: 'Instance' }
+    & KnowledgeInstanceFragment
   )> }
   & ListStructureFragment
 );
@@ -7432,6 +7446,19 @@ export type AttestStructureMutation = { __typename?: 'Mutation', attestStructure
       { __typename?: 'Structure' }
       & ListStructureFragment
     ) } };
+
+export type AssertSameInstanceMutationVariables = Exact<{
+  input: AssertSameInstanceInput;
+}>;
+
+
+export type AssertSameInstanceMutation = { __typename?: 'Mutation', assertSameInstance: { __typename?: 'AssertedSameness', pending: boolean, assertion: (
+      { __typename?: 'Assertion' }
+      & AssertionFragment
+    ), links: Array<(
+      { __typename?: 'Link' }
+      & LinkFragment
+    )> } };
 
 export type CommentOnStructureMutationVariables = Exact<{
   identifier: Scalars['String']['input'];
@@ -8938,15 +8965,15 @@ export type SearchStructuresQueryVariables = Exact<{
 
 export type SearchStructuresQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Structure', value: string, label: string }> };
 
-export type GetInformedStructureQueryVariables = Exact<{
+export type KnowledgeForStructureQueryVariables = Exact<{
   identifier: Scalars['StructureIdentifier']['input'];
   object: Scalars['StructureObject']['input'];
 }>;
 
 
-export type GetInformedStructureQuery = { __typename?: 'Query', structureByIdentifier: (
+export type KnowledgeForStructureQuery = { __typename?: 'Query', structureByIdentifier: (
     { __typename?: 'Structure' }
-    & InformedStructureFragment
+    & KnowledgeStructureFragment
   ) };
 
 export type ListStructuresQueryVariables = Exact<{
@@ -9270,27 +9297,6 @@ export const NodeFragmentDoc = gql`
 ${EntityFragmentDoc}
 ${NaturalEventFragmentDoc}
 ${ProtocolEventFragmentDoc}`;
-export const ListNodeFragmentDoc = gql`
-    fragment ListNode on Node {
-  id
-  label
-}
-    `;
-export const NodeDrawingFragmentDoc = gql`
-    fragment NodeDrawing on NodeDrawing {
-  graph {
-    id
-    name
-  }
-  category {
-    id
-    label
-  }
-  node {
-    ...ListNode
-  }
-}
-    ${ListNodeFragmentDoc}`;
 export const EdgeDrawingFragmentDoc = gql`
     fragment EdgeDrawing on EdgeDrawing {
   graph {
@@ -10333,15 +10339,54 @@ export const StructureFragmentDoc = gql`
     ${ListStructureFragmentDoc}
 ${StructureKindFragmentDoc}
 ${ListMetricFragmentDoc}`;
-export const InformedStructureFragmentDoc = gql`
-    fragment InformedStructure on Structure {
+export const ListNodeFragmentDoc = gql`
+    fragment ListNode on Node {
+  id
+  label
+}
+    `;
+export const NodeDrawingFragmentDoc = gql`
+    fragment NodeDrawing on NodeDrawing {
+  graph {
+    id
+    name
+  }
+  category {
+    id
+    label
+  }
+  node {
+    ...ListNode
+  }
+}
+    ${ListNodeFragmentDoc}`;
+export const KnowledgeInstanceFragmentDoc = gql`
+    fragment KnowledgeInstance on Instance {
+  ...Instance
+  component
+  sameAs {
+    ...Link
+  }
+  drawnIn {
+    ...NodeDrawing
+  }
+}
+    ${InstanceFragmentDoc}
+${LinkFragmentDoc}
+${NodeDrawingFragmentDoc}`;
+export const KnowledgeStructureFragmentDoc = gql`
+    fragment KnowledgeStructure on Structure {
   ...ListStructure
   metrics {
     ...ListMetric
   }
+  informs {
+    ...KnowledgeInstance
+  }
 }
     ${ListStructureFragmentDoc}
-${ListMetricFragmentDoc}`;
+${ListMetricFragmentDoc}
+${KnowledgeInstanceFragmentDoc}`;
 export const DetailStructureRelationFragmentDoc = gql`
     fragment DetailStructureRelation on StructureRelation {
   id
@@ -10735,6 +10780,46 @@ export function useAttestStructureMutation(baseOptions?: ApolloReactHooks.Mutati
 export type AttestStructureMutationHookResult = ReturnType<typeof useAttestStructureMutation>;
 export type AttestStructureMutationResult = Apollo.MutationResult<AttestStructureMutation>;
 export type AttestStructureMutationOptions = Apollo.BaseMutationOptions<AttestStructureMutation, AttestStructureMutationVariables>;
+export const AssertSameInstanceDocument = gql`
+    mutation AssertSameInstance($input: AssertSameInstanceInput!) {
+  assertSameInstance(input: $input) {
+    pending
+    assertion {
+      ...Assertion
+    }
+    links {
+      ...Link
+    }
+  }
+}
+    ${AssertionFragmentDoc}
+${LinkFragmentDoc}`;
+export type AssertSameInstanceMutationFn = Apollo.MutationFunction<AssertSameInstanceMutation, AssertSameInstanceMutationVariables>;
+
+/**
+ * __useAssertSameInstanceMutation__
+ *
+ * To run a mutation, you first call `useAssertSameInstanceMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAssertSameInstanceMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [assertSameInstanceMutation, { data, loading, error }] = useAssertSameInstanceMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAssertSameInstanceMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssertSameInstanceMutation, AssertSameInstanceMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AssertSameInstanceMutation, AssertSameInstanceMutationVariables>(AssertSameInstanceDocument, options);
+      }
+export type AssertSameInstanceMutationHookResult = ReturnType<typeof useAssertSameInstanceMutation>;
+export type AssertSameInstanceMutationResult = Apollo.MutationResult<AssertSameInstanceMutation>;
+export type AssertSameInstanceMutationOptions = Apollo.BaseMutationOptions<AssertSameInstanceMutation, AssertSameInstanceMutationVariables>;
 export const CommentOnStructureDocument = gql`
     mutation CommentOnStructure($identifier: String!, $object: String!, $descendants: [DescendantInput!]!, $parent: ID) {
   commentOnStructure(
@@ -16108,42 +16193,42 @@ export function useSearchStructuresLazyQuery(baseOptions?: ApolloReactHooks.Lazy
 export type SearchStructuresQueryHookResult = ReturnType<typeof useSearchStructuresQuery>;
 export type SearchStructuresLazyQueryHookResult = ReturnType<typeof useSearchStructuresLazyQuery>;
 export type SearchStructuresQueryResult = Apollo.QueryResult<SearchStructuresQuery, SearchStructuresQueryVariables>;
-export const GetInformedStructureDocument = gql`
-    query GetInformedStructure($identifier: StructureIdentifier!, $object: StructureObject!) {
+export const KnowledgeForStructureDocument = gql`
+    query KnowledgeForStructure($identifier: StructureIdentifier!, $object: StructureObject!) {
   structureByIdentifier(identifier: $identifier, object: $object) {
-    ...InformedStructure
+    ...KnowledgeStructure
   }
 }
-    ${InformedStructureFragmentDoc}`;
+    ${KnowledgeStructureFragmentDoc}`;
 
 /**
- * __useGetInformedStructureQuery__
+ * __useKnowledgeForStructureQuery__
  *
- * To run a query within a React component, call `useGetInformedStructureQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetInformedStructureQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useKnowledgeForStructureQuery` and pass it any options that fit your needs.
+ * When your component renders, `useKnowledgeForStructureQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useGetInformedStructureQuery({
+ * const { data, loading, error } = useKnowledgeForStructureQuery({
  *   variables: {
  *      identifier: // value for 'identifier'
  *      object: // value for 'object'
  *   },
  * });
  */
-export function useGetInformedStructureQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetInformedStructureQuery, GetInformedStructureQueryVariables>) {
+export function useKnowledgeForStructureQuery(baseOptions: ApolloReactHooks.QueryHookOptions<KnowledgeForStructureQuery, KnowledgeForStructureQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetInformedStructureQuery, GetInformedStructureQueryVariables>(GetInformedStructureDocument, options);
+        return ApolloReactHooks.useQuery<KnowledgeForStructureQuery, KnowledgeForStructureQueryVariables>(KnowledgeForStructureDocument, options);
       }
-export function useGetInformedStructureLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetInformedStructureQuery, GetInformedStructureQueryVariables>) {
+export function useKnowledgeForStructureLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<KnowledgeForStructureQuery, KnowledgeForStructureQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetInformedStructureQuery, GetInformedStructureQueryVariables>(GetInformedStructureDocument, options);
+          return ApolloReactHooks.useLazyQuery<KnowledgeForStructureQuery, KnowledgeForStructureQueryVariables>(KnowledgeForStructureDocument, options);
         }
-export type GetInformedStructureQueryHookResult = ReturnType<typeof useGetInformedStructureQuery>;
-export type GetInformedStructureLazyQueryHookResult = ReturnType<typeof useGetInformedStructureLazyQuery>;
-export type GetInformedStructureQueryResult = Apollo.QueryResult<GetInformedStructureQuery, GetInformedStructureQueryVariables>;
+export type KnowledgeForStructureQueryHookResult = ReturnType<typeof useKnowledgeForStructureQuery>;
+export type KnowledgeForStructureLazyQueryHookResult = ReturnType<typeof useKnowledgeForStructureLazyQuery>;
+export type KnowledgeForStructureQueryResult = Apollo.QueryResult<KnowledgeForStructureQuery, KnowledgeForStructureQueryVariables>;
 export const ListStructuresDocument = gql`
     query ListStructures($id: ID, $filters: StructureFilter, $pagination: StructurePaginationInput, $ordering: [StructureOrder!]) {
   structures(

@@ -17,6 +17,7 @@ import { Identifier, Object } from "@/types";
 import { Check, Menu, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  StructureInput,
   useCreateRoomMutation,
   useGetRoomQuery,
   useListRoomsQuery,
@@ -76,7 +77,13 @@ const latestRoomId = (rooms: readonly RankableRoom[]): string => {
 const buildSidebarStorageKey = (identifier: Identifier, object: Object) =>
   `alpaka-structure-rooms:${identifier}:${object.id}`;
 
-const StructureRoomView = ({ roomId }: { roomId: string }) => {
+const StructureRoomView = ({
+  roomId,
+  talkingAbout,
+}: {
+  roomId: string;
+  talkingAbout: StructureInput;
+}) => {
   const { data, loading, error, subscribeToMore } = useGetRoomQuery({
     variables: {
       id: roomId,
@@ -152,7 +159,7 @@ const StructureRoomView = ({ roomId }: { roomId: string }) => {
           </div>
         }
       >
-        <Chat isMobile={isMobile} room={data.room} />
+        <Chat isMobile={isMobile} room={data.room} talkingAbout={[talkingAbout]} />
       </Guard.Rekuest>
     </div>
   );
@@ -325,7 +332,11 @@ export const StructureRoomsSidebar = ({
       </div>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {resolvedActiveRoomId && (
-          <StructureRoomView key={resolvedActiveRoomId} roomId={resolvedActiveRoomId} />
+          <StructureRoomView
+            key={resolvedActiveRoomId}
+            roomId={resolvedActiveRoomId}
+            talkingAbout={talkingAbout}
+          />
         )}
       </div>
     </div>

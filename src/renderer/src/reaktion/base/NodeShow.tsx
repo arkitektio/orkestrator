@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { NodeResizeControl } from '@xyflow/react'
 import { motion } from 'framer-motion'
 import React from 'react'
-import { useEditNodeErrors, EditFlowStoreContext, useEditFlowStore } from '../edit/context'
+import { useFlowAdapter } from '../nodes/adapter'
 
 type NodeProps = {
   children: React.ReactNode
@@ -114,16 +114,41 @@ const BaseNodeShowLayout: React.FC<NodeProps & { showNodeErrors?: boolean; error
   )
 }
 
-const EditNodeShowLayout: React.FC<NodeProps> = (props) => {
-  const showNodeErrors = useEditFlowStore((s) => s.showNodeErrors);
-  const errors = useEditNodeErrors(props.id)
-  return <BaseNodeShowLayout {...props} showNodeErrors={showNodeErrors} errors={errors} />
+const NodeShowLayoutInner: React.FC<NodeProps> = (props) => {
+  const adapter = useFlowAdapter()
+  const showNodeErrors = adapter.useShowNodeErrors()
+  const errors = adapter.useNodeErrors(props.id)
+  return <BaseNodeShowLayout {...props} showNodeErrors={showNodeErrors} errors={errors as never[]} />
 }
 
-export const NodeShowLayout: React.FC<NodeProps> = (props) => {
-  const storeContext = React.useContext(EditFlowStoreContext)
-  if (storeContext) {
-    return <EditNodeShowLayout {...props} />
-  }
-  return <BaseNodeShowLayout {...props} />
-}
+/**
+ * Shared node chrome. Errors and the error toggle come from the surface's
+ * `FlowAdapter`, so the viewer and tracker get the no-error path for free.
+ */
+export const NodeShowLayout = React.memo(NodeShowLayoutInner)
+
+/**
+ * Text block of a node. Deliberately not `CardHeader`: that is a container-query
+ * root, and inline-size containment makes it contribute zero width to React
+ * Flow's shrink-to-fit node, collapsing every node to its `minWidth`.
+ */
+export const NodeHeader = ({ className, ...props }: React.ComponentProps<'div'>) => (
+  <div className={cn('flex flex-col gap-1 px-4 py-3', className)} {...props} />
+)
+
+/** One line; its width (with the node's `minWidth`) is what sizes the node. */
+export const NodeTitle = ({ className, ...props }: React.ComponentProps<'div'>) => (
+  <div
+    className={cn('flex items-center justify-between gap-3 whitespace-nowrap text-sm font-medium', className)}
+    {...props}
+  />
+)
+
+/**
+ * Wraps inside whatever width the title/`minWidth` gave the node instead of
+ * stretching it (`w-0 min-w-full`), so it also follows a manual resize.
+ */
+export const NodeDescription = ({ className, ...props }: React.ComponentProps<'div'>) => (
+  <div className={cn('w-0 min-w-full text-xs/relaxed text-muted-foreground', className)} {...props} />
+)
+

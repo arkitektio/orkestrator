@@ -13,6 +13,7 @@ import { ActiveTabRouter } from "./ActiveTabRouter";
 import { TabsProvider, useTabs } from "./TabsProvider";
 import { useActiveTabNavigation } from "./useActiveTabNavigation";
 import { saveTabs, tabsStorageKey, createTab } from "./tabs";
+import { NEW_TAB_PATH } from "./tabs";
 
 /** Reads everything through the CHROME router — the way the rail does. */
 const Probe = () => {
@@ -211,5 +212,23 @@ describe("tabs are per membership", () => {
     });
     expect(localStorage.length).toBe(0);
     vi.useRealTimers();
+  });
+});
+
+describe("⌘T", () => {
+  it("opens a tab on the new-tab page at once — no palette in between", () => {
+    render(
+      <TabsProvider>
+        <ActiveTabRouter>
+          <Probe />
+        </ActiveTabRouter>
+      </TabsProvider>,
+    );
+    expect(screen.getByTestId("count").textContent).toBe("1");
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "t", metaKey: true, bubbles: true }));
+    });
+    expect(screen.getByTestId("count").textContent).toBe("2");
+    expect(screen.getByTestId("path").textContent).toBe(NEW_TAB_PATH);
   });
 });

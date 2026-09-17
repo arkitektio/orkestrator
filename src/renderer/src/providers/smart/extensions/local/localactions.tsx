@@ -5,7 +5,7 @@ import {
 } from "@/app/localactions";
 import {
 } from "@/components/ui/command";
-import { Action, ActionState } from "@/lib/localactions/LocalActionProvider";
+import { Action, ActionState, orderActionEntries } from "@/lib/localactions/LocalActionProvider";
 import { CommandGroup } from "cmdk";
 import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
@@ -45,19 +45,10 @@ export const Actions = (props: {
     search: props.filter,
   });
 
-  const actions = useMemo(() => {
-    const pinned = new Set(pinnedActionIds);
-    return [...matchingActions].sort((left, right) => {
-      const leftPinned = pinned.has(left.id);
-      const rightPinned = pinned.has(right.id);
-
-      if (leftPinned !== rightPinned) {
-        return leftPinned ? -1 : 1;
-      }
-
-      return left.action.title.localeCompare(right.action.title);
-    });
-  }, [matchingActions, pinnedActionIds]);
+  const actions = useMemo(
+    () => orderActionEntries(matchingActions, pinnedActionIds, props.filter),
+    [matchingActions, pinnedActionIds, props.filter],
+  );
 
   if (actions.length === 0) {
     return null;

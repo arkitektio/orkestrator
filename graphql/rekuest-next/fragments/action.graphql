@@ -10,6 +10,9 @@ fragment ListAction on Action {
     id
     agent {
       id
+      name
+      active
+      connected
     }
   }
   key
@@ -20,6 +23,103 @@ fragment ListAction on Action {
   latestTask {
     id
     args
+  }
+}
+
+# The actions catalog (ActionsPage): ListAction plus what the facets, grouping
+# and card chips need. Kept apart from ListAction, which chat, kabinet, reaktion
+# and global search all select.
+fragment BrowseAction on Action {
+  ...ListAction
+  definedAt
+  isDev
+  pinned
+  collections {
+    id
+    name
+  }
+  protocols {
+    id
+    name
+  }
+}
+
+fragment ProvidingImplementation on Implementation {
+  id
+  interface
+  pinned
+  agent {
+    id
+    name
+    active
+    connected
+    blocked
+    lastSeen
+  }
+}
+
+fragment ActionTestCase on TestCase {
+  id
+  name
+  description
+  isBenchmark
+  tester {
+    id
+    name
+    hash
+  }
+  results {
+    id
+    passed
+    createdAt
+    implementation {
+      id
+      interface
+      agent {
+        id
+        name
+      }
+    }
+    tester {
+      id
+      interface
+    }
+  }
+}
+
+# What the action detail page shows around the assign form. Deliberately not
+# part of DetailAction: that fragment is the assign payload every assign dialog
+# and shortcut form loads.
+fragment ActionOverview on Action {
+  id
+  name
+  hash
+  key
+  version
+  kind
+  stateful
+  pure
+  idempotent
+  isDev
+  pinned
+  scope
+  definedAt
+  app {
+    identifier
+  }
+  protocols {
+    id
+    name
+  }
+  collections {
+    id
+    name
+  }
+  implementations {
+    ...ProvidingImplementation
+  }
+  testCases {
+    ...ActionTestCase
   }
 }
 
@@ -52,13 +152,13 @@ fragment GraphNodeAction on Action {
   }
 }
 
+# The assign payload: every assign dialog and shortcut form loads this, so it
+# carries what running the action needs. What the action PAGE shows around the
+# form lives in ActionOverview.
 fragment DetailAction on Action {
   ...GraphNodeAction
   implementations {
     ...MinimalImplementation
-  }
-  testCases {
-    ...ListTestCase
   }
   tests {
     id
@@ -68,9 +168,6 @@ fragment DetailAction on Action {
       implementation_id: arg(key: "implementation")
       latestEventKind
     }
-  }
-  tasks(pagination: { limit: 10, offset: 0 }) {
-    ...MinimalTask
   }
   key
   version
@@ -116,6 +213,7 @@ fragment HoverAction on Action {
       id
       name
       active
+      connected
     }
   }
   tasks(pagination: { limit: 5 }, ordering: { createdAt: DESC }) {

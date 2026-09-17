@@ -1,4 +1,7 @@
 import {
+  ActionHashDocument,
+  ActionHashQuery,
+  ActionHashQueryVariables,
   AgentDocument,
   AgentQuery,
   AgentQueryVariables,
@@ -8,6 +11,9 @@ import {
   BounceDocument,
   BounceMutation,
   BounceMutationVariables,
+  CleanupActionsDocument,
+  CleanupActionsMutation,
+  CleanupActionsMutationVariables,
   DeleteBlokDocument,
   DeleteBlokMutation,
   DeleteBlokMutationVariables,
@@ -37,9 +43,22 @@ import {
 import type { Arkitekt } from '@/app/Arkitekt'
 import { buildDeleteAction } from '../localactions/builders/deleteAction'
 import { Action } from '../localactions/LocalActionProvider'
-import { Ban, Bookmark, LogOut, Pencil, Pin, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react'
+import { Ban, Bookmark, Eraser, Hash, LogOut, Pencil, Pin, Play, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type RekuestAction = Action<typeof Arkitekt>
+
+const ACTION_IDENTIFIER = '@rekuest/action'
+
+const ACTION_CONDITIONS = [
+  {
+    type: 'identifier',
+    identifier: ACTION_IDENTIFIER,
+  },
+  {
+    type: 'nopartner',
+  },
+] as const
 
 export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
   'rekuest-update-agent': {
@@ -444,6 +463,151 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       }
 
       dialog.openDialog('createshortcut', { id: data.implementation.action.id })
+    },
+    collections: ['io'],
+  },
+  'rekuest-assign-action': {
+    title: 'Run Action',
+    description: 'Fill in the arguments and assign this action',
+    icon: Play,
+    pinned: true,
+    conditions: ACTION_CONDITIONS,
+    execute: async ({ state, dialog }) => {
+      const structure = state.left.find(
+        (item) => item.identifier === ACTION_IDENTIFIER,
+      )
+
+      if (!structure?.object?.id) {
+        throw new Error('No action selected')
+      }
+
+      dialog.openDialog('actionassign', { id: structure.object.id })
+    },
+    collections: ['io'],
+  },
+  'rekuest-create-shortcut-from-action': {
+    title: 'Create Shortcut',
+    description: 'Create a shortcut for this action',
+    icon: Bookmark,
+    conditions: ACTION_CONDITIONS,
+    execute: async ({ state, dialog }) => {
+      const structure = state.left.find(
+        (item) => item.identifier === ACTION_IDENTIFIER,
+      )
+
+      if (!structure?.object?.id) {
+        throw new Error('No action selected')
+      }
+
+      dialog.openDialog('createshortcut', { id: structure.object.id })
+    },
+    collections: ['io'],
+  },
+  'rekuest-copy-action-hash': {
+    title: 'Copy Hash',
+    description: 'Copy the hash that identifies this action definition',
+    icon: Hash,
+    conditions: ACTION_CONDITIONS,
+    execute: async ({ services, state }) => {
+      const structure = state.left.find(
+        (item) => item.identifier === ACTION_IDENTIFIER,
+      )
+
+      if (!structure?.object?.id) {
+        throw new Error('No action selected')
+      }
+
+      // Lists and the detail page carry the hash on the object; a bare
+      // `{ id }` structure (e.g. from a link) needs the lookup.
+      const carried = structure.object.hash
+      let hash: string | undefined =
+        typeof carried === 'string' ? carried : undefined
+
+      if (!hash) {
+        if (!services.rekuest) {
+          throw new Error('Rekuest service not available')
+        }
+
+        const { data } = await services.rekuest.client.query<
+          ActionHashQuery,
+          ActionHashQueryVariables
+        >({
+          query: ActionHashDocument,
+          variables: { id: structure.object.id },
+          fetchPolicy: 'cache-first',
+        })
+
+        hash = data?.action?.hash
+      }
+
+      if (!hash) {
+        throw new Error('Could not load the hash for this action')
+      }
+
+      await navigator.clipboard.writeText(hash)
+      toast.success('Action hash copied')
+    },
+    collections: ['io'],
+  },
+  'rekuest-cleanup-action': {
+    title: 'Clean Up Action',
+    description: 'Remove this action if nothing references it anymore',
+    icon: Eraser,
+    conditions: ACTION_CONDITIONS,
+    execute: async ({ services, state, confirm, modifiers }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+
+      // The identifier condition matches when ANY selected item matches, so a
+      // mixed selection can include other types — never pass those on.
+      const actionIds = state.left
+        .filter((item) => item.identifier === ACTION_IDENTIFIER)
+        .map((item) => item.object?.id)
+        .filter((id): id is string => Boolean(id))
+
+      if (actionIds.length === 0) {
+        return
+      }
+
+      if (!modifiers.ctrlKey) {
+        const confirmed = await confirm({
+          title:
+            actionIds.length > 1
+              ? `Clean up ${actionIds.length} actions?`
+              : 'Clean up this action?',
+          description:
+            'Only unreferenced actions are removed; ones still in use are left alone. This action cannot be undone. To skip this dialog, hold Ctrl when doing it.',
+          confirmLabel: 'Clean up',
+          cancelLabel: 'Keep',
+          destructive: true,
+        })
+
+        if (!confirmed) {
+          return
+        }
+      }
+
+      const client = services.rekuest.client
+      const { data } = await client.mutate<
+        CleanupActionsMutation,
+        CleanupActionsMutationVariables
+      >({
+        mutation: CleanupActionsDocument,
+        variables: { actionIds },
+      })
+
+      const removed = data?.cleanupActions ?? 0
+
+      if (removed > 0) {
+        // The mutation only reports a count, so drop the cached lists rather
+        // than guessing which of the selected actions went away.
+        client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'actions' })
+        client.cache.gc()
+        toast.success(`Cleaned up ${removed} action${removed === 1 ? '' : 's'}`)
+      } else {
+        toast.info('Nothing to clean up — the action is still referenced')
+      }
     },
     collections: ['io'],
   },

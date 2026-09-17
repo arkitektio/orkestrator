@@ -10,8 +10,10 @@ import {
 } from "../../api/graphql";
 import {
   bufferEvent,
-  forgetId,
-  isTerminalEvent,
+  deliverHeldEvents,
+  deliverToCallback,
+  holdForCallback,
+  isTaskLive,
   mapReference,
   referenceForId,
   registeredCallbacks,
@@ -52,7 +54,7 @@ export const TaskUpdater = () => {
     if (seeded.current || loading || !data) return;
     seeded.current = true;
     const running = data.myTasks
-      .filter((task) => !task.isDone && !isTerminalEvent(task.latestEventKind))
+      .filter(isTaskLive)
       .sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -80,11 +82,10 @@ export const TaskUpdater = () => {
           // Deliver to locally tracking components outside the cache update
           // (cache writes no-op when the entity isn't cached yet).
           if (reference) {
-            registeredCallbacks.get(reference)?.(synth);
-            if (isTerminalEvent(event.kind)) {
-              registeredCallbacks.delete(reference);
-              forgetId(event.task);
-            }
+            deliverToCallback(reference, synth);
+          } else {
+            // Not routable until the task's reference is known.
+            holdForCallback(event.task, event);
           }
 
           const existed = writeTaskEventToCache(client, event, synth);
@@ -97,6 +98,9 @@ export const TaskUpdater = () => {
 
         if (create) {
           mapReference(create.id, create.reference);
+          // Events that arrived before this payload had no reference to be
+          // routed by; the local tracker gets them now.
+          deliverHeldEvents(create.id);
 
           const existing = client.readQuery<MyTasksQuery>({
             query: MyTasksDocument,

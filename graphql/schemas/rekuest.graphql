@@ -1367,9 +1367,6 @@ type Client {
   """Unique ID of the client."""
   id: ID!
 
-  """Name of the client."""
-  name: String!
-
   """Release associated with the client."""
   release: Release
 }
@@ -3420,7 +3417,7 @@ type Provides {
 
 input ProvidesInput {
   """
-  The key of the provision: the path into the object the constraint reads
+  The key of the provision: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes')
   """
   key: String!
 
@@ -3761,7 +3758,7 @@ type Requires {
 
 input RequiresInput {
   """
-  The key of the requirement: the path into the object the constraint reads
+  The key of the requirement: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes')
   """
   key: String!
 

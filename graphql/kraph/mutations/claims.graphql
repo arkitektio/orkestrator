@@ -115,3 +115,18 @@ mutation AttestStructure($id: String!) {
     }
   }
 }
+
+# Sameness is an equivalence with no primary: which id goes first is immaterial,
+# and asserting that three are one records every pair under one assertion.
+# Entities only, never structures.
+mutation AssertSameInstance($input: AssertSameInstanceInput!) {
+  assertSameInstance(input: $input) {
+    pending
+    assertion {
+      ...Assertion
+    }
+    links {
+      ...Link
+    }
+  }
+}

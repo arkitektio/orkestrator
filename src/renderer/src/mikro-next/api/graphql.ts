@@ -11072,6 +11072,50 @@ export type CreateTransformationMutation = { __typename?: 'Mutation', createTran
     & Transformation_UnmappableTransformation_Fragment
   ) };
 
+export type UpdateTransformationMutationVariables = Exact<{
+  input: UpdateTransformationInput;
+}>;
+
+
+export type UpdateTransformationMutation = { __typename?: 'Mutation', updateTransformation: (
+    { __typename?: 'AffineTransformation', version: number }
+    & Transformation_AffineTransformation_Fragment
+  ) | (
+    { __typename?: 'ByDimensionTransformation', version: number }
+    & Transformation_ByDimensionTransformation_Fragment
+  ) | (
+    { __typename?: 'FieldTransformation', version: number }
+    & Transformation_FieldTransformation_Fragment
+  ) | (
+    { __typename?: 'IdentityTransformation', version: number }
+    & Transformation_IdentityTransformation_Fragment
+  ) | (
+    { __typename?: 'MapAxisTransformation', version: number }
+    & Transformation_MapAxisTransformation_Fragment
+  ) | (
+    { __typename?: 'RotationTransformation', version: number }
+    & Transformation_RotationTransformation_Fragment
+  ) | (
+    { __typename?: 'ScaleTransformation', version: number }
+    & Transformation_ScaleTransformation_Fragment
+  ) | (
+    { __typename?: 'SequenceTransformation', version: number }
+    & Transformation_SequenceTransformation_Fragment
+  ) | (
+    { __typename?: 'TranslationTransformation', version: number }
+    & Transformation_TranslationTransformation_Fragment
+  ) | (
+    { __typename?: 'UnmappableTransformation', version: number }
+    & Transformation_UnmappableTransformation_Fragment
+  ) };
+
+export type DeleteTransformationMutationVariables = Exact<{
+  input: DeleteTransformationInput;
+}>;
+
+
+export type DeleteTransformationMutation = { __typename?: 'Mutation', deleteTransformation: string };
+
 export type AddLayerReachableQueryVariables = Exact<{
   scene: Scalars['ID']['input'];
 }>;
@@ -12109,6 +12153,103 @@ export type RegisterSourceCandidatesQuery = { __typename?: 'Query', arrayDataset
     { __typename?: 'TableDataset' }
     & ListTableDatasetFragment
   )> };
+
+export type GetRegistrationEdgeQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetRegistrationEdgeQuery = { __typename?: 'Query', transformation: (
+    { __typename?: 'AffineTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_AffineTransformation_Fragment
+  ) | (
+    { __typename?: 'ByDimensionTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_ByDimensionTransformation_Fragment
+  ) | (
+    { __typename?: 'FieldTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_FieldTransformation_Fragment
+  ) | (
+    { __typename?: 'IdentityTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_IdentityTransformation_Fragment
+  ) | (
+    { __typename?: 'MapAxisTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_MapAxisTransformation_Fragment
+  ) | (
+    { __typename?: 'RotationTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_RotationTransformation_Fragment
+  ) | (
+    { __typename?: 'ScaleTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_ScaleTransformation_Fragment
+  ) | (
+    { __typename?: 'SequenceTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_SequenceTransformation_Fragment
+  ) | (
+    { __typename?: 'TranslationTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_TranslationTransformation_Fragment
+  ) | (
+    { __typename?: 'UnmappableTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+        { __typename?: 'Axis' }
+        & AxisFragment
+      )> } | null }
+    & Transformation_UnmappableTransformation_Fragment
+  ) };
 
 export type GetFileQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -17123,6 +17264,71 @@ export function useCreateTransformationMutation(baseOptions?: ApolloReactHooks.M
 export type CreateTransformationMutationHookResult = ReturnType<typeof useCreateTransformationMutation>;
 export type CreateTransformationMutationResult = Apollo.MutationResult<CreateTransformationMutation>;
 export type CreateTransformationMutationOptions = Apollo.BaseMutationOptions<CreateTransformationMutation, CreateTransformationMutationVariables>;
+export const UpdateTransformationDocument = gql`
+    mutation UpdateTransformation($input: UpdateTransformationInput!) {
+  updateTransformation(input: $input) {
+    ...Transformation
+    version
+  }
+}
+    ${TransformationFragmentDoc}`;
+export type UpdateTransformationMutationFn = Apollo.MutationFunction<UpdateTransformationMutation, UpdateTransformationMutationVariables>;
+
+/**
+ * __useUpdateTransformationMutation__
+ *
+ * To run a mutation, you first call `useUpdateTransformationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateTransformationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateTransformationMutation, { data, loading, error }] = useUpdateTransformationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateTransformationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateTransformationMutation, UpdateTransformationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateTransformationMutation, UpdateTransformationMutationVariables>(UpdateTransformationDocument, options);
+      }
+export type UpdateTransformationMutationHookResult = ReturnType<typeof useUpdateTransformationMutation>;
+export type UpdateTransformationMutationResult = Apollo.MutationResult<UpdateTransformationMutation>;
+export type UpdateTransformationMutationOptions = Apollo.BaseMutationOptions<UpdateTransformationMutation, UpdateTransformationMutationVariables>;
+export const DeleteTransformationDocument = gql`
+    mutation DeleteTransformation($input: DeleteTransformationInput!) {
+  deleteTransformation(input: $input)
+}
+    `;
+export type DeleteTransformationMutationFn = Apollo.MutationFunction<DeleteTransformationMutation, DeleteTransformationMutationVariables>;
+
+/**
+ * __useDeleteTransformationMutation__
+ *
+ * To run a mutation, you first call `useDeleteTransformationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteTransformationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteTransformationMutation, { data, loading, error }] = useDeleteTransformationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useDeleteTransformationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteTransformationMutation, DeleteTransformationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteTransformationMutation, DeleteTransformationMutationVariables>(DeleteTransformationDocument, options);
+      }
+export type DeleteTransformationMutationHookResult = ReturnType<typeof useDeleteTransformationMutation>;
+export type DeleteTransformationMutationResult = Apollo.MutationResult<DeleteTransformationMutation>;
+export type DeleteTransformationMutationOptions = Apollo.BaseMutationOptions<DeleteTransformationMutation, DeleteTransformationMutationVariables>;
 export const AddLayerReachableDocument = gql`
     query AddLayerReachable($scene: ID!) {
   scene(id: $scene) {
@@ -18443,6 +18649,63 @@ export function useRegisterSourceCandidatesLazyQuery(baseOptions?: ApolloReactHo
 export type RegisterSourceCandidatesQueryHookResult = ReturnType<typeof useRegisterSourceCandidatesQuery>;
 export type RegisterSourceCandidatesLazyQueryHookResult = ReturnType<typeof useRegisterSourceCandidatesLazyQuery>;
 export type RegisterSourceCandidatesQueryResult = Apollo.QueryResult<RegisterSourceCandidatesQuery, RegisterSourceCandidatesQueryVariables>;
+export const GetRegistrationEdgeDocument = gql`
+    query GetRegistrationEdge($id: ID!) {
+  transformation(id: $id) {
+    ...Transformation
+    version
+    invariance
+    valueRelation
+    selector {
+      axis
+      index
+    }
+    input {
+      id
+      name
+      axes {
+        ...Axis
+      }
+    }
+    output {
+      id
+      name
+      axes {
+        ...Axis
+      }
+    }
+  }
+}
+    ${TransformationFragmentDoc}
+${AxisFragmentDoc}`;
+
+/**
+ * __useGetRegistrationEdgeQuery__
+ *
+ * To run a query within a React component, call `useGetRegistrationEdgeQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetRegistrationEdgeQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetRegistrationEdgeQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetRegistrationEdgeQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetRegistrationEdgeQuery, GetRegistrationEdgeQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetRegistrationEdgeQuery, GetRegistrationEdgeQueryVariables>(GetRegistrationEdgeDocument, options);
+      }
+export function useGetRegistrationEdgeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetRegistrationEdgeQuery, GetRegistrationEdgeQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetRegistrationEdgeQuery, GetRegistrationEdgeQueryVariables>(GetRegistrationEdgeDocument, options);
+        }
+export type GetRegistrationEdgeQueryHookResult = ReturnType<typeof useGetRegistrationEdgeQuery>;
+export type GetRegistrationEdgeLazyQueryHookResult = ReturnType<typeof useGetRegistrationEdgeLazyQuery>;
+export type GetRegistrationEdgeQueryResult = Apollo.QueryResult<GetRegistrationEdgeQuery, GetRegistrationEdgeQueryVariables>;
 export const GetFileDocument = gql`
     query GetFile($id: ID!) {
   file(id: $id) {

@@ -70,6 +70,10 @@ export function ThemeProvider({
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(resolvedTheme);
+    // The window frame has parts CSS cannot reach (the background Chromium
+    // paints during a resize, Windows' overlay glyphs); main recolours them.
+    // Optional all the way down: a browser tab has no frame of ours.
+    window.api?.windowControls?.setTheme?.(resolvedTheme);
   }, [resolvedTheme]);
 
   const setTheme = useCallback(

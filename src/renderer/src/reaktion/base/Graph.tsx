@@ -1,6 +1,5 @@
 import { Background, EdgeTypes, ReactFlow, ReactFlowProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { AnimatePresence } from "framer-motion";
 import React from "react";
 import { FlowEdge, FlowNode, NodeTypes } from "../types";
 
@@ -34,10 +33,8 @@ export const Graph: React.FC<Props> = ({
       attributionPosition="top-right"
       {...props}
     >
-      <AnimatePresence>
-        <Background />
-        {children}
-      </AnimatePresence>
+      <Background />
+      {children}
     </ReactFlow>
   );
 };

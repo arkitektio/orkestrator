@@ -17,7 +17,11 @@ import {
   DeleteProtocolEventCategoryDocument,
   AssertInformsDocument,
 } from "./api/graphql";
-import { Link2, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
+import { smartRegistry } from "@/providers/smart/registry";
+import type { Structure } from "@/types";
+import { Equal, Link2, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
+import { toast } from "sonner";
+import { executeSameness, explainSameness, planSameness } from "./lib/sameness";
 
 export const NewEntityAction: Action = {
   title: "Create New Entity",
@@ -178,9 +182,74 @@ export const RetractLinksAction: Action = {
   collections: ["io"],
 };
 
+/** How a datum is named in a confirmation: its label if it has one, else its model and id. */
+const describeDatum = (structure: Structure) => {
+  const { label, name } = structure.object;
+  if (typeof label === "string" && label) return label;
+  if (typeof name === "string" && name) return name;
+  return `${smartRegistry.getDisplayName(structure.identifier)} ${structure.object.id}`;
+};
+
+/**
+ * "This is the same thing as that one." Two datums — the one this runs on and
+ * the one dropped onto it (or chosen as its partner) — are evidence for one
+ * individual. Organization-grain: it names no graph, and every view whose
+ * sameness rule trusts the claimant folds the two into one node.
+ *
+ * A local action rather than a button so the same gesture works from a drop on
+ * the Knowledge panel, the context menu and the `ObjectButton` alike. The
+ * decision of *what* to write lives in `kraph/lib/sameness` and is shared with
+ * the per-label drop target in the Knowledge sidebar.
+ */
+export const SameAsDatumAction: Action = {
+  title: "Same thing as…",
+  description:
+    "Claim that this datum and the partner datum are evidence for one and the same thing",
+  icon: Equal,
+  conditions: [{ type: "datum" }, { type: "pdatum" }],
+  execute: async ({ state, services, confirm }) => {
+    const left = state.left[0];
+    const right = state.right?.[0];
+    if (!left || !right || state.left.length !== 1 || state.right?.length !== 1) {
+      throw new Error("Pick exactly one datum on each side");
+    }
+
+    const client = (services.kraph as unknown as { client: ApolloClient<NormalizedCache> })
+      .client;
+    if (!client) {
+      throw new Error("Kraph service is not available");
+    }
+
+    const plan = await planSameness({ client, left, right });
+    if (plan.kind === "needs-term" || plan.kind === "ambiguous") {
+      throw new Error(explainSameness(plan) ?? "Cannot claim sameness here");
+    }
+    if (plan.kind === "already-same") {
+      toast.info(`Already the same ${plan.term}`);
+      return;
+    }
+
+    // A drop is cheap to do by accident, and this is the one claim here that
+    // merges identities — so it is confirmed, unlike a label.
+    const confirmed = await confirm({
+      title: `Same ${plan.term}?`,
+      description: `${describeDatum(left)} and ${describeDatum(right)} will be recorded as evidence for one ${plan.term}. This is a claim in the log and can be retracted.`,
+      confirmLabel: "Claim same",
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    await executeSameness(client, plan);
+    toast.success(`Claimed the same ${plan.term}`);
+  },
+  collections: ["io"],
+};
+
 export const KRAPH_ACTIONS = {
   "create-new-entity": NewEntityAction,
   "link-structure-to-entity": LinkStructureToEntityAction,
+  "same-datum": SameAsDatumAction,
   "attest-node": AttestNodeAction,
   "retract-links": RetractLinksAction,
   "delete-kraph-graph": buildDeleteAction({

@@ -30,7 +30,7 @@ import {
   EdgeProps,
   Node,
   NodeProps,
-  OnConnectStartParams,
+  XYPosition,
 } from "@xyflow/react";
 
 export type DataEnhancer<T, L = {}> = T & { extras?: L };
@@ -187,51 +187,52 @@ export type RelativePosition =
   | "topright"
   | "topleft";
 
+/**
+ * Contextual panels are keyed by *ids* into the store. They never carry node
+ * or edge objects: those would be frozen copies that go stale the moment the
+ * graph changes. Components resolve the live node with `useEditNode(id)`.
+ *
+ * `position` is the panel's placement relative to the flow wrapper (CSS px);
+ * `flowPosition` is where a new node should be placed, in flow coordinates.
+ */
 export type DropContextualParams = {
   handleType: "source" | "target";
-  causingNode: FlowNode;
+  causingNodeId: string;
   causingStream: number;
   relativePosition: RelativePosition;
   position: { x: number; y: number };
-  event: MouseEvent | TouchEvent;
-  connectionParams: OnConnectStartParams;
+  flowPosition: XYPosition;
 };
 
 export type SubflowDropContextualParams = DropContextualParams & {
   subflowNodeId: string;
-  subflowNode: Node<AgentSubFlowNodeData, "AgentSubFlowNode">;
 };
 
 export type ClickContextualParams = {
   position: { x: number; y: number };
-  event: MouseEvent | TouchEvent;
+  flowPosition: XYPosition;
 };
 
 export type EdgeContextualParams = {
   edgeId: string;
   position: { x: number; y: number };
-  event: MouseEvent | TouchEvent;
-  leftNode: FlowNode;
+  leftNodeId: string;
   leftStream: number;
-  rightNode: FlowNode;
+  rightNodeId: string;
   rightStream: number;
 };
 
 export type ConnectContextualParams = {
   connection: Connection;
-  leftNode: FlowNode;
+  leftNodeId: string;
   leftStream: number;
-  rightNode: FlowNode;
+  rightNodeId: string;
   rightStream: number;
   position: { x: number; y: number };
 };
 
-export type NodeContextualAction =
-  | { type: "implementations"; appIdentifier: string; }
-
 export type NodeContextualParams = {
   nodeId: string;
-  subFlowNode: Node<AgentSubFlowNodeData, "AgentSubFlowNode">;
   position: { x: number; y: number };
 };
 

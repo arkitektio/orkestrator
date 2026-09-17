@@ -1,137 +1,78 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Card } from "@/components/ui/card";
-import {
-  ElektroNeuronModel,
-  ElektroRecording,
-  ElektroSimulation,
-  ElektroStimulus,
-} from "@/linkers";
-import { cn } from "@/lib/utils";
-import React from "react";
+import { Sidebars } from "@/components/layout/Sidebars";
+import { ElektroSimulation } from "@/linkers";
+import React, { useCallback } from "react";
 import { useDetailSimulationQuery } from "../api/graphql";
-import {
-  getColorForRecordingView,
-  getColorForStimulusView,
-} from "../components/ExperimentRender.utils";
+import { SimulationInfoSidebar } from "../components/sidebars/SimulationInfoSidebar";
 import { SimulationRender } from "../components/SimulationRender";
+import { SimulationTitleHeader } from "../components/simulation/SimulationTitleHeader";
 
 export type IRepresentationScreenProps = {};
 
+/** Add the id if absent, drop it if present. */
+const toggle = (prev: string[], id: string) =>
+  prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+
+/**
+ * Laid out like `ArrayDatasetPage` and `NeuronModelPage`: the content area is
+ * the plot under a one-line title, and the facts — run parameters, model,
+ * creator, and the trace legend with its visibility toggles — are one Info tab
+ * in the rail.
+ */
 export const SimulationPage = asDetailQueryRoute(
   useDetailSimulationQuery,
   ({ data }) => {
-  const [hidden, setHidden] = React.useState<string[]>([]);
+    const simulation = data.simulation;
+    const [hidden, setHidden] = React.useState<string[]>([]);
     const [hiddenStimuli, setHiddenStimuli] = React.useState<string[]>([]);
+    const toggleRecording = useCallback(
+      (id: string) => setHidden((prev) => toggle(prev, id)),
+      [],
+    );
+    const toggleStimulus = useCallback(
+      (id: string) => setHiddenStimuli((prev) => toggle(prev, id)),
+      [],
+    );
 
     return (
       <ElektroSimulation.ModelPage
+        object={simulation}
+        title={simulation.name}
         variant="black"
-        title={data?.simulation?.name}
-        object={data.simulation}
+        overlay
+        actions={<ElektroSimulation.Actions object={simulation} />}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <ElektroSimulation.ObjectButton object={data.simulation} />
+          <div className="flex items-center gap-2">
+            <ElektroSimulation.ObjectButton object={simulation} />
           </div>
         }
+        additionalSidebars={
+          <Sidebars.Tab label="Info">
+            <SimulationInfoSidebar
+              simulation={simulation}
+              hidden={hidden}
+              hiddenStimuli={hiddenStimuli}
+              onToggleRecording={toggleRecording}
+              onToggleStimulus={toggleStimulus}
+            />
+          </Sidebars.Tab>
+        }
+        defaultSidebar="Info"
+        sidebarKey="SimulationDetail"
       >
-        <div className="flex-initial grid grid-cols-12 gap-2 h-32 w-full">
-          <div className="col-span-11 h-32 p-3">
-            <div>
-              <h1 className="scroll-m-16 text-4xl font-extrabold tracking-tight lg:text-5xl">
-                {data.simulation.name}
-              </h1>
-              <p className="mt-3 text-xl text-muted-foreground">
-                Duration: {data.simulation.duration} ms dt:{" "}
-                {data.simulation.dt} s/ms
-              </p>
-            </div>
+        <div className="flex h-full w-full flex-col">
+          <SimulationTitleHeader simulation={simulation} />
+          <div className="flex min-h-0 w-full flex-1 overflow-hidden">
+            <SimulationRender
+              simulation={simulation}
+              hidden={hidden}
+              hiddenStimuli={hiddenStimuli}
+            />
           </div>
-          {data.simulation.model && <>
-            <ElektroNeuronModel.DetailLink object={data.simulation.model} className="col-span-1 h-32 p-3 flex items-center justify-center">
-              Open Model
-            </ElektroNeuronModel.DetailLink>
-
-          </>}
-        </div>
-        <div className="flex-grow w-full flex overflow-hidden">
-          <SimulationRender
-            simulation={data.simulation}
-            hidden={hidden}
-            hiddenStimuli={hiddenStimuli}
-          />
-        </div>
-        <div className="flex-initial flex flex-row gap-2">
-          {data.simulation.recordings.map((view, index) => (
-            <Card
-              className={cn(
-                "px-2 flex-1 cursor-pointer max-w-xs p-3",
-                hidden.includes(view.id) && "opacity-20",
-              )}
-              key={index}
-              onClick={() => {
-                setHidden((prev) =>
-                  prev.find((x) => x === view.id)
-                    ? prev.filter((x) => x !== view.id)
-                    : [...prev, view.id],
-                );
-              }}
-            >
-              <div className="flex flex-row gap-2 my-auto">
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: getColorForRecordingView(view) }}
-                />
-                <div className="text-sm text-muted-foreground my-auto">
-                  {view.label}
-                </div>
-                <ElektroRecording.DetailLink
-                  object={view}
-                  className="text-sm text-muted-foreground my-auto"
-                >
-                  {" "}
-                  Open{" "}
-                </ElektroRecording.DetailLink>
-              </div>
-            </Card>
-          ))}
-          {data.simulation.stimuli.map((view, index) => (
-            <Card
-              className={cn(
-                "px-2 flex-1 cursor-pointer max-w-xs p-3",
-                hiddenStimuli.includes(view.id) && "opacity-20",
-              )}
-              key={index}
-              onClick={() => {
-                setHiddenStimuli((prev) =>
-                  prev.find((x) => x === view.id)
-                    ? prev.filter((x) => x !== view.id)
-                    : [...prev, view.id],
-                );
-              }}
-            >
-              <div className="flex flex-row gap-2 my-auto">
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: getColorForStimulusView(view) }}
-                />
-                <div className="text-sm text-muted-foreground my-auto">
-                  {view.label}
-                </div>
-                <ElektroStimulus.DetailLink
-                  object={view}
-                  className="text-sm text-muted-foreground my-auto"
-                >
-                  {" "}
-                  Open{" "}
-                </ElektroStimulus.DetailLink>
-              </div>
-            </Card>
-          ))}
         </div>
       </ElektroSimulation.ModelPage>
     );
   },
 );
-
 
 export default SimulationPage;

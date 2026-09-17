@@ -2,7 +2,6 @@ import { asDetailQueryRoute } from '@/app/routes/DetailQueryRoute'
 import { useSceneOpen } from "../lib/zarr/useDatalayerWarmup";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { MikroArrayDataset } from '@/linkers'
-import { RefetchProvider } from '@/providers/refetch/RefetchContext'
 import { useCallback, useState } from 'react'
 import { useGetArrayDatasetQuery, useGetSceneQuery } from '../api/graphql'
 import { DatasetBackdrop } from '../components/arraydataset/DatasetBackdrop'
@@ -54,10 +53,6 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
     // sibling panel of the content area) reaches the scene stores. Null scene
     // = "no scene selected"; the tab says so instead of listing layers.
     <Scene.Provider scene={sceneData?.scene ?? null}>
-    {/* Publish no refetch: this is a canvas page whose content area is the
-        viewport, so the layout's pull-to-refetch gesture would fight the
-        scene's own wheel/drag handling. Overrides the route's provider. */}
-    <RefetchProvider>
     <MikroArrayDataset.ModelPage
       object={dataset}
       title={dataset.name}
@@ -127,7 +122,6 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
         />
       </div>
     </MikroArrayDataset.ModelPage>
-    </RefetchProvider>
     </Scene.Provider>
   )
 })

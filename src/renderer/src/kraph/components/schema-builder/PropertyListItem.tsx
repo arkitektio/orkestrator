@@ -6,18 +6,12 @@ interface PropertyListItemProps {
   property: PropertyDefinition;
   isActive: boolean;
   onClick: () => void;
-  onDragStart?: (e: React.DragEvent) => void;
-  onDragEnd?: (e: React.DragEvent) => void;
-  isDragging?: boolean;
 }
 
 export function PropertyListItem({
   property,
   isActive,
   onClick,
-  onDragStart,
-  onDragEnd,
-  isDragging = false,
 }: PropertyListItemProps) {
   const typeConfig = dataTypeConfigs[property.valueKind];
 
@@ -29,15 +23,11 @@ export function PropertyListItem({
 
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all group",
         "hover:bg-accent/50",
         isActive && "bg-accent border-l-4 border-primary",
-        isDragging && "opacity-50",
         !isActive && "border-l-4 border-transparent"
       )}
     >

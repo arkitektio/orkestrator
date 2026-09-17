@@ -22,6 +22,8 @@ export type SmartModelPage<T extends Object = Object> = {
   defaultSidebar?: string;
   /** Own persistence key for the remembered rail tab (default "DetailModel"). */
   sidebarKey?: string;
+  /** `false` drops the auto-appended Chat tab (a room page is already the chat). */
+  chat?: boolean;
   callback?: (object: T) => void;
 };
 

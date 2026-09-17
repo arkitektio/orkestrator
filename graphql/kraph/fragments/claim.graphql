@@ -45,6 +45,22 @@ fragment DetailInstance on Instance {
   }
 }
 
+# What the Knowledge panel needs per label on a datum: the claim itself, the
+# views that draw it (with the drawn node, so the panel can link into each
+# graph), and the sameness component. `component` is ids only — members are
+# rendered by their evidence through `informingStructures` until the backend
+# exposes `Instance.evidence`.
+fragment KnowledgeInstance on Instance {
+  ...Instance
+  component
+  sameAs {
+    ...Link
+  }
+  drawnIn {
+    ...NodeDrawing
+  }
+}
+
 fragment Link on Link {
   id
   # One of eight: RELATION, SAME_AS, CLASSIFIES, INFORMS, MEASUREMENT,

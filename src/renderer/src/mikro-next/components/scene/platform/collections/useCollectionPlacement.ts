@@ -13,7 +13,8 @@ import type { LayerState } from "../stores/sceneStore";
  * return the SAME `Matrix4`. Downstream keys on it, and a fresh-but-equal
  * instance used to rebuild the whole manager and refetch every cell.
  *
- * `layer.pathToWorld` is ALL `resolveCollectionMatrix` reads from the layer
+ * The layer's PLACEMENT (`asAffine`, and the `pathToWorld` it was composed
+ * from) is all `resolveCollectionMatrix` reads from the layer
  * (`collectionPlacement.ts`). Depending on the whole `layer` re-composed the
  * transform chain on every `patchSceneLayer` tick — an opacity drag included.
  *
@@ -22,7 +23,7 @@ import type { LayerState } from "../stores/sceneStore";
  * (The network layer has no picking and simply ignores it.)
  */
 export function useCollectionPlacement(
-  layer: { pathToWorld?: unknown },
+  layer: { pathToWorld?: unknown; asAffine?: unknown },
   collection: Parameters<typeof resolveCollectionMatrix>[1],
   transformContext: Parameters<typeof resolveCollectionMatrix>[2],
 ): { matrix: THREE.Matrix4; inverse: THREE.Matrix4 } {
@@ -39,8 +40,13 @@ export function useCollectionPlacement(
     matrixRef.current = next;
     inverseRef.current.copy(next).invert();
     return next;
+    // `asAffine` is what the resolver actually READS; `pathToWorld` only
+    // identifies the path it was composed from. They move together for a
+    // server re-placement, but a placement PREVIEW (COORDINATE_SYSTEMS.md §1
+    // R1a) rewrites `asAffine` alone — keyed on the path, the mesh would sit
+    // still while every other layer kind followed the preview.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layer.pathToWorld, collection, transformContext]);
+  }, [layer.pathToWorld, layer.asAffine, collection, transformContext]);
 
   return { matrix, inverse: inverseRef.current };
 }

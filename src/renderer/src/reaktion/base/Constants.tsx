@@ -24,6 +24,14 @@ export { portHash };
 
 let unserializableCounter = 0;
 
+const sameJson = (a: unknown, b: unknown) => {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b ?? {});
+  } catch {
+    return false;
+  }
+};
+
 export const ArgsContainer = ({
   ports,
   options,
@@ -124,19 +132,27 @@ export const Constants = (props: {
       return `unserializable:${++unserializableCounter}`;
     }
   }, [watched]);
-  const latest = useLatestRef({ form, ports: props.ports, onSubmit: props.onSubmit });
+  const latest = useLatestRef({
+    form,
+    ports: props.ports,
+    onSubmit: props.onSubmit,
+    overwrites: props.overwrites,
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const { form: f, ports, onSubmit: submit } = latest.current;
+      const { form: f, ports, onSubmit: submit, overwrites } = latest.current;
       void f.trigger().then((valid) => {
         if (!valid) return;
-        submit?.(
-          submittedDataToRekuestFormat(
-            f.getValues(),
-            ports as unknown as RekuestArgPort[],
-          ),
+        const values = submittedDataToRekuestFormat(
+          f.getValues(),
+          ports as unknown as RekuestArgPort[],
         );
+        // `usePortForm` resets the form whenever `overwrites` changes, which
+        // fires this watcher again. Only push values that actually differ, or
+        // every store write would re-trigger itself once more.
+        if (sameJson(values, overwrites)) return;
+        submit?.(values);
       });
     }, 250);
     return () => clearTimeout(timer);

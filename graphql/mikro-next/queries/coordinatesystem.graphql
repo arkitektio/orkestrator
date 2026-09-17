@@ -121,3 +121,37 @@ query RegisterSourceCandidates($search: String) {
     ...ListTableDataset
   }
 }
+
+# One edge, with everything an interactive registration must know before it may
+# rewrite it — and that the scene fragment deliberately does not carry per
+# layer: whether the edge is scoped (`selector`), whether it is a DERIVATION
+# fact rather than a placement (`valueRelation`), and both endpoints' full axis
+# lists (a saved edge must follow the INPUT SYSTEM's axis order, and extending
+# an edge onto a new spatial axis needs to know what that axis is called on
+# each side).
+query GetRegistrationEdge($id: ID!) {
+  transformation(id: $id) {
+    ...Transformation
+    version
+    invariance
+    valueRelation
+    selector {
+      axis
+      index
+    }
+    input {
+      id
+      name
+      axes {
+        ...Axis
+      }
+    }
+    output {
+      id
+      name
+      axes {
+        ...Axis
+      }
+    }
+  }
+}

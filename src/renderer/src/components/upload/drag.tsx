@@ -1,7 +1,7 @@
 import { UploadOptions } from "@/datalayer/hooks/useUpload";
+import { acceptsFiles } from "@/lib/dnd/files";
+import { useDragSession, useDropTarget } from "@/lib/dnd/react";
 import { useState } from "react";
-import { useDrop } from "react-dnd";
-import { NativeTypes } from "react-dnd-html5-backend";
 
 export type UploadFunc = (
   file: File,
@@ -26,65 +26,61 @@ export const DragZone: React.FC<{
 }> = ({ uploadFile, createFile }) => {
   const [uploadFutures, setUploadFutures] = useState<UploadFuture[]>([]);
 
-  const [{ isOver, canDrop }, drop] = useDrop(() => {
-    return {
-      accept: [NativeTypes.FILE],
-      drop: (item, _monitor) => {
-        const files: File[] = (item as any).files;
-        console.log("files", files);
-        const futures: UploadFuture[] = files.map((file: any, _index) => {
-          const abortController = new AbortController();
+  // The zone shows itself only while files are in the air over the window.
+  const session = useDragSession();
+  const canDrop = session !== null && acceptsFiles(session);
 
-          const hash = hashFile(file);
-          console.log("Starting upload for", file, "with hash", hash);
+  const { ref, isOver } = useDropTarget({
+    accepts: acceptsFiles,
+    onDrop: (payload) => {
+      if (payload.origin !== "external") return;
+      const futures: UploadFuture[] = payload.files.map((file) => {
+        const abortController = new AbortController();
 
-          return {
-            hash: hash,
-            file: file,
-            controller: abortController,
-            future: uploadFile(file, {
-              signal: abortController.signal,
-              onProgress: (ev: ProgressEvent) => {
-                console.log("Progress", ev);
-                if (ev.lengthComputable) {
-                  setUploadFutures((prev) =>
-                    prev.map((f) =>
-                      f.hash === hash
-                        ? { ...f, progress: ev.loaded / ev.total }
-                        : f,
-                    ),
-                  );
-                }
-              },
+        const hash = hashFile(file);
+        console.log("Starting upload for", file, "with hash", hash);
+
+        return {
+          hash: hash,
+          file: file,
+          controller: abortController,
+          future: uploadFile(file, {
+            signal: abortController.signal,
+            onProgress: (ev: ProgressEvent) => {
+              console.log("Progress", ev);
+              if (ev.lengthComputable) {
+                setUploadFutures((prev) =>
+                  prev.map((f) =>
+                    f.hash === hash
+                      ? { ...f, progress: ev.loaded / ev.total }
+                      : f,
+                  ),
+                );
+              }
+            },
+          })
+            .then((key) => {
+              console.log("Upload done");
+              return createFile(file, key);
             })
-              .then((key) => {
-                console.log("Upload done");
-                return createFile(file, key);
-              })
-              .then(() => {
-                console.log("Create done");
-                setUploadFutures((futures) =>
-                  futures.filter((f) => f.hash !== hashFile(file)),
-                );
-              })
-              .catch((e) => {
-                console.log("error", e);
-                setUploadFutures((futures) =>
-                  futures.filter((f) => f.hash !== hashFile(file)),
-                );
-              }),
-          };
-        });
+            .then(() => {
+              console.log("Create done");
+              setUploadFutures((futures) =>
+                futures.filter((f) => f.hash !== hashFile(file)),
+              );
+            })
+            .catch((e) => {
+              console.log("error", e);
+              setUploadFutures((futures) =>
+                futures.filter((f) => f.hash !== hashFile(file)),
+              );
+            }),
+        };
+      });
 
-        setUploadFutures(futures);
-        return {};
-      },
-      collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
-        canDrop: !!monitor.canDrop(),
-      }),
-    };
-  }, []);
+      setUploadFutures(futures);
+    },
+  });
 
   return (
     <>
@@ -115,9 +111,7 @@ export const DragZone: React.FC<{
       <div
         className={`${!canDrop && "hidden"
           } bg-slate-300 border border-gray-800 cursor-pointer rounded text-white  hover:shadow-lg`}
-        ref={(node) => {
-          drop(node);
-        }}
+        ref={ref}
       >
         <div className="truncate p-5">
           {isOver ? "Release to upload" : "Drag and drop a file here"}

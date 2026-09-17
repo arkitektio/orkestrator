@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { isSceneNavigationTarget } from "@/lib/input/keyboardTarget";
 import {
   Background,
   ReactFlow,
@@ -42,9 +43,16 @@ const treeLayout = {
 
 export type Props = {
   model: DetailNeuronModelFragment;
+  /**
+   * Hosted inside the neuron viewport (the "Tree" display mode) rather than on
+   * its own page: the zoom controls move out of the top-left corner, which the
+   * page's title card owns there, into a bottom-centre strip in the scene
+   * viewport's HUD dialect.
+   */
+  embedded?: boolean;
 };
 
-export const NeuronModelTree: React.FC<Props> = ({ model }) => {
+export const NeuronModelTree: React.FC<Props> = ({ model, embedded = false }) => {
   const [reactFlowInstance, setReactFlowInstance] =
     React.useState<ReactFlowInstance<SectionNodeType, SectionEdge> | null>(null);
 
@@ -121,6 +129,21 @@ export const NeuronModelTree: React.FC<Props> = ({ model }) => {
     }
   }, [nodes, edges, reactFlowInstance]);
 
+  // F frames the tree, the same key that frames the 3D view — one binding for
+  // both display modes, gated like the scene's navigation keys.
+  useEffect(() => {
+    if (!embedded) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (e.code !== "KeyF") return;
+      if (!isSceneNavigationTarget(e.target as { tagName?: string } | null)) return;
+      e.preventDefault();
+      reactFlowInstance?.fitView();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [embedded, reactFlowInstance]);
+
   return (
     <ImportanceContext.Provider value={importanceValue}>
     <div className="relative h-full w-full">
@@ -155,30 +178,39 @@ export const NeuronModelTree: React.FC<Props> = ({ model }) => {
 
       {/* Custom controls, styled to match the platform's flow surfaces
           (reaktion `DefaultControls`) rather than React Flow's defaults. */}
-      <div className="absolute top-2 left-2 z-10 flex h-10 flex-row items-center gap-2 overflow-hidden rounded-md bg-card px-2">
+      <div
+        className={
+          embedded
+            ? "pointer-events-auto absolute bottom-2 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-black/10 bg-black/40 p-1 backdrop-blur-md"
+            : "absolute top-2 left-2 z-10 flex h-10 flex-row items-center gap-2 overflow-hidden rounded-md bg-card px-2"
+        }
+      >
         <Button
           variant="outline"
-          size="icon"
+          size={embedded ? "xs" : "icon"}
+          className={embedded ? "h-7 w-8 bg-black p-0" : undefined}
           onClick={() => reactFlowInstance?.zoomIn()}
           title="Zoom in"
         >
-          <Plus />
+          <Plus className={embedded ? "h-3.5 w-3.5" : undefined} />
         </Button>
         <Button
           variant="outline"
-          size="icon"
+          size={embedded ? "xs" : "icon"}
+          className={embedded ? "h-7 w-8 bg-black p-0" : undefined}
           onClick={() => reactFlowInstance?.zoomOut()}
           title="Zoom out"
         >
-          <Minus />
+          <Minus className={embedded ? "h-3.5 w-3.5" : undefined} />
         </Button>
         <Button
           variant="outline"
-          size="icon"
+          size={embedded ? "xs" : "icon"}
+          className={embedded ? "h-7 w-8 bg-black p-0" : undefined}
           onClick={() => reactFlowInstance?.fitView()}
-          title="Fit view"
+          title="Fit view (F)"
         >
-          <Maximize />
+          <Maximize className={embedded ? "h-3.5 w-3.5" : undefined} />
         </Button>
       </div>
 

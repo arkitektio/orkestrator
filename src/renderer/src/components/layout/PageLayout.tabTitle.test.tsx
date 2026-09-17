@@ -12,14 +12,9 @@ vi.mock("use-react-router-breadcrumbs", () => ({
 }));
 // PageLayout's own dependencies are not what is under test here.
 vi.mock("@/hooks/use-report", () => ({ useReport: () => vi.fn() }));
-vi.mock("@/providers/refetch/RefetchContext", () => ({ useRefetch: () => vi.fn() }));
-vi.mock("@/hooks/use-pull-to-refetch", () => ({
-  usePullToRefetch: () => ({ ref: { current: null }, pull: 0, progress: 0, refreshing: false }),
-}));
 vi.mock("../navigation/BreadCrumbs", () => ({ default: () => <nav /> }));
 vi.mock("../sidebars/help", () => ({ HelpSidebar: () => null }));
 vi.mock("./Sidebars", () => ({ Sidebars: () => null }));
-vi.mock("./PullToRefetchIndicator", () => ({ PullToRefetchIndicator: () => null }));
 
 import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
 import { TabOutlet } from "@/command/tabs/TabOutlet";

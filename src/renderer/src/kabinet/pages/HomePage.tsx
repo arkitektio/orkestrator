@@ -12,8 +12,10 @@ import {
   BarChart3,
   Network,
   ShoppingBasket,
+  Store,
   TrendingUp
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   HomePageQuery,
   ListDefinitionsDocument,
@@ -55,6 +57,12 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
       }
       pageActions={
         <div className="flex flex-row gap-1">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/kabinet/app-store">
+              <Store className="mr-2 h-4 w-4" />
+              App Store
+            </Link>
+          </Button>
           <>
             <DialogButton
               name="createrepo"
@@ -106,9 +114,15 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
 
             {/* Action Section */}
             <div className="mt-12 space-y-6">
-              <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-center gap-4">
                 <Button variant="default" size="lg" onClick={() => { }}>
                   Add your first Repo
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link to="/kabinet/app-store">
+                    <Store className="mr-2 h-4 w-4" />
+                    Browse the App Store
+                  </Link>
                 </Button>
               </div>
               <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">

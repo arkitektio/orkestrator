@@ -1,5 +1,4 @@
 import { useDebugReport } from "@/providers/debug/useDebugReport";
-import { RefetchProvider } from "@/providers/refetch/RefetchContext";
 import {
   ApolloQueryResult,
   DocumentNode,
@@ -121,9 +120,7 @@ export const asDetailQueryRoute = <T extends any>(
 
     if (passyProps && passyProps.data) {
       return (
-        <RefetchProvider refetch={passyProps.refetch}>
-          <Component {...passyProps} id={id ?? ""} />
-        </RefetchProvider>
+        <Component {...passyProps} id={id ?? ""} />
       );
     }
 
@@ -185,9 +182,7 @@ export const asGraphScopeQueryRoute = <T extends any>(
     if (!data) return <LoadingPage />;
 
     return (
-      <RefetchProvider refetch={query.refetch}>
-        <Component {...query} data={data} id={graphId} />
-      </RefetchProvider>
+      <Component {...query} data={data} id={graphId} />
     );
   };
 };
@@ -255,13 +250,11 @@ export const asGraphDetailQueryRoute = <T extends any>(
 
     if (passyProps && passyProps.data) {
       return (
-        <RefetchProvider refetch={passyProps.refetch}>
-          <Component
-            {...passyProps}
-            id={id ?? ""}
-            graph={scope?.graphId ?? ""}
-          />
-        </RefetchProvider>
+        <Component
+          {...passyProps}
+          id={id ?? ""}
+          graph={scope?.graphId ?? ""}
+        />
       );
     }
 

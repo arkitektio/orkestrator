@@ -9,7 +9,7 @@ import { useMeQuery } from "@/lok-next/api/graphql";
 import { PortKind } from "@/rekuest/api/graphql";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, Loader2, CheckCircle2, AlertCircle, XCircle, X, Ban, RefreshCw } from "lucide-react";
-import { ActiveTask } from "./chat";
+import { ActiveTask } from "./activeTasks";
 import React, { useCallback, useRef } from "react";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";

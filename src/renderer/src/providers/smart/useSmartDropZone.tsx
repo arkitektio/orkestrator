@@ -1,12 +1,10 @@
-import { SMART_MODEL_DROP_TYPE } from "@/constants";
 import { Structure } from "@/types";
 import { useFloating } from "@floating-ui/react";
 import React, { useEffect, useRef, useState } from "react";
-import { useDrop } from "react-dnd";
-import { NativeTypes } from "react-dnd-html5-backend";
+import { toast } from "sonner";
 
-import { useLatestRef } from "@/hooks/useLatestRef";
-import { resolveSmartDrop } from "./dropUtils";
+import { useDropTarget } from "@/lib/dnd/react";
+import { acceptsSmartDrag, resolveSmartDrop } from "./dragPayload";
 import { SmartModelProps } from "./types";
 
 const syncAttribute = (
@@ -34,7 +32,6 @@ export type UseSmartDropZoneResult = {
   ref: (node: HTMLDivElement | null) => void;
   self: Structure;
   isOver: boolean;
-  canDrop: boolean;
   partners: Structure[];
   clearPartners: () => void;
   floatingRef: (node: HTMLDivElement | null) => void;
@@ -65,37 +62,27 @@ export const useSmartDropZone = ({
     },
   });
 
-  const [{ isOver, canDrop }, drop] = useDrop(
-    () => ({
-      accept: [SMART_MODEL_DROP_TYPE, NativeTypes.TEXT, NativeTypes.URL],
-      drop: (item: unknown, monitor) => {
-        const resolvedDrop = resolveSmartDrop(item, monitor.getItemType());
-        if (!resolvedDrop) {
-          alert(`Drop unkonwn ${String(item)}`);
-          return {};
-        }
+  // A nested target inside this zone (a label card's own drop target, say)
+  // claims the drop before it gets here — the engine gives a drop to the
+  // innermost target only — so the partner panel never opens on top of an act
+  // the inner target already offered.
+  const { ref: drop, isOver } = useDropTarget({
+    accepts: acceptsSmartDrag,
+    onDrop: (payload) => {
+      const resolvedDrop = resolveSmartDrop(payload);
+      if (!resolvedDrop) {
+        toast.error("Nothing droppable in that");
+        return;
+      }
 
-        setPartners(resolvedDrop.partners);
-        return {};
-      },
-      collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
-        canDrop: !!monitor.canDrop(),
-      }),
-    }),
-    [],
-  );
+      setPartners(resolvedDrop.partners);
+    },
+  });
 
   useEffect(() => {
-    syncAttribute(nodeRef.current, "data-over", isOver ? "true" : "false");
-    syncAttribute(nodeRef.current, "data-can-drop", canDrop ? "true" : "false");
     syncAttribute(nodeRef.current, "data-identifier", identifier);
     syncAttribute(nodeRef.current, "data-object", object.id);
-  }, [canDrop, identifier, isOver, object]);
-
-  // Keep the ref callback stable across drag-state changes (see
-  // useSmartModel): the effect above re-syncs the attributes after mount.
-  const dndStateRef = useLatestRef({ isOver, canDrop });
+  }, [identifier, object]);
 
   const ref = React.useCallback(
     (node: HTMLDivElement | null) => {
@@ -109,8 +96,6 @@ export const useSmartDropZone = ({
 
       syncAttribute(node, "data-identifier", identifier);
       syncAttribute(node, "data-object", self.object.id);
-      syncAttribute(node, "data-over", dndStateRef.current.isOver ? "true" : "false");
-      syncAttribute(node, "data-can-drop", dndStateRef.current.canDrop ? "true" : "false");
     },
     [drop, identifier, self, refs],
   );
@@ -145,7 +130,6 @@ export const useSmartDropZone = ({
     ref,
     self,
     isOver,
-    canDrop,
     partners,
     clearPartners,
     floatingRef: refs.setFloating,

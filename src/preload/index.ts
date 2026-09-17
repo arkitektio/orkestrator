@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 import { Assign } from "../main/message";
-import type { WindowChromeState } from "../main/modules/WindowManager";
+import type { ChromeTheme, WindowChromeState } from "../main/modules/WindowManager";
 
 // Subscribe `cb` to an ipcRenderer channel and return the disposer. Every
 // event listener exposed to the renderer must be removable, otherwise each
@@ -45,6 +45,12 @@ const api = {
     getState: () => ipcRenderer.invoke("window:get-state"),
     onStateChanged: (cb: (state: WindowChromeState) => void) =>
       subscribe<WindowChromeState>("window:state-changed", cb),
+    /**
+     * The frame has parts the renderer cannot paint — the background Chromium
+     * shows during a resize, the Windows overlay glyphs — so it is told the
+     * resolved theme and colours them itself.
+     */
+    setTheme: (theme: ChromeTheme) => ipcRenderer.send("window:set-theme", theme),
   },
   /**
    * Deep links land here: main asks the renderer to open a path as a tab

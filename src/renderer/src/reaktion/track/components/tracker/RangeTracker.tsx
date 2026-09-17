@@ -27,10 +27,11 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
 
   const [fetchInbetweenEvents] = useEventsBetweenLazyQuery();
 
+  // One derivation covers both a new event window and a scrubbed `t`.
   useEffect(() => {
-    const { events: newEvents } = latestEventPerSource(rangeEvents, t);
-    setRunState({ t: t, events: newEvents });
-  }, [rangeEvents, t]);
+    const { events: newEvents, bySource } = latestEventPerSource(rangeEvents, t);
+    setRunState({ t: t, events: newEvents, latestBySource: bySource });
+  }, [rangeEvents, t, setRunState]);
 
   useEffect(() => {
     if (!play) {
@@ -57,13 +58,6 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
       setTriggerRange({ min: t, max: t + 80 });
     }
   }, [t, triggerRange]);
-
-  useEffect(() => {
-    setRunState((state) => ({
-      t: t,
-      events: state?.events?.filter((event) => event && event?.t <= t),
-    }));
-  }, [t]);
 
   useEffect(() => {
 

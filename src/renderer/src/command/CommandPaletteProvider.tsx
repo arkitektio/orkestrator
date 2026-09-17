@@ -216,13 +216,9 @@ export const CommandPaletteProvider = ({ children }: { children: React.ReactNode
         return;
       }
 
-      // ⌘T is "new tab": the palette becomes the address bar of a tab that does
-      // not exist yet, and whatever is chosen opens in it.
-      if (e.key === "t") {
-        e.preventDefault();
-        togglePalette({ fresh: true, intent: "new-tab" });
-        return;
-      }
+      // ⌘T is the tab store's: it opens a real tab on the new-tab page, whose
+      // search IS the palette's sources. The "new-tab" intent stays for callers
+      // that want a chosen result opened in a fresh tab.
 
       // ⌘M and ⌘, predate this and are muscle memory for existing users; they
       // cost nothing to keep. ⌘M preserves context, ⌘, resets it.

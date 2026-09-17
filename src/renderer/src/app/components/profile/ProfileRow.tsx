@@ -48,7 +48,7 @@ export const ProfileRow = ({
         .join(" · ");
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex w-full items-center justify-between gap-1 pr-1">
       <DropdownMenuItem
         className={cn(
           "flex flex-1 min-w-0 cursor-pointer items-center gap-2",
@@ -90,11 +90,15 @@ export const ProfileRow = ({
         ) : null}
       </DropdownMenuItem>
 
+      {/* The row's own menu, at its right edge; opens out to the right. */}
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="px-1.5 [&>svg:last-child]:hidden">
-          <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+        <DropdownMenuSubTrigger
+          aria-label={`More for ${title}`}
+          className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md p-0 text-muted-foreground hover:text-foreground [&>svg:last-child]:hidden"
+        >
+          <MoreHorizontal className="h-3.5 w-3.5" />
         </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent className="w-64">
+        <DropdownMenuSubContent side="right" align="start" className="w-64">
           <div className="px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
             Removing forgets this login on this computer only. It stays valid on
             the server until it expires.

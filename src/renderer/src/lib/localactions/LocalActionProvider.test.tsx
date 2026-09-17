@@ -12,8 +12,16 @@ vi.mock("@/lib/generic/createScopedStore", () => ({
   }),
 }));
 
+// `datum` / `pdatum` ask the smart registry; drive it with a fixed set so the
+// test does not depend on which linkers are registered.
+const datums = new Set(["@x/datum"]);
+vi.mock("@/providers/smart/registry", () => ({
+  smartRegistry: { isDatum: (identifier: string) => datums.has(identifier) },
+}));
+
 import type { Action, ActionState, Condition, Structure } from "./LocalActionProvider";
 import { getActionEntriesForState, getActionsForState } from "./LocalActionProvider";
+import { orderActionEntries } from "./LocalActionProvider";
 
 const structure = (identifier: string, id = "1"): Structure =>
   ({ identifier, object: { id } }) as Structure;
@@ -84,6 +92,28 @@ describe("getActionsForState — single conditions", () => {
     expect(getActionsForState(registry, state({ right: [structure("@x/q")] }))).toHaveLength(0);
   });
 
+  it("datum matches when any left structure is a registered datum", () => {
+    const registry = { a: action([{ type: "datum" }]) };
+    expect(getActionsForState(registry, state({ left: [structure("@x/datum")] }))).toHaveLength(1);
+    expect(
+      getActionsForState(registry, state({ left: [structure("@x/a"), structure("@x/datum", "2")] })),
+    ).toHaveLength(1);
+    expect(getActionsForState(registry, state({ left: [structure("@x/a")] }))).toHaveLength(0);
+    expect(getActionsForState(registry, state({ left: [] }))).toHaveLength(0);
+  });
+
+  it("pdatum matches only when the partner selection holds a datum", () => {
+    const registry = { a: action([{ type: "pdatum" }]) };
+    expect(
+      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/datum")] })),
+    ).toHaveLength(1);
+    expect(
+      getActionsForState(registry, state({ left: [structure("@x/a")], right: [structure("@x/b")] })),
+    ).toHaveLength(0);
+    // No partner at all is not a partner datum.
+    expect(getActionsForState(registry, state({ left: [structure("@x/datum")] }))).toHaveLength(0);
+  });
+
   it("command matches the isCommand flag", () => {
     const registry = { a: action([{ type: "command", command: true }]) };
     expect(getActionsForState(registry, state({ isCommand: true }))).toHaveLength(1);
@@ -139,5 +169,32 @@ describe("getActionEntriesForState", () => {
     const entries = getActionEntriesForState(registry, state({ left: [structure("@x/a")] }));
     expect(entries.map((e) => e.id)).toEqual(["onA"]);
     expect(entries[0].action).toBe(registry.onA);
+  });
+});
+
+describe("orderActionEntries", () => {
+  const entry = (id: string, title: string, description = "") => ({ id, action: { title, description } });
+  const ids = (entries: ReturnType<typeof entry>[], pinned: string[], search?: string) =>
+    orderActionEntries(entries, pinned, search).map((e) => e.id);
+
+  it("puts pinned actions first, then the rest by name, when nothing is typed", () => {
+    const entries = [entry("b", "Beta"), entry("a", "Alpha"), entry("z", "Zip")];
+    expect(ids(entries, ["z"])).toEqual(["z", "a", "b"]);
+  });
+
+  it("orders by how well each fits what was typed", () => {
+    // "a": Alpha is a prefix hit, Beta only a substring hit.
+    const entries = [entry("b", "Beta"), entry("a", "Alpha")];
+    expect(ids(entries, [], "a")).toEqual(["a", "b"]);
+  });
+
+  it("keeps pinned actions above better fits", () => {
+    const entries = [entry("b", "Beta"), entry("a", "Alpha")];
+    expect(ids(entries, ["b"], "a")).toEqual(["b", "a"]);
+  });
+
+  it("finds an action fuzzily, as the palette does", () => {
+    const entries = [entry("s", "Create shortcut", "Pin this action")];
+    expect(ids(entries, [], "shrtcut")).toEqual(["s"]);
   });
 });

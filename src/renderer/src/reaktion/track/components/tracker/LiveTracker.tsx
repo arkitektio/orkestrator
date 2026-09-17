@@ -36,11 +36,11 @@ export const LiveTracker = ({
   });
 
   useEffect(() => {
-    const { events: newEvents, highestT } = latestEventPerSource(
+    const { events: newEvents, highestT, bySource } = latestEventPerSource(
       events?.eventsBetween,
     );
-    setRunState({ t: highestT, events: newEvents });
-  }, [events?.eventsBetween]);
+    setRunState({ t: highestT, events: newEvents, latestBySource: bySource });
+  }, [events?.eventsBetween, setRunState]);
 
   useEffect(() => {
     const unsubscripe = subscribeToMore<EventsSubscription>({

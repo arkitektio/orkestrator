@@ -2,7 +2,9 @@ import { Arkitekt } from "@/app/Arkitekt";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { BackNavigationErrorCatcher } from "./AppProvider";
+import { NewTabPage } from "./pages/NewTabPage";
 import { ConnectingFallback } from "./components/fallbacks/Connecting";
+import { ModuleLoadingFallback } from "./components/fallbacks/ModuleLoading";
 import { NotConnected } from "./components/fallbacks/NotConnected";
 import { NotFound } from "./components/fallbacks/NotFound";
 
@@ -35,7 +37,8 @@ const protectModule = (component: React.ReactNode, fallback?: React.ReactNode) =
       notConnectedFallback={fallback || <NotConnected />}
       connectingFallback={<ConnectingFallback />}
     >
-      <React.Suspense fallback={<ConnectingFallback />}>{component}</React.Suspense>
+      {/* The chunk is loading, not the session: the guard above already passed. */}
+      <React.Suspense fallback={<ModuleLoadingFallback />}>{component}</React.Suspense>
     </Arkitekt.Guard>
   );
 };
@@ -55,11 +58,13 @@ export const AppRoutes = () => (
         <Route
           index
           element={
-            <React.Suspense fallback={<ConnectingFallback />}>
+            <React.Suspense fallback={<ModuleLoadingFallback />}>
               <Hero />
             </React.Suspense>
           }
         />
+        {/* What ⌘T opens: the search as a page, plus the modules. */}
+        <Route path="new" element={<NewTabPage />} />
         <Route path="mikro/*" element={protectModule(<MikroNextModule />)} />
         <Route path="elektro/*" element={protectModule(<ElektroModule />)} />
         <Route path="rekuest/*" element={protectModule(<RekuestNextModule />)} />

@@ -1,10 +1,11 @@
 import { is } from '@electron-toolkit/utils';
-import { app, BrowserWindow, dialog, Menu, screen, shell } from 'electron';
+import { app, BrowserWindow, dialog, Menu, nativeTheme, screen, shell } from 'electron';
 import type { MenuItemConstructorOptions } from 'electron';
 import Store from 'electron-store';
 import { join } from 'path';
 import { AppModule } from './AppModule';
 import { IpcTransport } from './IpcTransport';
+import { deepLinkPath } from './deepLinkPath';
 import { APP_ORIGIN } from '../scheme';
 
 import { autoUpdater } from 'electron-updater';
@@ -48,6 +49,40 @@ const WINDOW_STATE_KEY = "windowState";
  */
 const WINDOWS_OVERLAY_HEIGHT = 32;
 
+/** The renderer's resolved theme, as `ThemeProvider` reports it. */
+export type ChromeTheme = "light" | "dark";
+
+/** What the renderer's title bar lays itself out from, per window. */
+export type WindowChromeState = {
+    maximized: boolean;
+    fullscreen: boolean;
+    focused: boolean;
+};
+
+/**
+ * The two colours the FRAME needs from the theme, as hex because neither
+ * `BrowserWindow.backgroundColor` nor `setTitleBarOverlay` parses oklch.
+ *
+ * `background` is what Chromium paints before the renderer does and during a
+ * resize; without it a dark window flashes white on Windows and Linux. `symbol`
+ * is the Windows Controls Overlay glyph colour, which the renderer cannot style
+ * (the OS draws those buttons) so it has to be told which theme is up.
+ *
+ * They track `--sidebar` and `--muted-foreground` in the renderer's
+ * `index.css`; change one, change both.
+ */
+const CHROME_COLORS: Record<ChromeTheme, { background: string; symbol: string }> = {
+    light: { background: "#f9fafa", symbol: "#6e7572" },
+    dark: { background: "#131916", symbol: "#9ba39f" },
+};
+
+/**
+ * The best guess before any renderer has reported: the OS setting, which is
+ * also what `ThemeProvider` resolves `system` to.
+ */
+const systemChromeTheme = (): ChromeTheme =>
+    nativeTheme.shouldUseDarkColors ? "dark" : "light";
+
 /**
  * The renderer draws the title bar, so the frame has to get out of the way —
  * but each platform gets out of the way differently, and the differences are
@@ -76,7 +111,7 @@ const WINDOWS_OVERLAY_HEIGHT = 32;
  * — so Reload / Force Reload / DevTools MUST stay reachable from the command
  * palette's app commands, which is where they now live.
  */
-const CHROME_OPTIONS: Partial<Electron.BrowserWindowConstructorOptions> =
+const chromeOptions = (theme: ChromeTheme): Partial<Electron.BrowserWindowConstructorOptions> =>
     process.platform === "darwin"
         ? {
             titleBarStyle: "hiddenInset",
@@ -85,23 +120,21 @@ const CHROME_OPTIONS: Partial<Electron.BrowserWindowConstructorOptions> =
         : process.platform === "win32"
             ? {
                 titleBarStyle: "hidden",
-                titleBarOverlay: {
-                    // Transparent so our own bar shows through; the symbol colour
-                    // is a neutral that reads on both themes.
-                    color: "#00000000",
-                    symbolColor: "#9b9b9b",
-                    height: WINDOWS_OVERLAY_HEIGHT,
-                },
+                titleBarOverlay: titleBarOverlay(theme),
             }
             : { frame: false };
 
-/** What the renderer needs to lay the bar out. */
-export interface WindowChromeState {
-    maximized: boolean;
-    fullscreen: boolean;
-    focused: boolean;
-}
+/**
+ * Transparent so our own bar shows through; only the glyphs are coloured, and
+ * they follow the theme (`window:set-theme`) because the OS draws them.
+ */
+const titleBarOverlay = (theme: ChromeTheme): Electron.TitleBarOverlayOptions => ({
+    color: "#00000000",
+    symbolColor: CHROME_COLORS[theme].symbol,
+    height: WINDOWS_OVERLAY_HEIGHT,
+});
 
+/** What the renderer needs to lay the bar out. */
 export class WindowManager implements AppModule {
     private mainWindow: BrowserWindow | null = null;
     private windows: Set<BrowserWindow> = new Set();
@@ -162,10 +195,17 @@ export class WindowManager implements AppModule {
     }
 
     handleOrkestratorUrl(url: string) {
+        // (see `deepLinkPath` below for the shape of what comes in)
         try {
             const parsedUrl = new URL(url);
-            // Remove the protocol and get everything after orkestrator://
-            const fullPath = "/" + parsedUrl.hostname + parsedUrl.pathname + parsedUrl.search;
+            // Everything after `orkestrator://`, as one app path with exactly
+            // one leading slash. The URL parser splits it into host + path, and
+            // where the split falls depends on the link's shape:
+            //   orkestrator://mikro/x   → host "mikro", path "/x"
+            //   orkestrator:///mikro/x  → host "",      path "/mikro/x"
+            // Joining naively gave "//mikro/x" for the second — a route that
+            // matches nothing.
+            const fullPath = deepLinkPath(parsedUrl);
 
             // A deep link opens a TAB in the main window, not a new window:
             // the renderer holds the tabs, so this is one message across.
@@ -184,24 +224,15 @@ export class WindowManager implements AppModule {
         this.iconPath = iconPath;
 
         const state = this.getStoredWindowState();
-        this.mainWindow = new BrowserWindow({
-            x: state.x,
-            y: state.y,
-            width: state.width,
-            height: state.height,
-            show: false,
-            title: "Orkestrator",
-            icon: iconPath,
-            autoHideMenuBar: true,
-            ...CHROME_OPTIONS,
-            ...(process.platform === "linux" ? { icon: iconPath } : {}),
-            webPreferences: {
-                preload: join(__dirname, "../preload/index.mjs"),
-                sandbox: false,
-                nodeIntegrationInWorker: false,
-                contextIsolation: true,
-            },
-        });
+        this.mainWindow = new BrowserWindow(
+            this.appWindowOptions({
+                x: state.x,
+                y: state.y,
+                width: state.width,
+                height: state.height,
+                title: "Orkestrator",
+            }),
+        );
 
         if (state.maximized) {
             this.mainWindow.maximize();
@@ -229,15 +260,7 @@ export class WindowManager implements AppModule {
 
         this.mainWindow.on("move", () => this.debouncedSaveWindowState());
 
-        // Tell the renderer what the frame is doing. It draws the title bar, so
-        // it has to know: the maximise button must show the right glyph, and on
-        // macOS fullscreen the traffic lights disappear, which means the gutter
-        // reserved for them has to collapse or the centred search bar sits
-        // permanently off-centre.
-        (["maximize", "unmaximize", "enter-full-screen", "leave-full-screen", "focus", "blur"] as const)
-            .forEach((event) => {
-                this.mainWindow?.on(event, () => this.broadcastChromeState());
-            });
+        this.wireChrome(this.mainWindow);
 
         // Persist synchronously on close: by the time 'closed' fires the window
         // is already destroyed and its bounds are unreadable.
@@ -278,19 +301,18 @@ export class WindowManager implements AppModule {
         return this.mainWindow;
     }
 
+    /**
+     * A popout. It runs the same renderer shell as the main window, so it gets
+     * the same frame: were it left with a native title bar, the rail inside
+     * would still draw its gutter, strip or buttons under the real ones.
+     */
     createSecondaryWindow(path: string, iconPath: string): BrowserWindow {
-        const secondaryWindow = new BrowserWindow({
-            width: 900,
-            height: 670,
-            show: false,
-            autoHideMenuBar: true,
-            ...(process.platform === "linux" ? { icon: iconPath } : {}),
-            webPreferences: {
-                preload: join(__dirname, "../preload/index.mjs"),
-                sandbox: false,
-                contextIsolation: true,
-            },
-        });
+        if (iconPath) this.iconPath = iconPath;
+        const secondaryWindow = new BrowserWindow(
+            this.appWindowOptions({ width: 900, height: 670 }),
+        );
+
+        this.wireChrome(secondaryWindow);
 
         secondaryWindow.on("ready-to-show", () => {
             secondaryWindow.show();
@@ -433,9 +455,50 @@ export class WindowManager implements AppModule {
         }
     }
 
+    /**
+     * What every window of ours is built from: hidden until ready, our icon,
+     * no menu bar, the platform's chrome, and a background in the theme's
+     * colour so the first paint and every resize are not a white flash.
+     */
+    private appWindowOptions(
+        extra: Electron.BrowserWindowConstructorOptions,
+    ): Electron.BrowserWindowConstructorOptions {
+        const theme = systemChromeTheme();
+        return {
+            show: false,
+            icon: this.iconPath,
+            autoHideMenuBar: true,
+            backgroundColor: CHROME_COLORS[theme].background,
+            ...chromeOptions(theme),
+            ...extra,
+            webPreferences: {
+                preload: join(__dirname, "../preload/index.mjs"),
+                sandbox: false,
+                nodeIntegrationInWorker: false,
+                contextIsolation: true,
+                ...extra.webPreferences,
+            },
+        };
+    }
+
+    /**
+     * Tell the renderer what the frame is doing. It draws the title bar, so
+     * it has to know: the maximise button must show the right glyph, and on
+     * macOS fullscreen the traffic lights disappear, which means the gutter
+     * reserved for them has to collapse or the centred search bar sits
+     * permanently off-centre. Per window — a popout's bar describes the popout.
+     */
+    private wireChrome(win: BrowserWindow) {
+        // Typed as a plain emitter: BrowserWindow's `on` overloads reject a
+        // union of event names, and listing six identical listeners is worse.
+        const emitter: NodeJS.EventEmitter = win;
+        for (const event of ["maximize", "unmaximize", "enter-full-screen", "leave-full-screen", "focus", "blur"]) {
+            emitter.on(event, () => this.broadcastChromeState(win));
+        }
+    }
+
     /** The frame state the renderer's title bar lays itself out from. */
-    getChromeState(): WindowChromeState {
-        const win = this.mainWindow;
+    getChromeState(win: BrowserWindow | null = this.mainWindow): WindowChromeState {
         if (!win || win.isDestroyed()) {
             return { maximized: false, fullscreen: false, focused: false };
         }
@@ -446,15 +509,24 @@ export class WindowManager implements AppModule {
         };
     }
 
-    private broadcastChromeState() {
-        if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+    private broadcastChromeState(win: BrowserWindow) {
+        if (win.isDestroyed()) {
             return;
         }
-        this.ipcTransport.sendTo(
-            this.mainWindow.webContents,
-            "window:state-changed",
-            this.getChromeState(),
-        );
+        this.ipcTransport.sendTo(win.webContents, "window:state-changed", this.getChromeState(win));
+    }
+
+    /**
+     * The renderer's theme changed (or was first resolved). Repaint the parts
+     * of the frame the renderer cannot reach: the background Chromium shows
+     * around and beneath the page, and on Windows the overlay's glyphs.
+     */
+    private applyChromeTheme(win: BrowserWindow, theme: ChromeTheme) {
+        if (win.isDestroyed()) return;
+        win.setBackgroundColor(CHROME_COLORS[theme].background);
+        if (process.platform === "win32") {
+            win.setTitleBarOverlay(titleBarOverlay(theme));
+        }
     }
 
     private saveWindowState() {
@@ -507,7 +579,15 @@ export class WindowManager implements AppModule {
         });
 
         // Seeds the renderer's first paint, so the bar is never briefly wrong.
-        this.ipcTransport.handleChannel("window:get-state", () => this.getChromeState());
+        this.ipcTransport.handleChannel("window:get-state", (event) =>
+            this.getChromeState(senderWindow(event)),
+        );
+
+        this.ipcTransport.onChannel("window:set-theme", (event, theme: ChromeTheme) => {
+            const win = senderWindow(event);
+            if (!win || (theme !== "light" && theme !== "dark")) return;
+            this.applyChromeTheme(win, theme);
+        });
 
         this.ipcTransport.handleChannel("reload-window", () => {
             const focusedWindow = BrowserWindow.getFocusedWindow();

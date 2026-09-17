@@ -40,6 +40,7 @@ import { SceneModeControls } from "./chrome/SceneModeControls";
 import { SceneShortcuts } from "./keyboard/SceneShortcuts";
 import { CenterLodReadout } from "../features/bricks/CenterLodReadout";
 import { DrawSizeReadout } from "../features/annotations/DrawSizeReadout";
+import { MetadataOverlay } from "../features/annotations/MetadataOverlay";
 import { RoiToolbar } from "../features/annotations/RoiToolbar";
 import { MeshDesignToolbar } from "../features/meshDesign/ui/MeshDesignToolbar";
 import { SceneScreenshot } from "./chrome/SceneScreenshot";
@@ -340,8 +341,17 @@ export const DefaultScenePanels = () => (
  *
  * `children` compose the overlay panel stack (see `DefaultScenePanels` for the
  * default shape and `Scene.Column` for what positions it).
+ *
+ * `inCanvas` is the other slot: host-provided R3F content mounted INSIDE the
+ * canvas, in world space, after the scene's own interaction layers — a host
+ * workflow's handles and markers (the registration workspace's gizmo). R3F
+ * bridges React context into the canvas, so a host's own provider above the
+ * viewport reaches these children exactly as the scene's stores do. The scene
+ * neither knows nor cares what is in it; what it draws must follow the same
+ * rules as the scene's own overlays (P17 two-plane rule, P20 handler
+ * attachment).
  */
-export const SceneViewport = (props: { children?: ReactNode }) => {
+export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNode }) => {
   const status = useSceneScopeStatus();
 
   if (status.phase !== "ready") {
@@ -418,6 +428,8 @@ export const SceneViewport = (props: { children?: ReactNode }) => {
 
           <SceneModeContent />
 
+          {props.inCanvas}
+
           <BrickSystemProvider />
           <WhenDebug>
             <BrickResidencyOverlay />
@@ -453,6 +465,10 @@ export const SceneViewport = (props: { children?: ReactNode }) => {
           {/* Bottom-left, under the scale bar: both answer "what am I
               actually looking at" — one in world units, one in pixels. */}
           <CenterLodReadout />
+          {/* Bottom-right, above the mode controls: what was RECORDED about
+              what you are looking at — the active layer's anchored acquisition
+              metadata, folded to a single unfold button until asked. */}
+          <MetadataOverlay />
           <DrawSizeReadout />
           {/* Both dock bottom-right: the probe readout sits directly above the
               mode controls that turn probing on. */}

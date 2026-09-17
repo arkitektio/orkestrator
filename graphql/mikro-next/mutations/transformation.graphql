@@ -14,3 +14,28 @@ mutation CreateTransformation($input: CreateTransformationInput!) {
     ...Transformation
   }
 }
+
+# Refine an edge IN PLACE: same id, bumped `version`, a new provenance row —
+# "the refinement is recorded in the edge's provenance, which is what tells an
+# ROI its chain has moved". The interactive registration workspace uses this
+# whenever the edge can hold the result (a top-level bare affine with unchanged
+# axes; see components/registration/math/saveMath.ts). The input cannot change
+# an edge's kind, axes or endpoints — that is a replace, below.
+#
+# `version` is selected on top of the fragment for the same reason
+# `PlacementStep` does: (id, version) is the edge's STATE, and the scene's
+# structural signature is what drops the placement preview when it moves.
+mutation UpdateTransformation($input: UpdateTransformationInput!) {
+  updateTransformation(input: $input) {
+    ...Transformation
+    version
+  }
+}
+
+# The second half of a REPLACE: the successor edge is created first
+# (CreateTransformation above) and the old one deleted after, so the layer is
+# never left without a path — a transient rival edge is legal, a transient gap
+# would un-place the data.
+mutation DeleteTransformation($input: DeleteTransformationInput!) {
+  deleteTransformation(input: $input)
+}

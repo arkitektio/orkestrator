@@ -109,7 +109,6 @@ import { CommandPaletteProvider } from "@/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/command/Host";
 import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
 import { TabsProvider } from "@/command/tabs/TabsProvider";
-import { PinsProvider } from "@/command/PinsProvider";
 
 
 /**
@@ -155,7 +154,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                 <SelectionProvider>
                                   <AgentProvider disabled={false}>
                                     <CommandPaletteProvider>
-                                    <PinsProvider>
                                     <WardRegistrar />
                                     {/* One palette for the whole app. It used to
                                         be mounted per page, so it was missing on
@@ -190,7 +188,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     <BackNavigationErrorCatcher>
                                       {children}
                                     </BackNavigationErrorCatcher>
-                                    </PinsProvider>
                                     </CommandPaletteProvider>
                                   </AgentProvider>
                                 </SelectionProvider>

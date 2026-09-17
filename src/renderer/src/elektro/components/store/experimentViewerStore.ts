@@ -51,6 +51,13 @@ export interface ExperimentViewerState {
   // Loading
   detailLoading: boolean;
   overviewLoading: boolean;
+  /**
+   * Why the last load produced nothing, or null. Surfaced by the charts in
+   * place of an empty plot: a failed trace read used to leave the data empty
+   * and the spinner cleared, which looks exactly like a simulation with no
+   * traces.
+   */
+  loadError: string | null;
 
   // Hover
   hover: HoverState;
@@ -72,6 +79,7 @@ export interface ExperimentViewerState {
   setOverviewData: (data: ColumnData, overviewStepSize: number) => void;
   setDetailLoading: (loading: boolean) => void;
   setOverviewLoading: (loading: boolean) => void;
+  setLoadError: (error: string | null) => void;
   setSpikeTimes: (spikes: { value: number; label: string }[]) => void;
   setHover: (hover: HoverState) => void;
   setHidden: (hidden: string[]) => void;
@@ -114,6 +122,7 @@ export const createExperimentViewerStore = ({
 
     detailLoading: true,
     overviewLoading: true,
+    loadError: null,
 
     hover: null,
 
@@ -181,6 +190,7 @@ export const createExperimentViewerStore = ({
 
     setDetailLoading: (detailLoading) => set({ detailLoading }),
     setOverviewLoading: (overviewLoading) => set({ overviewLoading }),
+    setLoadError: (loadError) => set({ loadError }),
     setSpikeTimes: (spikeTimes) => set({ spikeTimes }),
     setHover: (hover) => set({ hover }),
     setHidden: (hidden) => set({ hidden }),

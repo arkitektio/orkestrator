@@ -1,85 +1,93 @@
-import { toast } from '@/components/ui/use-toast'
-import {
-  FlowFragment,
-  GraphInput
-} from '@/reaktion/api/graphql'
-import { EditFlowCanvas } from '@/reaktion/edit/components/EditFlowCanvas'
-import { EditFlowStoreContext } from '@/reaktion/edit/context'
-import { LabeledShowEdge } from '@/reaktion/edit/edges/LabeledShowEdge'
-import { RedoUndoHandler } from '@/reaktion/edit/keyboardhandlers/RedoUndo'
-import { AgentSubflowWidget } from '@/reaktion/edit/nodes/AgentSubflowWidget'
-import { ReactiveTrackNodeWidget } from '@/reaktion/edit/nodes/ReactiveWidget'
-import { RekuestFilterActionWidget } from '@/reaktion/edit/nodes/RekuestFilterActionWidget'
-import { RekuestMapActionWidget } from '@/reaktion/edit/nodes/RekuestMapActionWidget'
-import { ArgTrackNodeWidget } from '@/reaktion/edit/nodes/generic/ArgShowNodeWidget'
-import { ReturnTrackNodeWidget } from '@/reaktion/edit/nodes/generic/ReturnShowNodeWidget'
-import { createEditFlowStore, createInitialState } from '@/reaktion/edit/store'
-import { EdgeTypes, NodeTypes } from '@/reaktion/types'
-import {
-  flowEdgeToInput,
-  flowNodeToInput,
-  globalToInput
-} from '@/reaktion/utils'
-import { EdgeProps, NodeProps } from '@xyflow/react'
-import React, { useCallback, useEffect, useRef } from 'react'
+import { Guard } from "@/app/Arkitekt";
+import { toast } from "@/components/ui/use-toast";
+import { FlowFragment, GraphInput } from "@/reaktion/api/graphql";
+import { EditFlowCanvas } from "@/reaktion/edit/components/EditFlowCanvas";
+import { EditFlowStoreContext } from "@/reaktion/edit/context";
+import { RedoUndoHandler } from "@/reaktion/edit/keyboardhandlers/RedoUndo";
+import { createEditFlowStore } from "@/reaktion/edit/store";
+import { createEditAdapter, FlowAdapterProvider } from "@/reaktion/nodes/adapter";
+import { flowEdgeTypes, flowNodeTypes } from "@/reaktion/nodes/flowTypes";
+import { flowEdgeToInput, flowNodeToInput, globalToInput } from "@/reaktion/utils";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
-const nodeTypes: NodeTypes = {
-  RekuestFilterActionNode: RekuestFilterActionWidget as React.FC<NodeProps>,
-  RekuestMapActionNode: RekuestMapActionWidget as React.FC<NodeProps>,
-  ReactiveNode: ReactiveTrackNodeWidget as React.FC<NodeProps>,
-  ArgNode: ArgTrackNodeWidget as React.FC<NodeProps>,
-  ReturnNode: ReturnTrackNodeWidget as React.FC<NodeProps>,
-  AgentSubFlowNode: AgentSubflowWidget as React.FC<NodeProps>
-}
-
-const edgeTypes: EdgeTypes = {
-  VanillaEdge: LabeledShowEdge as React.FC<EdgeProps>,
-  LoggingEdge: LabeledShowEdge as React.FC<EdgeProps>
-}
+export type SaveResult = FlowFragment | null | undefined | void;
 
 export type Props = {
-  flow: FlowFragment
-  onSave?: (graph: GraphInput) => void
-}
+  flow: FlowFragment;
+  /**
+   * Persists the graph. Returning the saved `FlowFragment` lets the editor
+   * adopt it (new flow id, server-normalised graph); returning nothing just
+   * clears the dirty flag and waits for the refetched flow.
+   */
+  onSave?: (graph: GraphInput) => Promise<SaveResult> | SaveResult;
+};
+
+const RekuestRequired = () => (
+  <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+    The workflow editor needs the Rekuest service, which is not available in this deployment.
+  </div>
+);
 
 export const EditFlow: React.FC<Props> = ({ flow, onSave }) => {
-  const reactFlowWrapperRef = useRef<HTMLDivElement | null>(null)
-  const [store] = React.useState(() => createEditFlowStore(createInitialState(flow)))
+  const reactFlowWrapperRef = useRef<HTMLDivElement | null>(null);
+  const [store] = React.useState(() => createEditFlowStore(flow));
+  const adapter = useMemo(() => createEditAdapter(store), [store]);
 
   useEffect(() => {
-    store.getState().setRelativeWrapperRef(reactFlowWrapperRef)
-  }, [store])
+    store.getState().setRelativeWrapperRef(reactFlowWrapperRef);
+  }, [store]);
 
-  const save = useCallback(() => {
-    const state = store.getState()
+  // Resync policy: a different flow (e.g. the version created by a save, or a
+  // refetch) replaces the graph when there are no unsaved edits; otherwise it
+  // is kept aside and the canvas offers to reload.
+  useEffect(() => {
+    const state = store.getState();
+    if (flow.id === state.loadedFlowId) return;
+    if (state.dirty) state.setIncomingFlow(flow);
+    else state.loadFlow(flow);
+  }, [flow, store]);
 
-    if (state.remainingErrors.length === 0) {
-      const graph: GraphInput = {
-        nodes: state.nodes.map((node) => flowNodeToInput(node)),
-        edges: state.edges.map((edge) => flowEdgeToInput(edge)),
-        globals: state.globals.map((globalArg) => globalToInput(globalArg))
-      }
-
-      onSave?.(graph)
-      return
+  const save = useCallback(async () => {
+    const state = store.getState();
+    if (state.remainingErrors.length > 0) {
+      toast({
+        title: "Workflow has errors",
+        description: "Resolve the remaining validation errors before saving.",
+      });
+      return;
     }
+    if (!onSave) return;
 
-    toast({
-      title: 'Workflow has errors',
-      description: 'Resolve the remaining validation errors before saving.'
-    })
-  }, [onSave, store])
+    const graph: GraphInput = {
+      nodes: state.nodes.map((node) => flowNodeToInput(node)),
+      edges: state.edges.map((edge) => flowEdgeToInput(edge)),
+      globals: state.globals.map((globalArg) => globalToInput(globalArg)),
+    };
+
+    try {
+      const saved = await onSave(graph);
+      store.getState().markSaved(saved ?? undefined);
+    } catch (error) {
+      toast({
+        title: "Saving failed",
+        description: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }, [onSave, store]);
 
   return (
-    <EditFlowStoreContext.Provider value={store}>
-      <RedoUndoHandler />
-      <EditFlowCanvas
-        reactFlowWrapperRef={reactFlowWrapperRef}
-        flow={flow}
-        save={save}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-      />
-    </EditFlowStoreContext.Provider>
-  )
-}
+    <Guard.Rekuest unavailable={<RekuestRequired />}>
+      <EditFlowStoreContext.Provider value={store}>
+        <FlowAdapterProvider adapter={adapter}>
+          <RedoUndoHandler />
+          <EditFlowCanvas
+            reactFlowWrapperRef={reactFlowWrapperRef}
+            save={onSave ? save : undefined}
+            nodeTypes={flowNodeTypes}
+            edgeTypes={flowEdgeTypes}
+          />
+        </FlowAdapterProvider>
+      </EditFlowStoreContext.Provider>
+    </Guard.Rekuest>
+  );
+};

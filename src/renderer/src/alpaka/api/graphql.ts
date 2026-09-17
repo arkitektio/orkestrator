@@ -39,6 +39,7 @@ export type Agent = {
   client: Client;
   id: Scalars['ID']['output'];
   name?: Maybe<Scalars['String']['output']>;
+  /** The room this agent participates in */
   room: Room;
   /** The user this agent acts on behalf of */
   user: User;
@@ -967,6 +968,7 @@ export enum Role {
 /** A room agents and users converse in */
 export type Room = {
   __typename?: 'Room';
+  /** The room this agent participates in */
   agents: Array<Agent>;
   /** The time this room got created */
   createdAt: Scalars['DateTime']['output'];
@@ -1388,7 +1390,7 @@ export type ListProviderFragment = { __typename?: 'Provider', id: string, name: 
 
 export type ChatResponseFragment = { __typename?: 'ChatResponse', id: string, object: string, created: number, model: string, usage?: { __typename?: 'Usage', promptTokens: number, completionTokens: number, totalTokens: number } | null, choices: Array<{ __typename?: 'Choice', index: number, finishReason?: string | null, message: { __typename?: 'ChatMessage', role: Role, content?: string | null, name?: string | null, toolCallId?: string | null, functionCall?: { __typename?: 'FunctionCall', name: string, arguments: string } | null, toolCalls?: Array<{ __typename?: 'ToolCall', id: string, type: ToolType, function: { __typename?: 'FunctionCall', name: string, arguments: string } }> | null } }> };
 
-export type RoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, messages: Array<(
+export type RoomFragment = { __typename?: 'Room', id: string, title: string, description?: string | null, createdAt: any, creator?: { __typename?: 'User', id: string, preferredUsername: string } | null, organization: { __typename?: 'Organization', id: string, slug: string }, agents: Array<{ __typename?: 'Agent', id: string, name?: string | null, user: { __typename?: 'User', id: string, preferredUsername: string } }>, messages: Array<(
     { __typename?: 'Message' }
     & ListMessageFragment
   )> };
@@ -1477,6 +1479,16 @@ export type DeleteProviderMutationVariables = Exact<{
 
 
 export type DeleteProviderMutation = { __typename?: 'Mutation', deleteProvider: string };
+
+export type RefreshProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RefreshProviderMutation = { __typename?: 'Mutation', refreshProvider: (
+    { __typename?: 'Provider' }
+    & ProviderFragment
+  ) };
 
 export type PullMutationVariables = Exact<{
   input: PullInput;
@@ -1842,6 +1854,23 @@ export const RoomFragmentDoc = gql`
   id
   title
   description
+  createdAt
+  creator {
+    id
+    preferredUsername
+  }
+  organization {
+    id
+    slug
+  }
+  agents {
+    id
+    name
+    user {
+      id
+      preferredUsername
+    }
+  }
   messages {
     ...ListMessage
   }
@@ -2168,6 +2197,39 @@ export function useDeleteProviderMutation(baseOptions?: ApolloReactHooks.Mutatio
 export type DeleteProviderMutationHookResult = ReturnType<typeof useDeleteProviderMutation>;
 export type DeleteProviderMutationResult = Apollo.MutationResult<DeleteProviderMutation>;
 export type DeleteProviderMutationOptions = Apollo.BaseMutationOptions<DeleteProviderMutation, DeleteProviderMutationVariables>;
+export const RefreshProviderDocument = gql`
+    mutation RefreshProvider($id: ID!) {
+  refreshProvider(input: {id: $id}) {
+    ...Provider
+  }
+}
+    ${ProviderFragmentDoc}`;
+export type RefreshProviderMutationFn = Apollo.MutationFunction<RefreshProviderMutation, RefreshProviderMutationVariables>;
+
+/**
+ * __useRefreshProviderMutation__
+ *
+ * To run a mutation, you first call `useRefreshProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRefreshProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [refreshProviderMutation, { data, loading, error }] = useRefreshProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRefreshProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RefreshProviderMutation, RefreshProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RefreshProviderMutation, RefreshProviderMutationVariables>(RefreshProviderDocument, options);
+      }
+export type RefreshProviderMutationHookResult = ReturnType<typeof useRefreshProviderMutation>;
+export type RefreshProviderMutationResult = Apollo.MutationResult<RefreshProviderMutation>;
+export type RefreshProviderMutationOptions = Apollo.BaseMutationOptions<RefreshProviderMutation, RefreshProviderMutationVariables>;
 export const PullDocument = gql`
     mutation Pull($input: PullInput!) {
   pull(input: $input) {

@@ -22,13 +22,11 @@ export const SmartModel = ({ ...props }: SmartModelProps) => {
     ref,
     floatingRef,
     floatingStyles,
-    self,
     isOver,
     partners,
+    dropObjects,
     clearPartners,
     handleClick,
-    handleDragStart,
-    getCurrentSelection,
   } = useSmartModel({ identifier: props.identifier, object: props.object });
 
   const className = React.useMemo(
@@ -52,8 +50,6 @@ export const SmartModel = ({ ...props }: SmartModelProps) => {
       ref={ref}
       onClick={handleClick}
       className={cn("relative", props.containerClassName, className)}
-      onDragStart={handleDragStart}
-      draggable={false}
       data-hover={props.hover ? "true" : undefined}
       data-partners={partners.length > 0 ? "true" : undefined}
     >
@@ -72,11 +68,7 @@ export const SmartModel = ({ ...props }: SmartModelProps) => {
             animate={{ filter: "none" }}
           >
             <SmartContext
-              objects={
-                getCurrentSelection().length > 1
-                  ? getCurrentSelection()
-                  : [self]
-              }
+              objects={dropObjects}
               partners={partners}
               onDone={() => clearPartners()}
             />

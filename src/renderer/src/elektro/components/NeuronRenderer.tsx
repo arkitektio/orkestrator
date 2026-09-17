@@ -1,7 +1,7 @@
-import { Card } from "@/components/ui/card";
 import { OrbitControls, useCursor } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { EffectComposer, Vignette } from '@react-three/postprocessing';
+import { isSceneNavigationTarget, isTypingTarget } from "@/lib/input/keyboardTarget";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { CompartmentFragment, DetailNeuronModelFragment, SectionFragment } from "../api/graphql";
@@ -19,6 +19,21 @@ import { toBase } from "@/lib/quantities";
 import { ImportanceControl } from "./ImportanceControl";
 import { HoveredNet, NetworkLayer, NetworkTooltip } from "./NetworkLayer3D";
 import { NetworkControl } from "./NetworkControl";
+
+/**
+ * The scene viewport's button map (`mikro-next/.../CameraController.tsx`), so
+ * the two 3D views feel like one: left-drag pans, right-drag orbits, the wheel
+ * and middle-drag dolly. Holding Shift swaps pan and orbit for the button being
+ * dragged — that is OrbitControls' own behaviour, so Shift+left-drag rotates.
+ *
+ * A module-level constant, not an inline object: R3F diffs object props by
+ * reference, and a fresh map per render would re-apply on every frame.
+ */
+const NAVIGATE_BUTTONS = {
+  LEFT: THREE.MOUSE.PAN,
+  MIDDLE: THREE.MOUSE.DOLLY,
+  RIGHT: THREE.MOUSE.ROTATE,
+} as const;
 
 // --- Types & Helpers ---
 interface ProcessedSegment {
@@ -277,6 +292,10 @@ const Branch = ({
  * api) and writes the result straight onto the matching DOM node's transform.
  * Doing it imperatively avoids a React re-render on every frame.
  */
+/** Gap between the clicked point and the card, and the card and the frame edge. */
+const PANEL_GAP = 12;
+const PANEL_MARGIN = 8;
+
 const PanelProjector = ({
   nodes,
 }: {
@@ -293,13 +312,30 @@ const PanelProjector = ({
       const [x, y, z] = panels[id].position;
       projected.set(x, y, z).project(camera);
 
-      const screenX = (projected.x * 0.5 + 0.5) * size.width;
-      const screenY = (-projected.y * 0.5 + 0.5) * size.height;
+      const anchorX = (projected.x * 0.5 + 0.5) * size.width;
+      const anchorY = (-projected.y * 0.5 + 0.5) * size.height;
       const behindCamera = projected.z > 1;
 
-      node.style.transform = `translate(-50%, calc(-100% - 12px)) translate(${screenX}px, ${screenY}px)`;
+      // The card wants to sit centred above the point. Near the top it flips
+      // below, and near any edge it slides inward, so it is never clipped by
+      // the frame — the anchor dot (the node's first child) stays on the
+      // point itself, so a card that had to move still reads as attached.
+      const width = node.offsetWidth;
+      const height = node.offsetHeight;
+      let left = anchorX - width / 2;
+      let top = anchorY - height - PANEL_GAP;
+      if (top < PANEL_MARGIN) top = anchorY + PANEL_GAP;
+      left = Math.min(Math.max(left, PANEL_MARGIN), Math.max(PANEL_MARGIN, size.width - width - PANEL_MARGIN));
+      top = Math.min(Math.max(top, PANEL_MARGIN), Math.max(PANEL_MARGIN, size.height - height - PANEL_MARGIN));
+
+      node.style.transform = `translate(${left}px, ${top}px)`;
       node.style.opacity = behindCamera ? "0" : "1";
       node.style.pointerEvents = behindCamera ? "none" : "auto";
+
+      const dot = node.firstElementChild as HTMLElement | null;
+      if (dot) {
+        dot.style.transform = `translate(${anchorX - left}px, ${anchorY - top}px)`;
+      }
     }
   });
 
@@ -308,13 +344,40 @@ const PanelProjector = ({
 
 // --- DOM panel ---
 
+/**
+ * One labelled value. The label truncates and the value wraps mid-token: a
+ * `mechanism.param` label can be long, and a quantity string longer still, and
+ * neither may push the card wider than it is. Both carry the full text as a
+ * tooltip for when they do get cut.
+ */
 const ParamRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="flex items-baseline justify-between gap-3 text-xs">
-    <span className="text-white/50">{label}</span>
-    <span className="font-mono text-white/90">{value}</span>
+    <span className="min-w-0 truncate text-white/50" title={label}>
+      {label}
+    </span>
+    <span
+      className="max-w-[55%] shrink-0 break-all text-right font-mono tabular-nums text-white/90"
+      title={typeof value === "string" || typeof value === "number" ? String(value) : undefined}
+    >
+      {value}
+    </span>
   </div>
 );
 
+const PanelSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="flex flex-col gap-1 border-t border-white/10 px-3 py-2">
+    <p className="text-[0.5625rem] font-medium uppercase tracking-widest text-white/40">{title}</p>
+    {children}
+  </div>
+);
+
+/**
+ * The parameter panel for one section, in the scene HUD's dialect (the same
+ * surface as the mode strip and the shortcuts sheet) rather than a `Card` with
+ * its defaults overridden. The header stays put; everything under it scrolls
+ * as one column, capped well inside the frame so a compartment with many
+ * parameters grows a scrollbar rather than a card taller than the viewport.
+ */
 const NeuronPanelCard = ({
   section,
   compartment,
@@ -325,20 +388,34 @@ const NeuronPanelCard = ({
   onClose: () => void;
 }) => {
   if (!section) return null;
+  const swatch = rgbaToCss(compartment?.color);
 
   return (
-    <Card className="flex max-h-72 w-52 flex-col gap-0 border-white/10 bg-black/70 py-0 text-white shadow-2xl shadow-black/60 ring-white/10 backdrop-blur-xl hover:bg-black/70">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-2.5 py-1.5">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-semibold tracking-tight">{section.id}</p>
-          <p className="text-[0.5625rem] uppercase tracking-widest text-white/40">
-            {section.category}
+    <div className="flex max-h-[min(22rem,60vh)] w-60 flex-col overflow-hidden rounded-lg border border-white/10 bg-black/70 text-white shadow-2xl shadow-black/60 backdrop-blur-md">
+      <div className="flex shrink-0 items-start justify-between gap-2 px-3 py-2">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="truncate text-sm font-semibold leading-tight tracking-tight" title={section.id}>
+            {section.id}
           </p>
+          {section.category && (
+            <span className="flex min-w-0 items-center gap-1.5 text-[0.625rem] text-white/60">
+              {swatch && (
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full ring-1 ring-white/20"
+                  style={{ backgroundColor: swatch }}
+                />
+              )}
+              <span className="truncate" title={section.category}>
+                {section.category}
+              </span>
+            </span>
+          )}
         </div>
         <button
           onClick={onClose}
-          className="shrink-0 rounded p-0.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+          className="-mr-1 -mt-0.5 shrink-0 rounded p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
           aria-label="Close panel"
+          title="Close"
         >
           <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={2}>
             <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
@@ -346,60 +423,65 @@ const NeuronPanelCard = ({
         </button>
       </div>
 
-      <div className="shrink-0 space-y-1 px-2.5 py-2">
-        <ParamRow label="Diameter" value={section.diam} />
-        {section.length && <ParamRow label="Length" value={section.length} />}
-        <ParamRow label="Segments" value={section.nseg} />
-      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <PanelSection title="Geometry">
+          <ParamRow label="Diameter" value={section.diam} />
+          {section.length && <ParamRow label="Length" value={section.length} />}
+          <ParamRow label="Segments" value={section.nseg} />
+          {/* Per-section overrides of the model globals: only when set, so an
+              inherited value is not shown as if it were this section's own. */}
+          {section.ra && <ParamRow label="Ra" value={section.ra} />}
+          {section.cm && <ParamRow label="Cm" value={section.cm} />}
+          {section.dLambda != null && <ParamRow label="d_lambda" value={section.dLambda} />}
+        </PanelSection>
 
-      {compartment && (
-        <div className="flex min-h-0 flex-col border-t border-white/10 px-2.5 py-2">
-          <p className="mb-1 shrink-0 text-[0.5625rem] uppercase tracking-widest text-white/40">
-            Mechanisms
-          </p>
-          {compartment.mechanisms.length === 0 ? (
-            <p className="text-[0.6875rem] text-white/40">None</p>
-          ) : (
-            <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
-              <div className="flex flex-wrap gap-1">
-                {compartment.mechanisms.map((mech) => (
-                  <span
-                    key={mech}
-                    className="rounded-full bg-white/10 px-1.5 py-0.5 text-[0.5625rem] font-medium"
-                  >
-                    {mech}
-                  </span>
+        {compartment && (
+          <>
+            <PanelSection title="Mechanisms">
+              {compartment.mechanisms.length === 0 ? (
+                <p className="text-[0.6875rem] text-white/40">None</p>
+              ) : (
+                <div className="flex flex-wrap gap-1">
+                  {compartment.mechanisms.map((mech) => (
+                    <span
+                      key={mech}
+                      className="max-w-full truncate rounded-full bg-white/10 px-1.5 py-0.5 font-mono text-[0.625rem]"
+                      title={mech}
+                    >
+                      {mech}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </PanelSection>
+
+            {compartment.sectionParams.length > 0 && (
+              <PanelSection title="Parameters">
+                {compartment.sectionParams.map((p, i) => (
+                  <ParamRow
+                    key={`${p.mechanism}-${p.param}-${i}`}
+                    label={`${p.mechanism}.${p.param}`}
+                    value={p.distribution.value == null ? "—" : String(p.distribution.value)}
+                  />
                 ))}
-              </div>
+              </PanelSection>
+            )}
 
-              {compartment.sectionParams.length > 0 && (
-                <div className="mt-1.5 space-y-1">
-                  {compartment.sectionParams.map((p, i) => (
-                    <ParamRow
-                      key={`${p.mechanism}-${p.param}-${i}`}
-                      label={`${p.mechanism}.${p.param}`}
-                      value={String(p.distribution.value)}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {compartment.ions.length > 0 && (
-                <div className="mt-1.5 space-y-1">
-                  {compartment.ions.map((ion) => (
-                    <ParamRow
-                      key={ion.ion}
-                      label={`${ion.ion} (${ion.style})`}
-                      value={ion.reversalPotential ?? "—"}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </Card>
+            {compartment.ions.length > 0 && (
+              <PanelSection title="Ions">
+                {compartment.ions.map((ion) => (
+                  <ParamRow
+                    key={ion.ion}
+                    label={`${ion.ion} · ${ion.style.toLowerCase()}`}
+                    value={ion.reversalPotential ?? "—"}
+                  />
+                ))}
+              </PanelSection>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -434,6 +516,9 @@ const PanelOverlay = ({
             className="absolute left-0 top-0 will-change-transform"
             style={{ pointerEvents: "auto" }}
           >
+            {/* First child by contract with PanelProjector: the dot that marks
+                the clicked point, positioned relative to the card each frame. */}
+            <span className="pointer-events-none absolute left-0 top-0 z-10 -ml-[5px] -mt-[5px] h-2.5 w-2.5 rounded-full bg-pink-500 ring-2 ring-black/60" />
             <NeuronPanelCard
               section={section}
               compartment={
@@ -496,6 +581,32 @@ export const NeuronVisualizer = ({ model }: { model: DetailNeuronModelFragment }
   const closeAll = useNeuronPanelStore((s) => s.closeAll);
   const hasPanels = useNeuronPanelStore((s) => Object.keys(s.panels).length > 0);
 
+  // F re-frames the model and Esc closes the section panels — the scene's
+  // bindings, gated the scene's way: F only when nothing else holds focus
+  // (arrow-cluster strictness is overkill for F, but it keeps one rule), Esc
+  // whenever the user is not typing. `code`, so the physical key is what
+  // counts regardless of layout.
+  const [refit, setRefit] = useState(0);
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as { tagName?: string; isContentEditable?: boolean } | null;
+      if (e.code === "KeyF" && !e.shiftKey && isSceneNavigationTarget(target)) {
+        e.preventDefault();
+        setRefit((n) => n + 1);
+      } else if (e.key === "Escape" && !isTypingTarget(target)) {
+        // Only claims the key when there is something to close, so the
+        // shortcuts sheet above still gets its own Escape.
+        if (Object.keys(useNeuronPanelStore.getState().panels).length > 0) {
+          e.preventDefault();
+          closeAll();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [closeAll]);
+
   // Panels are anchored to section ids of *this* model — drop them when the
   // model changes or the renderer unmounts so they can't leak across pages.
   useEffect(() => {
@@ -503,15 +614,21 @@ export const NeuronVisualizer = ({ model }: { model: DetailNeuronModelFragment }
   }, [model.id, closeAll]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", minHeight: "500px" }}>
+    <div className="relative h-full w-full">
       <Canvas camera={{ fov: 34 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[10, 50, 20]} />
 
-        <OrbitControls makeDefault />
+        {/* Damping off, like the scene viewport's default: the camera stops
+            where the drag stops. */}
+        <OrbitControls
+          makeDefault
+          enableDamping={false}
+          mouseButtons={NAVIGATE_BUTTONS}
+        />
 
         {/* Fit the whole neuron into view, rotating around the root-node centroid. */}
-        <FitCamera points={points} target={target} />
+        <FitCamera points={points} target={target} refit={refit} />
 
         {segments.map((seg) => (
           <Branch
@@ -541,8 +658,11 @@ export const NeuronVisualizer = ({ model }: { model: DetailNeuronModelFragment }
 
       <PanelOverlay sectionMap={sectionMap} compartmentMap={compartmentMap} nodes={nodes} />
 
+      {/* Bottom-right, stacked above the viewport's mode strip (which sits at
+          bottom-2 in a 36px box), where the scene keeps its readouts and
+          panels. The page's title card owns the top-left corner. */}
       {(importance.hasData || network.hasData) && (
-        <div className="pointer-events-auto absolute left-3 top-3 flex flex-col gap-2">
+        <div className="pointer-events-auto absolute bottom-12 right-2 z-30 flex flex-col items-end gap-2">
           {importance.hasData && (
             <ImportanceControl
               variant="dark"
@@ -574,7 +694,8 @@ export const NeuronVisualizer = ({ model }: { model: DetailNeuronModelFragment }
       {hasPanels && (
         <button
           onClick={closeAll}
-          className="pointer-events-auto absolute right-3 top-3 rounded-md border border-white/10 bg-black/60 px-2.5 py-1 text-xs text-white/70 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
+          title="Close all section panels (Esc)"
+          className="pointer-events-auto absolute right-2 top-2 z-30 rounded-lg border border-black/10 bg-black/40 px-2.5 py-1 text-xs text-white/70 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
         >
           Close all
         </button>

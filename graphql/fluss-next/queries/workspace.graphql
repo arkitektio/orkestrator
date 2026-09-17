@@ -4,8 +4,12 @@ query Workspace($id: ID!) {
   }
 }
 
-query Workspaces($pagination: OffsetPaginationInput) {
-  workspaces(pagination: $pagination) {
+query Workspaces(
+  $filters: WorkspaceFilter
+  $pagination: OffsetPaginationInput
+  $ordering: [WorkspaceOrder!]
+) {
+  workspaces(filters: $filters, pagination: $pagination, ordering: $ordering) {
     ...ListWorkspace
   }
 }

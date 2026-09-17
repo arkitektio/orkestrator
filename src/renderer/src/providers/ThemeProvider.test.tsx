@@ -39,7 +39,11 @@ beforeEach(() => {
   listeners = [];
   installMatchMedia();
 });
-afterEach(() => document.documentElement.classList.remove("light", "dark"));
+afterEach(() => {
+  document.documentElement.classList.remove("light", "dark");
+  // @ts-expect-error - clean up the injected global
+  delete window.api;
+});
 
 describe("ThemeProvider", () => {
   it("toggles between light and dark, and paints the root", () => {
@@ -80,5 +84,39 @@ describe("ThemeProvider", () => {
     localStorage.setItem("t", "sepia");
     renderWith("dark");
     expect(resolved()).toBe("dark");
+  });
+});
+
+describe("the window frame follows the theme", () => {
+  // The frame has parts CSS cannot reach: the background Chromium paints
+  // during a resize, and on Windows the overlay's glyphs. Main recolours them,
+  // but only if it is told — so every resolution of the theme must report.
+  const withBridge = () => {
+    const setTheme = vi.fn();
+    // @ts-expect-error - stand in for the preload injection
+    window.api = { windowControls: { setTheme } };
+    return setTheme;
+  };
+
+  it("reports the resolved theme on mount and on every change", () => {
+    const setTheme = withBridge();
+    renderWith("dark");
+    expect(setTheme).toHaveBeenLastCalledWith("dark");
+    click("toggle");
+    expect(setTheme).toHaveBeenLastCalledWith("light");
+  });
+
+  it("reports what is on screen, never the raw `system` choice", () => {
+    const setTheme = withBridge();
+    prefersDark = true;
+    renderWith("system");
+    expect(setTheme).toHaveBeenLastCalledWith("dark");
+    osChanges(false);
+    expect(setTheme).toHaveBeenLastCalledWith("light");
+  });
+
+  it("works in a browser tab, where there is no frame to tell", () => {
+    expect(() => renderWith("light")).not.toThrow();
+    expect(resolved()).toBe("light");
   });
 });

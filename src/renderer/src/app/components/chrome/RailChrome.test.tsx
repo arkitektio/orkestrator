@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
@@ -118,6 +118,29 @@ describe("RailChrome drag regions", () => {
   });
 });
 
+describe("double-clicking the bar", () => {
+  it("maximises on Linux, whose frameless window lost that along with its frame", () => {
+    setElectron("linux");
+    const { container } = render(<Shell><RailChrome /></Shell>);
+    fireEvent.doubleClick(container.querySelector(".app-drag")!);
+    expect(window.api.windowControls.toggleMaximize).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not double up on a control on Linux", () => {
+    setElectron("linux");
+    render(<Shell><RailChrome /></Shell>);
+    fireEvent.doubleClick(screen.getByLabelText("Reload"));
+    expect(window.api.windowControls.toggleMaximize).not.toHaveBeenCalled();
+  });
+
+  it.each(["darwin", "win32"])("is left to the real frame on %s", (platform) => {
+    setElectron(platform);
+    const { container } = render(<Shell><RailChrome /></Shell>);
+    fireEvent.doubleClick(container.querySelector(".app-drag")!);
+    expect(window.api.windowControls.toggleMaximize).not.toHaveBeenCalled();
+  });
+});
+
 describe("the traffic-light gutter", () => {
   it("reserves room beside the lights on macOS, where they sit on the rail", () => {
     // The nav buttons share this row with the lights, so the gutter is
@@ -200,3 +223,31 @@ describe("Back and Forward are greyed honestly", () => {
     expect(screen.getByLabelText("Forward")).toBeEnabled();
   });
 });
+
+describe("share", () => {
+  const original = navigator.clipboard;
+  afterEach(() => {
+    Object.defineProperty(navigator, "clipboard", { value: original, configurable: true });
+  });
+
+  it("copies the active tab's universal link", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(
+      <Shell>
+        <Driver />
+        <RailChrome />
+      </Shell>,
+    );
+    act(() => screen.getByText("drive-forward").click());
+    await act(async () => {
+      screen.getByLabelText("Share").click();
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      `https://arkitekt.live/deeplink?orkestrator=${encodeURIComponent("/somewhere")}`,
+    );
+    // It says so, for a moment.
+    expect(screen.getByLabelText("Share").getAttribute("title")).toBe("Link copied");
+  });
+});
+

@@ -99,3 +99,25 @@ export const getRoomTalkingAbout = (
     }))
     .filter((structure) => Number.isInteger(structure.object));
 };
+
+/**
+ * What the first message of a chat should carry.
+ *
+ * A chat started *about* something ("Talk about", or "New chat" in a model's
+ * chat tab) attaches that something to its opening message, so the replyer
+ * knows what is being asked about. Only the opening message: once the room has
+ * messages the structure is already in the conversation.
+ *
+ * `about` is what the surface knows the chat is about (the sidebar's own
+ * structure); without it, what was remembered when the room was created.
+ */
+export const firstMessageAttachments = (
+  room: { id: string; messages: readonly unknown[] },
+  about?: readonly RoomTalkingAboutStructure[],
+): RoomTalkingAboutStructure[] => {
+  if (room.messages.length > 0) {
+    return [];
+  }
+
+  return about && about.length > 0 ? [...about] : getRoomTalkingAbout(room.id);
+};

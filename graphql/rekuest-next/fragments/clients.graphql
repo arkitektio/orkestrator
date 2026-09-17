@@ -1,11 +1,19 @@
 fragment Client on Client {
   id
-  name
   clientId
 }
 
+# `Client.name` is gone server-side; the release (app + version) is what labels
+# a client in pickers now.
 fragment ListClient on Client {
   id
-  name
   clientId
+  release {
+    id
+    version
+    app {
+      id
+      identifier
+    }
+  }
 }

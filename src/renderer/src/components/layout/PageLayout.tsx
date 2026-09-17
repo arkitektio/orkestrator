@@ -1,12 +1,10 @@
 import { useTabTitle } from "@/command/tabs/useTabTitle";
-import { usePullToRefetch } from "@/hooks/use-pull-to-refetch";
+import { useCopyUniversalLink } from "@/hooks/use-copy-universal-link";
 import { useReport } from "@/hooks/use-report";
 import { cn } from "@/lib/utils";
-import { useRefetch } from "@/providers/refetch/RefetchContext";
 import { ChevronDownIcon, PanelRight } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { PullToRefetchIndicator } from "./PullToRefetchIndicator";
 import BreadCrumbs from "../navigation/BreadCrumbs";
 import { Button } from "../ui/button";
 import { ButtonGroup } from "../ui/button-group";
@@ -67,69 +65,9 @@ export const PageLayout = ({
 
   const location = useLocation();
 
-  const refetch = useRefetch();
-  const {
-    ref: pullRef,
-    pull,
-    progress,
-    refreshing,
-  } = usePullToRefetch(refetch);
-
   const reportBug = useReport();
 
-  const [, setCopied] = useState(false);
-  const copyTimer = useRef<number | undefined>(undefined);
-
-  // Clear the pending copy-reset timer on unmount to avoid a setState-after-unmount.
-  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
-
-  const copyPathToClipboard = useCallback(() => {
-
-    const searchText = `${location.pathname}${location.search}`;
-    const fullUrl = `https://arkitekt.live/deeplink?orkestrator=${encodeURIComponent(searchText)}`;
-
-    // Try modern clipboard API first
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(fullUrl)
-        .then(() => {
-          setCopied(true);
-          copyTimer.current = window.setTimeout(() => setCopied(false), 1500);
-        })
-        .catch(() => {
-          // Fallback to electron API if available
-          const api = (window as any).api;
-          if (api?.copyToClipboard) {
-            api.copyToClipboard(fullUrl);
-            setCopied(true);
-            copyTimer.current = window.setTimeout(() => setCopied(false), 1500);
-          }
-        });
-    } else {
-      // Try electron API
-      const api = (window as any).api;
-      if (api?.copyToClipboard) {
-        api.copyToClipboard(fullUrl);
-        setCopied(true);
-        copyTimer.current = window.setTimeout(() => setCopied(false), 1500);
-      } else {
-        // Last resort: old-school execCommand
-        try {
-          const textarea = document.createElement("textarea");
-          textarea.value = fullUrl;
-          textarea.style.position = "fixed";
-          textarea.style.opacity = "0";
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand("copy");
-          document.body.removeChild(textarea);
-          setCopied(true);
-          copyTimer.current = window.setTimeout(() => setCopied(false), 1500);
-        } catch (e) {
-          console.warn("Failed to copy to clipboard", e);
-        }
-      }
-    }
-  }, [location.pathname, location.search]);
+  const { copy: copyPathToClipboard } = useCopyUniversalLink(location);
 
   const popOut = useCallback(() => {
     window.api.openSecondWindow(location.pathname);
@@ -230,22 +168,9 @@ export const PageLayout = ({
             </div>
           </div>
 
-          <div
-            ref={pullRef}
-            className={cn(
-              "p-3 flex-grow @container flex flex-col overflow-y-auto",
-              "transition-[filter,opacity] duration-200 ease-out",
-              refreshing && "blur-[3px] opacity-60",
-            )}
-          >
+          <div className="p-3 flex-grow @container flex flex-col overflow-y-auto">
             {children}
           </div>
-
-          <PullToRefetchIndicator
-            pull={pull}
-            progress={progress}
-            refreshing={refreshing}
-          />
         </div>
       </ResizablePanel>
       {params.get("pageSidebar") == "true" && (

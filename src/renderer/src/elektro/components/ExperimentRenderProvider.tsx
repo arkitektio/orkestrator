@@ -33,6 +33,7 @@ const ExperimentDataLoader: React.FC = () => {
     let cancelled = false;
     store.getState().setDetailLoading(true);
     store.getState().setOverviewLoading(true);
+    store.getState().setLoadError(null);
 
     const load = async () => {
       try {
@@ -58,6 +59,15 @@ const ExperimentDataLoader: React.FC = () => {
         store.getState().setDetailData(detailData, nextStepSize);
         store.getState().setOverviewData(overviewData, nextStepSize);
         store.getState().setSpikeTimes(spikes);
+      } catch (error) {
+        // Without this the rejection is unhandled, the spinner clears in
+        // `finally`, and the store keeps its empty columns — a blank plot that
+        // is indistinguishable from a simulation with nothing recorded.
+        if (cancelled) return;
+        console.error("Failed to load experiment traces", error);
+        store
+          .getState()
+          .setLoadError(error instanceof Error ? error.message : String(error));
       } finally {
         if (!cancelled) {
           store.getState().setDetailLoading(false);

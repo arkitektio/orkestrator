@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSortableItem, useSortableListId } from "@/lib/dnd/sortable";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
-import { useState } from "react";
 import { PropertyListItem } from "./PropertyListItem";
 import { PropertyDefinition } from "./utils";
 
@@ -13,6 +15,42 @@ interface PropertyListProps {
   onReorderProperties: (startIndex: number, endIndex: number) => void;
 }
 
+/** One row: draggable, and a place to drop another row of this list. */
+const SortableProperty = ({
+  list,
+  index,
+  onReorder,
+  children,
+}: {
+  list: string;
+  index: number;
+  onReorder: (startIndex: number, endIndex: number) => void;
+  children: React.ReactNode;
+}) => {
+  const { ref, edge } = useSortableItem({ list, index, onReorder });
+
+  return (
+    // The rows hold still during the drag; `layout` slides them once the
+    // order has changed.
+    <motion.div
+      ref={ref}
+      layout="position"
+      transition={{ duration: 0.15 }}
+      className="relative dragging:opacity-50"
+    >
+      {edge && (
+        <div
+          className={cn(
+            "pointer-events-none absolute left-0 right-0 h-1 rounded bg-primary",
+            edge === "before" ? "top-0 -mt-1" : "bottom-0 -mb-1",
+          )}
+        />
+      )}
+      {children}
+    </motion.div>
+  );
+};
+
 export function PropertyList({
   properties,
   selectedIndex,
@@ -20,34 +58,7 @@ export function PropertyList({
   onAddProperty,
   onReorderProperties,
 }: PropertyListProps) {
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
-
-  const handleDragStart = (index: number) => (e: React.DragEvent) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (index: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    if (draggedIndex !== null && draggedIndex !== index) {
-      setDropTargetIndex(index);
-    }
-  };
-
-  const handleDrop = (index: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    if (draggedIndex !== null && draggedIndex !== index) {
-      onReorderProperties(draggedIndex, index);
-    }
-    setDraggedIndex(null);
-    setDropTargetIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDropTargetIndex(null);
-  };
+  const list = useSortableListId();
 
   return (
     <div className="h-full flex flex-col border-r bg-background">
@@ -63,24 +74,18 @@ export function PropertyList({
       <ScrollArea className="flex-1 p-2">
         <div className="space-y-1">
           {properties.map((property, index) => (
-            <div
+            <SortableProperty
               key={property.key || index}
-              onDragOver={handleDragOver(index)}
-              onDrop={handleDrop(index)}
-              className="relative"
+              list={list}
+              index={index}
+              onReorder={onReorderProperties}
             >
-              {dropTargetIndex === index && draggedIndex !== index && (
-                <div className="absolute top-0 left-0 right-0 h-1 bg-primary rounded -mt-1" />
-              )}
               <PropertyListItem
                 property={property}
                 isActive={selectedIndex === index}
                 onClick={() => onSelectProperty(index)}
-                onDragStart={handleDragStart(index)}
-                onDragEnd={handleDragEnd}
-                isDragging={draggedIndex === index}
               />
-            </div>
+            </SortableProperty>
           ))}
         </div>
       </ScrollArea>

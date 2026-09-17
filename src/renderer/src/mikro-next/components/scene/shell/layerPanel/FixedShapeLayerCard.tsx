@@ -23,7 +23,6 @@ import {
   PhasorNodeEditor,
   TransferEditor,
 } from "../../features/volume/rendergraph/RenderNodeEditor";
-import { LayerGraphFlyout } from "./LayerGraphFlyout";
 import { RgbChannelEditor } from "./RgbChannelEditor";
 import { LayerRow } from "./LayerRow";
 import { UnplannableNotice } from "./UnplannableNotice";
@@ -99,7 +98,6 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
   onUpdate,
   onFocus,
   onRemove,
-  onClose,
 }: LayerCardProps<LayerState>) {
   perfMonitor.countRender("FixedShapeLayerCard"); // no-op unless a perf recording is armed
   const updateStoreLayer = useSceneStore((s) => s.updateLayer);
@@ -343,9 +341,6 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
               )}
             </CardSection>
           )}
-          {/* The metadata + placement chrome every layer card offers. Passing
-              no editor is what keeps the graph section out. */}
-          <LayerGraphFlyout inline layer={layer} onUpdate={onUpdate} onClose={onClose} />
         </div>
       </CollapsibleContent>
     </Collapsible>

@@ -8,8 +8,8 @@ import {
   useCancelMutation,
 } from "../../api/graphql";
 import { deriveLiveState } from "../../hooks/useTasks";
-import { isTerminalEvent } from "../../lib/taskTracker";
-import { TaskStatusIcon, formatEventKind } from "../hovers/status";
+import { TaskStatusIcon, formatEventKind } from "../../lib/taskStatus";
+import { isTaskLive } from "../../lib/taskTracker";
 
 /**
  * Shared status presentation for an task: icon, action name, formatted
@@ -29,8 +29,7 @@ export const TaskStatusLine = (props: {
     variables: { input: { task: task.id } },
   });
 
-  const running =
-    !task.isDone && !isTerminalEvent(task.latestEventKind);
+  const running = isTaskLive(task);
   const canceling =
     task.latestEventKind === TaskEventKind.Cancelling;
 

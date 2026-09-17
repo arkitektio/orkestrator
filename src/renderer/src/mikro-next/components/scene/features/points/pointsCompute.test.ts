@@ -1,11 +1,16 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { IndirectStorageBufferAttribute } from "three/webgpu";
+import {
+  IndirectStorageBufferAttribute,
+  StorageInstancedBufferAttribute,
+  WebGPUBackend,
+} from "three/webgpu";
+import * as TSL from "three/tsl";
 
 // These cover the CPU-side contracts, which are the ones that fail SILENTLY: a wrong indirect
 // word draws nothing or draws garbage, and neither raises. The TSL graphs themselves need a
 // GPU to say anything about.
-import { VERTICES_PER_POINT, loadScatterPairs } from "./pointsCompute";
+import { VERTICES_PER_POINT, createCullPass, loadScatterPairs } from "./pointsCompute";
 
 describe("the indirect draw arguments", () => {
   it("lays out [vertexCount, instanceCount, firstVertex, firstInstance]", () => {
@@ -79,5 +84,53 @@ describe("loadScatterPairs", () => {
       0,
     );
     expect(ok).toBe(false);
+  });
+});
+
+/**
+ * The WGSL the cull pass compiles to, built with the backend's own node builder — no GPU, no
+ * device, just the text. A shader-module error is the quietest failure this layer has: the
+ * pipeline is invalid, the submission is dropped, `instanceCount` stays 0 and NOTHING draws,
+ * with one console line as the only witness.
+ */
+describe("the cull pass's WGSL", () => {
+  const wgslOf = (node: unknown): string => {
+    const backend = new WebGPUBackend();
+    const renderer = {
+      backend,
+      library: null,
+      hasFeature: () => false,
+      getRenderTarget: () => null,
+      getMRT: () => null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      contextNode: (TSL as any).context({}),
+      overrideNodes: {},
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const builder = (backend as any).createNodeBuilder(node, renderer);
+    builder.build();
+    return builder.computeShader as string;
+  };
+
+  const passes = () => {
+    const positions = new StorageInstancedBufferAttribute(new Float32Array(8), 2);
+    return createCullPass(positions, 4, 2).node as [unknown, unknown];
+  };
+
+  it("resets the count with atomicStore — WGSL has no `=` on an atomic", () => {
+    const [reset] = passes();
+    const wgsl = wgslOf(reset);
+    expect(wgsl).toMatch(/atomicStore\( &\w+\.value\[ 1u \], 0u \)/);
+    // The regression: `.assign` on the atomic indirect buffer emitted exactly this.
+    expect(wgsl).not.toMatch(/\.value\[ 1u \] = /);
+    // And it must run on invocation 0, the only one `compute(1)` lets through.
+    expect(wgsl).not.toMatch(/instanceIndex == 1u/);
+  });
+
+  it("appends survivors through atomicAdd on the same word", () => {
+    const [, cull] = passes();
+    const wgsl = wgslOf(cull);
+    expect(wgsl).toMatch(/atomicAdd\( &\w+\.value\[ 1u \], 1u \)/);
+    expect(wgsl).not.toMatch(/\.value\[ 1u \] = /);
   });
 });

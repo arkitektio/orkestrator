@@ -11,7 +11,11 @@ nothing about any feature.**
 
 ```
 scene/
-  Scene.tsx      the public API — the only entry point outside code should use
+  Scene.tsx      the public API — what a host RENDERS (provider, viewport,
+                 panels, the `inCanvas` slot)
+  sceneHost.ts   the HOST API — what a workflow composed over the scene may DO
+                 and KNOW: layer list + placement, placement preview, world
+                 picks, modes. Plain data out, no stores or fragments.
   shell/         composition root: provider, viewport, mode subtrees, chrome,
                  the registries. Mounts everything; nothing imports it back.
   platform/      the generic engine. Layer model, coordinates, camera, GPU,
@@ -20,6 +24,19 @@ scene/
   features/      one folder per concern, each readable end-to-end: its math,
                  its GPU code, its layer component, its panel, its store.
 ```
+
+**Workflows live outside.** A task with its own lifecycle — a session, a
+draft, save/cancel — is not a rendering concern and is not a `features/`
+folder. It is a component OUTSIDE `scene/` that composes over these two entry
+points and imports nothing else from here; the interactive registration
+workspace (`mikro-next/components/registration`, guarded by its own
+`registrationImports.test.ts`) is the model — and it is hosted on a PAGE OF ITS
+OWN (`pages/SceneRegistrationPage`, `/mikro/scenes/:id/register`), opted into
+from a scene through a local action; the scene page stays a viewer and mounts
+none of it. What the scene gives such a host
+is deliberately generic: `Scene.Viewport`'s `inCanvas` slot for its R3F
+children, and `sceneHost.ts`. If a hook in `sceneHost.ts` only makes sense for
+one host, it belongs in that host.
 
 ### `platform/`
 

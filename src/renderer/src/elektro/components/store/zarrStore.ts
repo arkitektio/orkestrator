@@ -83,6 +83,13 @@ type CachedGrant = {
 };
 
 type OpenEntry = {
+  /**
+   * When the credentials this store was opened with run out. Provisional
+   * (infinity) until the grant resolves, then the grant's real expiry — an
+   * entry past it is replaced on the next `getArray` rather than handed out.
+   * The store also rotates its own credentials on demand (see `refreshConfig`
+   * in `openArray`), so this is the second line of defence, not the first.
+   */
   expiresAt: number;
   array: Promise<OpenedZarrArray>;
 };
@@ -122,17 +129,28 @@ export const createElektroZarrStore = (
   let grant: CachedGrant | null = null;
 
   return createStore<ElektroZarrState>((set, get_) => {
-    const ensureGrant = (): Promise<GeneralZarrAccessGrantFragment> => {
+    /**
+     * The cached general grant, re-requested near expiry. `forceRefresh` skips
+     * the cache: a store's 403 recovery asks for it when S3 rejected the grant
+     * we still believed in (clock drift, early revocation).
+     *
+     * Open stores are NOT dropped on refresh: each rotates its own credentials
+     * through `refreshConfig`, so a refresh here is one mutation shared by
+     * every store that asks, not a reason to reopen them all.
+     */
+    const ensureGrant = (
+      options: { forceRefresh?: boolean } = {},
+    ): Promise<GeneralZarrAccessGrantFragment> => {
       if (!client) throw new Error("No elektro client found");
       const { refreshMarginMs, grantExpiresIn } = get_().config;
 
-      if (grant && Date.now() < grant.expiresAt - refreshMarginMs) {
+      if (
+        !options.forceRefresh &&
+        grant &&
+        Date.now() < grant.expiresAt - refreshMarginMs
+      ) {
         return grant.promise;
       }
-
-      // Stale/near-expiry: re-request and drop every open store built on the old grant.
-      openByStoreId.clear();
-      set({ openStoreIds: [] });
 
       const promise = requestGeneralAccess(client, grantExpiresIn);
       // Optimistically cache the promise; back-fill the real expiry once resolved.
@@ -149,21 +167,38 @@ export const createElektroZarrStore = (
       return promise;
     };
 
-    const openArray = async (store: ZarrStoreFragment): Promise<OpenedZarrArray> => {
+    /** The fetch config a grant implies for one trace store. */
+    const configFor = (
+      g: GeneralZarrAccessGrantFragment,
+      store: ZarrStoreFragment,
+      endpoint: string,
+    ): S3FetchConfig => ({
+      accessKey: g.accessKey,
+      secretKey: g.secretKey,
+      sessionToken: g.sessionToken,
+      region: g.region,
+      expiresAt: Date.now() + g.expiresIn * 1000,
+      storeId: store.id,
+      baseUrl: `${endpoint.replace(/\/$/, "")}/${g.bucket}/${store.key}`,
+    });
+
+    const openArray = async (
+      store: ZarrStoreFragment,
+      onGrant: (g: GeneralZarrAccessGrantFragment) => void,
+    ): Promise<OpenedZarrArray> => {
       if (!datalayer) throw new Error("No datalayer endpoint configured");
+      const endpoint = datalayer;
       const g = await ensureGrant();
-      const expiresAt = Date.now() + g.expiresIn * 1000;
-      const s3config: S3FetchConfig = {
-        accessKey: g.accessKey,
-        secretKey: g.secretKey,
-        sessionToken: g.sessionToken,
-        region: g.region,
-        expiresAt,
-        storeId: store.id,
-        baseUrl: `${datalayer.replace(/\/$/, "")}/${g.bucket}/${store.key}`,
-      };
-      const s3 = new ConfiguredS3Store(s3config, {
+      onGrant(g);
+      const s3 = new ConfiguredS3Store(configFor(g, store, endpoint), {
         preloadMetadata: get_().config.preloadMetadata,
+        // Traces outlive their credentials: the registry keeps a store open
+        // for as long as the module is mounted, and a grant is minutes long.
+        // Without this an expired config is a hard error inside the store,
+        // and the page that reads it goes blank. Same wiring as the mikro
+        // scene stores (`zarrSources.ts`).
+        refreshConfig: async (options) =>
+          configFor(await ensureGrant(options), store, endpoint),
       });
       return open.v3(s3, { kind: "array" }) as Promise<OpenedZarrArray>;
     };
@@ -181,10 +216,13 @@ export const createElektroZarrStore = (
         }
 
         const entry: OpenEntry = {
-          // Provisional; the real expiry comes from the grant, but the registry is
-          // cleared on grant refresh anyway, so this only guards against reuse races.
+          // Provisional until the grant resolves; see OpenEntry.expiresAt.
           expiresAt: Number.POSITIVE_INFINITY,
-          array: openArray(store),
+          array: Promise.resolve().then(() =>
+            openArray(store, (g) => {
+              entry.expiresAt = Date.now() + g.expiresIn * 1000;
+            }),
+          ),
         };
         // Drop the cached promise if opening fails, so the next call retries.
         entry.array.catch(() => {

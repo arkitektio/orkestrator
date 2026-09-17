@@ -523,7 +523,6 @@ export const DashboardScene = () => {
       });
       setSelectedAgentBlokId(null);
     },
-    [],
   );
 
   useEffect(() => {

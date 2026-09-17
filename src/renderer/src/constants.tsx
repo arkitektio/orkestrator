@@ -62,7 +62,7 @@ export const manifest: Manifest = {
   ],
 };
 
-// The type of the smart model, used by the smart model and react-dnd
+// The kind of a smart model drag, as the dnd engine (lib/dnd) names it
 export const SMART_MODEL_DROP_TYPE = "smart";
 
 // Which endpoints should be used to discover the fakts services
