@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/arkitektio/orkestrator/compare/v2.4.0...v2.5.0) (2026-09-17)
+
+
+### Features
+
+* with proper windows chrome ([bf92865](https://github.com/arkitektio/orkestrator/commit/bf928650fa0426441d4e56f5632afc13d35340ad))
+
 # [2.4.0](https://github.com/arkitektio/orkestrator/compare/v2.3.0...v2.4.0) (2026-09-17)
 
 
