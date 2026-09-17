@@ -10,7 +10,9 @@
 @custom-variant over (&[data-over="true"]);
 @custom-variant dragging (&[data-dragging="true"]);
 @custom-variant isdropping (&[data-isdropping="true"]);
-@custom-variant can-drop (&[data-can-drop="true"]);
+/* A drop target while any drag is in the window. The dnd engine marks the root
+   for the length of a drag, so this costs no per-target state. */
+@custom-variant can-drop (:root[data-dnd-active] &[data-drop-target]);
 
 /* Window-drag regions for the renderer-drawn title bar.
  *

@@ -9,19 +9,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { SMART_MODEL_DROP_TYPE } from "@/constants";
 import {
   executeSameness,
   explainSameness,
   planSameness,
   type SamenessPlan,
 } from "@/kraph/lib/sameness";
+import { useDragSession, useDropTarget } from "@/lib/dnd/react";
 import { cn } from "@/lib/utils";
-import { resolveSmartDrop } from "@/providers/smart/dropUtils";
+import { acceptsSmartDrag, resolveSmartDrop } from "@/providers/smart/dragPayload";
 import type { Structure } from "@/types";
-import { useCallback, useState } from "react";
-import { useDrop } from "react-dnd";
-import { NativeTypes } from "react-dnd-html5-backend";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export type SameAsDropTargetProps = {
@@ -82,37 +80,21 @@ export const SameAsDropTarget = ({ self, term, onDone }: SameAsDropTargetProps) 
     }
   };
 
-  const [{ isOver, canDrop }, drop] = useDrop(
-    () => ({
-      accept: [SMART_MODEL_DROP_TYPE, NativeTypes.TEXT, NativeTypes.URL],
-      drop: (item: unknown, monitor) => {
-        const resolved = resolveSmartDrop(item, monitor.getItemType());
-        const partner = resolved?.partners[0];
-        if (!partner) {
-          toast.error("Drop a datum here");
-          return {};
-        }
-        void propose(partner);
-        // Returning marks the drop as handled, so the panel-wide zone around
-        // this card does not also open its partner panel.
-        return {};
-      },
-      collect: (monitor) => ({
-        isOver: !!monitor.isOver({ shallow: true }),
-        canDrop: !!monitor.canDrop(),
-      }),
-    }),
-    [self.identifier, self.object.id, term],
-  );
-
-  // react-dnd's connector is not a React ref; hand it the node, as
-  // `useSmartDropZone` does.
-  const ref = useCallback(
-    (node: HTMLDivElement | null) => {
-      drop(node);
+  // The innermost target takes the drop, so the panel-wide zone around this
+  // card does not also open its partner panel.
+  const { ref, isOver } = useDropTarget({
+    accepts: acceptsSmartDrag,
+    onDrop: (payload) => {
+      const partner = resolveSmartDrop(payload)?.partners[0];
+      if (!partner) {
+        toast.error("Drop a datum here");
+        return;
+      }
+      void propose(partner);
     },
-    [drop],
-  );
+  });
+  const session = useDragSession();
+  const canDrop = session !== null && acceptsSmartDrag(session);
 
   return (
     <>

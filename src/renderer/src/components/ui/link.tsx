@@ -1,6 +1,5 @@
-import { SMART_MODEL_DROP_TYPE } from "@/constants";
-import { useEffect } from "react";
-import { useDrop } from "react-dnd";
+import { useSpringLoaded } from "@/lib/dnd/react";
+import { acceptsSmartDrag } from "@/providers/smart/dragPayload";
 import {
   LinkProps,
   NavLink,
@@ -13,42 +12,24 @@ export const Link = ({ to, children }: LinkProps) => {
   return <RouterLink to={to}>{children}</RouterLink>;
 };
 
+/**
+ * How long a drag rests on a navigation link before it is followed. A full
+ * second: the navigation replaces the page under the drag.
+ */
+export const NAV_SPRING_DELAY_MS = 1000;
+
+/** A link that a drag resting on it follows, so the drop can land on its page. */
 export const DroppableNavLink = (props: NavLinkProps) => {
   const navigate = useNavigate();
 
-  const [{ isOver }, drop] = useDrop(() => {
-    return {
-      accept: [SMART_MODEL_DROP_TYPE],
-      drop: (item, monitor) => {
-        if (!monitor.didDrop()) {
-          console.log("Dropping item on NavLink", item);
-        }
-        return {};
-      },
-      collect: (monitor) => {
-        return {
-          isOver: !!monitor.isOver(),
-        };
-      },
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isOver) {
-      const timeout = setTimeout(() => {
-        console.log("Navigating to ", props.to);
-        navigate(props.to);
-      }, 1000);
-
-      return () => {
-        clearTimeout(timeout);
-      };
-    }
-    return undefined;
-  }, [isOver]);
+  const { ref, isOver } = useSpringLoaded({
+    accepts: acceptsSmartDrag,
+    delayMs: NAV_SPRING_DELAY_MS,
+    onFire: () => navigate(props.to),
+  });
 
   return (
-    <div ref={(node) => { drop(node); }} className={`${isOver && "animate-pulse"}`}>
+    <div ref={ref} className={isOver ? "animate-pulse" : undefined}>
       <NavLink {...props} />
     </div>
   );

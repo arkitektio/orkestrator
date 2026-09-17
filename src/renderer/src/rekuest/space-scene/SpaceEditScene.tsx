@@ -769,7 +769,6 @@ export const SpaceEditScene = () => {
       setSelectedMaterializedBlok(null);
       setSelectedThreeDModel(null);
     },
-    [],
   );
 
   const handleCreatePlacement = useCallback(
@@ -839,7 +838,7 @@ export const SpaceEditScene = () => {
   );
 
   return (
-    <div className="relative flex h-full flex-col" ref={dropRef as unknown as React.Ref<HTMLDivElement>}>
+    <div className="relative flex h-full flex-col" ref={dropRef}>
       <div className="flex items-center gap-2 border-b px-4 py-2">
         <div className="text-xs uppercase tracking-widest text-muted-foreground">Space Editor</div>
         <div className="text-xs text-muted-foreground">

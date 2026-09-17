@@ -1,8 +1,6 @@
-import { SMART_MODEL_DROP_TYPE } from "@/constants";
+import { useDragSession, useDropTarget } from "@/lib/dnd/react";
+import { acceptsSmartDrag, resolveSmartDrop } from "@/providers/smart/dragPayload";
 import { Identifier, Structure } from "@/types";
-import { useDrop } from "react-dnd";
-
-import { resolveSmartDrop } from "@/providers/smart/dropUtils";
 
 export type DropZoneProps = {
   accepts: Identifier[];
@@ -23,54 +21,30 @@ export const DropZone = ({
   overLabel,
   canDropLabel,
 }: DropZoneProps) => {
-  const [{ isOver, canDrop, allItemsContained }, drop] = useDrop(() => {
-    return {
-      accept: [SMART_MODEL_DROP_TYPE],
-      drop: async (item, monitor) => {
-        const resolvedDrop = resolveSmartDrop(item, monitor.getItemType());
-        if (!resolvedDrop) {
-          return {};
-        }
+  // This zone only exists while something it could take is in the air, so it
+  // reads the drag itself. Only drags from this window: one from outside keeps
+  // its contents to itself until it is dropped.
+  const session = useDragSession();
+  const dragged =
+    session?.origin === "internal" ? resolveSmartDrop(session)?.partners : undefined;
+  const containedIds = compareWithList?.map((c) => c.id) ?? [];
+  const fresh = dragged?.filter((i) => !containedIds.includes(i.object.id));
+  const allItemsContained = !!fresh && fresh.length === 0;
+  const canDrop =
+    !!fresh && (allItemsContained || accepts.includes(fresh.at(0)?.identifier || ""));
 
-        return await onDrop(resolvedDrop.partners);
-      },
-      collect: (monitor) => {
-        const resolvedDrop = resolveSmartDrop(monitor.getItem(), monitor.getItemType());
-        let items = resolvedDrop?.partners;
-        if (!items) {
-          return {
-            isOver: false,
-            canDrop: false,
-            allItemsContained: false,
-          };
-        }
-        if (compareWithList && compareWithList.length > 0) {
-          const compareIds = compareWithList.map((c) => c.id);
-          items = items.filter((i) => !compareIds.includes(i.object.id));
-          console.log("ALL COMPARED ITEMS", items);
-        }
-
-        if (items.length === 0) {
-          return {
-            isOver: !!monitor.isOver(),
-            canDrop: true,
-            allItemsContained: true,
-          };
-        }
-
-        return {
-          isOver: !!monitor.isOver(),
-          canDrop:
-            monitor.canDrop() &&
-            accepts.includes(items.at(0)?.identifier || ""),
-          allItemsContained: false,
-        };
-      },
-    };
-  }, []);
+  const { ref, isOver } = useDropTarget({
+    accepts: (s) => s.origin === "internal" && acceptsSmartDrag(s),
+    onDrop: (payload) => {
+      const resolvedDrop = resolveSmartDrop(payload);
+      if (resolvedDrop) {
+        void onDrop(resolvedDrop.partners);
+      }
+    },
+  });
 
   return (
-    <div className={`${!canDrop && "hidden"} ${className}`} ref={(node) => { drop(node); }}>
+    <div className={`${!canDrop && "hidden"} ${className}`} ref={ref}>
       {allItemsContained && "All items already contained"}
       {isOver ? overLabel : canDropLabel}
       {children}

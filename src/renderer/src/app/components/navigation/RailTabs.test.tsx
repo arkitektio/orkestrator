@@ -1,70 +1,33 @@
 // @vitest-environment jsdom
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useEffect } from "react";
-import { DndProvider, useDragDropManager } from "react-dnd";
-import type { BackendFactory, DragDropManager, Identifier } from "dnd-core";
-
-import { SMART_MODEL_DROP_TYPE } from "@/constants";
 
 const tabsValue = vi.fn();
 vi.mock("@/command/tabs/TabsProvider", () => ({ useTabs: () => tabsValue() }));
 
 import RailTabs, { TAB_SPRING_DELAY_MS } from "./RailTabs";
 import { NEW_TAB_PATH } from "@/command/tabs/tabs";
+import { SMART_MODEL_DROP_TYPE } from "@/constants";
+import { createDragSource, installDndEngine } from "@/lib/dnd/engine";
+import { dragOnto as dragNodeOnto, FakeDataTransfer, fireDrag } from "@/lib/dnd/testing";
 
-/**
- * The smallest react-dnd backend there is: it records which DOM node each drop
- * target connected to, so a test can "hover" a row by its element. Dragging is
- * driven straight through the manager's actions, the way the real backend does.
- */
-const makeBackend = () => {
-  const targets = new Map<Element, Identifier>();
-  const backend: BackendFactory = () => ({
-    setup: () => {},
-    teardown: () => {},
-    connectDragSource: () => () => {},
-    connectDragPreview: () => () => {},
-    connectDropTarget: (id: Identifier, node: Element) => {
-      targets.set(node, id);
-      return () => targets.delete(node);
-    },
-    profile: () => ({}),
+/** The strip, with the dnd engine listening — its rows are drop targets. */
+const renderStrip = () => render(<RailTabs />);
+
+/** Begin a smart-model drag and rest it on `node`. Returns how to end it. */
+const dragOnto = (node: Element) => {
+  const card = document.createElement("div");
+  document.body.appendChild(card);
+  createDragSource(() => ({
+    kind: SMART_MODEL_DROP_TYPE,
+    getData: () => ({ structures: [{ identifier: "@x/thing", object: { id: "1" } }] }),
+  })).attach(card);
+
+  let drag!: ReturnType<typeof dragNodeOnto>;
+  act(() => {
+    drag = dragNodeOnto(card, node);
   });
-  return { backend, targets };
-};
-
-/** Hands the manager out of the provider, so a test can drive a drag. */
-const Grab = ({ onManager }: { onManager: (m: DragDropManager) => void }) => {
-  const m = useDragDropManager();
-  useEffect(() => onManager(m), [m, onManager]);
-  return null;
-};
-
-/** The strip under a DndProvider — its rows are drop targets. */
-const renderStrip = () => {
-  const { backend, targets } = makeBackend();
-  const box: { manager: DragDropManager | null } = { manager: null };
-  render(
-    <DndProvider backend={backend}>
-      <Grab onManager={(m) => { box.manager = m; }} />
-      <RailTabs />
-    </DndProvider>,
-  );
-  return { targets, manager: () => box.manager! };
-};
-
-/** Begin a smart-model drag and rest it on `node`. */
-const dragOnto = (m: DragDropManager, targets: Map<Element, Identifier>, node: Element) => {
-  const sourceId = m.getRegistry().addSource(SMART_MODEL_DROP_TYPE, {
-    beginDrag: () => ({ identifier: "@x/thing", object: "1" }),
-    canDrag: () => true,
-    isDragging: () => false,
-    endDrag: () => {},
-  });
-  act(() => m.getActions().beginDrag([sourceId]));
-  act(() => m.getActions().hover([targets.get(node)!]));
-  return () => act(() => m.getActions().endDrag());
+  return () => act(() => void drag.cancel());
 };
 
 const LONG_LABEL =
@@ -86,11 +49,19 @@ const value = (over: Record<string, unknown> = {}) => ({
   closeOthers: vi.fn(),
   open: vi.fn(),
   setPinned: vi.fn(),
+  move: vi.fn(),
   ...over,
 });
 
+let uninstallDnd: () => void;
+
 beforeEach(() => {
   tabsValue.mockReturnValue(value());
+  uninstallDnd = installDndEngine(document);
+});
+
+afterEach(() => {
+  uninstallDnd();
 });
 
 describe("the Open strip", () => {
@@ -208,8 +179,8 @@ describe("spring-loaded tabs", () => {
   it("opens a tab that a drag rests on, so the drop can land in it", () => {
     const v = value();
     tabsValue.mockReturnValue(v);
-    const { targets, manager } = renderStrip();
-    dragOnto(manager(), targets, rowOf("One"));
+    renderStrip();
+    dragOnto(rowOf("One"));
     expect(v.focus).not.toHaveBeenCalled(); // not yet — a sweep across must not open
     act(() => vi.advanceTimersByTime(TAB_SPRING_DELAY_MS));
     expect(v.focus).toHaveBeenCalledWith("t1");
@@ -218,8 +189,8 @@ describe("spring-loaded tabs", () => {
   it("does nothing if the drag moves on before the delay", () => {
     const v = value();
     tabsValue.mockReturnValue(v);
-    const { targets, manager } = renderStrip();
-    const end = dragOnto(manager(), targets, rowOf("One"));
+    renderStrip();
+    const end = dragOnto(rowOf("One"));
     act(() => vi.advanceTimersByTime(TAB_SPRING_DELAY_MS / 2));
     end();
     act(() => vi.advanceTimersByTime(TAB_SPRING_DELAY_MS));
@@ -229,15 +200,112 @@ describe("spring-loaded tabs", () => {
   it("does not re-focus the tab already showing", () => {
     const v = value();
     tabsValue.mockReturnValue(v);
-    const { targets, manager } = renderStrip();
-    dragOnto(manager(), targets, rowOf("Two")); // active
+    renderStrip();
+    dragOnto(rowOf("Two")); // active
     act(() => vi.advanceTimersByTime(TAB_SPRING_DELAY_MS * 2));
     expect(v.focus).not.toHaveBeenCalled();
   });
 
   it("marks the row while the drag rests on it", () => {
-    const { targets, manager } = renderStrip();
-    dragOnto(manager(), targets, rowOf("One"));
+    renderStrip();
+    dragOnto(rowOf("One"));
     expect(rowOf("One").getAttribute("data-drag-over")).toBe("true");
+  });
+});
+
+describe("reordering the strip", () => {
+  const rowOf = (label: string) => screen.getByText(label).closest("[role='button']")!;
+  const labels = () =>
+    [...document.querySelectorAll("[data-tab-row]")].map((row) => row.getAttribute("title"));
+
+  /**
+   * Pick a tab up and hold it at `clientY`. jsdom lays nothing out — every row
+   * is at the top, no taller than a line — so above zero is "past them all"
+   * and below it "before them all", which is all these need.
+   */
+  const dragTab = (label: string, clientY: number) => {
+    const dataTransfer = new FakeDataTransfer();
+    const target = rowOf(label === "One" ? "Two" : "One");
+    act(() => {
+      fireDrag(rowOf(label), "dragstart", { dataTransfer });
+      fireDrag(target, "dragover", { dataTransfer, clientY });
+    });
+    return {
+      drop: () => act(() => void fireDrag(target, "drop", { dataTransfer, clientY })),
+      cancel: () => act(() => void fireDrag(rowOf(label), "dragend", { dataTransfer })),
+    };
+  };
+
+  it("parts the rows around a tab being dragged, and moves it where it is let go", () => {
+    const v = value();
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+
+    const drag = dragTab("One", 10);
+    expect(labels()).toEqual(["Two", "One"]);
+    expect(v.move).not.toHaveBeenCalled();
+
+    drag.drop();
+    expect(v.move).toHaveBeenCalledWith("t1", 1);
+  });
+
+  it("puts the rows back when the drag is called off", () => {
+    const v = value();
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+
+    dragTab("One", 10).cancel();
+
+    expect(labels()).toEqual(["One", "Two"]);
+    expect(v.move).not.toHaveBeenCalled();
+  });
+
+  it("does not let an open tab in among the pinned", () => {
+    const v = value({
+      tabs: [tab("t1", "One", true), tab("t2", "Two"), tab("t3", "Three")],
+      activeId: "t2",
+    });
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+
+    const drag = dragTab("Three", -10); // above everything
+    expect(labels()).toEqual(["One", "Three", "Two"]);
+
+    drag.drop();
+    expect(v.move).toHaveBeenCalledWith("t3", 1);
+  });
+
+  it("opens no tab that another tab rests on", () => {
+    vi.useFakeTimers();
+    try {
+      const v = value();
+      tabsValue.mockReturnValue(v);
+      renderStrip();
+
+      dragTab("Two", -10);
+      act(() => vi.advanceTimersByTime(TAB_SPRING_DELAY_MS * 2));
+
+      expect(v.focus).not.toHaveBeenCalled();
+      expect(rowOf("One").hasAttribute("data-drag-over")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("moves a focused tab with Alt and the arrows", () => {
+    const v = value();
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+
+    fireEvent.keyDown(rowOf("One"), { key: "ArrowDown", altKey: true });
+    expect(v.move).toHaveBeenCalledWith("t1", 1);
+
+    fireEvent.keyDown(rowOf("Two"), { key: "ArrowUp", altKey: true });
+    expect(v.move).toHaveBeenCalledWith("t2", 0);
+
+    // The arrows alone are not a move.
+    v.move.mockClear();
+    fireEvent.keyDown(rowOf("One"), { key: "ArrowDown" });
+    expect(v.move).not.toHaveBeenCalled();
   });
 });

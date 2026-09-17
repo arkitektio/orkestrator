@@ -13,11 +13,12 @@ import {
 } from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
-import { PlayIcon } from "lucide-react";
+import { ArrowRight, PlayIcon } from "lucide-react";
 import React from "react";
 import {
   ApplicableTalk as ApplicableAlpakaTalk,
 } from "./alpaka/talk";
+import { describeStructures } from "./describe";
 import { ApplicableDefinitions } from "./kabinet/definitions";
 import { ApplicableRelations } from "./kraph/relations";
 import { ApplicableLocalActions } from "./local/localactions";
@@ -54,6 +55,30 @@ export const ObjectButton = (props: ObjectButtonProps) => {
   );
 };
 
+/**
+ * What the menu is about, when that is not plain from where it opened: a
+ * drop ("2 Images → Dataset", as the gesture went) or a selection ("3 Images").
+ * One object, right-clicked, needs no telling.
+ */
+const SmartContextHeader = ({ objects, partners }: SmartContextProps) => {
+  const dropped = partners && partners.length > 0;
+  if (!dropped && objects.length < 2) {
+    return null;
+  }
+
+  return (
+    <div className="flex min-w-0 items-center gap-1.5 px-2 pb-2 pt-1 text-xs font-medium text-foreground">
+      {dropped && (
+        <>
+          <span className="truncate">{describeStructures(partners)}</span>
+          <ArrowRight aria-hidden className="h-3 w-3 shrink-0 text-muted-foreground" />
+        </>
+      )}
+      <span className="truncate">{describeStructures(objects)}</span>
+    </div>
+  );
+};
+
 export const SmartContext = (props: SmartContextProps) => {
   const [filter, setFilterValue] = React.useState<string | undefined>(undefined);
   // The raw value drives the input; the children put the filter straight into
@@ -62,19 +87,7 @@ export const SmartContext = (props: SmartContextProps) => {
 
   return (
     <>
-      <>
-        {props.objects.length > 1 && (
-          <div className="flex flex-row text-xs bg-gray-800 rounded-md px-2 py-1">
-            {props.objects.length} {props.objects.at(0)?.identifier}
-          </div>
-        )}
-        {props.partners && props.partners.length >= 1 && (
-          <div className="flex flex-row text-xs bg-gray-800 rounded-md px-2 py-1">
-            with {props.partners.length} {props.partners.at(0)?.identifier}
-          </div>
-        )}
-      </>
-      <div className="h-2" />
+      <SmartContextHeader {...props} />
 
       <Command shouldFilter={false}>
         <CommandInput
