@@ -22,7 +22,7 @@ export const RunCarousel = ({ }) => {
   return (
     <div className="w-full">
       {error && <div>Error: {error.message}</div>}
-      <Carousel className="w-full dark:text-white">
+      <Carousel className="w-full text-foreground">
         <CarouselPrevious />
         <CarouselContent>
           {data?.runs.map((item, index) => (

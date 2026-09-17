@@ -27,7 +27,7 @@ export const ParagraphField = (
             <Textarea
               placeholder={props.placeholder ? props.placeholder : "Enter.."}
               {...field}
-              className="dark:text-white"
+              className="text-foreground"
             />
           </FormControl>
           <FormDescription>{props.description}</FormDescription>

@@ -44,7 +44,7 @@ export const OutStream: React.FC<{
           <TooltipContent
             side="top"
             sideOffset={25}
-            className="bg-background text-foreground border border-1 border-gray-300"
+            className="bg-background text-foreground border border-1 border-border"
           >
             <div className="grid grid-cols-1 gap-4">
               {stream.length > 0 ? (

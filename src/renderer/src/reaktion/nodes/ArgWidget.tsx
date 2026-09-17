@@ -7,7 +7,7 @@ import React from "react";
 import { useFlowAdapter } from "./adapter";
 import { errorClassName, statusClassName } from "./status";
 
-const BASE = "border-blue-400/40 shadow-blue-400/10 dark:border-blue-300 dark:shadow-blue/20 shadow-xl";
+const BASE = "border-chart-3/40 shadow-chart-3/10 dark:border-chart-3 dark:shadow-blue/20 shadow-xl";
 
 const ArgWidgetInner: React.FC<ArgNodeProps> = ({ data: { outs }, id, selected }) => {
   const adapter = useFlowAdapter();

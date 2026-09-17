@@ -86,7 +86,7 @@ const Page = asDetailQueryRoute(
             <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
               <KraphGraph.DetailLink
                 object={{ id: data.graphTableQuery.graph.id }}
-                className={"text-slate-400 mr-2"}
+                className={"text-muted-foreground mr-2"}
               >
                 {data.graphTableQuery.graph.name}
               </KraphGraph.DetailLink>

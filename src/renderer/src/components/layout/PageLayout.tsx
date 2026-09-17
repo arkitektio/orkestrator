@@ -116,7 +116,7 @@ export const PageLayout = ({
               pages ended up a couple of pixels lower than list pages. */}
           <div
             className={cn(
-              "h-16 min-h-16 shrink-0 flex-row flex justify-between dark:border-gray-700 px-2 py-2 items-center",
+              "h-16 min-h-16 shrink-0 flex-row flex justify-between border-border px-2 py-2 items-center",
               variant == "default"
                 ? ""
                 : "border-0 bg-black bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-20 ",
@@ -189,10 +189,14 @@ export const PageLayout = ({
                 ? variant == "default"
                   ? "bg-radial-[at_100%_100%] from-background to-backgroundpaired"
                   : "bg-black text-gray-300"
-                : cn(
-                    "bg-sidebar",
-                    variant == "default" ? "" : "border-0 bg-sidebar bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-20 ",
-                  ),
+                : variant == "default"
+                  ? // Darker than the page in BOTH themes, which needs a pair:
+                    // `--muted` is a step under white in light mode, but in
+                    // dark mode it is 0.269 against `--sidebar`'s 0.205 -- i.e.
+                    // lighter. Dark mode drops to `--background` instead, the
+                    // black the page gradient starts from.
+                    "bg-muted dark:bg-background"
+                  : "border-0 bg-sidebar bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-20 ",
             )}
             id="sidebar"
 

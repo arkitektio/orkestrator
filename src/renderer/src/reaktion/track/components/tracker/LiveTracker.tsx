@@ -66,7 +66,7 @@ export const LiveTracker = ({
 
   return (
     <div className="flex flex-row z-50">
-      <div className="flex-initial my-auto mr-4 dark:text-white cursor-pointer my-auto">
+      <div className="flex-initial my-auto mr-4 text-foreground cursor-pointer my-auto">
         <FiPlay size={"1em"} />
       </div>
 

@@ -71,6 +71,7 @@ export const EditFlowCanvas: React.FC<Props> = ({ reactFlowWrapperRef, save, nod
     onConnect,
     onPaneClick,
     onNodeClick,
+    onNodeDoubleClick,
     onEdgeClick,
     setReactFlowInstance,
   } = useStore(
@@ -85,6 +86,7 @@ export const EditFlowCanvas: React.FC<Props> = ({ reactFlowWrapperRef, save, nod
       onConnect: state.onConnect,
       onPaneClick: state.onPaneClick,
       onNodeClick: state.onNodeClick,
+      onNodeDoubleClick: state.onNodeDoubleClick,
       onEdgeClick: state.onEdgeClick,
       setReactFlowInstance: state.setReactFlowInstance,
     })),
@@ -105,6 +107,7 @@ export const EditFlowCanvas: React.FC<Props> = ({ reactFlowWrapperRef, save, nod
         onConnect={onConnect}
         onPaneClick={onPaneClick}
         onNodeClick={onNodeClick}
+        onNodeDoubleClick={onNodeDoubleClick}
         onEdgeClick={onEdgeClick}
         elementsSelectable={true}
         nodeTypes={nodeTypes}

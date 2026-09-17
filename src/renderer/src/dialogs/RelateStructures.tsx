@@ -93,16 +93,16 @@ export const RelateStructures = (props: {
       <div className="flex flex-col space-y-4">Relating structures...</div>
 
       {error && <div className="text-red-500">Error: {error.message}</div>}
-      {!data && <div className="text-gray-500">Loading...</div>}
+      {!data && <div className="text-muted-foreground">Loading...</div>}
 
       {data?.structureRelationCategories?.map((category) => (
         <div
           key={category.id}
-          className="p-2 border rounded-lg w-full cursor-pointer hover:bg-gray-100"
+          className="p-2 border rounded-lg w-full cursor-pointer hover:bg-muted"
           onClick={() => handleRelationCreation(category)}
         >
           <div className="font-bold">{category.label}</div>
-          <div className="text-sm text-gray-500">{category.description}</div>
+          <div className="text-sm text-muted-foreground">{category.description}</div>
         </div>
       ))}
     </div>

@@ -11,7 +11,7 @@ export const ActionButton = (props: {
       <>
         <Dialog>
           <DialogTrigger asChild>{props.children}</DialogTrigger>
-          <DialogContent className="text-white">
+          <DialogContent className="text-foreground">
             <ActionAssignForm id={props.id} />
           </DialogContent>
         </Dialog>

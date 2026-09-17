@@ -23,7 +23,7 @@ export const SmartDropZone = ({
       key={props.object.id}
       ref={ref}
       className={cn(
-        "group relative over:shadow-xl over:ring-2 over:ring-gray-300 over:rounded-md can-drop:border-gray-200",
+        "group relative over:shadow-xl over:ring-2 over:ring-border over:rounded-md can-drop:border-border",
         className,
       )}
     >
@@ -35,7 +35,7 @@ export const SmartDropZone = ({
           <div
             ref={floatingRef}
             className={cn(
-              "bg-background border border-gray-500 rounded-lg shadow-lg p-2 z-[9999] w-[300px] aspect-square",
+              "bg-background border border-border rounded-lg shadow-lg p-2 z-[9999] w-[300px] aspect-square",
             )}
             style={floatingStyles}
           >

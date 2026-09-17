@@ -39,13 +39,13 @@ const Page = asDetailQueryRoute(useGetServiceInstanceQuery, ({ data }) => {
           <div>
             <div className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl flex flex-col">
               {data.serviceInstance.release.service.identifier}
-              <div className="text-lg text-gray-500">
+              <div className="text-lg text-muted-foreground">
                 {data.serviceInstance.release.service.identifier}
               </div>
-              <div className="text-lg text-gray-700 font-light">
+              <div className="text-lg text-foreground font-light">
                 Provides {data.serviceInstance.release.service.identifier}
               </div>
-              <div className="text-lg text-gray-700 font-light">
+              <div className="text-lg text-foreground font-light">
                 {data.serviceInstance.release.service.description}
               </div>
             </div>

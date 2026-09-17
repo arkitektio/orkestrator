@@ -64,7 +64,7 @@ export const ListButtonLabel = (props: {
         <Badge
           key={index}
           onClick={() => remove(l.value)}
-          className="cursor-pointer px-1 py-1 bg-slate-300 my-2"
+          className="cursor-pointer px-1 py-1 bg-muted my-2"
         >
           {l.label}
         </Badge>
@@ -179,7 +179,7 @@ export const ListSearchField = ({
         const selected = fromFieldValue(field.value);
         return (
         <>
-          <FormItem className={cn("flex flex-col dark:text-white", className)}>
+          <FormItem className={cn("flex flex-col text-foreground", className)}>
             {label != undefined && <FormLabel>{label}</FormLabel>}
             <Command
               shouldFilter={false}

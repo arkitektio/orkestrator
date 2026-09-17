@@ -9,7 +9,7 @@ export const AppAvatar = (props: { clientId: string }) => {
   });
 
   return (
-    <div className="px-2 bg-slate-200 rounded rounded-md inline">
+    <div className="px-2 bg-muted rounded rounded-md inline">
       {data?.client && clientAppIdentifier(data.client)}
     </div>
   );

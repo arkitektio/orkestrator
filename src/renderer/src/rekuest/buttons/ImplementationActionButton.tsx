@@ -16,7 +16,7 @@ export const ImplementationActionButton = ({
       <>
         <Dialog>
           <DialogTrigger asChild>{children}</DialogTrigger>
-          <DialogContent className="text-white max-w-3xl w-full">
+          <DialogContent className="text-foreground max-w-3xl w-full">
             <ImplementationAssignForm {...props} />
           </DialogContent>
         </Dialog>

@@ -40,16 +40,16 @@ export const TaskStatsSidebar = (props: { task: DetailTaskFragment }) => {
         : `${((new Date(endTime).getTime() - new Date(startTime).getTime()) / 1000).toFixed(2)}s`,
       description: "Total walltime taken for this task",
       icon: Clock,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
+      color: "text-chart-3",
+      bgColor: "bg-chart-3/10",
     },
     {
       title: "Events",
       value: String(props.task.events.length),
       description: "Events recorded for this task",
       icon: ListChecks,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
+      color: "text-chart-4",
+      bgColor: "bg-chart-4/10",
     },
   ];
 
@@ -64,7 +64,7 @@ export const TaskStatsSidebar = (props: { task: DetailTaskFragment }) => {
       {statsCards.map((card) => (
         <div
           key={card.title}
-          className="p-4 rounded-lg border dark:border-gray-700 flex items-center gap-4"
+          className="p-4 rounded-lg border dark:border-border flex items-center gap-4"
         >
           <div
             className={`p-3 rounded-lg ${card.bgColor} ${card.color}`}

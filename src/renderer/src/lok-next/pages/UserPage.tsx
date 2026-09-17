@@ -52,7 +52,7 @@ const Page = asDetailQueryRoute(useUserQuery, ({ data }) => {
     >
       {/* Profile Hero Section */}
       <div className="relative mb-10">
-        <div className="h-32 w-full bg-gradient-to-r from-indigo-600/15 via-fuchsia-500/15 to-pink-500/15 dark:from-indigo-500/10 dark:via-fuchsia-500/10 dark:to-pink-500/10 border-b border-border/40" />
+        <div className="h-32 w-full bg-gradient-to-r from-chart-5/15 via-chart-3/15 to-chart-1/15 dark:from-chart-5/10 dark:via-chart-3/10 dark:to-chart-1/10 border-b border-border/40" />
         <div className="pl-6 pr-6 -mt-14 flex flex-row gap-6 items-end max-w-3xl">
           <div className="relative group w-36 h-36 cursor-pointer" onClick={openFileDialog} role="button" aria-label="Change avatar" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFileDialog(); } }}>
             <div className="w-36 h-36 rounded-full ring-4 ring-background shadow-xl overflow-hidden bg-muted flex items-center justify-center text-4xl font-semibold select-none">

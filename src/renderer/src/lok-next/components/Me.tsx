@@ -7,7 +7,7 @@ export const Me = () => {
   const resolve = useResolve();
 
   return (
-    <Avatar className="border-seperator border-white mx-auto cursor-pointer rounded-md">
+    <Avatar className="border-seperator border-border mx-auto cursor-pointer rounded-md">
       <AvatarImage
         src={resolve(data?.me?.profile.avatar?.presignedUrl)}
         alt={data?.me?.username}

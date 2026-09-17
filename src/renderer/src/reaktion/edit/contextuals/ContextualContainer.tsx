@@ -12,7 +12,7 @@ export const ContextualContainer: React.FC<{
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className={cn(
-        "rounded-xl border bg-card text-card-foreground shadow dark:border-gray-700 border-gray-400",
+        "rounded-xl border bg-card text-card-foreground shadow border-border",
         "absolute translate-x-[-50%] z-50 p-2 max-w-[200px] text-xs bg-sidebar flex flex-col opacity-70 data-[found=true]:opacity-100 shadow-xl shadow-xl dark:shadow-xl dark:shadow-xl",
       )}
       data-found={props.active}

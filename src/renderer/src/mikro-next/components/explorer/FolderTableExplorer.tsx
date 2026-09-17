@@ -67,7 +67,7 @@ export const columns: ColumnDef<Item>[] = [
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
-        className="ring-0 border-gray-500 bg-background"
+        className="ring-0 border-border bg-background"
       />
     ),
     cell: ({ row }) => (
@@ -75,7 +75,7 @@ export const columns: ColumnDef<Item>[] = [
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
-        className="ring-0 border-gray-500 bg-background"
+        className="ring-0 border-border bg-background"
       />
     ),
     enableSorting: false,

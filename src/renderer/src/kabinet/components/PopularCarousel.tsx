@@ -20,7 +20,7 @@ export const PopularCarousel = ({ }) => {
 
   return (
     <div className="w-full">
-      <Carousel className="w-full dark:text-white">
+      <Carousel className="w-full dark:text-foreground">
         <CarouselPrevious />
         <CarouselContent>
           {data?.definitions.map((item, index) => (

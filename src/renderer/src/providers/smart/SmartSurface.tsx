@@ -99,7 +99,7 @@ const SmartContextMenuSurface = ({
           SelectionBox's global mousedown handler would clear the selection the
           moment a row is pressed — an action on a multi-selection would then run
           against the single right-clicked item. */}
-      <ContextMenuContent className="dark:border-gray-700 max-w-md" data-nonbreaker>
+      <ContextMenuContent className="dark:border-border max-w-md" data-nonbreaker>
         <SmartMenuContent targetRef={targetRef} />
       </ContextMenuContent>
     </ContextMenu>

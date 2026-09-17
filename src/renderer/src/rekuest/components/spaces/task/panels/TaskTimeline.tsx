@@ -468,7 +468,7 @@ export const TaskTimeline = () => {
 
   return (
     <div
-      className="w-full h-full justify-end text-white @container overflow-y-auto overflow-x-hidden rounded-b-2xl border border-border/60 bg-gradient-to-b from-background to-background/80  cursor-default"
+      className="w-full h-full justify-end text-foreground @container overflow-y-auto overflow-x-hidden rounded-b-2xl border border-border/60 bg-gradient-to-b from-background to-background/80  cursor-default"
       onClick={() => setHighlighted([])}
     >
       <div
@@ -502,7 +502,7 @@ export const TaskTimeline = () => {
         {/* event ticks — one per cluster, label on hover only */}
         <div className="absolute inset-0 flex z-20 pointer-events-none">
           <div className="w-1/12" />
-          <div className="w-11/12 relative border-l border-white/5">
+          <div className="w-11/12 relative border-l border-foreground/5">
             <TooltipProvider delayDuration={100}>
               {eventClusters.map((cluster, index) => {
                 const screen = toScreen(cluster.position)
@@ -519,7 +519,7 @@ export const TaskTimeline = () => {
                         className={`absolute top-0 bottom-0 w-px cursor-default pointer-events-auto ${
                           hasError
                             ? 'bg-rose-500/60 hover:bg-rose-400'
-                            : 'bg-white/15 hover:bg-white/50'
+                            : 'bg-foreground/15 hover:bg-foreground/50'
                         }`}
                         style={{ left: `${screen * 100}%` }}
                       >

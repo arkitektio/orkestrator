@@ -294,7 +294,7 @@ export const ListSearchWidget = (
       name={name}
       render={({ field }) => (
         <>
-          <FormItem className={cn("flex flex-col dark:text-white")}>
+          <FormItem className={cn("flex flex-col text-foreground")}>
             <FormLabel>{props.port.label || props.port.key}</FormLabel>
             <Command
               shouldFilter={false}

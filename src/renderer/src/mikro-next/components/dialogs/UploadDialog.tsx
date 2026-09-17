@@ -83,7 +83,7 @@ export const UploadDialog: React.FC<UploadDialogProps> = ({
 
   const getFileIcon = (file: File) => {
     if (file.type.startsWith("image/")) {
-      return <Image className="h-5 w-5 text-blue-500" />;
+      return <Image className="h-5 w-5 text-chart-3" />;
     } else if (
       file.type.includes("dataset") ||
       file.type.includes("csv") ||
@@ -91,7 +91,7 @@ export const UploadDialog: React.FC<UploadDialogProps> = ({
     ) {
       return <Database className="h-5 w-5 text-green-500" />;
     } else {
-      return <File className="h-5 w-5 text-gray-500" />;
+      return <File className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -124,7 +124,7 @@ export const UploadDialog: React.FC<UploadDialogProps> = ({
             className={cn(
               "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
               dragOver
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                ? "border-chart-3 bg-chart-3/10 dark:bg-chart-3/20"
                 : "border-muted-foreground/25 hover:border-muted-foreground/50",
             )}
             onDrop={handleDrop}

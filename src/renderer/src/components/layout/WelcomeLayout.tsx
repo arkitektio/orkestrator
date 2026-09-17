@@ -37,7 +37,7 @@ export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
   }, []);
 
   return (
-    <div data-testid="welcome-layout" className="flex h-screen flex-col bg-sidebar dark:text-white">
+    <div data-testid="welcome-layout" className="flex h-screen flex-col bg-sidebar text-foreground">
       {/* Windows only, and 0px tall until the pointer touches the top edge;
           nothing at all on macOS, Linux or the web. */}
       <AutoHideTitleBar />

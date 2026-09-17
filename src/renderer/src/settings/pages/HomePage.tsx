@@ -68,9 +68,9 @@ const FaktsViewer: React.FC<{ fakts: unknown }> = ({ fakts }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const renderValue = (value: unknown): React.ReactNode => {
-    if (value === null) return <span className="text-gray-400">None</span>;
+    if (value === null) return <span className="text-muted-foreground">None</span>;
     if (value === undefined)
-      return <span className="text-gray-400">Undefined</span>;
+      return <span className="text-muted-foreground">Undefined</span>;
     if (typeof value === "boolean")
       return (
         <Badge variant={value ? "default" : "secondary"}>
@@ -99,7 +99,7 @@ const FaktsViewer: React.FC<{ fakts: unknown }> = ({ fakts }) => {
       return (
         <div className="ml-4">
           {value.map((item, index) => (
-            <div key={index} className="border-l border-gray-600 pl-2 my-1">
+            <div key={index} className="border-l border-border pl-2 my-1">
               [{index}]: {renderValue(item)}
             </div>
           ))}
@@ -110,7 +110,7 @@ const FaktsViewer: React.FC<{ fakts: unknown }> = ({ fakts }) => {
       return (
         <div className="ml-4">
           {Object.entries(value as Record<string, unknown>).map(([k, v]) => (
-            <div key={k} className="border-l border-gray-600 pl-2 my-1">
+            <div key={k} className="border-l border-border pl-2 my-1">
               <span className="text-blue-300 font-medium">{k}:</span>{" "}
               {renderValue(v)}
             </div>
@@ -160,7 +160,7 @@ const FaktsViewer: React.FC<{ fakts: unknown }> = ({ fakts }) => {
   return (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
         <Input
           placeholder="Search configuration..."
           value={searchTerm}
@@ -240,10 +240,10 @@ const ServiceCard: React.FC<{
         )}
 
         <details className="mt-4">
-          <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">
+          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
             View Raw Configuration
           </summary>
-          <pre className="mt-2 text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-x-auto">
+          <pre className="mt-2 text-xs bg-muted p-3 rounded overflow-x-auto">
             {JSON.stringify(service.instance, null, 2)}
           </pre>
         </details>
@@ -698,8 +698,8 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
             <Card>
               <CardContent className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <Server className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No active services found</p>
+                  <Server className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No active services found</p>
                 </div>
               </CardContent>
             </Card>

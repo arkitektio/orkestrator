@@ -37,7 +37,7 @@ const Page = asDetailQueryRoute(useGetServiceQuery, ({ data }) => {
           <div>
             <div className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl flex flex-col">
               {data.service.identifier}
-              <div className="text-lg text-gray-500">
+              <div className="text-lg text-muted-foreground">
                 {data.service.description}
               </div>
             </div>

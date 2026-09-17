@@ -64,99 +64,99 @@ export const dataTypeConfigs: Partial<Record<ValueKind, DataTypeConfig>> = {
   [ValueKind.String]: {
     icon: Type,
     color: {
-      bg: 'bg-blue-50',
-      text: 'text-blue-700',
-      border: 'border-blue-200'
+      bg: 'bg-chart-1/10',
+      text: 'text-chart-1',
+      border: 'border-chart-1/30'
     },
     label: 'String'
   },
   [ValueKind.Int]: {
     icon: Hash,
     color: {
-      bg: 'bg-green-50',
-      text: 'text-green-700',
-      border: 'border-green-200'
+      bg: 'bg-chart-2/10',
+      text: 'text-chart-2',
+      border: 'border-chart-2/30'
     },
     label: 'Integer'
   },
   [ValueKind.Float]: {
     icon: Hash,
     color: {
-      bg: 'bg-green-50',
-      text: 'text-green-700',
-      border: 'border-green-200'
+      bg: 'bg-chart-2/10',
+      text: 'text-chart-2',
+      border: 'border-chart-2/30'
     },
     label: 'Float'
   },
   [ValueKind.Boolean]: {
     icon: ToggleLeft,
     color: {
-      bg: 'bg-orange-50',
-      text: 'text-orange-700',
-      border: 'border-orange-200'
+      bg: 'bg-chart-3/10',
+      text: 'text-chart-3',
+      border: 'border-chart-3/30'
     },
     label: 'Boolean'
   },
   [ValueKind.Datetime]: {
     icon: Calendar,
     color: {
-      bg: 'bg-teal-50',
-      text: 'text-teal-700',
-      border: 'border-teal-200'
+      bg: 'bg-chart-4/10',
+      text: 'text-chart-4',
+      border: 'border-chart-4/30'
     },
     label: 'Date/Time'
   },
   [ValueKind.Category]: {
     icon: FileText,
     color: {
-      bg: 'bg-indigo-50',
-      text: 'text-indigo-700',
-      border: 'border-indigo-200'
+      bg: 'bg-chart-5/10',
+      text: 'text-chart-5',
+      border: 'border-chart-5/30'
     },
     label: 'Category'
   },
   [ValueKind.OneDVector]: {
     icon: ArrowRightCircle,
     color: {
-      bg: 'bg-purple-50',
-      text: 'text-purple-700',
-      border: 'border-purple-200'
+      bg: 'bg-chart-1/10',
+      text: 'text-chart-1',
+      border: 'border-chart-1/30'
     },
     label: '1D Vector'
   },
   [ValueKind.TwoDVector]: {
     icon: ArrowRightCircle,
     color: {
-      bg: 'bg-purple-50',
-      text: 'text-purple-700',
-      border: 'border-purple-200'
+      bg: 'bg-chart-1/10',
+      text: 'text-chart-1',
+      border: 'border-chart-1/30'
     },
     label: '2D Vector'
   },
   [ValueKind.ThreeDVector]: {
     icon: ArrowRightCircle,
     color: {
-      bg: 'bg-purple-50',
-      text: 'text-purple-700',
-      border: 'border-purple-200'
+      bg: 'bg-chart-1/10',
+      text: 'text-chart-1',
+      border: 'border-chart-1/30'
     },
     label: '3D Vector'
   },
   [ValueKind.FourDVector]: {
     icon: ArrowRightCircle,
     color: {
-      bg: 'bg-purple-50',
-      text: 'text-purple-700',
-      border: 'border-purple-200'
+      bg: 'bg-chart-1/10',
+      text: 'text-chart-1',
+      border: 'border-chart-1/30'
     },
     label: '4D Vector'
   },
   [ValueKind.NVector]: {
     icon: ArrowRightCircle,
     color: {
-      bg: 'bg-purple-50',
-      text: 'text-purple-700',
-      border: 'border-purple-200'
+      bg: 'bg-chart-1/10',
+      text: 'text-chart-1',
+      border: 'border-chart-1/30'
     },
     label: 'N-D Vector'
   }

@@ -26,7 +26,7 @@ export const RoomsCarousel = () => {
       {error && <div>Error: {error.message}</div>}
       {JSON.stringify(error)}
       {data?.rooms.length > 0 && (
-        <Carousel className="w-full dark:text-white">
+        <Carousel className="w-full dark:text-foreground">
           <CarouselPrevious />
           <CarouselContent>
             {data?.rooms?.map((item, index) => (
@@ -61,7 +61,7 @@ export const RoomsCarousel = () => {
         </Carousel>
       )}
       {data?.rooms.length == 0 && (
-        <Carousel className="w-full dark:text-white">
+        <Carousel className="w-full dark:text-foreground">
           <CarouselPrevious />
           <CarouselContent>
             <CarouselItem key={0} className="grid grid-cols-6">

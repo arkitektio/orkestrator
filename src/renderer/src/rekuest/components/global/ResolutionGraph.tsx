@@ -161,11 +161,11 @@ const useLayout = () => {
 
 const ResolutionNode = ({ data }: { data: { label: string } }) => {
   return (
-    <Card className="w-[200px] border-stone-400 shadow-md bg-white dark:bg-stone-950">
+    <Card className="w-[200px] border-border shadow-md bg-card">
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3 !bg-stone-500"
+        className="w-3 h-3 !bg-muted-foreground"
       />
       <CardHeader className="p-3">
         <CardTitle className="text-sm font-bold">{data.label}</CardTitle>
@@ -174,7 +174,7 @@ const ResolutionNode = ({ data }: { data: { label: string } }) => {
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3 !bg-stone-500"
+        className="w-3 h-3 !bg-muted-foreground"
       />
     </Card>
   );
@@ -190,11 +190,11 @@ const ImplementationNode = ({
   targetPosition?: Position;
 }) => {
   return (
-    <Card className="w-[200px] border-blue-500 shadow-md bg-white dark:bg-slate-950">
+    <Card className="w-[200px] border-chart-3 shadow-md bg-card">
       <Handle
         type="target"
         position={targetPosition}
-        className="w-3 h-3 !bg-blue-500"
+        className="w-3 h-3 !bg-chart-3"
       />
       <CardHeader className="p-3">
         <div className="text-xs text-muted-foreground mb-1 truncate">
@@ -206,7 +206,7 @@ const ImplementationNode = ({
       <Handle
         type="source"
         position={sourcePosition}
-        className="w-3 h-3 !bg-blue-500"
+        className="w-3 h-3 !bg-chart-3"
       />
     </Card>
   );
@@ -298,7 +298,7 @@ const DependencyGroupNode = ({
           </button>
           <button
             onClick={data.onAdd}
-            className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-[10px]"
+            className="p-1 bg-chart-3 text-white rounded hover:bg-chart-3/80 text-[10px]"
             title="Add Agent"
           >
             +

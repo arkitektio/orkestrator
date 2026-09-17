@@ -44,7 +44,7 @@ export const StructureWidget = (props: InputWidgetProps) => {
               }
               onBlur={field.onBlur}
               name={field.name}
-              className="text-slate-200"
+              className="text-foreground"
             />
           </FormControl>
           <FormDescription>{props.port.description}</FormDescription>

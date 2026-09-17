@@ -82,6 +82,24 @@ describe("edit flow store undo history during node drags", () => {
     expect(store.temporal.getState().pastStates).toHaveLength(1);
   });
 
+  it("flags the graph dirty when a node is moved", () => {
+    const store = makeStore();
+    expect(store.getState().dirty).toBe(false);
+    store
+      .getState()
+      .onNodesChange([{ type: "position", id: "a", position: { x: 3, y: 3 }, dragging: false }]);
+    expect(store.getState().dirty).toBe(true);
+  });
+
+  it("does not flag the graph dirty on selection or measurement", () => {
+    const store = makeStore();
+    store.getState().onNodesChange([{ type: "select", id: "a", selected: true }]);
+    store
+      .getState()
+      .onNodesChange([{ type: "dimensions", id: "a", dimensions: { width: 10, height: 10 } }]);
+    expect(store.getState().dirty).toBe(false);
+  });
+
   it("does not record selection changes", () => {
     const store = makeStore();
     store.getState().onNodesChange([{ type: "select", id: "a", selected: true }]);
@@ -102,7 +120,6 @@ describe("commits", () => {
 
     store.getState().addActionNodes({
       nodes: [wrapper, child],
-      edges: [makeEdge("new", "mid", "child")],
       connection: { source: "mid", sourceHandle: "return_0", target: "child", targetHandle: "arg_0" },
     });
 
@@ -112,6 +129,19 @@ describe("commits", () => {
     expect(store.getState().edges.some((e) => e.target === "wrap")).toBe(false);
     expect(store.getState().dirty).toBe(true);
     expect(store.getState().contextuals).toEqual([]);
+  });
+
+  it("wires the new node exactly once", () => {
+    const store = createEditFlowStore(linearGraph());
+    const child = makeNode("child", { position: { x: 24, y: 72 }, parentId: "wrap" });
+    const wrapper = makeNode("wrap", { type: "AgentSubFlowNode", ins: [], outs: [], data: { appFilter: "app" } });
+
+    store.getState().addActionNodes({
+      nodes: [wrapper, child],
+      connection: { source: "mid", sourceHandle: "return_0", target: "child", targetHandle: "arg_0" },
+    });
+
+    expect(store.getState().edges.filter((e) => e.target === "child")).toHaveLength(1);
   });
 
   it("is a no-op write when the reducer returns the same state", () => {

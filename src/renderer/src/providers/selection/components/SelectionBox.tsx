@@ -102,7 +102,7 @@ export const SelectionBox = () => {
             setBSelection([]);
           }}
           aria-label="Clear selection"
-          className="ml-3 mr-2 p-1 rounded-full hover:bg-gray-200/10 focus:outline-none"
+          className="ml-3 mr-2 p-1 rounded-full hover:bg-muted focus:outline-none"
         >
           <span className="text-xl leading-none">x</span>
         </button>

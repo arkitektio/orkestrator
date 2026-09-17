@@ -9,7 +9,7 @@ export const Handles = (props: { self: string }) => {
     <div className="absolute top-0 left-0 w-full h-full z-0 group-hover:z-10">
       {!connection.inProgress && (
         <Handle
-          className="w-1 h-1 group-hover:bg-blue-500 hover:opacity-50 opacity-0 transition-opacity duration-300"
+          className="w-1 h-1 group-hover:bg-chart-3 hover:opacity-50 opacity-0 transition-opacity duration-300"
           position={Position.Top}
           style={{
             width: "100%",

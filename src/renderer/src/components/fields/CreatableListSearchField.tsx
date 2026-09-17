@@ -65,7 +65,7 @@ export const ListButtonLabel = (props: {
         <Badge
           key={index}
           onClick={() => remove(l.value)}
-          className="cursor-pointer px-1 py-1 bg-slate-300 my-2"
+          className="cursor-pointer px-1 py-1 bg-muted my-2"
         >
           {l.label}
         </Badge>
@@ -183,7 +183,7 @@ export const CreatableListSearchField = ({
       rules={{ validate: validate }}
       render={({ field }) => (
         <>
-          <FormItem className={cn("flex flex-col dark:text-white", className)}>
+          <FormItem className={cn("flex flex-col text-foreground", className)}>
             {label != undefined && <FormLabel>{label}</FormLabel>}
             <Command
               shouldFilter={false}
@@ -297,7 +297,7 @@ export const CreatableListSearchField = ({
                       )}
                     </div>
                     {inputValue && inputValue.length > 1 && <CommandItem onSelect={() => createValue(inputValue)}>
-                      <PlusIcon className="mr-2"></PlusIcon> Create <pre className="ml-2 inline font-light p-1 bg-slate-700 rounded">{inputValue}</pre>{" "}
+                      <PlusIcon className="mr-2"></PlusIcon> Create <pre className="ml-2 inline font-light p-1 bg-muted rounded">{inputValue}</pre>{" "}
                     </CommandItem>}
                   </CommandList>
                 )}

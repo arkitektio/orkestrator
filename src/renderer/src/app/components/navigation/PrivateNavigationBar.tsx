@@ -33,6 +33,8 @@ import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHo
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
 import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
+import { UploadIsland } from "@/providers/upload/UploadProvider";
+import { DownloadIsland } from "@/providers/download/DownloadProvider";
 
 
 export type INavigationBarProps = {
@@ -406,8 +408,11 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
         <RailTabs />
       </div>
 
-      {/* Running tasks, where a browser puts its now-playing control: in the
-          chrome that is always there, rather than floating over the page. */}
+      {/* Transfers and running tasks, where a browser puts its now-playing
+          control: in the chrome that is always there, rather than floating
+          over the page. Each island renders nothing while it is empty. */}
+      <DownloadIsland />
+      <UploadIsland />
       <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
         <TaskNotificationStack />
       </Guard.Rekuest>

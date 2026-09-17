@@ -17,14 +17,14 @@ const MemoryStructureReturnWidget: React.FC<ReturnWidgetProps> = ({ value }) => 
 
   if (!valid) {
     return (
-      <div className="text-white items-center flex justify-center h-full w-full">
+      <div className="text-foreground items-center flex justify-center h-full w-full">
         Invalid Memory Structure
       </div>
     );
   }
 
   return (
-    <div className="text-white items-center flex justify-center h-full w-full">
+    <div className="text-foreground items-center flex justify-center h-full w-full">
       {data?.memoryDrawer?.label}
     </div>
   );

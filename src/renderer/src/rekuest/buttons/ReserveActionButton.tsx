@@ -11,7 +11,7 @@ export const ReserveActionButton = (props: {
       <>
         <Dialog>
           <DialogTrigger asChild>{props.children}</DialogTrigger>
-          <DialogContent className="text-white">
+          <DialogContent className="text-foreground">
             <ReserveForm id={props.id} />
           </DialogContent>
         </Dialog>

@@ -87,7 +87,7 @@ export default ({
           transform={`translate(-50%, -50%) translate(${centerX}px,${centerY + offset}px)`}
         >
           <div className="flex flex-row gap-2">
-            <div className="text-slate-300">as</div>{" "}
+            <div className="text-muted-foreground">as</div>{" "}
             <div className="text-xs">{data?.role}</div>
           </div>
         </PathEdgePresentation>

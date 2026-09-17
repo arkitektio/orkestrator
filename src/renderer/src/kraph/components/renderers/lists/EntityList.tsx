@@ -295,7 +295,7 @@ const calculateColumns = (
                   ✓
                 </Badge>
               ) : (
-                <div className="h-4 w-4 border border-gray-400 rounded-sm" />
+                <div className="h-4 w-4 border border-border rounded-sm" />
               )}
             </Button>
           </div>
@@ -426,14 +426,14 @@ export const RowEntity = ({
 
   if (connections.length === 0) {
     return (
-      <div className="p-3 w-full text-sm text-muted-foreground bg-slate-900/70">
+      <div className="p-3 w-full text-sm text-muted-foreground bg-card/70">
         No connections recorded
       </div>
     );
   }
 
   return (
-    <div className="p-1 w-full h-full overflow-hidden bg-slate-900/70 flex flex-row gap-3">
+    <div className="p-1 w-full h-full overflow-hidden bg-card/70 flex flex-row gap-3">
       {connections.map((connection) => (
         <Card
           key={connection.id}
@@ -674,7 +674,7 @@ export const EntityList = (props: {
                   setSearchInput(e.target.value);
                   debouncedSetSearch(e.target.value);
                 }}
-                className="bg-black"
+                className="bg-background"
               />
 
             </div>

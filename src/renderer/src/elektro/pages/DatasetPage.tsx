@@ -92,11 +92,11 @@ export const DatasetPage = asDetailQueryRoute(useGetDatasetQuery, ({ data }) => 
       {/* Files */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2 border-b border-border/40 pb-2">
-          <FileIcon className="h-4 w-4 text-slate-500" />
+          <FileIcon className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-lg font-bold tracking-tight">Files</h2>
           <Badge
             variant="outline"
-            className="bg-slate-500/10 text-slate-500 border-slate-500/20 font-semibold text-xs ml-auto"
+            className="bg-muted text-muted-foreground border-border font-semibold text-xs ml-auto"
           >
             {dataset.files?.length ?? 0} Total
           </Badge>

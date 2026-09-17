@@ -92,7 +92,7 @@ export const EnhanceButton = (props: EnhanceButtonProps) => {
 
   if (actions.length === 1) {
     return (
-      <div className="p-[1px] rounded-md bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 inline-flex items-center justify-center shrink-0">
+      <div className="p-[1px] rounded-md bg-gradient-to-r from-chart-5 via-chart-4 to-chart-1 inline-flex items-center justify-center shrink-0">
         <Button
           onClick={() => onEnhance(actions[0])}
           variant="ghost"
@@ -100,14 +100,14 @@ export const EnhanceButton = (props: EnhanceButtonProps) => {
           className="bg-background hover:bg-secondary/80 w-8 h-8 rounded-[5px] shrink-0"
           disabled={loading}
         >
-          <Sparkles className={`w-4 h-4 text-purple-500 ${loading ? "animate-spin" : ""}`} />
+          <Sparkles className={`w-4 h-4 text-chart-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
     )
   }
 
   return (
-    <div className="p-[1px] rounded-md bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 inline-flex items-center justify-center shrink-0">
+    <div className="p-[1px] rounded-md bg-gradient-to-r from-chart-5 via-chart-4 to-chart-1 inline-flex items-center justify-center shrink-0">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -116,7 +116,7 @@ export const EnhanceButton = (props: EnhanceButtonProps) => {
             className="bg-background hover:bg-secondary/80 w-8 h-8 rounded-[5px] shrink-0"
             disabled={loading}
           >
-            <Sparkles className={`w-4 h-4 text-purple-500 ${loading ? "animate-spin" : ""}`} />
+            <Sparkles className={`w-4 h-4 text-chart-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>

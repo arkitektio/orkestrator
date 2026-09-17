@@ -23,18 +23,18 @@ const getFileExtension = (filename: string) => {
 const getFileTypeColor = (filename: string) => {
   const extension = filename.split('.').pop()?.toLowerCase();
   switch (extension) {
-    case 'pdf': return 'bg-red-500/10 text-red-500 border-red-500/20';
+    case 'pdf': return 'bg-chart-1/10 text-chart-1 border-chart-1/20';
     case 'doc':
-    case 'docx': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+    case 'docx': return 'bg-chart-2/10 text-chart-2 border-chart-2/20';
     case 'jpg':
     case 'jpeg':
     case 'png':
-    case 'gif': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+    case 'gif': return 'bg-chart-3/10 text-chart-3 border-chart-3/20';
     case 'mp4':
     case 'avi':
-    case 'mov': return 'bg-purple-500/10 text-purple-500 border-purple-500/20';
-    case 'txt': return 'bg-sky-500/10 text-sky-500 border-sky-500/20';
-    default: return 'bg-slate-500/10 text-slate-500 border-slate-500/20';
+    case 'mov': return 'bg-chart-4/10 text-chart-4 border-chart-4/20';
+    case 'txt': return 'bg-chart-5/10 text-chart-5 border-chart-5/20';
+    default: return 'bg-muted text-muted-foreground border-border';
   }
 };
 

@@ -6,7 +6,7 @@ const DateReturnWidget: React.FC<ReturnWidgetProps> = ({
 }) => {
   const display =
     value == null ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
-  return <div className="text-white items-center flex justify-center h-full w-full">{display}</div>
+  return <div className="text-foreground items-center flex justify-center h-full w-full">{display}</div>
 };
 
 export { DateReturnWidget };

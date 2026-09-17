@@ -78,7 +78,7 @@ export const ListRender = <T extends any>({
         <>
           <ListTitle
             right={
-              <div className="flex flex-row text-gray-700 my-auto">
+              <div className="flex flex-row text-foreground my-auto">
                 {refetch && (
                   <>
                     <ListOffsetter

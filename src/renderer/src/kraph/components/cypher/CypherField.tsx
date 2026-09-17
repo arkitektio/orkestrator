@@ -185,7 +185,7 @@ export const CypherField = ({
       name={name}
       rules={{ validate }}
       render={({ field }) => (
-        <FormItem className="flex flex-col dark:text-white">
+        <FormItem className="flex flex-col text-foreground">
           {label && <FormLabel>{label}</FormLabel>}
           <Editor
             options={{
@@ -197,7 +197,7 @@ export const CypherField = ({
             onChange={field.onChange}
             theme="OneDarkPro"
             beforeMount={handleEditorDidMount}
-            className="w-full h-96 rounded-lg border-2 border-slate-300 dark:border-slate-700 dark:bg-slate-800 overflow-hidden"
+            className="w-full h-96 rounded-lg border-2 border-border dark:bg-card overflow-hidden"
           />
           {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />

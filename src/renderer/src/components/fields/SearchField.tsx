@@ -64,7 +64,7 @@ export const ButtonLabel = (props: {
 
   return (
     <div className="flex flex-row items-center">
-      {option?.label && <div className="text-slate-200">{option.label}</div>}
+      {option?.label && <div className="text-foreground">{option.label}</div>}
       {error}
     </div>
   );
@@ -194,7 +194,7 @@ export const SearchField = ({
         const currentKey = fieldKey(field.value);
         return (
         <>
-          <FormItem className="flex flex-col dark:text-white">
+          <FormItem className="flex flex-col text-foreground">
             {label != undefined && <FormLabel>{label}</FormLabel>}
             <Command
               shouldFilter={false}
@@ -218,7 +218,7 @@ export const SearchField = ({
                       {currentKey !== undefined && (
                         <div
                           className={cn(
-                            "z-8 absolute w-full h-full cursor-pointer flex flex-row items-center bg-slate-800 top-0 left-0 rounded-md px-2 flex h-10 w-full rounded-md  py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 truncate",
+                            "z-8 absolute w-full h-full cursor-pointer flex flex-row items-center bg-background top-0 left-0 rounded-md px-2 flex h-10 w-full rounded-md  py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 truncate",
                           )}
                           onClick={() => {
                             setInputValue("");

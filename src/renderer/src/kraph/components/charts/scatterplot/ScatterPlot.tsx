@@ -191,8 +191,8 @@ const ScatterPlot = (props: {
             onClick={() => setIsLassoMode(!isLassoMode)}
             className={`px-3 py-1 rounded text-sm font-medium ${
               isLassoMode
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                ? "bg-chart-3 text-white"
+                : "bg-muted text-foreground hover:bg-accent"
             }`}
           >
             {isLassoMode

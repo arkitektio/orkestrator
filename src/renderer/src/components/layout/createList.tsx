@@ -79,13 +79,13 @@ export const Offseter = ({
   array?: any[] | undefined | null;
   refetch: () => Promise<any>;
 }) => (
-  <div className="flex flex-row items-center gap-1 text-gray-600">
+  <div className="flex flex-row items-center gap-1 text-muted-foreground">
     {offset != 0 && (
       <Button
         size={"sm"}
         variant={"ghost"}
         type="button"
-        className="hover:text-gray-200 transition-all"
+        className="hover:text-foreground transition-all"
         onClick={() => setOffset(offset - step > 0 ? offset - step : 0)}
       >
         {" "}
@@ -96,7 +96,7 @@ export const Offseter = ({
       <Button
         size={"sm"}
         variant={"ghost"}
-        className="hover:text-gray-200 transition-all "
+        className="hover:text-foreground transition-all "
         onClick={() => setOffset(offset + step)}
       >
         {" "}
@@ -237,7 +237,7 @@ export const createList = <
 
         {actions}
         {smart ? (
-          <smart.NewButton><Button size={"icon"} variant={"ghost"} className="text-gray-600"><Plus className="h-4 w-4 mr-1" /></Button></smart.NewButton>
+          <smart.NewButton><Button size={"icon"} variant={"ghost"} className="text-muted-foreground"><Plus className="h-4 w-4 mr-1" /></Button></smart.NewButton>
         ) : null}
         <Offseter
           offset={pagination.offset || 0}

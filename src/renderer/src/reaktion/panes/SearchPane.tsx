@@ -76,7 +76,7 @@ export const NavigationPane = () => {
           >
             <CubeIcon className="h-4 w-4 my-auto" />
             {run.flow.workspace.title}
-            <div className="text-slate-600 text-xs my-auto">
+            <div className="text-muted-foreground text-xs my-auto">
               <Timestamp date={run.createdAt} relative />
             </div>
           </FlussRun.PaneLink>

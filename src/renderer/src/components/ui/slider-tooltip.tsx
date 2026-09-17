@@ -55,14 +55,14 @@ export const SliderTooltip = React.forwardRef<
         onPointerDown={handlePointerDown}
         {...props}
       >
-        <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-200/20">
-          <SliderPrimitive.Range className="absolute h-full bg-slate-300/40" />
+        <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-muted/20">
+          <SliderPrimitive.Range className="absolute h-full bg-muted-foreground/40" />
         </SliderPrimitive.Track>
         <TooltipProvider>
           <Tooltip open={showTooltipState}>
             <TooltipTrigger asChild>
               <SliderPrimitive.Thumb
-                className="block h-5 w-5 rounded-full border-2 ring-slate-300 border-slate-300 bg-background ring-offset-slate-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                className="block h-5 w-5 rounded-full border-2 ring-border border-border bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                 onMouseEnter={() => setShowTooltipState(true)}
                 onMouseLeave={() => setShowTooltipState(false)}
               />

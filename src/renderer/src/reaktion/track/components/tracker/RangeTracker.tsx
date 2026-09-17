@@ -79,7 +79,7 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
   return (
     <div className="flex flex-row z-50">
       <div
-        className="flex-initial my-auto mr-4 dark:text-white cursor-pointer my-auto"
+        className="flex-initial my-auto mr-4 text-foreground cursor-pointer my-auto"
         onClick={() => setPlay(!play)}
       >
         {play ? <RiStopLine size={"1em"} /> : <FiPlay size={"1em"} />}
@@ -87,7 +87,7 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
 
       <div className="flex-grow relative group my-auto">
         <Card
-          className="group-hover:opacity-100 opacity-0 absolute w-20 h-13 p-1  translate-x-[-50%] translate-y-[-120%] flex items-center justify-center bg-gray-900 dark:bg-gray-800 rounded-md shadow-md"
+          className="group-hover:opacity-100 opacity-0 absolute w-20 h-13 p-1  translate-x-[-50%] translate-y-[-120%] flex items-center justify-center bg-popover rounded-md shadow-md"
           style={{
             left: `${((t - range.min) / (range.max - range.min)) * 100}%`,
           }}
@@ -95,7 +95,7 @@ export const RangeTracker = ({ run }: { run: DetailRunFragment }) => {
           <Timestamp
             date={rangeEvents.find((e) => e?.t == t)?.createdAt}
             relative
-            className="text-xs dark:text-white my-auto mx-auto"
+            className="text-xs text-popover-foreground my-auto mx-auto"
           />
         </Card>
         <Slider

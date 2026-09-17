@@ -64,8 +64,8 @@ export function PropertyListItem({
           </div>
         )}
         {property.searchable && (
-          <div className="p-1 rounded bg-blue-100">
-            <Search className="h-3 w-3 text-blue-700" />
+          <div className="p-1 rounded bg-chart-3/15">
+            <Search className="h-3 w-3 text-chart-3" />
           </div>
         )}
       </div>

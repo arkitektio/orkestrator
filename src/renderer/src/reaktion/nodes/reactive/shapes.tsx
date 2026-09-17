@@ -17,7 +17,7 @@ export type ShapeProps = {
   className?: string;
 };
 
-const CARD = "rounded-md border-blue-400/40 shadow-blue-400/20 dark:border-blue-300 dark:shadow-blue/20 shadow-xl";
+const CARD = "rounded-md border-chart-3/40 shadow-chart-3/20 dark:border-chart-3 dark:shadow-blue/20 shadow-xl";
 
 export const TriangleToRight = ({ implementation }: ShapeProps) => (
   <svg height="40" width="40">

@@ -70,10 +70,10 @@ export default ({
         <PathEdgePresentation
           id={id}
           transform={`translate(-50%, -50%) translate(${centerX}px,${centerY + offset}px)`}
-          className="ring-2 ring-blue ring-blue-200"
+          className="ring-2 ring-blue ring-chart-3"
         >
           <div className="flex flex-row gap-2">
-            <div className="text-slate-300">as</div>{" "}
+            <div className="text-muted-foreground">as</div>{" "}
             <div className="text-xs">{data?.role}</div>
           </div>
         </PathEdgePresentation>

@@ -2,12 +2,10 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropContextualParams,
-  FlowEdge,
   FlowNode,
   SubflowDropContextualParams,
 } from "@/reaktion/types";
-import { nodeIdBuilder, streamToReadable } from "@/reaktion/utils";
-import { createVanillaTransformEdge } from "@/reaktion/validation/integrate";
+import { streamToReadable } from "@/reaktion/utils";
 import { DemandKind } from "@/rekuest/api/graphql";
 import type { Connection } from "@xyflow/react";
 import { useCallback, useMemo, useState } from "react";
@@ -73,17 +71,16 @@ export const DropContextual = ({
           ? node
           : { ...node, position: params.flowPosition };
 
-      const edge: FlowEdge = addingTarget
-        ? createVanillaTransformEdge(nodeIdBuilder(), causing.id, params.causingStream, placed.id, 0, ports)
-        : createVanillaTransformEdge(nodeIdBuilder(), placed.id, 0, causing.id, params.causingStream, placed.data.outs.at(0));
-
+      // Only the `connection` is staged, never a pre-built edge as well:
+      // `addActionNodes` integrates the connection into an edge of its own
+      // (inserting transforms where needed), so handing it a second edge for
+      // the same pair of handles produced two stacked wires.
       const connection: Connection = addingTarget
         ? { source: causing.id, sourceHandle: `return_${params.causingStream}`, target: placed.id, targetHandle: "arg_0" }
         : { source: placed.id, sourceHandle: "return_0", target: causing.id, targetHandle: `arg_${params.causingStream}` };
 
       addActionNodes({
         nodes: wrapper && !subflow ? [wrapper, placed] : [placed],
-        edges: [edge],
         connection,
       });
     },

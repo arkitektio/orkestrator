@@ -53,11 +53,11 @@ export const CommandActionContent = (props: {
       <TooltipTrigger className="flex w-full items-center gap-3 text-left">
         <CommandActionIcon icon={props.icon} svg={props.svg} />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="mr-auto flex text-md text-gray-100">
+          <span className="mr-auto flex text-md text-foreground">
             {props.title}
           </span>
           {props.description ? (
-            <span className="mr-auto text-xs text-gray-400">
+            <span className="mr-auto text-xs text-muted-foreground">
               {props.description}
             </span>
           ) : null}

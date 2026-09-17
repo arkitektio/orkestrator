@@ -110,7 +110,7 @@ export const DragZone: React.FC<{
       ))}
       <div
         className={`${!canDrop && "hidden"
-          } bg-slate-300 border border-gray-800 cursor-pointer rounded text-white  hover:shadow-lg`}
+          } bg-muted border border-border cursor-pointer rounded text-foreground  hover:shadow-lg`}
         ref={ref}
       >
         <div className="truncate p-5">

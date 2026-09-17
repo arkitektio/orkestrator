@@ -68,7 +68,7 @@ const calculateColumns = (
             {row.getIsSelected() ? (
               <Badge className="h-4 w-4 flex items-center justify-center p-0">✓</Badge>
             ) : (
-              <div className="h-4 w-4 border border-gray-400 rounded-sm" />
+              <div className="h-4 w-4 border border-border rounded-sm" />
             )}
           </Button>
         </div>
@@ -300,7 +300,7 @@ export const StructureList = (props: {
                 placeholder="Search structures..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="bg-black"
+                className="bg-background"
               />
             </div>
 

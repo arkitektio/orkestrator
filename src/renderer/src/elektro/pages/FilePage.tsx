@@ -63,7 +63,7 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
       {/* File Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl border shadow-sm bg-slate-500/10 text-slate-500 border-slate-500/20">
+          <div className="p-3 rounded-xl border shadow-sm bg-muted text-muted-foreground border-border">
             <FileIcon className="h-8 w-8" />
           </div>
           <div className="flex-1 min-w-0">
@@ -117,11 +117,11 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
       {file.origins && file.origins.length > 0 && (
         <div className="space-y-4 mb-8 mt-3">
           <div className="flex items-center gap-2 mb-2 border-b border-border/40 pb-2">
-            <LinkIcon className="h-4 w-4 text-indigo-500" />
+            <LinkIcon className="h-4 w-4 text-chart-5" />
             <h2 className="text-lg font-bold tracking-tight">Origin Traces</h2>
             <Badge
               variant="outline"
-              className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20 font-semibold text-xs ml-auto"
+              className="bg-chart-5/10 text-chart-5 border-chart-5/20 font-semibold text-xs ml-auto"
             >
               {file.origins.length} Total
             </Badge>

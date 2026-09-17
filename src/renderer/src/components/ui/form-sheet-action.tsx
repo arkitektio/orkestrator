@@ -53,7 +53,7 @@ export const FormSheetAction: React.FC<FormDialogActionProps> = ({
       <SheetTrigger asChild>
         <Button {...props}>{props.buttonChildren || props.label}</Button>
       </SheetTrigger>
-      <SheetContent className="border-gray-700 text-foreground">
+      <SheetContent className="border-border text-foreground">
         <FormDialogContext.Provider
           value={{ onSubmit: bonSubmit, onError: bonError }}
         >

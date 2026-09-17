@@ -26,7 +26,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
   const mode = getChromeMode();
 
   return (
-    <div className="flex flex-col bg-sidebar dark:text-white h-screen">
+    <div className="flex flex-col bg-sidebar text-foreground h-screen">
       {/* Windows only, and 0px tall until the pointer touches the top edge;
           nothing at all on macOS, Linux or the web. */}
       <AutoHideTitleBar />

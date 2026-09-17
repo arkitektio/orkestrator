@@ -28,7 +28,7 @@ const Agents = (props: { search?: string; onPick: (agent: ListAgentFragment) => 
           <TooltipTrigger asChild>
             <Card
               onClick={() => props.onPick(agent)}
-              className="px-2 py-1 border-solid border-2 border-indigo-400 cursor-pointer"
+              className="px-2 py-1 border-solid border-2 border-chart-5 cursor-pointer"
             >
               {agent.name}
             </Card>

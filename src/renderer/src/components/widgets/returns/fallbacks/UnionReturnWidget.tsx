@@ -4,7 +4,7 @@ import React from "react";
 
 const UnionReturnWidget: React.FC<ReturnWidgetProps> = () => {
   return (
-    <div className="text-white">
+    <div className="text-foreground">
       <NotImplementedYet />
     </div>
   );

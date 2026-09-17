@@ -67,7 +67,7 @@ export const ImageCreator = (props: {
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center p-6 min-h-[200px] gap-2">
-        <div className="p-[1px] rounded-md bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 inline-flex">
+        <div className="p-[1px] rounded-md bg-gradient-to-r from-chart-5 via-chart-4 to-chart-1 inline-flex">
           <Button
             onClick={() => createImage(props.prompt)}
             disabled={loading}
@@ -75,10 +75,10 @@ export const ImageCreator = (props: {
             className="bg-background hover:bg-secondary/80"
           >
             <Sparkles
-              className={`w-4 h-4 mr-2 text-purple-500 ${loading ? "animate-spin" : ""
+              className={`w-4 h-4 mr-2 text-chart-4 ${loading ? "animate-spin" : ""
                 }`}
             />
-            <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent font-semibold">
+            <span className="bg-gradient-to-r from-chart-5 via-chart-4 to-chart-1 bg-clip-text text-transparent font-semibold">
               {loading ? "Dreaming up..." : `Generate ${props.kind} Image`}
             </span>
           </Button>

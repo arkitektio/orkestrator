@@ -94,7 +94,7 @@ export const DocumentsExplorer = (props: {
 
         <div className="flex flex-col gap-2">
           {data?.data?.documents?.map((doc) => (
-            <div key={doc.id} className="border border-gray-300 p-2 rounded">
+            <div key={doc.id} className="border border-border p-2 rounded">
               {doc.structure ? (
                 <DelegatingStructureWidget
                   port={{

@@ -38,7 +38,7 @@ export const ObjectButton = (props: ObjectButtonProps) => {
         {props.children || (
           <Button
             variant={props.variant || "outline"}
-            className={cn(props.className, "text-white")}
+            className={cn(props.className, "text-foreground")}
             size={props.size || "icon"}
           >
             <PlayIcon />
@@ -46,7 +46,7 @@ export const ObjectButton = (props: ObjectButtonProps) => {
         )}
       </PopoverTrigger>
       <PopoverContent
-        className="text-white border-gray-800 px-2 py-2 items-left"
+        className="text-foreground border-border px-2 py-2 items-left"
         data-nonbreaker
       >
         <SmartContext {...props} />

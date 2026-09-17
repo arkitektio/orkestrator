@@ -29,7 +29,7 @@ const TheCard = ({ item }: Props) => {
   return (
     <RekuestImplementation.Smart object={item} >
       <Card
-        className="group border border-gray-200 dark:border-gray-800 aspect-square max-h-lg"
+        className="group border border-border aspect-square max-h-lg"
         style={{
           backgroundSize: `${progress?.progress || 0}% 100%`,
           backgroundImage: `linear-gradient(to right, #10b981 ${progress?.progress}%, #10b981 ${progress?.progress}%)`,
@@ -46,7 +46,7 @@ const TheCard = ({ item }: Props) => {
               </RekuestImplementation.DetailLink>
             </CardTitle>
             <CardDescription>{item.agent.name}</CardDescription>
-            <p className="text-xs text-gray-500">{item.interface}</p>
+            <p className="text-xs text-muted-foreground">{item.interface}</p>
           </div>
         </CardHeader>
         <CardContent>

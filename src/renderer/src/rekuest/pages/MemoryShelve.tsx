@@ -31,8 +31,8 @@ export const MemoryShelvePage = asDetailQueryRoute(
             <Card key={d.id} className="mb-4">
               <div className="flex flex-row justify-between">
                 <div className="flex flex-row gap-2">
-                  <BellIcon className="h-6 w-6 text-neutral-700 dark:text-neutral-300" />
-                  <p className="text-xl font-semibold text-neutral-700 dark:text-neutral-300">
+                  <BellIcon className="h-6 w-6 text-foreground" />
+                  <p className="text-xl font-semibold text-foreground">
                     {d.label} {d.resourceId}
                   </p>
                 </div>

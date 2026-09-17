@@ -51,7 +51,7 @@ export const FormDialogAction: React.FC<FormDialogActionProps> = ({
       <DialogTrigger asChild>
         <Button {...props}>{props.buttonChildren || props.label}</Button>
       </DialogTrigger>
-      <DialogContent className="border-gray-700 text-foreground">
+      <DialogContent className="border-border text-foreground">
         <FormDialogContext.Provider
           value={{ onSubmit: bonSubmit, onError: bonError }}
         >

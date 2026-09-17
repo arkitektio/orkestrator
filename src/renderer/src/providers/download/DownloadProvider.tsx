@@ -1,9 +1,14 @@
-import React, { createContext, useContext, useRef, useState } from "react";
+import React, { createContext, useContext, useRef } from "react";
 import { createStore, useStore } from "zustand";
 import { v4 as uuidv4 } from "uuid";
-import { X, CheckCircle2, AlertCircle, Loader2, ChevronUp, ChevronDown, FolderOpen, ExternalLink } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { X, CheckCircle2, AlertCircle, Loader2, FolderOpen, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  TransferIsland,
+  TransferIslandRow,
+  TransferName,
+  TransferProgress,
+} from "@/providers/transfers/TransferIsland";
 
 export type DownloadStatus = "pending" | "downloading" | "completed" | "error";
 
@@ -162,81 +167,105 @@ export const createDownloadStore = () =>
 
 const DownloadContext = createContext<DownloadStore | null>(null);
 
-const DownloadOverlay: React.FC = () => {
-  const { downloads, cancelDownload, clearCompleted } = useDownload();
-  const [isMinimized, setIsMinimized] = useState(false);
-
-  if (downloads.length === 0) return null;
-
-  const allCompletedOrError = downloads.every(d => d.status === "completed" || d.status === "error");
+/**
+ * Downloads in flight, as an island in the rail, directly above the uploads
+ * and the task island and styled the same way: one soft card, one compact line
+ * per download — icon, name, percentage — a hairline progress bar and the same
+ * band of light sweeping across a row that is still working.
+ *
+ * A finished download keeps its row (nothing evicts it) so its "show in
+ * folder" / "open" controls stay reachable; the X dismisses it.
+ */
+export const DownloadIsland: React.FC = () => {
+  const { downloads, cancelDownload } = useDownload();
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 w-80 max-h-96 pointer-events-auto bg-background border shadow-lg rounded-xl overflow-hidden">
-      <div className="bg-muted p-3 flex justify-between items-center border-b">
-        <span className="text-sm font-semibold">
-          Downloads ({downloads.filter(d => d.status !== 'completed' && d.status !== 'error').length} active)
-        </span>
-        <div className="flex gap-2">
-          {allCompletedOrError && (
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={clearCompleted}>
-              Clear
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsMinimized(!isMinimized)}>
-            {isMinimized ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
-        </div>
-      </div>
+    <TransferIsland
+      show={downloads.length > 0}
+      islandKey="download-island"
+      testId="download-island"
+    >
+      {downloads
+        .slice()
+        .reverse()
+        .map((d) => {
+          const working = d.status === "downloading" || d.status === "pending";
+          return (
+            <TransferIslandRow
+              key={d.id}
+              working={working}
+              testId="download-island-row"
+            >
+              <div className="relative flex min-w-0 items-center gap-2">
+                {d.status === "completed" ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
+                ) : d.status === "error" ? (
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
+                ) : (
+                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+                )}
 
-      {!isMinimized && (
-        <div className="flex flex-col gap-3 p-3 overflow-y-auto max-h-72">
-          {downloads.slice().reverse().map(d => (
-            <div key={d.id} className="flex flex-col gap-1.5 text-sm group">
-              <div className="flex justify-between items-center">
-                <span className="truncate pr-2 font-medium max-w-[200px]" title={d.fileName}>{d.fileName}</span>
-                <div className="flex items-center gap-2">
-                  {d.status === "pending" && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                  {d.status === "downloading" && <span className="text-xs text-muted-foreground">{d.progress.toFixed(0)}%</span>}
-                  {d.status === "completed" && (
-                    <>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {d.savePath && (
-                          <>
-                            <button onClick={() => window.api.showItemInFolder(d.savePath!)} title="Show in folder" className="text-muted-foreground hover:text-foreground">
-                              <FolderOpen className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => window.api.openPath(d.savePath!)} title="Open file" className="text-muted-foreground hover:text-foreground">
-                              <ExternalLink className="h-4 w-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    </>
-                  )}
-                  {d.status === "error" && (
-                    <span title={d.error}>
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                    </span>
-                  )}
-                  {(d.status === "downloading" || d.status === "pending") && (
-                    <button onClick={() => cancelDownload(d.id)} className="text-muted-foreground hover:text-foreground">
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
+                <TransferName name={d.fileName} working={working} />
+
+                {d.status === "downloading" && (
+                  <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                    {d.progress.toFixed(0)}%
+                  </span>
+                )}
+
+                {d.status === "completed" && d.savePath && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground"
+                      onClick={() => window.api.showItemInFolder(d.savePath!)}
+                      aria-label="Show in folder"
+                      title="Show in folder"
+                    >
+                      <FolderOpen className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground"
+                      onClick={() => window.api.openPath(d.savePath!)}
+                      aria-label="Open file"
+                      title="Open file"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => cancelDownload(d.id)}
+                  aria-label={working ? "Cancel download" : "Dismiss download"}
+                  title={working ? "Cancel download" : "Dismiss"}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
               </div>
-              {d.status === "downloading" && (
-                <Progress value={d.progress} className="h-1.5" />
+
+              {working && (
+                <TransferProgress
+                  progress={d.progress}
+                  started={d.status === "downloading"}
+                />
               )}
+
               {d.status === "error" && (
-                <span className="text-xs text-red-500 truncate">{d.error}</span>
+                <p className="relative mt-1 line-clamp-2 break-words text-[11px] leading-snug text-destructive">
+                  {d.error}
+                </p>
               )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            </TransferIslandRow>
+          );
+        })}
+    </TransferIsland>
   );
 };
 
@@ -248,7 +277,6 @@ export const DownloadProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   return (
     <DownloadContext.Provider value={storeRef.current}>
       {children}
-      <DownloadOverlay />
     </DownloadContext.Provider>
   );
 };

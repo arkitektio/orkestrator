@@ -382,7 +382,7 @@ const HopRow = ({
           </span>
           <span
             className={`rounded px-1 text-[9px] font-medium ${
-              meta.kind === "SPARSE" ? "bg-sky-500/15 text-sky-600 dark:text-sky-300" : "bg-muted text-muted-foreground"
+              meta.kind === "SPARSE" ? "bg-chart-2/15 text-chart-2" : "bg-muted text-muted-foreground"
             }`}
           >
             {meta.kind === "SPARSE" ? "matrix" : "table"}

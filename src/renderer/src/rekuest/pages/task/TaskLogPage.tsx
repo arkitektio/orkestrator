@@ -67,7 +67,7 @@ export const TPage = asDetailQueryRoute(
           </Sidebars>
         }
       >
-        <pre className="rounded rounded-md p-3 bg-gray-900 border border-gray-800 text-sm mb-4 overflow-x-auto">
+        <pre className="rounded rounded-md p-3 bg-card border border-border text-sm mb-4 overflow-x-auto">
           {data.task.events.map((event) => (
             <div key={event.id}>[<Timestamp date={event.createdAt} />] {event.kind}[{event.level}]: {event.message} {event.returns && JSON.stringify(event.returns)}</div>
           ))}

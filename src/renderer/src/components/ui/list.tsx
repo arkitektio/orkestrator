@@ -18,7 +18,7 @@ export const ListOffsetter = ({
         size={"sm"}
         variant={"ghost"}
         type="button"
-        className="hover:text-gray-200 transition-all"
+        className="hover:text-foreground transition-all"
         onClick={() => setOffset(offset - step > 0 ? offset - step : 0)}
       >
         {" "}
@@ -29,7 +29,7 @@ export const ListOffsetter = ({
       <Button
         size={"sm"}
         variant={"ghost"}
-        className="hover:text-gray-200 transition-all "
+        className="hover:text-foreground transition-all "
         onClick={() => setOffset(offset + step)}
       >
         {" "}
@@ -46,7 +46,7 @@ export const ListTitle = (props: {
   onClick?: () => void;
 }) => {
   return (
-    <div className="text-xl dark:text-white justify-between flex flex-row">
+    <div className="text-xl text-foreground justify-between flex flex-row">
       <div className="flex-grow my-auto font-semibold text-md">{props.children}</div>
       {props.right && <div className="my-auto">{props.right}</div>}
     </div>

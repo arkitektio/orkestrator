@@ -111,7 +111,7 @@ export const mergeRowSelection = (
 // ticked. The column keeps its width either way, so revealing one does not
 // shift the numbers sideways mid-read.
 const SELECT_REVEAL_CLASSES =
-  "border-gray-500 bg-background opacity-0 ring-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100";
+  "border-border bg-background opacity-0 ring-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100";
 
 const createSelectColumn = (): ColumnDef<Item> => ({
   id: "select",

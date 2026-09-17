@@ -10,7 +10,7 @@ import React, { useMemo } from "react";
 import { useFlowAdapter } from "./adapter";
 import { errorClassName, statusClassName } from "./status";
 
-const BASE = "border-gray-800/40 shadow-accent/30 dark:border-accent dark:shadow-accent/20 shadow-xl";
+const BASE = "border-border/40 shadow-accent/30 dark:border-accent dark:shadow-accent/20 shadow-xl";
 
 const RekuestFilterWidgetInner: React.FC<RekuestFilterNodeProps> = ({
   data: { ins, outs, constants, ...data },

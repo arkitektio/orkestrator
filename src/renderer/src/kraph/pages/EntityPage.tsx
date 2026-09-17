@@ -104,7 +104,7 @@ const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
     >
       <div className="flex flex-col lg:flex-row h-full min-h-[80vh]">
         {/* Left Column: Info */}
-        <div className="w-full lg:w-[450px] xl:w-[500px] flex-shrink-0 flex flex-col gap-8 p-4 lg:p-8 lg:overflow-y-auto lg:h-full lg:border-r bg-black z-20">
+        <div className="w-full lg:w-[450px] xl:w-[500px] flex-shrink-0 flex flex-col gap-8 p-4 lg:p-8 lg:overflow-y-auto lg:h-full lg:border-r bg-background z-20">
           {/* Metadata */}
 
 
@@ -246,7 +246,7 @@ const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
 
         {/* Right Column: Node View */}
         <div className="flex-1 relative min-h-[500px] lg:min-h-auto">
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none hidden lg:block" />
+          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none hidden lg:block" />
           <div className="absolute inset-0 overflow-hidden">
             Currently not implemented
           </div>

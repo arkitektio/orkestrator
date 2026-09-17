@@ -206,7 +206,7 @@ export const CreateableSearchField = ({
                       ))}
                     </CommandGroup>
                     {latestQuery && latestQuery.length > 1 && <CommandItem onSelect={() => createValue(latestQuery)}>
-                      <PlusIcon className="mr-2"></PlusIcon> Create <pre className="ml-2 inline font-light p-1 bg-slate-700 rounded">{latestQuery}</pre>{" "}
+                      <PlusIcon className="mr-2"></PlusIcon> Create <pre className="ml-2 inline font-light p-1 bg-muted rounded">{latestQuery}</pre>{" "}
                     </CommandItem>}
                   </CommandList>
                 </Command>

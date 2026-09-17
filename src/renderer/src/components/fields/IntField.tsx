@@ -32,7 +32,7 @@ export const IntField = (props: FieldProps & { placeholder?: string }) => {
                 field.onChange(e);
               }}
               type="string"
-              className="w-full dark:text-white"
+              className="w-full text-foreground"
             />
           </FormControl>
           <FormDescription>{props.description}</FormDescription>

@@ -281,7 +281,7 @@ export const TimelineRender = ({
 
 export const GanttTimeline = ({
   task,
-  className = "flex flex-grow flex-col text-white @container",
+  className = "flex flex-grow flex-col text-foreground @container",
   panelClassName = "flex flex-col gap-2 relative",
 }: {
   task?: DetailTaskFragment | null;
@@ -305,11 +305,11 @@ export const GanttTimeline = ({
       <div className={panelClassName}>
         <div className="absolute inset-0 flex pointer-events-none z-0">
           <div className="w-2/12"></div>
-          <div className="w-10/12 relative border-l  border-white/5">
+          <div className="w-10/12 relative border-l  border-foreground/5">
             {events.map((event, index) => (
               <div
                 key={`global-event-${index}`}
-                className="absolute top-0 bottom-0 w-px bg-white/20 group"
+                className="absolute top-0 bottom-0 w-px bg-foreground/20 group"
                 style={{ left: `${event.position * 100}%` }}
               >
                 <div className="absolute top-full mt-1 text-[8px] text-muted-foreground whitespace-nowrap -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 px-1 rounded border z-50">
@@ -321,11 +321,11 @@ export const GanttTimeline = ({
         </div>
         <div className="absolute inset-0 flex pointer-events-none z-0">
           <div className="w-2/12"></div>
-          <div className="w-10/12 relative border-l  border-white/5">
+          <div className="w-10/12 relative border-l  border-foreground/5">
             {events.map((event, index) => (
               <div
                 key={`global-event-${index}`}
-                className="absolute bottom-0 w-px bg-white/20 group "
+                className="absolute bottom-0 w-px bg-foreground/20 group "
                 style={{ left: `${event.position * 100}%` }}
               >
                 <div className="-translate-x-1/2 text-xs flex items-center justify-center w-16 p-1 border bg-background/90 rounded-md ">

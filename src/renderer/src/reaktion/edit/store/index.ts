@@ -111,6 +111,7 @@ export interface EditFlowState extends TemporalEditFlowState, UiState {
   onEdgesChange: (changes: EdgeChange[]) => void;
   onPaneClick: (event: ReactMouseEvent) => void;
   onNodeClick: (event: ReactMouseEvent, node: Node) => void;
+  onNodeDoubleClick: (event: ReactMouseEvent, node: Node) => void;
   onEdgeClick: (event: ReactMouseEvent, edge: Edge) => void;
   onConnect: (connection: Connection) => void;
   onConnectStart: (event: MouseEvent | TouchEvent, params: OnConnectStartParams) => void;
@@ -202,10 +203,10 @@ export const createEditFlowStore = (
   const store = createStore<EditFlowState>()(
     temporal(
       (set, get) => {
-        const setNodesOnly = (nodes: FlowNode[], history: boolean) => {
+        const setNodesOnly = (nodes: FlowNode[], history: boolean, dirty = false) => {
           suppressHistory = !history;
           try {
-            set({ nodes, ...deriveNodeIndexes(nodes) });
+            set({ nodes, ...deriveNodeIndexes(nodes), ...(dirty ? { dirty: true } : {}) });
           } finally {
             suppressHistory = false;
           }
@@ -335,8 +336,13 @@ export const createEditFlowStore = (
               setNodesOnly(nextNodes, false);
               return;
             }
+            // A move is a graph edit: node coordinates (including those of
+            // children inside an agent subflow, which are stored relative to
+            // their wrapper) are persisted by `flowNodeToInput`, so a drag has
+            // to flag the graph dirty or the layout is silently lost. Only
+            // position changes count -- selection and measurement do not.
             const isPositionCommit = changes.some((c) => c.type === "position");
-            setNodesOnly(nextNodes, isPositionCommit);
+            setNodesOnly(nextNodes, isPositionCommit, isPositionCommit);
           },
 
           onEdgesChange: (changes) => {
@@ -406,6 +412,25 @@ export const createEditFlowStore = (
               },
               append,
             );
+          },
+
+          // Double-clicking an agent card frames that agent's implementations.
+          // React Flow fires `onNodeClick` twice before this, which leaves the
+          // add-an-action panel open over the very nodes we are zooming to, so
+          // the panels are dismissed first.
+          onNodeDoubleClick: (_event, node) => {
+            if (node.type !== "AgentSubFlowNode") return;
+            const state = get();
+            state.clearPanels();
+            const children = state.nodes
+              .filter((candidate) => candidate.parentId === node.id)
+              .map((child) => ({ id: child.id }));
+            void state.reactFlowInstance?.fitView({
+              nodes: children.length > 0 ? children : [{ id: node.id }],
+              duration: 300,
+              maxZoom: 1.5,
+              padding: 0.2,
+            });
           },
 
           onEdgeClick: (event, edge) => {

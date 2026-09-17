@@ -41,7 +41,7 @@ export const NotFound = () => {
               </div>
             )}
           </div>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Sorry {data?.me?.username || "Stranger"}, this route does not exist.
             It may have been renamed, or the object it pointed to is gone.
           </p>
@@ -64,7 +64,7 @@ export const NotFound = () => {
           )}
           <NavLink
             to="/"
-            className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary-dark"
+            className="px-4 py-2 text-primary-foreground bg-primary rounded-md hover:bg-primary-dark"
           >
             Go Home
           </NavLink>

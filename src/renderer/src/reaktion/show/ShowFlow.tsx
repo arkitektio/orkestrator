@@ -99,15 +99,15 @@ export const ShowFlow: React.FC<Props> = ({ flow, template, preview = false }) =
               proOptions={preview ? { hideAttribution: true } : undefined}
             >
               {!preview && (
-                <Controls className="flex flex-row bg-white gap-2 rounded-md overflow-hidden px-2">
+                <Controls className="flex flex-row bg-card gap-2 rounded-md overflow-hidden px-2">
                   <button
                     onClick={() => setShowEdgeLabels((v) => !v)}
-                    className={cn("hover:bg-primary", showEdgeLabels ? "text-muted" : "text-gray-400")}
+                    className={cn("hover:bg-primary", showEdgeLabels ? "text-muted" : "text-muted-foreground")}
                   >
                     <LetterCaseToggleIcon />
                   </button>
                   <Sheet>
-                    <SheetTrigger className={cn("hover:bg-primary", "text-muted disabled:text-gray-200")}>
+                    <SheetTrigger className={cn("hover:bg-primary", "text-muted disabled:text-muted-foreground")}>
                       <EyeOpenIcon />
                     </SheetTrigger>
                     <SheetContent>
@@ -115,7 +115,7 @@ export const ShowFlow: React.FC<Props> = ({ flow, template, preview = false }) =
                         <SheetTitle>Debug Screen</SheetTitle>
                         <SheetDescription></SheetDescription>
                       </SheetHeader>
-                      <ScrollArea className="h-full dark:text-white">
+                      <ScrollArea className="h-full text-foreground">
                         <pre>{JSON.stringify(nodes, null, 2)}</pre>
                       </ScrollArea>
                     </SheetContent>

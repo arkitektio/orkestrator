@@ -18,8 +18,8 @@ export const EntityCategorySidebar = (props: { category: string }) => {
       value: loading ? "..." : totalGraphs,
       description: "Total number of entities in this category",
       icon: Images,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
+      color: "text-chart-3",
+      bgColor: "bg-chart-3/10",
     },
   ];
 
@@ -47,7 +47,7 @@ export const EntityCategorySidebar = (props: { category: string }) => {
       {statsCards.map((card) => (
         <div
           key={card.title}
-          className="p-4 rounded-lg border dark:border-gray-700 flex items-center gap-4"
+          className="p-4 rounded-lg border dark:border-border flex items-center gap-4"
         >
           <div
             className={`p-3 rounded-lg ${card.bgColor} ${card.color}`}

@@ -206,7 +206,7 @@ export const NetworkEditor = ({
       {/* Stimulators */}
       <section className="space-y-2">
         <GroupHeader
-          icon={<Radio className="h-3.5 w-3.5 text-violet-500" />}
+          icon={<Radio className="h-3.5 w-3.5 text-chart-4" />}
           title="Stimulators"
           count={stimulators.length}
           onAdd={onAddStimulator}
@@ -259,7 +259,7 @@ export const NetworkEditor = ({
       {/* Connections */}
       <section className="space-y-2">
         <GroupHeader
-          icon={<ArrowRight className="h-3.5 w-3.5 text-sky-500" />}
+          icon={<ArrowRight className="h-3.5 w-3.5 text-chart-2" />}
           title="Connections"
           count={connections.length}
           onAdd={onAddConnection}
