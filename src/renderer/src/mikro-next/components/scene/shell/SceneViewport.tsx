@@ -341,8 +341,17 @@ export const DefaultScenePanels = () => (
  *
  * `children` compose the overlay panel stack (see `DefaultScenePanels` for the
  * default shape and `Scene.Column` for what positions it).
+ *
+ * `inCanvas` is the other slot: host-provided R3F content mounted INSIDE the
+ * canvas, in world space, after the scene's own interaction layers — a host
+ * workflow's handles and markers (the registration workspace's gizmo). R3F
+ * bridges React context into the canvas, so a host's own provider above the
+ * viewport reaches these children exactly as the scene's stores do. The scene
+ * neither knows nor cares what is in it; what it draws must follow the same
+ * rules as the scene's own overlays (P17 two-plane rule, P20 handler
+ * attachment).
  */
-export const SceneViewport = (props: { children?: ReactNode }) => {
+export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNode }) => {
   const status = useSceneScopeStatus();
 
   if (status.phase !== "ready") {
@@ -418,6 +427,8 @@ export const SceneViewport = (props: { children?: ReactNode }) => {
           <ScaleGrid />
 
           <SceneModeContent />
+
+          {props.inCanvas}
 
           <BrickSystemProvider />
           <WhenDebug>

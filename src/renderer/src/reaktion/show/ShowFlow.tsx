@@ -21,10 +21,12 @@ import { ShowRiverContext, ShowRiverContextType } from "./context";
 export type Props = {
   flow: FlowFragment;
   template?: DetailImplementationFragment;
+  /** Static thumbnail: no controls or overlays, no pan/zoom, clicks fall through. */
+  preview?: boolean;
 };
 
 /** Read-only rendering of a flow (implementation pages, carousels). */
-export const ShowFlow: React.FC<Props> = ({ flow, template }) => {
+export const ShowFlow: React.FC<Props> = ({ flow, template, preview = false }) => {
   const [showEdgeLabels, setShowEdgeLabels] = useState(false);
 
   // Nodes/edges are derived from the fragment exactly once per flow; React
@@ -45,10 +47,10 @@ export const ShowFlow: React.FC<Props> = ({ flow, template }) => {
   return (
     <ShowRiverContext.Provider value={context}>
       <FlowAdapterProvider adapter={showAdapter}>
-        <div className="h-full w-full" data-disableselect>
+        <div className={cn("h-full w-full", preview && "pointer-events-none")} data-disableselect>
           <div className="flex flex-grow h-full w-full relative">
             <AnimatePresence>
-              {globals.length > 0 && (
+              {!preview && globals.length > 0 && (
                 <div className="absolute top-0 left-0 ml-3 mt-5 z-50">
                   <Card className="max-w-md">
                     <CardHeader>
@@ -80,37 +82,46 @@ export const ShowFlow: React.FC<Props> = ({ flow, template }) => {
               nodes={nodes}
               edges={edges}
               onNodesChange={onNodesChange}
-              elementsSelectable={true}
+              elementsSelectable={!preview}
               nodeTypes={flowNodeTypes}
               edgeTypes={flowEdgeTypes}
               fitView
               nodesConnectable={false}
               nodesDraggable={false}
               nodesFocusable={false}
+              edgesFocusable={!preview}
+              panOnDrag={!preview}
+              zoomOnScroll={!preview}
+              zoomOnPinch={!preview}
+              zoomOnDoubleClick={!preview}
+              preventScrolling={!preview}
               attributionPosition="bottom-right"
+              proOptions={preview ? { hideAttribution: true } : undefined}
             >
-              <Controls className="flex flex-row bg-white gap-2 rounded-md overflow-hidden px-2">
-                <button
-                  onClick={() => setShowEdgeLabels((v) => !v)}
-                  className={cn("hover:bg-primary", showEdgeLabels ? "text-muted" : "text-gray-400")}
-                >
-                  <LetterCaseToggleIcon />
-                </button>
-                <Sheet>
-                  <SheetTrigger className={cn("hover:bg-primary", "text-muted disabled:text-gray-200")}>
-                    <EyeOpenIcon />
-                  </SheetTrigger>
-                  <SheetContent>
-                    <SheetHeader>
-                      <SheetTitle>Debug Screen</SheetTitle>
-                      <SheetDescription></SheetDescription>
-                    </SheetHeader>
-                    <ScrollArea className="h-full dark:text-white">
-                      <pre>{JSON.stringify(nodes, null, 2)}</pre>
-                    </ScrollArea>
-                  </SheetContent>
-                </Sheet>
-              </Controls>
+              {!preview && (
+                <Controls className="flex flex-row bg-white gap-2 rounded-md overflow-hidden px-2">
+                  <button
+                    onClick={() => setShowEdgeLabels((v) => !v)}
+                    className={cn("hover:bg-primary", showEdgeLabels ? "text-muted" : "text-gray-400")}
+                  >
+                    <LetterCaseToggleIcon />
+                  </button>
+                  <Sheet>
+                    <SheetTrigger className={cn("hover:bg-primary", "text-muted disabled:text-gray-200")}>
+                      <EyeOpenIcon />
+                    </SheetTrigger>
+                    <SheetContent>
+                      <SheetHeader>
+                        <SheetTitle>Debug Screen</SheetTitle>
+                        <SheetDescription></SheetDescription>
+                      </SheetHeader>
+                      <ScrollArea className="h-full dark:text-white">
+                        <pre>{JSON.stringify(nodes, null, 2)}</pre>
+                      </ScrollArea>
+                    </SheetContent>
+                  </Sheet>
+                </Controls>
+              )}
             </Graph>
           </div>
         </div>

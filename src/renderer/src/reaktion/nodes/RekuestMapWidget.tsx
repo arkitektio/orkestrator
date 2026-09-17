@@ -1,4 +1,3 @@
-import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ReturnsContainer } from "@/components/widgets/returns/ReturnsContainer";
 import { ActionDescription, useActionDescription } from "@/lib/rekuest/ActionDescription";
@@ -6,7 +5,7 @@ import { RunEventKind } from "@/reaktion/api/graphql";
 import { Args } from "@/reaktion/base/Args";
 import { Constants } from "@/reaktion/base/Constants";
 import { InStream } from "@/reaktion/base/Instream";
-import { NodeShowLayout } from "@/reaktion/base/NodeShow";
+import { NodeDescription, NodeHeader, NodeShowLayout, NodeTitle } from "@/reaktion/base/NodeShow";
 import { OutStream } from "@/reaktion/base/Outstream";
 import { FlussArgPortFragment } from "@/reaktion/api/graphql";
 import { RekuestMapNodeProps } from "@/reaktion/types";
@@ -18,6 +17,11 @@ import { EditActions, useFlowAdapter } from "./adapter";
 import { errorClassName, statusClassName } from "./status";
 
 const BASE = "border-blue-400/40 shadow-blue-400/10 dark:border-blue-300 dark:shadow-blue/20 shadow-xl";
+
+// Wide enough for a title plus a two-to-three line description; the expanded
+// form is a container-query root (zero intrinsic width), so it needs its own floor.
+const MIN_WIDTH = 240;
+const EXPANDED_MIN_WIDTH = 360;
 
 const EditableConstants = ({
   id,
@@ -95,59 +99,54 @@ const RekuestMapWidgetInner: React.FC<RekuestMapNodeProps> = ({
       id={id}
       className={statusClassName(status, errorClassName(errors.length > 0, BASE))}
       selected={selected}
+      minWidth={expanded ? EXPANDED_MIN_WIDTH : MIN_WIDTH}
     >
       {ins.map((s, index) => (
         <InStream key={index} stream={s} id={index} length={ins.length} />
       ))}
 
-      <CardHeader className="p-4">
-        <CardTitle onDoubleClick={() => setExpanded((e) => !e)}>
-          <div className="flex justify-between">
-            {data?.title}
-            {edit && (
-              <div className="group-hover:opacity-100 opacity-0 transition-all duration-3000">
-                <Sheet>
-                  <SheetTrigger>
-                    <GearIcon />
-                  </SheetTrigger>
-                  <SheetContent>
-                    <SheetHeader>
-                      <SheetTitle>These are advanced settings</SheetTitle>
-                      <SheetDescription asChild>
-                        <div>
-                          <EditableConstants
-                            id={id}
-                            ins={ins}
-                            constants={nonGlobalConstants}
-                            constantsMap={data.constantsMap}
-                            edit={edit}
-                          />
-                        </div>
-                      </SheetDescription>
-                    </SheetHeader>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            )}
-          </div>
-          {status && (
-            <div className="text-center font-light text-xs p-1">
-              {status.kind === RunEventKind.Complete && "✅"}
-              {status.kind === RunEventKind.Error && (
-                <span className="text-red-300">❌ {status.exception}</span>
-              )}
-            </div>
+      <NodeHeader>
+        <NodeTitle onDoubleClick={() => setExpanded((e) => !e)}>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="max-w-[15rem] truncate">{data?.title}</span>
+            {status?.kind === RunEventKind.Complete && "✅"}
+          </span>
+          {edit && (
+            <Sheet>
+              <SheetTrigger className="nodrag text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100">
+                <GearIcon />
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>These are advanced settings</SheetTitle>
+                  <SheetDescription asChild>
+                    <div>
+                      <EditableConstants
+                        id={id}
+                        ins={ins}
+                        constants={nonGlobalConstants}
+                        constantsMap={data.constantsMap}
+                        edit={edit}
+                      />
+                    </div>
+                  </SheetDescription>
+                </SheetHeader>
+              </SheetContent>
+            </Sheet>
           )}
-        </CardTitle>
-        <CardDescription>
+        </NodeTitle>
+        {status?.kind === RunEventKind.Error && (
+          <NodeDescription className="text-red-300">❌ {status.exception}</NodeDescription>
+        )}
+        <NodeDescription>
           <ActionDescription description={description} />
           {dependency && (
-            <div className="text-xs text-muted-foreground mt-1">
+            <div className="mt-1 text-muted-foreground/60">
               {dependency.appFilter ?? "any app"}
               {dependency.versionFilter ? `:${dependency.versionFilter}` : ""}
             </div>
           )}
-        </CardDescription>
+        </NodeDescription>
         {expanded && edit && (
           <EditableConstants
             id={id}
@@ -160,7 +159,7 @@ const RekuestMapWidgetInner: React.FC<RekuestMapNodeProps> = ({
         {expanded && status?.kind === RunEventKind.Next && Array.isArray(status.value) && (
           <TrackReturns outs={outs} value={status.value} />
         )}
-      </CardHeader>
+      </NodeHeader>
 
       {outs.map((s, index) => (
         <OutStream key={index} stream={s} id={index} length={outs.length} />

@@ -1,176 +1,26 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { buildAssignInput } from "@/rekuest/assign";
-import { ListRender } from "@/components/layout/ListRender";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
-import { useActionDescription } from "@/lib/rekuest/ActionDescription";
-import { RekuestAction, RekuestImplementation } from "@/linkers";
+import { RekuestAction } from "@/linkers";
 import {
-  TaskEventKind,
-  DetailActionFragment,
+  useActionOverviewQuery,
   useDetailActionQuery,
 } from "@/rekuest/api/graphql";
-import { ArrowRight } from "lucide-react";
-import { useCallback } from "react";
-import { TbMedicalCross } from "react-icons/tb";
-import { TiTick } from "react-icons/ti";
-import MinimalTaskCard from "../components/cards/MinimalTaskCard";
-import MinimalImplementationCard from "../components/cards/MinimalImplementationCard";
-import { useAction } from "../hooks/useAction";
-import { usePortForm } from "../hooks/usePortForm";
-import { ReturnsContainer } from "../widgets/tailwind";
-import PortConstraintBadges from "../components/displays/PortConstraintBadges";
-import { portToLabel } from "../widgets/utils";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
-
-export const DoActionForm = ({ action }: { action: DetailActionFragment }) => {
-  const { assign, latestTask } = useAction({
-    id: action.id,
-  });
-
-  const form = usePortForm({
-    ports: action?.args || [],
-  });
-
-  const onSubmit = (data: any) => {
-    assign(buildAssignInput({
-      action: action.id,
-      args: data,
-      hooks: [],
-    })).then(
-      (_v) => { },
-      (_error) => { },
-    );
-  };
-
-  const { registry } = useWidgetRegistry();
-
-  const yieldEvent = latestTask?.events.find(
-    (x) => x.kind == TaskEventKind.Yield,
-  );
-
-  const errorEvent = latestTask?.events.find(
-    (x) => x.kind == TaskEventKind.Critical,
-  );
-
-
-
-
-
-  return (
-    <>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="rounded flex gap-2xl max-w-[80%] mt-2 gap-2">
-            <Card className="flex-1 p-2">
-              <CardHeader>
-                <CardTitle className="font-light">Arguments</CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <div className="w-full">
-                  <ArgsContainer
-                    registry={registry}
-                    groups={action?.portGroups || []}
-                    ports={action?.args || []}
-                    path={[]}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            <div className="flex-initial h-full flex flex-col ">
-              <Button
-                type="submit"
-                variant={"ghost"}
-                className="my-auto block h-full"
-              >
-                <ArrowRight className="my-auto" />
-              </Button>
-            </div>
-
-            {yieldEvent ? (
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle className="font-light">Outs</CardTitle>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="flex flex-col gap-2">
-                    <ReturnsContainer
-                      registry={registry}
-                      ports={action.returns}
-                      values={yieldEvent?.returns}
-                    ></ReturnsContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle className="font-light">Outs</CardTitle>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="flex flex-col gap-2">
-                    {action?.returns?.map((p) => (
-                      <div>
-                        <div className=" font-bold">{p.label || p.key}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {p.description}
-                        </div>
-
-                        <div className="text-xs text-muted-foreground">
-                          {portToLabel(p)}
-                        </div>
-                        <PortConstraintBadges items={p.provides} className="mt-1" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {errorEvent && (
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle className="font-light text-red-800">
-                    Errors
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="flex flex-col gap-2">
-                    {errorEvent.message}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-
-
-
-
-
-
-
-          </div>
-        </form>
-      </Form>
-    </>
-  );
-};
+import { ActionHeader } from "../components/action/ActionHeader";
+import { ActionSignature } from "../components/action/ActionSignature";
+import { ActionTaskHistory } from "../components/action/ActionTaskHistory";
+import { ProvidedByPanel } from "../components/action/ProvidedByPanel";
+import { LegacyActionTests, TestMatrix } from "../components/action/TestMatrix";
+import { ActionUsageSidebar } from "../sidebars/ActionUsageSidebar";
 
 export const ActionPage = asDetailQueryRoute(useDetailActionQuery, ({ data }) => {
-  const copyHashToClipboard = useCallback(() => {
-    navigator.clipboard.writeText(data?.action?.hash || "");
-  }, [data?.action?.hash]);
-
-  const description = useActionDescription({
-    description: data.action.description || "",
+  // The page describes the action; it does not run it (that is the "Run
+  // Action" local action, in the context menu and the ObjectButton). What it
+  // shows beyond the ports comes from a query of its own: DetailAction is the
+  // assign payload every assign dialog loads, and should not grow with the page.
+  const { data: overviewData } = useActionOverviewQuery({
+    variables: { id: data.action.id },
   });
+  const overview = overviewData?.action;
 
   return (
     <RekuestAction.ModelPage
@@ -181,80 +31,35 @@ export const ActionPage = asDetailQueryRoute(useDetailActionQuery, ({ data }) =>
           <Sidebars.Tab label="Knowledge">
             <RekuestAction.Knowledge object={data?.action} />
           </Sidebars.Tab>
+          <Sidebars.Tab label="Usage">
+            <ActionUsageSidebar id={data.action.id} />
+          </Sidebars.Tab>
         </Sidebars>
       }
     >
-      <div className=" p-6">
-        <div className="mb-3">
-          <h1
-            className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl cursor-pointer"
-            onClick={copyHashToClipboard}
-          >
-            {data?.action?.name}
-          </h1>
-          <p className="mt-3 text-xl text-muted-foreground max-w-[80%]">
-            {description}
-          </p>
-        </div>
-        <DoActionForm action={data.action} />
+      <div className="p-6 space-y-6">
+        <ActionHeader action={data.action} overview={overview} />
 
-        {(data.action.tests?.length || 0) > 0 && (
-          <>
-            <h5 className="font-light text-xl mt-2"> Tests for this Action </h5>
-            <div className="grid grid-cols-2 gap-4 mt-3">
-              {data.action.tests?.map((testCase, key) => (
-                <Card key={key}>
-                  <CardHeader>
-                    <CardTitle>
-                      {testCase.name}
-                      <p className="text-muted mt-3">{testCase.description}</p>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {testCase.runs?.map((result, key) => {
-                      if (result?.implementation_id == null) {
-                        return null;
-                      }
+        <ActionSignature action={data.action} />
 
-                      return (
-                        <div key={key}>
-                          <RekuestImplementation.DetailLink
-                            object={result?.implementation_id}
-                            className="font-bold"
-                          >
-                            {result?.implementation_id}
-                          </RekuestImplementation.DetailLink>
-                          <div>
-                            {result.latestEventKind == TaskEventKind.Completed ? (
-                              <TiTick />
-                            ) : (
-                              <TbMedicalCross />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </>
+        {overview ? (
+          <ProvidedByPanel implementations={overview.implementations} />
+        ) : (
+          <div className="h-40 animate-pulse rounded-xl bg-muted/40" />
         )}
 
+        {overview && overview.testCases && overview.testCases.length > 0 ? (
+          <TestMatrix
+            testCases={overview.testCases}
+            implementations={overview.implementations}
+          />
+        ) : (
+          data.action.tests.length > 0 && (
+            <LegacyActionTests tests={data.action.tests} />
+          )
+        )}
 
-
-
-
-
-
-
-
-        <ListRender array={data?.action?.tasks} title="Tasks">
-          {(item, key) => <MinimalTaskCard item={item} key={key} />}
-        </ListRender>
-        <ListRender array={data?.action?.implementations} title="Implementations">
-          {(item, key) => <MinimalImplementationCard item={item} key={key} />}
-        </ListRender>
+        <ActionTaskHistory id={data.action.id} />
       </div>
     </RekuestAction.ModelPage>
   );

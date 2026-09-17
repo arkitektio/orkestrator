@@ -31,9 +31,14 @@ import { ZSliderPanel } from "./shell/chrome/ZSliderPanel";
  *     </ModelPage>
  *   </Scene.Provider>
  */
-const SceneRoot = (props: { scene: SceneFragment; children?: ReactNode }) => (
+const SceneRoot = (props: {
+  scene: SceneFragment;
+  children?: ReactNode;
+  /** Host R3F content mounted inside the canvas — see `SceneViewport`. */
+  inCanvas?: ReactNode;
+}) => (
   <SceneProvider scene={props.scene}>
-    <SceneViewport>{props.children}</SceneViewport>
+    <SceneViewport inCanvas={props.inCanvas}>{props.children}</SceneViewport>
   </SceneProvider>
 );
 

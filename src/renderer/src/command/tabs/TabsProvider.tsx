@@ -17,12 +17,12 @@ import {
   bootTabs,
   closeOtherTabs,
   closeTab,
-  focusOrOpenForPin,
   focusTab,
   moveTab,
   openTab,
   saveTabs,
   setTabLabel,
+  setTabPinned,
   warmIds as warmIdsOf,
   type LabelSource,
   NEW_TAB_PATH,
@@ -58,7 +58,8 @@ export type TabsValue = {
   closeOthers: (id: string) => void;
   move: (id: string, toIndex: number) => void;
   setLabel: (id: string, label: string, origin?: LabelSource) => void;
-  focusOrOpenForPin: (pinKey: string, to: string, options?: Omit<OpenOptions, "pinKey">) => void;
+  /** Pin or unpin a tab — see `setTabPinned`. */
+  setPinned: (id: string, pinned: boolean) => void;
 };
 
 type Store = {
@@ -215,8 +216,8 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     (id, label, origin) => store.set((s) => setTabLabel(s, id, label, origin)),
     [store],
   );
-  const focusOrOpen = useCallback<TabsValue["focusOrOpenForPin"]>(
-    (pinKey, to, options) => store.set((s) => focusOrOpenForPin(s, pinKey, to, options)),
+  const setPinned = useCallback<TabsValue["setPinned"]>(
+    (id, pinned) => store.set((s) => setTabPinned(s, id, pinned)),
     [store],
   );
 
@@ -270,8 +271,8 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   }, [store, close, focus, open]);
 
   const actions = useMemo(
-    () => ({ open, focus, close, closeOthers, move, setLabel, focusOrOpenForPin: focusOrOpen }),
-    [open, focus, close, closeOthers, move, setLabel, focusOrOpen],
+    () => ({ open, focus, close, closeOthers, move, setLabel, setPinned }),
+    [open, focus, close, closeOthers, move, setLabel, setPinned],
   );
 
   return (
@@ -283,7 +284,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
 
 type Actions = Pick<
   TabsValue,
-  "open" | "focus" | "close" | "closeOthers" | "move" | "setLabel" | "focusOrOpenForPin"
+  "open" | "focus" | "close" | "closeOthers" | "move" | "setLabel" | "setPinned"
 >;
 
 const noop = () => {};
@@ -294,7 +295,7 @@ const ActionsContext = createContext<Actions>({
   closeOthers: noop,
   move: noop,
   setLabel: noop,
-  focusOrOpenForPin: noop,
+  setPinned: noop,
 });
 
 const useStore = (): Store => {
@@ -323,6 +324,14 @@ export const useActiveTabIdOrNull = (): string | null => {
     store ? () => store.get().activeId : noTab,
   );
 };
+
+/**
+ * The tab actions alone: stable, so reading them never re-renders, and inert
+ * (not throwing) with no tab store above. For callers that only ever DO
+ * something to the tabs — a local action row opening one — and are mounted by
+ * the hundred, where `useTabs` would re-render every one on every navigation.
+ */
+export const useTabActions = (): Actions => useContext(ActionsContext);
 
 /** The current tabs snapshot; re-renders on any tab or navigation change. */
 export const useTabsState = (): TabsState => {

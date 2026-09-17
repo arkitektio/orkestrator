@@ -61,7 +61,7 @@ describe("persistence", () => {
 
   it("is global, not per-organization", () => {
     // A preference about this person's screen, not about the tenant's data —
-    // unlike pins and recents, it must survive an organization switch.
+    // unlike tabs and recents, it must survive an organization switch.
     expect(RAIL_WIDTH_STORAGE_KEY).not.toContain("guest");
     expect(RAIL_WIDTH_STORAGE_KEY).not.toMatch(/org|profile/);
   });

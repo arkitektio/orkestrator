@@ -30,6 +30,7 @@ import {
   PutTableDatasetsInFolderMutationVariables,
 } from "@/mikro-next/api/graphql";
 import { linkBuilder } from "@/providers/smart/builder";
+import { sceneRegistrationLink } from "@/mikro-next/components/registration/entry";
 import {
   Boxes,
   Clapperboard,
@@ -320,6 +321,35 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         { scene: selected.object.id },
         { className: 'max-w-3xl' },
       );
+    },
+  },
+  // Interactive registration is its own PAGE (mikro-next/pages/
+  // SceneRegistrationPage — the workspace in components/registration composed
+  // over the viewer), not a dialog and not a mode of the scene page: aligning
+  // data means looking at it, and the scene page stays a viewer. This action is
+  // the way in. Layers carry no smart identifier of their own, so the entry
+  // point is the scene; which layer to move is picked there, next to the reason
+  // any layer cannot be.
+  'register-scene-interactively': {
+    title: 'Align Layers…',
+    description:
+      'Open the registration page for this scene: overlay a layer on the others, move it into place by hand or with landmark pairs, and save the result as its registration',
+    icon: Waypoints,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/scene' },
+      { type: 'nopartner' },
+    ],
+    collections: ['scene'],
+    execute: async ({ state, navigate }) => {
+      const selected = state.left.find(
+        (item) => item.identifier === '@mikro/scene',
+      );
+
+      if (!selected?.object?.id) {
+        throw new Error('No scene selected for Align Layers action');
+      }
+
+      navigate(sceneRegistrationLink(selected.object.id));
     },
   },
   'update-mikro-folder': {

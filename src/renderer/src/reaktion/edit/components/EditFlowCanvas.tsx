@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Graph } from "@/reaktion/base/Graph";
 import { useEditFlowStore, useEditFlowStoreApi } from "@/reaktion/edit/context";
 import { EdgeTypes, NodeTypes } from "@/reaktion/types";
-import { AnimatePresence } from "framer-motion";
 import React, { RefObject } from "react";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
@@ -40,17 +39,12 @@ const IncomingFlowBanner = () => {
 const SaveCard = ({ save }: { save: () => void }) => {
   const hasErrors = useEditFlowStore((s) => s.remainingErrors.length > 0);
   const dirty = useEditFlowStore((s) => s.dirty);
+  if (hasErrors) return null;
   return (
-    <AnimatePresence>
-      {!hasErrors && (
-        <Card className="absolute bottom-0 right-0 mr-3 mb-5 z-50 flex flex-row gap-2 items-center px-4 py-2 border">
-          {dirty && <span className="text-xs text-muted-foreground">Unsaved changes</span>}
-          <Button onClick={save} size="lg">
-            Save
-          </Button>
-        </Card>
-      )}
-    </AnimatePresence>
+    <div className="flex h-9 items-center gap-2 rounded-lg border bg-card px-1 shadow-sm">
+      {dirty && <span className="pl-2 text-xs text-muted-foreground">Unsaved changes</span>}
+      <Button onClick={save}>Save</Button>
+    </div>
   );
 };
 
@@ -100,7 +94,6 @@ export const EditFlowCanvas: React.FC<Props> = ({ reactFlowWrapperRef, save, nod
     <div ref={reactFlowWrapperRef} className="flex flex-grow h-full w-full relative" data-disableselect>
       <ErrorOverlay />
       <IncomingFlowBanner />
-      {save && <SaveCard save={save} />}
       <Contextuals />
       <Graph
         nodes={nodes}
@@ -121,7 +114,10 @@ export const EditFlowCanvas: React.FC<Props> = ({ reactFlowWrapperRef, save, nod
         attributionPosition="bottom-right"
         proOptions={{ hideAttribution: true }}
       />
-      <DefaultControls />
+      <div className="absolute bottom-3 right-3 z-50 flex items-center gap-2">
+        <DefaultControls />
+        {save && <SaveCard save={save} />}
+      </div>
     </div>
   );
 };

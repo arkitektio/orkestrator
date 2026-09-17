@@ -3,7 +3,10 @@ import {
   StructureInput,
   useSendMessageMutation,
 } from "@/alpaka/api/graphql";
-import { toStructureInputs } from "@/alpaka/roomTalkingAbout";
+import {
+  firstMessageAttachments,
+  toStructureInputs,
+} from "@/alpaka/roomTalkingAbout";
 import { Guard, useRekuest } from "@/app/Arkitekt";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useSmartDrop } from "@/providers/smart/hooks";
@@ -18,7 +21,7 @@ import {
 } from "lucide-react";
 import { Card } from "../ui/card";
 import { ChatList } from "./chat-list";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Form } from "@/components/ui/form";
 import { ArgsContainer } from "@/components/widgets/ArgsContainer";
@@ -44,7 +47,9 @@ import {
   useDetailActionQuery,
   DemandKind,
   PortKind,
-  TaskEventKind,
+  TaskDocument,
+  TaskQuery,
+  TaskQueryVariables,
   useCancelMutation,
 } from "@/rekuest/api/graphql";
 import {
@@ -55,8 +60,22 @@ import {
 import { useHashActionWithProgress } from "@/rekuest/hooks/useHashActionWithProgress";
 import { KabinetDefinition } from "@/linkers";
 import { useAssignWithCallback } from "@/rekuest/hooks/useAssign";
+import { useTasks } from "@/rekuest/hooks/useTasks";
+import {
+  ActiveTask,
+  DISMISS_AFTER_MS,
+  applyTaskEvent,
+  bindTask,
+  failTask,
+  isSettled,
+  settleFromTasks,
+  startTask,
+} from "./activeTasks";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+
+/** How long after a message lands a still-spinning pill re-checks its task. */
+const RECHECK_AFTER_MESSAGE_MS = 5000;
 
 type InstallAction = {
   id: string;
@@ -349,23 +368,43 @@ const ReplyerControl = (props: {
   );
 };
 
-export interface ActiveTask {
-  id: string;
-  reference: string;
-  actionName: string;
-  status: 'PENDING' | 'RUNNING' | 'DONE' | 'ERROR' | 'CANCELLED';
-  progress?: number | null;
-  message?: string | null;
-  delegatedName?: string | null;
-}
+export type { ActiveTask } from "./activeTasks";
 
+/**
+ * Settles spinning pills from the cached task list.
+ *
+ * The event callback is the fast path, and it can miss: it is torn down on the
+ * terminal event, so one lost delivery would leave a spinner for good. The task
+ * itself cannot be missed — `TaskUpdater` keeps the cached list current whether
+ * or not a callback heard the event.
+ *
+ * Its own component, mounted only while a pill spins: reading the list here
+ * rerenders on every task event in the app, which `Chat` should not.
+ */
+const PillSettler = (props: {
+  pills: ActiveTask[];
+  onSettle: (settle: (pills: ActiveTask[]) => ActiveTask[]) => void;
+}) => {
+  const { data } = useTasks();
+  const { pills, onSettle } = props;
+
+  useEffect(() => {
+    const known = data?.myTasks;
+    if (known) onSettle((prev) => settleFromTasks(prev, known));
+  }, [data, pills, onSettle]);
+
+  return null;
+};
 
 interface ChatProps {
   isMobile: boolean;
   room: RoomFragment;
+  /** What this chat is about, when the surface showing it knows (a model's
+   *  chat tab). Attached to the opening message. */
+  talkingAbout?: readonly StructureInput[];
 }
 
-export function Chat({ isMobile, room }: ChatProps) {
+export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   const [send, { loading }] = useSendMessageMutation({
     refetchQueries: ["DetailRoom"],
   });
@@ -409,6 +448,20 @@ export function Chat({ isMobile, room }: ChatProps) {
       setSearchParams(nextParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  // A chat started about something carries it on its opening message. Seeded
+  // once per room, so a chip the user removed stays removed; and after the
+  // URL prefill above, which stages the same structures and must not double.
+  const seededRoomId = useRef<string | null>(null);
+  useEffect(() => {
+    if (seededRoomId.current === room.id) return;
+    seededRoomId.current = room.id;
+
+    const attachments = firstMessageAttachments(room, talkingAbout);
+    if (attachments.length === 0) return;
+
+    setStagedStructures((prev) => (prev.length > 0 ? prev : attachments));
+  }, [room, talkingAbout]);
 
   const { data: actionsData } = useAllActionsQuery({
     variables: {
@@ -455,49 +508,75 @@ export function Chat({ isMobile, room }: ChatProps) {
   const [activeTasks, setActiveTasks] = useState<ActiveTask[]>([]);
 
   const { assign } = useAssignWithCallback({
-    onDone: (event) => {
-      setActiveTasks((prev) => {
-        return prev.map((ass) => {
-          if (ass.reference === event.task.reference) {
-            let status: ActiveTask["status"] = ass.status;
-            if (event.kind === TaskEventKind.Completed) {
-              status = "DONE";
-            } else if (event.kind === TaskEventKind.Failed) {
-              status = "ERROR";
-            } else if (event.kind === TaskEventKind.Cancelled) {
-              status = "CANCELLED";
-            } else {
-              status = "RUNNING";
-            }
-
-            return {
-              ...ass,
-              status,
-              progress: event.progress !== undefined && event.progress !== null ? event.progress : ass.progress,
-              message: event.message || ass.message,
-              delegatedName: event.delegatedTo?.implementation?.action?.name || ass.delegatedName,
-            };
-          }
-          return ass;
-        });
-      });
-    },
+    onDone: (event) => setActiveTasks((prev) => applyTaskEvent(prev, event)),
   });
 
+  // If the subscription itself dropped the terminal event, the cache that
+  // `PillSettler` reads is stale too.
+  // A message landing while a pill still spins is the cue that its replyer may
+  // be finished: ask the server once, a moment later.
+  const rekuest = useRekuest();
+  const messageCount = room.messages.length;
+  const activeTasksRef = useRef(activeTasks);
+  activeTasksRef.current = activeTasks;
   useEffect(() => {
-    const doneTasks = activeTasks.filter((ass) => ass.status === "DONE");
-    if (doneTasks.length > 0) {
-      const timers = doneTasks.map((ass) => {
-        return setTimeout(() => {
-          setActiveTasks((prev) => prev.filter((p) => p.reference !== ass.reference));
-        }, 3000);
+    if (!rekuest) return undefined;
+
+    const timer = setTimeout(() => {
+      const spinning = activeTasksRef.current.filter(
+        (task) => task.id && !isSettled(task.status),
+      );
+      spinning.forEach((pill) => {
+        void rekuest
+          .query<TaskQuery, TaskQueryVariables>({
+            query: TaskDocument,
+            variables: { id: pill.id },
+            fetchPolicy: "network-only",
+          })
+          .then(({ data }) => {
+            const task = data?.task;
+            if (task) setActiveTasks((prev) => settleFromTasks(prev, [task]));
+          })
+          .catch(() => {
+            // A failed re-check changes nothing; the pill keeps its cancel button.
+          });
       });
-      return () => {
-        timers.forEach((t) => clearTimeout(t));
-      };
-    }
-    return undefined;
+    }, RECHECK_AFTER_MESSAGE_MS);
+
+    return () => clearTimeout(timer);
+  }, [messageCount, rekuest]);
+
+  // Every settled pill leaves on its own. One timer per pill, started when it
+  // settles and left alone after: restarting them on each state change let the
+  // progress events of another reply keep a finished pill up indefinitely.
+  const dismissTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  useEffect(() => {
+    const timers = dismissTimers.current;
+
+    activeTasks.forEach((task) => {
+      if (!isSettled(task.status) || timers.has(task.reference)) return;
+      timers.set(
+        task.reference,
+        setTimeout(() => {
+          timers.delete(task.reference);
+          setActiveTasks((prev) => prev.filter((p) => p.reference !== task.reference));
+        }, DISMISS_AFTER_MS[task.status]),
+      );
+    });
+
+    timers.forEach((timer, reference) => {
+      if (activeTasks.some((task) => task.reference === reference)) return;
+      clearTimeout(timer);
+      timers.delete(reference);
+    });
   }, [activeTasks]);
+  useEffect(() => {
+    const timers = dismissTimers.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
 
   const dismissTask = (reference: string) => {
     setActiveTasks((prev) => prev.filter((ass) => ass.reference !== reference));
@@ -521,6 +600,43 @@ export function Chat({ isMobile, room }: ChatProps) {
     }
   };
 
+  /** Assign the selected replyer to a message, with a pill to follow it. */
+  const runReplyer = async (messageId: string) => {
+    if (!selectedActionId || selectedActionId === "none" || !messageKey || !action) {
+      return;
+    }
+
+    const rawFormValues = form.getValues();
+    const formattedFormValues = submittedDataToRekuestFormat(rawFormValues, action.args as any);
+
+    const assignArgs: Record<string, any> = {
+      ...formattedFormValues,
+      [messageKey]: {
+        __identifier: "@alpaka/message",
+        object: messageId,
+      },
+    };
+
+    const reference = uuidv4();
+    setActiveTasks((prev) => startTask(prev, reference, action.name));
+
+    try {
+      const task = await assign(buildAssignInput({
+        action: selectedActionId,
+        args: assignArgs,
+        reference,
+      }));
+
+      setActiveTasks((prev) => bindTask(prev, reference, task));
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Replyer failed: ${err.message || err}`);
+      setActiveTasks((prev) =>
+        failTask(prev, reference, err.message || "Failed to trigger"),
+      );
+    }
+  };
+
   const handleRereply = async (messageId: string) => {
     if (selectedActionId && selectedActionId !== "none" && messageKey && action) {
       const isValid = await form.trigger();
@@ -529,56 +645,7 @@ export function Chat({ isMobile, room }: ChatProps) {
         return;
       }
 
-      const rawFormValues = form.getValues();
-      const formattedFormValues = submittedDataToRekuestFormat(rawFormValues, action.args as any);
-
-      const assignArgs: Record<string, any> = {
-        ...formattedFormValues,
-        [messageKey]: {
-          __identifier: "@alpaka/message",
-          object: messageId,
-        },
-      };
-
-      const reference = uuidv4();
-
-      setActiveTasks((prev) => [
-        ...prev,
-        {
-          id: "",
-          reference,
-          actionName: action.name,
-          status: "PENDING",
-          progress: null,
-          message: "Assigning...",
-        },
-      ]);
-
-      try {
-        const task = await assign(buildAssignInput({
-          action: selectedActionId,
-          args: assignArgs,
-          reference,
-        }));
-
-        setActiveTasks((prev) =>
-          prev.map((ass) =>
-            ass.reference === reference
-              ? { ...ass, id: task.id, status: "RUNNING" }
-              : ass
-          )
-        );
-      } catch (err: any) {
-        console.error(err);
-        toast.error(`Replyer failed: ${err.message || err}`);
-        setActiveTasks((prev) =>
-          prev.map((ass) =>
-            ass.reference === reference
-              ? { ...ass, status: "ERROR", message: err.message || "Failed to trigger" }
-              : ass
-          )
-        );
-      }
+      await runReplyer(messageId);
     }
   };
 
@@ -655,57 +722,8 @@ export function Chat({ isMobile, room }: ChatProps) {
 
       setStagedStructures([]);
 
-      if (createdMessage && selectedActionId && selectedActionId !== "none" && messageKey && action) {
-        const rawFormValues = form.getValues();
-        const formattedFormValues = submittedDataToRekuestFormat(rawFormValues, action.args as any);
-
-        const assignArgs: Record<string, any> = {
-          ...formattedFormValues,
-          [messageKey]: {
-            __identifier: "@alpaka/message",
-            object: createdMessage.id,
-          },
-        };
-
-        const reference = uuidv4();
-
-        setActiveTasks((prev) => [
-          ...prev,
-          {
-            id: "",
-            reference,
-            actionName: action.name,
-            status: "PENDING",
-            progress: null,
-            message: "Assigning...",
-          },
-        ]);
-
-        try {
-          const task = await assign(buildAssignInput({
-            action: selectedActionId,
-            args: assignArgs,
-            reference,
-          }));
-
-          setActiveTasks((prev) =>
-            prev.map((ass) =>
-              ass.reference === reference
-                ? { ...ass, id: task.id, status: "RUNNING" }
-                : ass
-            )
-          );
-        } catch (err: any) {
-          console.error(err);
-          toast.error(`Replyer failed: ${err.message || err}`);
-          setActiveTasks((prev) =>
-            prev.map((ass) =>
-              ass.reference === reference
-                ? { ...ass, status: "ERROR", message: err.message || "Failed to trigger" }
-                : ass
-            )
-          );
-        }
+      if (createdMessage) {
+        await runReplyer(createdMessage.id);
       }
     } catch (error: any) {
       console.error(error);
@@ -755,6 +773,9 @@ export function Chat({ isMobile, room }: ChatProps) {
             </Card>
           </div>
         </div>
+      )}
+      {activeTasks.some((task) => !isSettled(task.status)) && (
+        <PillSettler pills={activeTasks} onSettle={setActiveTasks} />
       )}
       <ChatList
         messages={sortedMessages}

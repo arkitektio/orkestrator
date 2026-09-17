@@ -70,7 +70,13 @@ const dragOnto = (m: DragDropManager, targets: Map<Element, Identifier>, node: E
 const LONG_LABEL =
   "an_open_tab_whose_title_is_far_longer_than_two_hundred_and_forty_pixels_allows";
 
-const tab = (id: string, label: string) => ({ id, label, lastActiveAt: 0, history: {} });
+const tab = (id: string, label: string, pinned = false) => ({
+  id,
+  label,
+  lastActiveAt: 0,
+  history: {},
+  ...(pinned ? { pinned } : {}),
+});
 
 const value = (over: Record<string, unknown> = {}) => ({
   tabs: [tab("t1", "One"), tab("t2", "Two")],
@@ -79,6 +85,7 @@ const value = (over: Record<string, unknown> = {}) => ({
   close: vi.fn(),
   closeOthers: vi.fn(),
   open: vi.fn(),
+  setPinned: vi.fn(),
   ...over,
 });
 
@@ -139,6 +146,56 @@ describe("the Open strip", () => {
   it("keeps its heading visible while the list scrolls", () => {
     renderStrip();
     expect(screen.getByText("Open").parentElement?.className).toContain("sticky");
+  });
+});
+
+describe("pinning a tab", () => {
+  const pinnedStrip = () => value({ tabs: [tab("t1", "One", true), tab("t2", "Two")] });
+
+  it("pins from the hover control without also focusing", () => {
+    const v = value();
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+    act(() => screen.getByLabelText("Pin One").click());
+    expect(v.setPinned).toHaveBeenCalledWith("t1", true);
+    expect(v.focus).not.toHaveBeenCalled();
+  });
+
+  it("unpins from the same control", () => {
+    const v = pinnedStrip();
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+    act(() => screen.getByLabelText("Unpin One").click());
+    expect(v.setPinned).toHaveBeenCalledWith("t1", false);
+  });
+
+  it("hides the pin at rest until the tab is pinned, then keeps it showing", () => {
+    // The pin IS the indicator — there is no pinned section to be listed in.
+    tabsValue.mockReturnValue(pinnedStrip());
+    renderStrip();
+    expect(screen.getByLabelText("Pin Two").className).toContain("opacity-0");
+    const unpin = screen.getByLabelText("Unpin One");
+    expect(unpin.className).not.toContain("opacity-0");
+    expect(unpin.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("puts no close under the pointer on a pinned tab", () => {
+    tabsValue.mockReturnValue(pinnedStrip());
+    renderStrip();
+    expect(screen.queryByLabelText("Close One")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Close Two")).toBeInTheDocument();
+  });
+
+  it("keeps the pin where it is when the close goes, so a second click cannot land on it", () => {
+    // Unpinning must not slide the close under the pointer that just clicked:
+    // the pin is followed by the same one slot either way.
+    tabsValue.mockReturnValue(pinnedStrip());
+    renderStrip();
+    expect(screen.getByLabelText("Unpin One").nextElementSibling).not.toBeNull();
+    expect(screen.getByLabelText("Unpin One").nextElementSibling?.tagName).toBe("SPAN");
+    expect(screen.getByLabelText("Pin Two").nextElementSibling).toBe(
+      screen.getByLabelText("Close Two"),
+    );
   });
 });
 

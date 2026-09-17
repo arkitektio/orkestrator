@@ -1,6 +1,5 @@
-import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RunEventKind } from "@/reaktion/api/graphql";
-import { NodeShowLayout } from "@/reaktion/base/NodeShow";
+import { NodeDescription, NodeHeader, NodeShowLayout, NodeTitle } from "@/reaktion/base/NodeShow";
 import { OutStream } from "@/reaktion/base/Outstream";
 import { ArgNodeProps } from "@/reaktion/types";
 import { portToLabel } from "@/rekuest/widgets/utils";
@@ -21,10 +20,10 @@ const ArgWidgetInner: React.FC<ArgNodeProps> = ({ data: { outs }, id, selected }
       id={id}
       selected={selected}
     >
-      <CardHeader className="p-4">
-        <CardTitle>Inputs {status?.kind === RunEventKind.Complete && "✅"}</CardTitle>
-        <CardDescription>{outs.at(0)?.map((o) => portToLabel(o)).join(" | ")}</CardDescription>
-      </CardHeader>
+      <NodeHeader>
+        <NodeTitle>Inputs {status?.kind === RunEventKind.Complete && "✅"}</NodeTitle>
+        <NodeDescription className="w-auto min-w-0 max-w-[16rem]">{outs.at(0)?.map((o) => portToLabel(o)).join(" | ")}</NodeDescription>
+      </NodeHeader>
       {outs.map((s, index) => (
         <OutStream key={index} stream={s} id={index} length={outs.length} />
       ))}

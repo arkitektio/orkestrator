@@ -50,6 +50,30 @@ query AllActions(
   }
 }
 
+query BrowseActions(
+  $pagination: OffsetPaginationInput
+  $filters: ActionFilter
+  $ordering: [ActionOrder!]
+) {
+  actions(ordering: $ordering, pagination: $pagination, filters: $filters) {
+    ...BrowseAction
+  }
+}
+
+query ActionOverview($id: ID!) {
+  action(id: $id) {
+    ...ActionOverview
+  }
+}
+
+# Hash only (copy-hash local action when the structure carries no hash).
+query ActionHash($id: ID!) {
+  action(id: $id) {
+    id
+    hash
+  }
+}
+
 query AllPrimaryActions(
   $pagination: OffsetPaginationInput
   $filters: ActionFilter

@@ -7,14 +7,14 @@ import { smartRegistry } from "@/providers/smart/registry";
 import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
 import type { PassDownProps } from "@/providers/smart/extensions/types";
 import { CommandGroup } from "cmdk";
-import { ArrowRight, Pin } from "lucide-react";
+import { ArrowRight, Pin, PinOff } from "lucide-react";
 import { useMemo } from "react";
 import useReactRouterBreadcrumbs from "use-react-router-breadcrumbs";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { matchesFilter, rankByFilter } from "../filter";
 import { useOpenTarget } from "../useOpenTarget";
-import { usePins } from "../PinsProvider";
+import { useTabs } from "../tabs/TabsProvider";
 import { APP_COMMANDS } from "./appCommands";
 import { ROUTE_CATALOG, searchRoutes } from "./routeCatalog";
 import { breadcrumbText } from "@/lib/breadcrumbText";
@@ -42,8 +42,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   const { setTheme, toggleTheme } = useTheme();
   const actions = Arkitekt.useActions();
   const openTarget = useOpenTarget();
-  const { pin, isCurrentPinned, canPin } = usePins();
-  const { pathname } = useLocation();
+  const { activeTab, setPinned } = useTabs();
 
   const moduleRows = useMemo(
     () =>
@@ -80,16 +79,19 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
     );
   }, [filter]);
 
-  // Mirrors the rail's "+" so the same thing is reachable without the pointer.
-  // Hidden when it would be a no-op: signed out (no membership to pin into),
-  // already pinned, or the dashboard, which the rail already takes you to.
-  const canPinHere = canPin && pathname !== "/" && !isCurrentPinned;
+  // Mirrors the pin on the tab's row in the rail, so the same thing is
+  // reachable without the pointer — in both directions, since a pin you cannot
+  // undo from where you made it is half a control.
+  const tabPinned = Boolean(activeTab.pinned);
   const pinRow = useMemo(
     () =>
-      canPinHere && matchesFilter(["Pin current page", "bookmark", "keep"], filter)
+      matchesFilter(
+        tabPinned ? ["Unpin this tab", "pin", "release"] : ["Pin this tab", "pin", "keep"],
+        filter,
+      )
         ? [{ label: currentPageLabel(breadcrumbs) }]
         : [],
-    [canPinHere, filter, breadcrumbs],
+    [tabPinned, filter, breadcrumbs],
   );
 
   const commandRows = useMemo(
@@ -174,14 +176,12 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
       )}
 
       {pinRow.length > 0 && (
-        <CommandGroup heading={<GroupHeading>This page</GroupHeading>}>
+        <CommandGroup heading={<GroupHeading>This tab</GroupHeading>}>
           <CommandActionRow
-            title="Pin current page"
+            title={tabPinned ? "Unpin this tab" : "Pin this tab"}
             description={pinRow[0].label}
-            icon={Pin}
-            onSelect={() =>
-              run(() => pin({ kind: "route", route: pathname, label: pinRow[0].label }))
-            }
+            icon={tabPinned ? PinOff : Pin}
+            onSelect={() => run(() => setPinned(activeTab.id, !tabPinned))}
           />
         </CommandGroup>
       )}

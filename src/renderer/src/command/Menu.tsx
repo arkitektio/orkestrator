@@ -27,6 +27,7 @@ import { createElement, Suspense, useMemo } from "react";
 import { useCommandPalette } from "./CommandPaletteProvider";
 import { resolveContextObjects } from "./contextObjects";
 import { CyclingPlaceholder } from "./CyclingPlaceholder";
+import { ApplicableAsk } from "./sources/ApplicableAsk";
 import { ApplicableNavigation } from "./sources/ApplicableNavigation";
 import { ApplicableRecents } from "./sources/ApplicableRecents";
 import { ApplicableEntitySearch } from "./sources/entity/ApplicableEntitySearch";
@@ -365,6 +366,16 @@ export const CommandMenu = (props: {
                     onDone={closePalette}
                   />
                   {!hasContext && actionSources}
+                  {/* Whatever was typed can be asked, so a query that matches
+                      nothing still has a row. Below what matched — a hit beats
+                      a question — and above the entity search, whose late
+                      results would otherwise push it around. */}
+                  <ApplicableAsk
+                    filter={searchFilter}
+                    objects={objects}
+                    partners={props.partners}
+                    onDone={closePalette}
+                  />
                   {/* Last: the only async source, so late results never shove
                       the synchronous rows out from under the cursor. */}
                   <ApplicableEntitySearch

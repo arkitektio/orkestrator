@@ -110,6 +110,38 @@ export const eventKindColor = (kind: TaskEventKind): string => {
   }
 };
 
+/**
+ * Background tint for the brief flash a row gives when an event of this kind
+ * arrives. Same hue per kind as {@link eventKindColor}, so a yield reads purple
+ * and a failure red wherever they show up. Literal class names — Tailwind only
+ * sees what is spelled out.
+ */
+export const eventKindTint = (
+  kind: TaskEventKind | null | undefined,
+): string => {
+  switch (kind) {
+    case TaskEventKind.Completed:
+      return "bg-green-500/25";
+    case TaskEventKind.Yield:
+      return "bg-purple-500/25";
+    case TaskEventKind.Failed:
+    case TaskEventKind.Critical:
+      return "bg-red-500/25";
+    case TaskEventKind.Cancelled:
+    case TaskEventKind.Cancelling:
+    case TaskEventKind.Interrupted:
+    case TaskEventKind.Interrupting:
+      return "bg-orange-400/25";
+    case TaskEventKind.Bound:
+    case TaskEventKind.Delegate:
+      return "bg-blue-500/25";
+    case TaskEventKind.Progress:
+      return "bg-yellow-500/20";
+    default:
+      return "bg-primary/15";
+  }
+};
+
 /** Fill + border classes for gantt/timeline bars keyed by event kind. */
 export const statusBarColor = (
   status: TaskEventKind | undefined | string,

@@ -7,11 +7,12 @@ import {
 } from "@/components/hover/HoverShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { RekuestImplementation } from "@/linkers";
 import { Object } from "@/types";
 import { Zap } from "lucide-react";
 import { TaskEventKind, useHoverActionQuery } from "../../api/graphql";
+import { deriveAvailability } from "../../lib/actionBrowse";
+import { AgentStatusDot, agentStatus } from "../displays/AgentStatusDot";
 
 export const ActionHoverCard = ({ object }: { object: Object }) => {
   const { openDialog } = useDialog();
@@ -41,9 +42,7 @@ export const ActionHoverCard = ({ object }: { object: Object }) => {
       a.latestEventKind === TaskEventKind.Failed ||
       a.latestEventKind === TaskEventKind.Critical,
   ).length;
-  const activeAgents = action.implementations.filter(
-    (i) => i.agent.active,
-  ).length;
+  const availability = deriveAvailability(action.implementations);
 
   return (
     <HoverShell
@@ -70,7 +69,7 @@ export const ActionHoverCard = ({ object }: { object: Object }) => {
       <div className="flex flex-col gap-1">
         <HoverRow
           label="Implementations"
-          value={`${action.implementations.length} (${activeAgents} active)`}
+          value={`${availability.total} (${availability.online} online)`}
         />
         <HoverRow
           label="Recent runs"
@@ -95,12 +94,7 @@ export const ActionHoverCard = ({ object }: { object: Object }) => {
                 object={impl}
                 className="flex flex-row items-center gap-2 text-xs rounded px-1 py-0.5 hover:bg-muted transition-colors"
               >
-                <span
-                  className={cn(
-                    "h-1.5 w-1.5 rounded-full shrink-0",
-                    impl.agent.active ? "bg-green-500" : "bg-muted-foreground/40",
-                  )}
-                />
+                <AgentStatusDot status={agentStatus(impl.agent)} />
                 <span className="line-clamp-1">{impl.agent.name}</span>
               </RekuestImplementation.DetailLink>
             ))}

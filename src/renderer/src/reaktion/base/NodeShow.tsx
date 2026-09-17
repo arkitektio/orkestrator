@@ -126,3 +126,29 @@ const NodeShowLayoutInner: React.FC<NodeProps> = (props) => {
  * `FlowAdapter`, so the viewer and tracker get the no-error path for free.
  */
 export const NodeShowLayout = React.memo(NodeShowLayoutInner)
+
+/**
+ * Text block of a node. Deliberately not `CardHeader`: that is a container-query
+ * root, and inline-size containment makes it contribute zero width to React
+ * Flow's shrink-to-fit node, collapsing every node to its `minWidth`.
+ */
+export const NodeHeader = ({ className, ...props }: React.ComponentProps<'div'>) => (
+  <div className={cn('flex flex-col gap-1 px-4 py-3', className)} {...props} />
+)
+
+/** One line; its width (with the node's `minWidth`) is what sizes the node. */
+export const NodeTitle = ({ className, ...props }: React.ComponentProps<'div'>) => (
+  <div
+    className={cn('flex items-center justify-between gap-3 whitespace-nowrap text-sm font-medium', className)}
+    {...props}
+  />
+)
+
+/**
+ * Wraps inside whatever width the title/`minWidth` gave the node instead of
+ * stretching it (`w-0 min-w-full`), so it also follows a manual resize.
+ */
+export const NodeDescription = ({ className, ...props }: React.ComponentProps<'div'>) => (
+  <div className={cn('w-0 min-w-full text-xs/relaxed text-muted-foreground', className)} {...props} />
+)
+

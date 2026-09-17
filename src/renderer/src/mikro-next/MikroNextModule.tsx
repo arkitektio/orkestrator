@@ -19,6 +19,7 @@ import TableDatasetPage from "./pages/TableDatasetPage";
 import TableDatasetsPage from "./pages/TableDatasetsPage";
 import ScenesPage from "./pages/ScenesPage";
 import ScenePage from "./pages/ScenePage";
+import SceneRegistrationPage from "./pages/SceneRegistrationPage";
 import { LensPage } from "./pages/LensPage";
 import StandardPane from "./panes/StandardPane";
 
@@ -46,6 +47,8 @@ export const MikroNextModule = () => {
           <Route path="annotations/:id" element={<AnnotationPage />} />
           <Route path="scenes" element={<ScenesPage />} />
           <Route path="scenes/:id" element={<ScenePage />} />
+          {/* Its own page, opted into from a scene — never a mode of ScenePage. */}
+          <Route path="scenes/:id/register" element={<SceneRegistrationPage />} />
           <Route path="peerhome/:id" element={<PeerHomePage />} />
           <Route path="files/:id" element={<FilePage />} />
           <Route path="tabledatasets" element={<TableDatasetsPage />} />

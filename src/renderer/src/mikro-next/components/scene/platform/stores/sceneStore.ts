@@ -7,11 +7,17 @@ import { isBrickLayer, type BrickLayerFragment } from "../model/layerGuards";
 import { reconcileSceneLayers } from "../model/layerReconcile";
 import { layerStructureKey } from "../model/sceneStructure";
 import {
+  applyPlacementPreview,
+  prunePreviewBases,
+  type PreviewPlacement,
+} from "../model/placementPreview";
+import {
   normalizeBrickLayer,
   type LayerState,
   type SceneTransformContext,
 } from "../model/layerModel";
 import { planDefaultVolumeLods } from "../quality/lodPlanning";
+import { composeLayerAffine, spatialAxisTriple } from "@/mikro-next/lib/coords/transformGraph";
 import type { FabriksInstanceColormap } from "../gpu/instanceColormaps";
 
 // Re-exported for the store's many consumers (the model lives in core/).
@@ -173,6 +179,27 @@ export interface SceneState {
   layerDimExtents: Record<string, DimExtent[]>;
   setLayerDimExtents: (layerId: string, extents: DimExtent[] | null) => void;
   patchSceneLayer: (id: string, patch: Partial<SceneLayer>) => void;
+  /**
+   * The SERVER placements of the layers currently drawn with a placement
+   * preview, by layer id. Empty when nothing is previewed. See
+   * `platform/model/placementPreview.ts` and COORDINATE_SYSTEMS.md §1 R1a.
+   */
+  placementPreviewBases: Record<string, PreviewPlacement>;
+  /**
+   * Draw `layerIds` with `worldDelta` (row-major 4×4, world [x, y, z] slots)
+   * applied on top of their server placement; null or identity clears. Layers
+   * previewed before and not listed are restored. Session-only, never
+   * persisted, and dropped by `syncSceneLayers` for any layer the server
+   * re-places.
+   *
+   * Every member is written in ONE `set`: layers that merge into one brick
+   * pass share an affine key (`mergeMembers.ts`), and moving them one by one
+   * would split the bucket for a frame.
+   */
+  setPlacementPreview: (
+    layerIds: readonly string[],
+    worldDelta: readonly (readonly number[])[] | null,
+  ) => { failures: { layerId: string; reason: string }[] };
 }
 
 export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
@@ -207,6 +234,46 @@ export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
       },
       trackTailWindows: {},
       layerDimExtents: {},
+      placementPreviewBases: {},
+      setPlacementPreview: (layerIds, worldDelta) => {
+        const { sceneLayers, layers, placementPreviewBases, transformContext } = get();
+        const worldSpatial = spatialAxisTriple(transformContext.worldCoordinateSystem);
+        const result = applyPlacementPreview<SceneLayer, LayerState>({
+          sceneLayers,
+          layers,
+          bases: placementPreviewBases,
+          layerIds,
+          worldDelta,
+          worldSpatial,
+          // Exact for lens-backed layers (the triple `composeLayerAffine`
+          // reduces with). Every other kind assumes its data names its
+          // spatial axes like the world does — only consulted when the delta
+          // leaves the axes a PARTIAL placement constrains, where a
+          // differently-named 3D collection would preview flattened.
+          dataSpatialOf: (layer) =>
+            isBrickLayer(layer)
+              ? [layer.lens.renderAxes.x, layer.lens.renderAxes.y, layer.lens.renderAxes.z]
+              : worldSpatial,
+          placeImage: (state, placement) => {
+            const asAffine = placement as unknown as LayerState["asAffine"];
+            return {
+              ...state,
+              asAffine,
+              affineMatrix: composeLayerAffine(transformContext, { ...state, asAffine }),
+            };
+          },
+        });
+        // The PLAIN-OBJECT form, as in `syncSceneLayers`: untouched layers
+        // keep their identity, which the immer finalizer would not preserve.
+        if (result.changed) {
+          set({
+            sceneLayers: result.sceneLayers,
+            layers: result.layers,
+            placementPreviewBases: result.bases,
+          });
+        }
+        return { failures: result.failures };
+      },
       sceneLayers: scene.layers,
       layers: brickLayers.map((layer) =>
         normalizeBrickLayer(layer, defaultVolumeLods.get(layer.id) ?? null, scene),
@@ -291,11 +358,24 @@ export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
         };
         if (!result.sceneLayersChanged && !result.layersChanged) return summary;
 
+        // A layer the fold re-derived (or dropped) carries the SERVER's
+        // placement again, so its placement-preview base is stale: forget it.
+        // Kept layers are exactly the ones whose stored object survived.
+        const previousRaw = new Set<SceneLayer>(sceneLayers);
+        const prunedBases = prunePreviewBases(
+          get().placementPreviewBases,
+          new Set(result.sceneLayers.filter((layer) => previousRaw.has(layer)).map((layer) => layer.id)),
+        );
+
         // The PLAIN-OBJECT form on purpose: the immer middleware only runs
         // `produce` for function updaters, so this bypasses the finalizer.
         // Going through it would freeze/clone the reused elements and break
         // the identity preservation the reconcile exists for.
-        set({ sceneLayers: result.sceneLayers, layers: result.layers });
+        set({
+          sceneLayers: result.sceneLayers,
+          layers: result.layers,
+          ...(prunedBases ? { placementPreviewBases: prunedBases } : {}),
+        });
         return summary;
       },
       touchImageLayers: () => set({ layers: [...get().layers] }),

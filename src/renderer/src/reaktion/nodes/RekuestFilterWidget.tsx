@@ -1,9 +1,9 @@
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { useActionDescription } from "@/lib/rekuest/ActionDescription";
 import { Args } from "@/reaktion/base/Args";
 import { Constants } from "@/reaktion/base/Constants";
 import { InStream } from "@/reaktion/base/Instream";
-import { NodeShowLayout } from "@/reaktion/base/NodeShow";
+import { NodeDescription, NodeHeader, NodeShowLayout, NodeTitle } from "@/reaktion/base/NodeShow";
 import { OutStream } from "@/reaktion/base/Outstream";
 import { RekuestFilterNodeProps } from "@/reaktion/types";
 import React, { useMemo } from "react";
@@ -34,18 +34,19 @@ const RekuestFilterWidgetInner: React.FC<RekuestFilterNodeProps> = ({
       id={id}
       className={statusClassName(status, errorClassName(errors.length > 0, BASE))}
       selected={selected}
+      minWidth={expanded ? 360 : 240}
     >
       {ins.map((s, index) => (
         <InStream key={index} stream={s} id={index} length={ins.length} />
       ))}
-      <CardHeader className="p-4">
-        <CardTitle onDoubleClick={() => setExpanded((e) => !e)}>
-          <Card className="absolute top-0 left-[50%] translate-x-[-50%] px-3 translate-y-[-50%] text-sm">
-            Conditional
-          </Card>
-          <div className="text-xl font-bold">{data?.title}</div>
-        </CardTitle>
-        <CardDescription>{description}</CardDescription>
+      <NodeHeader>
+        <Card className="absolute top-0 left-[50%] translate-x-[-50%] translate-y-[-50%] px-3 py-0.5 text-xs">
+          Conditional
+        </Card>
+        <NodeTitle onDoubleClick={() => setExpanded((e) => !e)}>
+          <span className="max-w-[15rem] truncate">{data?.title}</span>
+        </NodeTitle>
+        <NodeDescription>{description}</NodeDescription>
         {expanded && edit && (
           <div>
             <div className="text-xs text-muted-foreground inline">Args</div>
@@ -66,7 +67,7 @@ const RekuestFilterWidgetInner: React.FC<RekuestFilterNodeProps> = ({
             />
           </div>
         )}
-      </CardHeader>
+      </NodeHeader>
       {outs.map((s, index) => (
         <OutStream key={index} stream={s} id={index} length={outs.length} />
       ))}

@@ -40,43 +40,36 @@ const NavigateAction: Action = {
 };
 const OpenInNewTabAction: Action = {
   title: "Open in new tab",
-  description: "Pin the structure to the rail and open it",
+  description: "Open the structure in a tab of its own",
   icon: PanelLeftOpen,
   conditions: [
     {
       type: "nopartner",
     },
   ],
-  execute: async ({ state, navigate, pins }) => {
-    if (!pins.canPin) {
-      throw new Error("Sign in to an organization to open tabs");
-    }
-
-    let last: string | undefined;
-    for (const item of state.left) {
-      const { identifier, object } = item;
+  execute: async ({ state, tabs }) => {
+    const targets = state.left.map(({ identifier, object }) => {
       const path = smartRegistry.buildModelPath(identifier, object.id);
       if (!path) {
         throw new Error(`No path found for identifier ${identifier}`);
       }
 
       const named = object.label ?? object.name;
-      pins.pin({
-        kind: "entity",
-        identifier,
-        id: object.id,
+      return {
+        to: path.startsWith("/") ? path : `/${path}`,
         label:
           typeof named === "string" && named
             ? named
             : `${smartRegistry.getDisplayName(identifier)} ${object.id}`,
-      });
-      last = path.startsWith("/") ? path : `/${path}`;
-    }
+      };
+    });
 
     // Every selected structure gets a tab; the last one is the one shown.
-    if (last) {
-      navigate(last);
-    }
+    // `evict`: this was asked for by name, so at the cap it takes the place of
+    // the stalest unpinned tab rather than silently doing nothing.
+    targets.forEach(({ to, label }, index) =>
+      tabs.open(to, { label, evict: true, background: index < targets.length - 1 }),
+    );
   },
   collections: ["smart"],
 };

@@ -56,8 +56,14 @@ export interface GeneratedListProps<TFilters, TOrder, TOrdering> {
   // same list reads as a picture shelf on a page of planes and as a grid of
   // readouts everywhere else. Same `any` caveat as `groupBy`.
   aspectOf?: (item: any) => number;
+  // Extra controls for the empty state, next to "Check Again" — typically a
+  // "Clear filters" button on a filtered page.
+  emptyActions?: React.ReactNode;
+  // Narrows the loaded page on the client, for criteria the backend cannot
+  // filter on. Paging still runs on the unfiltered page, so a page may render
+  // fewer items than its limit. Same `any` caveat as `groupBy`.
+  clientFilter?: (item: any) => boolean;
 }
-
 
 
 export const Offseter = ({
@@ -198,6 +204,14 @@ export const createList = <
       setPagination((prev) => ({ ...prev, offset: 0 }));
     }, [queryKey]);
 
+    // Follow a changing `defaultLimit` (e.g. a larger page while grouped); the
+    // state initializer above only reads it on mount.
+    useEffect(() => {
+      setPagination((prev) =>
+        prev.limit === defaultLimit ? prev : { limit: defaultLimit, offset: 0 },
+      );
+    }, [defaultLimit]);
+
     const { data, loading, error, refetch, } = useHook({
       variables: {
         filters: props.filters as TFilters,
@@ -210,6 +224,13 @@ export const createList = <
 
     const listData = (data ? data[dataKey] : []) as unknown as TItem[];
     const hasItems = listData && listData.length > 0;
+
+    const clientFilter = props.clientFilter;
+    const visibleItems = useMemo(
+      () => (clientFilter && listData ? listData.filter(clientFilter) : listData),
+      [listData, clientFilter],
+    );
+    const hiddenCount = (listData?.length ?? 0) - (visibleItems?.length ?? 0);
 
     const headerActions = (
       <div className="flex items-center gap-2">
@@ -277,20 +298,30 @@ export const createList = <
               <EmptyDescription>{emptyDescription}</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Button variant="outline" onClick={() => refetch()}>
-                Check Again
-              </Button>
+              <div className="flex flex-row items-center justify-center gap-2">
+                <Button variant="outline" onClick={() => refetch()}>
+                  Check Again
+                </Button>
+                {props.emptyActions}
+              </div>
             </EmptyContent>
           </Empty>
         ) : (
-          <GroupableListRenderer<TItem>
-            items={listData}
-            groupBy={props.groupBy}
-            ItemComponent={ItemComponent}
-            cardProps={cardProps}
-            minItemWidth={minItemWidth}
-            aspectOf={props.aspectOf}
-          />
+          <>
+            {hiddenCount > 0 && (
+              <div className="mb-2 text-xs text-muted-foreground">
+                {hiddenCount} of {listData.length} on this page hidden
+              </div>
+            )}
+            <GroupableListRenderer<TItem>
+              items={visibleItems}
+              groupBy={props.groupBy}
+              ItemComponent={ItemComponent}
+              cardProps={cardProps}
+              minItemWidth={minItemWidth}
+              aspectOf={props.aspectOf}
+            />
+          </>
         )}
 
       </ListLayout.Root>

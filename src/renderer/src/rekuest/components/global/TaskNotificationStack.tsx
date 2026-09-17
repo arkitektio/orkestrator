@@ -1,441 +1,356 @@
-import { Button } from '@/components/ui/button'
+import { useLatestRef } from '@/hooks/useLatestRef'
 import { cn } from '@/lib/utils'
-import { LiveTaskFragment, TaskEventKind, useCancelMutation } from '@/rekuest/api/graphql'
-import { LiveTaskState, useLiveTask, useTask } from '@/rekuest/hooks/useTasks'
-import { RekuestTask } from '@/linkers'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ArrowUpRight, Loader, Square, X } from 'lucide-react'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
-import { useEffect, useState } from 'react'
+import { LiveTaskFragment, TaskEventKind } from '@/rekuest/api/graphql'
+import { useTasks } from '@/rekuest/hooks/useTasks'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ChevronDown } from 'lucide-react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  MAX_VISIBLE_ROWS,
+  orderFromSignature,
+  overflowDots,
+  rankSignature,
+  reconcileOrder,
+  shouldAutoDismiss,
+  splitVisible,
+  TaskRank
+} from '../../lib/taskIsland'
 import { dismiss, useTaskNotifications } from '../../lib/taskNotifications'
-import { TaskStatusLine } from '../task/TaskStatusLine'
-import { TaskStatusIcon } from '../../lib/taskStatus'
-import { borderColorForLiveState, DynamicYieldDisplay } from '../task/YieldDisplay'
+import { TaskIslandRow, taskIslandHeaderId } from './TaskIslandRow'
+
+/** How long a quietly finished task stays before it clears on its own. */
+const AUTO_DISMISS_MS = 8000
+/** Rest on a row this long before it opens: crossing the island opens nothing. */
+const OPEN_DELAY_MS = 120
+/** Grace after the pointer leaves the island before the open row closes. */
+const CLOSE_DELAY_MS = 200
+/**
+ * After a row opens, hover is ignored for this long. The opening row pushes
+ * its neighbours around; without the pause, one that slides under the pointer
+ * would open in turn, and the island would flicker between the two.
+ */
+const SETTLE_MS = 250
 
 /**
- * Headless auto-dismiss for one task. Success and cancellation clear after a
- * delay long enough to read the result; errors AND tasks that yielded a result
- * (e.g. an image) persist until dismissed, so the result stays inspectable.
+ * Headless auto-dismiss for one task. A quiet finish clears after a delay long
+ * enough to read; failures AND tasks that yielded a result (e.g. an image)
+ * persist until dismissed, so the result stays inspectable.
  *
- * Rendered for EVERY active id by the stack itself. It used to live in the
- * expanded card, which only mounts while the hover list is open — so finished
- * tasks never cleared on their own and piled up behind the island.
+ * Rendered for EVERY active id, including the ones behind the peek — a task
+ * nobody is looking at still has to clear. Paused while its row is open, so a
+ * row is never pulled out from under the pointer reading it.
  */
-const TaskAutoDismiss = ({ id }: { id: string }) => {
-  const live = useLiveTask({ task: id })
+const TaskAutoDismiss = memo(function TaskAutoDismiss({
+  id,
+  task,
+  paused
+}: {
+  id: string
+  task: LiveTaskFragment | undefined
+  paused: boolean
+}) {
+  const hasYield = task?.events.some((event) => event.kind === TaskEventKind.Yield) ?? false
+  const clears = shouldAutoDismiss(task, hasYield)
 
   useEffect(() => {
-    if ((live.done || live.cancelled) && !live.yield && !live.error) {
-      const timer = setTimeout(() => dismiss(id), 8000)
-      return () => clearTimeout(timer)
-    }
-    return undefined
-  }, [live.done, live.cancelled, live.yield, live.error, id])
+    if (!clears || paused) return undefined
+    const timer = setTimeout(() => dismiss(id), AUTO_DISMISS_MS)
+    return () => clearTimeout(timer)
+  }, [clears, paused, id])
 
   return null
+})
+
+/** Hover-intent bookkeeping: timers and the settle deadline. Handlers only. */
+type Intent = {
+  open?: ReturnType<typeof setTimeout>
+  close?: ReturnType<typeof setTimeout>
+  pending: string | null
+  settledAt: number
+}
+
+const cancelOpen = (intent: Intent) => {
+  clearTimeout(intent.open)
+  intent.pending = null
+}
+
+/** Dot colour per rank on the peek. Literal classes — Tailwind reads the source. */
+const DOT: Record<TaskRank, string> = {
+  0: 'bg-primary animate-pulse',
+  1: 'bg-destructive',
+  2: 'bg-muted-foreground/50'
 }
 
 /**
- * A single live task card in the expanded list: status line, error block and
- * the full yield display. Auto-dismiss lives in {@link TaskAutoDismiss}.
- */
-const TaskNotificationCard = ({ id }: { id: string }) => {
-  const task = useTask({ task: id })
-  const live = useLiveTask({ task: id })
-
-  if (!task) {
-    return null
-  }
-
-  return (
-    <div
-      className={cn(
-        // `w-full`, not a fixed width: the card used to be `w-80` inside a
-        // `w-80` container with padding, so it overflowed by exactly that
-        // padding. The container owns the width; the card fills it.
-        // `min-w-0` lets the truncation inside actually engage.
-        'relative flex w-full min-w-0 flex-col gap-2 overflow-hidden rounded-md border bg-background p-3 shadow-lg',
-        borderColorForLiveState(live)
-      )}
-    >
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute right-1 top-1 h-6 w-6 text-muted-foreground hover:text-foreground"
-        onClick={() => dismiss(id)}
-        aria-label="Dismiss notification"
-      >
-        <X className="h-4 w-4" />
-      </Button>
-      <div className="min-w-0 pr-7">
-        <TaskStatusLine task={task} showCancel showLink />
-      </div>
-
-      {live.error && (
-        // Server errors arrive as arbitrary text: a stack trace, or a single
-        // unbroken token like a URL or a UUID, which would otherwise push the
-        // card wider than its container. Break anywhere, and cap the height so
-        // one long failure cannot bury the tasks underneath it.
-        <div className="max-h-32 w-full min-w-0 overflow-y-auto break-words whitespace-pre-wrap rounded bg-red-500/10 p-2 text-xs text-red-500">
-          {live.error}
-        </div>
-      )}
-
-      <AnimatedYield
-        eventId={latestYieldEventId(task)}
-        values={live.yield}
-        actionId={live.actionId}
-      />
-    </div>
-  )
-}
-
-/** A task that has neither finished nor been stopped. */
-const isRunning = (live: LiveTaskState) =>
-  !live.done && !live.cancelled && !live.error && !live.isDone
-
-/**
- * The latest yield, cross-faded whenever a new one arrives. Keyed on the YIELD
- * event's id rather than on the values, so two identical consecutive yields
- * still read as "something happened" and a re-render with the same event does
- * not replay the animation.
- */
-const AnimatedYield = ({
-  eventId,
-  values,
-  actionId,
-  className,
-  minimal
-}: {
-  eventId: string | undefined
-  values: unknown[] | null | undefined
-  actionId: string | undefined
-  className?: string
-  minimal?: boolean
-}) => (
-  <AnimatePresence mode="popLayout" initial={false}>
-    {values && actionId && (
-      <motion.div
-        key={eventId ?? 'yield'}
-        layout
-        initial={{ opacity: 0, y: 6, filter: 'blur(4px)' }}
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        exit={{ opacity: 0, y: -6, filter: 'blur(4px)' }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        // A yield is a rendered widget — an image, a table — sized by its own
-        // registry entry, not by this island. Contain it rather than trust it.
-        className={cn('min-w-0 overflow-hidden', className)}
-      >
-        <DynamicYieldDisplay values={values} actionId={actionId} minimal={minimal} />
-      </motion.div>
-    )}
-  </AnimatePresence>
-)
-
-/** Id of the newest YIELD event; events arrive newest first. */
-const latestYieldEventId = (task: LiveTaskFragment) =>
-  task.events?.find((event) => event.kind === TaskEventKind.Yield)?.id
-
-/**
- * The collapsed "island": a summary of the latest task (icon, name, progress,
- * latest yield). Further tasks show as a stacked edge beneath it, not a count.
- * Hovering / clicking it expands the full
- * stack; hovering also reveals its own controls (open, cancel, dismiss).
- *
- * While the task runs the island looks busy — a light sweep across it and a
- * live progress edge (indeterminate when no PROGRESS event arrived yet) — and
- * goes still the moment it settles, so "still working" is readable at a glance.
- */
-const TaskNotificationPill = ({ id, onClick }: { id: string; onClick: () => void }) => {
-  const task = useTask({ task: id })
-  const live = useLiveTask({ task: id })
-  const reduceMotion = useReducedMotion()
-  const [cancel, { loading: cancelRequested }] = useCancelMutation({
-    variables: { input: { task: id } }
-  })
-
-  if (!task) {
-    return null
-  }
-
-  const running = isRunning(live)
-  const cancelling = cancelRequested || task.latestEventKind === TaskEventKind.Cancelling
-
-  // The controls live inside the clickable island, so they must not also
-  // toggle the expanded stack.
-  const stop = (fn: () => void) => (event: React.MouseEvent) => {
-    event.stopPropagation()
-    fn()
-  }
-
-  return (
-    // A `div role="button"`, not a `<button>`: the hover controls are buttons
-    // themselves, and interactive content cannot nest inside a `<button>`.
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(event) => {
-        // Only the island itself: Enter on a focused control bubbles up here,
-        // and swallowing it would stop that control from activating.
-        if (event.target !== event.currentTarget) return
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onClick()
-        }
-      }}
-      aria-label="Show tasks"
-      aria-busy={running}
-      // The rail is 240px and an action name can be any length, so every part
-      // of this row is either `shrink-0` or allowed to truncate. `min-w-0` on
-      // the flexible one is what makes `truncate` engage at all — without it a
-      // flex item's automatic minimum size is its content, and the row grows
-      // past the rail instead of clipping.
-      // A raised card, like a browser's now-playing media control at the foot
-      // of its sidebar: soft border, real shadow, lifting a little further on
-      // hover. The contents (yield widgets) stay bare — the card is the only
-      // chrome. Status is carried by the icon, not a coloured border.
-      className="group relative flex w-full min-w-0 cursor-pointer flex-col gap-1.5 overflow-hidden rounded-xl border border-border/60 bg-background/90 px-2.5 py-2 text-left shadow-md shadow-black/5 transition-[box-shadow,background-color] duration-200 hover:bg-background hover:shadow-lg hover:shadow-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:shadow-black/30"
-    >
-      {/* Busy sweep: a soft band of light travelling across the island. */}
-      {running && !reduceMotion && (
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
-          initial={{ x: '-100%' }}
-          animate={{ x: '300%' }}
-          transition={{ duration: 1.8, ease: 'easeInOut', repeat: Infinity }}
-        />
-      )}
-
-      <div className="relative flex min-w-0 items-center gap-2">
-        <TaskStatusIcon
-          kind={task.latestEventKind}
-          isDone={task.isDone}
-          className="h-4 w-4 shrink-0"
-        />
-        <span
-          className={cn(
-            'min-w-0 flex-1 truncate text-xs font-medium transition-[padding] group-hover:pr-12 group-focus-within:pr-12',
-            running && 'text-foreground/80'
-          )}
-        >
-          {live.actionName || 'Unknown action'}
-        </span>
-        {/* Status chips give way to the controls on hover, in the same spot,
-            so the row never reflows under the pointer. */}
-        <div className="flex shrink-0 items-center gap-1 transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0">
-          {live.progress != null && (
-            <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
-              {live.progress}%
-            </span>
-          )}
-        </div>
-        <div className="pointer-events-none absolute right-0 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-          <RekuestTask.DetailLink
-            object={task}
-            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-            onClick={(event: React.MouseEvent) => event.stopPropagation()}
-            aria-label="Open task"
-            title="Open task"
-          >
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </RekuestTask.DetailLink>
-          {running ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 text-muted-foreground hover:text-destructive"
-              disabled={cancelling}
-              onClick={stop(() => cancel())}
-              aria-label="Cancel task"
-              title={cancelling ? 'Cancelling…' : 'Cancel task'}
-            >
-              {cancelling ? (
-                <Loader className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Square className="h-3 w-3 fill-current" />
-              )}
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 text-muted-foreground hover:text-foreground"
-              onClick={stop(() => dismiss(id))}
-              aria-label="Dismiss task"
-              title="Dismiss"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <AnimatedYield
-        eventId={latestYieldEventId(task)}
-        values={live.yield}
-        actionId={live.actionId}
-        minimal
-        // Capped: the island is a summary, the full yield is one hover away.
-        // The mask fades an over-tall widget out instead of hard-clipping it.
-        className="relative max-h-24 [mask-image:linear-gradient(to_bottom,black_70%,transparent)]"
-      />
-
-      {/* Progress edge along the bottom: determinate once the task reports
-          progress, a travelling segment until then. */}
-      <AnimatePresence>
-        {running && (
-          <motion.div
-            aria-hidden
-            className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-primary/10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {live.progress != null ? (
-              <motion.div
-                className="h-full bg-primary"
-                initial={false}
-                animate={{ width: `${live.progress}%` }}
-                transition={{ type: 'spring', bounce: 0, duration: 0.5 }}
-              />
-            ) : (
-              <motion.div
-                className="h-full w-1/3 bg-primary/70"
-                initial={{ x: '-100%' }}
-                animate={reduceMotion ? { x: '100%' } : { x: '300%' }}
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : { duration: 1.2, ease: 'easeInOut', repeat: Infinity }
-                }
-              />
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-const ENTER = { opacity: 0, y: 15, scale: 0.96 }
-const SHOWN = { opacity: 1, y: 0, scale: 1 }
-const LEAVE = { opacity: 0, y: -10, scale: 0.95 }
-const SPRING = { type: 'spring', bounce: 0.3, duration: 0.35 } as const
-
-/**
- * Running tasks, as a strip at the foot of the rail.
+ * Running tasks, as an island at the foot of the rail.
  *
  * Deliberately where a browser puts its now-playing control: tasks are ambient
  * and long-running, so they belong in the chrome that is always there rather
  * than floating over the page, where they covered content and moved with
  * nothing.
  *
- * Collapsed is a single row summarising the latest task; hover or focus fans
- * every active task out into a card list to the RIGHT of the rail. Popping out
- * rather than expanding in place matters here — growing inside a 240px column
- * would shove the pinned routes above it around every time a task started.
+ * One line per task, up to {@link MAX_VISIBLE_ROWS}; tasks still working come
+ * first, then failures, then quiet finishes. Resting the pointer on a line
+ * unfolds it IN PLACE (see {@link TaskIslandRow}). That is safe for the rail
+ * because the island is anchored at its bottom: a row grows upward, so nothing
+ * below it moves, and the pins above are anchored at the top of their own
+ * scroller, which merely gets shorter. Any further tasks sit behind the
+ * stacked edge under the island, one dot each; clicking it shows them all.
  *
  * Reads its ids from the `taskNotifications` store, which `TaskUpdater` feeds
  * from the WatchMyTasks subscription, so a fresh task still pops in on create.
+ * The task list is read ONCE here and handed down: see `TaskIslandRow` for why.
  */
 export const TaskNotificationStack = () => {
   const ids = useTaskNotifications()
-  const [expanded, setExpanded] = useState(false)
+  const { data } = useTasks()
+  const myTasks = data?.myTasks
+
+  const tasksById = useMemo(
+    () => new Map((myTasks ?? []).map((task) => [task.id, task] as const)),
+    [myTasks]
+  )
+
+  // Every task event rebuilds `tasksById`, but the ORDER can only change when
+  // a rank does. Memoizing on the signature string keeps the order (and with it
+  // every row's props) stable through the stream of PROGRESS / YIELD events.
+  const signature = rankSignature(
+    ids.filter((id) => tasksById.has(id)),
+    tasksById
+  )
+  const ranked = useMemo(() => orderFromSignature(signature), [signature])
+  const orderedIds = useMemo(() => ranked.map((entry) => entry.id), [ranked])
+  const rankById = useMemo(() => new Map(ranked.map((entry) => [entry.id, entry.rank])), [ranked])
+
+  const [hovered, setHovered] = useState(false)
+  const [hoverId, setHoverId] = useState<string | null>(null)
+  const [pinnedId, setPinnedId] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
+  const [frozenOrder, setFrozenOrder] = useState<string[] | null>(null)
+
+  // A task can be dismissed while it is the open one; derived here rather than
+  // cleaned up in an effect, so a stale id never survives a render.
+  const known = (id: string | null) => (id !== null && rankById.has(id) ? id : null)
+  const pinned = known(pinnedId)
+  const expandedId = known(hoverId) ?? pinned
+
+  // While the user is in the island its rows must not re-sort under the
+  // pointer, so the order is frozen for as long as the interaction lasts.
+  const engaged = hovered || pinned !== null
+  const displayIds = engaged && frozenOrder ? reconcileOrder(frozenOrder, orderedIds) : orderedIds
+  const { visible, hidden } = splitVisible(displayIds, { showAll, keepId: expandedId })
+  const orderKey = visible.join('|')
+  const overflowing = displayIds.length > MAX_VISIBLE_ROWS
+
+  const intent = useRef<Intent>({ pending: null, settledAt: 0 })
+
+  // What the stable row callbacks below need to read without being rebuilt
+  // (which would re-render every memoized row) each time it changes.
+  const latest = useLatestRef({ expandedId, engaged, hovered, displayIds, pinned })
+
+  useEffect(() => {
+    const timers = intent.current
+    return () => {
+      clearTimeout(timers.open)
+      clearTimeout(timers.close)
+    }
+  }, [])
+
+  const freeze = useCallback(() => {
+    if (!latest.current.engaged) setFrozenOrder(latest.current.displayIds)
+  }, [latest])
+
+  const onHover = useCallback(
+    (id: string) => {
+      const state = intent.current
+      clearTimeout(state.close)
+      if (id === latest.current.expandedId) {
+        cancelOpen(state)
+        return
+      }
+      if (state.pending === id || Date.now() < state.settledAt) return
+      cancelOpen(state)
+      state.pending = id
+      state.open = setTimeout(() => {
+        state.pending = null
+        state.settledAt = Date.now() + SETTLE_MS
+        setHoverId(id)
+      }, OPEN_DELAY_MS)
+    },
+    [latest]
+  )
+
+  const onTogglePin = useCallback(
+    (id: string) => {
+      cancelOpen(intent.current)
+      intent.current.settledAt = Date.now() + SETTLE_MS
+      if (latest.current.pinned === id) {
+        setPinnedId(null)
+        // Under a pointer the row stays open until the pointer leaves. With
+        // no pointer in the island (keyboard) nothing would ever close it.
+        if (!latest.current.hovered) setHoverId(null)
+        return
+      }
+      freeze()
+      setPinnedId(id)
+      // Opens at once as well: a click is all the intent there is, and a
+      // keyboard user never hovers.
+      setHoverId(id)
+    },
+    [freeze, latest]
+  )
+
+  const onCollapse = useCallback((id: string) => {
+    cancelOpen(intent.current)
+    setHoverId(null)
+    setPinnedId(null)
+    // Escape may come from a control inside the region that is about to
+    // unmount; hand focus back to the header rather than lose it to <body>.
+    document.getElementById(taskIslandHeaderId(id))?.focus()
+  }, [])
+
+  const onDismiss = useCallback(
+    (id: string) => {
+      // The dismiss button unmounts with its row. Move focus to a neighbouring
+      // row first so a keyboard user stays in the island.
+      const rows = latest.current.displayIds
+      const index = rows.indexOf(id)
+      const neighbour = rows[index + 1] ?? rows[index - 1]
+      if (neighbour) document.getElementById(taskIslandHeaderId(neighbour))?.focus()
+      dismiss(id)
+    },
+    [latest]
+  )
+
+  const onPointerEnter = () => {
+    clearTimeout(intent.current.close)
+    freeze()
+    setHovered(true)
+  }
+
+  const onPointerLeave = () => {
+    cancelOpen(intent.current)
+    clearTimeout(intent.current.close)
+    // Only leaving the WHOLE island closes a row. Moving between rows, or
+    // from a header down into its own detail, never does.
+    intent.current.close = setTimeout(() => {
+      setHoverId(null)
+      setHovered(false)
+      // The full list folds back too, unless a pinned row says the user is
+      // still working in here.
+      if (latest.current.pinned === null) setShowAll(false)
+    }, CLOSE_DELAY_MS)
+  }
 
   return (
-    <AnimatePresence>
-      {ids.length > 0 && (
-        // `min-w-0` so this section can be narrower than the pill's content
-        // wants to be; without it the rail's own flex column would be widened
-        // by a long action name rather than the name being truncated.
-        // `shrink-0` so a long pin list above squeezes the scrolling list, not
-        // this. Wrapped in presence so the island fades OUT when the last task
-        // is dismissed instead of vanishing.
-        <motion.div
-          key="task-island"
-          initial={{ opacity: 0, y: 8, filter: 'blur(6px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: 8, filter: 'blur(6px)' }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="min-w-0 shrink-0 px-2 pb-2"
-        >
-          {ids.map((id) => (
-            <TaskAutoDismiss key={id} id={id} />
-          ))}
-          <HoverCard open={expanded} onOpenChange={setExpanded} openDelay={80} closeDelay={180}>
-            <HoverCardTrigger asChild>
-              <motion.div layout className="relative w-full min-w-0">
-                {/* More than one task: the edges of the cards underneath peek
-                    out below the island, like a stack — "there is more" said
-                    without a counter. The list itself is one hover away. */}
-                <AnimatePresence>
-                  {ids.length > 1 && (
-                    <motion.div
-                      key="stack-peek"
-                      aria-hidden
-                      data-testid="task-stack-peek"
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className="pointer-events-none absolute inset-x-2.5 -bottom-1.5 h-6 rounded-b-xl border border-t-0 border-border/50 bg-background/60 shadow-sm shadow-black/5"
-                    />
-                  )}
-                </AnimatePresence>
-                {/* Re-keyed on the newest id: a freshly started task fades in
-                    over the previous one rather than swapping its text. */}
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.div
-                    key={ids[0]}
-                    initial={ENTER}
-                    animate={SHOWN}
-                    exit={LEAVE}
-                    transition={SPRING}
-                    className="relative w-full min-w-0"
-                  >
-                    <TaskNotificationPill
-                      id={ids[0]}
-                      onClick={() => setExpanded((current) => !current)}
-                    />
-                  </motion.div>
-                </AnimatePresence>
-              </motion.div>
-            </HoverCardTrigger>
+    <>
+      {ids.map((id) => (
+        <TaskAutoDismiss key={id} id={id} task={tasksById.get(id)} paused={id === expandedId} />
+      ))}
+      <AnimatePresence>
+        {displayIds.length > 0 && (
+          // `min-w-0` so this section can be narrower than its content wants to
+          // be; without it the rail's own flex column would be widened by a
+          // long action name rather than the name being truncated. `shrink-0`
+          // so a long pin list above squeezes the scrolling list, not this.
+          // Wrapped in presence so the island fades OUT when the last task is
+          // dismissed instead of vanishing.
+          <motion.div
+            key="task-island"
+            initial={{ opacity: 0, y: 8, filter: 'blur(6px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 8, filter: 'blur(6px)' }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="relative min-w-0 shrink-0 px-2 pb-2"
+            onPointerEnter={onPointerEnter}
+            onPointerLeave={onPointerLeave}
+          >
+            {/* A raised card, like a browser's now-playing media control at the
+                foot of its sidebar: soft border, real shadow. One card for all
+                rows, so the shadow belongs to the island and each row is free
+                to clip its own unfolding.
 
-            <HoverCardContent
-              side="right"
-              align="end"
-              sideOffset={8}
-              // Capped against the viewport, not just given a width: at 320px plus
-              // the rail plus the gaps, a narrow window would otherwise push this
-              // off-screen. Radix flips it on collision, and this keeps it fitting
-              // whichever side it lands on.
-              className="flex max-h-[70vh] w-80 max-w-[calc(100vw-var(--rail-width)-2.5rem)] flex-col gap-2 overflow-y-auto overflow-x-hidden p-2"
+                Always height-capped, but only a scroller while showing
+                everything: three collapsed rows and one open one never reach
+                the cap, and a scroller that is not needed would only get in
+                the way of the row shadows and the wheel. */}
+            <motion.div
+              layoutScroll
+              data-testid="task-island"
+              className={cn(
+                'relative z-10 max-h-[45vh] min-w-0 overflow-x-hidden rounded-xl border border-border/60 bg-background/90 shadow-md shadow-black/5 dark:shadow-black/30',
+                showAll && overflowing ? 'overflow-y-auto' : 'overflow-y-hidden'
+              )}
             >
+              {/* Default presence mode, NOT `popLayout`: that pins a leaving
+                  row at its old `offsetTop`, and in a list anchored at the
+                  bottom the rows then slide up underneath it. Folding the
+                  height away keeps the row in flow while it leaves. */}
               <AnimatePresence initial={false}>
-                {ids.map((id) => (
-                  <motion.div
-                    key={id}
-                    layout
-                    initial={ENTER}
-                    animate={SHOWN}
-                    exit={LEAVE}
-                    transition={SPRING}
-                    // `shrink-0`: this is a scrolling flex column, and without it
-                    // the cards compress into each other as tasks pile up instead
-                    // of the list scrolling.
-                    className="w-full min-w-0 shrink-0"
-                  >
-                    <TaskNotificationCard id={id} />
-                  </motion.div>
-                ))}
+                {visible.map((id) => {
+                  const task = tasksById.get(id)
+                  if (!task) return null
+                  return (
+                    <TaskIslandRow
+                      key={id}
+                      id={id}
+                      task={task}
+                      expanded={id === expandedId}
+                      pinned={id === pinned}
+                      orderKey={orderKey}
+                      onHover={onHover}
+                      onTogglePin={onTogglePin}
+                      onCollapse={onCollapse}
+                      onDismiss={onDismiss}
+                    />
+                  )
+                })}
               </AnimatePresence>
-            </HoverCardContent>
-          </HoverCard>
-        </motion.div>
-      )}
-    </AnimatePresence>
+            </motion.div>
+
+            {/* More tasks than rows: the edge of the cards underneath peeks
+                out below the island, like a stack, with one dot per hidden
+                task in the colour of its state — "there is more, and this is
+                how it is doing" said without a +N counter. */}
+            <AnimatePresence initial={false}>
+              {overflowing && (
+                <motion.button
+                  key="stack-peek"
+                  type="button"
+                  data-testid="task-stack-peek"
+                  aria-expanded={showAll}
+                  aria-label={
+                    showAll
+                      ? 'Show fewer tasks'
+                      : `Show ${hidden.length} more ${hidden.length === 1 ? 'task' : 'tasks'}`
+                  }
+                  onClick={() => {
+                    freeze()
+                    setShowAll((current) => !current)
+                  }}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="relative mx-2.5 -mt-px flex h-3.5 w-[calc(100%-1.25rem)] cursor-pointer items-center justify-center gap-1 rounded-b-xl border border-t-0 border-border/50 bg-background/60 text-muted-foreground shadow-sm shadow-black/5 hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {showAll ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    overflowDots(hidden).map((id) => (
+                      <span
+                        key={id}
+                        data-testid="task-stack-dot"
+                        className={cn('h-1 w-1 rounded-full', DOT[rankById.get(id) ?? 0])}
+                      />
+                    ))
+                  )}
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }

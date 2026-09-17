@@ -5176,7 +5176,24 @@ export type _Service = {
   sdl: Scalars['String']['output'];
 };
 
-export type ListActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
+export type ListActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
+
+export type BrowseActionFragment = (
+  { __typename?: 'Action', definedAt: any, isDev: boolean, pinned: boolean, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }> }
+  & ListActionFragment
+);
+
+export type ProvidingImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, pinned: boolean, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, lastSeen?: any | null } };
+
+export type ActionTestCaseFragment = { __typename?: 'TestCase', id: string, name: string, description: string, isBenchmark: boolean, tester: { __typename?: 'Action', id: string, name: string, hash: any }, results: Array<{ __typename?: 'TestResult', id: string, passed: boolean, createdAt: any, implementation: { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string } }, tester: { __typename?: 'Implementation', id: string, interface: string } }> };
+
+export type ActionOverviewFragment = { __typename?: 'Action', id: string, name: string, hash: any, key: string, version: string, kind: ActionKind, stateful: boolean, pure: boolean, idempotent: boolean, isDev: boolean, pinned: boolean, scope: ActionScope, definedAt: any, app: { __typename?: 'App', identifier: string }, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }>, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, implementations: Array<(
+    { __typename?: 'Implementation' }
+    & ProvidingImplementationFragment
+  )>, testCases?: Array<(
+    { __typename?: 'TestCase' }
+    & ActionTestCaseFragment
+  )> | null };
 
 export type SearchActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope };
 
@@ -5189,19 +5206,13 @@ export type DetailActionFragment = (
   { __typename?: 'Action', key: string, version: string, hash: any, allowProbe: boolean, implementations: Array<(
     { __typename?: 'Implementation' }
     & MinimalImplementationFragment
-  )>, testCases?: Array<(
-    { __typename?: 'TestCase' }
-    & ListTestCaseFragment
-  )> | null, tests: Array<{ __typename?: 'Action', id: string, name: string, description?: string | null, runs?: Array<{ __typename?: 'Task', latestEventKind: TaskEventKind, implementation_id?: any | null }> | null }>, tasks: Array<(
-    { __typename?: 'Task' }
-    & MinimalTaskFragment
-  )>, app: { __typename?: 'App', identifier: string } }
+  )>, tests: Array<{ __typename?: 'Action', id: string, name: string, description?: string | null, runs?: Array<{ __typename?: 'Task', latestEventKind: TaskEventKind, implementation_id?: any | null }> | null }>, app: { __typename?: 'App', identifier: string } }
   & GraphNodeActionFragment
 );
 
 export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, description?: string | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }> };
 
-export type HoverActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
+export type HoverActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
 
 export type ProtocolAgentFragment = { __typename?: 'Agent', id: string, name: string, app: { __typename?: 'App', identifier: string }, states: Array<(
     { __typename?: 'State' }
@@ -6119,7 +6130,9 @@ export type AcknowledgeMutation = { __typename?: 'Mutation', ack: (
     & PostmanTaskFragment
   ) };
 
-export type CleanupActionsMutationVariables = Exact<{ [key: string]: never; }>;
+export type CleanupActionsMutationVariables = Exact<{
+  actionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+}>;
 
 
 export type CleanupActionsMutation = { __typename?: 'Mutation', cleanupActions: number };
@@ -6551,6 +6564,35 @@ export type AllActionsQuery = { __typename?: 'Query', actions: Array<(
     & ListActionFragment
   )> };
 
+export type BrowseActionsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  filters?: InputMaybe<ActionFilter>;
+  ordering?: InputMaybe<Array<ActionOrder>>;
+}>;
+
+
+export type BrowseActionsQuery = { __typename?: 'Query', actions: Array<(
+    { __typename?: 'Action' }
+    & BrowseActionFragment
+  )> };
+
+export type ActionOverviewQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ActionOverviewQuery = { __typename?: 'Query', action: (
+    { __typename?: 'Action' }
+    & ActionOverviewFragment
+  ) };
+
+export type ActionHashQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ActionHashQuery = { __typename?: 'Query', action: { __typename?: 'Action', id: string, hash: any } };
+
 export type AllPrimaryActionsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<ActionFilter>;
@@ -6789,6 +6831,24 @@ export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type HomePageStatsQuery = { __typename?: 'Query', actionStats: { __typename?: 'ActionStats', count: number }, taskStats: { __typename?: 'TaskStats', count: number } };
+
+export type ActionsPageStatsQueryVariables = Exact<{
+  filters?: InputMaybe<ActionFilter>;
+  taskFilters?: InputMaybe<TaskFilter>;
+  by: Granularity;
+}>;
+
+
+export type ActionsPageStatsQuery = { __typename?: 'Query', actionStats: { __typename?: 'ActionStats', count: number, series: Array<{ __typename?: 'TimeBucket', ts: any, count: number }> }, taskStats: { __typename?: 'TaskStats', count: number, series: Array<{ __typename?: 'TimeBucket', ts: any, count: number }> } };
+
+export type ActionUsageStatsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  after?: InputMaybe<Scalars['DateTime']['input']>;
+  by: Granularity;
+}>;
+
+
+export type ActionUsageStatsQuery = { __typename?: 'Query', total: { __typename?: 'TaskStats', count: number }, recent: { __typename?: 'TaskStats', count: number, series: Array<{ __typename?: 'TimeBucket', ts: any, count: number }> }, completed: { __typename?: 'TaskStats', count: number }, failed: { __typename?: 'TaskStats', count: number }, running: { __typename?: 'TaskStats', count: number } };
 
 export type HooksSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -7442,6 +7502,9 @@ export const ListActionFragmentDoc = gql`
     id
     agent {
       id
+      name
+      active
+      connected
     }
   }
   key
@@ -7455,6 +7518,102 @@ export const ListActionFragmentDoc = gql`
   }
 }
     `;
+export const BrowseActionFragmentDoc = gql`
+    fragment BrowseAction on Action {
+  ...ListAction
+  definedAt
+  isDev
+  pinned
+  collections {
+    id
+    name
+  }
+  protocols {
+    id
+    name
+  }
+}
+    ${ListActionFragmentDoc}`;
+export const ProvidingImplementationFragmentDoc = gql`
+    fragment ProvidingImplementation on Implementation {
+  id
+  interface
+  pinned
+  agent {
+    id
+    name
+    active
+    connected
+    blocked
+    lastSeen
+  }
+}
+    `;
+export const ActionTestCaseFragmentDoc = gql`
+    fragment ActionTestCase on TestCase {
+  id
+  name
+  description
+  isBenchmark
+  tester {
+    id
+    name
+    hash
+  }
+  results {
+    id
+    passed
+    createdAt
+    implementation {
+      id
+      interface
+      agent {
+        id
+        name
+      }
+    }
+    tester {
+      id
+      interface
+    }
+  }
+}
+    `;
+export const ActionOverviewFragmentDoc = gql`
+    fragment ActionOverview on Action {
+  id
+  name
+  hash
+  key
+  version
+  kind
+  stateful
+  pure
+  idempotent
+  isDev
+  pinned
+  scope
+  definedAt
+  app {
+    identifier
+  }
+  protocols {
+    id
+    name
+  }
+  collections {
+    id
+    name
+  }
+  implementations {
+    ...ProvidingImplementation
+  }
+  testCases {
+    ...ActionTestCase
+  }
+}
+    ${ProvidingImplementationFragmentDoc}
+${ActionTestCaseFragmentDoc}`;
 export const SearchActionFragmentDoc = gql`
     fragment SearchAction on Action {
   id
@@ -7502,6 +7661,7 @@ export const HoverActionFragmentDoc = gql`
       id
       name
       active
+      connected
     }
   }
   tasks(pagination: {limit: 5}, ordering: {createdAt: DESC}) {
@@ -8768,80 +8928,11 @@ export const MinimalImplementationFragmentDoc = gql`
   }
 }
     `;
-export const TestResultFragmentDoc = gql`
-    fragment TestResult on TestResult {
-  id
-  implementation {
-    id
-    interface
-    agent {
-      name
-    }
-  }
-  tester {
-    id
-    interface
-    agent {
-      name
-    }
-  }
-  case {
-    id
-  }
-  passed
-}
-    `;
-export const ListTestResultFragmentDoc = gql`
-    fragment ListTestResult on TestResult {
-  ...TestResult
-}
-    ${TestResultFragmentDoc}`;
-export const TestCaseFragmentDoc = gql`
-    fragment TestCase on TestCase {
-  id
-  name
-  description
-  results {
-    ...ListTestResult
-  }
-  tester {
-    hash
-  }
-}
-    ${ListTestResultFragmentDoc}`;
-export const ListTestCaseFragmentDoc = gql`
-    fragment ListTestCase on TestCase {
-  ...TestCase
-}
-    ${TestCaseFragmentDoc}`;
-export const MinimalTaskFragmentDoc = gql`
-    fragment MinimalTask on Task {
-  id
-  reference
-  latestEventKind
-  isDone
-  createdAt
-  action {
-    id
-    name
-  }
-  implementation {
-    id
-    interface
-    agent {
-      name
-    }
-  }
-}
-    `;
 export const DetailActionFragmentDoc = gql`
     fragment DetailAction on Action {
   ...GraphNodeAction
   implementations {
     ...MinimalImplementation
-  }
-  testCases {
-    ...ListTestCase
   }
   tests {
     id
@@ -8852,9 +8943,6 @@ export const DetailActionFragmentDoc = gql`
       latestEventKind
     }
   }
-  tasks(pagination: {limit: 10, offset: 0}) {
-    ...MinimalTask
-  }
   key
   version
   app {
@@ -8864,9 +8952,7 @@ export const DetailActionFragmentDoc = gql`
   allowProbe
 }
     ${GraphNodeActionFragmentDoc}
-${MinimalImplementationFragmentDoc}
-${ListTestCaseFragmentDoc}
-${MinimalTaskFragmentDoc}`;
+${MinimalImplementationFragmentDoc}`;
 export const ListDependencyFragmentDoc = gql`
     fragment ListDependency on Dependency {
   id
@@ -9385,6 +9471,26 @@ export const LiveTaskFragmentDoc = gql`
   finishedAt
 }
     ${TaskEventFragmentDoc}`;
+export const MinimalTaskFragmentDoc = gql`
+    fragment MinimalTask on Task {
+  id
+  reference
+  latestEventKind
+  isDone
+  createdAt
+  action {
+    id
+    name
+  }
+  implementation {
+    id
+    interface
+    agent {
+      name
+    }
+  }
+}
+    `;
 export const NoChildrenDetailTaskFragmentDoc = gql`
     fragment NoChildrenDetailTask on Task {
   ...PostmanTask
@@ -9541,6 +9647,52 @@ export const HoverTaskFragmentDoc = gql`
   }
 }
     `;
+export const TestResultFragmentDoc = gql`
+    fragment TestResult on TestResult {
+  id
+  implementation {
+    id
+    interface
+    agent {
+      name
+    }
+  }
+  tester {
+    id
+    interface
+    agent {
+      name
+    }
+  }
+  case {
+    id
+  }
+  passed
+}
+    `;
+export const ListTestResultFragmentDoc = gql`
+    fragment ListTestResult on TestResult {
+  ...TestResult
+}
+    ${TestResultFragmentDoc}`;
+export const TestCaseFragmentDoc = gql`
+    fragment TestCase on TestCase {
+  id
+  name
+  description
+  results {
+    ...ListTestResult
+  }
+  tester {
+    hash
+  }
+}
+    ${ListTestResultFragmentDoc}`;
+export const ListTestCaseFragmentDoc = gql`
+    fragment ListTestCase on TestCase {
+  ...TestCase
+}
+    ${TestCaseFragmentDoc}`;
 export const ToolboxFragmentDoc = gql`
     fragment Toolbox on Toolbox {
   id
@@ -9682,8 +9834,8 @@ export type AcknowledgeMutationHookResult = ReturnType<typeof useAcknowledgeMuta
 export type AcknowledgeMutationResult = Apollo.MutationResult<AcknowledgeMutation>;
 export type AcknowledgeMutationOptions = Apollo.BaseMutationOptions<AcknowledgeMutation, AcknowledgeMutationVariables>;
 export const CleanupActionsDocument = gql`
-    mutation CleanupActions {
-  cleanupActions
+    mutation CleanupActions($actionIds: [ID!]) {
+  cleanupActions(actionIds: $actionIds)
 }
     `;
 export type CleanupActionsMutationFn = Apollo.MutationFunction<CleanupActionsMutation, CleanupActionsMutationVariables>;
@@ -9701,6 +9853,7 @@ export type CleanupActionsMutationFn = Apollo.MutationFunction<CleanupActionsMut
  * @example
  * const [cleanupActionsMutation, { data, loading, error }] = useCleanupActionsMutation({
  *   variables: {
+ *      actionIds: // value for 'actionIds'
  *   },
  * });
  */
@@ -11219,6 +11372,114 @@ export function useAllActionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type AllActionsQueryHookResult = ReturnType<typeof useAllActionsQuery>;
 export type AllActionsLazyQueryHookResult = ReturnType<typeof useAllActionsLazyQuery>;
 export type AllActionsQueryResult = Apollo.QueryResult<AllActionsQuery, AllActionsQueryVariables>;
+export const BrowseActionsDocument = gql`
+    query BrowseActions($pagination: OffsetPaginationInput, $filters: ActionFilter, $ordering: [ActionOrder!]) {
+  actions(ordering: $ordering, pagination: $pagination, filters: $filters) {
+    ...BrowseAction
+  }
+}
+    ${BrowseActionFragmentDoc}`;
+
+/**
+ * __useBrowseActionsQuery__
+ *
+ * To run a query within a React component, call `useBrowseActionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBrowseActionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBrowseActionsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *   },
+ * });
+ */
+export function useBrowseActionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<BrowseActionsQuery, BrowseActionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BrowseActionsQuery, BrowseActionsQueryVariables>(BrowseActionsDocument, options);
+      }
+export function useBrowseActionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BrowseActionsQuery, BrowseActionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BrowseActionsQuery, BrowseActionsQueryVariables>(BrowseActionsDocument, options);
+        }
+export type BrowseActionsQueryHookResult = ReturnType<typeof useBrowseActionsQuery>;
+export type BrowseActionsLazyQueryHookResult = ReturnType<typeof useBrowseActionsLazyQuery>;
+export type BrowseActionsQueryResult = Apollo.QueryResult<BrowseActionsQuery, BrowseActionsQueryVariables>;
+export const ActionOverviewDocument = gql`
+    query ActionOverview($id: ID!) {
+  action(id: $id) {
+    ...ActionOverview
+  }
+}
+    ${ActionOverviewFragmentDoc}`;
+
+/**
+ * __useActionOverviewQuery__
+ *
+ * To run a query within a React component, call `useActionOverviewQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActionOverviewQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActionOverviewQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useActionOverviewQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ActionOverviewQuery, ActionOverviewQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActionOverviewQuery, ActionOverviewQueryVariables>(ActionOverviewDocument, options);
+      }
+export function useActionOverviewLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActionOverviewQuery, ActionOverviewQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActionOverviewQuery, ActionOverviewQueryVariables>(ActionOverviewDocument, options);
+        }
+export type ActionOverviewQueryHookResult = ReturnType<typeof useActionOverviewQuery>;
+export type ActionOverviewLazyQueryHookResult = ReturnType<typeof useActionOverviewLazyQuery>;
+export type ActionOverviewQueryResult = Apollo.QueryResult<ActionOverviewQuery, ActionOverviewQueryVariables>;
+export const ActionHashDocument = gql`
+    query ActionHash($id: ID!) {
+  action(id: $id) {
+    id
+    hash
+  }
+}
+    `;
+
+/**
+ * __useActionHashQuery__
+ *
+ * To run a query within a React component, call `useActionHashQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActionHashQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActionHashQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useActionHashQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ActionHashQuery, ActionHashQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActionHashQuery, ActionHashQueryVariables>(ActionHashDocument, options);
+      }
+export function useActionHashLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActionHashQuery, ActionHashQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActionHashQuery, ActionHashQueryVariables>(ActionHashDocument, options);
+        }
+export type ActionHashQueryHookResult = ReturnType<typeof useActionHashQuery>;
+export type ActionHashLazyQueryHookResult = ReturnType<typeof useActionHashLazyQuery>;
+export type ActionHashQueryResult = Apollo.QueryResult<ActionHashQuery, ActionHashQueryVariables>;
 export const AllPrimaryActionsDocument = gql`
     query AllPrimaryActions($pagination: OffsetPaginationInput, $filters: ActionFilter, $ordering: [ActionOrder!]) {
   actions(ordering: $ordering, pagination: $pagination, filters: $filters) {
@@ -12073,6 +12334,107 @@ export function useHomePageStatsLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type HomePageStatsQueryHookResult = ReturnType<typeof useHomePageStatsQuery>;
 export type HomePageStatsLazyQueryHookResult = ReturnType<typeof useHomePageStatsLazyQuery>;
 export type HomePageStatsQueryResult = Apollo.QueryResult<HomePageStatsQuery, HomePageStatsQueryVariables>;
+export const ActionsPageStatsDocument = gql`
+    query ActionsPageStats($filters: ActionFilter, $taskFilters: TaskFilter, $by: Granularity!) {
+  actionStats(filters: $filters) {
+    count
+    series(by: $by, field: CREATED_AT, timestampField: CREATED_AT) {
+      ts
+      count
+    }
+  }
+  taskStats(filters: $taskFilters) {
+    count
+    series(by: $by, field: CREATED_AT, timestampField: CREATED_AT) {
+      ts
+      count
+    }
+  }
+}
+    `;
+
+/**
+ * __useActionsPageStatsQuery__
+ *
+ * To run a query within a React component, call `useActionsPageStatsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActionsPageStatsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActionsPageStatsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      taskFilters: // value for 'taskFilters'
+ *      by: // value for 'by'
+ *   },
+ * });
+ */
+export function useActionsPageStatsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ActionsPageStatsQuery, ActionsPageStatsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActionsPageStatsQuery, ActionsPageStatsQueryVariables>(ActionsPageStatsDocument, options);
+      }
+export function useActionsPageStatsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActionsPageStatsQuery, ActionsPageStatsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActionsPageStatsQuery, ActionsPageStatsQueryVariables>(ActionsPageStatsDocument, options);
+        }
+export type ActionsPageStatsQueryHookResult = ReturnType<typeof useActionsPageStatsQuery>;
+export type ActionsPageStatsLazyQueryHookResult = ReturnType<typeof useActionsPageStatsLazyQuery>;
+export type ActionsPageStatsQueryResult = Apollo.QueryResult<ActionsPageStatsQuery, ActionsPageStatsQueryVariables>;
+export const ActionUsageStatsDocument = gql`
+    query ActionUsageStats($id: ID!, $after: DateTime, $by: Granularity!) {
+  total: taskStats(filters: {action: $id}) {
+    count
+  }
+  recent: taskStats(filters: {action: $id, createdAfter: $after}) {
+    count
+    series(by: $by, field: CREATED_AT, timestampField: CREATED_AT) {
+      ts
+      count
+    }
+  }
+  completed: taskStats(filters: {action: $id, state: [COMPLETED]}) {
+    count
+  }
+  failed: taskStats(filters: {action: $id, state: [FAILED, CRITICAL]}) {
+    count
+  }
+  running: taskStats(filters: {action: $id, isDone: false}) {
+    count
+  }
+}
+    `;
+
+/**
+ * __useActionUsageStatsQuery__
+ *
+ * To run a query within a React component, call `useActionUsageStatsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActionUsageStatsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActionUsageStatsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *      after: // value for 'after'
+ *      by: // value for 'by'
+ *   },
+ * });
+ */
+export function useActionUsageStatsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ActionUsageStatsQuery, ActionUsageStatsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActionUsageStatsQuery, ActionUsageStatsQueryVariables>(ActionUsageStatsDocument, options);
+      }
+export function useActionUsageStatsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActionUsageStatsQuery, ActionUsageStatsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActionUsageStatsQuery, ActionUsageStatsQueryVariables>(ActionUsageStatsDocument, options);
+        }
+export type ActionUsageStatsQueryHookResult = ReturnType<typeof useActionUsageStatsQuery>;
+export type ActionUsageStatsLazyQueryHookResult = ReturnType<typeof useActionUsageStatsLazyQuery>;
+export type ActionUsageStatsQueryResult = Apollo.QueryResult<ActionUsageStatsQuery, ActionUsageStatsQueryVariables>;
 export const HooksSearchDocument = gql`
     query HooksSearch($search: String, $values: [ID!]) {
   options: actions(filters: {protocols: ["hook"], ids: $values, search: $search}) {

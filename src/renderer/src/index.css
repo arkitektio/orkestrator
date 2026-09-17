@@ -109,9 +109,41 @@
   animation: palette-fold 200ms cubic-bezier(0.32, 0, 0.67, 0) both;
 }
 
+/* The task island at the foot of the rail. Both run for as long as a task does,
+ * so they are CSS rather than a JS animation loop: transform and opacity only,
+ * which the compositor handles without touching the main thread.
+ *
+ * `task-sweep` is the band of light crossing a working row (and the travelling
+ * segment of its indeterminate progress bar); `task-pulse` is the one-shot
+ * tint a row flashes when an event arrives. */
+@keyframes task-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
+@keyframes task-pulse {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@utility animate-task-sweep {
+  animation: task-sweep 1.8s ease-in-out infinite;
+}
+
+@utility animate-task-pulse {
+  animation: task-pulse 700ms ease-out both;
+}
+
 /* Honour a stated preference for less motion: the palette still appears, it
- * just does not travel. */
+ * just does not travel — and the task island holds still, its state carried by
+ * the ring and the label alone. */
 @media (prefers-reduced-motion: reduce) {
+  @keyframes task-sweep {
+    from, to { transform: translateX(-100%); }
+  }
+  @keyframes task-pulse {
+    from, to { opacity: 0; }
+  }
   @keyframes palette-unfold {
     from { opacity: 0; }
     to { opacity: 1; }

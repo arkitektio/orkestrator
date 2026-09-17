@@ -1,5 +1,5 @@
 import { useTabs } from "@/command/tabs/TabsProvider";
-import { NEW_TAB_PATH } from "@/command/tabs/tabs";
+import { NEW_TAB_PATH, type TabRecord } from "@/command/tabs/tabs";
 import { SMART_MODEL_DROP_TYPE } from "@/constants";
 import {
   ContextMenu,
@@ -9,7 +9,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
-import { Plus, X } from "lucide-react";
+import { Pin, Plus, X } from "lucide-react";
 import { useEffect } from "react";
 import { useDrop } from "react-dnd";
 
@@ -53,15 +53,11 @@ const useSpringLoadedTab = (tabId: string, active: boolean, focus: (id: string) 
 };
 
 /** One row of the strip. Its own component so each can hold a drop target. */
-const TabRow = ({
-  tab,
-  active,
-}: {
-  tab: { id: string; label: string };
-  active: boolean;
-}) => {
-  const { focus, close, closeOthers, open } = useTabs();
+const TabRow = ({ tab, active }: { tab: TabRecord; active: boolean }) => {
+  const { focus, close, closeOthers, open, setPinned } = useTabs();
   const { isOver, drop } = useSpringLoadedTab(tab.id, active, focus);
+  const pinned = Boolean(tab.pinned);
+  const togglePin = () => setPinned(tab.id, !pinned);
 
   return (
     <ContextMenu>
@@ -108,20 +104,52 @@ const TabRow = ({
           <span className="min-w-0 flex-1 truncate">{tab.label}</span>
           <button
             type="button"
-            aria-label={`Close ${tab.label}`}
+            aria-label={`${pinned ? "Unpin" : "Pin"} ${tab.label}`}
+            aria-pressed={pinned}
+            title={pinned ? "Unpin" : "Pin"}
             onClick={(e) => {
               e.stopPropagation();
-              close(tab.id);
+              togglePin();
             }}
-            // Revealed on hover so the rail stays quiet at rest, but kept
-            // in the layout so labels do not shift under the pointer.
-            className="shrink-0 rounded opacity-0 transition-opacity group-hover:opacity-60 hover:!opacity-100 focus-visible:opacity-100"
+            // Revealed on hover like the close beside it — except once pinned,
+            // when it stays: at rest it is the whole of how a pinned tab is
+            // told from the others, and it is already where you reach to undo
+            // it.
+            className={cn(
+              "shrink-0 rounded transition-opacity hover:!opacity-100 focus-visible:opacity-100",
+              pinned ? "opacity-60" : "opacity-0 group-hover:opacity-60",
+            )}
           >
-            <X className="h-3 w-3" />
+            <Pin className={cn("h-3 w-3", pinned && "fill-current")} />
           </button>
+          {/* A pinned tab has no close under the pointer, so a kept tab is not
+              lost to a stray click: unpin it, or close it on purpose — the
+              menu, a middle-click, ⌘W. The slot stays, empty, so the pin does
+              not slide under the pointer that just clicked it — unpinning
+              would otherwise put the close exactly where the next click
+              lands. */}
+          {pinned ? (
+            <span aria-hidden className="h-3 w-3 shrink-0" />
+          ) : (
+            <button
+              type="button"
+              aria-label={`Close ${tab.label}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                close(tab.id);
+              }}
+              // Revealed on hover so the rail stays quiet at rest, but kept
+              // in the layout so labels do not shift under the pointer.
+              className="shrink-0 rounded opacity-0 transition-opacity group-hover:opacity-60 hover:!opacity-100 focus-visible:opacity-100"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
+        <ContextMenuItem onSelect={togglePin}>{pinned ? "Unpin" : "Pin"}</ContextMenuItem>
+        <ContextMenuSeparator />
         <ContextMenuItem onSelect={() => close(tab.id)}>Close</ContextMenuItem>
         <ContextMenuItem onSelect={() => closeOthers(tab.id)}>Close others</ContextMenuItem>
         <ContextMenuSeparator />
@@ -134,10 +162,10 @@ const TabRow = ({
 /**
  * The open tabs, as a strip in the rail.
  *
- * Sits above the pinned routes: tabs are the working set — what is open right
- * now, each with its own history — and pins are the bookmarks beneath them.
- * The two look alike on purpose (same row, same dot, same hover-revealed
- * close) so the rail reads as one list with two tenses, not two widgets.
+ * One list. A tab worth keeping is pinned where it stands — the pin on its row
+ * is both the control and the indicator — rather than copied into a second
+ * section: pinned tabs gather at the top, survive "Close others" and are never
+ * evicted to make room.
  *
  * The "+" opens a tab on the new-tab page — exactly what ⌘T does — so the
  * mouse and the keyboard create tabs through one path.

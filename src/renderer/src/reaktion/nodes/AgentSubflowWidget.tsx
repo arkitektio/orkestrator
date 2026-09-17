@@ -7,11 +7,16 @@ import { NodeResizeControl } from "@xyflow/react";
 import React, { useMemo } from "react";
 import { EditActions, useFlowAdapter } from "./adapter";
 
+// Room for an action card (240–300px wide) at the child offset, with the same
+// margin on the right.
+const MIN_WIDTH = 360;
+const MIN_HEIGHT = 180;
+
 const ResizeHandle = ({ selected }: { selected?: boolean }) => (
   <NodeResizeControl
     position="bottom-right"
-    minWidth={280}
-    minHeight={180}
+    minWidth={MIN_WIDTH}
+    minHeight={MIN_HEIGHT}
     maxWidth={1200}
     maxHeight={900}
     className="nodrag nopan nowheel z-40"
@@ -93,8 +98,8 @@ const AgentSubflowWidgetInner: React.FC<AgentSubFlownNodeProps> = ({ data, id, s
       <NodeShowLayout
         id={id}
         selected={selected}
-        minWidth={280}
-        minHeight={180}
+        minWidth={MIN_WIDTH}
+        minHeight={MIN_HEIGHT}
         maxWidth={1200}
         maxHeight={900}
         showResizeControl={false}

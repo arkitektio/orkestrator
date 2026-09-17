@@ -3,9 +3,24 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useCommandPalette } from "./CommandPaletteProvider";
-import { routeOfPin, type Pin } from "./pins";
 import { useTabs } from "./tabs/TabsProvider";
 import { useRecordRecent } from "./useRecordRecent";
+
+/**
+ * Something the palette can take you to: a thing, or a page. The same record
+ * shape as `recents.ts`, minus the timestamp — one vocabulary across the
+ * palette's sources and its history.
+ */
+export type OpenTarget =
+  | { kind: "entity"; identifier: string; id: string; label: string }
+  | { kind: "route"; route: string; label: string };
+
+/** Where a target points; `undefined` for a model no longer registered. */
+const routeOfTarget = (target: OpenTarget): string | undefined => {
+  if (target.kind === "route") return target.route;
+  const path = smartRegistry.buildModelPath(target.identifier, target.id);
+  return path ? (path.startsWith("/") ? path : `/${path}`) : undefined;
+};
 
 /**
  * What happens when a result is chosen from the palette.
@@ -25,12 +40,10 @@ export const useOpenTarget = () => {
   const record = useRecordRecent();
 
   return useCallback(
-    (target: Pin) => {
+    (target: OpenTarget) => {
       record(target);
 
-      const to = routeOfPin(target, (identifier, id) =>
-        smartRegistry.buildModelPath(identifier, id),
-      );
+      const to = routeOfTarget(target);
 
       // A model the deployment no longer registers has no path; do nothing
       // rather than navigate to `/undefined`.

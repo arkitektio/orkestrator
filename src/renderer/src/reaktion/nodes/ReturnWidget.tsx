@@ -1,7 +1,6 @@
-import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RunEventKind } from "@/reaktion/api/graphql";
 import { InStream } from "@/reaktion/base/Instream";
-import { NodeShowLayout } from "@/reaktion/base/NodeShow";
+import { NodeDescription, NodeHeader, NodeShowLayout, NodeTitle } from "@/reaktion/base/NodeShow";
 import { ReturnNodeProps } from "@/reaktion/types";
 import { portToLabel } from "@/rekuest/widgets/utils";
 import React from "react";
@@ -21,10 +20,10 @@ const ReturnWidgetInner: React.FC<ReturnNodeProps> = ({ data: { ins }, id, selec
       id={id}
       selected={selected}
     >
-      <CardHeader className="p-4 group">
-        <CardTitle>Outputs {status?.kind === RunEventKind.Complete && "✅"}</CardTitle>
-        <CardDescription>{ins.at(0)?.map((o) => portToLabel(o)).join(" | ")}</CardDescription>
-      </CardHeader>
+      <NodeHeader>
+        <NodeTitle>Outputs {status?.kind === RunEventKind.Complete && "✅"}</NodeTitle>
+        <NodeDescription className="w-auto min-w-0 max-w-[16rem]">{ins.at(0)?.map((o) => portToLabel(o)).join(" | ")}</NodeDescription>
+      </NodeHeader>
       {ins.map((s, index) => (
         <InStream key={index} stream={s as never} id={index} length={ins.length} />
       ))}

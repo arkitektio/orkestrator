@@ -4,7 +4,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 
 import { useDialog } from "@/app/dialog";
 import { matchesFilter, scoreFilter } from "@/command/filter";
-import type { PinsValue } from "@/command/PinsProvider";
+import type { TabsValue } from "@/command/tabs/TabsProvider";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
 import { smartRegistry } from "@/providers/smart/registry";
 import type { Structure as AppStructure } from "@/types";
@@ -136,8 +136,8 @@ export type ActionParams<TAppOrServices = ServiceMap> = {
   }) => Promise<boolean>;
   dialog: ReturnType<typeof useDialog>;
   navigate: ReturnType<typeof useNavigate>;
-  /** The rail's pins — pinning something is what opens it as a new tab. */
-  pins: Pick<PinsValue, "pin" | "canPin">;
+  /** The rail's tabs, for an action that opens one rather than navigating. */
+  tabs: Pick<TabsValue, "open">;
 };
 
 export type SetAction = ActionState;

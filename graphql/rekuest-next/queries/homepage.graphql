@@ -7,3 +7,47 @@ query HomePageStats{
     count
   }
 }
+
+query ActionsPageStats(
+  $filters: ActionFilter
+  $taskFilters: TaskFilter
+  $by: Granularity!
+) {
+  actionStats(filters: $filters) {
+    count
+    series(by: $by, field: CREATED_AT, timestampField: CREATED_AT) {
+      ts
+      count
+    }
+  }
+
+  taskStats(filters: $taskFilters) {
+    count
+    series(by: $by, field: CREATED_AT, timestampField: CREATED_AT) {
+      ts
+      count
+    }
+  }
+}
+
+query ActionUsageStats($id: ID!, $after: DateTime, $by: Granularity!) {
+  total: taskStats(filters: { action: $id }) {
+    count
+  }
+  recent: taskStats(filters: { action: $id, createdAfter: $after }) {
+    count
+    series(by: $by, field: CREATED_AT, timestampField: CREATED_AT) {
+      ts
+      count
+    }
+  }
+  completed: taskStats(filters: { action: $id, state: [COMPLETED] }) {
+    count
+  }
+  failed: taskStats(filters: { action: $id, state: [FAILED, CRITICAL] }) {
+    count
+  }
+  running: taskStats(filters: { action: $id, isDone: false }) {
+    count
+  }
+}

@@ -1,6 +1,5 @@
 import { useDetailActionQuery } from "@/rekuest/api/graphql";
 import { cn } from "@/lib/utils";
-import { LiveTaskState } from "@/rekuest/hooks/useTasks";
 import { WrappedReturnsContainer } from "@/rekuest/widgets/tailwind";
 import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
 
@@ -47,22 +46,4 @@ export const DynamicYieldDisplay = (props: {
       />
     </div>
   );
-};
-
-/** Border accent for a live task state (notification cards/pills). */
-export const borderColorForLiveState = (live: LiveTaskState) => {
-  if (live.error) {
-    return "border-red-500";
-  }
-  if (live.cancelled) {
-    return "border-orange-500";
-  }
-  if (live.done) {
-    return "border-green-500";
-  }
-  if (live.yield) {
-    return "border-blue-500";
-  }
-
-  return "border-muted-foreground/10";
 };

@@ -30,7 +30,6 @@ import {
 import React from "react";
 import { matchIcon } from "./moduleIcons";
 import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHover";
-import RailPins from "./RailPins";
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
 import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
@@ -393,13 +392,11 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
       </div>
       </ModuleNavHoverGroup>
 
-      {/* Pinned routes. A module's own links live on the hover over its icon
-          above, not here — the vertical run belongs to what the user chose to
-          keep. */}
+      {/* The open tabs. A module's own links live on the hover over its icon
+          above, not here — the vertical run belongs to what the user has open,
+          the pinned ones first. */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-        {/* What is open now, then what is kept: one list, two tenses. */}
         <RailTabs />
-        <RailPins />
       </div>
 
       {/* Running tasks, where a browser puts its now-playing control: in the
