@@ -38,6 +38,21 @@ export type TimelineDependencyGroup = {
   methods: TimelineMethodRow[];
 };
 
+/** Compact human duration: `340 ms`, `4.20 s`, `42.5 s`, `3m 07s`, `2h 05m`. */
+export const formatDuration = (ms: number) => {
+  if (!Number.isFinite(ms) || ms < 0) ms = 0;
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  const seconds = ms / 1000;
+  if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 2 : 1)} s`;
+  const totalSeconds = Math.round(seconds);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  if (totalSeconds < 3600) {
+    return `${Math.floor(totalSeconds / 60)}m ${pad(totalSeconds % 60)}s`;
+  }
+  const totalMinutes = Math.round(totalSeconds / 60);
+  return `${Math.floor(totalMinutes / 60)}h ${pad(totalMinutes % 60)}m`;
+};
+
 export function notEmpty<T>(v: T | null | undefined): v is T {
   return v !== null && v !== undefined;
 }

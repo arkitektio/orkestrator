@@ -1160,8 +1160,6 @@ export type Client = {
   device?: Maybe<Device>;
   /** Unique ID of the client. */
   id: Scalars['ID']['output'];
-  /** Name of the client. */
-  name: Scalars['String']['output'];
   /** Release associated with the client. */
   release?: Maybe<Release>;
 };
@@ -3081,7 +3079,7 @@ export type Provides = {
 };
 
 export type ProvidesInput = {
-  /** The key of the provision: the path into the object the constraint reads */
+  /** The key of the provision: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes') */
   key: Scalars['String']['input'];
   /** The operator for the provision */
   operator: DescriptorOperator;
@@ -3712,7 +3710,7 @@ export type Requires = {
 };
 
 export type RequiresInput = {
-  /** The key of the requirement: the path into the object the constraint reads */
+  /** The key of the requirement: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes') */
   key: Scalars['String']['input'];
   /** The operator for the requirement */
   operator: DescriptorOperator;
@@ -5377,9 +5375,9 @@ export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string }
 
 export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, blok: { __typename?: 'Blok', id: string, name: string } };
 
-export type ClientFragment = { __typename?: 'Client', id: string, name: string, clientId: string };
+export type ClientFragment = { __typename?: 'Client', id: string, clientId: string };
 
-export type ListClientFragment = { __typename?: 'Client', id: string, name: string, clientId: string };
+export type ListClientFragment = { __typename?: 'Client', id: string, clientId: string, release?: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', id: string, identifier: string } } | null };
 
 export type DashboardFragment = { __typename?: 'Dashboard', id: string, name?: string | null, placements: Array<{ __typename?: 'DashboardPlacement', blok?: (
       { __typename?: 'MaterializedBlok' }
@@ -6062,7 +6060,7 @@ export type ChildTaskEventFragment = { __typename?: 'ChildTaskEvent', create?: (
     & TaskChangeFragment
   ) | null };
 
-export type ListTaskFragment = { __typename?: 'Task', id: string, reference?: string | null, latestEventKind: TaskEventKind, isDone: boolean, finishedAt?: any | null, createdAt: any, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string } | null };
+export type ListTaskFragment = { __typename?: 'Task', id: string, reference?: string | null, latestEventKind: TaskEventKind, isDone: boolean, finishedAt?: any | null, createdAt: any, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string } | null, agent?: { __typename?: 'Agent', id: string, name: string } | null, events: Array<{ __typename?: 'TaskEvent', id: string, kind: TaskEventKind, progress?: number | null, message?: string | null, createdAt: any }> };
 
 export type HoverTaskFragment = { __typename?: 'Task', id: string, reference?: string | null, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any, finishedAt?: any | null, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string } } | null, events: Array<{ __typename?: 'TaskEvent', id: string, kind: TaskEventKind, progress?: number | null, message?: string | null, createdAt: any }> };
 
@@ -8195,7 +8193,17 @@ export const ListTaskFragmentDoc = gql`
     id
     interface
   }
-  createdAt
+  agent {
+    id
+    name
+  }
+  events(pagination: {limit: 3}, ordering: {createdAt: DESC}) {
+    id
+    kind
+    progress
+    message
+    createdAt
+  }
 }
     `;
 export const MediaStoreFragmentDoc = gql`
@@ -8379,15 +8387,21 @@ export const ListBlokFragmentDoc = gql`
 export const ClientFragmentDoc = gql`
     fragment Client on Client {
   id
-  name
   clientId
 }
     `;
 export const ListClientFragmentDoc = gql`
     fragment ListClient on Client {
   id
-  name
   clientId
+  release {
+    id
+    version
+    app {
+      id
+      identifier
+    }
+  }
 }
     `;
 export const ListMaterializedBlokFragmentDoc = gql`

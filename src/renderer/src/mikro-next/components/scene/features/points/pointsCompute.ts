@@ -23,7 +23,7 @@ import * as TSLTyped from "three/tsl";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const TSL = TSLTyped as any;
-const { Fn, If, atomicAdd, float, instanceIndex, storage, uint, uniform } = TSL;
+const { Fn, If, atomicAdd, atomicStore, float, instanceIndex, storage, uint, uniform } = TSL;
 
 /** Vertices per point. Two triangles of a billboard quad, from `vertexIndex` alone. */
 export const VERTICES_PER_POINT = 6;
@@ -171,10 +171,13 @@ export const createCullPass = (
   // cursor and the survivors would overwrite each other.
   const indirectNode = storage(indirect, "uint", 4).toAtomic();
 
+  // `atomicStore`, not `.assign`: the buffer is `array<atomic<u32>>`, and WGSL has no `=` on an
+  // atomic — three emits one anyway, the module fails to compile, and because `reset` and `cull`
+  // are encoded into ONE pass the invalid pipeline takes the cull down with it. `instanceCount`
+  // then stays at its seeded 0 and nothing is ever drawn. No index guard either: `compute(1)`
+  // bounds-checks to the single invocation 0.
   const reset = Fn(() => {
-    If(instanceIndex.equal(uint(1)), () => {
-      indirectNode.element(uint(1)).assign(uint(0));
-    });
+    atomicStore(indirectNode.element(uint(1)), uint(0));
   })().compute(1);
 
   const cull = Fn(() => {

@@ -4,6 +4,7 @@ import { Route, Routes } from "react-router-dom";
 import { BackNavigationErrorCatcher } from "./AppProvider";
 import { NewTabPage } from "./pages/NewTabPage";
 import { ConnectingFallback } from "./components/fallbacks/Connecting";
+import { ModuleLoadingFallback } from "./components/fallbacks/ModuleLoading";
 import { NotConnected } from "./components/fallbacks/NotConnected";
 import { NotFound } from "./components/fallbacks/NotFound";
 
@@ -36,7 +37,8 @@ const protectModule = (component: React.ReactNode, fallback?: React.ReactNode) =
       notConnectedFallback={fallback || <NotConnected />}
       connectingFallback={<ConnectingFallback />}
     >
-      <React.Suspense fallback={<ConnectingFallback />}>{component}</React.Suspense>
+      {/* The chunk is loading, not the session: the guard above already passed. */}
+      <React.Suspense fallback={<ModuleLoadingFallback />}>{component}</React.Suspense>
     </Arkitekt.Guard>
   );
 };
@@ -56,7 +58,7 @@ export const AppRoutes = () => (
         <Route
           index
           element={
-            <React.Suspense fallback={<ConnectingFallback />}>
+            <React.Suspense fallback={<ModuleLoadingFallback />}>
               <Hero />
             </React.Suspense>
           }

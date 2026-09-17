@@ -30,6 +30,7 @@ const List = ({ filters, order, pagination, title }: Props) => {
         }
         refetch={refetch}
         error={error}
+        minItemWidth={240}
       >
         {(ex) => (
           <TaskCard key={ex.id} item={ex} />

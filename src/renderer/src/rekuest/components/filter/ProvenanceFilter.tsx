@@ -61,7 +61,7 @@ export const ProvenanceFilter = ({ value, onChange }: ProvenanceFilterProps) => 
   const [fetchTasks] = useListTasksLazyQuery();
 
   // rekuest `ClientFilter` has no free-text search, so we fetch a page of
-  // clients and match the client-side (by name / clientId). Value = clientId to
+  // clients and match the client-side (by app release / clientId). Value = clientId to
   // line up with `Simulation.createdWith` and `ProvenanceEntry.client.clientId`.
   // Memoised on the (stable) lazy-query fn so `SearchField`'s mount effect does
   // not re-fire on every re-render (which would loop forever).
@@ -79,12 +79,17 @@ export const ProvenanceFilter = ({ value, onChange }: ProvenanceFilterProps) => 
       const clients = data?.clients ?? [];
       const wanted = values?.map((v) => v.toString());
       return clients
-        .filter((c) =>
+        .map((c) => ({
+          value: c.clientId,
+          label: c.release
+            ? `${c.release.app.identifier} ${c.release.version}`
+            : c.clientId,
+        }))
+        .filter((o) =>
           wanted
-            ? wanted.includes(c.clientId)
-            : includesInsensitive(`${c.name} ${c.clientId}`, search),
-        )
-        .map((c) => ({ value: c.clientId, label: c.name }));
+            ? wanted.includes(o.value)
+            : includesInsensitive(`${o.label} ${o.value}`, search),
+        );
     },
     [fetchClients],
   );

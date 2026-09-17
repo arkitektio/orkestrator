@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { LayerState } from "../../platform/stores/sceneStore";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
-import { PlacementPopover } from "../../platform/layerui/PlacementChain";
 import {
   RenderGraphEditor,
   RenderGraphSection,
@@ -16,9 +15,7 @@ import {
  * The acquisition metadata anchored to what the layer is showing is NOT here:
  * it is the viewport's bottom-left overlay (`features/annotations/
  * MetadataOverlay.tsx`), which describes the active layer next to the picture
- * instead of folding a copy into every card. The placement chain stays behind
- * a popover: which coordinate systems a layer passes through only matters when
- * it lands somewhere unexpected.
+ * instead of folding a copy into every card.
  */
 export const LayerGraphFlyout = ({
   layer,
@@ -28,15 +25,8 @@ export const LayerGraphFlyout = ({
   inline = false,
 }: {
   layer: LayerState;
-  /**
-   * Lifted render-graph editing state (shared with the card header's Save).
-   *
-   * OMITTED by the fixed-shape kinds: an intensity, rgb or phasor layer has no
-   * render graph, so there is no graph section to mount — what it wants from
-   * this component is the placement chain, which every lens-backed layer
-   * answers the same way.
-   */
-  editor?: RenderGraphEditor;
+  /** Lifted render-graph editing state (shared with the card header's Save). */
+  editor: RenderGraphEditor;
   onUpdate: (updated: LayerState) => void;
   onClose: () => void;
   /**
@@ -48,9 +38,8 @@ export const LayerGraphFlyout = ({
 }) => {
   const label = layerDisplayLabel(layer);
 
-  // The render graph; placement is one click away rather than occupying the
-  // bottom of every unfolded card. `min-w-0` so a long colormap or dimension
-  // name truncates instead of widening the card.
+  // The render graph. `min-w-0` so a long colormap or dimension name truncates
+  // instead of widening the card.
   const body = (
     <div
       className={
@@ -59,9 +48,7 @@ export const LayerGraphFlyout = ({
           : "flex min-w-0 flex-col gap-2 overflow-y-auto px-3 py-2 text-[10px] text-white/85"
       }
     >
-      {editor && <RenderGraphSection editor={editor} layer={layer} />}
-
-      <PlacementPopover layer={layer} />
+      <RenderGraphSection editor={editor} layer={layer} />
     </div>
   );
 
