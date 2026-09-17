@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/arkitektio/orkestrator/compare/v2.2.1...v2.3.0) (2026-09-16)
+
+
+### Features
+
+* better debug pane ([03a860b](https://github.com/arkitektio/orkestrator/commit/03a860b31fe0d20c061f8564d9dff01fd52953c0))
+
 ## [2.2.1](https://github.com/arkitektio/orkestrator/compare/v2.2.0...v2.2.1) (2026-09-16)
 
 
