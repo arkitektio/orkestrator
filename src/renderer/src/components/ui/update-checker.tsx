@@ -1,3 +1,7 @@
+import {
+  updateError as recordUpdateError,
+  useUpdateState,
+} from "@/app/updates/updateStore";
 import { AlertTriangle, CheckCircle, Download, RefreshCw, X } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "./alert";
@@ -13,24 +17,33 @@ import {
 
 type UpdateChannel = "latest" | "next";
 
-interface UpdateStatus {
-  isChecking: boolean;
-  updateAvailable: boolean;
-  updateInfo?: any;
-  progress?: number;
-  error?: string;
-  status?: string;
-  checkComplete: boolean;
-}
-
+/**
+ * The update card on the settings page.
+ *
+ * Reads `app/updates/updateStore` rather than subscribing to the updater
+ * itself. `UpdateListener` owns the one subscription, so this card and the rail
+ * island can never disagree — opening settings mid-download used to show 0%
+ * while a download was already half done, because each surface started its own
+ * listener from zero.
+ */
 export const UpdateChecker: React.FC = () => {
-  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({
-    isChecking: false,
-    updateAvailable: false,
-    checkComplete: false,
-  });
+  const { phase, version: updateVersion, releaseNotes, percent, status, error } =
+    useUpdateState((state) => state);
 
-  const [showAlert, setShowAlert] = useState(false);
+  const isChecking = phase === "checking";
+  const updateAvailable =
+    phase === "available" || phase === "downloading" || phase === "downloaded";
+  const checkComplete = phase !== "idle" && phase !== "checking";
+
+  // Page-local: whether the user has waved the result away. Reset by a new check.
+  const [alertDismissed, setAlertDismissed] = useState(false);
+  const showAlert =
+    !alertDismissed &&
+    (phase === "available" ||
+      phase === "downloaded" ||
+      phase === "none" ||
+      phase === "error");
+
   const [channel, setChannel] = useState<UpdateChannel>("latest");
   const [version, setVersion] = useState<string>("");
   const [channelBusy, setChannelBusy] = useState(false);
@@ -47,170 +60,72 @@ export const UpdateChecker: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  // Set up event listeners for update events
-  useEffect(() => {
-    if (!window.updates) return;
-
-    const handleStatus = (status: string) => {
-      setUpdateStatus(prev => ({ ...prev, status, isChecking: true }));
-    };
-
-    const handleUpdateAvailable = (info: any) => {
-      setUpdateStatus(prev => ({
-        ...prev,
-        updateAvailable: true,
-        updateInfo: info,
-        isChecking: false,
-        checkComplete: true
-      }));
-      setShowAlert(true);
-    };
-
-    const handleUpdateNone = () => {
-      setUpdateStatus(prev => ({
-        ...prev,
-        updateAvailable: false,
-        isChecking: false,
-        checkComplete: true,
-        error: undefined
-      }));
-      setShowAlert(true);
-    };
-
-    const handleProgress = (progress: any) => {
-      setUpdateStatus(prev => ({ ...prev, progress: progress.percent }));
-    };
-
-    const handleError = (error: any) => {
-      setUpdateStatus(prev => ({
-        ...prev,
-        error: String(error),
-        isChecking: false,
-        checkComplete: true
-      }));
-      setShowAlert(true);
-    };
-
-    // Register event listeners; each returns its disposer.
-    const disposers = [
-      window.updates.onStatus(handleStatus),
-      window.updates.onAvailable(handleUpdateAvailable),
-      window.updates.onNone(handleUpdateNone),
-      window.updates.onProgress(handleProgress),
-      window.updates.onError(handleError),
-    ];
-
-    return () => {
-      for (const dispose of disposers) {
-        if (typeof dispose === "function") dispose();
-      }
-    };
-  }, []);
-
   const checkForUpdates = useCallback(async () => {
     if (!window.updates) {
-      setUpdateStatus(prev => ({
-        ...prev,
-        error: "Update system not available",
-        checkComplete: true
-      }));
-      setShowAlert(true);
+      recordUpdateError("Update system not available");
       return;
     }
 
-    setUpdateStatus(prev => ({
-      ...prev,
-      isChecking: true,
-      error: undefined,
-      checkComplete: false
-    }));
-    setShowAlert(false);
+    setAlertDismissed(false);
 
     try {
       const result = await window.updates.checkForUpdates();
+      // On success the updater's own events drive the store.
       if (!result.success || result.error) {
-        setUpdateStatus(prev => ({
-          ...prev,
-          error: result.error,
-          isChecking: false,
-          checkComplete: true
-        }));
-        setShowAlert(true);
+        recordUpdateError(result.error ?? "Update check failed");
       }
-      // If successful, the event listeners will handle the response
     } catch (error) {
-      setUpdateStatus(prev => ({
-        ...prev,
-        error: String(error),
-        isChecking: false,
-        checkComplete: true
-      }));
-      setShowAlert(true);
+      recordUpdateError(error);
     }
   }, []);
 
-  const handleChannelChange = useCallback(async (value: UpdateChannel) => {
-    if (!window.updates?.setChannel) return;
-    const previous = channel;
-    setChannel(value);
-    setChannelBusy(true);
-    setUpdateStatus(prev => ({
-      ...prev,
-      isChecking: true,
-      error: undefined,
-      checkComplete: false,
-    }));
-    setShowAlert(false);
-    try {
-      const result = await window.updates.setChannel(value);
-      if (!result.success || result.error) {
+  const handleChannelChange = useCallback(
+    async (value: UpdateChannel) => {
+      if (!window.updates?.setChannel) return;
+      const previous = channel;
+      setChannel(value);
+      setChannelBusy(true);
+      setAlertDismissed(false);
+      try {
+        const result = await window.updates.setChannel(value);
+        if (!result.success || result.error) {
+          setChannel(previous);
+          recordUpdateError(result.error || "Failed to switch update channel");
+        }
+        // On success the updater's events report the check result.
+      } catch (error) {
         setChannel(previous);
-        setUpdateStatus(prev => ({
-          ...prev,
-          error: result.error || "Failed to switch update channel",
-          isChecking: false,
-          checkComplete: true,
-        }));
-        setShowAlert(true);
+        recordUpdateError(error);
+      } finally {
+        setChannelBusy(false);
       }
-      // On success the update event listeners report the check result.
-    } catch (error) {
-      setChannel(previous);
-      setUpdateStatus(prev => ({
-        ...prev,
-        error: String(error),
-        isChecking: false,
-        checkComplete: true,
-      }));
-      setShowAlert(true);
-    } finally {
-      setChannelBusy(false);
-    }
-  }, [channel]);
+    },
+    [channel],
+  );
 
   const dismissAlert = () => {
-    setShowAlert(false);
+    setAlertDismissed(true);
   };
 
   const getStatusIcon = () => {
-    if (updateStatus.isChecking) {
+    if (isChecking) {
       return <RefreshCw className="h-4 w-4 animate-spin" />;
     }
-    if (updateStatus.error) {
+    if (error) {
       return <AlertTriangle className="h-4 w-4" />;
     }
-    if (updateStatus.updateAvailable) {
+    if (updateAvailable) {
       return <Download className="h-4 w-4" />;
     }
-    if (updateStatus.checkComplete) {
+    if (checkComplete) {
       return <CheckCircle className="h-4 w-4" />;
     }
     return <RefreshCw className="h-4 w-4" />;
   };
 
   const getButtonText = () => {
-    if (updateStatus.isChecking) {
-      return updateStatus.status || "Checking for updates...";
+    if (isChecking) {
+      return status || "Checking for updates...";
     }
     return "Check for Updates";
   };
@@ -251,7 +166,7 @@ export const UpdateChecker: React.FC = () => {
       <div className="flex items-center gap-4">
         <Button
           onClick={checkForUpdates}
-          disabled={updateStatus.isChecking}
+          disabled={isChecking}
           variant="outline"
           className="flex items-center gap-2"
         >
@@ -260,18 +175,20 @@ export const UpdateChecker: React.FC = () => {
         </Button>
       </div>
 
-      {updateStatus.progress !== undefined && updateStatus.progress > 0 && (
+      {percent !== undefined && percent > 0 && (
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground">
-            Downloading update: {Math.round(updateStatus.progress)}%
+            {phase === "downloaded"
+              ? "Update downloaded — restart to install"
+              : `Downloading update: ${Math.round(percent)}%`}
           </div>
-          <Progress value={updateStatus.progress} />
+          <Progress value={percent} />
         </div>
       )}
 
       {showAlert && (
         <Alert
-          variant={updateStatus.error ? "destructive" : "default"}
+          variant={error ? "destructive" : "default"}
           className="relative"
         >
           <Button
@@ -284,25 +201,25 @@ export const UpdateChecker: React.FC = () => {
           </Button>
 
           <div className="pr-8">
-            {updateStatus.error && (
+            {error && (
               <>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Update check failed:</strong> {updateStatus.error}
+                  <strong>Update check failed:</strong> {error}
                 </AlertDescription>
               </>
             )}
 
-            {updateStatus.updateAvailable && updateStatus.updateInfo && (
+            {updateAvailable && !error && (
               <>
                 <Download className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Update available:</strong> Version {updateStatus.updateInfo.version} is ready to download.
-                  {updateStatus.updateInfo.releaseNotes && (
+                  <strong>Update available:</strong> Version {updateVersion} is ready to download.
+                  {releaseNotes && (
                     <div className="mt-2 text-sm">
                       <strong>Release Notes:</strong>
                       <div className="mt-1 max-h-32 overflow-y-auto text-xs">
-                        {updateStatus.updateInfo.releaseNotes}
+                        {releaseNotes}
                       </div>
                     </div>
                   )}
@@ -310,7 +227,7 @@ export const UpdateChecker: React.FC = () => {
               </>
             )}
 
-            {updateStatus.checkComplete && !updateStatus.updateAvailable && !updateStatus.error && (
+            {checkComplete && !updateAvailable && !error && (
               <>
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>

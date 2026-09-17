@@ -144,7 +144,9 @@ if (process.contextIsolated) {
       onAvailable: (cb: (info: unknown) => void) => subscribe<unknown>("updater:available", cb),
       onNone: (cb: () => void) => subscribe<unknown>("updater:none", () => cb()),
       onProgress: (cb: (progress: unknown) => void) => subscribe<unknown>("updater:progress", cb),
+      onDownloaded: (cb: (info: unknown) => void) => subscribe<unknown>("updater:downloaded", cb),
       onError: (cb: (error: unknown) => void) => subscribe<unknown>("updater:error", cb),
+      quitAndInstall: () => ipcRenderer.invoke("quit-and-install"),
     });
   } catch (error) {
     console.error(error);

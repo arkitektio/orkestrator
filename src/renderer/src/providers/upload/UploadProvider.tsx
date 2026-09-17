@@ -4,11 +4,11 @@ import { v4 as uuidv4 } from "uuid";
 import { X, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  TransferIsland,
-  TransferIslandRow,
-  TransferName,
-  TransferProgress,
-} from "@/providers/transfers/TransferIsland";
+  RailIsland,
+  RailIslandRow,
+  RailIslandName,
+  RailIslandProgress,
+} from "@/app/components/rail/RailIsland";
 
 export type UploadStatus = "pending" | "uploading" | "completed" | "error";
 
@@ -194,7 +194,7 @@ export const UploadIsland: React.FC = () => {
   const { uploads, cancelUpload } = useUpload();
 
   return (
-    <TransferIsland
+    <RailIsland
       show={uploads.length > 0}
       islandKey="upload-island"
       testId="upload-island"
@@ -205,7 +205,7 @@ export const UploadIsland: React.FC = () => {
         .map((u) => {
           const working = u.status === "uploading" || u.status === "pending";
           return (
-            <TransferIslandRow
+            <RailIslandRow
               key={u.id}
               working={working}
               testId="upload-island-row"
@@ -219,7 +219,7 @@ export const UploadIsland: React.FC = () => {
                   <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
                 )}
 
-                <TransferName name={u.file.name} working={working} />
+                <RailIslandName name={u.file.name} working={working} />
 
                 {u.status === "uploading" && (
                   <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
@@ -242,7 +242,7 @@ export const UploadIsland: React.FC = () => {
               </div>
 
               {working && (
-                <TransferProgress
+                <RailIslandProgress
                   progress={u.progress}
                   started={u.status === "uploading"}
                 />
@@ -253,10 +253,10 @@ export const UploadIsland: React.FC = () => {
                   {u.error}
                 </p>
               )}
-            </TransferIslandRow>
+            </RailIslandRow>
           );
         })}
-    </TransferIsland>
+    </RailIsland>
   );
 };
 

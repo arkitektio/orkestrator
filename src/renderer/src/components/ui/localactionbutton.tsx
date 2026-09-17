@@ -24,6 +24,7 @@ export const LocalActionButton = ({
   const action = useAction(name);
   const { assign, confirmationDialog } = usePerformAction({
     action,
+    actionId: name,
     state: state || { left: [], isCommand: false },
   });
 

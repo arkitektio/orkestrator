@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
@@ -13,6 +13,12 @@ import { useAssign } from "./useAssign";
 
 export type useActionOptions = {
   hash?: string;
+  /**
+   * Also show the task in the rail island. For a caller whose own progress
+   * display lives in something that closes — the command palette — where the
+   * task would otherwise run on with no indicator at all.
+   */
+  notifyGlobally?: boolean;
   onDone?: (event: TaskEventFragment) => void;
   onError?: (error: string) => void;
   object?: string;
@@ -63,9 +69,24 @@ export const useHashActionWithProgress = (
     [setDoing, setProgress, setError, options.onDone, options.onError],
   );
 
+  // The tracker outlives this hook unless something stops it: `untrack` used to
+  // be called only when the assign mutation itself failed, so an unmounted row
+  // left its callback registered until a terminal event arrived.
+  const untrackRef = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      untrackRef.current?.();
+      untrackRef.current = null;
+    },
+    [],
+  );
+
   const assign = async (args: { [key: string]: unknown }) => {
     const reference = uuidv4();
-    const untrack = trackTask(reference, doStuff);
+    const untrack = trackTask(reference, doStuff, {
+      notifyGlobally: options.notifyGlobally,
+    });
+    untrackRef.current = untrack;
 
     try {
       await postAssign(buildAssignInput({
@@ -78,6 +99,7 @@ export const useHashActionWithProgress = (
       setError(null);
     } catch (e) {
       untrack();
+      untrackRef.current = null;
       const message = e instanceof Error ? e.message : "Unknown error";
       toast.error(message);
       setDoing(false);

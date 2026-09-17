@@ -35,6 +35,10 @@ import RailFooter from "./RailFooter";
 import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
 import { UploadIsland } from "@/providers/upload/UploadProvider";
 import { DownloadIsland } from "@/providers/download/DownloadProvider";
+import { AgentIsland } from "@/app/agent/AgentIsland";
+import { LocalActionIsland } from "@/app/components/rail/LocalActionIsland";
+import { RailIslandStack } from "@/app/components/rail/RailIsland";
+import { UpdateIsland } from "@/app/updates/UpdateIsland";
 
 
 export type INavigationBarProps = {
@@ -408,14 +412,26 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
         <RailTabs />
       </div>
 
-      {/* Transfers and running tasks, where a browser puts its now-playing
-          control: in the chrome that is always there, rather than floating
-          over the page. Each island renders nothing while it is empty. */}
-      <DownloadIsland />
-      <UploadIsland />
-      <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
-        <TaskNotificationStack />
-      </Guard.Rekuest>
+      {/* Everything ambient and long-running, where a browser puts its
+          now-playing control: in the chrome that is always there, rather than
+          floating over the page. Each island renders nothing while it is empty,
+          and they share one scroller so a busy app cannot push the footer off
+          the bottom of the rail.
+
+          Ordered by how often they appear, rarest at the top: what shows up
+          constantly (transfers) sits nearest the footer and the pointer, so a
+          rare arrival above does not shove it around. The agent sits beside the
+          task island to share the one rekuest guard. */}
+      <RailIslandStack>
+        <UpdateIsland />
+        <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
+          <AgentIsland />
+          <TaskNotificationStack />
+        </Guard.Rekuest>
+        <LocalActionIsland />
+        <DownloadIsland />
+        <UploadIsland />
+      </RailIslandStack>
 
       <RailFooter />
     </>

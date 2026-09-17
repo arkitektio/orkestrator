@@ -34,6 +34,9 @@ export const InstallButton = (props: {
   const client = useRekuest();
   const { assign, progress, installed } = useHashActionWithProgress({
     hash: props.action.hash,
+    // Fired from the command palette, which closes on select: without this the
+    // install runs on with no indicator anywhere.
+    notifyGlobally: true,
     onDone: () => {
       void client.refetchQueries({ include: ["AllPrimaryActions"] });
     },

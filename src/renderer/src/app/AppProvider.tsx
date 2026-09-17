@@ -7,6 +7,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Toaster } from "@/components/ui/sonner";
+import { UpdateListener } from "@/app/updates/UpdateListener";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useFatalReport } from "@/hooks/use-report";
 import { ThemeProvider } from "@/providers/ThemeProvider";
@@ -181,6 +182,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                       <ProfileIdentitySync />
                                     </Guard.Lok>
                                     <Toaster />
+                                    {/* One subscription to the app updater, for
+                                        the rail island and the settings card. */}
+                                    <UpdateListener />
                                     <Guard.Mikro unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
                                       <MikroDashboardWidgets />
                                       <LatestArrayDatasetsDashboardWidget />

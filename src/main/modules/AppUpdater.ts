@@ -47,7 +47,16 @@ export class AppUpdater implements AppModule {
             this.broadcast("updater:error", String(err)),
         );
 
+        // The renderer shows this as a row in the rail with a Restart button,
+        // rather than a modal that steals focus from whatever the user was in
+        // the middle of. Ignoring the row is safe: `autoInstallOnAppQuit` means
+        // "Later" was always the default outcome anyway.
         autoUpdater.on("update-downloaded", async (info) => {
+            if (this.windowManager.getAllWindows().length > 0) {
+                this.broadcast("updater:downloaded", { version: info.version });
+                return;
+            }
+            // No window to put the row in — fall back to the native prompt.
             const r = await dialog.showMessageBox({
                 type: "info",
                 buttons: ["Restart now", "Later"],
@@ -71,6 +80,13 @@ export class AppUpdater implements AppModule {
                 console.error("Manual update check failed:", error);
                 return { success: false, error: String(error) };
             }
+        });
+
+        // `setImmediate` so this call's IPC reply is flushed before the app
+        // starts tearing itself down.
+        this.ipcTransport.handleChannel("quit-and-install", async () => {
+            setImmediate(() => autoUpdater.quitAndInstall());
+            return { success: true };
         });
 
         this.ipcTransport.handleChannel("get-update-channel", async () => {
@@ -119,10 +135,15 @@ export class AppUpdater implements AppModule {
         }
     }
 
+    /**
+     * Every window, not just the main one: a popout runs the same renderer shell
+     * and so draws its own rail, and an update row missing from the window the
+     * user happens to be in would be the one place it mattered.
+     */
     private broadcast(channel: string, ...args: any[]) {
-        const mainWindow = this.windowManager.getMainWindow();
-        if (mainWindow) {
-            this.ipcTransport.sendTo(mainWindow.webContents, channel, ...args);
+        for (const win of this.windowManager.getAllWindows()) {
+            if (win.isDestroyed()) continue;
+            this.ipcTransport.sendTo(win.webContents, channel, ...args);
         }
     }
 }

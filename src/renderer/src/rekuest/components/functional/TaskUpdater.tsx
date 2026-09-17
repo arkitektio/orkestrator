@@ -13,6 +13,7 @@ import {
   deliverHeldEvents,
   deliverToCallback,
   holdForCallback,
+  isGloballyNotified,
   isTaskLive,
   mapReference,
   referenceForId,
@@ -116,10 +117,13 @@ export const TaskUpdater = () => {
             }
             if (
               create.reference &&
-              registeredCallbacks.has(create.reference)
+              registeredCallbacks.has(create.reference) &&
+              !isGloballyNotified(create.reference)
             ) {
-              // Already tracked locally by a component, skip the global
-              // notification.
+              // Already tracked locally by a component that is showing the
+              // progress itself, so skip the global notification — unless it
+              // asked for both, which is what a tracker inside a surface that
+              // closes (the command palette) does.
               return;
             }
             notifyTask(create.id);

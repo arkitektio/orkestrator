@@ -16,6 +16,8 @@ export const LocalActionCommand = (props: {
   action: Action;
   state: ActionState;
   onDone?: OnDone;
+  /** Registry id, so a reopened palette re-attaches to a run already going. */
+  actionId?: string;
 }) => {
   const { assign, progress, confirmationDialog } = usePerformAction(props);
   const Icon = props.action.icon ?? Sparkles;
@@ -65,6 +67,7 @@ export const Actions = (props: {
       {actions.map(({ id, action }) => (
         <LocalActionCommand
           key={id}
+          actionId={id}
           action={action}
           state={props.state}
           onDone={props.onDone}

@@ -14,10 +14,19 @@ import { Action, ActionState } from "@/lib/localactions/LocalActionProvider";
 import type { ServiceMap } from "@/lib/arkitekt/provider";
 import type { OnDone } from "@/providers/smart/extensions/types";
 import { useSelectionSelector } from "@/providers/selection/SelectionContext";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDialog } from "../dialog";
+import {
+  cancelLocalActionRun,
+  dismissLocalActionRun,
+  finishLocalActionRun,
+  selectRunForKey,
+  setLocalActionRunProgress,
+  startLocalActionRun,
+  useLocalActionRuns,
+} from "../localActionRuns";
 import { getModifierState } from "./modifierTracker";
 
 type LocalActionConfirmOptions = {
@@ -32,9 +41,17 @@ export const usePerformAction = (props: {
   action: Action;
   state: ActionState;
   onDone?: OnDone;
+  /**
+   * The action's registry id. It is what a row coming back re-attaches to, so
+   * pass it wherever it is known; the title is a workable fallback.
+   */
+  actionId?: string;
 }) => {
-  const [progress, setProgress] = useState<number | undefined>(0);
-  const [controller, setController] = useState<AbortController | null>(null);
+  // The run lives in `localActionRuns`, not here: this hook unmounts with the
+  // popover the moment an action is selected, and a run has to outlive that to
+  // stay visible and cancellable. See that module's header.
+  const key = props.actionId ?? props.action.title;
+  const run = useLocalActionRuns((state) => selectRunForKey(state, key));
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     options: LocalActionConfirmOptions;
@@ -46,6 +63,10 @@ export const usePerformAction = (props: {
   const { open: openTab } = useTabActions();
   const setSelection = useSelectionSelector((state) => state.setSelection);
   const setBSelection = useSelectionSelector((state) => state.setBSelection);
+
+  // The live run's id, for the unmount guard below. A ref, not state: it is
+  // only ever read from a cleanup.
+  const runIdRef = useRef<string | null>(null);
 
   const confirm = useCallback((options: LocalActionConfirmOptions) => {
     return new Promise<boolean>((resolve) => {
@@ -64,21 +85,48 @@ export const usePerformAction = (props: {
     });
   }, []);
 
+  // `confirm` is the one part of a run that CANNOT move into the store: it
+  // renders an AlertDialog in this component's own tree. So when the surface
+  // goes away with a question still open, the run fails closed — resolve
+  // `false` and abort — rather than waiting on a dialog nobody can answer.
+  // (Routing confirmation through the dialog registry in `app/dialog.tsx` is
+  // the real fix.)
+  useEffect(
+    () => () => {
+      setConfirmState((current) => {
+        if (current?.resolver) {
+          current.resolver(false);
+          const id = runIdRef.current;
+          if (id) cancelLocalActionRun(id);
+        }
+        return null;
+      });
+    },
+    [],
+  );
+
   const assign = async () => {
-    if (controller) {
-      controller.abort();
+    // Clicking a running action stops it. Now correct across remounts: the
+    // controller is in the store, so the second click aborts the first run
+    // instead of starting a second one beside it.
+    if (run) {
+      cancelLocalActionRun(run.id);
       return;
     }
-    const newController = new AbortController();
 
-    setController(newController);
+    const { id, controller } = startLocalActionRun({
+      key,
+      title: props.action.title,
+      icon: props.action.icon,
+    });
+    runIdRef.current = id;
 
     try {
       const result = await props.action.execute({
         onProgress: (p) => {
-          setProgress(p);
+          setLocalActionRunProgress(id, p);
         },
-        abortSignal: newController.signal,
+        abortSignal: controller.signal,
         services: (connection?.serviceMap || {}) as ServiceMap,
         dialog,
         navigate,
@@ -97,27 +145,39 @@ export const usePerformAction = (props: {
         setBSelection(result.right ?? []);
       }
 
-      setController(null);
-      setProgress(undefined);
+      runIdRef.current = null;
+      finishLocalActionRun(id, { status: "completed" });
       if (props.onDone) {
         props.onDone({ kind: "local" });
       }
     } catch (e) {
-      setProgress(undefined);
-      setController(null);
+      runIdRef.current = null;
       if (props.onDone) {
         props.onDone({ kind: "local" });
       }
-      toast.error(
+
+      // A cancel is not a failure and leaves no row behind — the user just
+      // took it away.
+      if (e instanceof Error && e.name === "AbortError") {
+        dismissLocalActionRun(id);
+        return;
+      }
+
+      const message =
         e instanceof Error
           ? e.message
-          : "An error occurred while performing the action",
-      );
+          : "An error occurred while performing the action";
+      // Kept until dismissed in the island, since the surface that started it
+      // has very likely closed by now.
+      finishLocalActionRun(id, { status: "error", error: message });
+      toast.error(message);
     }
   };
 
   return {
-    progress,
+    progress: run?.progress,
+    /** True while this action has a run in flight — survives a remount. */
+    running: run !== undefined,
     assign,
     confirmationDialog: confirmState ? (
       <AlertDialog

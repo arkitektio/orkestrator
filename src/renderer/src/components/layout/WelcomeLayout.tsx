@@ -1,5 +1,6 @@
 import { AutoHideTitleBar } from "@/app/components/chrome/AutoHideTitleBar";
 import { WindowControls } from "@/app/components/chrome/WindowControls";
+import { UpdateIsland } from "@/app/updates/UpdateIsland";
 import { dragZoneDoubleClick, getChromeMode, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
@@ -55,6 +56,13 @@ export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
 
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background mx-2 mb-2 rounded-xl border border-border/60 shadow-sm">
         {children}
+      </div>
+
+      {/* The one island that belongs here: an update downloads whether or not
+          anyone is signed in, and there is no rail to put it in. Same component
+          and same store as in the rail — only the container differs. */}
+      <div className="app-no-drag pointer-events-none fixed bottom-2 left-2 z-50 w-72 [&>*]:pointer-events-auto">
+        <UpdateIsland />
       </div>
     </div>
   );

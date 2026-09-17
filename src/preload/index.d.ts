@@ -68,7 +68,10 @@ declare global {
       onAvailable: (callback: (info: any) => void) => () => void;
       onNone: (callback: () => void) => () => void;
       onProgress: (callback: (progress: any) => void) => () => void;
+      onDownloaded: (callback: (info: any) => void) => () => void;
       onError: (callback: (error: any) => void) => () => void;
+      /** Restart into the downloaded update. */
+      quitAndInstall: () => Promise<{ success: boolean }>;
     };
   }
 }

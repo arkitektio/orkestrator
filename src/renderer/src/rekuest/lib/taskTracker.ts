@@ -59,12 +59,29 @@ export const isTaskLive = (task: {
 export const trackTask = (
   reference: string,
   callback: (event: TaskEventFragment) => void,
+  options?: { notifyGlobally?: boolean },
 ): (() => void) => {
   registeredCallbacks.set(reference, callback);
+  if (options?.notifyGlobally) globallyNotified.add(reference);
   return () => {
     registeredCallbacks.delete(reference);
+    globallyNotified.delete(reference);
   };
 };
+
+/**
+ * References whose task wants the rail island ANYWAY.
+ *
+ * Tracking a task locally normally suppresses the global notification — the
+ * component that fired it is showing the progress itself, and two surfaces for
+ * one task is noise. That reasoning fails for a tracker inside something that
+ * closes: a kabinet install started from the command palette keeps running with
+ * its only indicator gone. Such callers opt in, and get both.
+ */
+const globallyNotified = new Set<string>();
+
+export const isGloballyNotified = (reference: string) =>
+  globallyNotified.has(reference);
 
 /**
  * Bridge between a task's id and its client-generated reference.
@@ -103,6 +120,7 @@ export const deliverToCallback = (
   registeredCallbacks.get(reference)?.(event);
   if (isTerminalEvent(event.kind)) {
     registeredCallbacks.delete(reference);
+    globallyNotified.delete(reference);
     forgetId(event.task.id);
   }
 };
