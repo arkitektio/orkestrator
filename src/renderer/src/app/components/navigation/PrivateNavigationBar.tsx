@@ -358,7 +358,10 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           `1fr` max stretches the tiles across the full rail width and wraps to
           a new row only once a tile would drop below its minimum size. */}
       <ModuleNavHoverGroup preload={readyModules}>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(2.25rem,1fr))] gap-1 px-2 pb-3 shrink-0 mt-1">
+      {/* `app-no-drag`: the rail's surface is a window-drag region, and a drag
+          region eats the clicks of everything inside it that has not opted out.
+          The gaps AROUND this grid still drag the window. */}
+      <div className="app-no-drag grid grid-cols-[repeat(auto-fit,minmax(2.25rem,1fr))] gap-1 px-2 pb-3 shrink-0 mt-1">
         {/* The dashboard, first. The logo that used to double as "home" is
             gone from the rail, so this is now the one place to reach it. */}
         <DroppableNavLink to="/" end aria-label="Home" className="block">
@@ -394,7 +397,11 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
 
       {/* The open tabs. A module's own links live on the hover over its icon
           above, not here — the vertical run belongs to what the user has open,
-          the pinned ones first. */}
+          the pinned ones first.
+
+          Deliberately NOT `app-no-drag` on this scroller: `RailTabs` opts its
+          own list out, so the empty rail below a short list — usually the
+          largest drag target in the window — keeps moving the window. */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         <RailTabs />
       </div>

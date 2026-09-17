@@ -2,13 +2,14 @@ import { cn } from "@/lib/utils";
 import { Copy, Minus, Square, X } from "lucide-react";
 
 /**
- * Minimise / maximise / close — for Linux only.
+ * Minimise / maximise / close — Windows and Linux.
  *
- * Nowhere else draws these. macOS has real traffic lights (`hiddenInset`) and
- * Windows keeps its real system buttons through the Controls Overlay, which is
- * what preserves Snap Layouts; a browser tab has no frame of ours at all. Linux
- * is the one platform that is genuinely frameless, so it is the one platform
- * that needs us to supply the buttons.
+ * Both platforms run without a caption of their own, so these are the only
+ * window buttons there are. They sit in different places: Linux has no top bar
+ * at all, so the rail's chrome row carries them (`RailChrome`); Windows puts
+ * them in the bar that slides down from the top edge (`AutoHideTitleBar`).
+ * macOS draws neither — it keeps its real traffic lights (`hiddenInset`) — and a
+ * browser tab has no frame of ours at all.
  */
 export const WindowControls = ({
   maximized,

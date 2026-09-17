@@ -1,4 +1,4 @@
-import { WindowsOverlayStrip } from "@/app/components/chrome/RailChrome";
+import { AutoHideTitleBar } from "@/app/components/chrome/AutoHideTitleBar";
 import { WindowControls } from "@/app/components/chrome/WindowControls";
 import { dragZoneDoubleClick, getChromeMode, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
@@ -38,8 +38,9 @@ export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
 
   return (
     <div data-testid="welcome-layout" className="flex h-screen flex-col bg-sidebar dark:text-white">
-      {/* Windows only; nothing at all on macOS, Linux or the web. */}
-      <WindowsOverlayStrip />
+      {/* Windows only, and 0px tall until the pointer touches the top edge;
+          nothing at all on macOS, Linux or the web. */}
+      <AutoHideTitleBar />
 
       {/* The one strip of window surface: draggable, and on macOS wide
           enough for the traffic lights the system draws over it. */}

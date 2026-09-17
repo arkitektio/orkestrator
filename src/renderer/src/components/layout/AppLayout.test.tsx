@@ -4,7 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/components/chrome/RailChrome", () => ({
   RailChrome: () => <div>chrome</div>,
-  WindowsOverlayStrip: () => null,
+}));
+vi.mock("@/app/components/chrome/AutoHideTitleBar", () => ({
+  AutoHideTitleBar: () => null,
 }));
 
 import { AppLayout } from "./AppLayout";

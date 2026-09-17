@@ -173,8 +173,8 @@ describe("navigation controls", () => {
 
 describe("window controls", () => {
   it.each(["darwin", "win32"])("draws none of its own on %s", (platform) => {
-    // macOS has real traffic lights; Windows keeps its own overlay buttons,
-    // which is what preserves Snap Layouts.
+    // macOS has real traffic lights; on Windows they live in the bar that
+    // slides down from the top edge (`AutoHideTitleBar`), not in the rail.
     setElectron(platform);
     render(<Shell><RailChrome /></Shell>);
     expect(screen.queryByLabelText("Close")).not.toBeInTheDocument();

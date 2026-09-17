@@ -51,11 +51,12 @@ describe("getChromeMode", () => {
     expect(getChromeMode()).toBe("mac");
   });
 
-  it("lets Windows keep its own overlay buttons", () => {
-    // Deliberately NOT our own buttons: a frameless Windows window loses Snap
-    // Layouts, and there is no way to fake the maximise-button hit test.
+  it("gives Windows the auto-hiding bar, not the Controls Overlay", () => {
+    // WCO's buttons are the OS's and cannot be collapsed to nothing
+    // (`setTitleBarOverlay({height: 0})` clamps to 30px), which is what kept a
+    // permanent strip across the top of the window.
     setElectron("win32");
-    expect(getChromeMode()).toBe("overlay");
+    expect(getChromeMode()).toBe("autohide");
   });
 
   it("draws its own buttons on Linux, which is frameless", () => {
@@ -67,7 +68,7 @@ describe("getChromeMode", () => {
 describe("trafficLightGutter", () => {
   it("reserves room only for real traffic lights", () => {
     expect(trafficLightGutter("mac", false)).toBeGreaterThan(0);
-    expect(trafficLightGutter("overlay", false)).toBe(0);
+    expect(trafficLightGutter("autohide", false)).toBe(0);
     expect(trafficLightGutter("buttons", false)).toBe(0);
     expect(trafficLightGutter("none", false)).toBe(0);
   });
@@ -93,7 +94,7 @@ describe("dragZoneDoubleClick", () => {
   it("only exists where the frame is ours to replace (Linux)", () => {
     // macOS and Windows keep a real frame that already handles the bar.
     expect(dragZoneDoubleClick("mac")).toBeUndefined();
-    expect(dragZoneDoubleClick("overlay")).toBeUndefined();
+    expect(dragZoneDoubleClick("autohide")).toBeUndefined();
     expect(dragZoneDoubleClick("none")).toBeUndefined();
     expect(dragZoneDoubleClick("buttons")).toBeTypeOf("function");
   });

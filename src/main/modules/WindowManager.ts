@@ -40,15 +40,6 @@ const DEFAULT_WINDOW_STATE: WindowState = {
 
 const WINDOW_STATE_KEY = "windowState";
 
-/**
- * How much room Windows' Controls Overlay gets.
- *
- * This app has no title bar — the rail carries the chrome — so on Windows the
- * renderer draws a matching empty strip across the top for these buttons to sit
- * in (`WindowsOverlayStrip`). Change one and you must change the other.
- */
-const WINDOWS_OVERLAY_HEIGHT = 32;
-
 /** The renderer's resolved theme, as `ThemeProvider` reports it. */
 export type ChromeTheme = "light" | "dark";
 
@@ -60,20 +51,16 @@ export type WindowChromeState = {
 };
 
 /**
- * The two colours the FRAME needs from the theme, as hex because neither
- * `BrowserWindow.backgroundColor` nor `setTitleBarOverlay` parses oklch.
+ * The one colour the FRAME needs from the theme, as hex because
+ * `BrowserWindow.backgroundColor` does not parse oklch.
  *
- * `background` is what Chromium paints before the renderer does and during a
- * resize; without it a dark window flashes white on Windows and Linux. `symbol`
- * is the Windows Controls Overlay glyph colour, which the renderer cannot style
- * (the OS draws those buttons) so it has to be told which theme is up.
- *
- * They track `--sidebar` and `--muted-foreground` in the renderer's
- * `index.css`; change one, change both.
+ * It is what Chromium paints before the renderer does and during a resize;
+ * without it a dark window flashes white on Windows and Linux. It tracks
+ * `--sidebar` in the renderer's `index.css`; change one, change both.
  */
-const CHROME_COLORS: Record<ChromeTheme, { background: string; symbol: string }> = {
-    light: { background: "#f9fafa", symbol: "#6e7572" },
-    dark: { background: "#131916", symbol: "#9ba39f" },
+const CHROME_COLORS: Record<ChromeTheme, { background: string }> = {
+    light: { background: "#f9fafa" },
+    dark: { background: "#131916" },
 };
 
 /**
@@ -94,16 +81,21 @@ const systemChromeTheme = (): ChromeTheme =>
  * directly on the sidebar rail's surface, and `trafficLightPosition` places
  * them in the gap the rail reserves above its search pill.
  *
- * **Windows** uses `hidden` + `titleBarOverlay` (Window Controls Overlay) rather
- * than `frame: false`. A frameless window has no native non-client area, so
- * Chromium never answers `HTMAXBUTTON` to `WM_NCHITTEST` and **Snap Layouts —
- * the Win11 hover-the-maximise-button flyout — silently stop working**, with no
- * hook in Electron to fake it. WCO keeps the real system buttons (and with them
- * Snap Layouts, high-contrast themes, RTL mirroring) while still letting us
- * paint the rest of the bar. The renderer reserves their space through the
- * `env(titlebar-area-*)` CSS variables, which stay correct on their own. The
- * price is system-styled buttons on Windows; nobody notices those, everybody
- * notices broken Snap Layouts.
+ * **Windows** takes `hidden` with NO `titleBarOverlay`: the frame stays (resize
+ * borders, shadow, rounded corners) but the caption and its buttons are gone,
+ * and the renderer draws its own in the auto-hiding bar (`AutoHideTitleBar`)
+ * that slides down when the pointer touches the top edge. The Controls Overlay
+ * cannot do that: its buttons are drawn by the OS and
+ * `setTitleBarOverlay({ height: 0 })` clamps to 30px, so with WCO on there is no
+ * collapsed state — the buttons would float over the page's top-right corner and
+ * leave that strip click-dead.
+ *
+ * The price is the Win11 Snap Layouts flyout — the one you get by hovering a
+ * real maximise button. A window without a native caption never answers
+ * `HTMAXBUTTON` to `WM_NCHITTEST`, and Electron exposes no hook to fake it.
+ * Win+Z and drag-to-edge snapping are unaffected. That trade is deliberate: the
+ * page filling the window is what you look at all day, the flyout is one of
+ * three ways to snap.
  *
  * **Linux** goes frameless: `titleBarOverlay` is inconsistent across
  * GNOME/KDE/tiling WMs and there is no Snap-Layouts equivalent to lose. Note
@@ -111,28 +103,15 @@ const systemChromeTheme = (): ChromeTheme =>
  * — so Reload / Force Reload / DevTools MUST stay reachable from the command
  * palette's app commands, which is where they now live.
  */
-const chromeOptions = (theme: ChromeTheme): Partial<Electron.BrowserWindowConstructorOptions> =>
+const chromeOptions = (): Partial<Electron.BrowserWindowConstructorOptions> =>
     process.platform === "darwin"
         ? {
             titleBarStyle: "hiddenInset",
             trafficLightPosition: { x: 12, y: 14 },
         }
         : process.platform === "win32"
-            ? {
-                titleBarStyle: "hidden",
-                titleBarOverlay: titleBarOverlay(theme),
-            }
+            ? { titleBarStyle: "hidden" }
             : { frame: false };
-
-/**
- * Transparent so our own bar shows through; only the glyphs are coloured, and
- * they follow the theme (`window:set-theme`) because the OS draws them.
- */
-const titleBarOverlay = (theme: ChromeTheme): Electron.TitleBarOverlayOptions => ({
-    color: "#00000000",
-    symbolColor: CHROME_COLORS[theme].symbol,
-    height: WINDOWS_OVERLAY_HEIGHT,
-});
 
 /** What the renderer needs to lay the bar out. */
 export class WindowManager implements AppModule {
@@ -469,7 +448,7 @@ export class WindowManager implements AppModule {
             icon: this.iconPath,
             autoHideMenuBar: true,
             backgroundColor: CHROME_COLORS[theme].background,
-            ...chromeOptions(theme),
+            ...chromeOptions(),
             ...extra,
             webPreferences: {
                 preload: join(__dirname, "../preload/index.mjs"),
@@ -517,16 +496,15 @@ export class WindowManager implements AppModule {
     }
 
     /**
-     * The renderer's theme changed (or was first resolved). Repaint the parts
-     * of the frame the renderer cannot reach: the background Chromium shows
-     * around and beneath the page, and on Windows the overlay's glyphs.
+     * The renderer's theme changed (or was first resolved). Repaint the one
+     * part of the frame the renderer cannot reach: the background Chromium
+     * shows around and beneath the page. The only OS-drawn buttons left are
+     * macOS' traffic lights, which follow the system appearance themselves, so
+     * nothing else here needs repainting.
      */
     private applyChromeTheme(win: BrowserWindow, theme: ChromeTheme) {
         if (win.isDestroyed()) return;
         win.setBackgroundColor(CHROME_COLORS[theme].background);
-        if (process.platform === "win32") {
-            win.setTitleBarOverlay(titleBarOverlay(theme));
-        }
     }
 
     private saveWindowState() {

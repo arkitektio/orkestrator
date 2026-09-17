@@ -34,7 +34,9 @@ export const RailFooter = () => {
   const account = activeProfile?.label.username;
 
   return (
-    <div className="flex w-full min-w-0 shrink-0 items-center gap-1 px-2 pb-2">
+    // `app-no-drag`: the rail around it is a window-drag region, which would
+    // otherwise swallow every click on the switcher and the settings link.
+    <div className="app-no-drag flex w-full min-w-0 shrink-0 items-center gap-1 px-2 pb-2">
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(

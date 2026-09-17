@@ -261,7 +261,10 @@ export const TaskNotificationStack = () => {
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             exit={{ opacity: 0, y: 8, filter: 'blur(6px)' }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="relative min-w-0 shrink-0 px-2 pb-2"
+            // `app-no-drag`: this sits on the rail, which is a window-drag
+            // region, and a drag region swallows the clicks of anything inside
+            // it that has not opted out.
+            className="app-no-drag relative min-w-0 shrink-0 px-2 pb-2"
             onPointerEnter={onPointerEnter}
             onPointerLeave={onPointerLeave}
           >

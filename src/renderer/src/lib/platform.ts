@@ -7,8 +7,8 @@ import { useEffect, useState } from "react";
  * browser, and until now "am I in Electron?" was answered ad-hoc at a dozen call
  * sites (`window.electron`, `window.api?.`). The title bar needs a sharper
  * answer than a boolean — macOS keeps its real traffic lights and we only draw
- * around them, Windows and Linux are frameless and we draw the buttons
- * ourselves, and the browser has no frame of ours at all.
+ * around them, Windows and Linux have no buttons of their own so we draw those
+ * (in different places), and the browser has no frame of ours at all.
  */
 
 export type Platform = "darwin" | "win32" | "linux" | "web";
@@ -16,14 +16,14 @@ export type Platform = "darwin" | "win32" | "linux" | "web";
 /**
  * `"mac"`     — real traffic lights (`hiddenInset`); reserve a left gutter, draw
  *               no buttons of our own.
- * `"overlay"` — Windows Controls Overlay: the system still draws the buttons on
- *               top of our bar, so we draw none but must keep out of their way
- *               using the `env(titlebar-area-*)` variables. Chosen over a
- *               frameless window because frameless loses Win11 Snap Layouts.
- * `"buttons"` — frameless (Linux); we draw minimise/maximise/close ourselves.
+ * `"autohide"` — Windows: no caption, no Controls Overlay. The page fills the
+ *               window and our own buttons live in a bar that slides down when
+ *               the pointer touches the top edge (`AutoHideTitleBar`).
+ * `"buttons"` — frameless (Linux); we draw minimise/maximise/close ourselves,
+ *               inline in the rail, since there is no top bar to put them in.
  * `"none"`    — a browser tab; there is no frame of ours to draw.
  */
-export type ChromeMode = "mac" | "overlay" | "buttons" | "none";
+export type ChromeMode = "mac" | "autohide" | "buttons" | "none";
 
 /**
  * `window.electron` is injected by @electron-toolkit's preload, and is the check
@@ -52,7 +52,7 @@ export const getChromeMode = (): ChromeMode => {
   const platform = getPlatform();
   if (platform === "web") return "none";
   if (platform === "darwin") return "mac";
-  if (platform === "win32") return "overlay";
+  if (platform === "win32") return "autohide";
   return "buttons";
 };
 

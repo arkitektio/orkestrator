@@ -126,32 +126,3 @@ export const RailChrome = () => {
     </div>
   );
 };
-
-/**
- * A thin drag strip across the top of the window — Windows only.
- *
- * Windows keeps its own Controls Overlay buttons (which is what preserves Snap
- * Layouts), and the system draws them at the top-right of the window. With no
- * title bar they would land on top of the floating content card, over whatever
- * that page puts in its own header. This strip pushes the rail and the card down
- * by the overlay's height so the buttons have somewhere to be, and doubles as
- * the drag region.
- *
- * It is the one concession this layout makes to a platform: 32px of empty
- * surface, the same colour as everything around it.
- */
-export const WindowsOverlayStrip = () => {
-  const mode = getChromeMode();
-
-  if (mode !== "overlay") {
-    return null;
-  }
-
-  return (
-    <div
-      aria-hidden
-      className="app-drag w-full shrink-0"
-      style={{ height: "env(titlebar-area-height, 32px)" }}
-    />
-  );
-};
