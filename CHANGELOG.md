@@ -1,3 +1,25 @@
+# [2.4.0](https://github.com/arkitektio/orkestrator/compare/v2.3.0...v2.4.0) (2026-09-17)
+
+
+### Bug Fixes
+
+* better module loading ([d9a0faa](https://github.com/arkitektio/orkestrator/commit/d9a0faae4288710cebba486ff09529ddf80027c0))
+* fluss workspace ([b80bdf6](https://github.com/arkitektio/orkestrator/commit/b80bdf6cd79750b44cfe5309e82e25a1aa074e9d))
+* pointlayer and better module loading ([677f88c](https://github.com/arkitektio/orkestrator/commit/677f88cf2b9fce928c2fdd78c69ab82d312539d9))
+* workspace ([287a51e](https://github.com/arkitektio/orkestrator/commit/287a51e89cb75bd0bc8acac2cb5bfc07ff0d2a60))
+
+
+### Features
+
+* better chrome ([7073c93](https://github.com/arkitektio/orkestrator/commit/7073c931e078a02fb59a50feb9e4a2d344c4e205))
+* better drag and rdrop ([93556aa](https://github.com/arkitektio/orkestrator/commit/93556aaac0e587a4be3d169924bc9361bdd2b240))
+* better neuron model renderer ([93de550](https://github.com/arkitektio/orkestrator/commit/93de55065c333fd1bd8b2262c818334586461824))
+* better smimulation ([ba493d1](https://github.com/arkitektio/orkestrator/commit/ba493d1569f8c569480cb9e34ff9421d349c1740))
+* better tabs and actions ([dcb54b2](https://github.com/arkitektio/orkestrator/commit/dcb54b217fd58a4ae078f40f7d150b2e6f54a031))
+* better window manager and tests ([e2050eb](https://github.com/arkitektio/orkestrator/commit/e2050ebf07d69db219279a550abf873a401c85c3))
+* no more pull refresh ([a200868](https://github.com/arkitektio/orkestrator/commit/a200868823a57cd7982a99d05cafc21302c33711))
+* rooms ([cfe6198](https://github.com/arkitektio/orkestrator/commit/cfe61982a2311126c25abab42825f4aba10bd88c))
+
 # [2.3.0](https://github.com/arkitektio/orkestrator/compare/v2.2.1...v2.3.0) (2026-09-16)
 
 
