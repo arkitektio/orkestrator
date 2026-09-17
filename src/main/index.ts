@@ -207,7 +207,7 @@ if (!gotTheLock) {
     ) => {
       // Strip any pre-existing COOP/COEP before re-adding: the app:// protocol
       // handler already sets them (lowercased by Headers), so a plain spread
-      // would emit the header twice ("require-corp, require-corp"). COOP/COEP
+      // would emit the header twice ("credentialless, credentialless"). COOP/COEP
       // are structured single-item headers — a duplicated value is INVALID and
       // Chromium then ignores the header entirely, silently breaking
       // crossOriginIsolated (and thus SharedArrayBuffer) in the packaged app.
@@ -219,7 +219,17 @@ if (!gotTheLock) {
       callback({
         responseHeaders: {
           ...responseHeaders,
-          'Cross-Origin-Embedder-Policy': ['require-corp'],
+          // `credentialless`, not `require-corp`: both grant cross-origin
+          // isolation, but `require-corp` additionally demands that every
+          // no-cors cross-origin subresource carry `Cross-Origin-Resource-
+          // Policy: cross-origin`. The S3/datalayer hosts do not send CORP, so
+          // presigned media was fetched fine (200) and then discarded by
+          // Chromium with ERR_BLOCKED_BY_RESPONSE.NotSameOriginAfterDefaulted-
+          // ToSameOriginByCoep. `credentialless` drops that demand and instead
+          // sends such requests WITHOUT credentials — which costs us nothing,
+          // because these URLs authenticate through the query-string signature
+          // (`lib/datalayer/s3request.tsx`), never cookies.
+          'Cross-Origin-Embedder-Policy': ['credentialless'],
           'Cross-Origin-Opener-Policy': ['same-origin']
         }
       })
@@ -270,7 +280,13 @@ if (!gotTheLock) {
         "Content-Length": String(fileStat.size),
         "Cache-Control": cacheControlFor(pathname),
         "Cross-Origin-Opener-Policy": "same-origin",
-        "Cross-Origin-Embedder-Policy": "require-corp",
+        // MUST stay in lockstep with the value `injectCoopCoep` sets above: a
+        // document whose COEP differs between the two paths is the header
+        // mismatch that already cost us crossOriginIsolated once. See the note
+        // there for why this is `credentialless` rather than `require-corp`.
+        "Cross-Origin-Embedder-Policy": "credentialless",
+        // Unrelated to the above: this governs who may embed OUR assets, and
+        // same-origin is still the right answer for the renderer bundle.
         "Cross-Origin-Resource-Policy": "same-origin",
       })
       // Stream the file instead of buffering it whole: the multi-MB wasm and
