@@ -165,6 +165,11 @@ export const BarMesh = ({
     // specific to Line2NodeMaterial).
     m.transparent = true;
     m.depthWrite = false;
+    // Both faces: the quads run right-then-DOWN in a y-up frame, i.e.
+    // clockwise, which three culls as back faces under the default FrontSide —
+    // every band was silently invisible. Winding is meaningless for a flat 2D
+    // overlay, so do not depend on it.
+    m.side = THREE.DoubleSide;
     return m;
   }, []);
   useEffect(() => () => material.dispose(), [material]);

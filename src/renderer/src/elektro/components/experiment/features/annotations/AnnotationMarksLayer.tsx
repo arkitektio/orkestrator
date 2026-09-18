@@ -31,7 +31,8 @@ const DEFAULT_EVENT_COLOR = "#fbbf24";
 const DEFAULT_EPOCH_COLOR = "#fbbf24";
 const DEFAULT_SHAPE_COLOR = "#fcd34d";
 const SELECTED_COLOR = "#ffffff";
-const EPOCH_OPACITY = 0.14;
+// A tint, not a block: the traces under an epoch must still read clearly.
+const EPOCH_OPACITY = 0.06;
 
 /**
  * The selection, as a lookup — re-read whenever `selectionVersion` moves (a
@@ -187,6 +188,11 @@ const EpochBands = ({
     m.transparent = true;
     m.opacity = EPOCH_OPACITY;
     m.depthWrite = false;
+    // Both faces: the quads run right-then-DOWN in a y-up frame, i.e.
+    // clockwise, which three culls as back faces under the default FrontSide —
+    // every band was silently invisible. Winding is meaningless for a flat 2D
+    // overlay, so do not depend on it.
+    m.side = THREE.DoubleSide;
     return m;
   }, []);
 
