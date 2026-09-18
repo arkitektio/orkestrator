@@ -1,3 +1,26 @@
+# [2.6.0](https://github.com/arkitektio/orkestrator/compare/v2.5.0...v2.6.0) (2026-09-18)
+
+
+### Bug Fixes
+
+* band colors ([6d0acfe](https://github.com/arkitektio/orkestrator/commit/6d0acfe3575488fdf7584fe24c013de4afd14818))
+* better islands ([60e4e31](https://github.com/arkitektio/orkestrator/commit/60e4e3129665bca4372b28c7cb3227858c4b2eda))
+* COEP ([e4fffb3](https://github.com/arkitektio/orkestrator/commit/e4fffb38af4ac6d89720be6c30834e38880af9d2))
+
+
+### Features
+
+* better islands ([12bc215](https://github.com/arkitektio/orkestrator/commit/12bc21554d7004fe5d3b8cc1b6f092884531d405))
+* better islands ([dffe752](https://github.com/arkitektio/orkestrator/commit/dffe752c7d60a4c0e19cee5d703504cba9a953bc))
+* better metadata ([d814827](https://github.com/arkitektio/orkestrator/commit/d814827ba6308dc61c26b84dc8b1fd055d564a37))
+* better workers ([97a6db8](https://github.com/arkitektio/orkestrator/commit/97a6db8b7a873c9db88e13773842e9fcf0223276))
+* elektro is now cs first ([70df91f](https://github.com/arkitektio/orkestrator/commit/70df91f1a2efb7241a3398154ef4937adc3a0157))
+* layer metadata ([2ee7fc7](https://github.com/arkitektio/orkestrator/commit/2ee7fc7907ff55a788eebc427fda595262ad277f))
+* model in neuron model data ([e9747a3](https://github.com/arkitektio/orkestrator/commit/e9747a3addb7cfd0f5b86fbc40e40e540a366832))
+* more cs first features ([d0a17b2](https://github.com/arkitektio/orkestrator/commit/d0a17b2d80702322163e11aac388affb444a47d3))
+* more refactors ([c9f2d5a](https://github.com/arkitektio/orkestrator/commit/c9f2d5ae4bc4eb5ac598c59421ab42508244d831))
+* more refactors ([2b54bda](https://github.com/arkitektio/orkestrator/commit/2b54bda6c5de4d253da4eb8212cd6a7d655450e5))
+
 # [2.5.0](https://github.com/arkitektio/orkestrator/compare/v2.4.0...v2.5.0) (2026-09-17)
 
 
