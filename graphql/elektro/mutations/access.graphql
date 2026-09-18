@@ -1,0 +1,50 @@
+# Credentials for the non-zarr stores. Sparse stores (spike sets) and parquet
+# tables (events, unit tables) each have their own grant; all are rotated by the
+# reader that holds them, never cached on a component.
+
+fragment GeneralSparseAccessGrant on GeneralSparseAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
+  bucket
+}
+
+mutation RequestGeneralSparseAccess($input: RequestGeneralSparseAccessInput!) {
+  requestGeneralSparseAccess(input: $input) {
+    ...GeneralSparseAccessGrant
+  }
+}
+
+fragment ParquetAccessGrant on ParquetAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
+  bucket
+  key
+  path
+}
+
+mutation RequestParquetAccess($input: RequestParquetAccessInput!) {
+  requestParquetAccess(input: $input) {
+    ...ParquetAccessGrant
+  }
+}
+
+fragment GeneralParquetAccessGrant on GeneralParquetAccessGrant {
+  accessKey
+  secretKey
+  sessionToken
+  expiresIn
+  region
+  bucket
+}
+
+mutation RequestGeneralParquetAccess($input: RequestGeneralParquetAccessInput!) {
+  requestGeneralParquetAccess(input: $input) {
+    ...GeneralParquetAccessGrant
+  }
+}

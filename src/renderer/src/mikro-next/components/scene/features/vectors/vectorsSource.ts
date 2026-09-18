@@ -31,13 +31,14 @@
  * store is an open server question, and a strided level-0 read is correct at every
  * answer.
  */
-import { get, slice } from "zarrita";
-
 import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
 import type { MikroClient } from "@/lib/zarr/store/types";
 import { buildS3FetchConfig, getGeneralAccess } from "@/mikro-next/lib/zarr/access";
 import { buildSliceMap, resolveFixedDimIndex } from "../../platform/coords/selection";
-import { openZarrArray } from "../../platform/sources/arrayRegistry";
+import { openZarrArray } from "@/lib/zarr/openArray";
+import { readArrayWindow, type WindowRange } from "@/lib/zarr/readArrayWindow";
+import { ByteBudgetChunkCache } from "@/lib/zarr/caches/byteBudgetChunkCache";
+import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
 import type { VectorLayerFragment } from "../../platform/model/layerGuards";
 
 export type VectorField = {
@@ -57,6 +58,12 @@ export type VectorField = {
  * network path already draws, and a denser field reads as overdraw, not flow.
  */
 const GLYPH_BUDGET = 30_000;
+
+/**
+ * Decoded chunks of vector fields. Its own small budget: a field is one read per
+ * frame change, and it must not evict the bricks the image under it streams.
+ */
+const VECTOR_CHUNK_CACHE = new ByteBudgetChunkCache(64 * 1024 * 1024);
 
 const strideFor = (spatialSizes: number[], requested: number | null): number => {
   if (requested && requested >= 1) return Math.floor(requested);
@@ -127,35 +134,33 @@ export async function loadVectorField(
   await store.ready();
   const array = await openZarrArray(store);
 
-  // Selection in axis order: every component of the vector axis, a strided slice of
-  // each spatial axis, and the SELECTED index of anything else (time, a channel beside
-  // the field). Clamped against the store's own shape, matching how the brick path
-  // resolves the same slider against `levels[0].shape`.
+  // Ranges in axis order: every component of the vector axis, a strided run of
+  // each spatial axis, and the SELECTED index of anything else (time, a channel
+  // beside the field) as a one-wide range. Clamped against the store's own shape,
+  // matching how the brick path resolves the same slider against `levels[0].shape`.
+  // Read through the worker runner, never zarrita's main-thread `get()`.
   const sliceMap = buildSliceMap(lens.slices);
-  const selection = axisNames.map((name) => {
-    if (name === vectorAxis) return null;
+  const ranges: WindowRange[] = axisNames.map((name) => {
     const size = shape[axisNames.indexOf(name)];
+    if (name === vectorAxis) return { start: 0, stop: size };
     if (spatialArrayOrder.includes(name)) {
-      return slice(Math.min(offset, size - 1), size, stride);
+      return { start: Math.min(offset, size - 1), stop: size, step: stride };
     }
-    return resolveFixedDimIndex(sliceMap[name], dimSelections[name], size);
+    const index = resolveFixedDimIndex(sliceMap[name], dimSelections[name], size);
+    return { start: index, stop: index + 1 };
   });
 
-  const chunk = (await get(array as never, selection as never)) as unknown as {
-    data: ArrayLike<number>;
-    shape: number[];
-    stride: number[];
-  };
-  const data = chunk.data;
-  const chunkStride = chunk.stride;
-  // Integer selections drop their axes, so the chunk's dims are exactly the kept
-  // axes in axis order: the vector axis and the strided spatial axes.
-  const keptAxes = axisNames.filter(
-    (name) => name === vectorAxis || spatialArrayOrder.includes(name),
-  );
-  const vectorDim = keptAxes.indexOf(vectorAxis);
-  const spatialDims = spatialArrayOrder.map((name) => keptAxes.indexOf(name));
-  const sampled = spatialDims.map((dim) => chunk.shape[dim]);
+  const window = await readArrayWindow(array, ranges, {
+    pool: workerPool,
+    cache: VECTOR_CHUNK_CACHE,
+  });
+  const data = window.data;
+  const chunkStride = window.strides;
+  // A window keeps every axis (a pinned one at extent 1, index 0, so it adds
+  // nothing to an offset): its dims are the array's own, in axis order.
+  const vectorDim = axisNames.indexOf(vectorAxis);
+  const spatialDims = spatialArrayOrder.map((name) => axisNames.indexOf(name));
+  const sampled = spatialDims.map((dim) => window.shape[dim]);
 
   const count = sampled.reduce((product, size) => product * size, 1);
   const positions = new Float32Array(count * 3);

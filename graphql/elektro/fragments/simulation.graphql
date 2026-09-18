@@ -1,27 +1,48 @@
+# A simulation run.
+#
+# `timeTrace` and the experiment views are gone. A run now owns a `clock`
+# (the coordinate system its recordings are sampled onto) and, when its time step
+# varies, a `timeDataset` holding the time of every sample. Composing a run onto
+# an experiment's timeline is one edge from this clock into that world — which is
+# why moving one view of a run moves them all.
+
 fragment DetailSimulation on Simulation {
   id
   name
+  description
   model {
     ...DetailNeuronModel
   }
-  timeTrace {
-    id
-    name
-    store {
-      ...ZarrStore
-    }
-  }
   duration
+  dt
+  samplingRate
+  clock {
+    ...ExpCoordinateSystem
+  }
+  # Present only for a run whose samples are not evenly spaced; its values ARE
+  # the time axis, and no affine map can stand in for them.
+  timeDataset {
+    ...ExpArrayDatasetRef
+  }
+  # Recordings and stimuli are datasets now; what each one IS (which cell, which
+  # section, how far along it) lives on its anchors' recording/stimulus site.
   recordings {
-    ...Recording
+    ...SimulationTrace
   }
   stimuli {
-    ...Stimulus
+    ...SimulationTrace
   }
-  dt
   createdAt
   creator {
     sub
+  }
+}
+
+# A recording or stimulus of a run: the dataset plus the sites its anchors name.
+fragment SimulationTrace on ArrayDataset {
+  ...ExpArrayDatasetRef
+  anchors {
+    ...ExpAnchor
   }
 }
 

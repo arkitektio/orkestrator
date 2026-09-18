@@ -16,8 +16,12 @@ import type { Chunk, CodecMetadata, DataType } from 'zarrita'
  * - 'low' / 'high': per-chunk normalization into uint8/uint16. UNSUITABLE for
  *   multi-chunk surfaces (each chunk gets its own window) — no production
  *   caller passes these.
+ * - 'exact': NO conversion — the chunk returns in the array's own dtype
+ *   (int64 as BigInt64Array, float64 as Float64Array, …). For reads whose
+ *   values are integers that must survive exactly: sparse `indptr`/`indices`
+ *   offsets and label ids, which float32 silently rounds past 2^24.
  */
-export type TextureFidelity = 'default' | 'low' | 'high' | 'raw16'
+export type TextureFidelity = 'default' | 'low' | 'high' | 'raw16' | 'exact'
 
 export interface TextureChunkBounds {
   localMin: number

@@ -12,7 +12,7 @@ import type {
   TableHopLike,
 } from "./attributeTypes";
 import { hopSource } from "./attributeTypes";
-import { LruMap } from "./lruMap";
+import { LruMap } from "@/lib/generic/lruMap";
 
 /**
  * Plan discovery, memoized per probed system for the scene's life. The

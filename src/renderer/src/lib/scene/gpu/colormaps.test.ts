@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // (colormaps.tsx transitively reaches app modules that touch `window`)
 import { describe, expect, it } from "vitest";
-import { ColorMap } from "@/mikro-next/api/graphql";
 import {
+  ColorMap,
   buildColormapAtlas,
   sampleColorMapRgb,
   sampleCurveValue,

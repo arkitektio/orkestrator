@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildRegistrationInput, prefillMapping } from "../../../forms/registration/mapping";
-import { placementToSpatialAffine } from "../../../lib/coords/transformGraph";
+import { placementToSpatialAffine } from "@/lib/scene/coords/transformGraph";
 import { classifyPlacement, layersThroughEdge, type RegistrationEdgeLike } from "./eligibility";
 import { aboutPivot, identity, mul, rotationAxisAngle, scaling, type Mat4 } from "./mat4";
 import { planSave } from "./saveMath";

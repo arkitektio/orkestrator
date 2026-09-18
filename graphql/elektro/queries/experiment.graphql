@@ -1,6 +1,13 @@
-query DetailExperiment($id: ID!) {
+# The scene query.
+#
+# MUST run with `errorPolicy: "all"`. `ExperimentView.asAffine` errors rather than
+# nulling when a view's path will not condense to one matrix — every view over a
+# spike train, an irregularly sampled signal, or a variable-time-step run. The
+# policy nulls that one field and keeps the experiment; without it a single
+# lookup-timed recording discards the whole scene.
+query GetExperimentScene($id: ID!) {
   experiment(id: $id) {
-    ...Experiment
+    ...ExperimentScene
   }
 }
 

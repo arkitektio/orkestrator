@@ -1,7 +1,7 @@
 import { ListRender } from "@/components/layout/ListRender";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { FancyInput } from "@/components/ui/fancy-input";
-import { DroppableNavLink } from "@/components/ui/link";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
 import { CubeIcon } from "@radix-ui/react-icons";
 import { useDebounce } from "@uidotdev/usehooks";
 import { Home, Image } from "lucide-react";
@@ -13,45 +13,23 @@ import {
 import ImageCard from "../components/cards/ImageCard";
 
 export const NavigationPane = () => (
-  <div className="flex-1 flex-col">
-    <nav className="grid items-start px-1 text-sm font-medium lg:px-2">
-      <div className="text-muted-foreground text-xs font-semibold uppercase mb-4">
-        Explore
-      </div>
-      <div className="flex flex-col items-start gap-4 rounded-lg ml-2 text-muted-foreground mb-4">
-        <DroppableNavLink
-          to="/omero_ark"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <Home className="h-4 w-4" />
-          Dashboard
-        </DroppableNavLink>
-      </div>
-
-      <div className="text-muted-foreground text-xs font-semibold uppercase mb-4">
-        Data
-      </div>
-      <div className="flex flex-col items-start gap-4 rounded-lg ml-2 text-muted-foreground mb-5">
-        <DroppableNavLink
-          to="/omero_ark/datasets"
-          className="flex gap-3 w-full hover:text-primary"
-        >
-          <Image className="h-4 w-4" />
-          Datasets
-        </DroppableNavLink>
-        <DroppableNavLink
-          to="/omero_ark/projects"
-          className="flex gap-3 w-full hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
-          Projects
-        </DroppableNavLink>
-      </div>
-    </nav>
-  </div>
+  <SidePaneNav columns={1}>
+    <SidePaneGroup title="Data">
+      <PaneLink to="/omero_ark">
+        <Home />
+        Dashboard
+      </PaneLink>
+      <PaneLink to="/omero_ark/datasets">
+        <Image />
+        Datasets
+      </PaneLink>
+      <PaneLink to="/omero_ark/projects">
+        <CubeIcon />
+        Projects
+      </PaneLink>
+    </SidePaneGroup>
+  </SidePaneNav>
 );
-
-
 
 const Pane: React.FunctionComponent = () => {
   const [search, setSearch] = React.useState("");

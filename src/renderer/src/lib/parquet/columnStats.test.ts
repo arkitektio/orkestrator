@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { AttributeLookupEngine } from "./lookupEngine";
+import type { ParquetQueryEngine as AttributeLookupEngine } from "./parquetEngine";
 import {
   DISTINCT_LIMIT,
   HISTOGRAM_BINS,

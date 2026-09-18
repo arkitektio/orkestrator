@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { LabelLayerFragment } from "./layerGuards";
 import { isLabelLayerState, normalizeLabelLayer } from "./layerModel";
 import { LABEL_ID_CEILING, resolveLayerDataRange } from "./dataRange";
-import type { SceneTransformContext } from "@/mikro-next/lib/coords/transformGraph";
+import type { SceneTransformContext } from "@/lib/scene/coords/transformGraph";
 
 /**
  * `normalizeLabelLayer` is what lets a label mask join `LayerState` and therefore

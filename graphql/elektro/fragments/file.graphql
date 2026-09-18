@@ -3,8 +3,8 @@ fragment File on File {
   name
   size
   contentType
-  origins {
-    ...ListTrace
+  folder {
+    ...ListFolder
   }
   store {
     ...BigFileStore

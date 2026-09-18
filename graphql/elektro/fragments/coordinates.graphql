@@ -1,0 +1,120 @@
+# The coordinate graph, as the experiment scene needs it.
+#
+# These mirror mikro's `coordinatesystem.graphql` — the types are federated and
+# byte-identical, so the two modules ask the same questions of the same graph.
+# What differs is the axis of interest: mikro reduces a placement onto x/y/z,
+# elektro onto a single TIME axis.
+
+fragment ExpAxis on Axis {
+  id
+  order
+  name
+  # TIME picks the sample axis; VALUE only ever appears on a drawing space (an
+  # annotation collection's system), and is how a row-scoped annotation knows
+  # which way is up.
+  type
+  unit
+  longName
+}
+
+fragment ExpCoordinateSystem on CoordinateSystem {
+  id
+  name
+  # Wall-clock anchor. Worlds anchored at a Unix epoch put world times around
+  # 1.8e9, which float32 cannot resolve to better than ~128 — the renderer
+  # subtracts a per-scene origin before casting, and this is what it is measured
+  # against.
+  epoch
+  axes {
+    ...ExpAxis
+  }
+}
+
+# Just enough to identify a system, for the ends of a transformation edge.
+# `axes` is deliberately NOT selected here: an edge names its own `inputAxes` /
+# `outputAxes`, so walking into both endpoints' axis lists on every step of
+# every path would multiply the query for nothing.
+fragment ExpCoordinateSystemRef on CoordinateSystem {
+  id
+  name
+}
+
+# A composite's children, expanded one level. GraphQL cannot express unbounded
+# recursion, and real edges are shallow — a sampling law is
+# `Sequence[Scale, Translation]`. If the server ever nests deeper, the extra
+# depth silently drops out of the response: extend this fragment, do not teach
+# the client to guess.
+fragment ExpTransformationLeaf on Transformation {
+  __typename
+  id
+  kind
+  name
+  version
+  validity
+  invariance
+  inputAxes
+  outputAxes
+  selector {
+    axis
+    index
+  }
+  input {
+    ...ExpCoordinateSystemRef
+  }
+  output {
+    ...ExpCoordinateSystemRef
+  }
+  ... on AffineTransformation {
+    affine
+  }
+  ... on ScaleTransformation {
+    scale
+  }
+  ... on TranslationTransformation {
+    translation
+  }
+  ... on FieldTransformation {
+    field {
+      ...ExpCoordinateSystemRef
+    }
+  }
+}
+
+fragment ExpTransformation on Transformation {
+  ...ExpTransformationLeaf
+  # A FIELD step is what makes `asAffine` error rather than null: its map is the
+  # values of an array, and has no closed form. Spotting one is how the client
+  # tells "timed by a lookup" (drawable, read the time array) from
+  # "unregistered" (not drawable, go author an edge).
+  ... on SequenceTransformation {
+    transformations {
+      ...ExpTransformationLeaf
+    }
+  }
+  ... on ByDimensionTransformation {
+    transformations {
+      ...ExpTransformationLeaf
+    }
+  }
+}
+
+fragment ExpPlacementStep on PlacementStep {
+  inverted
+  transformation {
+    ...ExpTransformation
+  }
+}
+
+# The composed map. This is the ONLY placement authority for a view — the client
+# never composes a path of its own from `pathToWorld`, which it carries purely as
+# provenance and as the key that tells the provider a view's placement moved.
+#
+# `total: false` means the path constrains only `outputAxes` and the rest pass
+# through; what decides drawability is whether `outputAxes` names the world's
+# time axis, not the flag.
+fragment ExpAffinePlacement on AffinePlacement {
+  matrix
+  inputAxes
+  outputAxes
+  total
+}

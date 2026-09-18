@@ -1,5 +1,5 @@
 import type { AttributeLookupEngine } from "@/mikro-next/lib/attributes/lookupEngine";
-import { LruMap } from "@/mikro-next/lib/attributes/lruMap";
+import { LruMap } from "@/lib/generic/lruMap";
 import {
   columnValueAt,
   readColumnValues,

@@ -9,7 +9,7 @@ import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.j
 
 import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
 
-import { createRafCoalescer } from "../../platform/perf/rafCoalesce";
+import { createRafCoalescer } from "@/lib/scene/perf/rafCoalesce";
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 import { useModeStore } from "../../platform/stores/modeStore";
 import { isDrawingTool, useRoiDrawingStore } from "../annotations/roiDrawingStore";

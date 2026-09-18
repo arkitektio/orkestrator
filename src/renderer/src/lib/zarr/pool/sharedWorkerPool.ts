@@ -1,6 +1,6 @@
 import WorkerPool from "@/lib/zarr/pool/workerpool";
 import { createDefaultWorker } from "@/lib/zarr/runner/get-worker";
-import { ZARR_WORKER_POOL_SIZE } from "./config";
+import { ZARR_WORKER_POOL_SIZE } from "./poolSize";
 
 // The pool owns its workers (spawns into empty slots on demand), and each
 // worker overlaps a few fetches: a codec task is fetch → decode, and the

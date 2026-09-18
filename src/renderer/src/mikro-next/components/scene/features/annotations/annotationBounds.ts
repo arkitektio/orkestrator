@@ -8,7 +8,7 @@ import {
 import {
   placementToSpatialAffine,
   spatialAxisTriple,
-} from "@/mikro-next/lib/coords/transformGraph";
+} from "@/lib/scene/coords/transformGraph";
 
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { padDegenerateAxes } from "../../platform/camera/cameraFit";

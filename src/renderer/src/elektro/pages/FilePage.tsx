@@ -1,14 +1,11 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { ListRender } from "@/components/layout/ListRender";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useElektroBigFileDownload } from "@/datalayer/hooks/useElektroBigFileDownload";
 import { ElektroFile } from "@/linkers";
 import { useDownload } from "@/providers/download/DownloadProvider";
-import { DownloadIcon, FileIcon, LineChartIcon, LinkIcon } from "lucide-react";
+import { DownloadIcon, FileIcon } from "lucide-react";
 import { useGetFileQuery } from "../api/graphql";
-import TraceCard from "../components/cards/TraceCard";
 
 // Helper for formatting file size
 const formatBytes = (bytes: number | null | undefined): string => {
@@ -113,34 +110,6 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
         </div>
       </dl>
 
-      {/* Origin Traces (Lineage) */}
-      {file.origins && file.origins.length > 0 && (
-        <div className="space-y-4 mb-8 mt-3">
-          <div className="flex items-center gap-2 mb-2 border-b border-border/40 pb-2">
-            <LinkIcon className="h-4 w-4 text-chart-5" />
-            <h2 className="text-lg font-bold tracking-tight">Origin Traces</h2>
-            <Badge
-              variant="outline"
-              className="bg-chart-5/10 text-chart-5 border-chart-5/20 font-semibold text-xs ml-auto"
-            >
-              {file.origins.length} Total
-            </Badge>
-          </div>
-
-          <ListRender array={file.origins} fit>
-            {(origin) => <TraceCard item={origin} key={origin.id} />}
-          </ListRender>
-        </div>
-      )}
-
-      {file.origins?.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-2 mt-8 text-muted-foreground">
-          <LineChartIcon className="h-8 w-8 text-muted-foreground/40" />
-          <span className="text-sm">
-            This file has not produced any traces yet.
-          </span>
-        </div>
-      )}
     </ElektroFile.ModelPage>
   );
 });

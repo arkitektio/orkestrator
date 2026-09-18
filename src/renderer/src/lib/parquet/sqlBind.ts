@@ -1,4 +1,5 @@
-import type { BindParam } from "./planExec";
+/** A value bound into a parquet query: a key, a filter bound, a URL. */
+export type BindParam = string | number | bigint;
 
 /**
  * Escaped-literal substitution of positional `?` placeholders — the FALLBACK

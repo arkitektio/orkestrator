@@ -58,6 +58,16 @@ import { keyify } from "./utils";
 import { DerivationRuleEditor } from "../components/schema-builder/DerivationRuleEditor";
 import { buildDerivationRule } from "../components/schema-builder/utils";
 import { useGraphQLDialog } from "@/app/hooks/useGraphQLDialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
+import { ClaimRulesEditor } from "../components/schema-builder/ClaimRuleEditor";
+import {
+  ClaimRuleDraft,
+  summarizeRules,
+  toCategoryDefinition,
+  validateRules,
+  wordRule,
+} from "../components/schema-builder/claimRules";
 
 type CreateEntityCategoryFormValues = CreateEntityCategoryMutationVariables["input"];
 
@@ -313,108 +323,262 @@ export const PropertyDefinitions = () => {
 
 
 
-const TForm = (props: Partial<CreateEntityCategoryFormValues> & { onSuccess?: (data: CreateEntityCategoryMutation) => void }) => {
-  const [add] = useCreateEntityCategoryMutation({
-    refetchQueries: [props.graph ? { query: GetGraphDocument, variables: { id: props.graph } } : ListEntitiesDocument],
+type WizardValues = CreateEntityCategoryFormValues & {
+  /** "anyone": primitive, `definition` omitted. "rules": only matching claims count. */
+  existenceMode: "anyone" | "rules";
+  rules: ClaimRuleDraft[];
+};
 
-  });
+type Step = "existence" | "properties";
 
+const STEPS: { id: Step; label: string }[] = [
+  { id: "existence", label: "Existence" },
+  { id: "properties", label: "Properties" },
+];
 
-  const form = useForm<CreateEntityCategoryFormValues>({
-    defaultValues: {
-      ...props,
-      backfill: false,
-    },
-  });
+const StepIndicator = ({ step }: { step: Step }) => (
+  <div className="flex items-center gap-2 text-xs mb-4">
+    {STEPS.map((s, i) => (
+      <div key={s.id} className="flex items-center gap-2">
+        {i > 0 && <span className="text-muted-foreground">·</span>}
+        <span
+          className={cn(
+            "flex items-center gap-1",
+            s.id === step ? "font-medium text-foreground" : "text-muted-foreground",
+          )}
+        >
+          <span
+            className={cn(
+              "flex h-5 w-5 items-center justify-center rounded-full border text-[10px]",
+              s.id === step && "bg-primary text-primary-foreground border-primary",
+            )}
+          >
+            {i + 1}
+          </span>
+          {s.label}
+        </span>
+      </div>
+    ))}
+  </div>
+);
 
+/**
+ * Step 1: what the word is, and whose use of it makes an entity exist here.
+ * Omitting a definition keeps the category primitive — every claim under the
+ * word counts — which is the default and what most categories want.
+ */
+const ExistenceStep = ({
+  showGraph,
+  rulesError,
+}: {
+  showGraph: boolean;
+  rulesError: string | null;
+}) => {
+  const { control, getValues, setValue } = useFormContext<WizardValues>();
   const [search] = useSearchGraphsLazyQuery();
   const [searchTerms] = useSearchEntityTermsLazyQuery();
   const [createTerm] = useCreateEntityTermInlineMutation();
-  const  submit = useGraphQLDialog(add, {
-    successMessage: "Entity Category created",
-    onSuccess: (data) => {
-      if (data) {
-        props.onSuccess?.(data);
-      }
+  const mode = useWatch({ control, name: "existenceMode" });
+  const rules = useWatch({ control, name: "rules" });
+
+  return (
+    <div className="flex flex-col gap-1">
+      {showGraph && (
+        <GraphQLSearchField
+          label="Graph"
+          name="graph"
+          description="What graph do you want to add this expression to?"
+          searchQuery={search}
+        />
+      )}
+      <GraphQLCreatableSearchField
+        label="Word we trust"
+        name="key"
+        description="The organization's word this category declares, e.g. 'AIS'. Type a new word to declare it."
+        searchQuery={searchTerms}
+        createMutation={createTerm}
+      />
+      <StringField
+        label="Label"
+        name="label"
+        description="What this graph calls the word. Defaults to the word itself."
+      />
+      <ParagraphField
+        label="Description"
+        name="description"
+        description="What the word means here (e.g. 'A person is a human being')"
+      />
+
+      <div className="flex flex-col gap-3 mt-4">
+        <div>
+          <Label className="font-medium">What makes an entity exist here?</Label>
+          <p className="text-xs text-muted-foreground">
+            Entities come from classification claims — somebody saying a thing is
+            this word. Choose whose claims count.
+          </p>
+        </div>
+        <RadioGroup
+          value={mode}
+          onValueChange={(v) => {
+            const next = v as WizardValues["existenceMode"];
+            setValue("existenceMode", next);
+            // Seed the obvious rule: this word, then narrow down who says it.
+            if (next === "rules" && getValues("rules").length === 0) {
+              setValue("rules", [wordRule(getValues("key"))]);
+            }
+          }}
+          className="gap-2"
+        >
+          <label className="flex items-start gap-3 rounded-md border p-3 cursor-pointer">
+            <RadioGroupItem value="anyone" className="mt-0.5" />
+            <div>
+              <div className="text-sm font-medium">Anyone who uses the word</div>
+              <div className="text-xs text-muted-foreground">
+                Every claim made under this word draws an entity.
+              </div>
+            </div>
+          </label>
+          <label className="flex items-start gap-3 rounded-md border p-3 cursor-pointer">
+            <RadioGroupItem value="rules" className="mt-0.5" />
+            <div>
+              <div className="text-sm font-medium">Only claims matching rules</div>
+              <div className="text-xs text-muted-foreground">
+                Restrict by word, who claimed it, which app, how sure, and when.
+              </div>
+            </div>
+          </label>
+        </RadioGroup>
+
+        {mode === "rules" && (
+          <>
+            <Controller
+              control={control}
+              name="rules"
+              render={({ field }) => (
+                <ClaimRulesEditor
+                  value={field.value}
+                  onChange={field.onChange}
+                  newRule={() => wordRule(getValues("key"))}
+                />
+              )}
+            />
+            <p className="text-xs text-muted-foreground italic">{summarizeRules(rules)}</p>
+            {rulesError && <p className="text-xs text-destructive">{rulesError}</p>}
+          </>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <SwitchField
+          label="Draw existing evidence"
+          name="backfill"
+          description="Claims already made under this word are in the organization's evidence base. With this on they are projected into the graph now, instead of waiting for the next reproject — which takes as long as the evidence base is large."
+        />
+      </div>
+    </div>
+  );
+};
+
+const TForm = (props: Partial<CreateEntityCategoryFormValues> & { onSuccess?: (data: CreateEntityCategoryMutation) => void }) => {
+  const [add] = useCreateEntityCategoryMutation({
+    refetchQueries: [props.graph ? { query: GetGraphDocument, variables: { id: props.graph } } : ListEntitiesDocument],
+  });
+
+  const { onSuccess, ...defaults } = props;
+  const form = useForm<WizardValues>({
+    defaultValues: {
+      ...defaults,
+      backfill: false,
+      existenceMode: "anyone",
+      rules: [],
     },
   });
 
+  const [step, setStep] = useState<Step>("existence");
+  const [rulesError, setRulesError] = useState<string | null>(null);
 
+  const submit = useGraphQLDialog(add, {
+    successMessage: "Entity Category created",
+    onSuccess: (data) => {
+      if (data) {
+        onSuccess?.(data);
+      }
+    },
+  });
 
   // No label -> key derivation here any more. `key` IS the organization's word,
   // picked from the vocabulary rather than typed, and a picker fighting an
   // auto-deriving effect over the same field only ever loses.
 
+  /** Step 1 is complete when there is a graph, a word, and sendable rules. */
+  const validateExistence = () => {
+    const { graph, key, existenceMode, rules } = form.getValues();
+    let ok = true;
+    if (!graph) {
+      form.setError("graph", { message: "Pick a graph" });
+      ok = false;
+    }
+    if (!key) {
+      form.setError("key", { message: "Pick or declare a word" });
+      ok = false;
+    }
+    const ruleProblem = existenceMode === "rules" ? validateRules(rules) : null;
+    setRulesError(ruleProblem);
+    return ok && ruleProblem === null;
+  };
+
   return (
-    <>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(async (data) => {
-            const propertyDefinitions = data.propertyDefinitions?.map((definition) => ({
-              ...definition,
-              derivation: definition.derivation || DerivationType.Latest,
-              // Fill the rule's required fields without overwriting what the
-              // derivation editor set — `conflictPolicy` and the two priority
-              // lists are non-null on the input.
-              rule: buildDerivationRule(definition.rule),
-            }));
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(async ({ existenceMode, rules, ...data }) => {
+          // Enter in a step-1 field submits the form; treat it as "Next".
+          if (step === "existence") {
+            if (validateExistence()) setStep("properties");
+            return;
+          }
+          if (!validateExistence()) {
+            setStep("existence");
+            return;
+          }
 
-            submit({
-              variables: {
-                input: {
-                  ...data,
-                  propertyDefinitions,
-                },
+          const propertyDefinitions = data.propertyDefinitions?.map((definition) => ({
+            ...definition,
+            derivation: definition.derivation || DerivationType.Latest,
+            // Fill the rule's required fields without overwriting what the
+            // derivation editor set — `conflictPolicy` and the two priority
+            // lists are non-null on the input.
+            rule: buildDerivationRule(definition.rule),
+          }));
+
+          submit({
+            variables: {
+              input: {
+                ...data,
+                definition: existenceMode === "rules" ? toCategoryDefinition(rules) : null,
+                propertyDefinitions,
               },
-            });
-          })}
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-1 flex-col gap-1 flex">
-              {!props.graph && (
-                <>
-                  <GraphQLSearchField
-                    label="Graph"
-                    name="graph"
-                    description="What graph do you want to add this expression to?"
-                    searchQuery={search}
-                  />
-                </>
-              )}
-              <GraphQLCreatableSearchField
-                label="Word we trust"
-                name="key"
-                description="The organization's word this category declares, e.g. 'AIS'. This category draws every entity claimed under it. Type a new word to declare it."
-                searchQuery={searchTerms}
-                createMutation={createTerm}
-              />
-              <StringField
-                label="Label"
-                name="label"
-                description="What this graph calls the word. Defaults to the word itself."
-              />
-              <ParagraphField
-                label="Description"
-                name="description"
-                description="What the word means here (e.g. 'A person is a human being')"
-              />
-            </div>
-            <div className="col-span-1 flex-col gap-1 flex ">
-              <PropertyDefinitions />
-            </div>
-          </div>
+            },
+          });
+        })}
+      >
+        <StepIndicator step={step} />
 
-              <SwitchField
-                label="Draw existing evidence"
-                name="backfill"
-                description="Claims already made under this word are in the organization's evidence base. With this on they are projected into the graph now, instead of waiting for the next reproject — which takes as long as the evidence base is large."
-              />
-          <DialogFooter className="mt-2">
-            <Button type="submit">Create</Button>
-          </DialogFooter>
-        </form>
-      </Form>
-    </>
+        {step === "existence" ? (
+          <ExistenceStep showGraph={!props.graph} rulesError={rulesError} />
+        ) : (
+          <PropertyDefinitions />
+        )}
+
+        <DialogFooter className="mt-4">
+          {step === "properties" && (
+            <Button type="button" variant="outline" onClick={() => setStep("existence")}>
+              Back
+            </Button>
+          )}
+          <Button type="submit">{step === "existence" ? "Next" : "Create"}</Button>
+        </DialogFooter>
+      </form>
+    </Form>
   );
 };
 

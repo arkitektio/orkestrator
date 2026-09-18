@@ -1,0 +1,15 @@
+# Drawing on a timeline.
+#
+# `createAnnotation(experiment:)` finds the experiment's annotation collection or
+# MINTS it on first use — a coordinate system copying the world's axes, an identity
+# registration into the world, and one annotation view. So the first draw on an
+# experiment adds a view; the renderer treats that as a reconcile, never a rebuild.
+mutation CreateExperimentAnnotation($input: CreateAnnotationInput!) {
+  createAnnotation(input: $input) {
+    ...ExpAnnotation
+  }
+}
+
+mutation DeleteExperimentAnnotation($id: ID!) {
+  deleteAnnotation(input: { id: $id })
+}

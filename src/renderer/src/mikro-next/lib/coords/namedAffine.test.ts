@@ -8,7 +8,7 @@ import {
   touchedSlots,
   type NamedAffine,
 } from "./namedAffine";
-import { invert4, placementToSpatialAffine } from "./transformGraph";
+import { invert4, placementToSpatialAffine } from "@/lib/scene/coords/transformGraph";
 
 type M = number[][];
 

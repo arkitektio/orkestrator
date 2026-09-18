@@ -41,6 +41,10 @@ generates:
         Dimension: "@/elektro/api/scalars#Dimension"
         # An RGBA color as a 4-value list [r,g,b,a] (rendering tint, e.g. per compartment).
         RGBAColor: "@/elektro/api/scalars#RGBAColor"
+        # Annotation ids are UUIDs, not the serial ids everything else uses.
+        # Left unmapped they generate as `any`, which quietly defeats every
+        # id-keyed lookup the annotation layer does.
+        UUID: "string"
 
   src/renderer/src/elektro/graphql.schema.json:
     plugins:

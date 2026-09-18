@@ -3,8 +3,7 @@ import { SidebarLayout } from '@/components/layout/SidebarLayout'
 import { FancyInput } from '@/components/ui/fancy-input'
 import { DroppableNavLink } from '@/components/ui/link'
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Separator } from '@/components/ui/separator'
-import { PaneLink, SidePaneGroup } from '@/components/ui/sidepane'
+import { PaneLink, SidePaneGroup, SidePaneNav } from '@/components/ui/sidepane'
 import { Toggle } from '@/components/ui/toggle'
 import { JustUsername } from '@/lok-next/components/UserAvatar'
 import { useDebounce } from '@uidotdev/usehooks'
@@ -18,107 +17,76 @@ import FileCard from '../components/cards/FileCard'
 import FolderCard from '../components/cards/FolderCard'
 
 export const NavigationPane = () => {
-  const { data, error } = useMembersQuery()
+  const { data } = useMembersQuery()
 
   return (
-    <div className="flex-1 flex-col">
-      <nav className="grid items-start px-1 text-xs font-medium lg:px-2">
-        <SidePaneGroup title="Explore">
-          <PaneLink
-            to="/mikro/home"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <Home className="h-4 w-4" />
-            Dashboard
-          </PaneLink>
-        </SidePaneGroup>
+    <SidePaneNav columns={3}>
+      <SidePaneGroup title="Data">
+        <PaneLink to="/mikro/home">
+          <Home />
+          Dashboard
+        </PaneLink>
+        <PaneLink to="/mikro/scenes">
+          <File />
+          Scenes
+        </PaneLink>
+        <PaneLink to="/mikro/arraydatasets">
+          <Grid3x3 />
+          Array Datasets
+        </PaneLink>
+        <PaneLink to="/mikro/tabledatasets">
+          <Table2 />
+          Table Datasets
+        </PaneLink>
+        <PaneLink to="/mikro/coordinatesystems">
+          <Axis3d />
+          Coordinate Systems
+        </PaneLink>
+        <PaneLink to="/mikro/annotations">
+          <PenTool />
+          Annotations
+        </PaneLink>
+        <PaneLink to="/mikro/folders">
+          <Folder />
+          Folders
+        </PaneLink>
+        <PaneLink to="/mikro/files">
+          <File />
+          Files
+        </PaneLink>
+      </SidePaneGroup>
 
-        <SidePaneGroup title="Data">
-          <PaneLink to="/mikro/arraydatasets" className="flex gap-3 w-full hover:text-primary">
-            <Grid3x3 className="h-4 w-4" />
-            Array Datasets
+      {/* One link per spec, generated from the catalogue so the nav and the
+          pages behind it cannot drift apart. */}
+      <SidePaneGroup title={<NavLink to="/mikro/arraydatasets">By kind</NavLink>}>
+        {ADATASET_SPECS.map((entry) => (
+          <PaneLink key={entry.slug} to={arrayDatasetSpecLink(entry.slug)}>
+            <entry.icon />
+            {entry.label}
           </PaneLink>
-          <PaneLink to="/mikro/coordinatesystems" className="flex gap-3 w-full hover:text-primary">
-            <Axis3d className="h-4 w-4" />
-            Coordinate Systems
-          </PaneLink>
-          <PaneLink to="/mikro/tabledatasets" className="flex gap-3 w-full hover:text-primary">
-            <Table2 className="h-4 w-4" />
-            Table Datasets
-          </PaneLink>
-          <PaneLink to="/mikro/annotations" className="flex gap-3 w-full hover:text-primary">
-            <PenTool className="h-4 w-4" />
-            Annotations
-          </PaneLink>
-          <PaneLink to="/mikro/folders" className="flex gap-3 w-full hover:text-primary">
-            <Folder className="h-4 w-4" />
-            Folders
-          </PaneLink>
-          <PaneLink to="/mikro/files" className="flex gap-3 w-full hover:text-primary">
-            <File className="h-4 w-4" />
-            Files
-          </PaneLink>
-          <PaneLink to="/mikro/scenes" className="flex gap-3 w-full hover:text-primary">
-            <File className="h-4 w-4" />
-            Scenes
-          </PaneLink>
-        </SidePaneGroup>
+        ))}
+      </SidePaneGroup>
 
-        {/* One section per spec, generated from the catalogue so the sidebar and
-            the pages behind it cannot drift apart. The header is the unfiltered
-            list — "all of them" — and each link narrows it to one spec. */}
+      {data?.members.map((i) => (
         <SidePaneGroup
+          key={i.user.sub}
+          limit={5}
+          moreTo={`/mikro/peerhome/${i.user.sub}`}
           title={
-            <NavLink
-              to="/mikro/arraydatasets"
-              className="text-muted-foreground text-xs font-semibold uppercase hover:text-primary"
-            >
-              Array Datasets
-            </NavLink>
+            <DroppableNavLink to={`/mikro/peerhome/${i.user.sub}`}>
+              <JustUsername sub={i.user.sub} />
+            </DroppableNavLink>
           }
         >
-          {ADATASET_SPECS.map((entry) => (
-            <PaneLink
-              key={entry.slug}
-              to={arrayDatasetSpecLink(entry.slug)}
-              className="flex gap-3 w-full hover:text-primary"
-            >
-              <entry.icon className="h-4 w-4" />
-              {entry.label}
+          {i.folders.map((folder) => (
+            <PaneLink to={`/mikro/folders/${folder.id}`} key={folder.id}>
+              <Folder />
+              <span className="truncate">{folder.name}</span>
             </PaneLink>
           ))}
         </SidePaneGroup>
-
-        <Separator className="my-3" />
-
-        {data?.members.map((i) => (
-          <React.Fragment key={i.user.sub}>
-            <SidePaneGroup
-              title={
-                <DroppableNavLink
-                  to={`/mikro/peerhome/${i.user.sub}`}
-                  className="text-muted-foreground text-xs font-semibold uppercase "
-                >
-                  <JustUsername sub={i.user.sub} />
-                </DroppableNavLink>
-              }
-            >
-              {i.folders.map((folder) => (
-                <DroppableNavLink
-                  to={`/mikro/folders/${folder.id}`}
-                  key={folder.id}
-                  className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-                >
-                  <Folder className="h-4 w-4" />
-                  {folder.name}
-                </DroppableNavLink>
-              ))}
-            </SidePaneGroup>
-          </React.Fragment>
-        ))}
-        {error && <div>Error: {JSON.stringify(error)}</div>}
-      </nav>
-    </div>
+      ))}
+    </SidePaneNav>
   )
 }
 

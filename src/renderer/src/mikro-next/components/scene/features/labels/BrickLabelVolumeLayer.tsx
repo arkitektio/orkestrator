@@ -23,7 +23,7 @@ import {
 } from "../../platform/probe/probeGating";
 import { effectiveProbeLayerId, layerAnswersProbe } from "../../platform/probe/probeTargeting";
 import type { ProbeOrigin, ProbeResult } from "../../platform/probe/probeTypes";
-import { createRafCoalescer } from "../../platform/perf/rafCoalesce";
+import { createRafCoalescer } from "@/lib/scene/perf/rafCoalesce";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useBrickMaterialBundle } from "../bricks/layers/useBrickMaterialBundle";
 import {

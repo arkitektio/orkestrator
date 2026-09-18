@@ -72,8 +72,6 @@ export const ROUTE_CATALOG: CatalogRoute[] = [
   { module: "elektro", label: "Neuron models", route: "/elektro/neuronmodels" },
   { module: "elektro", label: "Model Collections", route: "/elektro/modelcollections" },
   { module: "elektro", label: "Workspaces", route: "/elektro/modelworkspaces" },
-  { module: "elektro", label: "Blocks", route: "/elektro/blocks" },
-  { module: "elektro", label: "Datasets", route: "/elektro/datasets" },
   { module: "elektro", label: "Files", route: "/elektro/files" },
   // kabinet
   { module: "kabinet", label: "Dashboard", route: "/kabinet/home" },

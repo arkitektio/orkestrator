@@ -5,10 +5,10 @@ import {
 } from "@/components/hover/HoverShell";
 import { Object } from "@/types";
 import { formatDistanceToNow } from "date-fns";
-import { useDetailExperimentQuery } from "../../api/graphql";
+import { useGetExperimentSceneQuery } from "../../api/graphql";
 
 export const ExperimentHoverCard = ({ object }: { object: Object }) => {
-  const { data, error } = useDetailExperimentQuery({
+  const { data, error } = useGetExperimentSceneQuery({
     variables: { id: object.id },
     fetchPolicy: "cache-first",
   });
@@ -26,6 +26,15 @@ export const ExperimentHoverCard = ({ object }: { object: Object }) => {
   }
 
   const experiment = data.experiment;
+  const count = (typename: string) =>
+    experiment.layers.filter((layer) => layer.__typename === typename).length;
+  // Only the kinds it has: an experiment with no spike layers shows no "Spikes 0".
+  const kinds = [
+    { label: "Traces", value: count("TraceLayer") },
+    { label: "Spikes", value: count("SpikesLayer") },
+    { label: "Events", value: count("EventsLayer") },
+    { label: "Annotations", value: count("AnnotationLayer") },
+  ].filter((kind) => kind.value > 0);
 
   return (
     <HoverShell title={experiment.name} subtitle="Experiment">
@@ -36,8 +45,9 @@ export const ExperimentHoverCard = ({ object }: { object: Object }) => {
       )}
 
       <div className="flex flex-col gap-1">
-        <HoverRow label="Recordings" value={experiment.recordingViews.length} />
-        <HoverRow label="Stimuli" value={experiment.stimulusViews.length} />
+        {kinds.map((kind) => (
+          <HoverRow key={kind.label} label={kind.label} value={kind.value} />
+        ))}
         <HoverRow
           label="Created"
           value={

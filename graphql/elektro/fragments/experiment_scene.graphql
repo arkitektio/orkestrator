@@ -1,0 +1,182 @@
+# The experiment scene: elektro's `Scene`, composed over a timeline.
+#
+# An `Experiment` is to a time axis what mikro's `Scene` is to space. Its LAYERS
+# are mikro's layers over time — a trace (a lens over an array dataset), a spike
+# raster (a sparse dataset), an event table (parquet), or an annotation
+# collection. `world` is the shared clock they are laid out over; each layer's
+# `asAffine` is the one authority on where its samples land.
+#
+# `layers` comes back in server order; the client sorts it by (order, id) for
+# drawing and by (typename, id) for its structural signature, so array-order
+# churn can never move a signature.
+
+fragment ExpLayerCommon on ExperimentLayer {
+  __typename
+  id
+  kind
+  name
+  blending
+  opacity
+  visible
+  order
+  # PLACED | CONDITIONAL | UNREGISTERED | UNMAPPABLE. These need four different
+  # affordances — close the gap, pick a coordinate, badge it and stop — so a bare
+  # null `asAffine` is not enough to render the panel.
+  placement
+  placementValidity
+  placementInvariance
+  # THE placement. Left at the default `strict: false` on purpose: a partial map
+  # is still usable if it constrains the world's time axis, and that is a call the
+  # client is in a position to make.
+  #
+  # This field ERRORS rather than nulling when the path will not condense (any
+  # FIELD step: a variable-dt run timed by a lookup), which is why the query runs
+  # with `errorPolicy: "all"` and the page reads the errors.
+  asAffine {
+    ...ExpAffinePlacement
+  }
+  # Provenance, and the reconcile key. Never composed client-side for a layer.
+  pathToWorld {
+    ...ExpPlacementStep
+  }
+}
+
+# A picker entry is REPLACED WHOLE on write, so every field is selected: one not
+# read back would be silently dropped by the next edit.
+fragment ExpColorBy on ColorBy {
+  kind
+  table
+  column
+  joinPath {
+    table
+    column
+  }
+  colormap
+  min
+  max
+  label
+}
+
+fragment ExpFilterBy on FilterBy {
+  kind
+  table
+  column
+  joinPath {
+    table
+    column
+  }
+  min
+  max
+  values
+  exclude
+  label
+}
+
+fragment ExpTraceLayer on TraceLayer {
+  ...ExpLayerCommon
+  lens {
+    ...ExpLens
+  }
+  # Null = every channel of the lens, stacked; set = that channel only.
+  channelIndex
+  climMin
+  climMax
+  lineWidth
+  color
+  # DERIVED server-side off the lens extent and the sampling law. Null when the
+  # source is timed by a lookup, where a sample count is not a duration.
+  duration
+  # `levelPaths` is deliberately NOT selected (mikro §2): a level's placement is
+  # the layer's `asAffine` composed with that level's `toParent` factor.
+}
+
+fragment ExpSpikesLayer on SpikesLayer {
+  ...ExpLayerCommon
+  sparseDataset {
+    ...ExpSparseDataset
+  }
+  tickHeight
+  rowOrderColumn
+  valueMode
+  rateBin
+  colormap
+  climMin
+  climMax
+  color
+  activeColorBy
+  activeFilterBys
+  colorBys {
+    ...ExpColorBy
+  }
+  filterBys {
+    ...ExpFilterBy
+  }
+  unitTable {
+    ...ExpTableDataset
+  }
+}
+
+fragment ExpEventsLayer on EventsLayer {
+  ...ExpLayerCommon
+  tableDataset {
+    ...ExpTableDataset
+  }
+  # Null = the table's TIME coordinate column (read off `columns`).
+  timeColumn
+  stopColumn
+  labelColumn
+  laneColumn
+  colormap
+  color
+  activeColorBy
+  activeFilterBys
+  colorBys {
+    ...ExpColorBy
+  }
+  filterBys {
+    ...ExpFilterBy
+  }
+}
+
+fragment ExpAnnotationLayer on AnnotationLayer {
+  ...ExpLayerCommon
+  annotationCollection {
+    ...ExpAnnotationCollection
+  }
+}
+
+fragment ExperimentScene on Experiment {
+  id
+  name
+  description
+  createdAt
+  pinned
+  creator {
+    sub
+  }
+  # Nullable: an experiment minted without a world has no timeline and nothing
+  # placeable. The provider reports that as its own phase rather than as a load
+  # failure.
+  world {
+    ...ExpCoordinateSystem
+  }
+  # Where annotations drawn on this experiment land when no annotation layer
+  # names a collection of its own.
+  annotationCollection {
+    id
+  }
+  layers {
+    ...ExpTraceLayer
+    ...ExpSpikesLayer
+    ...ExpEventsLayer
+    ...ExpAnnotationLayer
+  }
+}
+
+fragment ListExperiment on Experiment {
+  id
+  name
+  description
+  createdAt
+  pinned
+}

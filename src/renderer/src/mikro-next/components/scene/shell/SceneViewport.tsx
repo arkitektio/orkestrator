@@ -8,7 +8,7 @@ import { useTabVisible } from "@/command/tabs/TabVisibilityContext";
 import { useEffect, type ReactNode } from "react";
 import { LongCommitProfiler } from "../platform/perf/commitProfiler";
 import { useViewStoreApi } from "../platform/stores/viewStore";
-import { WebGPURenderer } from "three/webgpu";
+import { createWebGPURendererFactory } from "@/lib/scene/gpu/createWebGPURenderer";
 import * as THREE from "three";
 import { CameraMatrixSync } from "../platform/camera/CameraMatrixSync";
 import { PerfFrameProbe } from "../platform/perf/PerfFrameProbe";
@@ -50,7 +50,7 @@ import { DimSliderPanel } from "./chrome/DimSliderPanel";
 import { SelectedPointPanel } from "../features/probe/SelectedPointPanel";
 import { RoiDeleteKeybinding } from "../features/annotations/RoiDeleteKeybinding";
 import { ZSliderPanel } from "./chrome/ZSliderPanel";
-import { WebGPUUnavailableError } from "../platform/gpu/webgpuSupport";
+import { WebGPUUnavailableError } from "@/lib/scene/gpu/webgpuSupport";
 import { useModeStore } from "../platform/stores/modeStore";
 import { useViewerStore } from "../platform/stores/viewerStore";
 
@@ -168,6 +168,17 @@ const TabVisibilitySync = () => {
   return null;
 };
 
+/**
+ * The WebGPU renderer, via the shared factory — the fallback-nulling, timestamp
+ * parking and drei anisotropy shim all live there now, shared with elektro's
+ * timeline. Module-level so r3f sees one stable `gl` prop.
+ */
+const sceneRendererFactory = createWebGPURendererFactory({
+  label: "scene",
+  // The device is live: everything before this was pre-GPU cold open.
+  onInitialized: () => coldOpenTimeline.stamp("canvasMount"),
+});
+
 const SceneWrapper = ({ children }: { children: ReactNode }) => {
   // A tab that is mounted but not on screen must not schedule frames. In
   // demand mode a scene at rest already draws nothing; "never" also stops the
@@ -184,95 +195,7 @@ const SceneWrapper = ({ children }: { children: ReactNode }) => {
         className="select-none [-webkit-user-select:none]"
         frameloop={visible ? "demand" : "never"}
         events={sceneEvents}
-        gl={async (props) => {
-          const renderer = new WebGPURenderer({
-            ...(props as Record<string, unknown>),
-            // No MSAA: the dominant pixel cost is the full-screen volume
-            // raymarch, which has zero geometric edges (the proxy box is
-            // invisible and the shader Discards, defeating early-Z) — MSAA
-            // there is pure color/depth bandwidth, plus 4× the realloc cost
-            // on every DPR switch. Line furniture (Line2 fat lines, gizmo)
-            // is screen-space quads, the least MSAA-sensitive geometry.
-            antialias: false,
-            // GPU frame timing for the perf monitor. Constructing with the
-            // flag on is required so init() can validate feature support
-            // (three self-clears it when the adapter lacks timestamp-query);
-            // it is switched OFF again right after init — see below.
-            trackTimestamp: true,
-          });
-
-          // three 0.184 has no forceWebGPU, and WebGPURenderer's constructor
-          // unconditionally overwrites parameters.getFallback with its own
-          // WebGL2 closure (three.webgpu.js:82651), so a caller-supplied one is
-          // discarded. Nulling the private field the base Renderer read it into
-          // (three.webgpu.js:58077) is the only lever: init() then rejects at
-          // three.webgpu.js:58528 instead of silently swapping in a WebGL2
-          // backend we no longer carry upload paths for. Re-verify on any three
-          // upgrade.
-          (renderer as unknown as { _getFallback: unknown })._getFallback = null;
-
-          // NOTE clipping needs no renderer opt-in here — and
-          // `material.clippingPlanes` does NOTHING on the WebGPU node path:
-          // planes are consumed solely from scene-graph `ClippingGroup`
-          // objects (the 2D mesh slab in fabriksManager uses one as its root).
-
-          await renderer.init();
-
-          // Timestamp writes land in a 2048-slot query pool that ONLY a
-          // resolveTimestampsAsync call drains — and nobody resolves outside a
-          // perf recording, so leaving the flag on floods the pool (three
-          // warns "Maximum number of queries exceeded"). Park it off and
-          // remember whether the device actually supports it; PerfFrameProbe
-          // flips it on for a recording's lifetime and drains on stop. The
-          // per-pass check in three reads the backend property live, so this
-          // runtime toggle is safe.
-          const tsBackend = (
-            renderer as unknown as {
-              backend?: { trackTimestamp?: boolean; __timestampQuerySupported?: boolean };
-            }
-          ).backend;
-          if (tsBackend) {
-            tsBackend.__timestampQuerySupported = tsBackend.trackTimestamp === true;
-            tsBackend.trackTimestamp = false;
-          }
-
-          const anyRenderer = renderer as unknown as {
-            backend?: { isWebGPUBackend?: boolean };
-            capabilities?: { getMaxAnisotropy?: () => number };
-            getMaxAnisotropy?: () => number;
-          };
-
-          // drei compat shim: several drei components (GizmoViewport's
-          // AxisHead, …) read `gl.capabilities.getMaxAnisotropy()`, which only
-          // exists on WebGLRenderer. WebGPURenderer exposes a top-level
-          // getMaxAnisotropy() — bridge it.
-          if (!anyRenderer.capabilities) {
-            anyRenderer.capabilities = {
-              getMaxAnisotropy: () => anyRenderer.getMaxAnisotropy?.() ?? 1,
-            };
-          } else if (typeof anyRenderer.capabilities.getMaxAnisotropy !== "function") {
-            anyRenderer.capabilities.getMaxAnisotropy = () =>
-              anyRenderer.getMaxAnisotropy?.() ?? 1;
-          }
-
-          // Tripwire, not a UX path: if a three upgrade reintroduces a fallback
-          // route, fail loudly rather than render a scene that lies about its
-          // backend. R3F v9 fire-and-forgets this factory's promise
-          // (react-three-fiber.esm.js:111), so this surfaces only as an
-          // unhandled rejection — the user-facing gate is
-          // assertWebGPUSupported() in SceneProvider.
-          if (anyRenderer.backend?.isWebGPUBackend !== true) {
-            throw new Error(
-              "[scene] WebGPURenderer initialized on a non-WebGPU backend — " +
-                "three's WebGL2 fallback should be unreachable.",
-            );
-          }
-
-          console.info("[scene] renderer initialized — backend: WebGPU");
-          // The device is live: everything above this was pre-GPU cold open.
-          coldOpenTimeline.stamp("canvasMount");
-          return renderer;
-        }}>{children}</Canvas>;
+        gl={sceneRendererFactory}>{children}</Canvas>;
 };
 
 const SceneModeContent = () => {

@@ -1,5 +1,12 @@
 /**
- * Reading ONE slice of a sparse matrix, from the browser.
+ * Reading ONE slice of a sparse matrix, from the browser — for any service.
+ *
+ * Shared by mikro (sparse colourings and profiles) and elektro (spike rasters):
+ * the anndata CSR/CSC layout is the same format in both, and so is the cost
+ * model. What differs is only WHO grants the credentials, so that is injected
+ * (`SparseStoreAccess`) rather than imported. Choosing the layout is the
+ * caller's business too: a colouring wants the layout indexed on the named
+ * position (mikro's `pickLayout`), a raster the one indexed on the unit axis.
  *
  * A `SPARSE` colouring names a matrix and a position along the axis it
  * identifies itself — `{gene: 4711}` — and what comes back is one value per
@@ -23,10 +30,10 @@
  * Selecting them (see `fragments/sparsedataset.graphql`) turns five round trips
  * into zero.
  *
- * **It does not request its own credentials.** `SparseStore.bucketKey` is
- * `"zarr"`, and a general zarr grant is bucket-wide, so the grant the scene
- * already holds and rotates covers every sparse store too. One provider, one
- * rotation, no second mutation.
+ * **It does not request its own credentials.** The caller passes a
+ * `SparseStoreAccess` — mikro's binds its general zarr grant (bucket-wide, so it
+ * covers every sparse store), elektro's its sparse grant. One provider per
+ * service, one rotation.
  *
  * ## The cost, honestly
  *
@@ -39,16 +46,40 @@
  * None of the millisecond figures published for this format are network
  * numbers: they are local-disk, warm-cache, and measured with `indptr` excluded
  * from the timer. Do not quote them here.
+ *
+ * ## Where the reads run
+ *
+ * Every read goes through the shared worker runner (`readArrayWindow`), never
+ * zarrita's main-thread `get()`, and at `fidelity: "exact"`: `indptr` and
+ * `indices` are integer offsets that the runner's default float32 promotion
+ * would round past 2^24, and an offset off by one reads a different cell.
  */
-import { get, open, root, slice, type Array as ZarrArray } from "zarrita";
+import { root } from "zarrita";
 
+import { ByteBudgetChunkCache } from "@/lib/zarr/caches/byteBudgetChunkCache";
+import { openZarrArray, type OpenedZarrArray } from "@/lib/zarr/openArray";
+import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
+import { readArrayWindow } from "@/lib/zarr/readArrayWindow";
 import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
-import type { MikroClient } from "@/lib/zarr/store/types";
-import type { SparseColouringSourceFragment } from "@/mikro-next/api/graphql";
-import { buildS3FetchConfig, getGeneralAccess } from "../zarr/access";
-import { LruMap } from "../attributes/lruMap";
+import type { S3FetchConfig } from "@/lib/zarr/runner/s3-request";
+import { LruMap } from "@/lib/generic/lruMap";
 
-/** A layout, paired with the store it lives in. */
+/**
+ * Where a service's sparse stores are, and the credentials to read them.
+ *
+ * `namespace` scopes the handle cache: store ids are only unique within one
+ * service, and a mikro id and an elektro id must never share an open handle.
+ * `configFor` is called on open and again on every credential rotation
+ * (`forceRefresh` when S3 rejected a grant still believed valid).
+ */
+export type SparseStoreAccess = {
+  namespace: string;
+  configFor: (
+    store: { id: string; key: string },
+    options?: { forceRefresh?: boolean },
+  ) => Promise<S3FetchConfig>;
+};
+
 /** What `openSparseLayout` needs of a store: where it is, and its shape. */
 export type SparseLayoutChoiceStore = {
   id: string;
@@ -61,7 +92,7 @@ export type SparseLayoutChoiceLayout = {
   path: string;
   indexedAxis: number;
   indexOrder: readonly number[];
-  rangeReadable?: boolean;
+  rangeReadable?: boolean | null;
 };
 
 /** A layout, paired with the store it lives in. Structural, so both the
@@ -77,54 +108,15 @@ export type SparseLayoutChoice = {
 };
 
 /**
- * The layout that answers "one value per object for this position".
- *
- * That is the layout indexed on the axis the colouring names a position along,
- * NOT the one indexed on the object axis. The object-major layout answers the
- * other question — one object's whole profile, which is a hover — and asking it
- * for a colouring is the scan.
+ * Decoded chunks of sparse reads. Exact-dtype chunks, so they must not share a
+ * cache with any promoting reader (the chunk key does not carry the fidelity).
  */
-export const pickLayout = (
-  dataset: SparseColouringSourceFragment,
-  at: readonly { axis: string; value: number }[],
-): SparseLayoutChoice | { error: string } => {
-  if (at.length === 0) return { error: "a sparse colouring names a position, and this one names none" };
-
-  const named = new Set(at.map((position) => position.axis));
-  const objectAxisName = dataset.axisNames.find((axis) => !named.has(axis));
-  if (objectAxisName === undefined) {
-    return {
-      error: `\`at\` names every axis of '${dataset.name}' (${dataset.axisNames.join(", ")}), leaving none for the mask's ids to run along`,
-    };
-  }
-  const objectAxis = dataset.axisNames.indexOf(objectAxisName);
-
-  for (const array of dataset.arrays) {
-    for (const layout of array.store.layouts) {
-      if (layout.path !== array.path) continue;
-      const axisName = dataset.axisNames[layout.indexedAxis];
-      if (!named.has(axisName)) continue;
-      if (layout.rangeReadable) {
-        // One uncompressed chunk per array: a "range read" of `data[lo:hi]` is
-        // the whole of `data`. Refused rather than served as a several-hundred
-        // megabyte GET for one gene.
-        return {
-          error: `'${dataset.name}' is stored byte-addressable, which a chunk-granular reader cannot slice — reading one position would download every value. Re-upload it without \`byte_addressable\`.`,
-        };
-      }
-      return { store: array.store, layout, indexedAxis: layout.indexedAxis, objectAxis };
-    }
-  }
-
-  return {
-    error: `'${dataset.name}' holds no layout indexed on any of ${[...named].sort().join(", ")}, so there is no contiguous slice to read. It is indexed on: ${dataset.indexableAxes.join(", ") || "none"}.`,
-  };
-};
+const SPARSE_CHUNK_CACHE = new ByteBudgetChunkCache(64 * 1024 * 1024);
 
 export type SparseLayoutHandle = {
   choice: SparseLayoutChoice;
-  indices: ZarrArray<never, never>;
-  data: ZarrArray<never, never>;
+  indices: OpenedZarrArray;
+  data: OpenedZarrArray;
   /**
    * The whole `indptr`, decoded and held.
    *
@@ -134,13 +126,14 @@ export type SparseLayoutHandle = {
    * store's chunk cache, which is shared with brick streaming and will evict it
    * during a pan.
    */
-  indptr: Int32Array | BigInt64Array | Float64Array;
+  indptr: ArrayLike<number | bigint>;
   /** How many objects a slice covers: the extent of the object axis. */
   slotCount: number;
 };
 
 const handles = new LruMap<Promise<SparseLayoutHandle>>(8);
-const keyOf = (choice: SparseLayoutChoice) => `${choice.store.id}:${choice.layout.path}`;
+const keyOf = (access: SparseStoreAccess, choice: SparseLayoutChoice) =>
+  `${access.namespace}:${choice.store.id}:${choice.layout.path}`;
 
 /**
  * Open a layout's three arrays and take its `indptr`, once.
@@ -150,47 +143,42 @@ const keyOf = (choice: SparseLayoutChoice) => `${choice.store.id}:${choice.layou
  * open rather than doubling it, and a failure does not stick.
  */
 export const openSparseLayout = async (
-  client: MikroClient,
-  datalayer: string,
+  access: SparseStoreAccess,
   choice: SparseLayoutChoice,
 ): Promise<SparseLayoutHandle> => {
-  const key = keyOf(choice);
+  const key = keyOf(access, choice);
   const cached = handles.get(key);
   if (cached) return cached;
 
   const opening = (async (): Promise<SparseLayoutHandle> => {
-    const descriptor = { key: choice.store.key, storeId: choice.store.id };
-    const store = new ConfiguredS3Store(
-      buildS3FetchConfig(await getGeneralAccess(client), descriptor, datalayer),
-      {
-        // The group root holds no array metadata to prime, and the arrays are
-        // opened explicitly below.
-        preloadMetadata: false,
-        // A viewer left open outlives its credentials; rotation goes through
-        // the same provider every other store uses.
-        refreshConfig: async (options) =>
-          buildS3FetchConfig(await getGeneralAccess(client, options), descriptor, datalayer),
-      },
-    );
+    const target = { id: choice.store.id, key: choice.store.key };
+    const store = new ConfiguredS3Store(await access.configFor(target), {
+      // The group root holds no array metadata to prime, and the arrays are
+      // opened explicitly below.
+      preloadMetadata: false,
+      // A viewer left open outlives its credentials; rotation goes through
+      // the same provider the service uses everywhere else.
+      refreshConfig: (options) => access.configFor(target, options),
+    });
     await store.ready();
 
     // `path` is the layout's own value — `layouts/axis{k}`, never a guess.
+    // `openZarrArray` opens v3 only (on a fresh store zarrita's auto-detect
+    // probes v2 first, two 404s per open) and reads the fetch metadata, so the
+    // runner plans against the INNER chunk shape of a sharded layout.
     const at = root(store).resolve(`/${choice.layout.path.replace(/^\/+/, "")}`);
-    // `open.v3`, never bare `open()`: on a fresh store zarrita's auto-detect
-    // probes v2 FIRST (`.zattrs`, then `.zarray`) before trying `zarr.json`,
-    // and these three run concurrently, so each paid two 404s per open.
     const [indptrArray, indices, data] = await Promise.all([
-      open.v3(at.resolve("indptr"), { kind: "array" }),
-      open.v3(at.resolve("indices"), { kind: "array" }),
-      open.v3(at.resolve("data"), { kind: "array" }),
+      openZarrArray(at.resolve("indptr")),
+      openZarrArray(at.resolve("indices")),
+      openZarrArray(at.resolve("data")),
     ]);
-    const indptr = (await get(indptrArray as never)).data as SparseLayoutHandle["indptr"];
+    const indptr = (await readSparseRun(indptrArray, null)).data;
 
     const shape = choice.store.shape ?? [];
     return {
       choice,
-      indices: indices as never,
-      data: data as never,
+      indices,
+      data,
       indptr,
       slotCount: shape[choice.objectAxis] ?? 0,
     };
@@ -237,64 +225,77 @@ export const readSparseSlice = async (
   if (hi <= lo) return { indices: new Int32Array(0), values: new Float32Array(0) };
 
   const [indices, values] = await Promise.all([
-    get(handle.indices as never, [slice(lo, hi)]),
-    get(handle.data as never, [slice(lo, hi)]),
+    readSparseRun(handle.indices, { start: lo, stop: hi }),
+    readSparseRun(handle.data, { start: lo, stop: hi }),
   ]);
-  return {
-    indices: (indices as { data: ArrayLike<number> }).data,
-    values: (values as { data: ArrayLike<number> }).data,
-  };
+  return { indices: asNumbers(indices.data), values: asNumbers(values.data) };
 };
 
 /**
- * A slice as the LUT painter wants it: `objectId -> value`.
+ * The runs for a CONTIGUOUS block of positions `[from, to)` along the indexed
+ * axis, in one read of `indices` and one of `data`.
  *
- * At rank two an `indices` entry IS the object-axis position, so the map is the
- * run verbatim. At rank three and above the run covers every uncompressed axis
- * raveled together, and only the entries matching the other named positions
- * survive — which is what makes a rank-three colouring one value per object
- * rather than several.
+ * Adjacent positions' runs are adjacent in the arrays (that is what `indptr`
+ * says), so a block of units is one range, not one per unit — the difference
+ * between two requests for a raster and two hundred. `offsets[k]..offsets[k+1]`
+ * is position `from + k`'s run within the returned arrays.
  */
-export const sliceAsValues = (
+export type SparseBlock = {
+  from: number;
+  to: number;
+  offsets: Float64Array;
+  indices: ArrayLike<number>;
+  values: ArrayLike<number>;
+};
+
+export const readSparseBlock = async (
   handle: SparseLayoutHandle,
-  sliceRead: SparseSlice,
-  dataset: SparseColouringSourceFragment,
-  at: readonly { axis: string; value: number }[],
-): Map<number, number> => {
-  const order = handle.choice.layout.indexOrder;
-  const values = new Map<number, number>();
-
-  if (order.length <= 1) {
-    for (let k = 0; k < sliceRead.indices.length; k += 1) {
-      values.set(sliceRead.indices[k], sliceRead.values[k]);
-    }
-    return values;
+  from: number,
+  to: number,
+): Promise<SparseBlock> => {
+  const positions = handle.indptr.length - 1;
+  const lo = Math.max(0, Math.min(positions, from));
+  const hi = Math.max(lo, Math.min(positions, to));
+  const offsets = new Float64Array(hi - lo + 1);
+  const base = boundAt(handle.indptr, lo);
+  for (let k = 0; k <= hi - lo; k++) offsets[k] = boundAt(handle.indptr, lo + k) - base;
+  const end = base + offsets[hi - lo];
+  if (end <= base) {
+    return { from: lo, to: hi, offsets, indices: new Int32Array(0), values: new Float32Array(0) };
   }
+  const [indices, values] = await Promise.all([
+    readSparseRun(handle.indices, { start: base, stop: end }),
+    readSparseRun(handle.data, { start: base, stop: end }),
+  ]);
+  return { from: lo, to: hi, offsets, indices: asNumbers(indices.data), values: asNumbers(values.data) };
+};
 
-  // Unravel through `indexOrder` — the one fact in the format that cannot be
-  // recovered from the bytes, so reading it wrong does not fail, it reads a
-  // different cell.
-  const shape = dataset.shape;
-  const extents = order.map((axis) => shape[axis] ?? 1);
-  const wanted = new Map<number, number>();
-  for (const position of at) {
-    const axis = dataset.axisNames.indexOf(position.axis);
-    if (axis >= 0) wanted.set(axis, position.value);
-  }
+/** Nonzeros in a block of positions — what a read of it would cost, before making it. */
+export const blockNnz = (handle: SparseLayoutHandle, from: number, to: number): number =>
+  boundAt(handle.indptr, Math.min(handle.indptr.length - 1, to)) -
+  boundAt(handle.indptr, Math.max(0, from));
 
-  for (let k = 0; k < sliceRead.indices.length; k += 1) {
-    const coordinates = unravel(order, extents, sliceRead.indices[k]);
-    let objectPosition = -1;
-    let keep = true;
-    for (let d = 0; d < order.length; d += 1) {
-      const axis = order[d];
-      const coordinate = coordinates[d];
-      if (axis === handle.choice.objectAxis) objectPosition = coordinate;
-      else if (wanted.has(axis) && wanted.get(axis) !== coordinate) keep = false;
-    }
-    if (keep && objectPosition >= 0) values.set(objectPosition, sliceRead.values[k]);
+/** One exact-dtype 1-D read through the worker runner (null = the whole array). */
+const readSparseRun = (array: OpenedZarrArray, range: { start: number; stop: number } | null) =>
+  readArrayWindow(array, [range], {
+    pool: workerPool,
+    cache: SPARSE_CHUNK_CACHE,
+    fidelity: "exact",
+  });
+
+/**
+ * A run as plain numbers. An int64 run arrives as a BigInt64Array; positions
+ * and values sit far below 2^53, so `Number()` is exact here. (`indptr` is kept
+ * as read and converted per lookup in `boundAt`.)
+ */
+const asNumbers = (data: ArrayLike<number | bigint>): ArrayLike<number> => {
+  if (
+    typeof BigInt64Array !== "undefined" &&
+    (data instanceof BigInt64Array || data instanceof BigUint64Array)
+  ) {
+    return Float64Array.from(data, Number);
   }
-  return values;
+  return data as ArrayLike<number>;
 };
 
 /**

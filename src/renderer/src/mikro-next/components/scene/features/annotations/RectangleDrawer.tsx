@@ -8,7 +8,7 @@ import {
   useRoiSelectionStoreApi,
 } from "./roiSelectionStore";
 import { useRoiDrawingStore } from "./roiDrawingStore";
-import { createRafCoalescer } from "../../platform/perf/rafCoalesce";
+import { createRafCoalescer } from "@/lib/scene/perf/rafCoalesce";
 import { DRAG_THRESHOLD_PX, intersectDrawPlane } from "./drawGesture";
 import { rectangleOutline } from "./roiOutline";
 

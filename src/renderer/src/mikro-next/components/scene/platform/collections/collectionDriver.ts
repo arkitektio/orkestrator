@@ -1,7 +1,7 @@
 import type * as THREE from "three";
 import type { StoreApi } from "zustand";
 
-import { bindField } from "../stores/bindStore";
+import { bindField } from "@/lib/scene/stores/bindStore";
 import {
   deriveCollectionPlanView,
   type CollectionPlanView,

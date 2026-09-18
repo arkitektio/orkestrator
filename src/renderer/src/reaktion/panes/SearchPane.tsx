@@ -1,9 +1,8 @@
-import { Tree } from "@/components/explorer/Tree";
 import { ListRender } from "@/components/layout/ListRender";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { FancyInput } from "@/components/ui/fancy-input";
 import { DialogButton } from "@/components/ui/dialog-button";
-import { PaneLink, SidePaneGroup } from "@/components/ui/sidepane";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
 import { useDebounce } from "@/hooks/use-debounce";
 import { FlussRun, FlussWorkspace } from "@/linkers";
 import { CubeIcon } from "@radix-ui/react-icons";
@@ -31,63 +30,43 @@ export const NavigationPane = () => {
   });
 
   return (
-    <Tree>
-      <SidePaneGroup title="Explore">
-        <PaneLink
-          to="/fluss/home"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <Home className="h-4 w-4" />
-          Dashboard
-        </PaneLink>
-      </SidePaneGroup>
-
-
-      <SidePaneGroup title={<FlussWorkspace.ListLink>Workspaces</FlussWorkspace.ListLink>}
+    <SidePaneNav columns={2}>
+      <SidePaneGroup
+        title={<FlussWorkspace.ListLink>Workspaces</FlussWorkspace.ListLink>}
+        limit={7}
+        moreTo="/fluss/workspaces"
         action={
-          <DialogButton
-            name="createworkspace"
-            variant={"ghost"}
-            dialogProps={{}}
-          >
-            <PlusIcon className="h-4 w-4" />
+          <DialogButton name="createworkspace" variant={"ghost"} dialogProps={{}}>
+            <PlusIcon className="h-3 w-3" />
           </DialogButton>
         }
       >
+        <PaneLink to="/fluss/home">
+          <Home />
+          Dashboard
+        </PaneLink>
         {data?.workspaces.map((workspace) => (
-          <FlussWorkspace.PaneLink
-            object={workspace}
-            key={workspace.id}
-            className="flex flex-row w-full gap-3 rounded-lg  text-muted-foreground transition-all hover:text-primary"
-          >
-            <CubeIcon className="h-4 w-4" />
-            {workspace.title}
+          <FlussWorkspace.PaneLink object={workspace} key={workspace.id}>
+            <CubeIcon />
+            <span className="truncate">{workspace.title}</span>
           </FlussWorkspace.PaneLink>
         ))}
       </SidePaneGroup>
 
-       <SidePaneGroup title={
-        <FlussRun.ListLink>Runs</FlussRun.ListLink>}>
+      <SidePaneGroup title={<FlussRun.ListLink>Recent runs</FlussRun.ListLink>}>
         {rundata?.runs.map((run) => (
-          <FlussRun.PaneLink
-            object={run}
-            key={run.id}
-            className="flex flex-row w-full gap-3 rounded-lg  text-muted-foreground transition-all hover:text-primary"
-          >
-            <CubeIcon className="h-4 w-4 my-auto" />
-            {run.flow.workspace.title}
-            <div className="text-muted-foreground text-xs my-auto">
+          <FlussRun.PaneLink object={run} key={run.id}>
+            <CubeIcon />
+            <span className="flex-1 truncate">{run.flow.workspace.title}</span>
+            <span className="shrink-0 text-[10px] text-muted-foreground">
               <Timestamp date={run.createdAt} relative />
-            </div>
+            </span>
           </FlussRun.PaneLink>
         ))}
       </SidePaneGroup>
-    </Tree>
+    </SidePaneNav>
   );
 };
-
-
-
 
 const Pane: React.FunctionComponent = () => {
   const [search, setSearch] = React.useState("");

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { createSettler } from "../../platform/perf/settle";
+import { createSettler } from "@/lib/scene/perf/settle";
 import {
   PROBE_READOUT_SETTLE_MS,
   needsImmediateReadout,

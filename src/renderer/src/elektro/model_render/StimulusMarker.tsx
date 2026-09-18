@@ -1,9 +1,9 @@
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
-import { StimulusFragment } from "../api/graphql"; // adjust path as needed
-import { getColorForStimulus } from "../components/SimulationRender";
+import type { SiteLike } from "../lib/sites";
+import { getColorForStimulus } from "../lib/traceColor";
 
-export const StimulusMarker = ({ stimulus, position }: { stimulus: StimulusFragment; position: THREE.Vector3 }) => (
+export const StimulusMarker = ({ stimulus, position }: { stimulus: SiteLike; position: THREE.Vector3 }) => (
   <group position={position}>
     <mesh>
       <sphereGeometry args={[0.6, 12, 12]} />

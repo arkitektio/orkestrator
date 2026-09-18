@@ -1,6 +1,7 @@
 // typed-dialog-provider.tsx
 
 import { Guard } from "@/app/Arkitekt";
+import { usePageDialogHost } from "@/components/layout/PageDialogHost";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,19 @@ type ModalState = {
   className?: string;
   side?: "top" | "bottom" | "left" | "right";
   size?: "small" | "medium" | "large";
+  /**
+   * The page host of whoever opened it (see `PageDialogHost`): a dialog opened
+   * from a page covers that page, not the rail. Null means the whole window.
+   */
+  container?: HTMLElement | null;
+};
+
+type OpenOptions = {
+  className?: string;
+  side?: "top" | "bottom" | "left" | "right";
+  size?: "small" | "medium" | "large";
+  /** Override where it renders; defaults to the caller's page, if any. */
+  container?: HTMLElement | null;
 };
 
 // --- 2. Factory Function ---
@@ -76,19 +90,12 @@ export function createDialogProvider<
     openDialog: <K extends DialogId>(
       id: K,
       props: DialogPropsMap[K],
-      options?: {
-        className?: string,
-        size?: "small" | "medium" | "large";
-      },
+      options?: Omit<OpenOptions, "side">,
     ) => void;
     openSheet: <K extends DialogId>(
       id: K,
       props: DialogPropsMap[K],
-      options?: {
-        className?: string;
-        side?: "top" | "bottom" | "left" | "right";
-        size?: "small" | "medium" | "large";
-      },
+      options?: OpenOptions,
     ) => void;
     closeDialog: () => void;
   }>({
@@ -97,7 +104,25 @@ export function createDialogProvider<
     closeDialog: () => { },
   });
 
-  const useDialog = () => useContext(DialogContext);
+  /**
+   * The provider sits above the page, so it cannot see which page a call came
+   * from; the caller's hook can. Stamp the caller's page host onto every open
+   * unless the caller chose a container itself.
+   */
+  const useDialog = () => {
+    const ctx = useContext(DialogContext);
+    const pageHost = usePageDialogHost();
+    return useMemo(
+      () => ({
+        ...ctx,
+        openDialog: ((id, props, options) =>
+          ctx.openDialog(id, props, { container: pageHost, ...options })) as typeof ctx.openDialog,
+        openSheet: ((id, props, options) =>
+          ctx.openSheet(id, props, { container: pageHost, ...options })) as typeof ctx.openSheet,
+      }),
+      [ctx, pageHost],
+    );
+  };
 
   const DialogProvider = ({ children }: { children: React.ReactNode }) => {
     const [modalState, setModalState] = useState<ModalState>({
@@ -110,14 +135,15 @@ export function createDialogProvider<
       <K extends DialogId>(
         id: K,
         props: DialogPropsMap[K],
-        options?: { className?: string, size?: "small" | "medium" | "large" },
+        options?: Omit<OpenOptions, "side">,
       ) => {
         setModalState({
           id: id as string,
           props,
           type: "dialog",
           className: options?.className,
-          size: options?.size
+          size: options?.size,
+          container: options?.container,
         });
       },
       [],
@@ -127,11 +153,7 @@ export function createDialogProvider<
       <K extends DialogId>(
         id: K,
         props: DialogPropsMap[K],
-        options?: {
-          className?: string;
-          side?: "top" | "bottom" | "left" | "right";
-          size?: "small" | "medium" | "large";
-        },
+        options?: OpenOptions,
       ) => {
         setModalState({
           id: id as string,
@@ -140,6 +162,7 @@ export function createDialogProvider<
           className: options?.className,
           side: options?.side || "right",
           size: options?.size,
+          container: options?.container,
         });
       },
       [],
@@ -167,14 +190,14 @@ export function createDialogProvider<
           modal={true}
         >
           {Component && (
-            <DialogContent className={cn(
+            <DialogContent container={modalState.container} className={cn(
               "text-foreground",
-              "w-[min(96vw,1200px)] max-w-[min(96vw,1200px)] max-h-[90vh]", // Default sizes
+              "w-[min(96cqw,1200px)] max-w-[min(96cqw,1200px)] max-h-[90cqh]", // Default sizes
               modalState.className,
               modalState.size === "small" && "max-w-sm",
               modalState.size === "medium" && "max-w-md",
-              modalState.size === "large" && "w-screen !min-w-[90vw] !max-w-[90vw] !min-h-[80vh] !max-h-[80vh]",
-              !modalState.className && modalState.size === undefined && "min-w-[80vw]",
+              modalState.size === "large" && "w-screen !min-w-[90cqw] !max-w-[90cqw] !min-h-[80cqh] !max-h-[80cqh]",
+              !modalState.className && modalState.size === undefined && "min-w-[80cqw]",
             )}>
               <Guard.Rekuest>
                 <Component {...modalState.props} />
@@ -189,6 +212,7 @@ export function createDialogProvider<
         >
           {Component && (
             <SheetContent
+              container={modalState.container}
               side={modalState.side}
               className={cn(
                 "text-foreground",
@@ -202,11 +226,11 @@ export function createDialogProvider<
                 (modalState.className.includes("h-") ||
                   modalState.className.includes("!h-") ||
                   modalState.className.includes("max-h-")) &&
-                "!h-auto !max-h-[90vh]",
+                "!h-auto !max-h-[90cqh]",
                 modalState.className,
-                modalState.size === "small" && "!max-w-sm w-[20vw]",
-                modalState.size === "medium" && "!max-w-md w-[30vw]",
-                modalState.size === "large" && "!max-w-lg w-[60vw]",
+                modalState.size === "small" && "!max-w-sm w-[20cqw]",
+                modalState.size === "medium" && "!max-w-md w-[30cqw]",
+                modalState.size === "large" && "!max-w-lg w-[60cqw]",
               )}
             >
               <Guard.Rekuest>

@@ -8,6 +8,7 @@ import { toBase } from "@/lib/quantities";
 import { RecordingMarker } from "../model_render/RecordingMarker";
 import { StimulusMarker } from "../model_render/StimulusMarker";
 import { interpolateCoords } from "../model_render/utils";
+import { sitesOf, type SiteLike } from "../lib/sites";
 
 const getColorFromIndex = (index: number) => {
   const hue = (index * 137.508) % 360;
@@ -132,6 +133,12 @@ const CylinderWithTooltip = ({
 
 
 export const NeuronSimulationVisualizer = ({ simulation }: { simulation: DetailSimulationFragment }) => {
+  const sitePoint = (site: SiteLike): THREE.Vector3 | null => {
+    const cell = simulation.model.config.cells.find((c) => c.id === site.cell);
+    const section = cell?.topology.sections.find((s) => s.id === site.location);
+    if (!section?.coords || typeof site.position !== "number") return null;
+    return interpolateCoords(section.coords, site.position);
+  };
   const cells = simulation.model.config.cells
   const compartmentMap = Object.fromEntries(
     simulation.model.config.cells.flatMap((cell) =>
@@ -227,29 +234,16 @@ export const NeuronSimulationVisualizer = ({ simulation }: { simulation: DetailS
             }
             )}
           </>)}
-        {simulation.recordings.map((rec, i) => {
-          const cell = simulation.model.config.cells.find(c => c.id === rec.cell);
-          const section = cell?.topology.sections.find(s => s.id === rec.location);
-
-          if (!section || !section.coords || typeof rec.position !== "number") throw new Error(`Invalid recording data ${JSON.stringify(rec)}`);
-
-          const point = interpolateCoords(section.coords, rec.position);
-
-          return (
-            <RecordingMarker key={`rec-marker-${i}`} recording={rec} position={point} />
-          );
+        {/* Markers come from the sites the datasets' anchors name. A site on a
+            section the model does not have is skipped, not thrown on: a stale
+            anchor should cost a marker, not the whole picture. */}
+        {simulation.recordings.flatMap((dataset) => sitesOf(dataset, "recording")).map((site) => {
+          const point = sitePoint(site);
+          return point ? <RecordingMarker key={`rec-${site.id}`} recording={site} position={point} /> : null;
         })}
-        {simulation.stimuli.map((stim, i) => {
-          const cell = simulation.model.config.cells.find(c => c.id === stim.cell);
-          const section = cell?.topology.sections.find(s => s.id === stim.location);
-
-          if (!section || !section.coords || typeof stim.position !== "number") throw new Error(`Invalid stimulus data ${JSON.stringify(stim)}`);
-
-          const point = interpolateCoords(section.coords, stim.position);
-
-          return (
-            <StimulusMarker key={`rec-marker-${i}`} stimulus={stim} position={point} />
-          );
+        {simulation.stimuli.flatMap((dataset) => sitesOf(dataset, "stimulus")).map((site) => {
+          const point = sitePoint(site);
+          return point ? <StimulusMarker key={`stim-${site.id}`} stimulus={site} position={point} /> : null;
         })}
       </>
     </Canvas>

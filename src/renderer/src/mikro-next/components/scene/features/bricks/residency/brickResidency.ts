@@ -25,7 +25,7 @@ import {
   readArrayMetadataCached,
   type ArrayMetadata,
 } from "../../../../../../lib/zarr/runner/index";
-import { workerPool } from "../../../../../workers/pool";
+import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
 import { INTERACTIVE_FETCH_PRIORITY } from "@/lib/zarr/pool/types";
 import { getInitialVolumeTextureBudgetBytes } from "../../../platform/quality/lodPlanning";
 import {

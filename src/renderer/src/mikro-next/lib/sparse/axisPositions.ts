@@ -17,7 +17,7 @@ import { ColumnRole } from "@/mikro-next/api/graphql";
 import type { SparseColouringSourceFragment } from "@/mikro-next/api/graphql";
 import type { AttributeLookupEngine } from "../attributes/lookupEngine";
 import { escapeSqlIdentifier, escapeSqlLiteral } from "../attributes/sqlBind";
-import { LruMap } from "../attributes/lruMap";
+import { LruMap } from "@/lib/generic/lruMap";
 
 export type AxisPosition = { value: number; label: string };
 

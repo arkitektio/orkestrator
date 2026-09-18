@@ -1,17 +1,9 @@
 import Timestamp from "@/components/ui/timestamp";
-import { cn } from "@/lib/utils";
-import {
-  ElektroNeuronModel,
-  ElektroRecording,
-  ElektroStimulus,
-} from "@/linkers";
+import { ElektroNeuronModel } from "@/linkers";
 import { UserInfo } from "@/lok-next/components/protected/UserInfo";
-import { Eye, EyeOff } from "lucide-react";
 import { DetailSimulationFragment } from "../../api/graphql";
-import {
-  getColorForRecordingView,
-  getColorForStimulusView,
-} from "../ExperimentRender.utils";
+import { siteLabelOf, sitesOf, whereOf, type SiteKind } from "../../lib/sites";
+import { getColorForRecording, getColorForStimulus } from "../../lib/traceColor";
 import { neuronModelCounts } from "../neuronmodel/counts";
 
 /** One labelled fact, in the rail's usual label / value row. */
@@ -41,82 +33,50 @@ const SectionHeader = ({ title, count }: { title: string; count?: number }) => (
 );
 
 /**
- * One trace in the plot: its colour swatch, where on the cell it sits, and an
- * eye to hide it. The row toggles; only the label links away, so hiding a
- * trace never navigates by accident.
+ * One recording or stimulus: its colour (matching its marker on the model),
+ * what it is called, and where on the cell it sits. A dataset whose anchors
+ * name no site shows its own name and no "where" line.
  */
 const TraceRow = ({
-  color,
-  label,
-  where,
-  hidden,
-  onToggle,
-  link,
+  dataset,
+  kind,
 }: {
-  color: string;
-  label: string;
-  where: string;
-  hidden: boolean;
-  onToggle: () => void;
-  link: React.ReactNode;
-}) => (
-  <div
-    className={cn(
-      "flex items-center gap-2 rounded-md border border-border/60 px-2 py-1.5 transition-colors hover:bg-accent/50",
-      hidden && "opacity-50",
-    )}
-  >
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex min-w-0 flex-1 items-center gap-2 text-left"
-      title={hidden ? "Show in plot" : "Hide from plot"}
-    >
-      <span
-        className="h-3 w-3 shrink-0 rounded-full"
-        style={{ backgroundColor: color }}
-      />
+  dataset: DetailSimulationFragment["recordings"][number];
+  kind: SiteKind;
+}) => {
+  const sites = sitesOf(dataset, kind);
+  const first = sites[0];
+  const color = first
+    ? kind === "recording"
+      ? getColorForRecording(first)
+      : getColorForStimulus(first)
+    : "hsl(0, 0%, 60%)";
+  const where = sites.map(whereOf).filter(Boolean).join(", ") || null;
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-border/60 px-2 py-1.5">
+      <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
       <span className="flex min-w-0 flex-col">
-        <span className="truncate text-xs font-medium">{label}</span>
-        <span className="truncate font-mono text-[0.625rem] text-muted-foreground">
-          {where}
-        </span>
+        <span className="truncate text-xs font-medium">{siteLabelOf(dataset, kind)}</span>
+        {where && (
+          <span className="truncate font-mono text-[0.625rem] text-muted-foreground">{where}</span>
+        )}
       </span>
-      {hidden ? (
-        <EyeOff className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      ) : (
-        <Eye className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      )}
-    </button>
-    {link}
-  </div>
-);
-
-/** "cell · location(position)" — the point on the model a trace belongs to. */
-const whereOf = (view: { cell: string; location: string; position: number }) =>
-  `${view.cell} · ${view.location}(${view.position})`;
+    </div>
+  );
+};
 
 /**
- * Everything about the simulation that is not the plot: how it was run, on
- * what, by whom, and the legend of what is drawn — which doubles as the
- * visibility toggle the page used to render as a row of cards under the
- * chart.
+ * Everything about the simulation that is not the model: how it was run, on
+ * what, by whom, and what it recorded and stimulated. The traces themselves
+ * are drawn on a timeline ("Open on timeline"), not here.
  *
  * Mirrors `DatasetInfoSidebar` / `NeuronModelInfoSidebar`: the content area is
  * the picture, so the facts move into one Info tab in the rail.
  */
 export const SimulationInfoSidebar = ({
   simulation,
-  hidden,
-  hiddenStimuli,
-  onToggleRecording,
-  onToggleStimulus,
 }: {
   simulation: DetailSimulationFragment;
-  hidden: string[];
-  hiddenStimuli: string[];
-  onToggleRecording: (id: string) => void;
-  onToggleStimulus: (id: string) => void;
 }) => {
   const model = simulation.model;
   const counts = model ? neuronModelCounts(model) : undefined;
@@ -168,23 +128,8 @@ export const SimulationInfoSidebar = ({
         {simulation.recordings.length === 0 ? (
           <span className="text-xs text-muted-foreground">Nothing was recorded.</span>
         ) : (
-          simulation.recordings.map((view) => (
-            <TraceRow
-              key={view.id}
-              color={getColorForRecordingView(view)}
-              label={view.label}
-              where={whereOf(view)}
-              hidden={hidden.includes(view.id)}
-              onToggle={() => onToggleRecording(view.id)}
-              link={
-                <ElektroRecording.DetailLink
-                  object={view}
-                  className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Open
-                </ElektroRecording.DetailLink>
-              }
-            />
+          simulation.recordings.map((dataset) => (
+            <TraceRow key={dataset.id} dataset={dataset} kind="recording" />
           ))
         )}
       </div>
@@ -194,23 +139,8 @@ export const SimulationInfoSidebar = ({
         {simulation.stimuli.length === 0 ? (
           <span className="text-xs text-muted-foreground">No stimulus was applied.</span>
         ) : (
-          simulation.stimuli.map((view) => (
-            <TraceRow
-              key={view.id}
-              color={getColorForStimulusView(view)}
-              label={view.label}
-              where={whereOf(view)}
-              hidden={hiddenStimuli.includes(view.id)}
-              onToggle={() => onToggleStimulus(view.id)}
-              link={
-                <ElektroStimulus.DetailLink
-                  object={view}
-                  className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Open
-                </ElektroStimulus.DetailLink>
-              }
-            />
+          simulation.stimuli.map((dataset) => (
+            <TraceRow key={dataset.id} dataset={dataset} kind="stimulus" />
           ))
         )}
       </div>

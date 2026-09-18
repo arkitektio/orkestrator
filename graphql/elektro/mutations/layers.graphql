@@ -1,0 +1,129 @@
+# Authoring an experiment's layers.
+#
+# Creates return the layer's full scene fragment so the page can refetch with a
+# warm cache. Updates return only what they can change: an edit is content
+# (visibility, order, colour, clim, pickers), never structure, so a structural
+# signature never moves and no tile refetches.
+
+mutation CreateTraceLayer($input: CreateTraceLayerInput!) {
+  createTraceLayer(input: $input) {
+    ...ExpTraceLayer
+  }
+}
+
+mutation CreateSpikesLayer($input: CreateSpikesLayerInput!) {
+  createSpikesLayer(input: $input) {
+    ...ExpSpikesLayer
+  }
+}
+
+mutation CreateEventsLayer($input: CreateEventsLayerInput!) {
+  createEventsLayer(input: $input) {
+    ...ExpEventsLayer
+  }
+}
+
+mutation CreateAnnotationLayer($input: CreateAnnotationLayerInput!) {
+  createAnnotationLayer(input: $input) {
+    ...ExpAnnotationLayer
+  }
+}
+
+# Kind-agnostic: visibility, order, opacity, blending, name.
+mutation UpdateLayer($input: UpdateLayerInput!) {
+  updateLayer(input: $input) {
+    __typename
+    id
+    name
+    blending
+    opacity
+    visible
+    order
+  }
+}
+
+mutation UpdateTraceLayer($input: UpdateTraceLayerInput!) {
+  updateTraceLayer(input: $input) {
+    id
+    name
+    blending
+    opacity
+    visible
+    order
+    channelIndex
+    climMin
+    climMax
+    lineWidth
+    color
+  }
+}
+
+mutation UpdateSpikesLayer($input: UpdateSpikesLayerInput!) {
+  updateSpikesLayer(input: $input) {
+    id
+    name
+    blending
+    opacity
+    visible
+    order
+    tickHeight
+    rowOrderColumn
+    valueMode
+    rateBin
+    colormap
+    climMin
+    climMax
+    color
+    activeColorBy
+    activeFilterBys
+    colorBys {
+      ...ExpColorBy
+    }
+    filterBys {
+      ...ExpFilterBy
+    }
+  }
+}
+
+mutation UpdateEventsLayer($input: UpdateEventsLayerInput!) {
+  updateEventsLayer(input: $input) {
+    id
+    name
+    blending
+    opacity
+    visible
+    order
+    stopColumn
+    labelColumn
+    laneColumn
+    colormap
+    color
+    activeColorBy
+    activeFilterBys
+    colorBys {
+      ...ExpColorBy
+    }
+    filterBys {
+      ...ExpFilterBy
+    }
+  }
+}
+
+mutation DeleteLayer($id: ID!) {
+  deleteLayer(input: { id: $id })
+}
+
+# Placement authoring. Both create an EDGE in the coordinate graph, which moves
+# every layer whose path crosses it — an offset on a clock moves every layer
+# timed on that clock, by design.
+mutation CreateSamplingLaw($input: CreateSamplingLawInput!) {
+  createSamplingLaw(input: $input) {
+    ...ExpTransformation
+  }
+}
+
+mutation CreateClockOffset($input: CreateClockOffsetInput!) {
+  createClockOffset(input: $input) {
+    ...ExpTransformation
+  }
+}

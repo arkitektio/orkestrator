@@ -223,6 +223,7 @@ const ModuleNavItem = React.memo(({
           <ModuleNavHover
             moduleKey={moduleKey}
             ready={moduleState.status === "ready"}
+            to={moduleState.route}
             label={moduleState.definition.label || moduleState.key}
             icon={icon}
           >

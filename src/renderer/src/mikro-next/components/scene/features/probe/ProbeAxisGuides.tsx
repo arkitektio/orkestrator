@@ -7,7 +7,7 @@ import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStor
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
-import { bindAll } from "../../platform/stores/bindStore";
+import { bindAll } from "@/lib/scene/stores/bindStore";
 
 /**
  * Three axis-aligned guide lines through the probed point, spanning the scene

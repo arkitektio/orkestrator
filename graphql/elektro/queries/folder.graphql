@@ -1,0 +1,25 @@
+query GetFolder($id: ID!) {
+  folder(id: $id) {
+    ...Folder
+  }
+}
+
+query GetFolders(
+  $filters: FolderFilter
+  $pagination: OffsetPaginationInput
+  $ordering: [FolderOrder!]
+) {
+  folders(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...ListFolder
+  }
+}
+
+query GetMyFolders(
+  $filters: FolderFilter
+  $pagination: OffsetPaginationInput
+  $ordering: [FolderOrder!]
+) {
+  myfolders(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...ListFolder
+  }
+}

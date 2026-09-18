@@ -1,13 +1,13 @@
-import { Tree } from "@/components/explorer/Tree";
 import { ListRender } from "@/components/layout/ListRender";
+import ExperimentCard from "../components/cards/ExperimentCard";
+import SimulationCard from "../components/cards/SimulationCard";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { FancyInput } from "@/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup } from "@/components/ui/sidepane";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
 import { useDebounce } from "@/hooks/use-debounce";
 import { CubeIcon } from "@radix-ui/react-icons";
 import {
   FileIcon,
-  FolderIcon,
   Home,
   LayoutDashboard,
   LineChartIcon,
@@ -19,86 +19,44 @@ import {
   GlobalSearchQueryVariables,
   useGlobalSearchQuery,
 } from "../api/graphql";
-import TraceCard from "../components/cards/TraceCard";
 
 export const NavigationPane = () => {
   return (
-    <Tree>
-      <SidePaneGroup title="Explore">
-        <PaneLink
-          to="/elektro"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <Home className="h-4 w-4" />
+    <SidePaneNav columns={2}>
+      <SidePaneGroup title="Neuron">
+        <PaneLink to="/elektro">
+          <Home />
           Home
         </PaneLink>
-      </SidePaneGroup>
-
-      <SidePaneGroup title="Neuron">
-        <PaneLink
-          to="/elektro/simulations"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <LineChartIcon className="h-4 w-4" />
+        <PaneLink to="/elektro/simulations">
+          <LineChartIcon />
           Simulations
         </PaneLink>
-        <PaneLink
-          to="/elektro/experiments"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <RiCheckboxMultipleLine className="h-4 w-4" />
+        <PaneLink to="/elektro/experiments">
+          <RiCheckboxMultipleLine />
           Experiments
         </PaneLink>
-        <PaneLink
-          to="/elektro/neuronmodels"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <Network className="h-4 w-4" />
+        <PaneLink to="/elektro/neuronmodels">
+          <Network />
           Neuron models
         </PaneLink>
-        <PaneLink
-          to="/elektro/modelcollections"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
+        <PaneLink to="/elektro/modelcollections">
+          <CubeIcon />
           Model Collections
         </PaneLink>
-        <PaneLink
-          to="/elektro/modelworkspaces"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <LayoutDashboard className="h-4 w-4" />
+        <PaneLink to="/elektro/modelworkspaces">
+          <LayoutDashboard />
           Workspaces
         </PaneLink>
       </SidePaneGroup>
 
-      <SidePaneGroup title="Ephys"  >
-        <PaneLink
-          to="/elektro/blocks"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <Network className="h-4 w-4" />
-          Blocks
-        </PaneLink>
-      </SidePaneGroup>
-
-      <SidePaneGroup title="Data">
-        <PaneLink
-          to="/elektro/datasets"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <FolderIcon className="h-4 w-4" />
-          Datasets
-        </PaneLink>
-        <PaneLink
-          to="/elektro/files"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <FileIcon className="h-4 w-4" />
+      <SidePaneGroup title="Ephys">
+        <PaneLink to="/elektro/files">
+          <FileIcon />
           Files
         </PaneLink>
       </SidePaneGroup>
-    </Tree>
+    </SidePaneNav>
   );
 };
 
@@ -138,8 +96,11 @@ const Pane: React.FunctionComponent = () => {
         <NavigationPane />
       ) : (
         <>
-          <ListRender array={data?.traces}>
-            {(item, i) => <TraceCard item={item} key={i} />}
+          <ListRender array={data?.experiments}>
+            {(item, i) => <ExperimentCard item={item} key={i} />}
+          </ListRender>
+          <ListRender array={data?.simulations}>
+            {(item, i) => <SimulationCard item={item} key={i} />}
           </ListRender>
         </>
       )}

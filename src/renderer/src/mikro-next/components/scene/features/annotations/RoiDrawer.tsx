@@ -26,7 +26,7 @@ import { useRoiDrawSessionStoreApi } from "./roiDrawSessionStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { useCreateSceneAnnotation } from "./useCreateSceneAnnotation";
-import { createRafCoalescer } from "../../platform/perf/rafCoalesce";
+import { createRafCoalescer } from "@/lib/scene/perf/rafCoalesce";
 import {
   DRAG_THRESHOLD_PX,
   exceedsDragThreshold,

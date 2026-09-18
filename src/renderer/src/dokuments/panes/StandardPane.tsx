@@ -1,7 +1,7 @@
 import { ListRender } from "@/components/layout/ListRender";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { FancyInput } from "@/components/ui/fancy-input";
-import { DroppableNavLink } from "@/components/ui/link";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
 import {
   Popover,
   PopoverAnchor,
@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useDebounce } from "@uidotdev/usehooks";
-import { ArrowDown, Home, Image } from "lucide-react";
+import { ArrowDown, Home } from "lucide-react";
 import * as React from "react";
 import {
   GlobalSearchQueryVariables,
@@ -18,32 +18,14 @@ import {
 import PageCard from "../components/cards/PageCard";
 
 export const NavigationPane = () => (
-  <div className="flex-1 flex-col">
-    <nav className="grid items-start px-1 text-sm font-medium lg:px-2">
-      <div className="text-muted-foreground text-xs font-semibold uppercase mb-4">
-        Explore
-      </div>
-      <div className="flex flex-col items-start gap-4 rounded-lg ml-2 text-muted-foreground mb-4">
-        <DroppableNavLink
-          to="/lovekit"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <Home className="h-4 w-4" />
-          Dashboard
-        </DroppableNavLink>
-      </div>
-
-      <div className="text-muted-foreground text-xs font-semibold uppercase mb-4">
-        Streams
-      </div>
-      <div className="flex flex-col items-start gap-4 rounded-lg ml-2 text-muted-foreground mb-5">
-        <DroppableNavLink to="/lovekit/streams" className="flex gap-3 w-full hover:text-primary">
-          <Image className="h-4 w-4" />
-          Streams
-        </DroppableNavLink>
-      </div>
-    </nav>
-  </div>
+  <SidePaneNav columns={1}>
+    <SidePaneGroup title="Explore">
+      <PaneLink to="/dokuments">
+        <Home />
+        Home
+      </PaneLink>
+    </SidePaneGroup>
+  </SidePaneNav>
 );
 
 const Pane: React.FunctionComponent = () => {

@@ -7,7 +7,7 @@ import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
 import { SceneFragment } from "@/mikro-next/api/graphql";
 import { isBrickLayer } from "../model/layerGuards";
 import { buildS3FetchConfig, getGeneralAccess } from "@/mikro-next/lib/zarr/access";
-import { openZarrArray, type OpenedZarrArray } from "./arrayRegistry";
+import { openZarrArray, type OpenedZarrArray } from "@/lib/zarr/openArray";
 import { coldOpenTimeline } from "../perf/coldOpenTimeline";
 
 export { requestGeneralAccess } from "@/mikro-next/lib/zarr/access";

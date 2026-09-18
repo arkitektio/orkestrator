@@ -2,11 +2,6 @@ import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
-import AnalogSignalChannelPage from "./pages/AnalogSignalChannelPage";
-import AnalogSignalPage from "./pages/AnalogSignalPage";
-import BlockPage from "./pages/BlockPage";
-import DatasetPage from "./pages/DatasetPage";
-import DatasetsPage from "./pages/DatasetsPage";
 import ExperimentPage from "./pages/ExperimentPage";
 import ExperimentsPage from "./pages/ExperimentsPage";
 import FilePage from "./pages/FilePage";
@@ -20,16 +15,13 @@ import NeuronModelEditorPage from "./pages/NeuronModelEditorPage";
 import NeuronModelPage from "./pages/NeuronModelPage";
 import NeuronModelTreePage from "./pages/NeuronModelTreePage";
 import NeuronModelsPage from "./pages/NeuronModelsPage";
-import RecordingPage from "./pages/RecordingPage";
 import SimulationPage from "./pages/SimulationPage";
 import SimulationsPage from "./pages/SimulationsPage";
-import StimulusPage from "./pages/StimulusPage";
-import TracePage from "./pages/TracePage";
-import TracesPage from "./pages/TracesPage";
 import StandardPane from "./panes/StandardPane";
 import { MechanismPage } from "./pages/MechanismPage";
 import { EnvironmentPage } from "./pages/EnvironmentPage";
 import { ElektroZarrStoreProvider } from "./components/store/ElektroZarrStoreProvider";
+import { ElektroParquetProvider } from "./components/store/parquetEngine";
 import { NotFound } from "@/app/components/fallbacks/NotFound";
 interface Props { }
 
@@ -37,24 +29,13 @@ export const ElektroModule: React.FC<Props> = () => {
   return (
     <Guard.Elektro unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>}>
       <ElektroZarrStoreProvider>
+        <ElektroParquetProvider>
         <ModuleLayout pane={<StandardPane />}>
         <Routes>
-          <Route path="traces/:id" element={<TracePage />} />
           <Route path="files/:id" element={<FilePage />} />
           <Route path="files" element={<FilesPage />} />
-          <Route path="datasets/:id" element={<DatasetPage />} />
-          <Route path="datasets" element={<DatasetsPage />} />
           <Route path="simulations/:id" element={<SimulationPage />} />
           <Route path="experiments/:id" element={<ExperimentPage />} />
-          <Route path="blocks/:id" element={<BlockPage />} />
-
-          <Route path="analogsignals/:id" element={<AnalogSignalPage />} />
-          <Route
-            path="analogsignalchannels/:id"
-            element={<AnalogSignalChannelPage />}
-          />
-          <Route path="recordings/:id" element={<RecordingPage />} />
-          <Route path="stimuli/:id" element={<StimulusPage />} />
           <Route path="neuronmodels/:id" element={<NeuronModelPage />} />
           <Route path="neuronmodels/:id/edit" element={<NeuronModelEditorPage />} />
           <Route path="neuronmodels/:id/tree" element={<NeuronModelTreePage />} />
@@ -67,7 +48,6 @@ export const ElektroModule: React.FC<Props> = () => {
             element={<ModelWorkspacePage />}
           />
           <Route path="modelworkspaces" element={<ModelWorkspacesPage />} />
-          <Route path="traces" element={<TracesPage />} />
           <Route path="simulations" element={<SimulationsPage />} />
           <Route path="experiments" element={<ExperimentsPage />} />
           <Route path="neuronmodels" element={<NeuronModelsPage />} />
@@ -78,6 +58,7 @@ export const ElektroModule: React.FC<Props> = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
         </ModuleLayout>
+        </ElektroParquetProvider>
       </ElektroZarrStoreProvider>
     </Guard.Elektro>
   );

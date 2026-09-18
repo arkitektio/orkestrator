@@ -27,7 +27,7 @@ import { TIME_DIM, type DimExtent } from "../../platform/model/dimExtents";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { usePublishDimExtents } from "../../platform/stores/useLayerDimExtents";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
-import { placementToSpatialAffine, spatialAxisTriple } from "@/mikro-next/lib/coords/transformGraph";
+import { placementToSpatialAffine, spatialAxisTriple } from "@/lib/scene/coords/transformGraph";
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { StorageInstancedBufferAttribute } from "three/webgpu";
 import { createPointMaterial, setPointValues, type PointMaterialBundle } from "./pointsMaterial";
@@ -42,7 +42,7 @@ import {
 import { fillPointFilterMask } from "./pointsFilterMask";
 import { loadPointGeometry, scatterPointValues, type PointGeometry } from "./pointsSource";
 import { valueWindowOf } from "../../platform/attributes/valueWindow";
-import { bindField } from "../../platform/stores/bindStore";
+import { bindField } from "@/lib/scene/stores/bindStore";
 import { useActivePickers } from "../../platform/attributes/useActivePickers";
 
 export const PointLayerRenderer = ({ layerId }: { layerId: string }) => {

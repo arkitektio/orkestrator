@@ -1,8 +1,7 @@
-import { Tree } from "@/components/explorer/Tree";
 import { ListRender } from "@/components/layout/ListRender";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { FancyInput } from "@/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup } from "@/components/ui/sidepane";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
 import { useDebounce } from "@/hooks/use-debounce";
 import { CubeIcon } from "@radix-ui/react-icons";
 import { AppleIcon, Home, User } from "lucide-react";
@@ -17,69 +16,45 @@ import UserCard from "../components/cards/UserCard";
 
 export const NavigationPane = () => {
   return (
-    <Tree>
+    <SidePaneNav columns={2}>
       <SidePaneGroup title="Explore">
-        <PaneLink
-          to="/lok"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <Home className="h-4 w-4" />
+        <PaneLink to="/lok">
+          <Home />
           Home
         </PaneLink>
-        <PaneLink
-          to="/lok/me"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <RiProfileFill className="h-4 w-4" />
+        <PaneLink to="/lok/me">
+          <RiProfileFill />
           Me
         </PaneLink>
       </SidePaneGroup>
 
       <SidePaneGroup title="Organization">
-        <PaneLink
-          to="/lok/users"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <User className="h-4 w-4" />
+        <PaneLink to="/lok/users">
+          <User />
           Users
         </PaneLink>
-        <PaneLink
-          to="/lok/apps"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <AppleIcon className="h-4 w-4" />
+        <PaneLink to="/lok/apps">
+          <AppleIcon />
           Apps
         </PaneLink>
-        <PaneLink
-          to="/lok/services"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
+        <PaneLink to="/lok/services">
+          <CubeIcon />
           Services
         </PaneLink>
-        <PaneLink
-          to="/lok/instances"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
+        <PaneLink to="/lok/instances">
+          <CubeIcon />
           Instances
         </PaneLink>
-        <PaneLink
-          to="/lok/redeemtokens"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
+        <PaneLink to="/lok/redeemtokens">
+          <CubeIcon />
           Redeem Tokens
         </PaneLink>
-        <PaneLink
-          to="/lok/computenodes"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
+        <PaneLink to="/lok/computenodes">
+          <CubeIcon />
           Devices
         </PaneLink>
       </SidePaneGroup>
-    </Tree>
+    </SidePaneNav>
   );
 };
 

@@ -1,0 +1,48 @@
+# What the placement editor needs to fix an UNREGISTERED layer.
+#
+# A layer is unregistered when nothing relates its data's clock to the
+# experiment's world. Two different gaps look the same from the layer:
+#  - the data IS timed on a clock (its intrinsic system has a sampling law out),
+#    but that clock is not placed in the world → a clock offset closes it;
+#  - the data is not timed at all → a sampling law onto a clock closes it.
+# The registrations out of the intrinsic system tell them apart.
+query PlacementContext($system: ID!) {
+  coordinateSystem(id: $system) {
+    id
+    name
+    axes {
+      name
+      type
+      unit
+    }
+    registrations {
+      id
+      kind
+      input {
+        id
+      }
+      output {
+        id
+        name
+        axes {
+          name
+          type
+          unit
+        }
+      }
+    }
+  }
+}
+
+# Clocks to time data on: systems with a TIME axis, searchable.
+query ClockPicker($search: String, $pagination: OffsetPaginationInput) {
+  coordinateSystems(filters: { search: $search }, pagination: $pagination) {
+    id
+    name
+    axes {
+      name
+      type
+      unit
+    }
+  }
+}

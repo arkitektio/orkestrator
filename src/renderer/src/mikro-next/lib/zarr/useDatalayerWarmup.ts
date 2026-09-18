@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
-import { workerPool } from "@/mikro-next/workers/pool";
-import { assertWebGPUSupported } from "@/mikro-next/components/scene/platform/gpu/webgpuSupport";
+import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
+import { assertWebGPUSupported } from "@/lib/scene/gpu/webgpuSupport";
 import type { MikroClient } from "@/lib/zarr/store/types";
 import { getGeneralAccess } from "./access";
 import { useMikro } from "@/app/Arkitekt";

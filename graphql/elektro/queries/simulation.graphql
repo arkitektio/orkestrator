@@ -13,3 +13,14 @@ query ListSimulations(
     ...ListSimulation
   }
 }
+
+# Just the run's clock: what "Open on timeline" stages an experiment over.
+query SimulationClock($id: ID!) {
+  simulation(id: $id) {
+    id
+    name
+    clock {
+      id
+    }
+  }
+}

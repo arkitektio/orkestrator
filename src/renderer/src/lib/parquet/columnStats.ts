@@ -1,5 +1,4 @@
-import type { ParquetStoreLike } from "./attributeTypes";
-import type { AttributeLookupEngine } from "./lookupEngine";
+import type { ParquetQueryEngine, ParquetStoreRef } from "./parquetEngine";
 import { escapeSqlIdentifier, escapeSqlLiteral } from "./sqlBind";
 
 /**
@@ -22,7 +21,7 @@ import { escapeSqlIdentifier, escapeSqlLiteral } from "./sqlBind";
 /** The slice of a `ColumnOption` these reads need — kept structural so the
  * module does not depend on the generated fragment types. */
 export type ColumnStatsTarget = {
-  table: { store: ParquetStoreLike };
+  table: { store: ParquetStoreRef };
   column: { name: string };
 };
 
@@ -57,7 +56,7 @@ const asNumber = (column: string) => `TRY_CAST(${column} AS DOUBLE)`;
  * holds no numbers. NULLs are skipped by `min`/`max` themselves.
  */
 export const readColumnDomain = async (
-  engine: AttributeLookupEngine,
+  engine: ParquetQueryEngine,
   target: ColumnStatsTarget,
 ): Promise<ColumnDomain> => {
   const column = escapeSqlIdentifier(target.column.name);
@@ -88,7 +87,7 @@ export const readColumnDomain = async (
  * silently drop the values it never showed.
  */
 export const readColumnDistinct = async (
-  engine: AttributeLookupEngine,
+  engine: ParquetQueryEngine,
   target: ColumnStatsTarget,
   limit: number = DISTINCT_LIMIT,
 ): Promise<ColumnDistinct> => {
@@ -126,7 +125,7 @@ export const HISTOGRAM_BINS = 32;
  * cannot disagree about where the axis starts.
  */
 export const readColumnHistogram = async (
-  engine: AttributeLookupEngine,
+  engine: ParquetQueryEngine,
   target: ColumnStatsTarget,
   domain: { min: number; max: number },
   binCount: number = HISTOGRAM_BINS,
@@ -192,7 +191,7 @@ export type FilterRuleSeed = {
 };
 
 export const readDefaultFilterRule = async (
-  engine: AttributeLookupEngine,
+  engine: ParquetQueryEngine,
   target: ColumnStatsTarget,
   control: "MEASURE" | "CATEGORICAL",
   limit: number = DISTINCT_LIMIT,
@@ -229,7 +228,7 @@ export type ColumnStatsFailure = { summary: string; detail: string };
 
 export const describeColumnStatsError = (
   error: unknown,
-  store?: ParquetStoreLike,
+  store?: ParquetStoreRef,
 ): ColumnStatsFailure => {
   const detail = error instanceof Error ? error.message : String(error);
   // Deliberately NOT a bare /not found/: a binder error reads "Referenced

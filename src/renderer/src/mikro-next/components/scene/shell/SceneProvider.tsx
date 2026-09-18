@@ -15,8 +15,8 @@ import {
   createConfiguredSceneStores,
   openMissingSceneArrays,
 } from "../platform/sources/zarrSources";
-import { openSceneArrays } from "../platform/sources/arrayRegistry";
-import { assertWebGPUSupported } from "../platform/gpu/webgpuSupport";
+import { openSceneArrays } from "@/lib/zarr/openArray";
+import { assertWebGPUSupported } from "@/lib/scene/gpu/webgpuSupport";
 import {
   AnimationStoreContext,
   createAnimationStore,

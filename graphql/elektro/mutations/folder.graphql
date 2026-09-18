@@ -1,0 +1,97 @@
+mutation CreateFolder($input: CreateFolderInput!) {
+  createFolder(input: $input) {
+    id
+    name
+  }
+}
+
+mutation EnsureFolder($input: CreateFolderInput!) {
+  ensureFolder(input: $input) {
+    id
+    name
+  }
+}
+
+mutation UpdateFolder($id: ID!, $name: String!, $parent: ID) {
+  updateFolder(input: { id: $id, name: $name, parent: $parent }) {
+    ...Folder
+  }
+}
+
+mutation PinFolder($id: ID!, $pin: Boolean!) {
+  pinFolder(input: { id: $id, pin: $pin }) {
+    ...Folder
+  }
+}
+
+mutation PutFoldersInFolder($selfs: [ID!]!, $other: ID!) {
+  putFoldersInFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation ReleaseFoldersFromFolder($selfs: [ID!]!, $other: ID!) {
+  releaseFoldersFromFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation PutArrayDatasetsInFolder($selfs: [ID!]!, $other: ID!) {
+  putArrayDatasetsInFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation ReleaseArrayDatasetsFromFolder($selfs: [ID!]!, $other: ID!) {
+  releaseArrayDatasetsFromFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation PutFilesInFolder($selfs: [ID!]!, $other: ID!) {
+  putFilesInFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation ReleaseFilesFromFolder($selfs: [ID!]!, $other: ID!) {
+  releaseFilesFromFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation PutTableDatasetsInFolder($selfs: [ID!]!, $other: ID!) {
+  putTableDatasetsInFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation ReleaseTableDatasetsFromFolder($selfs: [ID!]!, $other: ID!) {
+  releaseTableDatasetsFromFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation PutSparseDatasetsInFolder($selfs: [ID!]!, $other: ID!) {
+  putSparseDatasetsInFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation ReleaseSparseDatasetsFromFolder($selfs: [ID!]!, $other: ID!) {
+  releaseSparseDatasetsFromFolder(input: { selfs: $selfs, other: $other }) {
+    ...Folder
+  }
+}
+
+mutation RevertFolder($folder: ID!, $history: ID!) {
+  revertFolder(input: { id: $folder, historyId: $history }) {
+    id
+    name
+    description
+  }
+}
+
+mutation DeleteFolder($id: ID!) {
+  deleteFolder(input: { id: $id })
+}

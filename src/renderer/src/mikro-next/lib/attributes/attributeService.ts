@@ -34,7 +34,7 @@ import {
   type PlanHopStates,
 } from "./executePlan";
 import type { AttributeLookupEngine } from "./lookupEngine";
-import { LruMap } from "./lruMap";
+import { LruMap } from "@/lib/generic/lruMap";
 import type { HeldValue } from "./planExec";
 import { AttributePlanCache, type QueryClient } from "./planCache";
 

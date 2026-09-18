@@ -1,0 +1,60 @@
+# A sparse matrix (anndata CSR/CSC, "sporadik"): elektro's spike trains. One
+# axis indexes units, one is time (by `AxisType` on the coordinate system, never
+# by name or position); a spike is a nonzero, its sample index the `indices`
+# entry and its amplitude the `data` entry.
+#
+# Everything a read needs about the layout is selected here, so the reader never
+# fetches a `zarr.json` to learn it (see `@/lib/sparse/sparseReader`).
+
+fragment ExpSparseLayout on SparseLayout {
+  path
+  encoding
+  indexedAxis
+  indexOrder
+  nnz
+  dtype
+  rangeReadable
+}
+
+fragment ExpSparseDataset on SparseDataset {
+  id
+  name
+  axisNames
+  shape
+  indexableAxes
+  coordinateSystem {
+    ...ExpCoordinateSystem
+  }
+  arrays {
+    id
+    path
+    indexedAxis
+    indexedAxisName
+    store {
+      id
+      bucket
+      key
+      path
+      spec
+      shape
+      layouts {
+        ...ExpSparseLayout
+      }
+    }
+  }
+  # Which table describes each axis — the unit table for the unit axis.
+  axisReferences {
+    id
+    axis
+    references {
+      ...ExpTableDataset
+    }
+  }
+}
+
+fragment ListSparseDataset on SparseDataset {
+  id
+  name
+  axisNames
+  shape
+}

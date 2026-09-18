@@ -1,6 +1,8 @@
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import React, { Suspense, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
+import { NavLink } from "react-router-dom";
+
 import { MODULE_NAV, preloadModuleNav } from "./moduleNavRegistry";
 
 /** Delay before the first card of a hover run opens. */
@@ -92,12 +94,15 @@ export const ModuleNavHoverGroup = ({
 export const ModuleNavHover = ({
   moduleKey,
   ready,
+  to,
   label,
   icon,
   children,
 }: {
   moduleKey: string;
   ready: boolean;
+  /** The module's home, which the card's header links to. */
+  to: string;
   label: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
@@ -132,20 +137,23 @@ export const ModuleNavHover = ({
         side="right"
         align="start"
         sideOffset={8}
-        className="w-64 max-h-[70vh] overflow-y-auto p-0"
+        className="w-auto max-w-[calc(100vw-6rem)] max-h-[75vh] overflow-y-auto bg-popover p-0"
         // Following a link is the end of the visit; the card should not stay
         // hanging over the page it just opened.
         onClickCapture={(event) => {
           if ((event.target as HTMLElement).closest("a")) setOpen(false);
         }}
       >
-        <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/50 bg-popover/95 px-3 py-2 backdrop-blur">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <NavLink
+          to={to}
+          className="mb-1 flex items-center gap-2 border-b border-border/50 px-3 py-2.5 text-foreground hover:text-primary"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5">
             {icon}
           </span>
-          <span className="text-sm font-medium text-foreground">{label}</span>
-        </div>
-        <div className="p-2">
+          <span className="text-sm font-medium">{label}</span>
+        </NavLink>
+        <div className="px-2 pt-1">
           {/* Null while the module's chunk loads, so the card does not flash an
               empty box at its full height and then reflow. */}
           <Suspense fallback={null}>

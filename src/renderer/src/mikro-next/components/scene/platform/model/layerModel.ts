@@ -26,7 +26,7 @@ import {
   resolveProjectionMode,
 } from "./renderGraph";
 import { resolveIntensityAxis, resolvePhasorAxis } from "./dims";
-import { composeLayerAffine, type SceneTransformContext } from "@/mikro-next/lib/coords/transformGraph";
+import { composeLayerAffine, type SceneTransformContext } from "@/lib/scene/coords/transformGraph";
 
 export type { SceneTransformContext };
 

@@ -1,6 +1,6 @@
-import { open, type Array as ZarrArray, type DataType } from "zarrita";
-import { ZarrStore } from "@/lib/zarr/store/types";
-import { readArrayMetadataCached } from "@/lib/zarr/runner/get-worker";
+import { open, type Array as ZarrArray, type DataType, type Location } from "zarrita";
+import { ZarrStore } from "./store/types";
+import { readArrayMetadataCached } from "./runner/get-worker";
 
 export type OpenedZarrArray = ZarrArray<DataType, ZarrStore>;
 
@@ -13,9 +13,15 @@ export type OpenedZarrArray = ZarrArray<DataType, ZarrStore>;
  * synchronously by the time the array is registered: for a `sharding_indexed`
  * array zarrita's `arr.chunks` is the SHARD shape, and the planner must see the
  * inner chunk shape or it would fetch whole shards.
+ *
+ * Takes a store (the array at its root) or a location inside one (an array in
+ * a group, e.g. a sparse layout's `indptr`). The runner keys caches and chunk
+ * paths by the array's path, so sibling arrays in one store never collide.
  */
-export const openZarrArray = async (store: ZarrStore): Promise<OpenedZarrArray> => {
-  const arr = (await open.v3(store, { kind: "array" })) as OpenedZarrArray;
+export const openZarrArray = async (
+  at: ZarrStore | Location<ZarrStore>,
+): Promise<OpenedZarrArray> => {
+  const arr = (await open.v3(at, { kind: "array" })) as OpenedZarrArray;
   await readArrayMetadataCached(arr);
   return arr;
 };

@@ -1,5 +1,22 @@
+# The module's omnibox. `traces` is gone; what a user searches for now is an array
+# dataset, a composed experiment or a simulation run.
 query GlobalSearch($search: String, $pagination: OffsetPaginationInput) {
-  traces: traces(filters: { search: $search }, pagination: $pagination) {
-    ...ListTrace
+  arrayDatasets: arrayDatasets(
+    filters: { search: $search }
+    pagination: $pagination
+  ) {
+    ...ListArrayDataset
+  }
+  experiments: experiments(
+    filters: { search: $search }
+    pagination: $pagination
+  ) {
+    ...ListExperiment
+  }
+  simulations: simulations(
+    filters: { search: $search }
+    pagination: $pagination
+  ) {
+    ...ListSimulation
   }
 }

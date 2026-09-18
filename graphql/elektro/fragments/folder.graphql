@@ -1,0 +1,46 @@
+# Folders replace the old `Dataset`.
+#
+# A `Dataset` in the previous schema owned traces and files directly. A `Folder`
+# is a filing structure over the containers — array datasets, sparse datasets
+# (spike sets), tables, files and annotation collections — shared with mikro.
+
+fragment Folder on Folder {
+  id
+  name
+  description
+  provenanceEntries {
+    ...ProvenanceEntry
+  }
+  arrayDatasets {
+    ...ListArrayDataset
+  }
+  files {
+    ...ListFile
+  }
+  sparseDatasets {
+    ...ListSparseDataset
+  }
+  tableDatasets {
+    ...ListTableDataset
+  }
+  children {
+    ...ListFolder
+  }
+  parent {
+    ...ListFolder
+  }
+  isDefault
+  pinned
+  createdAt
+  creator {
+    sub
+  }
+  tags
+}
+
+fragment ListFolder on Folder {
+  id
+  name
+  description
+  isDefault
+}

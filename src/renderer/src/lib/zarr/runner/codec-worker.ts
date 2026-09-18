@@ -19,7 +19,7 @@ const ctx = self as unknown as DedicatedWorkerGlobalScope & {
 }
 
 type TextureCompatibleDataType = 'uint8' | 'uint16' | 'float32'
-type TextureFidelity = 'default' | 'low' | 'high' | 'raw16'
+type TextureFidelity = 'default' | 'low' | 'high' | 'raw16' | 'exact'
 
 type TextureCompatibleChunk = Chunk<'uint8'> | Chunk<'uint16'> | Chunk<'float32'>
 
@@ -142,9 +142,18 @@ function promoteChunkForTexture(
   useSharedArrayBuffer: boolean,
 ): {
   chunk: TextureCompatibleChunk
-  promotedType: TextureCompatibleDataType
+  /** Undefined = the array's own dtype ('exact'); the main thread rebuilds it
+   * from the codec meta (`createPromotedArray`). */
+  promotedType: TextureCompatibleDataType | undefined
   textureBounds?: TextureChunkBounds
 } {
+  if (textureFidelity === 'exact') {
+    return {
+      chunk: ensureSharedNativeIfNeeded(chunk, useSharedArrayBuffer) as unknown as TextureCompatibleChunk,
+      promotedType: undefined,
+    }
+  }
+
   if (textureFidelity === 'low') {
     return convertChunkToTexturePrecision(chunk, 'uint8', useSharedArrayBuffer)
   }
@@ -248,6 +257,23 @@ function ensureSharedChunkIfNeeded<D extends 'uint8' | 'uint16' | 'float32'>(
     shape: chunk.shape,
     stride: chunk.stride,
   }
+}
+
+/** `ensureSharedChunkIfNeeded` for a chunk in its OWN dtype: the copy keeps the
+ * source constructor (BigInt64Array stays BigInt64Array), so nothing widens. */
+function ensureSharedNativeIfNeeded(chunk: Chunk<DataType>, useSharedArrayBuffer: boolean): Chunk<DataType> {
+  const source = chunk.data as unknown as {
+    buffer: ArrayBufferLike
+    byteLength: number
+    length: number
+    constructor: new (buffer: ArrayBufferLike, byteOffset: number, length: number) => { set(src: unknown): void }
+  }
+  if (!useSharedArrayBuffer) return chunk
+  if (typeof SharedArrayBuffer !== 'undefined' && source.buffer instanceof SharedArrayBuffer) return chunk
+  const Ctr = source.constructor
+  const shared = new Ctr(createBuffer(source.byteLength, true), 0, source.length)
+  shared.set(source)
+  return { data: shared as unknown as Chunk<DataType>['data'], shape: chunk.shape, stride: chunk.stride }
 }
 
 const DTYPE_BY_PROMOTED_ARRAY = new Map<Function, 'uint8' | 'uint16' | 'float32'>([
@@ -418,7 +444,7 @@ type WorkerMessage =
     })
 
 interface DecodedPartMessage {
-  promotedType: TextureCompatibleDataType
+  promotedType: TextureCompatibleDataType | undefined
   textureBounds?: TextureChunkBounds
   data: ArrayBufferLike
   byteOffset: number

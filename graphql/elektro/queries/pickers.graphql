@@ -1,0 +1,38 @@
+# What the add-layer dialog offers, per layer kind. Filtered server-side to what
+# can actually be drawn on a timeline (`timed`), so the dialog never lists a
+# dataset that would land UNREGISTERED with no way to fix it from here.
+
+query LayerPickerArrayDatasets($search: String, $pagination: OffsetPaginationInput) {
+  arrayDatasets(filters: { search: $search }, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListArrayDataset
+    axisNames
+    shape
+  }
+}
+
+query LayerPickerSparseDatasets($search: String, $pagination: OffsetPaginationInput) {
+  sparseDatasets(filters: { search: $search, timed: true }, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListSparseDataset
+  }
+}
+
+query LayerPickerTableDatasets($search: String, $pagination: OffsetPaginationInput) {
+  tableDatasets(filters: { search: $search, timed: true }, pagination: $pagination, ordering: [{ createdAt: DESC }]) {
+    ...ListTableDataset
+  }
+}
+
+query LayerPickerAnnotationCollections($search: String, $pagination: OffsetPaginationInput) {
+  annotationCollections(filters: { search: $search }, pagination: $pagination) {
+    id
+    name
+  }
+}
+
+# One table with its columns: the picker editor's option source (elektro has no
+# options query — the columns and their `references` ARE the options).
+query GetTableDataset($id: ID!) {
+  tableDataset(id: $id) {
+    ...ExpTableDataset
+  }
+}

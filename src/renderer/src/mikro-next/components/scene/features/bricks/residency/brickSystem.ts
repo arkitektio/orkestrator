@@ -1,5 +1,5 @@
 import type { StoreApi } from "zustand/vanilla";
-import { workerPool } from "../../../../../workers/pool";
+import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
 import { createRepackDispatcher } from "../octree/repackDispatcher";
 import type { SceneState } from "../../../platform/stores/sceneStore";
 import type { ViewerState } from "../../../platform/stores/viewerStore";

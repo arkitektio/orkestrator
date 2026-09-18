@@ -1,0 +1,43 @@
+# A parquet table: an event list (EventsLayer) or a unit table (SpikesLayer
+# rows, colour and filter pickers). Read in the browser through DuckDB against
+# `store`; the columns say which is the time coordinate, which the id, and which
+# point at another table (`references`, the hop a picker's `joinPath` walks).
+
+fragment ExpColumn on Column {
+  id
+  order
+  name
+  dtype
+  role
+  axisType
+  unit
+  longName
+  references {
+    id
+    name
+  }
+}
+
+fragment ExpTableDataset on TableDataset {
+  id
+  name
+  axisNames
+  store {
+    id
+    bucket
+    key
+    path
+  }
+  coordinateSystem {
+    ...ExpCoordinateSystem
+  }
+  columns {
+    ...ExpColumn
+  }
+}
+
+fragment ListTableDataset on TableDataset {
+  id
+  name
+  axisNames
+}

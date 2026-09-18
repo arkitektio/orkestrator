@@ -1,0 +1,138 @@
+# Array data: the dataset, its pyramid levels, and the lenses that select into it.
+#
+# `ArrayDataset` replaces the old `Trace` — same role (a named thing with a zarr
+# store behind it), but it now carries its axes, its value unit, and its place in
+# the coordinate graph instead of a bare 5-D `View`.
+
+fragment ExpDataArray on DataArray {
+  id
+  level
+  shape
+  chunkShape
+  scaleMethod
+  # The edge back to the parent level. This is where a pyramid level's
+  # downsampling FACTOR comes from, and the multiscale planner cannot pick a level
+  # without it — an unknown factor is an unknown sample period, and a trace drawn
+  # at the wrong period looks like data. Canonically Sequence[Scale, Translation].
+  toParent {
+    ...ExpTransformation
+  }
+  store {
+    ...ZarrStore
+  }
+}
+
+# Identity plus the facts the renderer needs to read and label a trace. The
+# relations a dataset exposes — derivedFrom, derivedDatasets, annotationCollections,
+# lenses, anchors, sourceFiles, exports, spec, provenanceEntries — are each a graph
+# walk and none are needed to draw a line, so none are selected.
+fragment ExpArrayDatasetRef on ArrayDataset {
+  id
+  name
+  description
+  # Axis ORDER, matching the store's dimension order. `axisNames` and the store's
+  # `shape` are read together; an index into one indexes the other.
+  axisNames
+  shape
+  multiscale
+  # What was recorded. `valueUnit` labels the y axis ("mV"); `valueDimension`
+  # groups views that can share one — it is the key the SHARED layout bands by.
+  valueUnit
+  valueDimension
+  # Level 0 owns no system of its own: this resolves to the dataset's own pixel
+  # grid, which is where a lens' sample indices live.
+  intrinsicSystem {
+    ...ExpCoordinateSystem
+  }
+}
+
+fragment ExpArrayDataset on ArrayDataset {
+  ...ExpArrayDatasetRef
+  dataArrays {
+    ...ExpDataArray
+  }
+}
+
+# What one position along a dataset's non-time axes IS: its channel label, its
+# unit, the value range the server measured at upload (seeds a trace's scale
+# before the first tile lands), and — where the Neo model had Recording and
+# Stimulus objects — the site it was recorded at or stimulated through.
+fragment ExpAnchor on CoordinateAnchor {
+  id
+  coordinates
+  channelLabel {
+    id
+    label
+  }
+  valueUnit {
+    id
+    unit
+    dimension
+  }
+  valueHistogram {
+    id
+    min
+    max
+    p1
+    p99
+  }
+  recordingSite {
+    ...ExpRecordingSite
+  }
+  stimulusSite {
+    ...ExpStimulusSite
+  }
+}
+
+fragment ExpRecordingSite on RecordingSite {
+  id
+  kind
+  cell
+  location
+  position
+  label
+}
+
+fragment ExpStimulusSite on StimulusSite {
+  id
+  kind
+  cell
+  location
+  position
+  label
+}
+
+# An immutable selection over a dataset.
+#
+# Unlike mikro's, elektro's `Lens` has no `renderAxes`, so the axes on its
+# coordinate system ARE the axis-selection source — which is why they are
+# selected here and not anywhere else in the scene query.
+fragment ExpLens on Lens {
+  id
+  axisNames
+  shape
+  slices {
+    axis
+    start
+    stop
+    step
+  }
+  coordinateSystem {
+    ...ExpCoordinateSystem
+  }
+  # How a layer over channels 2..5 learns what those four channels are called,
+  # where each was recorded, and what feeds the coordinate picker for a
+  # CONDITIONAL placement.
+  activeAnchors {
+    ...ExpAnchor
+  }
+  dataset {
+    ...ExpArrayDataset
+  }
+}
+
+fragment ListArrayDataset on ArrayDataset {
+  id
+  name
+  valueUnit
+}

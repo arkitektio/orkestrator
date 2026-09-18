@@ -1,6 +1,6 @@
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { FancyInput } from "@/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup } from "@/components/ui/sidepane";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
   KraphEntityCategory,
@@ -32,170 +32,97 @@ export const NavigationPane = () => {
   const { data } = useStartPaneQuery();
 
   return (
-    <div className="flex-1 flex-col">
-      <nav className="grid items-start px-1 text-sm font-medium lg:px-2">
-        <SidePaneGroup title="Explore">
-          <PaneLink
-            to="/kraph/home"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <Home className="h-4 w-4" />
-            Dashboard
-          </PaneLink>
-          <PaneLink
-            to="/kraph/terms"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <SpellCheck className="h-4 w-4" />
-            Terms
-          </PaneLink>
-          <PaneLink
-            to="/kraph/graphs"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <SparkleIcon className="h-4 w-4" />
-            Graphs
-          </PaneLink>
-        </SidePaneGroup>
+    <SidePaneNav columns={3}>
+      <SidePaneGroup title="Explore">
+        <PaneLink to="/kraph/home">
+          <Home />
+          Dashboard
+        </PaneLink>
+        <PaneLink to="/kraph/graphs">
+          <SparkleIcon />
+          Graphs
+        </PaneLink>
+        <PaneLink to="/kraph/terms">
+          <SpellCheck />
+          Terms
+        </PaneLink>
+      </SidePaneGroup>
 
-        <SidePaneGroup title="Categories">
-          <PaneLink
-            to="/kraph/structurekinds"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <BsRecord className="h-4 w-4" />
-            Structures
-          </PaneLink>
-          <PaneLink
-            to="/kraph/entitycategories"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <CatIcon className="h-4 w-4" />
-            Entities
-          </PaneLink>
-          <PaneLink
-            to="/kraph/protocoleventcategories"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <Notebook className="h-4 w-4" />
-            Protocol Events
-          </PaneLink>
-          <PaneLink
-            to="/kraph/naturaleventcategories"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <Divide className="h-4 w-4" />
-            Natural Events
-          </PaneLink>
-          <PaneLink
-            to="/kraph/relationcategories"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <TbRelationOneToOne className="h-4 w-4" />
-            Relations
-          </PaneLink>
-          <PaneLink
-            to="/kraph/structurerelationcategories"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <TbRelationOneToOne className="h-4 w-4" />
-            Structure Relations
-          </PaneLink>
-          <PaneLink
-            to="/kraph/metrickinds"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <PiNumberCircleEight className="h-4 w-4" />
-            Metrics
-          </PaneLink>
-          
-          <PaneLink
-            to="/kraph/measurementcategories"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <Ruler className="h-4 w-4" />
-            Measurement
-          </PaneLink>
-        </SidePaneGroup>
+      <SidePaneGroup title="Categories">
+        <PaneLink to="/kraph/structurekinds">
+          <BsRecord />
+          Structures
+        </PaneLink>
+        <PaneLink to="/kraph/entitycategories">
+          <CatIcon />
+          Entities
+        </PaneLink>
+        <PaneLink to="/kraph/protocoleventcategories">
+          <Notebook />
+          Protocol Events
+        </PaneLink>
+        <PaneLink to="/kraph/naturaleventcategories">
+          <Divide />
+          Natural Events
+        </PaneLink>
+        <PaneLink to="/kraph/relationcategories">
+          <TbRelationOneToOne />
+          Relations
+        </PaneLink>
+        <PaneLink to="/kraph/structurerelationcategories">
+          <TbRelationOneToOne />
+          Structure Relations
+        </PaneLink>
+        <PaneLink to="/kraph/metrickinds">
+          <PiNumberCircleEight />
+          Metrics
+        </PaneLink>
+        <PaneLink to="/kraph/measurementcategories">
+          <Ruler />
+          Measurements
+        </PaneLink>
+      </SidePaneGroup>
 
-        {data?.entityCategories && data.entityCategories.length > 0 && (
-          <>
-            <div className="text-muted-foreground text-xs font-semibold uppercase mt-6 mb-4">
-              Pinned Entities
-            </div>
-            {data.entityCategories.map((i) => (
-              <div
-                className="flex flex-col items-start gap-4 rounded-lg ml-2 text-muted-foreground"
-                key={i.id}
-              >
-                <KraphEntityCategory.DetailLink
-                  object={i}
-                  className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-                >
-                  <SparkleIcon className="h-4 w-4" />
-                  {i.label}
-                </KraphEntityCategory.DetailLink>
-              </div>
-            ))}
-          </>
-        )}
-        {data?.structureKinds && data.structureKinds.length > 0 && (
-          <>
-            <div className="text-muted-foreground text-xs font-semibold uppercase mt-6 mb-4">
-              Recent Structure Kinds
-            </div>
-            {data.structureKinds.map((i) => (
-              <div className="flex flex-col items-start gap-4 rounded-lg ml-2 text-muted-foreground" key={i.id}>
-                <KraphStructureKind.DetailLink
-                  object={i}
-                  className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-                >
-                  <SparkleIcon className="h-4 w-4" />
-                  {i.identifier}
-                </KraphStructureKind.DetailLink>
-              </div>
-            ))}
-          </>
-        )}
-        {data?.relationCategories && data.relationCategories.length > 0 && (
-          <>
-            <div className="text-muted-foreground text-xs font-semibold uppercase mt-6 mb-4">
-              Pinned Relations
-            </div>
-            {data.relationCategories.map((i) => (
-              <div className="flex flex-col items-start gap-4 rounded-lg ml-2 text-muted-foreground" key={i.id}>
-                <KraphRelationCategory.DetailLink
-                  object={i}
-                  className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-                >
-                  <SparkleIcon className="h-4 w-4" />
-                  {i.label}
-                </KraphRelationCategory.DetailLink>
-              </div>
-            ))}
-          </>
-        )}
-        {data?.protocolEventCategories &&
-          data.protocolEventCategories.length > 0 && (
-            <>
-              <div className="text-muted-foreground text-xs font-semibold uppercase mt-6 mb-4">
-                Pinned Protocols
-              </div>
-              {data.protocolEventCategories.map((i) => (
-                <div className="flex flex-col items-start gap-4 rounded-lg ml-2 text-muted-foreground" key={i.id}>
-                  <KraphProtocolEventCategory.DetailLink
-                    object={i}
-                    className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-                  >
-                    <SparkleIcon className="h-4 w-4" />
-                    {i.label}
-                  </KraphProtocolEventCategory.DetailLink>
-                </div>
-              ))}
-            </>
-          )}
-      </nav>
-    </div>
+      <SidePaneGroup title="Pinned Entities" limit={5} moreTo="/kraph/entitycategories">
+        {data?.entityCategories.map((i) => (
+          <KraphEntityCategory.PaneLink object={i} key={i.id}>
+            <SparkleIcon />
+            <span className="truncate">{i.label}</span>
+          </KraphEntityCategory.PaneLink>
+        ))}
+      </SidePaneGroup>
+
+      <SidePaneGroup title="Recent Structures" limit={5} moreTo="/kraph/structurekinds">
+        {data?.structureKinds.map((i) => (
+          <KraphStructureKind.PaneLink object={i} key={i.id}>
+            <SparkleIcon />
+            <span className="truncate">{i.identifier}</span>
+          </KraphStructureKind.PaneLink>
+        ))}
+      </SidePaneGroup>
+
+      <SidePaneGroup title="Pinned Relations" limit={5} moreTo="/kraph/relationcategories">
+        {data?.relationCategories.map((i) => (
+          <KraphRelationCategory.PaneLink object={i} key={i.id}>
+            <SparkleIcon />
+            <span className="truncate">{i.label}</span>
+          </KraphRelationCategory.PaneLink>
+        ))}
+      </SidePaneGroup>
+
+      <SidePaneGroup
+        title="Pinned Protocols"
+        limit={5}
+        moreTo="/kraph/protocoleventcategories"
+      >
+        {data?.protocolEventCategories.map((i) => (
+          <KraphProtocolEventCategory.PaneLink object={i} key={i.id}>
+            <SparkleIcon />
+            <span className="truncate">{i.label}</span>
+          </KraphProtocolEventCategory.PaneLink>
+        ))}
+      </SidePaneGroup>
+    </SidePaneNav>
   );
 };
 

@@ -1,0 +1,34 @@
+# Experiments.
+#
+# `createExperiment` mints an empty experiment (optionally over a world);
+# `createExperimentFromCoordinateSystem` STAGES one over a clock — the server
+# walks everything placeable on it (traces, spike sets, event tables,
+# annotations) and adds a layer per item, like mikro's
+# `createSceneFromCoordinateSystem`. Layers are added and removed afterwards
+# with the mutations in `layers.graphql`.
+mutation CreateExperiment($input: CreateExperimentInput!) {
+  createExperiment(input: $input) {
+    ...ListExperiment
+    world {
+      id
+    }
+  }
+}
+
+mutation CreateExperimentFromCoordinateSystem($input: CreateExperimentFromCoordinateSystemInput!) {
+  createExperimentFromCoordinateSystem(input: $input) {
+    ...ListExperiment
+  }
+}
+
+mutation UpdateExperiment($input: UpdateExperimentInput!) {
+  updateExperiment(input: $input) {
+    id
+    name
+    description
+  }
+}
+
+mutation DeleteExperiment($id: ID!) {
+  deleteExperiment(input: { id: $id })
+}

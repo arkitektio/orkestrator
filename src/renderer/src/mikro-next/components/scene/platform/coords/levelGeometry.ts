@@ -1,5 +1,6 @@
 import { resolveAxisIndices, type AxisIndices, type LayerAxisDims } from "../model/dims";
-import type { TransformLike } from "@/mikro-next/lib/coords/transformGraph";
+import type { TransformLike } from "@/lib/scene/coords/transformGraph";
+import { relativeLevelScaleFactors } from "@/lib/scene/coords/levelScale";
 import { effectiveChunkShapeOf } from "@/lib/zarr/runner/get-worker";
 
 /**
@@ -100,73 +101,14 @@ export const hasPhasorSlabs = (geo: LayerLevelGeometry): boolean =>
   geo.phasorBins > 0 && geo.slabs.some((slab) => slab.kind === "phasor");
 
 /**
- * Absolute per-axis scale (array dim order) declared by a level's `toParent`
- * edge: a bare `ScaleTransformation`, or the Scale child of a Sequence
- * (Sequence[Scale, Translation] is the canonical pyramid-level edge; the
- * translation is the half-voxel downsampling offset, not yet consumed).
- * Identity / pure-translation edges scale nothing (all-1s). Null when the
- * edge is absent or not expressible as per-axis factors — callers fall back
- * to the shape-ratio chain in `resolveAxisScale`.
+ * Level scales moved to `@/lib/scene/coords/levelScale` — a trace pyramid is the
+ * same idea at rank 1, and elektro's timeline needs them too. Re-exported here so
+ * this module stays the place brick code asks about level geometry.
  */
-export const absoluteLevelScale = (
-  toParent: TransformLike | undefined,
-  dimCount: number,
-): number[] | null => {
-  if (!toParent) return null;
-  const nodes = toParent.transformations?.length ? toParent.transformations : [toParent];
-  let scale: number[] | null = null;
-  for (const node of nodes) {
-    if (!node) continue;
-    if (node.scale?.length) {
-      if (scale) return null;
-      scale = [...node.scale];
-    } else if (
-      node.__typename !== "IdentityTransformation" &&
-      node.__typename !== "TranslationTransformation"
-    ) {
-      return null;
-    }
-  }
-  if (scale) return scale.length === dimCount ? scale : null;
-  return Array<number>(dimCount).fill(1);
-};
-
-/**
- * Per-level factors relative to level 0 (array dim order) — the exact
- * semantics the removed server-side `DataArray.scaleFactors` field had —
- * derived from the levels' absolute `toParent` scales. The absolute scales
- * obey `scale·shape == const` per axis, so these agree with the shape-ratio
- * fallback by construction; declaring them here just short-circuits it.
- */
-// Memoized on the `dataArrays` ARRAY IDENTITY: fragments are normalized, so
-// the array reference is stable across replans (nodePlanTracker calls
-// `buildLevelSources` per layer every ~200 ms during interaction) and a new
-// scene fetch mints a new array. Without this, every replan re-parses the
-// levels' `toParent` edges for factors that cannot have changed.
-const factorsCache = new WeakMap<
-  object,
-  { dimCount: number; factors: (number[] | null)[] }
->();
-
-export const relativeLevelScaleFactors = (
-  dataArrays: readonly { level: number; toParent?: TransformLike }[],
-  dimCount: number,
-): (number[] | null)[] => {
-  if (dataArrays.length === 0) return [];
-  const cached = factorsCache.get(dataArrays);
-  if (cached && cached.dimCount === dimCount) return cached.factors;
-  const abs = dataArrays.map((dataArray) => absoluteLevelScale(dataArray.toParent, dimCount));
-  const baseIndex = dataArrays.reduce(
-    (best, dataArray, i) => (dataArray.level < dataArrays[best].level ? i : best),
-    0,
-  );
-  const base = abs[baseIndex];
-  const factors = base
-    ? abs.map((a) => (a ? a.map((v, k) => (base[k] ? v / base[k] : 1)) : null))
-    : dataArrays.map(() => null);
-  factorsCache.set(dataArrays, { dimCount, factors });
-  return factors;
-};
+export {
+  absoluteLevelScale,
+  relativeLevelScaleFactors,
+} from "@/lib/scene/coords/levelScale";
 
 /** Structural subset of a `DataArray` fragment that `buildLevelSources` needs. */
 export type DataArraySource = {

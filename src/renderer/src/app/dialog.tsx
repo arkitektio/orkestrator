@@ -37,6 +37,8 @@ import { CreateDatasetForm as CreateOmeroDatasetForm } from "@/omero-ark/forms/C
 import { CreateProjectForm } from "@/omero-ark/forms/CreateProjectForm";
 import { CreateWorkspaceForm } from "@/reaktion/components/forms/CreateWorkspaceForm";
 import { ExportModelForm } from "@/elektro/forms/ExportModelForm";
+import { AddExperimentLayerForm } from "@/elektro/forms/AddExperimentLayerForm";
+import { PlaceExperimentLayerForm } from "@/elektro/forms/PlaceExperimentLayerForm";
 import { CreateShortcutDialog } from "@/rekuest/components/dialogs/CreateShortcutDialog";
 import { ActionAssignForm } from "@/rekuest/forms/ActionAssignForm";
 import { ImplementationAssignForm } from "@/rekuest/forms/ImplementationAssignForm";
@@ -69,6 +71,8 @@ export const { DialogProvider, useDialog, registry } = createDialogProvider({
   commitmeshdesign: CommitMeshDesignDialog,
   // elektro
   exportelektromodel: ExportModelForm,
+  addexperimentlayer: AddExperimentLayerForm,
+  placeexperimentlayer: PlaceExperimentLayerForm,
   // kraph
   creategraph: CreateGraphForm,
   createnaturaleventcategory: CreateNaturalEventCategoryForm,

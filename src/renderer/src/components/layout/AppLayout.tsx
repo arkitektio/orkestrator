@@ -3,6 +3,7 @@ import { RailChrome } from "@/app/components/chrome/RailChrome";
 import { RailResizer } from "@/app/components/chrome/RailResizer";
 import { dragZoneDoubleClick, getChromeMode } from "@/lib/platform";
 import { cn } from "@/lib/utils";
+import { PageDialogHost } from "./PageDialogHost";
 
 export type AppLayoutProps = {
   navigationBar: React.ReactNode;
@@ -72,7 +73,8 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
       {/* The floating content card. `min-h-0`/`min-w-0` keep its own scroll
           containers scrolling instead of growing the card past the window. */}
       <div className="relative flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background rounded-xl border border-border/60 shadow-sm m-2">
-        {children}
+        {/* Dialogs opened from the page cover the card, not the rail beside it. */}
+        <PageDialogHost>{children}</PageDialogHost>
       </div>
       </div>
 

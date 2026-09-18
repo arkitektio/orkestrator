@@ -8,7 +8,7 @@ import { createBudgetSlice, type BudgetSlice } from "./viewer/budgetSlice";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore"
 import { RefObject } from "react";
 import * as THREE from 'three';
-import type { OpenedZarrArray } from "../sources/arrayRegistry";
+import type { OpenedZarrArray } from "@/lib/zarr/openArray";
 
 /** The subset of the R3F root state we need for camera operations */
 export interface CanvasContext {

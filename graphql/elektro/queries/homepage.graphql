@@ -1,15 +1,13 @@
 query HomePage {
-  blocks: blocks(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
-    ...ListBlock
+  experiments: experiments(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
+    ...ListExperiment
+  }
+
+  simulations: simulations(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
+    ...ListSimulation
   }
 
   models: neuronModels(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
     ...ListNeuronModel
-  }
-}
-
-query HomePageStats {
-  blockStats {
-    count
   }
 }

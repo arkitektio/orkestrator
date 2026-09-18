@@ -268,7 +268,7 @@ export function createFabriksDecodeDispatcher(): FabriksDecodeDispatcher {
   }
 }
 
-/** One pool for every mesh layer (the `workers/pool.ts` idiom): decode work
+/** One pool for every mesh layer (the `lib/zarr/pool/sharedWorkerPool.ts` idiom): decode work
  * is fungible across collections, and per-manager pools would multiply WASM
  * instances and idle workers per layer. Never disposed — it lives as long as
  * the renderer. */

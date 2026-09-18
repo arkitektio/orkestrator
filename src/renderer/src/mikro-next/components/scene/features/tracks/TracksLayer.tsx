@@ -33,7 +33,7 @@ import { useAttributeServiceOrNull } from "@/mikro-next/lib/attributes/Attribute
 import {
   placementToSpatialAffine,
   spatialAxisTriple,
-} from "@/mikro-next/lib/coords/transformGraph";
+} from "@/lib/scene/coords/transformGraph";
 import type { SceneLayerFragment } from "@/mikro-next/api/graphql";
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { paletteRowFor, DEFAULT_MEASURE_COLORMAP } from "../../platform/attributes/valueLut";
@@ -48,7 +48,7 @@ import {
   valueSpanOf,
   type TrackGeometry,
 } from "./tracksSource";
-import { bindField } from "../../platform/stores/bindStore";
+import { bindField } from "@/lib/scene/stores/bindStore";
 
 /** Tail length in timepoints when the layer has not been told otherwise. */
 export const DEFAULT_TAIL_WINDOW = 10;

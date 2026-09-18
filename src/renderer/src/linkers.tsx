@@ -214,31 +214,6 @@ export const MikroLens = buildSmart({
   name: "Lens",
 });
 
-export const ElektroTrace = buildSmart({
-  identifier: "@elektro/trace",
-  path: "elektro/traces",
-  name: "Trace",
-  datum: true,
-});
-export const ElektroBlock = buildSmart({
-  identifier: "@elektro/block",
-  path: "elektro/blocks",
-  name: "Block",
-  datum: true,
-});
-export const ElektroAnalogSignal = buildSmart({
-  identifier: "@elektro/analogsignal",
-  path: "elektro/analogsignals",
-  name: "Analog Signal",
-  datum: true,
-});
-export const ElektroAnalogSignalChannel = buildSmart({
-  identifier: "@elektro/analogsignalchannel",
-  path: "elektro/analogsignalchannels",
-  name: "Analog Signal Channel",
-  datum: true,
-});
-
 export const ElektroSimulation = buildSmart({
   identifier: "@elektro/simulation",
   path: "elektro/simulations",
@@ -264,18 +239,6 @@ export const ElektroModelCollection = buildSmart({
   identifier: "@elektro/modelcollection",
   path: "elektro/modelcollections",
   name: "Model Collection",
-});
-export const ElektroRecording = buildSmart({
-  identifier: "@elektro/recording",
-  path: "elektro/recordings",
-  name: "Recording",
-  datum: true,
-});
-export const ElektroStimulus = buildSmart({
-  identifier: "@elektro/stimulus",
-  path: "elektro/stimuli",
-  name: "Stimulus",
-  datum: true,
 });
 export const ElektroExperiment = buildSmart({
   identifier: "@elektro/experiment",
@@ -325,12 +288,6 @@ export const ElektroFile = buildSmart({
   datum: true,
 });
 
-export const ElektroDataset = buildSmart({
-  identifier: "@elektro/dataset",
-  path: "elektro/datasets",
-  name: "Dataset (Elektro)",
-  datum: true,
-});
 
 export const KraphNode = buildScopedSmart({
   identifier: "@kraph/node",

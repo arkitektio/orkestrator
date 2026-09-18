@@ -35,11 +35,9 @@ import {
   useQueryState,
 } from "@/hooks/use-search-param-state";
 import { HomePageQuery, Ordering, useHomePageQuery } from "../api/graphql";
-import BlockList from "../components/lists/BlockList";
 import ExperimentList from "../components/lists/ExperimentList";
 import NeuronModelList from "../components/lists/NeuronModelList";
 import SimulationList from "../components/lists/SimulationList";
-import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
 
 export interface IRepresentationScreenProps {}
 
@@ -111,7 +109,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
           <CollapsibleSearch
             value={search}
             onChange={(value) => setSearch(value || null)}
-            placeholder="Search blocks, simulations and models…"
+            placeholder="Search experiments, simulations and models…"
           />
 
           {/* Ordering: field + direction in a dropdown, shared across lists.
@@ -177,9 +175,6 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
       }
       sidebars={
         <Sidebars>
-          <Sidebars.Tab label="Statistics">
-            <HomePageStatisticsSidebar />
-          </Sidebars.Tab>
           <Sidebars.Tab label="Help">
             <HelpSidebar />
           </Sidebars.Tab>
@@ -187,7 +182,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
       }
     >
 
-      {data?.blocks.length == 0 && data?.models.length == 0 ? (
+      {data?.experiments.length == 0 && data?.simulations.length == 0 && data?.models.length == 0 ? (
         // Empty State with Hero Design
         <div className="min-h-full w-full flex items-center justify-center rounded-lg">
           <div className="max-w-4xl mx-auto text-center px-6 py-16">
@@ -206,7 +201,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
               </h1>
 
               <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-                Your electrophysiology and modelling platform. Record blocks,
+                Your electrophysiology and modelling platform. Lay recordings out on timelines,
                 build neuron models, and run simulations — then explore it all
                 from here.
               </p>
@@ -245,7 +240,6 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
             </CardDescription>
           </CardHeader>
 
-          <BlockList filters={listFilters} ordering={listOrdering} />
           <SimulationList filters={listFilters} ordering={listOrdering} />
           <NeuronModelList filters={listFilters} ordering={listOrdering} />
           <Separator className="my-4" />

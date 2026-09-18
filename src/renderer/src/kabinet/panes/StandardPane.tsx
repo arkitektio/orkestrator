@@ -2,7 +2,7 @@ import { ListRender } from "@/components/layout/ListRender";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { FancyInput } from "@/components/ui/fancy-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { PaneLink, SidePaneGroup } from "@/components/ui/sidepane";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
 import { KabinetBackend } from "@/linkers";
 import { CubeIcon } from "@radix-ui/react-icons";
 import { useDebounce } from "@uidotdev/usehooks";
@@ -20,76 +20,53 @@ export const NavigationPane = () => {
   const { data } = useListBackendsQuery();
 
   return (
-    <div className="flex-1 flex-col">
-      <nav className="grid items-start px-1 text-xs font-medium lg:px-2">
-        <SidePaneGroup title="Explore">
-          <PaneLink
-            to="/kabinet/home"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <Home className="h-4 w-4" />
-            Dashboard
-          </PaneLink>
-          <PaneLink
-            to="/kabinet/app-store"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            App Store
-          </PaneLink>
-        </SidePaneGroup>
+    <SidePaneNav columns={2}>
+      <SidePaneGroup title="Explore">
+        <PaneLink to="/kabinet/home">
+          <Home />
+          Dashboard
+        </PaneLink>
+        <PaneLink to="/kabinet/app-store">
+          <ShoppingCart />
+          App Store
+        </PaneLink>
+        <PaneLink to="/kabinet/repos">
+          <GitBranch />
+          Repos
+        </PaneLink>
+        <PaneLink to="/kabinet/pods">
+          <CubeIcon />
+          Pods
+        </PaneLink>
+      </SidePaneGroup>
 
-        <SidePaneGroup title="Manage All">
-          <PaneLink
-            to="/kabinet/repos"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <GitBranch className="h-4 w-4" />
-            Repos
-          </PaneLink>
-          <PaneLink
-            to="/kabinet/pods"
-            className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-          >
-            <CubeIcon className="h-4 w-4" />
-            Pods
-          </PaneLink>
-        </SidePaneGroup>
-
-        <SidePaneGroup title={
+      <SidePaneGroup
+        title="Backends"
+        limit={6}
+        action={
           <Popover>
-            <PopoverTrigger className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary items-center uppercase">
-
-              Backends
-              <HelpCircle className="h-3 w-3 cursor-pointer" />
+            <PopoverTrigger className="flex items-center justify-center text-muted-foreground hover:text-foreground">
+              <HelpCircle className="h-3 w-3" />
             </PopoverTrigger>
-            <PopoverContent>
-              <h3 className="mb-2 font-bold">What is an engine?</h3>
+            <PopoverContent className="text-sm">
+              <h3 className="mb-2 font-bold">What is a backend?</h3>
               <p>
-                Engines allow you to execute package plugins on a specific
-                computer (computational node). You need to install the engine
-                just like an arkitekt app. For more information, please visit
-                the documentation.
+                Backends let you run package plugins on a specific computer
+                (computational node). You install one just like an Arkitekt
+                app. See the documentation for more.
               </p>
             </PopoverContent>
           </Popover>
-        }>
-
-
-          {data?.backends.map((backend) => (
-            <KabinetBackend.PaneLink
-              object={backend}
-              key={backend.id}
-              className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-            >
-              <IconForBackendKind kind={backend.kind} className="h-4 w-4" />
-              {backend.name}
-            </KabinetBackend.PaneLink>
-          ))}
-
-        </SidePaneGroup>
-      </nav>
-    </div>
+        }
+      >
+        {data?.backends.map((backend) => (
+          <KabinetBackend.PaneLink object={backend} key={backend.id}>
+            <IconForBackendKind kind={backend.kind} className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{backend.name}</span>
+          </KabinetBackend.PaneLink>
+        ))}
+      </SidePaneGroup>
+    </SidePaneNav>
   );
 };
 

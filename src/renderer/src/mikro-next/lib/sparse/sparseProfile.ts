@@ -29,7 +29,7 @@ import type {
 } from "../attributes/attributeTypes";
 import { hopKey } from "../attributes/attributeTypes";
 import type { SparseProfileReaderLike } from "../attributes/executePlan";
-import { LruMap } from "../attributes/lruMap";
+import { LruMap } from "@/lib/generic/lruMap";
 import type { HeldValue } from "../attributes/planExec";
 import { openSparseLayout, readSparseSlice, unravel, type SparseLayoutChoice } from "./sparseSlice";
 

@@ -1,11 +1,19 @@
+# `name` became `fileName`, `dataset` became `folder`, and `origins` (the traces a
+# file produced) became `exportOf` — a file is now declared as the export of
+# something rather than the origin of traces.
 mutation from_file_like(
   $file: FileLike!
-  $name: String!
-  $origins: [ID!]
-  $dataset: ID
+  $fileName: String!
+  $folder: ID
+  $exportOf: [ExportOfInput!]
 ) {
   fromFileLike(
-    input: { file: $file, name: $name, origins: $origins, dataset: $dataset }
+    input: {
+      file: $file
+      fileName: $fileName
+      folder: $folder
+      exportOf: $exportOf
+    }
   ) {
     ...File
   }

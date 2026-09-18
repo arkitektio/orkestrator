@@ -1,0 +1,42 @@
+# Annotations: what is marked on a timeline.
+#
+# `Annotation` replaces the old `ROI`. The difference that matters for a trace
+# viewer is that an annotation lives in a coordinate system of its own — a
+# drawing space — rather than being pinned to one array's index space. That space
+# may carry a VALUE axis as well as a TIME one, which is what lets an annotation
+# be scoped to a single view's row rather than spanning all of them.
+
+fragment ExpAnnotation on Annotation {
+  id
+  name
+  description
+  # EVENT / EVENTS (points in time), EPOCH (a span), LINE / PATH / POLYGON.
+  kind
+  # Vertices, in the collection's coordinate system's axis order.
+  vectors
+  # A coordinate the annotation does NOT pin is one it spans: an epoch with no
+  # value coordinate spans every row, which is exactly what a trial marker wants.
+  coordinates {
+    name
+    value
+  }
+  strokeColor
+  fillColor
+  strokeWidth
+  filled
+  createdWithTransforms
+}
+
+fragment ExpAnnotationCollection on AnnotationCollection {
+  id
+  name
+  description
+  # The drawing space. Its axes say whether this collection is time-only or also
+  # carries a VALUE axis, which decides how a vertex maps to screen y.
+  coordinateSystem {
+    ...ExpCoordinateSystem
+  }
+  annotations {
+    ...ExpAnnotation
+  }
+}

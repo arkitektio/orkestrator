@@ -1,13 +1,14 @@
-import { open, type Array as ZarrArray, type DataType } from "zarrita";
-import { getChunkWorker } from "@/lib/zarr/runner";
+import { type Array as ZarrArray, type DataType } from "zarrita";
+import { effectiveChunkShapeOf, getChunkWorker } from "@/lib/zarr/runner";
+import { openZarrArray } from "@/lib/zarr/openArray";
 import { ByteBudgetChunkCache } from "@/lib/zarr/caches/byteBudgetChunkCache";
 import { INTERACTIVE_FETCH_PRIORITY } from "@/lib/zarr/pool/types";
 import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
 import type { MikroClient, ZarrStore } from "@/lib/zarr/store/types";
-import { workerPool } from "@/mikro-next/workers/pool";
+import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
 import { buildS3FetchConfig, getGeneralAccess } from "@/mikro-next/lib/zarr/access";
 import type { ZarrStoreLike } from "./attributeTypes";
-import { LruMap } from "./lruMap";
+import { LruMap } from "@/lib/generic/lruMap";
 import type { HeldValue } from "./planExec";
 import { readTypedValue } from "./sampleSource";
 
@@ -26,9 +27,11 @@ import { readTypedValue } from "./sampleSource";
  * Requires SharedArrayBuffer (cross-origin isolation) for the worker read.
  */
 
-// Probed chunks are promoted (float32) and the scene's pool budget knows nothing
+// Probed chunks are read at the array's OWN dtype ('exact' fidelity: a label id
+// past 2^24 does not survive float32) and the scene's pool budget knows nothing
 // about them, so they get their own byte-bounded cache rather than the runner's
-// shared default — a probe sweep must not evict what a one-off reader holds.
+// shared default. That also keeps exact chunks out of every promoting cache: the
+// decoded-chunk key does not carry the fidelity.
 const PROBE_CHUNK_CACHE_BYTES = 128 * 1024 * 1024;
 const PROBE_CHUNK_CACHE = new ByteBudgetChunkCache(PROBE_CHUNK_CACHE_BYTES);
 
@@ -91,7 +94,9 @@ export function createExactSampler(options: ExactSamplerOptions): ExactSampler {
           },
         );
         await s3Store.ready();
-        return (await open.v3(s3Store, { kind: "array" })) as OpenedZarrArray;
+        // Not a bare `open.v3`: this also reads the fetch metadata, so
+        // `effectiveChunkShapeOf` answers the INNER chunk shape below.
+        return (await openZarrArray(s3Store)) as OpenedZarrArray;
       })().catch((error) => {
         foreignArrays.take(store.id); // allow retry after transient failures
         throw error;
@@ -110,7 +115,16 @@ export function createExactSampler(options: ExactSamplerOptions): ExactSampler {
     async readExact(store, index) {
       const arr = await getArray(store);
       if (index.length !== arr.shape.length) return null;
-      const chunkShape = arr.chunks;
+      // Inner-chunk coordinates. `arr.chunks` is the SHARD shape of a
+      // `sharding_indexed` array, and dividing by it names the wrong chunk.
+      // A host-provided array was opened by the scene through `openZarrArray`,
+      // so this is populated for it too.
+      const chunkShape = effectiveChunkShapeOf(arr);
+      if (!chunkShape) {
+        throw new Error(
+          `[exact sample] no effective chunk shape for store ${store.id}: the array was opened without reading its metadata`,
+        );
+      }
       const chunkCoords = index.map((v, d) => Math.floor(v / chunkShape[d]));
       // Interactive tier: attribute probes race streaming brick decodes
       // (whose priorities scale with the residency plan generation) and must
@@ -120,6 +134,7 @@ export function createExactSampler(options: ExactSamplerOptions): ExactSampler {
         priority: INTERACTIVE_FETCH_PRIORITY,
         useSharedArrayBuffer: true,
         cache: PROBE_CHUNK_CACHE,
+        textureFidelity: "exact",
       });
       const flat = index.reduce(
         (acc, v, d) => acc + (v - chunkCoords[d] * chunkShape[d]) * (chunk.stride[d] ?? 0),

@@ -1,9 +1,8 @@
-import { Tree } from "@/components/explorer/Tree";
 import { ListRender } from "@/components/layout/ListRender";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { Button } from "@/components/ui/button";
 import { FancyInput } from "@/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup } from "@/components/ui/sidepane";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
 import { useDebounce } from "@/hooks/use-debounce";
 import { AlpakaRoom } from "@/linkers";
 import { CubeIcon, PlusIcon } from "@radix-ui/react-icons";
@@ -26,78 +25,63 @@ export const NavigationPane = () => {
   const { data } = useRoomsQuery();
 
   return (
-    <Tree>
+    <SidePaneNav columns={2}>
       <SidePaneGroup title="Explore">
-        <PaneLink
-          to="/alpaka"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <Home className="h-4 w-4" />
+        <PaneLink to="/alpaka">
+          <Home />
           Home
         </PaneLink>
-      </SidePaneGroup>
-
-      <SidePaneGroup title="Data">
-        <PaneLink
-          to="/alpaka/rooms"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
+        <PaneLink to="/alpaka/rooms">
+          <CubeIcon />
           Rooms
         </PaneLink>
-        <PaneLink
-          to="/alpaka/collections"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
+        <PaneLink to="/alpaka/collections">
+          <CubeIcon />
           Collections
         </PaneLink>
-        <PaneLink
-          to="/alpaka/llmmodels"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
+        <PaneLink to="/alpaka/llmmodels">
+          <CubeIcon />
           Models
         </PaneLink>
-        <PaneLink
-          to="/alpaka/providers"
-          className="flex flex-row w-full gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary"
-        >
-          <CubeIcon className="h-4 w-4" />
+        <PaneLink to="/alpaka/providers">
+          <CubeIcon />
           Providers
         </PaneLink>
       </SidePaneGroup>
-      <SidePaneGroup title="Recent"
+
+      <SidePaneGroup
+        title="Recent rooms"
+        limit={6}
+        moreTo="/alpaka/rooms"
         action={
-          <Button onClick={() => createRoom({
-            variables: {
-              input: {
-                title: "Conversation at " + new Date().toLocaleString(),
-                description: "Created by the sidebar",
-              }
+          <Button
+            onClick={() =>
+              createRoom({
+                variables: {
+                  input: {
+                    title: "Conversation at " + new Date().toLocaleString(),
+                    description: "Created by the sidebar",
+                  },
+                },
+              })
             }
-          })} variant={"ghost"} size={"icon"}>
+            variant={"ghost"}
+            size={"icon"}
+          >
             <PlusIcon className="h-3 w-3" />
           </Button>
         }
       >
         {data?.rooms.map((room) => (
-          <AlpakaRoom.DetailLink
-            object={room}
-            key={room.id}
-            className="flex flex-row w-full gap-3 rounded-lg  text-muted-foreground transition-all hover:text-primary"
-          >
-            <CubeIcon className="h-4 w-4" />
-            {room.title}
-          </AlpakaRoom.DetailLink>
+          <AlpakaRoom.PaneLink object={room} key={room.id}>
+            <CubeIcon />
+            <span className="truncate">{room.title}</span>
+          </AlpakaRoom.PaneLink>
         ))}
       </SidePaneGroup>
-    </Tree>
+    </SidePaneNav>
   );
 };
-
-
-
 
 const Pane: React.FunctionComponent = () => {
   const [search, setSearch] = React.useState("");

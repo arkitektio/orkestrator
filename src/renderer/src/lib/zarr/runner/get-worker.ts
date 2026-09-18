@@ -28,6 +28,7 @@ import {
   assertSharedArrayBufferAvailable,
   create_chunk_key_encoder,
   createBuffer,
+  get_ctr,
   get_strides,
 } from "./internals/util"
 import type { ChunkCache, CodecChunkMeta, GetWorkerOptions, TextureFidelity } from "./types"
@@ -239,10 +240,29 @@ function createWorkerTask<T>(
 function getTextureOutputConstructor(
   dataType: DataType,
   textureFidelity: TextureFidelity,
-): Uint8ArrayConstructor | Uint16ArrayConstructor | Float32ArrayConstructor {
+): { new (length: number): FillableArray; new (buffer: ArrayBuffer, byteOffset: number, length: number): FillableArray; BYTES_PER_ELEMENT: number } {
+  if (textureFidelity === "exact") {
+    return get_ctr(dataType) as unknown as ReturnType<typeof getTextureOutputConstructor>
+  }
   if (dataType === "uint8") return Uint8Array
   if (textureFidelity === "raw16" && dataType === "uint16") return Uint16Array
   return Float32Array
+}
+
+/** A typed array of any numeric dtype, as the fill paths see it. */
+type FillableArray = { fill(value: never): unknown; length: number }
+
+/**
+ * Fill with the array's fill value. A BigInt64Array (an 'exact' int64 read)
+ * only takes a bigint; every other constructor takes a number.
+ */
+function fillTyped(data: FillableArray, fillValue: Scalar<DataType> | null): void {
+  if (fillValue == null) return
+  const bigintArray =
+    typeof BigInt64Array !== "undefined" &&
+    (data instanceof BigInt64Array || data instanceof BigUint64Array)
+  const value = bigintArray ? BigInt(fillValue as number | bigint) : Number(fillValue)
+  ;(data.fill as (v: number | bigint) => unknown)(value)
 }
 
 function roundTiming(ms: number): number {
@@ -681,7 +701,7 @@ function fillChunkOf<D extends DataType>(
 ): Chunk<D> {
   const size = shape.reduce((a, b) => a * b, 1)
   const data = new OutputCtr(size)
-  if (fillValue != null) data.fill(Number(fillValue))
+  fillTyped(data, fillValue)
   return { data: data as Chunk<D>["data"], shape, stride: get_strides(shape) }
 }
 
@@ -945,9 +965,7 @@ export async function getChunkWorker<D extends DataType, Store extends Readable>
       1,
     )
     const chunkData = new OutputCtr(fillChunkSize)
-    if (fillValue != null) {
-      chunkData.fill(Number(fillValue))
-    }
+    fillTyped(chunkData, fillValue)
     return {
       data: chunkData as Chunk<D>["data"],
       shape: edgeChunkShape,
@@ -1244,9 +1262,7 @@ export async function getWorker<
       const fillStartedAt = performance.now()
       const fillChunkSize = edgeChunkShape.reduce((a: number, b: number) => a * b, 1)
       const chunkData = new OutputCtr(fillChunkSize)
-      if (fillValue != null) {
-        chunkData.fill(Number(fillValue))
-      }
+      fillTyped(chunkData, fillValue)
       const fillChunk: Chunk<D> = {
         data: chunkData as Chunk<D>["data"],
         shape: edgeChunkShape,
@@ -1316,9 +1332,7 @@ export async function getWorker<
               1,
             )
             const chunkData = new OutputCtr(fillChunkSize)
-            if (fillValue != null) {
-              chunkData.fill(Number(fillValue))
-            }
+            fillTyped(chunkData, fillValue)
             chunkToWrite = {
               data: chunkData as Chunk<D>["data"],
               shape: fillChunkShape,

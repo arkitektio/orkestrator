@@ -2,8 +2,13 @@ import { ApolloClient, NormalizedCache } from "@apollo/client";
 import { S3FetchConfig } from "@/lib/zarr/runner/s3-request";
 import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
-import { ZarrStore } from "@/lib/zarr/store/types";
-import { Array as ZarrArray, Chunk, DataType, get, open } from "zarrita";
+
+import { openZarrArray, type OpenedZarrArray } from "@/lib/zarr/openArray";
+import { ByteBudgetChunkCache } from "@/lib/zarr/caches/byteBudgetChunkCache";
+import { INTERACTIVE_FETCH_PRIORITY } from "@/lib/zarr/pool/types";
+import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
+import { readArrayWindow } from "@/lib/zarr/readArrayWindow";
+import type { AxisRange } from "@/elektro/components/experiment/platform/sources/axisSelection";
 import { createStore } from "zustand/vanilla";
 import {
   GeneralZarrAccessGrantFragment,
@@ -15,27 +20,39 @@ import {
 
 type ElektroClient = ApolloClient<NormalizedCache>;
 
-type OpenedZarrArray = ZarrArray<DataType, ZarrStore>;
+/**
+ * Decoded-chunk cache for trace reads.
+ *
+ * Its own budget rather than the runner's shared default: a mikro scene
+ * streaming bricks and an elektro timeline panning are both live in one app, and
+ * a brick sweep must not evict the window a trace is drawn from.
+ */
+const CHUNK_CACHE_BYTES = 256 * 1024 * 1024;
+const CHUNK_CACHE = new ByteBudgetChunkCache(CHUNK_CACHE_BYTES);
 
 // --- Selection / result types (shared with useTraceArray) ---
 
-export type Slice = {
-  _slice: true;
-  step: number | null;
-  start: number | null;
-  stop: number | null;
-};
-
-export type ArraySelection = Slice[];
-
-export type DownloadedArray = {
-  shape: [number, number, number, number, number];
-  out: Chunk<DataType>;
-  selection: ArraySelection;
-  tSize: number;
-  cSize: number;
-  dtypeMin: number;
-  dtypeMax: number;
+/**
+ * A decoded window of an array.
+ *
+ * `shape` is the WINDOW's shape, not the source array's, and is of whatever rank
+ * the array actually has — a trace is 1-D, a multi-channel signal 2-D. (The old
+ * type declared mikro's fixed 5-tuple, which was a lie for every elektro array.)
+ * Callers resolve axes by NAME against the dataset's `axisNames`; nothing here
+ * assumes a position.
+ *
+ * `data` is row-major over `shape`. It is a `Float32Array` for every dtype except
+ * `uint8`, because that is what the shared codec worker promotes to — see
+ * `TextureFidelity`. For sample data that is ample (a membrane voltage needs
+ * nowhere near 7 significant digits). It is worth knowing for a TIME lookup
+ * array: float32 resolves ~1e-4 at 1e3, so relative times are fine, but absolute
+ * epoch-scale seconds would not be. `CoordinateSystem.epoch` exists precisely so
+ * stored times stay relative.
+ */
+export type ArrayWindow = {
+  shape: number[];
+  strides: number[];
+  data: Float32Array | Uint8Array;
 };
 
 // --- Config ---
@@ -66,12 +83,18 @@ export interface ElektroZarrState {
 
   /** Open (or reuse) the zarr array for a trace store. */
   getArray: (store: ZarrStoreFragment) => Promise<OpenedZarrArray>;
-  /** Open the array and read a selection out of it. */
-  getSelection: (
+  /**
+   * Read a strided window out of an array, through the shared worker runner.
+   *
+   * `ranges` is positional, in the ARRAY's own axis order — callers project a
+   * by-name selection onto it (see `selectionForAxes`). A null/absent entry reads
+   * that axis in full.
+   */
+  readWindow: (
     store: ZarrStoreFragment,
-    selection: ArraySelection,
-    signal?: AbortSignal,
-  ) => Promise<DownloadedArray>;
+    ranges?: readonly (AxisRange | null | undefined)[],
+    opts?: { signal?: AbortSignal; priority?: number },
+  ) => Promise<ArrayWindow>;
 
   /** Drop the cached grant and every open store (e.g. after a config change). */
   invalidate: () => void;
@@ -200,7 +223,11 @@ export const createElektroZarrStore = (
         refreshConfig: async (options) =>
           configFor(await ensureGrant(options), store, endpoint),
       });
-      return open.v3(s3, { kind: "array" }) as Promise<OpenedZarrArray>;
+      // Not a bare `open.v3`: this also resolves the array's fetch metadata, so
+      // `effectiveChunkShapeOf` is answerable synchronously afterwards. For a
+      // `sharding_indexed` array zarrita's `arr.chunks` is the SHARD shape, and
+      // planning against that would fetch whole shards to read one window.
+      return openZarrArray(s3);
     };
 
     return {
@@ -240,18 +267,18 @@ export const createElektroZarrStore = (
         return entry.array;
       },
 
-      getSelection: async (store, selection, _signal) => {
+      readWindow: async (store, ranges = [], opts = {}) => {
         const array = await get_().getArray(store);
-        const view = (await get(array, selection)) as Chunk<DataType>;
-        return {
-          shape: array.shape as [number, number, number, number, number],
-          out: view,
-          selection,
-          dtypeMin: 0,
-          dtypeMax: 255,
-          tSize: array.shape[1],
-          cSize: array.shape[0],
-        };
+        // A scene with many views reissues a read per view on every band
+        // crossing; an abandoned window that still resolves wastes the fetch and
+        // races the buffer write that replaced it.
+        opts.signal?.throwIfAborted();
+        return readArrayWindow(array, ranges, {
+          pool: workerPool,
+          cache: CHUNK_CACHE,
+          priority: opts.priority ?? INTERACTIVE_FETCH_PRIORITY,
+          signal: opts.signal,
+        });
       },
 
       invalidate: () => {

@@ -1,5 +1,40 @@
-import { ColorMap } from "@/mikro-next/api/graphql";
 import * as THREE from "three";
+
+/**
+ * The colormap names mikro's and elektro's `ColorMap` enums share, as a plain
+ * string union — so this module serves both services without importing either's
+ * generated types. A generated enum member is assignable here (a string enum
+ * member is a subtype of its literal), so callers pass their own enum as is.
+ */
+export const ColorMap = {
+  Black: "BLACK",
+  Blue: "BLUE",
+  Brown: "BROWN",
+  Cool: "COOL",
+  Cyan: "CYAN",
+  Distinct: "DISTINCT",
+  Green: "GREEN",
+  Grey: "GREY",
+  Hues: "HUES",
+  Inferno: "INFERNO",
+  Intensity: "INTENSITY",
+  Magenta: "MAGENTA",
+  Magma: "MAGMA",
+  Orange: "ORANGE",
+  Pastel: "PASTEL",
+  Pink: "PINK",
+  Plasma: "PLASMA",
+  Purple: "PURPLE",
+  Rainbow: "RAINBOW",
+  Red: "RED",
+  Spectral: "SPECTRAL",
+  Viridis: "VIRIDIS",
+  Vivid: "VIVID",
+  Warm: "WARM",
+  White: "WHITE",
+  Yellow: "YELLOW",
+} as const;
+export type ColorMap = (typeof ColorMap)[keyof typeof ColorMap];
 
 const DEFAULT_INTENSITY_BASE_COLOR = [255, 255, 255] as const;
 

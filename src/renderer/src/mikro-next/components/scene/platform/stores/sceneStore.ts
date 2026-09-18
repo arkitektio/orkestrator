@@ -17,7 +17,7 @@ import {
   type SceneTransformContext,
 } from "../model/layerModel";
 import { planDefaultVolumeLods } from "../quality/lodPlanning";
-import { composeLayerAffine, spatialAxisTriple } from "@/mikro-next/lib/coords/transformGraph";
+import { composeLayerAffine, spatialAxisTriple } from "@/lib/scene/coords/transformGraph";
 import type { FabriksInstanceColormap } from "../gpu/instanceColormaps";
 
 // Re-exported for the store's many consumers (the model lives in core/).
