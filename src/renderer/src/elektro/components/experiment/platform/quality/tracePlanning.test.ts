@@ -406,3 +406,32 @@ describe("chunk-aligned tiles", () => {
     expect(tiny[0].tileSamples).toBe(4096);
   });
 });
+
+describe("drawableTiles fallback", () => {
+  it("keeps drawing a resident tile the new plan no longer names, until its own tiles land", () => {
+    const residency = createResidency();
+    // A resident tile from the previous plan, at the root level.
+    const root = levels[levels.length - 1];
+    insertTile(residency, {
+      key: "old",
+      level: root.level,
+      levelIndex: levels.length - 1,
+      index: 0,
+      span: WHOLE,
+      samples: { start: 0, stop: root.sampleCount },
+      bytes: 4,
+      period: root.period,
+      t0: root.t0,
+      channels: [new Float32Array(root.sampleCount)],
+      lastUsed: 0,
+    } as ResidentTile);
+    // A plan whose tiles are all still in flight (none resident).
+    const plan = planTraceTiles({ levels, window: { start: 10_000, end: 10_100 } });
+    const segments = drawableTiles(residency, { ...plan, tiles: plan.tiles.filter((t) => t.key !== "old") }, {
+      start: 10_000,
+      end: 10_100,
+    });
+    expect(segments.length).toBeGreaterThan(0);
+    expect(segments[0].tile.key).toBe("old");
+  });
+});

@@ -106,13 +106,15 @@ export const eventDrawFor = (
   colors: { instants: Float32Array; intervals: Float32Array } | null,
   window: { start: number; end: number },
   widthPx: number,
+  /** Interval quads already built for these marks — reused so nothing re-uploads. */
+  intervalQuads: Float32Array = intervalQuadsOf(marks),
 ): EventDraw => {
   const density = shouldDrawDensity(countInWindow(marks.instants, window.start, window.end), widthPx);
   return {
     instants: marks.instants,
     instantLanes: marks.instantLanes,
     instantColors: colors?.instants ?? null,
-    intervalQuads: intervalQuadsOf(marks),
+    intervalQuads,
     intervalColors: colors?.intervals ?? null,
     laneCount: Math.max(1, marks.lanes.length),
     density,

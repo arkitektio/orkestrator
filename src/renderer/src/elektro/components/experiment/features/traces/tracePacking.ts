@@ -64,6 +64,39 @@ const EMPTY: PackedChannel = {
   decimated: false,
 };
 
+/** Samples per summary block. */
+export const SUMMARY_BLOCK = 256;
+/** Tiles shorter than this are scanned raw — a summary would not pay for itself. */
+export const SUMMARY_MIN_SAMPLES = 16_384;
+
+export type ColumnSummary = { block: number; minIndex: Int32Array; maxIndex: Int32Array };
+
+/**
+ * Where each block's minimum and maximum sit — a one-level min/max pyramid of a
+ * column, built once when a tile lands. It is what makes a zoomed-out envelope
+ * of a trace with no server pyramid O(pixels) rather than O(samples): 1.25 M
+ * samples become ~5 000 block entries.
+ */
+export const summarizeColumn = (column: ArrayLike<number>, block = SUMMARY_BLOCK): ColumnSummary => {
+  const blocks = Math.ceil(column.length / block);
+  const minIndex = new Int32Array(blocks).fill(-1);
+  const maxIndex = new Int32Array(blocks).fill(-1);
+  for (let b = 0; b < blocks; b++) {
+    const end = Math.min(column.length, (b + 1) * block);
+    let lo = -1;
+    let hi = -1;
+    for (let i = b * block; i < end; i++) {
+      const v = column[i];
+      if (!Number.isFinite(v)) continue;
+      if (lo < 0 || v < column[lo]) lo = i;
+      if (hi < 0 || v > column[hi]) hi = i;
+    }
+    minIndex[b] = lo;
+    maxIndex[b] = hi;
+  }
+  return { block, minIndex, maxIndex };
+};
+
 export type PackOptions = {
   /** The window being drawn and its width in pixels: what "per pixel" means. */
   window?: { start: number; end: number } | null;
@@ -92,7 +125,15 @@ export const packChannel = (
   const widthPx = options.widthPx ?? 0;
   const bucket = window && widthPx > 0 ? (window.end - window.start) / widthPx : 0;
 
-  type Plan = { column: ArrayLike<number>; tile: DrawSegment["tile"]; from: number; to: number; step: number; dense: boolean };
+  type Plan = {
+    column: ArrayLike<number>;
+    channelSummary: ColumnSummary | null;
+    tile: DrawSegment["tile"];
+    from: number;
+    to: number;
+    step: number;
+    dense: boolean;
+  };
   const plans: Plan[] = [];
   let capacity = 0;
   for (const segment of segments) {
@@ -113,6 +154,7 @@ export const packChannel = (
     capacity += dense ? 2 * (Math.ceil(Math.abs(segment.end - segment.start) / bucket) + 2) : count;
     plans.push({
       column,
+      channelSummary: tile.summaries?.[channel] ?? null,
       tile,
       from: period > 0 ? first : last,
       to: period > 0 ? last : first,
@@ -135,7 +177,7 @@ export const packChannel = (
     n++;
   };
 
-  for (const { column, tile, from, to, step, dense } of plans) {
+  for (const { column, channelSummary, tile, from, to, step, dense } of plans) {
     const period = tile.period;
     const timeAt = (i: number) => tile.t0 + period * (tile.samples.start + i) - timeOrigin;
     if (!dense) {
@@ -158,9 +200,9 @@ export const packChannel = (
       push(timeAt(p), column[p], bucket);
       if (q !== p) push(timeAt(q), column[q], bucket);
     };
-    for (let i = from; step > 0 ? i <= to : i >= to; i += step) {
+    const consider = (i: number) => {
       const value = column[i];
-      if (!Number.isFinite(value)) continue;
+      if (!Number.isFinite(value)) return;
       const b = Math.floor((timeAt(i) - origin) / bucket);
       if (b !== current) {
         flush();
@@ -170,6 +212,33 @@ export const packChannel = (
         if (value < column[minI]) minI = i;
         if (value > column[maxI]) maxI = i;
       }
+    };
+    // A block summary is used when a pixel column spans several blocks: each
+    // whole block inside the run contributes its two extremes (in index order,
+    // so buckets stay monotone) instead of all of its samples. Partial blocks
+    // at the ends are scanned raw.
+    const summary = channelSummary;
+    const blocksPerBucket = summary ? bucket / Math.abs(period) / summary.block : 0;
+    if (summary && step > 0 && blocksPerBucket >= 2) {
+      const B = summary.block;
+      let i = from;
+      while (i <= to) {
+        if (i % B === 0 && i + B - 1 <= to) {
+          const b = i / B;
+          const lo = summary.minIndex[b];
+          const hi = summary.maxIndex[b];
+          if (lo >= 0) {
+            consider(Math.min(lo, hi));
+            if (hi !== lo) consider(Math.max(lo, hi));
+          }
+          i += B;
+        } else {
+          consider(i);
+          i += 1;
+        }
+      }
+    } else {
+      for (let i = from; step > 0 ? i <= to : i >= to; i += step) consider(i);
     }
     flush();
   }
@@ -238,6 +307,12 @@ export const splitChannels = (
   const channels = channelAxisIndex == null ? 1 : (window.shape[channelAxisIndex] ?? 1);
   const tStride = window.strides[timeAxisIndex] ?? 1;
   const cStride = channelAxisIndex == null ? 0 : (window.strides[channelAxisIndex] ?? 0);
+
+  // One contiguous channel that already IS the column (a single-channel trace
+  // read zero-copy): no de-interleaving pass, no copy. Read-only by contract.
+  if (channels === 1 && tStride === 1 && window.data instanceof Float32Array && window.data.length === samples) {
+    return [window.data];
+  }
 
   const out: Float32Array[] = [];
   for (let c = 0; c < channels; c++) {

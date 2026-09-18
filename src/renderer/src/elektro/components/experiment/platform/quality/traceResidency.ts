@@ -37,6 +37,13 @@ export type ResidentTile = {
    * strides for every frame a tile is drawn in.
    */
   channels: ArrayLike<number>[];
+  /**
+   * Per channel, the index of each block's minimum and maximum (`-1` for a
+   * block with no finite value) — built once when a long tile lands, so a
+   * zoomed-out envelope reads two entries per block instead of every sample.
+   * Absent for short tiles.
+   */
+  summaries?: { block: number; minIndex: Int32Array; maxIndex: Int32Array }[];
   /** Monotonic counter, for LRU among equally-distant tiles. */
   lastUsed: number;
 };
@@ -117,6 +124,42 @@ export const evictToBudget = (
   return evicted;
 };
 
+/**
+ * `evictToBudget` over SEVERAL residencies — every trace layer of a scope
+ * sharing one byte budget. Unprotected tiles of all members compete; the ones
+ * furthest from the focus go first, whichever layer they belong to, so a layer
+ * zoomed around a lot cannot starve its neighbours. Returns how many bytes it
+ * freed.
+ */
+export const evictAcross = (
+  members: readonly { residency: Residency; protectedKeys: ReadonlySet<TileKey> }[],
+  budgetBytes: number,
+  focus: number,
+): number => {
+  let total = members.reduce((acc, m) => acc + m.residency.bytes, 0);
+  if (total <= budgetBytes) return 0;
+  const distance = (tile: ResidentTile) => {
+    const d = focus < tile.span.start ? tile.span.start - focus : focus > tile.span.end ? focus - tile.span.end : 0;
+    return d * d;
+  };
+  const candidates = members
+    .flatMap(({ residency, protectedKeys }) =>
+      [...residency.byKey.values()]
+        .filter((tile) => !protectedKeys.has(tile.key))
+        .map((tile) => ({ residency, tile, distance: distance(tile) })),
+    )
+    .sort((a, b) => b.distance - a.distance || a.tile.lastUsed - b.tile.lastUsed);
+  let freed = 0;
+  for (const { residency, tile } of candidates) {
+    if (total <= budgetBytes) break;
+    residency.byKey.delete(tile.key);
+    residency.bytes -= tile.bytes;
+    total -= tile.bytes;
+    freed += tile.bytes;
+  }
+  return freed;
+};
+
 /** Every key a plan names, in either role. */
 export const protectedKeysOf = (plan: TracePlan): Set<TileKey> =>
   new Set(plan.tiles.map((t) => t.key));
@@ -157,13 +200,20 @@ export const drawableTiles = (
   plan: TracePlan,
   window: { start: number; end: number },
 ): DrawSegment[] => {
-  const inWindow = plan.tiles.filter((t) => spansOverlap(t.span, window));
-  if (inWindow.length === 0) return [];
-
+  const finestFirst = (a: { levelIndex: number; span: { start: number } }, b: { levelIndex: number; span: { start: number } }) =>
+    a.levelIndex - b.levelIndex || a.span.start - b.span.start;
   // Finest first: a finer tile claims its stretch before any coarser one can.
-  const byFineness = [...inWindow].sort(
-    (a, b) => a.levelIndex - b.levelIndex || a.span.start - b.span.start,
-  );
+  const planned = plan.tiles.filter((t) => spansOverlap(t.span, window)).sort(finestFirst);
+  // Then, as a FALLBACK only, anything else still resident — the previous plan's
+  // tiles. Right after a replan the new plan's tiles are often still in flight,
+  // and without this the trace would go blank until they land instead of
+  // keeping what it showed a moment ago.
+  const inPlan = new Set(plan.tiles.map((t) => t.key));
+  const fallback = [...residency.byKey.values()]
+    .filter((t) => !inPlan.has(t.key) && spansOverlap(t.span, window))
+    .sort(finestFirst);
+  const byFineness = [...planned, ...fallback];
+  if (byFineness.length === 0) return [];
 
   // What is still unclaimed, as disjoint intervals in increasing order.
   let uncovered: { start: number; end: number }[] = [
@@ -171,9 +221,9 @@ export const drawableTiles = (
   ];
   const segments: DrawSegment[] = [];
 
-  for (const planned of byFineness) {
+  for (const candidate of byFineness) {
     if (uncovered.length === 0) break;
-    const tile = residency.byKey.get(planned.key);
+    const tile = residency.byKey.get(candidate.key);
     if (!tile) continue;
 
     const next: { start: number; end: number }[] = [];

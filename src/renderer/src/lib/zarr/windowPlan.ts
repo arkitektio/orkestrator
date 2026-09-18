@@ -201,27 +201,54 @@ export const copyChunkInto = (
   step: readonly number[],
 ): void => {
   const rank = read.runs.length;
-  const counter = new Array<number>(rank).fill(0);
+  if (rank === 0) return;
   // An exact int64 read lands in a BigInt64Array, which only takes bigints;
   // every other output takes numbers.
   const bigintOut =
     typeof BigInt64Array !== "undefined" &&
     (out.data instanceof BigInt64Array || out.data instanceof BigUint64Array);
+  const bigintChunk =
+    typeof BigInt64Array !== "undefined" &&
+    (chunk.data instanceof BigInt64Array || chunk.data instanceof BigUint64Array);
+
+  // Fast path: along the innermost axis both sides are contiguous (stride 1,
+  // step 1) and of one number kind, so each innermost run is ONE `set` of a
+  // `subarray` instead of an element-by-element loop with index arithmetic —
+  // the difference that matters now a trace tile is a whole 5 M-element chunk.
+  const last = rank - 1;
+  const outData = out.data as unknown as { set?: (src: ArrayLike<number | bigint>, offset: number) => void };
+  const chunkData = chunk.data as unknown as { subarray?: (a: number, b: number) => ArrayLike<number | bigint> };
+  const runWise =
+    step[last] === 1 &&
+    out.strides[last] === 1 &&
+    chunk.stride[last] === 1 &&
+    bigintOut === bigintChunk &&
+    typeof outData.set === "function" &&
+    typeof chunkData.subarray === "function";
+
+  const counter = new Array<number>(rank).fill(0);
+  const innerCount = read.runs[last].outCount;
 
   for (;;) {
     let outIndex = 0;
     let chunkIndex = 0;
     for (let d = 0; d < rank; d++) {
       const run = read.runs[d];
-      outIndex += (run.outStart + counter[d]) * out.strides[d];
-      chunkIndex += (run.chunkOffset + counter[d] * step[d]) * chunk.stride[d];
+      const c = d === last && runWise ? 0 : counter[d];
+      outIndex += (run.outStart + c) * out.strides[d];
+      chunkIndex += (run.chunkOffset + c * step[d]) * chunk.stride[d];
     }
-    // Number(): a bigint dtype (int64 counts) would otherwise poison a float buffer.
-    const value = chunk.data[chunkIndex];
-    out.data[outIndex] = (bigintOut ? value : Number(value)) as number;
+    if (runWise) {
+      outData.set!(chunkData.subarray!(chunkIndex, chunkIndex + innerCount), outIndex);
+    } else {
+      // Number(): a bigint dtype (int64 counts) would otherwise poison a float buffer.
+      const value = chunk.data[chunkIndex];
+      out.data[outIndex] = (bigintOut ? value : Number(value)) as number;
+    }
 
-    // Odometer over the run extents, last axis fastest.
-    let d = rank - 1;
+    // Odometer over the run extents, last axis fastest (skipped when run-wise:
+    // the whole innermost run was copied at once).
+    let d = runWise ? last - 1 : last;
     while (d >= 0) {
       counter[d] += 1;
       if (counter[d] < read.runs[d].outCount) break;
@@ -230,4 +257,28 @@ export const copyChunkInto = (
     }
     if (d < 0) return;
   }
+};
+
+/**
+ * Does ONE chunk supply the whole window exactly as it is laid out — every axis
+ * read in full, step 1, row-major? Then the window IS the chunk's data, and no
+ * copy is needed at all (`readArrayWindow` returns it as is).
+ */
+export const chunkIsWindow = (
+  plan: WindowPlan,
+  chunk: { shape: readonly number[]; stride: readonly number[] },
+  step: readonly number[],
+): boolean => {
+  if (plan.chunks.length !== 1) return false;
+  const runs = plan.chunks[0].runs;
+  if (chunk.shape.length !== runs.length) return false;
+  const rowMajor = stridesFor(chunk.shape);
+  return runs.every(
+    (run, d) =>
+      step[d] === 1 &&
+      run.chunkOffset === 0 &&
+      run.outStart === 0 &&
+      run.outCount === chunk.shape[d] &&
+      chunk.stride[d] === rowMajor[d],
+  );
 };

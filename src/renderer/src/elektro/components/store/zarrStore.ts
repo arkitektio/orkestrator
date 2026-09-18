@@ -21,13 +21,16 @@ import {
 type ElektroClient = ApolloClient<NormalizedCache>;
 
 /**
- * Decoded-chunk cache for trace reads.
+ * Decoded-chunk cache for trace reads — deliberately SMALL.
  *
- * Its own budget rather than the runner's shared default: a mikro scene
- * streaming bricks and an elektro timeline panning are both live in one app, and
- * a brick sweep must not evict the window a trace is drawn from.
+ * Its own budget rather than the runner's shared default, so a mikro scene
+ * streaming bricks cannot evict the window a trace is drawn from. But the trace
+ * tile residency already holds every tile it draws (a tile is one chunk, often
+ * the chunk's own array, read zero-copy), so a large cache here would only hold
+ * the same 20 MB chunks a second time. What it is still for: a tile re-read
+ * soon after eviction, and the in-flight merge of concurrent reads.
  */
-const CHUNK_CACHE_BYTES = 256 * 1024 * 1024;
+const CHUNK_CACHE_BYTES = 64 * 1024 * 1024;
 const CHUNK_CACHE = new ByteBudgetChunkCache(CHUNK_CACHE_BYTES);
 
 // --- Selection / result types (shared with useTraceArray) ---

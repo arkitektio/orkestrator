@@ -106,3 +106,16 @@ describe("EventTableDriver", () => {
     expect(experimentApi.getState().reportedSpans.ev).toBeUndefined();
   });
 });
+
+describe("EventTableDriver on commit", () => {
+  it("reuses the draw arrays when only the window moved", async () => {
+    const { rangeApi, viewerApi } = setup(3);
+    await settle();
+    const before = viewerApi.getState().eventDraws.ev;
+    rangeApi.getState().jumpTo({ start: 5, end: 50 });
+    const after = viewerApi.getState().eventDraws.ev;
+    expect(after).not.toBe(before);
+    expect(after.instants).toBe(before.instants);
+    expect(after.intervalQuads).toBe(before.intervalQuads);
+  });
+});

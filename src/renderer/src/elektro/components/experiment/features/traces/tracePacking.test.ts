@@ -195,3 +195,29 @@ describe("packChannel envelope", () => {
     expect(packed.segmentCount).toBe(packed.xs.length - 2);
   });
 });
+
+import { summarizeColumn } from "./tracePacking";
+
+describe("block summaries", () => {
+  it("record where each block's extremes are, skipping non-finite values", () => {
+    const summary = summarizeColumn(Float32Array.from([3, 1, NaN, 7, 5, 5]), 3);
+    expect(Array.from(summary.minIndex)).toEqual([1, 4]);
+    expect(Array.from(summary.maxIndex)).toEqual([0, 3]);
+  });
+
+  it("give the same envelope extremes as the raw scan, reading far fewer samples", () => {
+    const count = 200_000;
+    const t = tile({ start: 0, count, period: 1 });
+    const column = Float32Array.from({ length: count }, (_, i) => Math.sin(i / 50) + (i === 123_457 ? 10 : 0));
+    const raw = { ...t, channels: [column] };
+    const summarized = { ...raw, summaries: [summarizeColumn(column)] };
+    const options = { window: t.span, widthPx: 200 };
+    const a = packChannel([whole(raw)], 0, 0, options);
+    const b = packChannel([whole(summarized)], 0, 0, options);
+    expect(b.valueMax).toBe(a.valueMax);
+    expect(b.valueMin).toBe(a.valueMin);
+    expect(Math.abs(b.xs.length - a.xs.length)).toBeLessThanOrEqual(4);
+    // The one-sample spike survives the summary.
+    expect(Array.from(b.ys)).toContain(column[123_457]);
+  });
+});

@@ -23,6 +23,7 @@ import type { LayerReadout, ViewerState } from "../../platform/stores/viewerStor
 import {
   eventDrawFor,
   filterMarks,
+  intervalQuadsOf,
   markColors,
   markLabelsFor,
   pickerValueAt,
@@ -105,6 +106,17 @@ export class EventTableDriver implements LayerDriver {
   private marks: EventMarks | null = null;
   private extra: Record<string, ArrayLike<unknown>> = {};
   private maps: Record<string, Map<unknown, unknown>> = {};
+  /**
+   * What does NOT depend on the window — the filtered marks, their colours and
+   * interval quads — kept until a read, a picker or the colour changes. A commit
+   * then only recomputes density and labels, and hands the layer the SAME arrays,
+   * so its tick buffer is not rewritten on every pan.
+   */
+  private prepared: {
+    filtered: EventMarks;
+    colors: { instants: Float32Array; intervals: Float32Array } | null;
+    intervalQuads: Float32Array;
+  } | null = null;
   private request = 0;
   private disposed = false;
   private readonly unsubscribes: (() => void)[] = [];
@@ -147,6 +159,7 @@ export class EventTableDriver implements LayerDriver {
       this.pickerKey = pickerKey;
       void this.loadPickers();
     } else if (colorChanged) {
+      this.prepared = null;
       this.derive();
     }
   }
@@ -204,6 +217,7 @@ export class EventTableDriver implements LayerDriver {
     );
     this.marks = marks;
     this.extra = Object.fromEntries(this.extras.map((e) => [e.alias, columns[e.alias]]));
+    this.prepared = null;
     this.derive();
     return marks;
   }
@@ -212,6 +226,7 @@ export class EventTableDriver implements LayerDriver {
     const mine = ++this.request;
     const source = this.layer.events;
     this.marks = null;
+    this.prepared = null;
     this.windowed = false;
     this.env.viewerApi.getState().setEventDraw(this.layer.id, null);
     if (!source) return;
@@ -273,6 +288,7 @@ export class EventTableDriver implements LayerDriver {
     const key = this.pickerKey;
     if (!service || !raw || entries.length === 0) {
       this.maps = {};
+      this.prepared = null;
       this.env.viewerApi.getState().setPickerProblems(this.layer.id, null);
       this.derive();
       return;
@@ -281,16 +297,16 @@ export class EventTableDriver implements LayerDriver {
     const values = await service.values(table, entries, 1);
     if (this.disposed || key !== this.pickerKey) return;
     this.maps = values.maps;
+    this.prepared = null;
     this.env.viewerApi.getState().setPickerProblems(this.layer.id, values.problems);
     this.derive();
   }
 
-  private derive(): void {
-    const marks = this.marks;
-    if (this.disposed || !marks) return;
+  /** Filter and colour — only when the marks, the pickers or the colour changed. */
+  private prepare(marks: EventMarks): NonNullable<EventTableDriver["prepared"]> {
+    if (this.prepared) return this.prepared;
     const valueFor = (key: string, entry: PickerEntry) => (row: number) =>
       pickerValueAt(entry, this.extra[`__p_${key}`], this.maps[key], row);
-
     const filtered = filterMarks(
       marks,
       rowFilter(this.active.filters.map(({ key, entry }) => ({ entry, valueAt: valueFor(key, entry) }))),
@@ -305,12 +321,20 @@ export class EventTableDriver implements LayerDriver {
           (colormap, t) => sampleColorMapRgb(colormap as ColorMap | null, t),
         )
       : null;
+    this.prepared = { filtered, colors, intervalQuads: intervalQuadsOf(filtered) };
+    return this.prepared;
+  }
 
+  /** The window-dependent part: density and labels, over the prepared marks. */
+  private derive(): void {
+    const marks = this.marks;
+    if (this.disposed || !marks) return;
+    const { filtered, colors, intervalQuads } = this.prepare(marks);
     const timeOrigin = this.env.experimentApi.getState().timeOrigin;
     const committed = this.env.rangeApi.getState().committedRange;
     const window = { start: committed.start - timeOrigin, end: committed.end - timeOrigin };
     const viewer = this.env.viewerApi.getState();
-    const draw = eventDrawFor(filtered, colors, window, viewer.viewportPx.width);
+    const draw = eventDrawFor(filtered, colors, window, viewer.viewportPx.width, intervalQuads);
     viewer.setEventDraw(this.layer.id, draw);
     this.readout({ count: draw.count, density: draw.density });
     viewer.setMarkLabels(

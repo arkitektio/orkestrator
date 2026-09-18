@@ -77,10 +77,11 @@ export const foldExperiment = (
         if (kept && kept.key === key && kept.source) {
           // Same structure: keep the pyramid object, so the layer keeps its tiles.
           // Normalizing again is still right — content (clim, colour, anchors)
-          // may have moved — but without rebuilding the source.
-          const normalized = normalizeTraceLayer(raw as TraceLayerLike, world, error);
+          // may have moved — but the kept source is passed in, so it is NOT
+          // rebuilt (and the layer's span, channels and seed derive from it).
+          const normalized = normalizeTraceLayer(raw as TraceLayerLike, world, error, kept.source);
           memo.set(raw.id, kept);
-          layers.push({ ...normalized, source: kept.source });
+          layers.push(normalized);
           break;
         }
         const normalized = normalizeTraceLayer(raw as TraceLayerLike, world, error);

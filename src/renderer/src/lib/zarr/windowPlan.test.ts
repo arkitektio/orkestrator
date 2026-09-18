@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  chunkIsWindow,
   copyChunkInto,
   countOf,
   planWindowRead,
@@ -251,5 +252,35 @@ describe("copyChunkInto with exact int64 data", () => {
     const out = { data: new Float32Array(plan.outLength), strides: stridesFor(plan.outShape) };
     copyChunkInto(out, chunk, plan.chunks[0], [1]);
     expect(Array.from(out.data)).toEqual([5, 6]);
+  });
+});
+
+describe("copyChunkInto run-wise fast path", () => {
+  it("copies contiguous innermost runs exactly like the element-wise loop", () => {
+    // A 2-D (t, c) window out of a 2-D chunk: rows are contiguous along c.
+    const chunk = { data: Float32Array.from({ length: 6 * 4 }, (_, i) => i), stride: [4, 1] };
+    const plan = planWindowRead([6, 4], [6, 4], [r(1, 5), r(1, 3)])!;
+    const out = { data: new Float32Array(plan.outLength), strides: stridesFor(plan.outShape) };
+    copyChunkInto(out, chunk, plan.chunks[0], [1, 1]);
+    expect(Array.from(out.data)).toEqual([5, 6, 9, 10, 13, 14, 17, 18]);
+  });
+
+  it("falls back per element when the innermost axis is strided", () => {
+    const chunk = { data: Float32Array.from({ length: 8 }, (_, i) => i), stride: [1] };
+    const plan = planWindowRead([8], [8], [r(0, 8, 2)])!;
+    const out = { data: new Float32Array(plan.outLength), strides: stridesFor(plan.outShape) };
+    copyChunkInto(out, chunk, plan.chunks[0], [2]);
+    expect(Array.from(out.data)).toEqual([0, 2, 4, 6]);
+  });
+});
+
+describe("chunkIsWindow", () => {
+  it("is true only for one whole, row-major, unstrided chunk", () => {
+    const whole = planWindowRead([4, 2], [4, 2], [r(0, 4), r(0, 2)])!;
+    expect(chunkIsWindow(whole, { shape: [4, 2], stride: [2, 1] }, [1, 1])).toBe(true);
+    const part = planWindowRead([4, 2], [4, 2], [r(1, 4), r(0, 2)])!;
+    expect(chunkIsWindow(part, { shape: [4, 2], stride: [2, 1] }, [1, 1])).toBe(false);
+    const two = planWindowRead([8, 2], [4, 2], [r(0, 8), r(0, 2)])!;
+    expect(chunkIsWindow(two, { shape: [4, 2], stride: [2, 1] }, [1, 1])).toBe(false);
   });
 });

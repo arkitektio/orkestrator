@@ -132,3 +132,18 @@ describe("foldExperiment", () => {
     expect(folded.worldSpan).toBeNull();
   });
 });
+
+describe("foldExperiment reuse", () => {
+  it("does not rebuild a kept pyramid", async () => {
+    const sources = await import("../sources/traceSource");
+    const { vi } = await import("vitest");
+    const first = foldExperiment(experiment([trace("1")]), new Map(), null);
+    const spy = vi.spyOn(sources, "buildTraceSource");
+    foldExperiment(experiment([trace("1", { name: "renamed" })]), new Map(), first.memo);
+    expect(spy).not.toHaveBeenCalled();
+    // The spy does see builds — a fold with no memo rebuilds.
+    foldExperiment(experiment([trace("1")]), new Map(), null);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+});

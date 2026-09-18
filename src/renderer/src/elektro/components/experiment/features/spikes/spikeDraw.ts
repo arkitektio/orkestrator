@@ -67,6 +67,32 @@ export const amplitudeTickColors = (
   return colors;
 };
 
+/**
+ * Above this many ticks the raster is CLIPPED to the window (± half its width
+ * each side) before upload: a 2 M-spike raster zoomed into a second should not
+ * upload 2 M instances. Below it the whole raster is uploaded once and reused
+ * by identity across commits — cheaper than re-uploading a clipped copy per pan.
+ */
+export const CLIP_TICKS_ABOVE = 200_000;
+
+/** The ticks within [start, end], with their colours. */
+export const clipTicks = (
+  raster: Pick<SpikeRaster, "xs" | "lanes">,
+  colors: Float32Array | null,
+  start: number,
+  end: number,
+): { xs: Float64Array; lanes: Uint32Array; colors: Float32Array | null } => {
+  const keep: number[] = [];
+  for (let i = 0; i < raster.xs.length; i++) if (raster.xs[i] >= start && raster.xs[i] <= end) keep.push(i);
+  return {
+    xs: Float64Array.from(keep, (i) => raster.xs[i]),
+    lanes: Uint32Array.from(keep, (i) => raster.lanes[i]),
+    colors: colors
+      ? Float32Array.from({ length: keep.length * 3 }, (_, k) => colors[keep[Math.floor(k / 3)] * 3 + (k % 3)])
+      : null,
+  };
+};
+
 /** What to draw for a window (origin-relative) at a canvas width. */
 export const spikeDrawFor = (
   raster: SpikeRaster,
@@ -77,11 +103,16 @@ export const spikeDrawFor = (
 ): SpikeDraw => {
   const inView = countInWindow(raster.xs, window.start, window.end);
   const density = rateBin != null || shouldDrawDensity(inView, widthPx * TICKS_PER_PIXEL);
+  const width = window.end - window.start;
+  const ticks =
+    !density && raster.xs.length > CLIP_TICKS_ABOVE
+      ? clipTicks(raster, colors, window.start - width / 2, window.end + width / 2)
+      : { xs: raster.xs, lanes: raster.lanes, colors };
   return {
-    xs: raster.xs,
-    lanes: raster.lanes,
+    xs: ticks.xs,
+    lanes: ticks.lanes,
     laneCount: raster.laneCount,
-    colors,
+    colors: ticks.colors,
     density,
     rateQuads: density
       ? laneRateQuads(

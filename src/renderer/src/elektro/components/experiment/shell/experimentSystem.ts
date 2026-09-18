@@ -13,6 +13,7 @@ import type { SpikesSlice } from "../features/spikes/store/spikesSlice";
 import { TraceTileDriver, type ReadWindow } from "../features/traces/TraceTileDriver";
 import type { TraceSlice } from "../features/traces/store/traceSlice";
 import type { PickerSlice } from "../platform/pickers/pickerSlice";
+import { TraceMemoryBudget } from "../platform/quality/traceBudget";
 import { PickerValuesService, type TableMeta } from "../platform/pickers/pickerValuesService";
 
 /** How many finest-level samples the narrowest window must still show. */
@@ -70,6 +71,28 @@ export const createExperimentSystem = (
     range.getState().setWorld(state.worldSpan, state.finestPeriod * MIN_VISIBLE_SAMPLES);
   });
 
+  // DuckDB-WASM's cold start (~1 s) is paid up front, in parallel with the zarr
+  // reads, as soon as the scene has a layer that will read parquet — not by the
+  // first events or unit-table read.
+  let warmed = false;
+  const warmParquet = () => {
+    if (warmed) return;
+    const needsParquet = experiment
+      .getState()
+      .layers.some((l) => l.kind === "events" || (l.kind === "spikes" && l.raster?.rowOrderColumn != null));
+    const engine = deps.engine();
+    if (!needsParquet || !engine) return;
+    warmed = true;
+    engine.warmUp();
+  };
+  warmParquet();
+  const unsubscribeWarm = experiment.subscribe((state, previous) => {
+    if (state.layers !== previous.layers) warmParquet();
+  });
+
+  // One decoded-bytes budget for every trace layer of the scope.
+  const traceBudget = new TraceMemoryBudget();
+
   const registry = new LayerDriverRegistry(experiment, viewer, {
     TraceLayer: (layer) =>
       new TraceTileDriver(layer, {
@@ -77,6 +100,7 @@ export const createExperimentSystem = (
         rangeApi: range,
         viewerApi: viewer,
         readWindow: (store, ranges, opts) => deps.readWindow(store, ranges, opts),
+        budget: traceBudget,
       }),
     EventsLayer: (layer) =>
       new EventTableDriver(layer, {
@@ -102,6 +126,7 @@ export const createExperimentSystem = (
     dispose: () => {
       registry.dispose();
       annotations.dispose();
+      unsubscribeWarm();
       unsubscribeWorld();
       viewer.getState().setPickerService(null);
       pickers.dispose();

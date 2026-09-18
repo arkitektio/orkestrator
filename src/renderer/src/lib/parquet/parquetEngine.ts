@@ -321,6 +321,16 @@ export class ParquetQueryEngine {
     });
   }
 
+  /**
+   * Start the connection now (DuckDB-WASM's cold start, httpfs) without
+   * querying, so the first real read does not pay it. Idempotent; failures are
+   * left for that first read to surface.
+   */
+  warmUp(): void {
+    if (this.disposed) return;
+    void this.ensureConnection().catch(() => undefined);
+  }
+
   dispose(): void {
     this.disposed = true;
     const statements = this.statements.drain();

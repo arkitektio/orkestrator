@@ -3,7 +3,7 @@ import { effectiveChunkShapeOf, getChunkGroupWorker, getStoreId } from "./runner
 import type { ChunkCache, TextureFidelity } from "./runner/types";
 import type { WorkerPool } from "./pool/workerpool";
 import { INTERACTIVE_FETCH_PRIORITY } from "./pool/types";
-import { copyChunkInto, planWindowRead, resolveRange, stridesFor } from "./windowPlan";
+import { chunkIsWindow, copyChunkInto, planWindowRead, resolveRange, stridesFor } from "./windowPlan";
 
 /** A half-open, forward-strided range along one axis. Omitted bounds mean "all of it". */
 export type WindowRange = {
@@ -30,6 +30,9 @@ export type WindowRange = {
  *  - `"exact"`: the array's own dtype, never widened. Required for integers
  *    that must survive exactly: sparse offsets and indices, label ids. float32
  *    rounds them past 2^24.
+ *
+ * The returned `data` may be the decoded chunk itself (when one chunk is exactly
+ * the window) — treat it as READ-ONLY.
  *
  * Each caller passes its OWN `cache`: the decoded-chunk key does not include the
  * fidelity, so an exact reader and a promoting reader must never share one.
@@ -104,6 +107,18 @@ export async function readArrayWindow(
   ).map((read) => raceSignal(read, signal));
 
   const strides = stridesFor(plan.outShape);
+
+  // Zero copy: one chunk that IS the window (a chunk-aligned trace tile) is
+  // returned as is. It is the decoded chunk the cache also holds — callers read
+  // windows, they never write into them.
+  if (pending.length === 1) {
+    const chunk = await pending[0];
+    signal?.throwIfAborted();
+    if (chunkIsWindow(plan, chunk, step)) {
+      return { shape: plan.outShape, strides, data: chunk.data as unknown as AnyTypedArray };
+    }
+  }
+
   let out: AnyTypedArray | null = null;
   for (let i = 0; i < pending.length; i++) {
     const chunk = await pending[i];

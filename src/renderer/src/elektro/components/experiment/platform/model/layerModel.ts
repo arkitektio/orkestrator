@@ -277,12 +277,18 @@ export const normalizeTraceLayer = (
   layer: TraceLayerLike,
   world: CoordinateSystemLike | null | undefined,
   asAffineError?: string | null,
+  /**
+   * The pyramid a previous fold built for the SAME structure (the fold's memo).
+   * Given, it is reused as is — building a source walks every level's
+   * transforms, and a content-only fold (an edit, a refetch) must not pay that.
+   */
+  keptSource?: TraceSource | null,
 ): LayerState => {
   const placeability = placeabilityOf(layer, asAffineError);
 
-  let source: TraceSource | null = null;
+  let source: TraceSource | null = keptSource ?? null;
   let sourceFailure: SourceFailure | null = null;
-  if (placeability.drawable && placeability.timeSource === "AFFINE") {
+  if (!source && placeability.drawable && placeability.timeSource === "AFFINE") {
     const result = buildTraceSource({
       lens: layer.lens,
       asAffine: layer.asAffine ?? null,

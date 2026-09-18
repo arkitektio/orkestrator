@@ -5,6 +5,7 @@ import type { LayerDriver } from "../../platform/drivers/layerDriver";
 import type { LayerState } from "../../platform/model/layerModel";
 import {
   DEFAULT_BUDGET_BYTES,
+  DEFAULT_PREFETCH_MARGIN,
   planTraceTiles,
   type TracePlan,
 } from "../../platform/quality/tracePlanning";
@@ -23,8 +24,16 @@ import { tileReadsFor, type TraceSource } from "../../platform/sources/traceSour
 import type { ExperimentStoreState } from "../../platform/stores/experimentStore";
 import type { RangeState } from "../../platform/stores/rangeStore";
 import type { ViewerState } from "../../platform/stores/viewerStore";
+import type { TraceMemoryBudget } from "../../platform/quality/traceBudget";
 import type { TraceSlice } from "./store/traceSlice";
-import { packChannel, splitChannels } from "./tracePacking";
+import { SUMMARY_MIN_SAMPLES, packChannel, splitChannels, summarizeColumn } from "./tracePacking";
+
+/**
+ * How far beyond the committed window (as a fraction of its width, each side)
+ * lines are packed — at most the planner's prefetch margin, whose tiles are
+ * resident.
+ */
+export const PACK_MARGIN = Math.min(0.5, DEFAULT_PREFETCH_MARGIN);
 
 /** A window read: what the elektro zarr store's `readWindow` does, injected. */
 export type ReadWindow = (
@@ -38,6 +47,11 @@ export type TraceDriverEnv = {
   rangeApi: StoreApi<RangeState>;
   viewerApi: StoreApi<ViewerState & TraceSlice>;
   readWindow: ReadWindow;
+  /**
+   * The scope's shared decoded-bytes budget. Absent (tests), the driver evicts
+   * against its own per-layer budget.
+   */
+  budget?: TraceMemoryBudget;
   /** Frame scheduling for the publish coalescer (tests pass a synchronous one). */
   raf?: (cb: () => void) => number;
   caf?: (handle: number) => void;
@@ -89,6 +103,14 @@ export class TraceTileDriver implements LayerDriver {
         if (state.viewportPx.width !== previous.viewportPx.width) this.publisher.schedule(null);
       }),
     );
+    if (env.budget) {
+      this.unsubscribes.push(
+        env.budget.register(layer.id, {
+          residency: () => this.residency,
+          protectedKeys: () => (this.plan ? protectedKeysOf(this.plan) : new Set()),
+        }),
+      );
+    }
     this.applyClimSeed(null);
     this.setSource(layer.source);
   }
@@ -175,6 +197,7 @@ export class TraceTileDriver implements LayerDriver {
         .then((window) => {
           if (this.disposed || controller.signal.aborted || residency !== this.residency) return;
           this.inFlight.delete(read.tile.key);
+          const channels = splitChannels(window, source.timeAxisIndex, source.channelAxisIndex);
           insertTile(residency, {
             key: read.tile.key,
             level: read.tile.level,
@@ -185,17 +208,22 @@ export class TraceTileDriver implements LayerDriver {
             bytes: read.tile.bytes,
             period: source.levels[read.tile.levelIndex].period,
             t0: source.levels[read.tile.levelIndex].t0,
-            channels: splitChannels(window, source.timeAxisIndex, source.channelAxisIndex),
+            channels,
+            // A long tile gets a block min/max summary once, here, so a
+            // zoomed-out repack reads blocks rather than every sample.
+            summaries:
+              channels[0] && channels[0].length >= SUMMARY_MIN_SAMPLES
+                ? channels.map((column) => summarizeColumn(column))
+                : undefined,
             lastUsed: 0,
           });
           if (this.plan) {
             const committed = this.env.rangeApi.getState().committedRange;
-            evictToBudget(
-              residency,
-              protectedKeysOf(this.plan),
-              DEFAULT_BUDGET_BYTES * 2,
-              (committed.start + committed.end) / 2,
-            );
+            const focus = (committed.start + committed.end) / 2;
+            // One budget across every trace of the scope when there is one: a
+            // per-layer budget lets N traces hold N budgets' worth.
+            if (this.env.budget) this.env.budget.enforce(focus);
+            else evictToBudget(residency, protectedKeysOf(this.plan), DEFAULT_BUDGET_BYTES * 2, focus);
           }
           this.publisher.schedule(null);
         })
@@ -220,10 +248,18 @@ export class TraceTileDriver implements LayerDriver {
     const window = this.env.rangeApi.getState().committedRange;
     const timeOrigin = this.env.experimentApi.getState().timeOrigin;
     const viewer = this.env.viewerApi.getState();
+    // Packed a margin BEYOND the committed window: the camera follows the live
+    // window during a gesture, and without the margin a pan revealed empty space
+    // until it settled. The planner prefetches the same margin, so the tiles are
+    // there. The pixel grid widens with it, keeping the same per-pixel envelope.
+    const width = window.end - window.start;
+    const packed = { start: window.start - width * PACK_MARGIN, end: window.end + width * PACK_MARGIN };
+    const packWidthPx = viewer.viewportPx.width * (1 + 2 * PACK_MARGIN);
+    const packedSegments = drawableTiles(this.residency, plan, packed);
     const segments = drawableTiles(this.residency, plan, window);
     const channels = Array.from({ length: source.channelCount }, (_, c) =>
       // Packed to the pixel grid: never more points than the canvas can show.
-      packChannel(segments, c, timeOrigin, { window, widthPx: viewer.viewportPx.width }),
+      packChannel(packedSegments, c, timeOrigin, { window: packed, widthPx: packWidthPx }),
     );
 
     let valueMin = Infinity;

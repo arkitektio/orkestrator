@@ -58,3 +58,19 @@ describe("readArrayWindow single flight", () => {
     expect(getChunkGroupWorker).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("readArrayWindow zero copy", () => {
+  it("returns the chunk's own data when one chunk is exactly the window", async () => {
+    getChunkGroupWorker.mockReset();
+    const land = deferredGroupRead();
+    const pending = readArrayWindow(array, [{ start: 4, stop: 8 }], { pool: {} as never, cache: new Map() });
+    await Promise.resolve();
+    await Promise.resolve();
+    land();
+    const window = await pending;
+    expect(Array.from(window.data)).toEqual([10, 11, 12, 13]);
+    // Not a copy: the decoded chunk itself.
+    const chunkData = (await getChunkGroupWorker.mock.results[0].value[0]).data;
+    expect(window.data).toBe(chunkData);
+  });
+});
