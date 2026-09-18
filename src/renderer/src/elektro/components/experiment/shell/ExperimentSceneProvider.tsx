@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { assertWebGPUSupported } from "@/lib/scene/gpu/webgpuSupport";
+import { ExperimentSystemHost } from "./ExperimentSystemHost";
+import { MIN_VISIBLE_SAMPLES } from "./experimentSystem";
+import { FEATURE_SLICES } from "./featureSlices";
 import { experimentScopeSignature } from "../platform/model/experimentStructure";
 import {
   foldExperiment,
@@ -17,8 +20,12 @@ import {
 import {
   ExperimentStoreContext,
   createExperimentStore,
+  type ExperimentLayerFragment,
   type ExperimentStoreApi,
 } from "../platform/stores/experimentStore";
+
+/** The fold is structural (no generated types); the fragments it passes on ARE the scene's. */
+const typedRaw = (raw: Record<string, unknown>) => raw as Record<string, ExperimentLayerFragment>;
 import {
   RangeStoreContext,
   createRangeStore,
@@ -58,8 +65,6 @@ type Scope = {
   viewer: ViewerStoreApi;
 };
 
-/** How many finest-level samples the narrowest window must still show. */
-const MIN_VISIBLE_SAMPLES = 8;
 
 /** What the provider builds a scope from: an experiment's scene fragment. */
 export type SceneSource = ExperimentLike & { id: string };
@@ -130,7 +135,7 @@ export const ExperimentSceneProvider = ({
           world: current.world ?? null,
           annotatable: annotatableRef.current,
           layers: folded.layers,
-          rawLayers: folded.rawLayers,
+          rawLayers: typedRaw(folded.rawLayers),
           timeOrigin: folded.timeOrigin,
           worldSpan: folded.worldSpan,
         });
@@ -141,19 +146,10 @@ export const ExperimentSceneProvider = ({
           range: initialRangeRef.current,
         });
 
-        // The range follows the experiment's extent, whoever moves it: a fold
-        // (a layer arriving) or a layer reporting what it read (an event table).
-        experimentStore.subscribe((state, previous) => {
-          if (state.worldSpan === previous.worldSpan) return;
-          rangeStore
-            .getState()
-            .setWorld(state.worldSpan, state.finestPeriod * MIN_VISIBLE_SAMPLES);
-        });
-
         setScope({
           experiment: experimentStore,
           range: rangeStore,
-          viewer: createViewerStore(),
+          viewer: createViewerStore(FEATURE_SLICES),
         });
         setStatus({ phase: "ready", experimentId: current.id, error: null });
       })
@@ -184,9 +180,9 @@ export const ExperimentSceneProvider = ({
 
     const { removedIds } = scope.experiment
       .getState()
-      .syncLayers(folded.layers, folded.rawLayers, folded.worldSpan);
-    for (const id of removedIds) scope.viewer.getState().clearStats(id);
-    // The range follows `worldSpan` through the subscription made at build.
+      .syncLayers(folded.layers, typedRaw(folded.rawLayers), folded.worldSpan);
+    for (const id of removedIds) scope.viewer.getState().clearLayer(id);
+    // The range follows `worldSpan` through the system's subscription.
   }, [scope, experiment, placementErrors, scopeSignature]);
 
   const statusValue = useMemo(() => status, [status]);
@@ -196,6 +192,7 @@ export const ExperimentSceneProvider = ({
       <ExperimentStoreContext.Provider value={scope?.experiment ?? null}>
         <RangeStoreContext.Provider value={scope?.range ?? null}>
           <ViewerStoreContext.Provider value={scope?.viewer ?? null}>
+            {scope && <ExperimentSystemHost scope={scope} />}
             {children}
           </ViewerStoreContext.Provider>
         </RangeStoreContext.Provider>

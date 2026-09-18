@@ -352,3 +352,57 @@ describe("levelIndexAt", () => {
     expect(levelIndexAt([], 0)).toBeNull();
   });
 });
+
+describe("chunk-aligned tiles", () => {
+  it("plans ONE tile for an un-pyramided trace stored as one chunk", () => {
+    // The LFP case: 1.25 M samples in a single 1.25 M-sample chunk. With the
+    // default 4096-sample tiles this was ~305 reads of the same chunk.
+    const single = buildTraceLevels(
+      [{ level: 0, shape: [1_250_000], chunkShape: [1_250_000], store: { id: "L0" } }],
+      0,
+      { period: 0.001, t0: 2, total: true },
+      { shapeRatioFallback: true },
+    );
+    expect(single[0].tileSamples).toBe(1_250_000);
+    const plan = planTraceTiles({ levels: single, window: { start: 2, end: 1252 } });
+    expect(plan.tiles).toHaveLength(1);
+    expect(plan.tiles[0].samples).toEqual({ start: 0, stop: 1_250_000 });
+  });
+
+  it("tiles each level by its own chunk, and still refines in world time", () => {
+    const pyramid = buildTraceLevels(
+      [
+        { level: 0, shape: [1_000_000], chunkShape: [100_000], store: { id: "L0" } },
+        {
+          level: 1,
+          shape: [100_000],
+          chunkShape: [100_000],
+          toParent: { __typename: "ScaleTransformation", scale: [10] },
+          store: { id: "L1" },
+        },
+      ],
+      0,
+      { period: 0.1, t0: 0, total: true },
+      { shapeRatioFallback: true },
+    );
+    // Zoomed in: the finest level is wanted, read as its 100 k-sample chunks.
+    const plan = planTraceTiles({
+      levels: pyramid,
+      window: { start: 50_000, end: 50_100 },
+      budgetBytes: 1e9,
+    });
+    const fine = plan.tiles.filter((t) => t.levelIndex === 0);
+    expect(fine.length).toBeGreaterThan(0);
+    expect(fine.every((t) => t.samples.stop - t.samples.start === 100_000)).toBe(true);
+  });
+
+  it("never tiles finer than the minimum, whatever the chunking", () => {
+    const tiny = buildTraceLevels(
+      [{ level: 0, shape: [100_000], chunkShape: [64], store: { id: "L0" } }],
+      0,
+      { period: 1, t0: 0, total: true },
+      { shapeRatioFallback: true },
+    );
+    expect(tiny[0].tileSamples).toBe(4096);
+  });
+});

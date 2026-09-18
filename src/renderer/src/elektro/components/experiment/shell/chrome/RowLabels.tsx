@@ -12,9 +12,10 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
  * when the layout or a clim changes, which is UI cadence.
  */
 export const RowLabels = () => {
+  // `rows` is replaced only by a relayout (UI cadence); each row's scale is its
+  // own per-key subscription below, so a clim change re-renders one label.
   const rows = useViewerStore((s) => s.rows);
   const rowCount = useViewerStore((s) => s.rowCount);
-  const clims = useViewerStore((s) => s.clims);
 
   if (rowCount === 0) return null;
   return (
@@ -36,7 +37,6 @@ export const RowLabels = () => {
         );
       })}
       {rows.map((row) => {
-        const clim = row.layerIds.length === 1 ? clims[row.layerIds[0]] : undefined;
         return (
           <div
             key={row.index}
@@ -51,15 +51,22 @@ export const RowLabels = () => {
               {row.label}
             </span>
             {row.unit && (
-              <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                {clim
-                  ? `${formatValue(clim.lo)}…${formatValue(clim.hi)} ${row.unit}`
-                  : row.unit}
-              </span>
+              <RowScale layerId={row.layerIds.length === 1 ? row.layerIds[0] : null} unit={row.unit} />
             )}
           </div>
         );
       })}
     </div>
+  );
+};
+
+/** A row's unit and current scale — subscribed per layer, so only its label re-renders. */
+const RowScale = ({ layerId, unit }: { layerId: string | null; unit: string }) => {
+  const lo = useViewerStore((s) => (layerId ? s.clims[layerId]?.lo : undefined));
+  const hi = useViewerStore((s) => (layerId ? s.clims[layerId]?.hi : undefined));
+  return (
+    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+      {lo != null && hi != null ? `${formatValue(lo)}…${formatValue(hi)} ${unit}` : unit}
+    </span>
   );
 };

@@ -2,6 +2,7 @@ import { createStore } from "zustand/vanilla";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
 import type { CoordinateSystemLike } from "../coords/timeAxis";
 import type { LayerState, PersistedLayer } from "../model/layerModel";
+import { rawLayerOf, type ExperimentLayerFragment, type LayerFragments } from "./layerFragments";
 import {
   addPatch,
   foldPatches,
@@ -38,8 +39,10 @@ export type ExperimentStoreState = {
   serverLayers: LayerState[];
   /** Pending optimistic edits, by layer id. */
   patches: LayerPatches;
-  /** Raw layer fragments, by id. Typed loosely; the consumer narrows it. */
-  rawLayers: Record<string, unknown>;
+  /** Raw layer fragments, by id — narrow with `rawLayerOf` / `useRawLayer`. */
+  rawLayers: Record<string, ExperimentLayerFragment>;
+  /** `layers` by id: O(1) for the per-layer hooks, rebuilt with `layers`. */
+  layerIndex: Map<string, LayerState>;
   /** Subtracted from every world time before a float32 cast. Fixed per scope. */
   timeOrigin: number;
   /**
@@ -59,7 +62,7 @@ export type ExperimentStoreState = {
 
   syncLayers: (
     layers: LayerState[],
-    rawLayers: Record<string, unknown>,
+    rawLayers: Record<string, ExperimentLayerFragment>,
     worldSpan: { start: number; end: number } | null,
   ) => { addedIds: string[]; removedIds: string[] };
   /** Lay an edit over a layer now; returns the rollback for a failed write. */
@@ -81,6 +84,11 @@ const unionSpan = (folded: Span | null, reported: Record<string, Span>): Span | 
   return end > start ? { start, end } : null;
 };
 
+const indexOf = (layers: readonly LayerState[]) => new Map(layers.map((l) => [l.id, l]));
+
+/** `layers` and its index, always written together. */
+const withIndex = (layers: LayerState[]) => ({ layers, layerIndex: indexOf(layers) });
+
 const finestPeriodOf = (layers: readonly LayerState[]): number => {
   let finest = Infinity;
   for (const layer of layers) {
@@ -95,12 +103,13 @@ export const createExperimentStore = (initial: {
   world: CoordinateSystemLike | null;
   annotatable: boolean;
   layers: LayerState[];
-  rawLayers: Record<string, unknown>;
+  rawLayers: Record<string, ExperimentLayerFragment>;
   timeOrigin: number;
   worldSpan: { start: number; end: number } | null;
 }) =>
   createStore<ExperimentStoreState>((set, get) => ({
     ...initial,
+    layerIndex: indexOf(initial.layers),
     foldedSpan: initial.worldSpan,
     reportedSpans: {},
     serverLayers: initial.layers,
@@ -125,7 +134,7 @@ export const createExperimentStore = (initial: {
       set({
         serverLayers,
         patches,
-        layers: overlay(serverLayers, patches),
+        ...withIndex(overlay(serverLayers, patches)),
         rawLayers,
         foldedSpan: worldSpan,
         reportedSpans,
@@ -147,10 +156,10 @@ export const createExperimentStore = (initial: {
 
     patchLayer: (id, patch) => {
       const { patches, previous } = addPatch(get().patches, id, patch);
-      set({ patches, layers: overlay(get().serverLayers, patches) });
+      set({ patches, ...withIndex(overlay(get().serverLayers, patches)) });
       return () => {
         const rolledBack = rollbackPatch(get().patches, id, previous);
-        set({ patches: rolledBack, layers: overlay(get().serverLayers, rolledBack) });
+        set({ patches: rolledBack, ...withIndex(overlay(get().serverLayers, rolledBack)) });
       };
     },
   }));
@@ -163,6 +172,18 @@ const hooks = createScopedStoreHooks<ExperimentStoreState, ExperimentStoreApi>(
 export const ExperimentStoreContext = hooks.StoreContext;
 export const useExperimentStore = hooks.useScopedStore;
 export const useExperimentStoreApi = hooks.useStoreApi;
+
+/** One layer's normalized state, by id — O(1), stable until a fold or an edit touches it. */
+export const useLayerState = (layerId: string): LayerState | undefined =>
+  useExperimentStore((s) => s.layerIndex.get(layerId));
+
+/** One layer's raw fragment, narrowed to its kind (undefined for another kind). */
+export const useRawLayer = <K extends keyof LayerFragments>(
+  layerId: string,
+  typename: K,
+): LayerFragments[K] | undefined => useExperimentStore((s) => rawLayerOf(s.rawLayers, layerId, typename));
+
+export type { ExperimentLayerFragment, LayerFragments } from "./layerFragments";
 
 /**
  * The scalar key standing for "which layers are drawn".

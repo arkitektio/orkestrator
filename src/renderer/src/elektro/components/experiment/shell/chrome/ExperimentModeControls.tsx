@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAutoscale } from "../../platform/edits/useAutoscale";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { cn } from "@/lib/utils";
 import { useExperimentStore } from "../../platform/stores/experimentStore";
@@ -44,6 +45,7 @@ export const ExperimentModeControls = () => {
   const canUndo = useRangeStore((s) => s.history.length > 0);
   const canRedo = useRangeStore((s) => s.future.length > 0);
   const viewerApi = useViewerStoreApi();
+  const autoscale = useAutoscale();
   const rangeApi = useRangeStoreApi();
   // An option that would do nothing is not offered: a synthesized run or segment
   // scene has no experiment to draw marks on.
@@ -98,8 +100,8 @@ export const ExperimentModeControls = () => {
         <Button
           size="icon-sm"
           variant="outline"
-          title="Autoscale every row to what is on screen"
-          onClick={() => viewerApi.getState().autoscale()}
+          title="Autoscale every row to what is on screen, and keep those scales"
+          onClick={() => autoscale()}
         >
           <Scaling />
         </Button>

@@ -1,5 +1,5 @@
-import type { Array as ZarrArray, DataType, Readable } from "zarrita";
-import { effectiveChunkShapeOf, getChunkGroupWorker } from "./runner";
+import type { Array as ZarrArray, Chunk, DataType, Readable } from "zarrita";
+import { effectiveChunkShapeOf, getChunkGroupWorker, getStoreId } from "./runner";
 import type { ChunkCache, TextureFidelity } from "./runner/types";
 import type { WorkerPool } from "./pool/workerpool";
 import { INTERACTIVE_FETCH_PRIORITY } from "./pool/types";
@@ -97,20 +97,11 @@ export async function readArrayWindow(
   }
 
   const step = resolved.map((r) => r?.step ?? 1);
-  // Group read: within one shard this coalesces the ranged GETs, which is the
-  // difference between one request and one per inner chunk.
-  const pending = getChunkGroupWorker(
+  const pending = sharedChunkReads(
     array,
     plan.chunks.map((c) => c.coords),
-    {
-      pool,
-      priority,
-      signal,
-      useSharedArrayBuffer: true,
-      cache,
-      textureFidelity: fidelity,
-    },
-  );
+    { pool, priority, cache, fidelity },
+  ).map((read) => raceSignal(read, signal));
 
   const strides = stridesFor(plan.outShape);
   let out: AnyTypedArray | null = null;
@@ -130,3 +121,89 @@ export async function readArrayWindow(
 
   return { shape: plan.outShape, strides, data: out ?? new Float32Array(plan.outLength) };
 }
+
+// --- single flight ------------------------------------------------------------
+
+/**
+ * Chunk reads in flight, per cache, by chunk identity.
+ *
+ * The runner checks the decoded-chunk cache when a read is ISSUED, so N readers
+ * asking for one chunk before the first read lands all miss — and each fetches
+ * and decodes it. That is exactly what a window-tiled reader does when its tiles
+ * are smaller than the storage chunks (hundreds of trace tiles over one 20 MB
+ * chunk). Keyed per cache because the cache key carries no fidelity; the key here
+ * adds it anyway.
+ */
+const inFlight = new WeakMap<object, Map<string, Promise<Chunk<DataType>>>>();
+
+const sharedChunkReads = (
+  array: ZarrArray<DataType, Readable>,
+  coordsList: readonly number[][],
+  options: {
+    pool: WorkerPool;
+    priority: number;
+    cache: ChunkCache;
+    fidelity: NonNullable<ReadArrayWindowOptions["fidelity"]>;
+  },
+): Promise<Chunk<DataType>>[] => {
+  let byKey = inFlight.get(options.cache);
+  if (!byKey) {
+    byKey = new Map();
+    inFlight.set(options.cache, byKey);
+  }
+  const prefix = `${getStoreId(array.store)}:${array.path}:${options.fidelity}:`;
+  const keys = coordsList.map((coords) => prefix + coords.join(","));
+
+  const out: (Promise<Chunk<DataType>> | null)[] = keys.map((key) => byKey!.get(key) ?? null);
+  const missing = keys.map((_, i) => i).filter((i) => out[i] === null);
+  if (missing.length > 0) {
+    // One group read for every chunk nobody is reading yet — within a shard this
+    // still coalesces the ranged GETs. It runs WITHOUT a caller's signal: it is
+    // shared, and a read another caller abandons still lands in the cache.
+    const reads = getChunkGroupWorker(
+      array,
+      missing.map((i) => coordsList[i]),
+      {
+        pool: options.pool,
+        priority: options.priority,
+        useSharedArrayBuffer: true,
+        cache: options.cache,
+        textureFidelity: options.fidelity,
+      },
+    );
+    missing.forEach((i, k) => {
+      const key = keys[i];
+      const read = reads[k] as Promise<Chunk<DataType>>;
+      byKey!.set(key, read);
+      const clear = () => {
+        if (byKey!.get(key) === read) byKey!.delete(key);
+      };
+      read.then(clear, clear);
+      out[i] = read;
+    });
+  }
+  return out as Promise<Chunk<DataType>>[];
+};
+
+/** A shared read, abandoned by THIS caller when its signal aborts. */
+const raceSignal = <T>(read: Promise<T>, signal: AbortSignal | undefined): Promise<T> => {
+  if (!signal) return read;
+  if (signal.aborted) return Promise.reject(signal.reason);
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(signal.reason);
+    signal.addEventListener("abort", onAbort, { once: true });
+    read.then(
+      (value) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
+  });
+};
+
+/** Test seam: how many chunk reads are in flight for a cache. */
+export const inFlightChunkReads = (cache: ChunkCache): number => inFlight.get(cache)?.size ?? 0;

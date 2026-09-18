@@ -1,12 +1,9 @@
-import { useMemo } from "react";
-import type { ExpAnnotationLayerFragment } from "@/elektro/api/graphql";
 import { unplaceableMessage } from "../../platform/model/placeable";
 import { PlacementFix } from "../../platform/edits/PlacementFix";
 import type { LayerState } from "../../platform/model/layerModel";
-import { useExperimentStore } from "../../platform/stores/experimentStore";
 import { CardFact, CardShell, type LayerCardProps } from "../../platform/layerui/cardShell";
 import { LayerMenu } from "../../platform/layerui/layerControls";
-import { annotationMarks } from "./annotationGeometry";
+import { useAnnotationMarks } from "./store/annotationSlice";
 
 /**
  * The card for an annotation layer.
@@ -22,23 +19,7 @@ import { annotationMarks } from "./annotationGeometry";
  * would make those shapes look correctly placed when they are not.
  */
 export const AnnotationLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProps<LayerState>) => {
-  const raw = useExperimentStore(
-    (s) => s.rawLayers[layer.id] as ExpAnnotationLayerFragment | undefined,
-  );
-  const world = useExperimentStore((s) => s.world);
-
-  const marks = useMemo(
-    () =>
-      raw
-        ? annotationMarks({
-            annotations: raw.annotationCollection.annotations,
-            system: raw.annotationCollection.coordinateSystem,
-            asAffine: raw.asAffine,
-            world,
-          })
-        : null,
-    [raw, world],
-  );
+  const marks = useAnnotationMarks(layer.id) ?? null;
   const message = unplaceableMessage(layer.placeability);
 
   return (

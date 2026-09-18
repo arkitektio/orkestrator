@@ -1,14 +1,7 @@
-import type { ApolloClient, NormalizedCache } from "@apollo/client";
 import { Pencil, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useElektro } from "@/app/Arkitekt";
 import { Button } from "@/components/ui/button";
-import {
-  GetTableDatasetDocument,
-  type ExpTableDatasetFragment,
-  type GetTableDatasetQuery,
-  type GetTableDatasetQueryVariables,
-} from "@/elektro/api/graphql";
+import type { ExpTableDatasetFragment } from "@/elektro/api/graphql";
 import { useElektroParquetEngine } from "@/elektro/components/store/parquetEngine";
 import { readColumnDistinct, readColumnDomain } from "@/lib/parquet/columnStats";
 import { ColorMap } from "@/lib/scene/gpu/colormaps";
@@ -20,6 +13,7 @@ import {
   type FilterByLike,
   type PickerOption,
 } from "./pickerModel";
+import { usePickerStore } from "./pickerSlice";
 import { usePickerWrite } from "./usePickerWrite";
 
 /**
@@ -158,42 +152,32 @@ const PickerEditor = ({
   filterBys: readonly FilterByLike[];
   write: ReturnType<typeof usePickerWrite>;
 }) => {
-  const client = useElektro() as ApolloClient<NormalizedCache> | undefined;
+  const service = usePickerStore((s) => s.pickerService);
   const engine = useElektroParquetEngine();
   const [tables, setTables] = useState<Record<string, ExpTableDatasetFragment>>({ [root.id]: root });
   const [adding, setAdding] = useState("");
 
-  // One hop: fetch every table a root column references (cache-first).
+  // One hop: every table a root column references, through the scope's picker
+  // service — the same cache the drivers' joins fill, so nothing is fetched twice.
   const referencedIds = useMemo(
     () => [...new Set(root.columns.map((c) => c.references?.id).filter((id): id is string => !!id))],
     [root],
   );
   useEffect(() => {
-    if (!client) return;
+    if (!service) return;
     let disposed = false;
-    void Promise.all(
-      referencedIds.map((id) =>
-        client
-          .query<GetTableDatasetQuery, GetTableDatasetQueryVariables>({
-            query: GetTableDatasetDocument,
-            variables: { id },
-            fetchPolicy: "cache-first",
-          })
-          .then((r) => r.data?.tableDataset ?? null)
-          .catch(() => null),
-      ),
-    ).then((found) => {
+    void Promise.all(referencedIds.map((id) => service.table(id).catch(() => null))).then((found) => {
       if (disposed) return;
       setTables((current) => {
         const next = { ...current };
-        for (const table of found) if (table) next[table.id] = table;
+        for (const table of found) if (table) next[table.id] = table as ExpTableDatasetFragment;
         return next;
       });
     });
     return () => {
       disposed = true;
     };
-  }, [client, referencedIds]);
+  }, [service, referencedIds]);
 
   const options = useMemo(() => pickerOptions(root, (id) => tables[id] ?? null), [root, tables]);
   const optionByKey = useMemo(() => new Map(options.map((o) => [o.key, o])), [options]);

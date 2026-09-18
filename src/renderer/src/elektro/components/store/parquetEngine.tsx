@@ -1,6 +1,6 @@
 import { useDatalayerEndpoint, useElektro } from "@/app/Arkitekt";
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ensureHttpfs, getDuckDb, resolveDuckDbEndpoint } from "@/lib/parquet/duckdb";
 import { ParquetQueryEngine } from "@/lib/parquet/parquetEngine";
 import {
@@ -70,15 +70,30 @@ const ElektroParquetContext = createContext<ParquetQueryEngine | null>(null);
  * datalayer changes, and disposed (connection closed, grants dropped) when it is.
  * Lazy: nothing connects until the first read, so a page without event or spike
  * layers never starts DuckDB.
+ *
+ * Created INSIDE the effect, never in a `useMemo` disposed by an effect cleanup:
+ * StrictMode runs mount → cleanup → mount, and a memoized engine would come back
+ * from that already disposed — every read then answers empty (`readAcross` → [],
+ * `readColumnsTyped` → null), which surfaced as "could not read this table
+ * columnwise". Each mount owns the engine it disposes.
  */
 export const ElektroParquetProvider = ({ children }: { children: ReactNode }) => {
   const client = useElektro() as ElektroClient | undefined;
   const datalayer = useDatalayerEndpoint();
-  const engine = useMemo(
-    () => (client ? createElektroParquetEngine(client, datalayer) : null),
-    [client, datalayer],
-  );
-  useEffect(() => () => engine?.dispose(), [engine]);
+  const [engine, setEngine] = useState<ParquetQueryEngine | null>(null);
+
+  useEffect(() => {
+    if (!client) {
+      setEngine(null);
+      return;
+    }
+    const created = createElektroParquetEngine(client, datalayer);
+    setEngine(created);
+    return () => {
+      created.dispose();
+    };
+  }, [client, datalayer]);
+
   return <ElektroParquetContext.Provider value={engine}>{children}</ElektroParquetContext.Provider>;
 };
 

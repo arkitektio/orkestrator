@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { bindFields } from "@/lib/scene/stores/bindStore";
 import { pixelAtTime } from "../../platform/camera/rangeToCamera";
 import { useRangeStoreApi } from "../../platform/stores/rangeStore";
@@ -15,14 +15,17 @@ import { bandKey, useViewerStore, useViewerStoreApi } from "../../platform/store
  * Vertical placement is the layer's band: its row, then its lane within it.
  */
 export const MarkLabelsOverlay = () => {
-  const markLabels = useViewerStore((s) => s.markLabels);
-  const rowCount = useViewerStore((s) => s.rowCount);
-  const bands = useViewerStore((s) => s.bands);
+  // Scalars (P17): which labels exist and where rows are both change at UI
+  // cadence; the records themselves are read through `getState()` below.
+  const labelsVersion = useViewerStore((s) => s.labelsVersion);
+  const layoutVersion = useViewerStore((s) => s.layoutVersion);
   const rangeApi = useRangeStoreApi();
   const viewerApi = useViewerStoreApi();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const entries = Object.entries(markLabels).flatMap(([layerId, labels]) => {
+  const entries = useMemo(() => {
+    const { markLabels, bands, rowCount } = viewerApi.getState();
+    return Object.entries(markLabels).flatMap(([layerId, labels]) => {
     const band = bands[bandKey(layerId, 0)];
     if (!band || rowCount === 0) return [];
     return labels.map((label, i) => {
@@ -30,7 +33,10 @@ export const MarkLabelsOverlay = () => {
       const yWorld = band.top - label.lane * laneHeight;
       return { key: `${layerId}:${i}`, time: label.time, text: label.text, topPct: (-yWorld / rowCount) * 100 };
     });
-  });
+    });
+    // The versions STAND FOR the records.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [labelsVersion, layoutVersion, viewerApi]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -46,7 +52,7 @@ export const MarkLabelsOverlay = () => {
         }
       },
     );
-  }, [rangeApi, viewerApi, entries.length, markLabels]);
+  }, [rangeApi, viewerApi, entries]);
 
   if (entries.length === 0) return null;
   return (

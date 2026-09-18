@@ -2,14 +2,10 @@ import { Flag, SquareDashed, Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  useDeleteExperimentAnnotationMutation,
-  type ExpAnnotationLayerFragment,
-} from "@/elektro/api/graphql";
+import { useDeleteExperimentAnnotationMutation } from "@/elektro/api/graphql";
 import { formatValue } from "../../platform/probe/formatValue";
-import { useExperimentStore } from "../../platform/stores/experimentStore";
 import { useRangeStoreApi } from "../../platform/stores/rangeStore";
-import { annotationMarks } from "./annotationGeometry";
+import { useAnnotationStore, useAnnotationStoreApi } from "./store/annotationSlice";
 
 /**
  * Every event and epoch on the timeline, in time order, each a jump target.
@@ -19,8 +15,9 @@ import { annotationMarks } from "./annotationGeometry";
  * history (undo takes you back to where you were).
  */
 export const AnnotationsPanel = () => {
-  const rawLayers = useExperimentStore((s) => s.rawLayers);
-  const world = useExperimentStore((s) => s.world);
+  // A scalar (P17): the marks record is read inside the memo, not subscribed to.
+  const version = useAnnotationStore((s) => s.annotationMarksVersion);
+  const marksApi = useAnnotationStoreApi();
   const rangeApi = useRangeStoreApi();
   const [remove] = useDeleteExperimentAnnotationMutation({
     refetchQueries: ["GetExperimentScene"],
@@ -36,16 +33,7 @@ export const AnnotationsPanel = () => {
       end: number;
       color: string | null;
     }[] = [];
-    const annotationLayers = (Object.values(rawLayers) as { __typename?: string }[]).filter(
-      (raw): raw is ExpAnnotationLayerFragment => raw.__typename === "AnnotationLayer",
-    );
-    for (const raw of annotationLayers) {
-      const marks = annotationMarks({
-        annotations: raw.annotationCollection.annotations,
-        system: raw.annotationCollection.coordinateSystem,
-        asAffine: raw.asAffine,
-        world,
-      });
+    for (const marks of Object.values(marksApi.getState().annotationMarks)) {
       for (const e of marks.events) {
         out.push({
           key: `e:${e.id}`,
@@ -71,7 +59,7 @@ export const AnnotationsPanel = () => {
       }
     }
     return out.sort((a, b) => a.start - b.start);
-  }, [rawLayers, world]);
+  }, [version, marksApi]);
 
   const jump = (start: number, end: number) => {
     const { committedRange } = rangeApi.getState();

@@ -2,13 +2,13 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
-import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { Line2NodeMaterial, MeshBasicNodeMaterial } from "three/webgpu";
 import { bindField } from "@/lib/scene/stores/bindStore";
-import type { ExpAnnotationLayerFragment } from "@/elektro/api/graphql";
+import { useSegmentGeometry, writeSegments } from "../../platform/marks/segmentGeometry";
 import { useExperimentStore } from "../../platform/stores/experimentStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
-import { annotationMarks, type AnnotationMarks } from "./annotationGeometry";
+import type { AnnotationMarks } from "./annotationGeometry";
+import { useAnnotationMarks } from "./store/annotationSlice";
 
 /**
  * An annotation layer: events as vertical lines, epochs as bands, across every row.
@@ -27,28 +27,8 @@ const DEFAULT_EPOCH_COLOR = "#fbbf24";
 const EPOCH_OPACITY = 0.14;
 
 export const AnnotationMarksLayer = ({ layerId }: { layerId: string }) => {
-  const raw = useExperimentStore(
-    (s) => s.rawLayers[layerId] as ExpAnnotationLayerFragment | undefined,
-  );
-  const world = useExperimentStore((s) => s.world);
+  const marks = useAnnotationMarks(layerId) ?? null;
   const timeOrigin = useExperimentStore((s) => s.timeOrigin);
-
-  const marks = useMemo((): AnnotationMarks | null => {
-    if (!raw) return null;
-    return annotationMarks({
-      annotations: raw.annotationCollection.annotations.map((a) => ({
-        id: a.id,
-        name: a.name,
-        kind: a.kind,
-        vectors: a.vectors,
-        strokeColor: a.strokeColor,
-        fillColor: a.fillColor,
-      })),
-      system: raw.annotationCollection.coordinateSystem,
-      asAffine: raw.asAffine,
-      world,
-    });
-  }, [raw, world]);
 
   useEffect(() => {
     if (marks && marks.rowScoped > 0) {
@@ -101,7 +81,8 @@ const EventLines = ({ marks, timeOrigin }: { marks: AnnotationMarks; timeOrigin:
     return m;
   }, [marks]);
 
-  const geometry = useMemo(() => new LineSegmentsGeometry(), []);
+  // Sized for the event count, written in place (see `segmentGeometry.ts`).
+  const geometry = useSegmentGeometry(marks.events.length, false);
   const line = useMemo(() => {
     const l = new Line2(geometry as never, material as never);
     l.matrixAutoUpdate = false;
@@ -110,7 +91,6 @@ const EventLines = ({ marks, timeOrigin }: { marks: AnnotationMarks; timeOrigin:
   }, [geometry, material]);
 
   useEffect(() => () => material.dispose(), [material]);
-  useEffect(() => () => geometry.dispose(), [geometry]);
 
   useLayoutEffect(() => {
     if (marks.events.length === 0) {
@@ -123,8 +103,7 @@ const EventLines = ({ marks, timeOrigin }: { marks: AnnotationMarks; timeOrigin:
       const x = event.time - timeOrigin;
       pairs.set([x, 0, 0.5, x, -1, 0.5], i * 6);
     });
-    geometry.setPositions(pairs);
-    geometry.instanceCount = marks.events.length;
+    writeSegments(geometry, pairs, marks.events.length);
     line.visible = true;
     invalidate();
   }, [marks, timeOrigin, geometry, line, material, invalidate]);
@@ -177,7 +156,6 @@ const EpochBands = ({ marks, timeOrigin }: { marks: AnnotationMarks; timeOrigin:
     return m;
   }, [geometry, material]);
 
-  useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => material.dispose(), [material]);
   useEffect(() => {
     mesh.visible = marks.epochs.length > 0;

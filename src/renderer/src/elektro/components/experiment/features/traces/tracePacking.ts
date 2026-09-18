@@ -40,10 +40,19 @@ export type PackedChannel = {
   ys: Float32Array;
   valueMin: number | null;
   valueMax: number | null;
+  /** Some stretch was packed as a per-pixel min/max envelope, not samples. */
+  decimated: boolean;
 };
 
 /** A gap wider than this many local periods breaks the run. */
 export const GAP_TOLERANCE = 1.5;
+
+/**
+ * Above this many samples per pixel column a stretch is packed as its min/max
+ * ENVELOPE — two points per column, the extremes in time order — instead of one
+ * point per sample. Below it, every sample is kept.
+ */
+export const SAMPLES_PER_PIXEL_LIMIT = 2;
 
 const EMPTY: PackedChannel = {
   pairs: new Float32Array(0),
@@ -52,24 +61,45 @@ const EMPTY: PackedChannel = {
   ys: new Float32Array(0),
   valueMin: null,
   valueMax: null,
+  decimated: false,
 };
 
+export type PackOptions = {
+  /** The window being drawn and its width in pixels: what "per pixel" means. */
+  window?: { start: number; end: number } | null;
+  widthPx?: number | null;
+};
+
+/**
+ * One channel of the drawable segments as a polyline buffer.
+ *
+ * Never more points than the screen can show: where a stretch holds more than
+ * `SAMPLES_PER_PIXEL_LIMIT` samples per pixel column (a trace with no pyramid
+ * seen whole, a level coarser than wanted still stood in for), it is reduced to
+ * each column's minimum and maximum, in the order they occur. The envelope keeps
+ * every excursion visible — a spike one sample wide still reaches its peak — and
+ * bounds the output at ~2 × width points per channel, whatever the data length.
+ * Without it a 1.25 M-sample trace seen whole was 1.25 M line instances per
+ * channel, re-uploaded on every tile landing.
+ */
 export const packChannel = (
   segments: readonly DrawSegment[],
   channel: number,
   timeOrigin: number,
+  options: PackOptions = {},
 ): PackedChannel => {
-  const xs: number[] = [];
-  const ys: number[] = [];
-  const periods: number[] = [];
+  const window = options.window ?? null;
+  const widthPx = options.widthPx ?? 0;
+  const bucket = window && widthPx > 0 ? (window.end - window.start) / widthPx : 0;
 
+  type Plan = { column: ArrayLike<number>; tile: DrawSegment["tile"]; from: number; to: number; step: number; dense: boolean };
+  const plans: Plan[] = [];
+  let capacity = 0;
   for (const segment of segments) {
     const { tile } = segment;
     const column = tile.channels[channel];
-    if (!column) continue;
     const period = tile.period;
-    if (!period) continue;
-
+    if (!column || !period) continue;
     // Sample indices (within the tile) whose times fall inside the clip. Solved
     // rather than scanned, and ordered, since a negative period runs backwards.
     const toLocal = (t: number) => (t - tile.t0) / period - tile.samples.start;
@@ -77,41 +107,103 @@ export const packChannel = (
     const b = toLocal(segment.end);
     const first = Math.max(0, Math.ceil(Math.min(a, b) - 1e-9));
     const last = Math.min(column.length - 1, Math.floor(Math.max(a, b) + 1e-9));
+    if (last < first) continue;
+    const count = last - first + 1;
+    const dense = bucket > 0 && bucket / Math.abs(period) > SAMPLES_PER_PIXEL_LIMIT;
+    capacity += dense ? 2 * (Math.ceil(Math.abs(segment.end - segment.start) / bucket) + 2) : count;
+    plans.push({
+      column,
+      tile,
+      from: period > 0 ? first : last,
+      to: period > 0 ? last : first,
+      step: period > 0 ? 1 : -1,
+      dense,
+    });
+  }
+  if (capacity === 0) return EMPTY;
 
-    const step = period > 0 ? 1 : -1;
-    const from = period > 0 ? first : last;
-    const to = period > 0 ? last : first;
-    for (let i = from; period > 0 ? i <= to : i >= to; i += step) {
+  const xs = new Float64Array(capacity);
+  const ys = new Float32Array(capacity);
+  /** The spacing a point was sampled at — a sample period, or a pixel column. */
+  const spacing = new Float64Array(capacity);
+  let n = 0;
+  let decimated = false;
+  const push = (x: number, y: number, space: number) => {
+    xs[n] = x;
+    ys[n] = y;
+    spacing[n] = space;
+    n++;
+  };
+
+  for (const { column, tile, from, to, step, dense } of plans) {
+    const period = tile.period;
+    const timeAt = (i: number) => tile.t0 + period * (tile.samples.start + i) - timeOrigin;
+    if (!dense) {
+      for (let i = from; step > 0 ? i <= to : i >= to; i += step) {
+        const value = column[i];
+        if (Number.isFinite(value)) push(timeAt(i), value, Math.abs(period));
+      }
+      continue;
+    }
+
+    decimated = true;
+    const origin = window!.start - timeOrigin;
+    let current = Number.NaN;
+    let minI = -1;
+    let maxI = -1;
+    const flush = () => {
+      if (minI < 0) return;
+      // The extremes in the order they occur, so the line goes where the data went.
+      const [p, q] = step > 0 === minI <= maxI ? [minI, maxI] : [maxI, minI];
+      push(timeAt(p), column[p], bucket);
+      if (q !== p) push(timeAt(q), column[q], bucket);
+    };
+    for (let i = from; step > 0 ? i <= to : i >= to; i += step) {
       const value = column[i];
       if (!Number.isFinite(value)) continue;
-      xs.push(tile.t0 + period * (tile.samples.start + i) - timeOrigin);
-      ys.push(value);
-      periods.push(Math.abs(period));
+      const b = Math.floor((timeAt(i) - origin) / bucket);
+      if (b !== current) {
+        flush();
+        current = b;
+        minI = maxI = i;
+      } else {
+        if (value < column[minI]) minI = i;
+        if (value > column[maxI]) maxI = i;
+      }
     }
+    flush();
   }
 
-  if (xs.length < 2) {
-    return xs.length === 0
-      ? EMPTY
-      : { ...EMPTY, xs: Float64Array.from(xs), ys: Float32Array.from(ys), valueMin: ys[0], valueMax: ys[0] };
+  if (n === 0) return EMPTY;
+  const outXs = xs.subarray(0, n);
+  const outYs = ys.subarray(0, n);
+  let valueMin = Infinity;
+  let valueMax = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const v = outYs[i];
+    if (v < valueMin) valueMin = v;
+    if (v > valueMax) valueMax = v;
+  }
+  if (n < 2) {
+    return { ...EMPTY, xs: outXs.slice(), ys: outYs.slice(), valueMin, valueMax, decimated };
   }
 
   // Runs: split wherever consecutive points are further apart than the local
-  // sample spacing allows — that is a coverage gap, and must not be bridged.
+  // spacing allows — that is a coverage gap, and must not be bridged.
   const runs: { start: number; length: number }[] = [];
   let runStart = 0;
-  for (let i = 1; i < xs.length; i++) {
-    const allowed = GAP_TOLERANCE * Math.max(periods[i], periods[i - 1]);
-    if (xs[i] - xs[i - 1] > allowed + 1e-9) {
+  for (let i = 1; i < n; i++) {
+    const allowed = GAP_TOLERANCE * Math.max(spacing[i], spacing[i - 1]);
+    if (outXs[i] - outXs[i - 1] > allowed + 1e-9) {
       runs.push({ start: runStart, length: i - runStart });
       runStart = i;
     }
   }
-  runs.push({ start: runStart, length: xs.length - runStart });
+  runs.push({ start: runStart, length: n - runStart });
 
   const segmentCount = runs.reduce((acc, run) => acc + segmentCountFor(run.length), 0);
   const pairs = new Float32Array(segmentCount * FLOATS_PER_SEGMENT);
-  const coords = { x: xs, y: ys, z: null };
+  const coords = { x: outXs, y: outYs, z: null };
   let offset = 0;
   for (const run of runs) {
     const written = writeRunPairs(pairs, offset, coords, run.start, run.length);
@@ -119,20 +211,14 @@ export const packChannel = (
     offset += written;
   }
 
-  let valueMin = Infinity;
-  let valueMax = -Infinity;
-  for (const v of ys) {
-    if (v < valueMin) valueMin = v;
-    if (v > valueMax) valueMax = v;
-  }
-
   return {
     pairs,
     segmentCount,
-    xs: Float64Array.from(xs),
-    ys: Float32Array.from(ys),
+    xs: outXs.slice(),
+    ys: outYs.slice(),
     valueMin,
     valueMax,
+    decimated,
   };
 };
 

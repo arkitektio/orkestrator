@@ -42,6 +42,13 @@ export type TraceLevel = {
   period: number;
   /** World time of this level's sample 0. */
   t0: number;
+  /**
+   * Samples per tile at this level: the storage chunk's length along time. A read
+   * can never cost less than a chunk (fetch and decode are chunk-granular), so a
+   * smaller tile only multiplies requests over the same bytes. Absent → the
+   * planner's default.
+   */
+  tileSamples?: number;
 };
 
 export type LevelChoice = {
@@ -63,6 +70,8 @@ export type LevelChoice = {
 export type LevelSource = {
   level: number;
   shape: readonly number[];
+  /** The storage chunk shape, when known — sets the level's tile size. */
+  chunkShape?: readonly number[] | null;
   toParent?: TransformLike | null;
   store: { id: string };
 };
@@ -147,11 +156,19 @@ export const buildTraceLevels = (
       // not consumed — mikro leaves it too, and at trace resolutions it is half a
       // sample of the COARSE level, invisible next to the line width.
       t0: timeMap.t0 - (timeMap.period * sliceStart) / sliceStep,
+      tileSamples: tileSamplesFor(source.chunkShape?.[timeAxisIndex]),
     });
   });
 
   return levels.sort((a, b) => Math.abs(a.period) - Math.abs(b.period));
 };
+
+/** Never tile finer than this, whatever the chunking: tiny chunks are the store's problem, not the planner's. */
+export const MIN_TILE_SAMPLES = 4096;
+
+/** A level's tile size from its chunk length along time (undefined when unknown). */
+export const tileSamplesFor = (chunkSamples: number | null | undefined): number | undefined =>
+  chunkSamples != null && chunkSamples > 0 ? Math.max(MIN_TILE_SAMPLES, chunkSamples) : undefined;
 
 /** The smallest power-of-two band whose stride brings `span` under the target. */
 const bandFor = (spanSamples: number, targetPoints: number): number => {

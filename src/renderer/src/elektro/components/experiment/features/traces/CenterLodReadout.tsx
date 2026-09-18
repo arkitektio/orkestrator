@@ -1,9 +1,11 @@
 import { useMemo } from "react";
 import {
+  drawnLayersKey,
   isLayerHidden,
   useExperimentStore,
+  useExperimentStoreApi,
 } from "../../platform/stores/experimentStore";
-import { useViewerStore } from "../../platform/stores/viewerStore";
+import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 
 /**
  * Which pyramid level the middle of the window is actually showing — the
@@ -19,14 +21,19 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
  * served level among the drawn views (the picture is only as sharp as its blurriest
  * row) and names every view in the tooltip.
  *
- * Reads the per-view stats, which the tile pipeline publishes once per settled
- * window or landed tile — UI cadence, so a plain subscription is right here.
+ * Subscribes to SCALARS (P17): the stats version (bumped once per settled window
+ * or landed tile — UI cadence) and the drawn-layers key; the records are read
+ * through `getState()` inside the memo.
  */
 export const CenterLodReadout = () => {
-  const stats = useViewerStore((s) => s.stats);
-  const views = useExperimentStore((s) => s.layers);
+  const statsVersion = useViewerStore((s) => s.statsVersion);
+  const drawnKey = useExperimentStore(drawnLayersKey);
+  const viewerApi = useViewerStoreApi();
+  const experimentApi = useExperimentStoreApi();
 
   const summary = useMemo(() => {
+    const stats = viewerApi.getState().stats;
+    const views = experimentApi.getState().layers;
     const rows = views
       .filter((v) => v.source && !isLayerHidden(v) && stats[v.id])
       .map((v) => ({ label: v.label, s: stats[v.id] }));
@@ -40,7 +47,9 @@ export const CenterLodReadout = () => {
       return lb > la ? b : a;
     });
     return { rows, worst };
-  }, [views, stats]);
+    // The version and key STAND FOR the records.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statsVersion, drawnKey, viewerApi, experimentApi]);
 
   if (!summary) return null;
   const { rows, worst } = summary;

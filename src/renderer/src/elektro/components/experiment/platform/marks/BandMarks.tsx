@@ -2,10 +2,10 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
-import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { Line2NodeMaterial, MeshBasicNodeMaterial } from "three/webgpu";
 import { bindField } from "@/lib/scene/stores/bindStore";
 import { bandKey, useViewerStoreApi, type Band } from "../stores/viewerStore";
+import { useSegmentGeometry, writeSegments } from "./segmentGeometry";
 
 /**
  * Drawing point marks — spike ticks, event instants, intervals, density bars —
@@ -92,8 +92,9 @@ export const TickLines = ({
     invalidate();
   }, [material, color, hasColors, lineWidth, invalidate]);
 
-  const geometry = useMemo(() => new LineSegmentsGeometry(), []);
-  useEffect(() => () => geometry.dispose(), [geometry]);
+  // Sized for the tick count, written in place (see `segmentGeometry.ts`: a
+  // bigger buffer swapped under a bound geometry drops the whole frame).
+  const geometry = useSegmentGeometry(xs.length, hasColors);
 
   const line = useMemo(() => {
     const l = new Line2(geometry as never, material as never);
@@ -119,16 +120,15 @@ export const TickLines = ({
       const x = xs[i];
       positions.set([x, -(lane + inset), 0.5, x, -(lane + 1 - inset), 0.5], i * 6);
     }
-    geometry.setPositions(positions);
+    let perVertex: Float32Array | null = null;
     if (hasColors && colors) {
-      const perVertex = new Float32Array(n * 6);
+      perVertex = new Float32Array(n * 6);
       for (let i = 0; i < n; i++) {
         const r = colors[i * 3], g = colors[i * 3 + 1], b = colors[i * 3 + 2];
         perVertex.set([r, g, b, r, g, b], i * 6);
       }
-      geometry.setColors(perVertex);
     }
-    geometry.instanceCount = n;
+    writeSegments(geometry, positions, n, perVertex);
     invalidate();
   }, [xs, lanes, height, colors, hasColors, geometry, line, material, invalidate]);
 

@@ -1,8 +1,8 @@
-import type { ExpSpikesLayerFragment } from "@/elektro/api/graphql";
 import { unplaceableMessage } from "../../platform/model/placeable";
 import { PlacementFix } from "../../platform/edits/PlacementFix";
 import { PickerSection } from "../../platform/pickers/PickerSection";
-import { useExperimentStore } from "../../platform/stores/experimentStore";
+import { usePickerProblems } from "../../platform/pickers/pickerSlice";
+import { useRawLayer } from "../../platform/stores/experimentStore";
 import type { LayerState } from "../../platform/model/layerModel";
 import { useLayerWrite } from "../../platform/edits/useLayerWrite";
 import { useViewerStore } from "../../platform/stores/viewerStore";
@@ -17,7 +17,8 @@ import { ColorInput, LayerMenu } from "../../platform/layerui/layerControls";
  */
 export const SpikesLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProps<LayerState>) => {
   const readout = useViewerStore((s) => s.readouts[layer.id]);
-  const raw = useExperimentStore((s) => s.rawLayers[layer.id]) as ExpSpikesLayerFragment | undefined;
+  const pickerProblems = usePickerProblems(layer.id);
+  const raw = useRawLayer(layer.id, "SpikesLayer");
   const write = useLayerWrite();
   const message = unplaceableMessage(layer.placeability);
 
@@ -69,6 +70,7 @@ export const SpikesLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProp
               filterBys={raw.filterBys}
               activeColorBy={raw.activeColorBy ?? null}
               activeFilterBys={raw.activeFilterBys}
+              problems={pickerProblems}
             />
           )}
           {readout?.error && (

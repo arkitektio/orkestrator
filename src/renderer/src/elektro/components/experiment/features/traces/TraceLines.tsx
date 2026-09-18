@@ -1,9 +1,9 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
-import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { Line2NodeMaterial } from "three/webgpu";
 import { bindFields } from "@/lib/scene/stores/bindStore";
+import { useSegmentGeometry, writeSegments } from "../../platform/marks/segmentGeometry";
 import type { LayerState } from "../../platform/model/layerModel";
 import {
   bandKey,
@@ -12,7 +12,7 @@ import {
 } from "../../platform/stores/viewerStore";
 import { valueToY } from "../../platform/coords/rowMap";
 import type { PackedChannel } from "./tracePacking";
-import { useTraceTiles } from "./useTraceTiles";
+import { useTraceStore } from "./store/traceSlice";
 
 /**
  * A trace layer drawn as fat lines, one `Line2` per channel.
@@ -36,8 +36,15 @@ import { useTraceTiles } from "./useTraceTiles";
  * state and is uploaded in a layout effect.
  */
 
+const NO_CHANNELS: PackedChannel[] = [];
+
+/**
+ * Draws what the layer's `TraceTileDriver` published — one `Line2` per channel.
+ * Subscribes to its OWN entry of the trace slice, which changes when tiles land
+ * or the committed window moves (UI cadence); the layout binds imperatively.
+ */
 export const TraceLines = ({ layer }: { layer: LayerState }) => {
-  const { channels } = useTraceTiles(layer);
+  const channels = useTraceStore((s) => s.packed[layer.id]?.channels ?? NO_CHANNELS);
   return (
     <>
       {channels.map((packed, channel) => (
@@ -89,7 +96,10 @@ const ChannelLine = ({
     invalidate();
   }, [material, color, lineWidth, invalidate]);
 
-  const geometry = useMemo(() => new LineSegmentsGeometry(), []);
+  // Sized for the segment count, written in place: a new, larger buffer under a
+  // geometry the backend already bound overflows and drops the WHOLE frame
+  // (see `segmentGeometry.ts`).
+  const geometry = useSegmentGeometry(packed.segmentCount, false);
   const line = useMemo(() => {
     const l = new Line2(geometry as never, material as never);
     // The matrix IS the layout (see the module docblock) — never let three
@@ -102,13 +112,9 @@ const ChannelLine = ({
     return l;
   }, [geometry, material]);
 
-  useEffect(
-    () => () => {
-      geometry.dispose();
-      material.dispose();
-    },
-    [geometry, material],
-  );
+  // Geometry disposal is `useSegmentGeometry`'s; the material lives as long as
+  // the component (disposing it with a replaced geometry would kill the line).
+  useEffect(() => () => material.dispose(), [material]);
 
   /**
    * Upload in a LAYOUT effect, before the frame that draws it: the WGSL vertex
@@ -122,8 +128,7 @@ const ChannelLine = ({
       invalidate();
       return;
     }
-    geometry.setPositions(packed.pairs);
-    geometry.instanceCount = packed.segmentCount;
+    writeSegments(geometry, packed.pairs, packed.segmentCount);
     invalidate();
   }, [packed, geometry, line, material, invalidate]);
 

@@ -120,7 +120,12 @@ export type PlanTraceTilesInput = {
   forcedLevel?: number | null;
 };
 
-export const DEFAULT_BUDGET_BYTES = 64 * 1024 * 1024;
+/**
+ * Decoded bytes a trace may plan. One chunk-aligned tile can be large (a 1.25 M
+ * sample, 4-channel chunk is 20 MB), so this must hold a few of them plus their
+ * ancestors, or refinement starves at the first level.
+ */
+export const DEFAULT_BUDGET_BYTES = 128 * 1024 * 1024;
 export const DEFAULT_PREFETCH_MARGIN = 0.5;
 export const DEFAULT_TARGET_POINTS = 2000;
 

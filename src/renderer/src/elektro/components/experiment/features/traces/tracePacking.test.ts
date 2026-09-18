@@ -155,3 +155,43 @@ describe("splitChannels", () => {
     expect(columns.map((c) => Array.from(c))).toEqual([[5, 6, 7]]);
   });
 });
+
+describe("packChannel envelope", () => {
+  /** A tile whose values are a slow ramp with one sharp spike at sample `spikeAt`. */
+  const spiky = (count: number, spikeAt: number): ResidentTile => {
+    const t = tile({ start: 0, count, period: 1 });
+    const column = Float32Array.from({ length: count }, (_, i) => (i === spikeAt ? 1000 : i % 10));
+    return { ...t, channels: [column] };
+  };
+
+  it("bounds the output by the pixel columns, whatever the data length", () => {
+    const t = spiky(1_000_000, 123_457);
+    const packed = packChannel([whole(t)], 0, 0, { window: t.span, widthPx: 1000 });
+    expect(packed.decimated).toBe(true);
+    expect(packed.xs.length).toBeLessThanOrEqual(2 * 1000 + 4);
+  });
+
+  it("keeps every excursion: the global extremes survive, in time order", () => {
+    const t = spiky(100_000, 54_321);
+    const packed = packChannel([whole(t)], 0, 0, { window: t.span, widthPx: 100 });
+    expect(packed.valueMax).toBe(1000);
+    expect(packed.valueMin).toBe(0);
+    expect(Array.from(packed.ys)).toContain(1000);
+    for (let i = 1; i < packed.xs.length; i++) expect(packed.xs[i]).toBeGreaterThan(packed.xs[i - 1]);
+  });
+
+  it("keeps every sample when there are few enough per pixel", () => {
+    const t = tile({ start: 0, count: 50, period: 1 });
+    const packed = packChannel([whole(t)], 0, 0, { window: t.span, widthPx: 1000 });
+    expect(packed.decimated).toBe(false);
+    expect(packed.xs.length).toBe(50);
+  });
+
+  it("still breaks the run across a coverage gap", () => {
+    const a = tile({ start: 0, count: 10_000, period: 1 });
+    const b = tile({ start: 50_000, count: 10_000, period: 1 });
+    const packed = packChannel([whole(a), whole(b)], 0, 0, { window: { start: 0, end: 60_000 }, widthPx: 600 });
+    // Two runs: one segment fewer than the points it joins, per run.
+    expect(packed.segmentCount).toBe(packed.xs.length - 2);
+  });
+});

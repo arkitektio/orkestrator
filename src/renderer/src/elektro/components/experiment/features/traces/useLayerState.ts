@@ -1,12 +1,5 @@
-import { useExperimentStore } from "../../platform/stores/experimentStore";
-import type { LayerState } from "../../platform/model/layerModel";
-
 /**
- * One layer's normalized state, by id.
- *
- * `LayerState` objects are re-created on a fold or an edit, and the provider
- * preserves a layer's `source` across folds that did not move its structure, so
- * a consumer keyed on `source` (the tile pipeline) survives content edits.
+ * One layer's normalized state, by id — re-exported from the store, where the
+ * O(1) index lives. Kept at this path for the features that import it.
  */
-export const useLayerState = (layerId: string): LayerState | undefined =>
-  useExperimentStore((s) => s.layers.find((l) => l.id === layerId));
+export { useLayerState } from "../../platform/stores/experimentStore";

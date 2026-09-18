@@ -1,11 +1,12 @@
 import { Scaling } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAutoscale } from "../../platform/edits/useAutoscale";
 import { useLayerWrite } from "../../platform/edits/useLayerWrite";
 import { unplaceableMessage } from "../../platform/model/placeable";
 import { PlacementFix } from "../../platform/edits/PlacementFix";
 import type { LayerState } from "../../platform/model/layerModel";
 import { formatValue } from "../../platform/probe/formatValue";
-import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { useViewerStore } from "../../platform/stores/viewerStore";
 import { CardFact, CardShell, type LayerCardProps } from "../../platform/layerui/cardShell";
 import { ColorInput, LayerMenu, LineWidthSelect } from "../../platform/layerui/layerControls";
 
@@ -28,7 +29,6 @@ import { ColorInput, LayerMenu, LineWidthSelect } from "../../platform/layerui/l
 export const TraceLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProps<LayerState>) => {
   const stats = useViewerStore((s) => s.stats[layer.id]);
   const clim = useViewerStore((s) => s.clims[layer.id]);
-  const viewerApi = useViewerStoreApi();
   const write = useLayerWrite();
   const message = unplaceableMessage(layer.placeability);
 
@@ -41,10 +41,8 @@ export const TraceLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProps
 
   const channels = layer.channelLabels.filter(Boolean).join(", ");
 
-  const autoscale = () => {
-    const set = viewerApi.getState().autoscale(layer.id)[layer.id];
-    if (set) void write(layer.id, { climMin: set.lo, climMax: set.hi });
-  };
+  const rescale = useAutoscale();
+  const autoscale = () => rescale(layer.id);
 
   return (
     <CardShell

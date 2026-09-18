@@ -25,6 +25,14 @@ import type { TraceLevel } from "./levelPlan";
 /** Samples per tile. The analogue of `BrickSpec.payload`. */
 export const DEFAULT_TILE_SAMPLES = 4096;
 
+/**
+ * A level's tile size: its own (`TraceLevel.tileSamples`, the storage chunk's
+ * length along time) when known, else the planner's default. Fixed per level, so
+ * tile keys stay stable across plans.
+ */
+export const tileSizeOf = (level: TraceLevel, fallback: number): number =>
+  level.tileSamples != null && level.tileSamples > 0 ? level.tileSamples : fallback;
+
 export type TileKey = string;
 
 export const tileKey = (level: number, index: number): TileKey =>
@@ -39,7 +47,7 @@ export const parseTileKey = (key: TileKey): { level: number; index: number } => 
 export const tileCountForLevel = (
   level: TraceLevel,
   tileSamples: number,
-): number => Math.max(0, Math.ceil(level.sampleCount / tileSamples));
+): number => Math.max(0, Math.ceil(level.sampleCount / tileSizeOf(level, tileSamples)));
 
 /** The half-open sample range a tile covers at its own level. */
 export const tileSampleRange = (
@@ -47,8 +55,9 @@ export const tileSampleRange = (
   tileSamples: number,
   index: number,
 ): { start: number; stop: number } => {
-  const start = index * tileSamples;
-  return { start, stop: Math.min(start + tileSamples, level.sampleCount) };
+  const size = tileSizeOf(level, tileSamples);
+  const start = index * size;
+  return { start, stop: Math.min(start + size, level.sampleCount) };
 };
 
 /**
@@ -87,14 +96,15 @@ export const tilesOverlapping = (
   const lo = Math.min(a, b);
   const hi = Math.max(a, b);
 
-  const first = Math.max(0, Math.floor(lo / tileSamples));
+  const size = tileSizeOf(level, tileSamples);
+  const first = Math.max(0, Math.floor(lo / size));
   // The END is EXCLUSIVE. A tile's span runs to the position one past its last
   // sample, so adjacent tiles' spans meet exactly — and treating that meeting
   // point as inclusive would pull in the next tile as well. Left unfixed, asking
   // for the children of tile `i` returns the first child of tile `i + 1` too: an
   // overhang that breaks the containment the planner's refinement order relies on
   // (a parent must never score worse than its own children).
-  const last = Math.min(count - 1, Math.ceil(hi / tileSamples) - 1);
+  const last = Math.min(count - 1, Math.ceil(hi / size) - 1);
   if (last < first) return null;
   return { first, last };
 };

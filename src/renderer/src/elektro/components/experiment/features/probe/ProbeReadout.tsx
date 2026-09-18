@@ -3,8 +3,10 @@ import { bindFields } from "@/lib/scene/stores/bindStore";
 import { pixelAtTime } from "../../platform/camera/rangeToCamera";
 import { sampleAt } from "../../platform/probe/sampleAt";
 import {
+  drawnLayersKey,
   isLayerHidden,
   useExperimentStore,
+  useExperimentStoreApi,
 } from "../../platform/stores/experimentStore";
 import { useRangeStoreApi } from "../../platform/stores/rangeStore";
 import {
@@ -78,11 +80,17 @@ const ReadoutPanel = () => {
   const hoverTime = useViewerStore((s) => s.hoverTime);
   const viewerApi = useViewerStoreApi();
   const timeOrigin = useExperimentStore((s) => s.timeOrigin);
-  const layers = useExperimentStore((s) => s.layers);
+  // Scalars (P17): what is drawn changes when tiles land (`probeVersion`) or the
+  // drawn set changes (`drawnLayersKey`) — both refresh the readout without the
+  // pointer having to move.
+  const probeVersion = useViewerStore((s) => s.probeVersion);
+  const drawnKey = useExperimentStore(drawnLayersKey);
+  const experimentApi = useExperimentStoreApi();
 
   const rows = useMemo(() => {
     if (hoverTime == null) return [];
     const { probeSources, stats } = viewerApi.getState();
+    const layers = experimentApi.getState().layers;
     const x = hoverTime - timeOrigin;
     return layers
       .filter((l) => l.kind === "trace" && !isLayerHidden(l))
@@ -99,11 +107,13 @@ const ReadoutPanel = () => {
           unit: layer.valueUnit,
           values,
           // Anything coarser than the finest level is a pyramid value, not a sample.
-          decimated: drawnLevel > 0,
+          decimated: drawnLevel > 0 || channels.some((c) => c.decimated),
         };
       })
       .filter((row) => row.values.some((v) => v != null));
-  }, [hoverTime, layers, timeOrigin, viewerApi]);
+    // The version and key STAND FOR the records.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoverTime, probeVersion, drawnKey, timeOrigin, viewerApi, experimentApi]);
 
   if (hoverTime == null || rows.length === 0) return null;
   return (
