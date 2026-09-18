@@ -1,11 +1,18 @@
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
+import { LayerMetadata } from "../../features/metadata/LayerMetadata";
 import { ROW_PADDING } from "../../features/stacking/stackLayout";
 import { formatValue } from "../../platform/probe/formatValue";
+import { useExperimentStore } from "../../platform/stores/experimentStore";
+import type { RowInfo } from "../../platform/stores/viewer/layoutSlice";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 
 /**
  * Row labels down the left edge: which layer each row is, in its colour, with its
  * unit and current scale — and, for a multi-channel trace, what each sub-band's
- * channel is called (from its anchors).
+ * channel is called (from its anchors). A trace row's label unfolds into that
+ * layer's metadata and provenance (`RowLabel`).
  *
  * Rows are laid out in equal fractions of the viewport height (see `stackLayout`),
  * so this is plain percentage positioning — no camera math, and it re-renders only
@@ -36,26 +43,73 @@ export const RowLabels = () => {
           ) : null,
         );
       })}
-      {rows.map((row) => {
-        return (
-          <div
-            key={row.index}
-            className="absolute left-2 flex max-w-[40%] items-center gap-1.5"
-            style={{ top: `calc(${(row.index / rowCount) * 100}% + 4px)` }}
+      {rows.map((row) => (
+        // Keyed by WHAT the row is, not where: a relayout must not hand one
+        // row's unfolded state to another.
+        <RowLabel key={row.layerIds.join("|")} row={row} rowCount={rowCount} />
+      ))}
+    </div>
+  );
+};
+
+/**
+ * One row's name, in its colour. A row with trace layers unfolds on click into
+ * their metadata (`LayerMetadata`) right underneath — what was recorded about
+ * the line next to the line, rather than in a corner. The query behind it
+ * mounts only while unfolded.
+ */
+const RowLabel = ({ row, rowCount }: { row: RowInfo; rowCount: number }) => {
+  const [expanded, setExpanded] = useState(false);
+  // A scalar key (P17): which of the row's layers are traces — the only kind
+  // with a lens, and so the only kind with anything to unfold.
+  const traceKey = useExperimentStore((s) =>
+    row.layerIds.filter((id) => s.layerIndex.get(id)?.kind === "trace").join("|"),
+  );
+  const traceIds = useMemo(() => (traceKey === "" ? [] : traceKey.split("|")), [traceKey]);
+  const unfoldable = traceIds.length > 0;
+  const open = expanded && unfoldable;
+  const Chevron = open ? ChevronDown : ChevronRight;
+
+  const name = (
+    <>
+      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: row.color }} />
+      <span className="truncate text-[11px] font-medium text-foreground/90 drop-shadow">
+        {row.label}
+      </span>
+    </>
+  );
+
+  return (
+    <div
+      className={cn("absolute left-2 flex flex-col items-start gap-1", open && "z-20")}
+      style={{ top: `calc(${(row.index / rowCount) * 100}% + 4px)` }}
+    >
+      <div className="flex max-w-[40vw] items-center gap-1.5">
+        {unfoldable ? (
+          <button
+            type="button"
+            className="pointer-events-auto flex min-w-0 items-center gap-1.5 rounded px-0.5 hover:bg-white/10"
+            title={open ? "Hide metadata" : "Show metadata"}
+            aria-expanded={open}
+            onClick={() => setExpanded(!open)}
           >
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: row.color }}
-            />
-            <span className="truncate text-[11px] font-medium text-foreground/90 drop-shadow">
-              {row.label}
-            </span>
-            {row.unit && (
-              <RowScale layerId={row.layerIds.length === 1 ? row.layerIds[0] : null} unit={row.unit} />
-            )}
-          </div>
-        );
-      })}
+            {name}
+            <Chevron className="h-3 w-3 shrink-0 text-muted-foreground" />
+          </button>
+        ) : (
+          name
+        )}
+        {row.unit && (
+          <RowScale layerId={row.layerIds.length === 1 ? row.layerIds[0] : null} unit={row.unit} />
+        )}
+      </div>
+      {open && (
+        <div className="pointer-events-auto flex max-h-[min(60vh,24rem)] w-72 flex-col gap-3 overflow-y-auto rounded-lg border border-black/10 bg-black/60 p-1.5 text-white/85 backdrop-blur-md">
+          {traceIds.map((id) => (
+            <LayerMetadata key={id} layerId={id} showHeader={traceIds.length > 1} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

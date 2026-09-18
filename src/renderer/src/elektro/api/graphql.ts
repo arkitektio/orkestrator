@@ -4282,8 +4282,12 @@ export type NeuronModel = {
   modelCollections?: Maybe<Array<ModelCollection>>;
   name: Scalars['String']['output'];
   provenanceEntries: Array<ProvenanceEntry>;
+  /** The recording sites that are part of this model: every place on it some dataset's values were recorded from, in the viewer's organization */
+  recordingSites: Array<RecordingSite>;
   sectionDominance: Array<SectionDominance>;
   simulations: Array<Simulation>;
+  /** The stimulus sites that are part of this model: every place on it some dataset's values were injected at, in the viewer's organization */
+  stimulusSites: Array<StimulusSite>;
 };
 
 
@@ -5033,27 +5037,30 @@ export enum RecordingKind {
   Voltage = 'VOLTAGE'
 }
 
-/** The site truth, recorded: where on a simulated model the anchored values were recorded (NEURON's cell, section and position along it) and what was recorded. elektro's own spoke; it was the `Recording` row of a simulation */
+/** The site truth, recorded: a place on a neuron model -- the model it is part of, NEURON's cell, section and position along it in that model -- where the anchored values were recorded, and what was recorded. elektro's own spoke; it was the `Recording` row of a simulation */
 export type RecordingSite = {
   __typename?: 'RecordingSite';
-  /** The id of the cell, as the model config names it */
+  /** The id of the cell, one of the cells the model declares */
   cell?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   kind: RecordingKind;
   /** The stated label, or the site spelled out as 'cell: location(position)' */
   label: Scalars['String']['output'];
-  /** The id of the section, as the model config names it */
+  /** The id of the section, one of the sections of that cell of the model */
   location?: Maybe<Scalars['String']['output']>;
+  /** The neuron model this site is part of */
+  model: NeuronModel;
   /** The normalized position along the section, 0 to 1 */
   position?: Maybe<Scalars['Float']['output']>;
 };
 
-/** Where on a model the anchored values were RECORDED: NEURON's cell, section and position along it, and what was recorded. elektro's own spoke; it replaces the `Recording` row of a simulation */
+/** A place on a neuron model where the anchored values were RECORDED: the model it is part of, NEURON's cell, section and position along it in that model, and what was recorded. elektro's own spoke; it replaces the `Recording` row of a simulation */
 export type RecordingSiteInput = {
   cell?: InputMaybe<Scalars['String']['input']>;
   kind?: RecordingKind;
   label?: InputMaybe<Scalars['String']['input']>;
   location?: InputMaybe<Scalars['String']['input']>;
+  model: Scalars['ID']['input'];
   position?: InputMaybe<Scalars['Float']['input']>;
 };
 
@@ -5971,27 +5978,30 @@ export enum StimulusKind {
   Voltage = 'VOLTAGE'
 }
 
-/** The site truth, injected: where on a simulated model the anchored values were injected (NEURON's cell, section and position along it) and what was clamped. elektro's own spoke; it was the `Stimulus` row of a simulation */
+/** The site truth, injected: a place on a neuron model -- the model it is part of, NEURON's cell, section and position along it in that model -- where the anchored values were injected, and what was clamped. elektro's own spoke; it was the `Stimulus` row of a simulation */
 export type StimulusSite = {
   __typename?: 'StimulusSite';
-  /** The id of the cell, as the model config names it */
+  /** The id of the cell, one of the cells the model declares */
   cell?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   kind: StimulusKind;
   /** The stated label, or the site spelled out as 'cell: location(position)' */
   label: Scalars['String']['output'];
-  /** The id of the section, as the model config names it */
+  /** The id of the section, one of the sections of that cell of the model */
   location?: Maybe<Scalars['String']['output']>;
+  /** The neuron model this site is part of */
+  model: NeuronModel;
   /** The normalized position along the section, 0 to 1 */
   position?: Maybe<Scalars['Float']['output']>;
 };
 
-/** Where on a model the anchored values were INJECTED: NEURON's cell, section and position along it, and what was clamped. elektro's own spoke; it replaces the `Stimulus` row of a simulation */
+/** A place on a neuron model where the anchored values were INJECTED: the model it is part of, NEURON's cell, section and position along it in that model, and what was clamped. elektro's own spoke; it replaces the `Stimulus` row of a simulation */
 export type StimulusSiteInput = {
   cell?: InputMaybe<Scalars['String']['input']>;
   kind?: StimulusKind;
   label?: InputMaybe<Scalars['String']['input']>;
   location?: InputMaybe<Scalars['String']['input']>;
+  model: Scalars['ID']['input'];
   position?: InputMaybe<Scalars['Float']['input']>;
 };
 
@@ -7044,7 +7054,7 @@ export type ExpLensFragment = { __typename?: 'Lens', id: string, axisNames: Arra
 export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, valueUnit?: Unit | null };
 
 export type ExpFullAnchorFragment = (
-  { __typename?: 'CoordinateAnchor', valueHistogram?: { __typename?: 'ValueHistogram', id: string, bins: Array<number>, histogram: Array<number> } | null, rig?: { __typename?: 'RigState', id: string, state: { __typename?: 'RigStateGraph', mode?: ClampMode | null, holdingPotential?: ElectricPotential | null, holdingCurrent?: any | null, seriesResistance?: any | null, membraneCapacitance?: any | null, temperature?: Temperature | null, devices: Array<{ __typename?: 'DeviceState', kind?: string | null, label: string, settings: Array<{ __typename?: 'Setting', name: string, text?: string | null, number?: number | null, flag?: boolean | null, quantity?: GenericQuantity | null }> }> } } | null, acquisitionMetadata?: { __typename?: 'AcquisitionMetadata', id: string, metadata: any } | null }
+  { __typename?: 'CoordinateAnchor', recordingSite?: { __typename?: 'RecordingSite', id: string, model: { __typename?: 'NeuronModel', id: string, name: string } } | null, stimulusSite?: { __typename?: 'StimulusSite', id: string, model: { __typename?: 'NeuronModel', id: string, name: string } } | null, valueHistogram?: { __typename?: 'ValueHistogram', id: string, bins: Array<number>, histogram: Array<number> } | null, rig?: { __typename?: 'RigState', id: string, state: { __typename?: 'RigStateGraph', mode?: ClampMode | null, holdingPotential?: ElectricPotential | null, holdingCurrent?: any | null, seriesResistance?: any | null, membraneCapacitance?: any | null, temperature?: Temperature | null, devices: Array<{ __typename?: 'DeviceState', kind?: string | null, label: string, settings: Array<{ __typename?: 'Setting', name: string, text?: string | null, number?: number | null, flag?: boolean | null, quantity?: GenericQuantity | null }> }> } } | null, acquisitionMetadata?: { __typename?: 'AcquisitionMetadata', id: string, metadata: any } | null }
   & ExpAnchorFragment
 );
 
@@ -8261,7 +8271,7 @@ export type GetExpLensAnchorsQueryVariables = Exact<{
 export type GetExpLensAnchorsQuery = { __typename?: 'Query', lens: { __typename?: 'Lens', id: string, activeAnchors: Array<(
       { __typename?: 'CoordinateAnchor' }
       & ExpFullAnchorFragment
-    )> } };
+    )>, dataset: { __typename?: 'ArrayDataset', id: string, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, model: { __typename?: 'NeuronModel', id: string, name: string } }> } } };
 
 export type DetailMechanismQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8536,6 +8546,20 @@ ${ExpStimulusSiteFragmentDoc}`;
 export const ExpFullAnchorFragmentDoc = gql`
     fragment ExpFullAnchor on CoordinateAnchor {
   ...ExpAnchor
+  recordingSite {
+    id
+    model {
+      id
+      name
+    }
+  }
+  stimulusSite {
+    id
+    model {
+      id
+      name
+    }
+  }
   valueHistogram {
     id
     bins
@@ -11582,6 +11606,17 @@ export const GetExpLensAnchorsDocument = gql`
     id
     activeAnchors {
       ...ExpFullAnchor
+    }
+    dataset {
+      id
+      simulations {
+        id
+        name
+        model {
+          id
+          name
+        }
+      }
     }
   }
 }

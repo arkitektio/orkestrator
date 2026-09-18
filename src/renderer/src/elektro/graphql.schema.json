@@ -30058,6 +30058,30 @@
             "deprecationReason": null
           },
           {
+            "name": "recordingSites",
+            "description": "The recording sites that are part of this model: every place on it some dataset's values were recorded from, in the viewer's organization",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "RecordingSite",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "sectionDominance",
             "description": null,
             "args": [
@@ -30206,6 +30230,30 @@
                   "kind": "NON_NULL",
                   "ofType": {
                     "name": "Simulation",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "stimulusSites",
+            "description": "The stimulus sites that are part of this model: every place on it some dataset's values were injected at, in the viewer's organization",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "StimulusSite",
                     "kind": "OBJECT",
                     "ofType": null
                   }
@@ -35372,12 +35420,12 @@
       {
         "kind": "OBJECT",
         "name": "RecordingSite",
-        "description": "The site truth, recorded: where on a simulated model the anchored values were recorded (NEURON's cell, section and position along it) and what was recorded. elektro's own spoke; it was the `Recording` row of a simulation",
+        "description": "The site truth, recorded: a place on a neuron model -- the model it is part of, NEURON's cell, section and position along it in that model -- where the anchored values were recorded, and what was recorded. elektro's own spoke; it was the `Recording` row of a simulation",
         "isOneOf": null,
         "fields": [
           {
             "name": "cell",
-            "description": "The id of the cell, as the model config names it",
+            "description": "The id of the cell, one of the cells the model declares",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -35437,12 +35485,28 @@
           },
           {
             "name": "location",
-            "description": "The id of the section, as the model config names it",
+            "description": "The id of the section, one of the sections of that cell of the model",
             "args": [],
             "type": {
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "model",
+            "description": "The neuron model this site is part of",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "NeuronModel",
+                "kind": "OBJECT",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -35468,7 +35532,7 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "RecordingSiteInput",
-        "description": "Where on a model the anchored values were RECORDED: NEURON's cell, section and position along it, and what was recorded. elektro's own spoke; it replaces the `Recording` row of a simulation",
+        "description": "A place on a neuron model where the anchored values were RECORDED: the model it is part of, NEURON's cell, section and position along it in that model, and what was recorded. elektro's own spoke; it replaces the `Recording` row of a simulation",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -35521,6 +35585,22 @@
               "ofType": null
             },
             "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "model",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -42474,12 +42554,12 @@
       {
         "kind": "OBJECT",
         "name": "StimulusSite",
-        "description": "The site truth, injected: where on a simulated model the anchored values were injected (NEURON's cell, section and position along it) and what was clamped. elektro's own spoke; it was the `Stimulus` row of a simulation",
+        "description": "The site truth, injected: a place on a neuron model -- the model it is part of, NEURON's cell, section and position along it in that model -- where the anchored values were injected, and what was clamped. elektro's own spoke; it was the `Stimulus` row of a simulation",
         "isOneOf": null,
         "fields": [
           {
             "name": "cell",
-            "description": "The id of the cell, as the model config names it",
+            "description": "The id of the cell, one of the cells the model declares",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -42539,12 +42619,28 @@
           },
           {
             "name": "location",
-            "description": "The id of the section, as the model config names it",
+            "description": "The id of the section, one of the sections of that cell of the model",
             "args": [],
             "type": {
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "model",
+            "description": "The neuron model this site is part of",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "NeuronModel",
+                "kind": "OBJECT",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -42570,7 +42666,7 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "StimulusSiteInput",
-        "description": "Where on a model the anchored values were INJECTED: NEURON's cell, section and position along it, and what was clamped. elektro's own spoke; it replaces the `Stimulus` row of a simulation",
+        "description": "A place on a neuron model where the anchored values were INJECTED: the model it is part of, NEURON's cell, section and position along it in that model, and what was clamped. elektro's own spoke; it replaces the `Stimulus` row of a simulation",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -42623,6 +42719,22 @@
               "ofType": null
             },
             "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "model",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
           },

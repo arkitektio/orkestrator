@@ -1,14 +1,29 @@
-# Every anchor on a lens with its full metadata payload, for the timeline's
-# metadata overlay. `ExpLens.activeAnchors` already carries a thin projection
-# (label, unit, the histogram's range, the site) — enough to name and scale a
-# row; this is the reference view, fetched only when someone unfolds the
-# overlay: the histogram's shape, the rig state and the raw acquisition
-# metadata are too heavy to ride along with every experiment load.
+# Everything a trace row's label unfolds into: every anchor on the lens with its
+# full metadata payload, and where the data came from — the simulation(s) that
+# produced the dataset and the neuron model they ran (the model its recording
+# sites name cells and sections of).
+#
+# `ExpLens.activeAnchors` already carries a thin projection (label, unit, the
+# histogram's range, the site) — enough to name and scale a row; this is the
+# reference view, fetched only when someone unfolds the row: the histogram's
+# shape, the rig state and the raw acquisition metadata are too heavy to ride
+# along with every experiment load.
 query GetExpLensAnchors($id: ID!) {
   lens(id: $id) {
     id
     activeAnchors {
       ...ExpFullAnchor
+    }
+    dataset {
+      id
+      simulations {
+        id
+        name
+        model {
+          id
+          name
+        }
+      }
     }
   }
 }

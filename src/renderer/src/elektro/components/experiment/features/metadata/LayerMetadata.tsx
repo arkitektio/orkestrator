@@ -5,12 +5,12 @@ import {
 } from "@/elektro/api/graphql";
 import { whereOf, type SiteLike } from "@/elektro/lib/sites";
 import { formatDisplay } from "@/lib/quantities";
+import { ElektroNeuronModel, ElektroSimulation } from "@/linkers";
 import {
   DeviceRows,
   MetadataAnchorBox,
   MetadataChip,
   MetadataHeader,
-  MetadataOverlayFrame,
   MetadataRow,
   ValueHistogramSpoke,
   type ValueHistogramLike,
@@ -23,40 +23,33 @@ import {
 } from "../../platform/model/anchors";
 import type { LayerState } from "../../platform/model/layerModel";
 import type { TraceSource } from "../../platform/sources/traceSource";
-import { rawLayerOf } from "../../platform/stores/layerFragments";
-import {
-  isLayerHidden,
-  useExperimentStore,
-  useLayerState,
-  useRawLayer,
-  type ExperimentStoreState,
-} from "../../platform/stores/experimentStore";
+import { useLayerState, useRawLayer } from "../../platform/stores/experimentStore";
 import { useRangeStore, type TimeWindow } from "../../platform/stores/rangeStore";
 
 /**
- * What was RECORDED about what the timeline is showing — the counterpart of
- * mikro's `MetadataOverlay`, same corner, same fold, same chrome
- * (`@/lib/scene/metadata/MetadataChrome`).
+ * What was RECORDED about a trace layer, and where it came from — unfolded
+ * under the layer's in-canvas row label (`shell/chrome/RowLabels`), the
+ * timeline's counterpart of mikro's `MetadataOverlay` body, drawn with the same
+ * chrome (`@/lib/scene/metadata/MetadataChrome`).
  *
- * A trace's lens carries `CoordinateAnchor`s pinning metadata to coordinates of
- * its dataset: what a channel is called, its unit and value distribution, the
- * site it was recorded at or stimulated through, the rig's state and the file's
- * own acquisition metadata. Which of them describe what is on screen depends on
- * the channel the layer draws and on the visible window (an anchor may pin a
- * sweep's first sample), so the panel splits them live (`anchors.anchorInView`)
- * and shows only the ones in view; the rest stay one click away, because "there
- * IS a rig state, just not for this channel" is a different answer from "none
- * was ever recorded".
+ * PROVENANCE first: the simulation(s) that produced the dataset and the neuron
+ * model they ran, as links — the recording sites below name cells and sections
+ * of exactly that model.
  *
- * WHICH layer: the timeline has no layer selection, and it shows every drawn
- * layer at once — so, like `CenterLodReadout`, the overlay describes every
- * drawn trace layer that has anchors, one section each. Spike, event and
- * annotation layers carry no lens and so no anchors.
+ * Then the ANCHORS: a trace's lens pins metadata to coordinates of its dataset —
+ * what a channel is called, its unit and value distribution, the site it was
+ * recorded at or stimulated through, the rig's state and the file's own
+ * acquisition metadata. Which of them describe what is on screen depends on the
+ * channel the layer draws and on the visible window (an anchor may pin a sweep's
+ * first sample), so the panel splits them live (`anchors.anchorInView`) and
+ * shows only the ones in view; the rest stay one click away, because "there IS a
+ * rig state, just not for this channel" is a different answer from "none was
+ * ever recorded".
  *
- * COLLAPSED is a single unfold button. Only EXPANDED mounts `GetExpLensAnchors`
- * — one per described layer, cache-first — for the histogram's shape, the rig
- * and the acquisition metadata; until it lands the panel draws from the thin
- * projection the experiment query already carries.
+ * Mounted only while the row is unfolded, so `GetExpLensAnchors` (cache-first,
+ * one per unfolded layer) runs only then; until it lands the panel draws from
+ * the thin projection the experiment query already carries. Spike, event and
+ * annotation layers carry no lens, and so nothing to unfold.
  */
 
 /**
@@ -69,26 +62,42 @@ type PanelAnchor = {
   channelLabel?: { label: string } | null;
   valueUnit?: { unit: string } | null;
   valueHistogram?: ValueHistogramLike | null;
-  recordingSite?: SiteLike | null;
-  stimulusSite?: SiteLike | null;
+  recordingSite?: PanelSite | null;
+  stimulusSite?: PanelSite | null;
   rig?: ExpFullAnchorFragment["rig"];
   acquisitionMetadata?: { metadata: unknown } | null;
 };
 
 const NO_ANCHORS: readonly PanelAnchor[] = [];
 
-/** The drawn trace layers with anchors, as one scalar key (P17). */
-const describedLayersKey = (state: ExperimentStoreState): string =>
-  state.layers
-    .filter(
-      (layer) =>
-        layer.kind === "trace" &&
-        layer.source !== null &&
-        !isLayerHidden(layer) &&
-        (rawLayerOf(state.rawLayers, layer.id, "TraceLayer")?.lens.activeAnchors.length ?? 0) > 0,
-    )
-    .map((layer) => layer.id)
-    .join("|");
+type SimulationRef = { id: string; name: string; model: { id: string; name: string } };
+
+const NO_SIMULATIONS: readonly SimulationRef[] = [];
+
+const LINK_CLASS = "min-w-0 truncate font-mono text-white/85 underline-offset-2 hover:underline";
+
+/** The simulation(s) that produced the dataset, and the neuron model each ran. */
+const Provenance = ({ simulations }: { simulations: readonly SimulationRef[] }) => (
+  <div className="flex max-w-full flex-col gap-1">
+    <MetadataHeader>Source</MetadataHeader>
+    {simulations.map((simulation) => (
+      <div key={simulation.id} className="flex min-w-0 flex-col gap-0.5">
+        <div className="flex min-w-0 items-baseline gap-1.5">
+          <span className="shrink-0 text-white/40">model</span>
+          <ElektroNeuronModel.DetailLink object={simulation.model} className={LINK_CLASS}>
+            {simulation.model.name}
+          </ElektroNeuronModel.DetailLink>
+        </div>
+        <div className="flex min-w-0 items-baseline gap-1.5">
+          <span className="shrink-0 text-white/40">run</span>
+          <ElektroSimulation.DetailLink object={simulation} className={LINK_CLASS}>
+            {simulation.name}
+          </ElektroSimulation.DetailLink>
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 const coverageOf = (source: TraceSource, window: TimeWindow): AnchorCoverage => ({
   channelAxis:
@@ -104,18 +113,36 @@ const CLAMP_MODE_LABELS: Record<string, string> = {
   ZERO_CURRENT: "I = 0",
 };
 
-const SiteRow = ({ label, site }: { label: string; site: SiteLike }) => {
+/** A site as the panel reads it; `model` arrives with the full anchor payload. */
+type PanelSite = SiteLike & { model?: { id: string; name: string } | null };
+
+/**
+ * A recording or stimulus site, and the neuron model it sits on — its cell and
+ * section are named in that model's terms, so the link is what makes
+ * "soma(0.5)" mean something.
+ */
+const SiteRow = ({ label, site }: { label: string; site: PanelSite }) => {
   const where = whereOf(site);
   return (
-    <MetadataRow
-      label={label}
-      value={
-        <>
-          {site.label}
-          {where && where !== site.label && <span className="text-white/45"> · {where}</span>}
-        </>
-      }
-    />
+    <div className="flex min-w-0 max-w-full flex-col gap-0.5">
+      <MetadataRow
+        label={label}
+        value={
+          <>
+            {site.label}
+            {where && where !== site.label && <span className="text-white/45"> · {where}</span>}
+          </>
+        }
+      />
+      {site.model && (
+        <div className="flex min-w-0 items-baseline gap-1.5 pl-1">
+          <span className="shrink-0 text-white/40">on</span>
+          <ElektroNeuronModel.DetailLink object={site.model} className={LINK_CLASS}>
+            {site.model.name}
+          </ElektroNeuronModel.DetailLink>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -180,7 +207,7 @@ const ActiveAnchor = ({ anchor }: { anchor: PanelAnchor }) => {
     Boolean(anchor.acquisitionMetadata);
 
   return (
-    <MetadataAnchorBox>
+    <MetadataAnchorBox align="start">
       {anchor.channelLabel?.label && <MetadataChip>{anchor.channelLabel.label}</MetadataChip>}
 
       {(anchor.recordingSite || anchor.stimulusSite) && (
@@ -233,7 +260,7 @@ const OutOfView = ({
   return (
     <div className="flex flex-col gap-1">
       <button
-        className="self-end text-[9px] uppercase tracking-widest text-white/40 transition-colors hover:text-white/70"
+        className="self-start text-[9px] uppercase tracking-widest text-white/40 transition-colors hover:text-white/70"
         onClick={() => setOpen((previous) => !previous)}
       >
         {anchors.length} more out of view
@@ -242,7 +269,7 @@ const OutOfView = ({
         anchors.map((anchor) => (
           <span
             key={anchor.id}
-            className="pr-1 text-[9px] text-white/40"
+            className="pl-1 text-[9px] text-white/40"
             title={whyOutOfView(anchor, coverage)}
           >
             {anchor.channelLabel?.label ?? anchor.recordingSite?.label ?? "unlabelled"}
@@ -252,8 +279,8 @@ const OutOfView = ({
   );
 };
 
-/** One described layer — mounts the full anchor query for its lens only. */
-const LayerSection = memo(function LayerSection({
+/** One trace layer's provenance and in-view anchors — mounts the full query for its lens only. */
+export const LayerMetadata = memo(function LayerMetadata({
   layerId,
   showHeader,
 }: {
@@ -280,16 +307,28 @@ const LayerSection = memo(function LayerSection({
     [anchors, coverage],
   );
 
-  if (!layer || !coverage || anchors.length === 0) return null;
+  const simulations = data?.lens.dataset.simulations ?? NO_SIMULATIONS;
+
+  if (!layer || !coverage) return null;
+  if (!loading && anchors.length === 0 && simulations.length === 0) {
+    return (
+      <div className="flex min-w-0 flex-col items-start gap-1.5 text-left text-[10px]">
+        {showHeader && <SectionHeader layer={layer} />}
+        <span className="text-white/40">No metadata recorded.</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-w-0 flex-col items-end gap-1.5 text-right text-[10px]">
+    <div className="flex min-w-0 flex-col items-start gap-1.5 text-left text-[10px]">
       {showHeader && <SectionHeader layer={layer} />}
-      {inView.length === 0 ? (
-        <span className="text-white/40">Nothing anchored to what this layer is showing.</span>
-      ) : (
-        inView.map((anchor) => <ActiveAnchor key={anchor.id} anchor={anchor} />)
-      )}
+      {simulations.length > 0 && <Provenance simulations={simulations} />}
+      {anchors.length > 0 &&
+        (inView.length === 0 ? (
+          <span className="text-white/40">Nothing anchored to what this layer is showing.</span>
+        ) : (
+          inView.map((anchor) => <ActiveAnchor key={anchor.id} anchor={anchor} />)
+        ))}
       {outOfView.length > 0 && <OutOfView anchors={outOfView} coverage={coverage} />}
       {loading && <span className="text-[9px] text-white/30">Loading…</span>}
     </div>
@@ -298,33 +337,7 @@ const LayerSection = memo(function LayerSection({
 
 const SectionHeader = ({ layer }: { layer: LayerState }) => (
   <div className="flex items-center gap-1.5 text-[10px] font-medium text-white/85">
-    <span className="truncate">{layer.label}</span>
     <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: layer.color }} />
+    <span className="truncate">{layer.label}</span>
   </div>
 );
-
-export const ExperimentMetadataOverlay = () => {
-  const key = useExperimentStore(describedLayersKey);
-  // Held here, not in the frame: it survives the frame unmounting while no
-  // drawn layer has anchors (a layer toggled off and on again).
-  const [expanded, setExpanded] = useState(false);
-
-  const layerIds = useMemo(() => (key === "" ? [] : key.split("|")), [key]);
-  if (layerIds.length === 0) return null;
-
-  return (
-    <MetadataOverlayFrame
-      title={layerIds.length === 1 ? "Metadata" : `Metadata for ${layerIds.length} layers`}
-      // Directly above the mode controls (bottom-14, one 36px row tall), as in the scene.
-      className="bottom-[6.5rem] right-2"
-      expanded={expanded}
-      setExpanded={setExpanded}
-    >
-      <div className="flex min-w-0 flex-col gap-3 px-1 pb-1 text-white/85">
-        {layerIds.map((id) => (
-          <LayerSection key={id} layerId={id} showHeader={layerIds.length > 1} />
-        ))}
-      </div>
-    </MetadataOverlayFrame>
-  );
-};

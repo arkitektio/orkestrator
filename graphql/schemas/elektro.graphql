@@ -4970,6 +4970,11 @@ type NeuronModel {
   modelCollections(filters: ModelCollectionFilter, ordering: [ModelCollectionOrder!]! = [], pagination: OffsetPaginationInput): [ModelCollection!]
   name: String!
   provenanceEntries(pagination: OffsetPaginationInput): [ProvenanceEntry!]!
+
+  """
+  The recording sites that are part of this model: every place on it some dataset's values were recorded from, in the viewer's organization
+  """
+  recordingSites: [RecordingSite!]!
   sectionDominance(
     referenceCell: ID = null
     referenceSection: ID = null
@@ -4990,6 +4995,11 @@ type NeuronModel {
     weightConductance: Float = null
   ): [SectionDominance!]!
   simulations(filters: SimulationFilter, ordering: [SimulationOrder!]! = [], pagination: OffsetPaginationInput): [Simulation!]!
+
+  """
+  The stimulus sites that are part of this model: every place on it some dataset's values were injected at, in the viewer's organization
+  """
+  stimulusSites: [StimulusSite!]!
 }
 
 input NeuronModelFilter {
@@ -5569,10 +5579,10 @@ enum RecordingKind {
 }
 
 """
-The site truth, recorded: where on a simulated model the anchored values were recorded (NEURON's cell, section and position along it) and what was recorded. elektro's own spoke; it was the `Recording` row of a simulation
+The site truth, recorded: a place on a neuron model -- the model it is part of, NEURON's cell, section and position along it in that model -- where the anchored values were recorded, and what was recorded. elektro's own spoke; it was the `Recording` row of a simulation
 """
 type RecordingSite {
-  """The id of the cell, as the model config names it"""
+  """The id of the cell, one of the cells the model declares"""
   cell: String
   id: ID!
   kind: RecordingKind!
@@ -5582,21 +5592,25 @@ type RecordingSite {
   """
   label: String!
 
-  """The id of the section, as the model config names it"""
+  """The id of the section, one of the sections of that cell of the model"""
   location: String
+
+  """The neuron model this site is part of"""
+  model: NeuronModel!
 
   """The normalized position along the section, 0 to 1"""
   position: Float
 }
 
 """
-Where on a model the anchored values were RECORDED: NEURON's cell, section and position along it, and what was recorded. elektro's own spoke; it replaces the `Recording` row of a simulation
+A place on a neuron model where the anchored values were RECORDED: the model it is part of, NEURON's cell, section and position along it in that model, and what was recorded. elektro's own spoke; it replaces the `Recording` row of a simulation
 """
 input RecordingSiteInput {
   cell: String = null
   kind: RecordingKind! = VOLTAGE
   label: String = null
   location: String = null
+  model: ID!
   position: Float = null
 }
 
@@ -6861,10 +6875,10 @@ enum StimulusKind {
 }
 
 """
-The site truth, injected: where on a simulated model the anchored values were injected (NEURON's cell, section and position along it) and what was clamped. elektro's own spoke; it was the `Stimulus` row of a simulation
+The site truth, injected: a place on a neuron model -- the model it is part of, NEURON's cell, section and position along it in that model -- where the anchored values were injected, and what was clamped. elektro's own spoke; it was the `Stimulus` row of a simulation
 """
 type StimulusSite {
-  """The id of the cell, as the model config names it"""
+  """The id of the cell, one of the cells the model declares"""
   cell: String
   id: ID!
   kind: StimulusKind!
@@ -6874,21 +6888,25 @@ type StimulusSite {
   """
   label: String!
 
-  """The id of the section, as the model config names it"""
+  """The id of the section, one of the sections of that cell of the model"""
   location: String
+
+  """The neuron model this site is part of"""
+  model: NeuronModel!
 
   """The normalized position along the section, 0 to 1"""
   position: Float
 }
 
 """
-Where on a model the anchored values were INJECTED: NEURON's cell, section and position along it, and what was clamped. elektro's own spoke; it replaces the `Stimulus` row of a simulation
+A place on a neuron model where the anchored values were INJECTED: the model it is part of, NEURON's cell, section and position along it in that model, and what was clamped. elektro's own spoke; it replaces the `Stimulus` row of a simulation
 """
 input StimulusSiteInput {
   cell: String = null
   kind: StimulusKind! = CURRENT
   label: String = null
   location: String = null
+  model: ID!
   position: Float = null
 }
 

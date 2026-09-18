@@ -6,7 +6,6 @@ import { createWebGPURendererFactory } from "@/lib/scene/gpu/createWebGPURendere
 import { AnnotationDrawer } from "../features/annotations/AnnotationDrawer";
 import { AnnotationToolbar } from "../features/annotations/AnnotationToolbar";
 import { MarkLabelsOverlay } from "../features/events/MarkLabelsOverlay";
-import { ExperimentMetadataOverlay } from "../features/metadata/ExperimentMetadataOverlay";
 import { CenterLodReadout } from "../features/traces/CenterLodReadout";
 import { ProbeReadout } from "../features/probe/ProbeReadout";
 import { StackLayoutManager } from "../features/stacking/StackLayoutManager";
@@ -88,9 +87,6 @@ const ReadyViewport = () => {
       <OverviewStrip />
       <CenterLodReadout />
       <TimeAxis />
-      {/* Bottom-right, above the mode controls: what was RECORDED about what is
-          on screen — the drawn traces' in-view anchors, folded to one button. */}
-      <ExperimentMetadataOverlay />
       <ExperimentModeControls />
       <AnnotationToolbar />
       <LoadingBar />

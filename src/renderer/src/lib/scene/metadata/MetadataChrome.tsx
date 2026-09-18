@@ -4,8 +4,8 @@ import { ChevronDown, Tags } from "lucide-react";
 import { memo } from "react";
 
 /**
- * The chrome both viewers' in-view metadata overlays are drawn with — mikro's
- * scene (`MetadataOverlay`) and elektro's timeline (`ExperimentMetadataOverlay`).
+ * The chrome both viewers' in-view metadata is drawn with — mikro's scene
+ * overlay (`MetadataOverlay`) and elektro's unfolding row labels (`LayerMetadata`).
  *
  * Only the presentation is shared. WHICH anchors are in view is each viewer's own
  * question (a channel toggle and a dim slider in the scene, the drawn channels and
@@ -31,9 +31,24 @@ export const MetadataChip = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
-/** One in-view anchor's box; its spokes stack inside, right-aligned. */
-export const MetadataAnchorBox = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex flex-col items-end gap-1.5 rounded border border-white/10 bg-white/[0.03] p-1.5 text-right">
+/**
+ * One in-view anchor's box; its spokes stack inside. Right-aligned by default
+ * (the scene docks its overlay on the right edge); a panel hanging off a
+ * left-hand label passes `align="start"`.
+ */
+export const MetadataAnchorBox = ({
+  children,
+  align = "end",
+}: {
+  children: React.ReactNode;
+  align?: "start" | "end";
+}) => (
+  <div
+    className={cn(
+      "flex flex-col gap-1.5 rounded border border-white/10 bg-white/[0.03] p-1.5",
+      align === "end" ? "items-end text-right" : "items-start text-left",
+    )}
+  >
     {children}
   </div>
 );
@@ -173,7 +188,7 @@ export const DeviceRows = ({ devices }: { devices: readonly DeviceLike[] }) => (
  * then is `children` mounted, so the heavy anchor query a body runs fires only
  * once someone asked.
  *
- * `className` positions it: each viewer docks it above its own mode controls.
+ * `className` positions it (the scene docks it above its mode controls).
  * Controlled, so the fold state can outlive the frame — the host keeps it while
  * the frame unmounts for a moment (no layer has anchors, then one does again).
  */
