@@ -98,3 +98,63 @@ describe("annotationMarks", () => {
     expect(marks.events[0].color).toBe("rgb(255, 0, 0)");
   });
 });
+
+describe("annotationMarks — value shapes over trace rows", () => {
+  const system = {
+    axes: [
+      { name: "t", type: "TIME", order: 0 },
+      { name: "c", type: "CHANNEL", order: 1 },
+      { name: "value", type: "VALUE", order: 2 },
+    ],
+  };
+  // Collection t is a lens sample: 2 world units per sample from 100.
+  const asAffine = { matrix: [[2, 0, 100]], inputAxes: ["t", "c"], outputAxes: ["t"], total: false };
+
+  it("emits a LINE into each target row showing its channel", () => {
+    const marks = annotationMarks({
+      annotations: [a("LINE", [[10, 3, -5], [20, 3, 40]])],
+      system,
+      asAffine,
+      world,
+      rowTargets: [
+        { traceLayerId: "all", channelIndex: null },
+        { traceLayerId: "only3", channelIndex: 3 },
+        { traceLayerId: "only1", channelIndex: 1 },
+      ],
+    });
+    expect(marks.epochs).toEqual([]);
+    expect(marks.rowScoped).toBe(0);
+    expect(marks.rows.map((r) => [r.traceLayerId, r.channel])).toEqual([
+      ["all", 3],
+      ["only3", 0],
+    ]);
+    expect(marks.rows[0].shapes[0]).toMatchObject({ kind: "LINE", times: [120, 140], values: [-5, 40], closed: false });
+  });
+
+  it("closes a POLYGON and falls back to the pinned channel", () => {
+    const twoD = { axes: [system.axes[0], system.axes[2]] };
+    const marks = annotationMarks({
+      annotations: [
+        a("POLYGON", [[1, 0], [2, 5], [3, 0]], { coordinates: [{ name: "c", value: 0 }] }),
+      ],
+      system: twoD,
+      asAffine: { matrix: [[1, 0]], inputAxes: ["t"], outputAxes: ["t"], total: true },
+      world,
+      rowTargets: [{ traceLayerId: "tr", channelIndex: null }],
+    });
+    expect(marks.rows[0]).toMatchObject({ traceLayerId: "tr", channel: 0 });
+    expect(marks.rows[0].shapes[0].closed).toBe(true);
+  });
+
+  it("without targets a value shape is a time extent, counted as row-scoped", () => {
+    const marks = annotationMarks({
+      annotations: [a("LINE", [[10, 3, -5], [20, 3, 40]])],
+      system,
+      asAffine,
+      world,
+    });
+    expect(marks.rows).toEqual([]);
+    expect(marks.rowScoped).toBe(1);
+    expect(marks.epochs[0]).toMatchObject({ start: 120, end: 140, rowScoped: true });
+  });
+});

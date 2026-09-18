@@ -5,7 +5,15 @@ import type {
 } from "@/mikro-next/api/graphql";
 import { useGetLensAnchorsQuery } from "@/mikro-next/api/graphql";
 import { LightPathListView } from "@/mikro-next/components/lightpath/LightPathListView";
-import { memo, useMemo, useState } from "react";
+import {
+  DeviceRows,
+  MetadataAnchorBox,
+  MetadataChip,
+  MetadataHeader,
+  MetadataRow,
+  ValueHistogramSpoke,
+} from "@/lib/scene/metadata/MetadataChrome";
+import { useMemo, useState } from "react";
 import {
   type AnchorMatch,
   layerCoverage,
@@ -63,99 +71,6 @@ type PanelAnchor = {
   phasorHistograms?: FullCoordinateAnchorFragment["phasorHistograms"];
 };
 
-const Header = ({ children }: { children: React.ReactNode }) => (
-  <div className="text-[9px] uppercase tracking-widest text-white/40">
-    {children}
-  </div>
-);
-
-const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="flex items-baseline gap-1.5">
-    <span className="shrink-0 text-white/40">{label}</span>
-    <span className="min-w-0 truncate font-mono text-white/85">{value}</span>
-  </div>
-);
-
-/** Read-only shape of a value distribution — reference, not a levels editor.
- * Memoized on the histogram's identity (Apollo-cached, stable): the metadata
- * pane re-partitions on every layer edit (a clim drag ticks per frame), and
- * without the memo every tick rebuilt one `<rect>` per bin per anchor. */
-const HistogramSparkline = memo(function HistogramSparkline({
-  histogram,
-}: {
-  histogram: readonly number[];
-}) {
-  // reduce, not Math.max(...bins): a fine-grained histogram would blow the
-  // argument limit.
-  const peak = histogram.reduce((best, count) => Math.max(best, count), 1);
-  const step = 100 / Math.max(1, histogram.length);
-  return (
-    <svg
-      viewBox="0 0 100 24"
-      preserveAspectRatio="none"
-      className="h-6 w-full rounded-sm bg-white/5"
-      aria-hidden
-    >
-      {histogram.map((count, index) => {
-        const height = (count / peak) * 24;
-        return (
-          <rect
-            key={index}
-            x={index * step}
-            y={24 - height}
-            width={step}
-            height={height}
-            className="fill-white/50"
-          />
-        );
-      })}
-    </svg>
-  );
-});
-
-const ValueHistogramSpoke = ({
-  histogram,
-}: {
-  histogram: NonNullable<PanelAnchor["valueHistogram"]>;
-}) => {
-  const limits = [
-    histogram.min != null && `min ${histogram.min}`,
-    histogram.max != null && `max ${histogram.max}`,
-    histogram.p1 != null && `p1 ${histogram.p1}`,
-    histogram.p99 != null && `p99 ${histogram.p99}`,
-  ].filter(Boolean);
-
-  return (
-    <div className="flex flex-col gap-1">
-      <Header>Values</Header>
-      {histogram.histogram.length > 0 && (
-        <HistogramSparkline histogram={histogram.histogram} />
-      )}
-      {limits.length > 0 && (
-        <div className="font-mono text-[9px] text-white/50">
-          {limits.join(" · ")}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * A `Setting` is a tagged union by which field is non-null — render whichever
- * one the server filled, and say nothing rather than "null" when none is.
- */
-const settingValue = (
-  setting: NonNullable<
-    FullCoordinateAnchorFragment["microscope"]
-  >["state"]["devices"][number]["settings"][number],
-): string | null => {
-  if (setting.quantity != null) return formatDisplay(setting.quantity);
-  if (setting.text != null && setting.text !== "") return setting.text;
-  if (setting.number != null) return String(setting.number);
-  if (setting.flag != null) return setting.flag ? "on" : "off";
-  return null;
-};
-
 const MicroscopeSpoke = ({
   microscope,
 }: {
@@ -170,34 +85,12 @@ const MicroscopeSpoke = ({
 
   return (
     <div className="flex flex-col gap-1">
-      <Header>Microscope</Header>
-      {stagePose && <Row label="stage" value={stagePose} />}
+      <MetadataHeader>Microscope</MetadataHeader>
+      {stagePose && <MetadataRow label="stage" value={stagePose} />}
       {temperature != null && (
-        <Row label="temp" value={formatDisplay(temperature)} />
+        <MetadataRow label="temp" value={formatDisplay(temperature)} />
       )}
-      {devices.map((device) => {
-        const settings = device.settings
-          .map((setting) => {
-            const value = settingValue(setting);
-            return value === null ? null : `${setting.name} ${value}`;
-          })
-          .filter((entry): entry is string => entry !== null);
-        return (
-          <div key={`${device.kind ?? ""}:${device.label}`} className="pl-1">
-            <Row
-              label={device.kind ?? "device"}
-              value={
-                <>
-                  {device.label}
-                  {settings.length > 0 && (
-                    <span className="text-white/45"> · {settings.join(" · ")}</span>
-                  )}
-                </>
-              }
-            />
-          </div>
-        );
-      })}
+      <DeviceRows devices={devices} />
     </div>
   );
 };
@@ -209,9 +102,9 @@ const PhasorSpoke = ({ anchor }: { anchor: PanelAnchor }) => {
 
   return (
     <div className="flex flex-col gap-1">
-      <Header>Phasor</Header>
+      <MetadataHeader>Phasor</MetadataHeader>
       {calibrations.map((calibration) => (
-        <Row
+        <MetadataRow
           key={calibration.id}
           label={`h${calibration.harmonic} cal`}
           value={[
@@ -226,7 +119,7 @@ const PhasorSpoke = ({ anchor }: { anchor: PanelAnchor }) => {
         />
       ))}
       {histograms.map((histogram) => (
-        <Row
+        <MetadataRow
           key={histogram.id}
           label={`h${histogram.harmonic} dist`}
           value={`${histogram.axis} · ${histogram.bins}² bins · ${
@@ -249,13 +142,11 @@ const ActiveAnchor = ({ anchor }: { anchor: PanelAnchor }) => {
     (anchor.phasorHistograms?.length ?? 0) > 0;
 
   return (
-    <div className="flex flex-col items-end gap-1.5 rounded border border-white/10 bg-white/[0.03] p-1.5 text-right">
+    <MetadataAnchorBox>
       {/* Which slice the anchor pins is not shown — `match` decided it is in
           view, and that is all the reader needs; the coordinates are noise. */}
       {anchor.channelLabel?.label && (
-        <span className="shrink-0 rounded border border-white/15 bg-white/5 px-1 py-px text-[9px] text-white/85">
-          {anchor.channelLabel.label}
-        </span>
+        <MetadataChip>{anchor.channelLabel.label}</MetadataChip>
       )}
 
       {anchor.valueHistogram && (
@@ -264,7 +155,7 @@ const ActiveAnchor = ({ anchor }: { anchor: PanelAnchor }) => {
 
       {anchor.lightGraph && (
         <div className="flex flex-col gap-1">
-          <Header>Light path</Header>
+          <MetadataHeader>Light path</MetadataHeader>
           {/* LightPathListView styles itself with themed tokens rather than the
               scene's white-on-black chrome. They read correctly on this
               near-black surface in the dark theme, and the wrapper sets the
@@ -282,7 +173,7 @@ const ActiveAnchor = ({ anchor }: { anchor: PanelAnchor }) => {
       {!hasSpokes && (
         <span className="text-[9px] text-white/40">no metadata recorded</span>
       )}
-    </div>
+    </MetadataAnchorBox>
   );
 };
 

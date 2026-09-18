@@ -1,4 +1,4 @@
-import { ChevronDown, Tags } from "lucide-react";
+import { MetadataOverlayFrame } from "@/lib/scene/metadata/MetadataChrome";
 import { memo, useState } from "react";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { LayerState, useSceneStore } from "../../platform/stores/sceneStore";
@@ -18,11 +18,12 @@ import { AnchorMetadata, useLayerAnchors } from "./AnchorMetadata";
  * second rule is deliberately the probe's own, so the readout, the LOD badge
  * and this overlay can never describe three different layers.
  *
- * Two states. COLLAPSED is nothing but a small unfold button — no title, no
- * layer name, no count — cheap enough to leave up on every scene and quiet
- * enough not to caption the picture. EXPANDED unfolds the full panel
- * (`AnchorMetadata`), and only then does `GetLensAnchors` fetch the heavy
- * microscope state and phasor facts, for exactly this one layer.
+ * Two states (`MetadataOverlayFrame`, shared with elektro's timeline).
+ * COLLAPSED is nothing but a small unfold button — no title, no layer name, no
+ * count — cheap enough to leave up on every scene and quiet enough not to
+ * caption the picture. EXPANDED unfolds the full panel (`AnchorMetadata`), and
+ * only then does `GetLensAnchors` fetch the heavy microscope state and phasor
+ * facts, for exactly this one layer.
  *
  * A layer with no anchors at all renders nothing: a dataset without recorded
  * metadata is the common case, not a fault worth a permanent pill.
@@ -53,40 +54,14 @@ export const MetadataOverlay = () => {
 
   if (!layer || layer.lens.activeAnchors.length === 0) return null;
 
-  const label = layerDisplayLabel(layer);
-
-  // Collapsed: only the button. The name and the count are for the tooltip.
-  if (!expanded) {
-    return (
-      <button
-        type="button"
-        className="pointer-events-auto absolute bottom-14 right-2 z-30 flex h-6 w-6 items-center justify-center rounded-md border border-black/10 bg-black/40 text-white/70 backdrop-blur-md hover:text-white"
-        title={`Metadata for ${label}`}
-        aria-label="Show metadata"
-        aria-expanded={false}
-        onClick={() => setExpanded(true)}
-      >
-        <Tags className="h-3 w-3" />
-      </button>
-    );
-  }
-
   return (
-    <div className="pointer-events-auto absolute bottom-14 right-2 z-30 flex max-h-[50vh] w-72 flex-col items-end overflow-hidden rounded-lg border border-black/10 bg-black/40 text-right backdrop-blur-md">
-      <button
-        type="button"
-        className="flex items-center gap-1.5 px-2 py-1 text-white/70 hover:text-white"
-        title="Collapse metadata"
-        aria-label="Hide metadata"
-        aria-expanded
-        onClick={() => setExpanded(false)}
-      >
-        <Tags className="h-3 w-3 shrink-0" />
-        <ChevronDown className="h-3 w-3 shrink-0 text-white/50" />
-      </button>
-      <div className="min-h-0 w-full overflow-y-auto border-t border-white/10 px-1 pt-1">
-        <OverlayBody layer={layer} />
-      </div>
-    </div>
+    <MetadataOverlayFrame
+      title={`Metadata for ${layerDisplayLabel(layer)}`}
+      className="bottom-14 right-2"
+      expanded={expanded}
+      setExpanded={setExpanded}
+    >
+      <OverlayBody layer={layer} />
+    </MetadataOverlayFrame>
   );
 };

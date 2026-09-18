@@ -3,7 +3,12 @@ import { PlacementFix } from "../../platform/edits/PlacementFix";
 import type { LayerState } from "../../platform/model/layerModel";
 import { CardFact, CardShell, type LayerCardProps } from "../../platform/layerui/cardShell";
 import { LayerMenu } from "../../platform/layerui/layerControls";
+import type { AnnotationMarks } from "./annotationGeometry";
 import { useAnnotationMarks } from "./store/annotationSlice";
+
+/** Distinct value shapes — one shape drawn in two rows is still one annotation. */
+const shapeCount = (marks: AnnotationMarks): number =>
+  new Set(marks.rows.flatMap((row) => row.shapes.map((shape) => shape.id))).size;
 
 /**
  * The card for an annotation layer.
@@ -14,9 +19,10 @@ import { useAnnotationMarks } from "./store/annotationSlice";
  * too. Counting marks from the
  * same `annotationMarks` the layer uses keeps the card and the canvas in agreement.
  *
- * It says how many row-scoped shapes were drawn by time only. That is a data-model
- * gap (no annotation names the layer whose row its value belongs to), and hiding it
- * would make those shapes look correctly placed when they are not.
+ * It says how many row-scoped shapes were drawn by time only — a value
+ * collection whose lens no trace in this experiment reads has no row to draw
+ * them in, and hiding that would make them look correctly placed when they are
+ * not.
  */
 export const AnnotationLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProps<LayerState>) => {
   const marks = useAnnotationMarks(layer.id) ?? null;
@@ -37,10 +43,11 @@ export const AnnotationLayerCard = ({ layer, hidden, onToggleHidden }: LayerCard
         <div className="flex flex-col gap-0.5">
           <CardFact label="Events" value={marks.events.length || null} />
           <CardFact label="Epochs" value={marks.epochs.length || null} />
+          <CardFact label="Shapes" value={shapeCount(marks) || null} />
           {marks.rowScoped > 0 && (
             <div className="text-[11px] text-amber-500">
               {marks.rowScoped} row-scoped shape{marks.rowScoped === 1 ? "" : "s"} shown by
-              time only — no layer is named for their values.
+              time only — no trace here reads the lens they were drawn over.
             </div>
           )}
           {marks.skipped > 0 && (

@@ -124,10 +124,14 @@ export const createExperimentSystem = (
   return {
     registry,
     dispose: () => {
+      // Followers FIRST. Drivers write on their way out (an event table withdraws
+      // its reported span), and a teardown write that still reached the range
+      // store would move the committed window — which `TimeRangeUrlSync` turns
+      // into a navigation back to this experiment, i.e. leaving the page reloads it.
+      unsubscribeWorld();
+      unsubscribeWarm();
       registry.dispose();
       annotations.dispose();
-      unsubscribeWarm();
-      unsubscribeWorld();
       viewer.getState().setPickerService(null);
       pickers.dispose();
     },

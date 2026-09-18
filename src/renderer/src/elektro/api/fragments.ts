@@ -9,8 +9,12 @@
     "ExperimentLayer": [
       "AnnotationLayer",
       "EventsLayer",
+      "HeatmapLayer",
+      "PointLayer",
+      "SeriesLayer",
       "SpikesLayer",
-      "TraceLayer"
+      "TraceLayer",
+      "WaveformLayer"
     ],
     "FileLinkContainer": [
       "AnnotationCollection",
@@ -82,6 +86,7 @@
       "File",
       "FileLink",
       "Folder",
+      "HeatmapLayer",
       "IdentityTransformation",
       "Lens",
       "MapAxisTransformation",
@@ -89,12 +94,14 @@
       "ModEnvironment",
       "Organization",
       "ParquetStore",
+      "PointLayer",
       "RecordingSite",
       "Release",
       "RigState",
       "RotationTransformation",
       "ScaleTransformation",
       "SequenceTransformation",
+      "SeriesLayer",
       "SparseArray",
       "SparseAxisReference",
       "SparseDataset",
@@ -108,6 +115,7 @@
       "User",
       "ValueHistogram",
       "ValueUnit",
+      "WaveformLayer",
       "ZarrStore"
     ]
   }

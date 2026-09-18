@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  anchorInView,
   anchorsForChannel,
   channelLabelsOf,
   climSeedOf,
   histogramClimOf,
+  partitionAnchors,
   pinOf,
+  sampleWindowOf,
   siteLabelOf,
+  type AnchorCoverage,
 } from "./anchors";
 
 const anchor = (coordinates: unknown, over: Record<string, unknown> = {}) => ({ coordinates, ...over });
@@ -64,5 +68,56 @@ describe("clim seeding", () => {
     expect(climSeedOf({ climMin: -1 }, histogram)).toEqual({ lo: -1, hi: 20 });
     expect(climSeedOf({}, histogram)).toEqual(histogram);
     expect(climSeedOf({}, null)).toBeNull();
+  });
+});
+
+describe("sampleWindowOf", () => {
+  it("maps a world window onto dataset samples off the finest level's law", () => {
+    expect(sampleWindowOf({ t0: 10, period: 0.5 }, { start: 11, end: 12 })).toEqual({ start: 2, end: 4 });
+  });
+  it("orders the run when time runs backwards, and refuses a zero period", () => {
+    expect(sampleWindowOf({ t0: 0, period: -1 }, { start: 1, end: 3 })).toEqual({ start: -3, end: -1 });
+    expect(sampleWindowOf({ t0: 0, period: 0 }, { start: 1, end: 3 })).toBeNull();
+    expect(sampleWindowOf(null, { start: 1, end: 3 })).toBeNull();
+  });
+});
+
+describe("anchorInView", () => {
+  const coverage: AnchorCoverage = {
+    channelAxis: "c",
+    channelIndices: [2],
+    timeAxis: "t",
+    timeSamples: { start: 100, end: 200 },
+  };
+
+  it("keeps global anchors and the drawn channel, drops other channels", () => {
+    expect(anchorInView({}, coverage)).toBe(true);
+    expect(anchorInView({ c: 2 }, coverage)).toBe(true);
+    expect(anchorInView({ c: 3 }, coverage)).toBe(false);
+  });
+
+  it("keeps a time pin only while its sample overlaps the window", () => {
+    expect(anchorInView({ t: 150 }, coverage)).toBe(true);
+    // Sample 99 spans [99, 100): it ends where the window starts.
+    expect(anchorInView({ t: 99 }, coverage)).toBe(false);
+    expect(anchorInView({ t: 199 }, coverage)).toBe(true);
+    expect(anchorInView({ t: 200 }, coverage)).toBe(false);
+    // A window that starts mid-sample still shows that sample.
+    expect(anchorInView({ t: 99 }, { ...coverage, timeSamples: { start: 99.5, end: 120 } })).toBe(true);
+  });
+
+  it("counts everything along an axis the coverage does not know", () => {
+    const open: AnchorCoverage = { channelAxis: null, channelIndices: [], timeAxis: "t", timeSamples: null };
+    expect(anchorInView({ c: 7, t: 1e9 }, open)).toBe(true);
+  });
+});
+
+describe("partitionAnchors", () => {
+  it("splits in order", () => {
+    const coverage: AnchorCoverage = { channelAxis: "c", channelIndices: [0], timeAxis: null, timeSamples: null };
+    const a = anchor({ c: 0 }, { id: "a" });
+    const b = anchor({ c: 1 }, { id: "b" });
+    const g = anchor({}, { id: "g" });
+    expect(partitionAnchors([a, b, g], coverage)).toEqual({ inView: [a, g], outOfView: [b] });
   });
 });

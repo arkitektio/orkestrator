@@ -136,3 +136,41 @@ fragment ListArrayDataset on ArrayDataset {
   name
   valueUnit
 }
+
+# The full metadata payload of one anchor (`GetExpLensAnchors`): `ExpAnchor`
+# plus the histogram's shape, the rig state at acquisition, and the recorded
+# acquisition metadata as the file stated it.
+fragment ExpFullAnchor on CoordinateAnchor {
+  ...ExpAnchor
+  valueHistogram {
+    id
+    bins
+    histogram
+  }
+  rig {
+    id
+    state {
+      mode
+      holdingPotential
+      holdingCurrent
+      seriesResistance
+      membraneCapacitance
+      temperature
+      devices {
+        kind
+        label
+        settings {
+          name
+          text
+          number
+          flag
+          quantity
+        }
+      }
+    }
+  }
+  acquisitionMetadata {
+    id
+    metadata
+  }
+}

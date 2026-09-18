@@ -3,10 +3,12 @@ import type { ExperimentStoreState } from "../../platform/stores/experimentStore
 import type { ExperimentLayerFragment } from "../../platform/stores/layerFragments";
 import { annotationMarks, type AnnotationMarks } from "./annotationGeometry";
 import type { AnnotationSlice } from "./store/annotationSlice";
+import { rowTargetsFor } from "./valueCollections";
 
 /**
  * Keeps `annotationSlice.annotationMarks` in step with the experiment: every
- * annotation layer's events and epochs, placed on the world clock.
+ * annotation layer's events and epochs, placed on the world clock, and the value
+ * shapes of a collection drawn over a trace, per row of that trace.
  *
  * For EVERY annotation layer, hidden or not — the card counts and the panel
  * lists marks of hidden layers too — which is why this is a scope-level service
@@ -15,7 +17,10 @@ import type { AnnotationSlice } from "./store/annotationSlice";
  * identity, so an unrelated fold re-renders nothing.
  */
 export class AnnotationMarksIndexer {
-  private readonly cache = new Map<string, { raw: ExperimentLayerFragment; marks: AnnotationMarks }>();
+  private readonly cache = new Map<
+    string,
+    { raw: ExperimentLayerFragment; targetsKey: string; marks: AnnotationMarks }
+  >();
   private world: unknown = null;
   private readonly unsubscribe: () => void;
 
@@ -45,8 +50,12 @@ export class AnnotationMarksIndexer {
     let changed = false;
     for (const [id, raw] of Object.entries(rawLayers)) {
       if (raw.__typename !== "AnnotationLayer") continue;
+      // A trace arriving or leaving moves a value collection's rows without
+      // touching its own fragment, so the targets are part of the cache key.
+      const rowTargets = rowTargetsFor(raw.annotationCollection, rawLayers);
+      const targetsKey = rowTargets.map((t) => `${t.traceLayerId}/${t.channelIndex}`).join(",");
       const cached = this.cache.get(id);
-      if (cached && cached.raw === raw) {
+      if (cached && cached.raw === raw && cached.targetsKey === targetsKey) {
         next[id] = cached.marks;
         continue;
       }
@@ -55,8 +64,9 @@ export class AnnotationMarksIndexer {
         system: raw.annotationCollection.coordinateSystem,
         asAffine: raw.asAffine,
         world,
+        rowTargets,
       });
-      this.cache.set(id, { raw, marks });
+      this.cache.set(id, { raw, targetsKey, marks });
       next[id] = marks;
       changed = true;
     }

@@ -4,12 +4,29 @@
 # MINTS it on first use — a coordinate system copying the world's axes, an identity
 # registration into the world, and one annotation view. So the first draw on an
 # experiment adds a view; the renderer treats that as a reconcile, never a rebuild.
+#
+# The collection id comes back so the client can append the new annotation to
+# that collection's cached `annotations` (and does so optimistically), instead
+# of refetching the whole scene.
 mutation CreateExperimentAnnotation($input: CreateAnnotationInput!) {
   createAnnotation(input: $input) {
     ...ExpAnnotation
+    collection {
+      id
+    }
   }
 }
 
 mutation DeleteExperimentAnnotation($id: ID!) {
   deleteAnnotation(input: { id: $id })
+}
+
+# A drawing space over one trace's lens: its time (and channel) axes map 1:1 onto
+# the lens' grid through a BY_DIMENSION edge, and its extra VALUE axis is what
+# that edge drops — so a baseline-to-peak line has a row to be drawn in. Created
+# on the first value shape drawn over a trace, then added as an annotation layer.
+mutation CreateExperimentAnnotationCollection($input: CreateAnnotationCollectionInput!) {
+  createAnnotationCollection(input: $input) {
+    ...ExpAnnotationCollection
+  }
 }

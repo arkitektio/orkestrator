@@ -127,3 +127,68 @@ export const climSeedOf = (
   const hi = persisted.climMax ?? histogram?.hi ?? null;
   return lo != null && hi != null && hi > lo ? { lo, hi } : null;
 };
+
+/**
+ * What a trace layer is showing right now, in the terms an anchor pins: dataset
+ * indices along the channel axis, and a run of dataset samples along time.
+ *
+ * The lens' own slices need no place here — `Lens.activeAnchors` already keeps
+ * only the anchors inside them. What the server cannot know is what the VIEWER
+ * shows: which channel `channelIndex` narrowed the lens to, and which part of
+ * the timeline is on screen.
+ */
+export type AnchorCoverage = {
+  channelAxis: string | null;
+  /** Dataset indices along the channel axis that are drawn. Empty: no channel axis. */
+  channelIndices: readonly number[];
+  timeAxis: string | null;
+  /** Half-open dataset sample run on screen; null when unknown (everything counts). */
+  timeSamples: { start: number; end: number } | null;
+};
+
+/**
+ * The dataset samples a world-time window covers, off the finest level's law
+ * (`t = t0 + i · period`). Half-open, and ordered even when time runs backwards.
+ */
+export const sampleWindowOf = (
+  finest: { t0: number; period: number } | null | undefined,
+  window: { start: number; end: number },
+): { start: number; end: number } | null => {
+  if (!finest || !finest.period || !Number.isFinite(finest.period)) return null;
+  const a = (window.start - finest.t0) / finest.period;
+  const b = (window.end - finest.t0) / finest.period;
+  return { start: Math.min(a, b), end: Math.max(a, b) };
+};
+
+/**
+ * Whether an anchor describes something on screen: pinned to a drawn channel
+ * (or global along the channel axis), and pinned to a sample inside the window
+ * (or global along time). Sample `i` spans `[i, i + 1)`, so an anchor on the
+ * sample straddling the window's edge is still in view.
+ */
+export const anchorInView = (coordinates: unknown, coverage: AnchorCoverage): boolean => {
+  if (coverage.channelAxis && coverage.channelIndices.length > 0) {
+    const pin = pinOf(coordinates, coverage.channelAxis);
+    if (pin !== null && !coverage.channelIndices.includes(pin)) return false;
+  }
+  if (coverage.timeAxis && coverage.timeSamples) {
+    const pin = pinOf(coordinates, coverage.timeAxis);
+    if (pin !== null && (pin + 1 <= coverage.timeSamples.start || pin >= coverage.timeSamples.end)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+/** Split anchors into the ones describing what is on screen and the rest, order kept. */
+export const partitionAnchors = <A extends { coordinates?: unknown }>(
+  anchors: readonly A[],
+  coverage: AnchorCoverage,
+): { inView: A[]; outOfView: A[] } => {
+  const inView: A[] = [];
+  const outOfView: A[] = [];
+  for (const anchor of anchors) {
+    (anchorInView(anchor.coordinates, coverage) ? inView : outOfView).push(anchor);
+  }
+  return { inView, outOfView };
+};

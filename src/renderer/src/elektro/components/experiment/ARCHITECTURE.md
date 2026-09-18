@@ -18,7 +18,7 @@ experiment/
                         chrome, the registries, the feature-slice list
   platform/             the engine: model, coords, camera, stores, drivers
                         (lifecycle only), marks, pickers, quality, sources
-  features/             one folder per layer kind (+ probe, stacking): its
+  features/             one folder per layer kind (+ probe, stacking, metadata): its
                         driver, its slice, its layer component, its card
 ```
 
@@ -76,6 +76,33 @@ late dependency never rebuilds the drivers.
 
 Layer COMPONENTS only draw: each subscribes to its own slice entry and binds its
 band imperatively.
+
+## Annotating — the scene's tools on a timeline
+
+`features/annotations/` mirrors mikro's `RoiToolbar` / `roiDrawingStore` /
+`roiSelectionStore`:
+
+- `annotationTools.ts` — the tools (SELECT; time: EVENT, EVENTS, EPOCH; row:
+  LINE, PATH, POLYGON) and ONE pure gesture machine for all of them. The
+  drawer resolves pointer events to world time, world y and the trace row under
+  them (`platform/coords/rowHit.ts`); the machine never reads a pixel.
+- `annotationSlice` — the active tool, the draft (pointer rate, bound
+  imperatively by the SVG preview) and the selection (`selectionVersion`
+  scalar; one boolean per panel row).
+- `useAnnotationCommit` — time shapes go to the experiment's own
+  world-registered collection (`createAnnotation(experiment:)`); row shapes go
+  to a per-lens VALUE COLLECTION (`valueCollections.ts`): axes = the lens'
+  time (and channel) + a VALUE axis, derived from the lens by a BY_DIMENSION
+  identity that drops the value. It is minted with its annotation layer on the
+  first row shape, single-flight per lens space. Vertices are
+  `[lens sample, lens channel, value]`; the channel is also pinned.
+- Drawing: `AnnotationMarksIndexer` matches a value collection to the trace
+  layers reading its lens (`derivedFrom[0].output` = the lens' space) and emits
+  `rows` per (trace, drawn channel). Those draw in the trace's own units under
+  `platform/marks/bandValueMatrix.ts` — the same band + clim → matrix binding
+  `TraceLines` uses — so a shape stays on its trace through any relayout.
+- `annotationHit.ts` — SELECT's pixel-space hit test (shapes, then instants,
+  then the narrowest epoch).
 
 ## Registries — adding a layer kind
 

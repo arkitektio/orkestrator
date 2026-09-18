@@ -39,6 +39,10 @@ const RECORDS = new Set([
   "spikeDraws",
   "annotationMarks",
   "pickerProblems",
+  // Pointer-rate: bound imperatively by the draft overlay, never rendered from.
+  "draft",
+  // Subscribe to one id's flag (`useIsAnnotationSelected`) or `selectionVersion`.
+  "selectedAnnotationIds",
 ]);
 
 const ALLOWLIST: Record<string, Record<string, string>> = {

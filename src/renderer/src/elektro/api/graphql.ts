@@ -1379,11 +1379,12 @@ export type CreateArrayDatasetInput = {
   sourceFiles?: InputMaybe<Array<SourceFileInput>>;
 };
 
-/** State where one clock's zero sits on another: a segment within its session, a session or a run within an experiment's world. One edge, shared by everything timed on `clock` -- which is why an offset is stated here once and never per layer. A bare offset when the two clocks count in one unit, a one-axis affine when they do not */
+/** State where one clock's zero sits on another, and how fast it ticks against it: a segment within its session, a session or a run within an experiment's world, a probe's clock against a DAQ's. One edge, shared by everything timed on `clock` -- which is why an offset is stated here once and never per layer. A bare offset when the two clocks count in one unit and do not drift, a one-axis affine otherwise */
 export type CreateClockOffsetInput = {
   clock: Scalars['ID']['input'];
+  driftPpm?: Scalars['Float']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
-  offset: Scalars['Duration']['input'];
+  offset?: InputMaybe<Scalars['Duration']['input']>;
   onto: Scalars['ID']['input'];
   validity?: InputMaybe<PlacementValidity>;
 };
@@ -1424,7 +1425,7 @@ export type CreateEventsLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-/** Stage what is already laid out on a coordinate system as an experiment over it: a layer for every trace, spike raster, event table and annotation collection that reaches it -- through a sampling law, a time lookup, or a chain of clock offsets. CS-first: time the data on a clock, then point this at the clock. Authors no edges. mikro's createSceneFromCoordinateSystem */
+/** Stage what is already laid out on a coordinate system as an experiment over it: a layer for every trace, spectrogram, waveform template, spike raster, event or series table, point table and annotation collection that reaches it -- through a sampling law, a time lookup, a chain of clock offsets, or a registration into a space. CS-first: time the data on a clock, then point this at the clock. Authors no edges. mikro's createSceneFromCoordinateSystem */
 export type CreateExperimentFromCoordinateSystemInput = {
   coordinateSystem: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
@@ -1446,6 +1447,25 @@ export type CreateFolderInput = {
   name: Scalars['String']['input'];
   /** The ID of the parent folder to nest this folder under */
   parent?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** Draw an array dataset as an image, time across and one other axis down: a spectrogram (t, f), a depth or current-source-density plot (t, c). Every other axis of the lens must be fixed to one position. mikro's intensity layer, over time */
+export type CreateHeatmapLayerInput = {
+  blending?: InputMaybe<Blending>;
+  climMax?: InputMaybe<Scalars['Float']['input']>;
+  climMin?: InputMaybe<Scalars['Float']['input']>;
+  clock?: InputMaybe<Scalars['ID']['input']>;
+  colormap?: InputMaybe<ColorMap>;
+  dataset?: InputMaybe<Scalars['ID']['input']>;
+  experiment: Scalars['ID']['input'];
+  gamma?: InputMaybe<Scalars['Float']['input']>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  rowAxis?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+  window?: InputMaybe<WindowInput>;
 };
 
 /** Add a layer of any kind with default render settings: exactly one source, the one its kind draws. The per-kind mutations set the render settings too */
@@ -1496,6 +1516,34 @@ export type CreateNeuronModelInput = {
   parent?: InputMaybe<Scalars['ID']['input']>;
 };
 
+/** Draw a table placed in space as a point per row: a probe's channel map, units at their positions. The table's SPACE coordinate columns place the rows, so the experiment is one over a space -- a probe's -- rather than a clock. mikro's point layer */
+export type CreatePointLayerInput = {
+  activeColorBy?: InputMaybe<Scalars['Int']['input']>;
+  activeFilterBys?: InputMaybe<Array<Scalars['Int']['input']>>;
+  blending?: InputMaybe<Blending>;
+  /** The base colour as RGBA, 0-255 */
+  color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  colorBys?: InputMaybe<Array<ColorByInput>>;
+  colormap?: InputMaybe<ColorMap>;
+  experiment: Scalars['ID']['input'];
+  /** The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  filterBys?: InputMaybe<Array<FilterByInput>>;
+  /** A column naming each point (a channel id, a unit label) */
+  labelColumn?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  /** The position top to bottom. Omit to append */
+  order?: InputMaybe<Scalars['Int']['input']>;
+  /** A point's size, in screen pixels */
+  pointSize?: InputMaybe<Scalars['Float']['input']>;
+  /** A numeric column scaling each point's size */
+  sizeColumn?: InputMaybe<Scalars['String']['input']>;
+  /** The table to draw: at least two SPACE coordinate columns and no TIME column; its space must reach the world */
+  tableDataset: Scalars['ID']['input'];
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** State `t = sample / samplingRate + tStart` as one edge from a sample grid onto a clock: how a regularly sampled signal -- or a spike raster's sample axis -- is timed. One BY_DIMENSION edge over the grid's TIME axis, in the clock's unit; the same edge `createTransformation` would write, with the arithmetic done for you */
 export type CreateSamplingLawInput = {
   clock: Scalars['ID']['input'];
@@ -1504,6 +1552,40 @@ export type CreateSamplingLawInput = {
   source: Scalars['ID']['input'];
   tStart?: Scalars['Duration']['input'];
   validity?: InputMaybe<PlacementValidity>;
+};
+
+/** Draw one numeric column of a table with a TIME column as a line over time: running speed, pupil size, a temperature -- a signal that arrives as rows */
+export type CreateSeriesLayerInput = {
+  activeColorBy?: InputMaybe<Scalars['Int']['input']>;
+  activeFilterBys?: InputMaybe<Array<Scalars['Int']['input']>>;
+  blending?: InputMaybe<Blending>;
+  /** The top of the value range, in the column's unit */
+  climMax?: InputMaybe<Scalars['Float']['input']>;
+  /** The bottom of the value range, in the column's unit */
+  climMin?: InputMaybe<Scalars['Float']['input']>;
+  /** The base colour as RGBA, 0-255 */
+  color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  colorBys?: InputMaybe<Array<ColorByInput>>;
+  colormap?: InputMaybe<ColorMap>;
+  experiment: Scalars['ID']['input'];
+  /** The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  filterBys?: InputMaybe<Array<FilterByInput>>;
+  /** How consecutive rows are joined. LINEAR by default */
+  interpolation?: InputMaybe<SeriesInterpolation>;
+  /** A categorical column giving each distinct value its own line (per subject, per wheel) */
+  laneColumn?: InputMaybe<Scalars['String']['input']>;
+  /** The line width, in screen pixels */
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  /** The position top to bottom. Omit to append */
+  order?: InputMaybe<Scalars['Int']['input']>;
+  /** The table to draw. It needs a TIME coordinate column, and its space must reach the world */
+  tableDataset: Scalars['ID']['input'];
+  /** The numeric column drawn as the value. Omit when the table has exactly one numeric, non-time attribute */
+  valueColumn?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** One run of a neuron model: the model, the integrator's parameters, and a clock. Optionally, the array datasets it produced and how their samples are timed on that clock. What was recorded or injected where is not stated here: it is a `recordingSite` / `stimulusSite` on each dataset's anchors, said at `createArrayDataset` */
@@ -1601,6 +1683,40 @@ export type CreateTransformationInput = {
   transform: TransformInput;
   validity?: InputMaybe<PlacementValidity>;
   valueRelation?: InputMaybe<ValueRelation>;
+};
+
+/** Draw per-unit waveform templates -- an array dataset (unit, [c,] w) derived from a spike raster -- in peri-spike time: `w` is timed by a sampling law onto a clock whose zero is the spike, so the layer belongs in an experiment over that clock. Colour and order come from the raster's units table */
+export type CreateWaveformLayerInput = {
+  activeColorBy?: InputMaybe<Scalars['Int']['input']>;
+  activeFilterBys?: InputMaybe<Array<Scalars['Int']['input']>>;
+  blending?: InputMaybe<Blending>;
+  /** Draw only this channel of the CHANNEL axis. Omit to draw every channel */
+  channelIndex?: InputMaybe<Scalars['Int']['input']>;
+  /** The top of the value range, in the templates' value unit */
+  climMax?: InputMaybe<Scalars['Float']['input']>;
+  /** The bottom of the value range, in the templates' value unit */
+  climMin?: InputMaybe<Scalars['Float']['input']>;
+  /** The base colour as RGBA, 0-255 */
+  color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  colorBys?: InputMaybe<Array<ColorByInput>>;
+  colormap?: InputMaybe<ColorMap>;
+  /** The templates, drawn whole. Exactly one of `lens` and `dataset` */
+  dataset?: InputMaybe<Scalars['ID']['input']>;
+  experiment: Scalars['ID']['input'];
+  /** The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  filterBys?: InputMaybe<Array<FilterByInput>>;
+  /** An existing lens over the templates. Exactly one of `lens` and `dataset` */
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  /** The line width, in screen pixels */
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  /** The position top to bottom. Omit to append */
+  order?: InputMaybe<Scalars['Int']['input']>;
+  /** The axis enumerating the units. Omit for the dataset's one INDEX axis */
+  unitAxis?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** One level of a dataset's resolution pyramid: a zarr-backed array, with its own sample-index coordinate system and a stored edge into the dataset's intrinsic space. Level 0 is the recording; higher levels are decimations a client reads when zoomed out over hours of data */
@@ -1986,7 +2102,7 @@ export type ExperimentFilter = {
   world?: InputMaybe<Scalars['ID']['input']>;
 };
 
-/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer (a lens over an array dataset), SpikesLayer (a spike raster), EventsLayer (an event table), AnnotationLayer (hand-drawn marks) */
+/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer and HeatmapLayer (a lens over an array dataset, as lines or as an image), SpikesLayer (a spike raster), WaveformLayer (per-unit templates in peri-spike time), EventsLayer and SeriesLayer (a table with a TIME column, as marks or as a line), PointLayer (a table placed in space), AnnotationLayer (hand-drawn marks) */
 export type ExperimentLayer = {
   /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
@@ -2009,32 +2125,32 @@ export type ExperimentLayer = {
 };
 
 
-/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer (a lens over an array dataset), SpikesLayer (a spike raster), EventsLayer (an event table), AnnotationLayer (hand-drawn marks) */
+/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer and HeatmapLayer (a lens over an array dataset, as lines or as an image), SpikesLayer (a spike raster), WaveformLayer (per-unit templates in peri-spike time), EventsLayer and SeriesLayer (a table with a TIME column, as marks or as a line), PointLayer (a table placed in space), AnnotationLayer (hand-drawn marks) */
 export type ExperimentLayerAsAffineArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
   strict?: Scalars['Boolean']['input'];
 };
 
 
-/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer (a lens over an array dataset), SpikesLayer (a spike raster), EventsLayer (an event table), AnnotationLayer (hand-drawn marks) */
+/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer and HeatmapLayer (a lens over an array dataset, as lines or as an image), SpikesLayer (a spike raster), WaveformLayer (per-unit templates in peri-spike time), EventsLayer and SeriesLayer (a table with a TIME column, as marks or as a line), PointLayer (a table placed in space), AnnotationLayer (hand-drawn marks) */
 export type ExperimentLayerPathToWorldArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer (a lens over an array dataset), SpikesLayer (a spike raster), EventsLayer (an event table), AnnotationLayer (hand-drawn marks) */
+/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer and HeatmapLayer (a lens over an array dataset, as lines or as an image), SpikesLayer (a spike raster), WaveformLayer (per-unit templates in peri-spike time), EventsLayer and SeriesLayer (a table with a TIME column, as marks or as a line), PointLayer (a table placed in space), AnnotationLayer (hand-drawn marks) */
 export type ExperimentLayerPlacementArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer (a lens over an array dataset), SpikesLayer (a spike raster), EventsLayer (an event table), AnnotationLayer (hand-drawn marks) */
+/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer and HeatmapLayer (a lens over an array dataset, as lines or as an image), SpikesLayer (a spike raster), WaveformLayer (per-unit templates in peri-spike time), EventsLayer and SeriesLayer (a table with a TIME column, as marks or as a line), PointLayer (a table placed in space), AnnotationLayer (hand-drawn marks) */
 export type ExperimentLayerPlacementInvarianceArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer (a lens over an array dataset), SpikesLayer (a spike raster), EventsLayer (an event table), AnnotationLayer (hand-drawn marks) */
+/** One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer and HeatmapLayer (a lens over an array dataset, as lines or as an image), SpikesLayer (a spike raster), WaveformLayer (per-unit templates in peri-spike time), EventsLayer and SeriesLayer (a table with a TIME column, as marks or as a line), PointLayer (a table placed in space), AnnotationLayer (hand-drawn marks) */
 export type ExperimentLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
@@ -2064,10 +2180,18 @@ export enum ExperimentLayerKind {
   Annotation = 'ANNOTATION',
   /** A table dataset with a TIME coordinate column -- TTL edges, trials, stimuli, Neo events and epochs -- drawn as a mark per row, or an interval when a stop column is named. */
   Events = 'EVENTS',
+  /** A lens over an array dataset drawn as an image -- time across, one other axis down: a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time. */
+  Heatmap = 'HEATMAP',
+  /** A table with SPACE coordinate columns drawn as a point per row, in a spatial world: a probe's channel map, units at their positions. mikro's point layer. */
+  Point = 'POINT',
+  /** A numeric column of a table with a TIME column, drawn as a line: running speed, pupil size, a temperature -- a signal that arrives as rows rather than as an array. */
+  Series = 'SERIES',
   /** A sparse dataset with a TIME axis -- a spike raster, units by samples -- drawn as a tick per nonzero and a row per unit. Colour and order come from the table identifying its unit axis. */
   Spikes = 'SPIKES',
   /** A lens over an array dataset -- a recording, a stimulus, an analog or irregularly sampled signal alike -- drawn as a line per channel. Its window is the lens' slices. */
-  Trace = 'TRACE'
+  Trace = 'TRACE',
+  /** A lens over per-unit templates (unit, [c,] w), drawn per unit in peri-spike time: the w axis is timed on a clock whose zero is the spike. Colour and order come from the units table the templates' raster names. */
+  Waveform = 'WAVEFORM'
 }
 
 export type ExperimentLayerOrder =
@@ -2082,8 +2206,12 @@ export type ExperimentOrder =
 export type ExperimentPolicyInput = {
   includeAnnotations?: Scalars['Boolean']['input'];
   includeEvents?: Scalars['Boolean']['input'];
+  includeHeatmaps?: Scalars['Boolean']['input'];
+  includePoints?: Scalars['Boolean']['input'];
+  includeSeries?: Scalars['Boolean']['input'];
   includeSpikes?: Scalars['Boolean']['input'];
   includeTraces?: Scalars['Boolean']['input'];
+  includeWaveforms?: Scalars['Boolean']['input'];
   nchildren?: Scalars['Int']['input'];
   skipUnplaceable?: Scalars['Boolean']['input'];
 };
@@ -2640,6 +2768,76 @@ export type GeneralZarrAccessGrant = {
   sessionToken: Scalars['String']['output'];
   status: Scalars['String']['output'];
   store?: Maybe<Scalars['String']['output']>;
+};
+
+/** A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma` */
+export type HeatmapLayer = ExperimentLayer & {
+  __typename?: 'HeatmapLayer';
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one */
+  asAffine?: Maybe<AffinePlacement>;
+  blending: Blending;
+  /** The value at the top of the colormap, in the dataset's value unit */
+  climMax?: Maybe<Scalars['Float']['output']>;
+  /** The value at the bottom of the colormap, in the dataset's value unit */
+  climMin?: Maybe<Scalars['Float']['output']>;
+  /** The continuous colormap the values are drawn through */
+  colormap?: Maybe<ColorMap>;
+  /** How much time this layer shows: its lens' extent along the sample axis over the sampling law's rate. Null over a lookup */
+  duration?: Maybe<Scalars['Duration']['output']>;
+  experiment: Experiment;
+  /** The gamma the colour range is drawn through; null is linear */
+  gamma?: Maybe<Scalars['Float']['output']>;
+  id: Scalars['ID']['output'];
+  kind: ExperimentLayerKind;
+  /** The selection this layer draws. Every axis but TIME and `rowAxis` is fixed to one position */
+  lens: Lens;
+  /** Per pyramid level, the path from that level's sample grid to this experiment's world: what a client zoomed out over an hour of data reads */
+  levelPaths: Array<LevelPlacement>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** The path of transformation edges from this layer's source coordinate system to its experiment's world. A layer belongs to exactly one experiment, so this is the one 'to world' question with a single right answer -- the path uses the data's own facts (a lens shift, a sampling law or time lookup) plus the world's registrations and the clocks chained into it. Null when the layer is unregistered or has no source system; empty when the source already is the world. Every step is here in full, with its own validity, invariance and provenance; `asAffine` is the same path composed */
+  pathToWorld?: Maybe<Array<PlacementStep>>;
+  /** Whether this layer has a place on its experiment's timeline, and if not, why not. UNREGISTERED is a gap to close (nobody has related this data's clock to the world); UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored */
+  placement: PlacementState;
+  /** Which geometric properties survive the whole walk from this layer's data to its experiment's world: the weakest edge on its path. AFFINE or stronger means a duration measured in samples is a duration on the timeline up to one factor; DIFFEOMORPHIC means the path crosses a time lookup; NONE means there is no path. Derived, never stored */
+  placementInvariance: TransformInvariance;
+  /** How much this layer's placement is actually known: the weakest edge on its path to world. INFERRED when it rests on a sampling law read from metadata, MANUAL once someone authored an offset, VALIDATED once it was checked, UNKNOWN when there is no path at all. Derived, never stored */
+  placementValidity: PlacementValidity;
+  /** The axis drawn down the image: the stated one, or the dataset's FREQUENCY axis, else CHANNEL, else INDEX -- resolved and checked when the layer was written */
+  rowAxis?: Maybe<Scalars['String']['output']>;
+  visible: Scalars['Boolean']['output'];
+};
+
+
+/** A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma` */
+export type HeatmapLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+  strict?: Scalars['Boolean']['input'];
+};
+
+
+/** A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma` */
+export type HeatmapLayerPathToWorldArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma` */
+export type HeatmapLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma` */
+export type HeatmapLayerPlacementInvarianceArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma` */
+export type HeatmapLayerPlacementValidityArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 /** The type of change that was made. */
@@ -3243,6 +3441,8 @@ export type Mutation = {
   createExperimentFromCoordinateSystem: Experiment;
   /** Create a new folder to organize data */
   createFolder: Folder;
+  /** Draw an array dataset as an image, time across and one other axis down: a spectrogram, a depth or CSD plot */
+  createHeatmapLayer: HeatmapLayer;
   /** Add a layer of any kind to an experiment, with default render settings */
   createLayer: ExperimentLayer;
   /** Create a lens: an immutable selection over a dataset. A sliced lens gets its own coordinate system and the derived edge recording the shift */
@@ -3255,8 +3455,12 @@ export type Mutation = {
   createModelWorkspace: ModelWorkspace;
   /** Create a new neuron model */
   createNeuronModel: NeuronModel;
+  /** Draw a table placed in space -- a channel map, units at their positions -- as a point per row */
+  createPointLayer: PointLayer;
   /** Time a sample grid (an array dataset's, or a spike raster's) on a clock: one BY_DIMENSION edge stating `t = sample / samplingRate + tStart`, in the clock's unit. Refused when the grid is already timed on that clock */
   createSamplingLaw: Transformation;
+  /** Draw a numeric column of a table with a TIME column as a line over time */
+  createSeriesLayer: SeriesLayer;
   /** Create a simulation: a run of a neuron model, its integrator parameters and its clock, and a timing edge onto that clock for each array dataset named. Creates no data; what was recorded where is each dataset's `recordingSite` / `stimulusSite` */
   createSimulation: Simulation;
   /** Create a sparse dataset from an uploaded sparse store. Each INDEX axis says what its positions are through `identifiedBy`; one axis may be TIME (elektro's own) -- a spike raster's samples, identified by nothing and placed on a clock with `createSamplingLaw`. The spec, shape and layouts are read from the store, never declared */
@@ -3269,6 +3473,8 @@ export type Mutation = {
   createTraceLayer: TraceLayer;
   /** Create one edge of the coordinate graph, mapping an input coordinate system to an output one. This is where a sampling law is corrected, two clocks are synchronised, and a recording is registered into a world */
   createTransformation: Transformation;
+  /** Draw per-unit waveform templates in peri-spike time, coloured by the raster's units table */
+  createWaveformLayer: WaveformLayer;
   /** Delete an annotation. Its collection, and the space it was drawn in, stay */
   deleteAnnotation: Scalars['ID']['output'];
   /** Delete an annotation collection. Its annotations, its experiment layers and the drawing space it owned go with it; what it was drawn over is untouched */
@@ -3405,10 +3611,16 @@ export type Mutation = {
   updateExperiment: Experiment;
   /** Update folder metadata */
   updateFolder: Folder;
+  /** Restyle a heatmap layer, or point it at another lens */
+  updateHeatmapLayer: HeatmapLayer;
   /** Restyle any layer's compositing: name, blending, opacity, visibility, order */
   updateLayer: ExperimentLayer;
   /** Update an existing model workspace */
   updateModelWorkspace: ModelWorkspace;
+  /** Restyle a point layer */
+  updatePointLayer: PointLayer;
+  /** Restyle a series layer */
+  updateSeriesLayer: SeriesLayer;
   /** Rename a sparse dataset or redescribe it. Its store, axes and coordinate system are fixed at creation */
   updateSparseDataset: SparseDataset;
   /** Restyle a spikes layer, or point it at another raster */
@@ -3419,6 +3631,8 @@ export type Mutation = {
   updateTraceLayer: TraceLayer;
   /** Refine a transformation's parameters in place. Everything that looks through the edge moves with it, because nothing stores a composed path */
   updateTransformation: Transformation;
+  /** Restyle a waveform layer */
+  updateWaveformLayer: WaveformLayer;
   /** Update a workspace mapping (e.g. change its group) */
   updateWorkspaceMapping: WorkspaceMapping;
 };
@@ -3489,6 +3703,11 @@ export type MutationCreateFolderArgs = {
 };
 
 
+export type MutationCreateHeatmapLayerArgs = {
+  input: CreateHeatmapLayerInput;
+};
+
+
 export type MutationCreateLayerArgs = {
   input: CreateLayerInput;
 };
@@ -3519,8 +3738,18 @@ export type MutationCreateNeuronModelArgs = {
 };
 
 
+export type MutationCreatePointLayerArgs = {
+  input: CreatePointLayerInput;
+};
+
+
 export type MutationCreateSamplingLawArgs = {
   input: CreateSamplingLawInput;
+};
+
+
+export type MutationCreateSeriesLayerArgs = {
+  input: CreateSeriesLayerInput;
 };
 
 
@@ -3551,6 +3780,11 @@ export type MutationCreateTraceLayerArgs = {
 
 export type MutationCreateTransformationArgs = {
   input: CreateTransformationInput;
+};
+
+
+export type MutationCreateWaveformLayerArgs = {
+  input: CreateWaveformLayerInput;
 };
 
 
@@ -3889,6 +4123,11 @@ export type MutationUpdateFolderArgs = {
 };
 
 
+export type MutationUpdateHeatmapLayerArgs = {
+  input: UpdateHeatmapLayerInput;
+};
+
+
 export type MutationUpdateLayerArgs = {
   input: UpdateLayerInput;
 };
@@ -3896,6 +4135,16 @@ export type MutationUpdateLayerArgs = {
 
 export type MutationUpdateModelWorkspaceArgs = {
   input: UpdateModelWorkspaceInput;
+};
+
+
+export type MutationUpdatePointLayerArgs = {
+  input: UpdatePointLayerInput;
+};
+
+
+export type MutationUpdateSeriesLayerArgs = {
+  input: UpdateSeriesLayerInput;
 };
 
 
@@ -3921,6 +4170,11 @@ export type MutationUpdateTraceLayerArgs = {
 
 export type MutationUpdateTransformationArgs = {
   input: UpdateTransformationInput;
+};
+
+
+export type MutationUpdateWaveformLayerArgs = {
+  input: UpdateWaveformLayerInput;
 };
 
 
@@ -4271,6 +4525,86 @@ export enum PlacementValidity {
   /** Exact or checked: either the server derived the map from shapes and slices, so it cannot be wrong, or someone validated an authored registration against the data. */
   Validated = 'VALIDATED'
 }
+
+/** Points: a table placed in space drawn as a point per row -- a probe's channel map, units at their positions. The table's SPACE coordinate columns place the rows (`xColumn`, `yColumn`, `zColumn`, derived from its declaration), so this layer lives in an experiment over a space. mikro's point layer */
+export type PointLayer = ExperimentLayer & {
+  __typename?: 'PointLayer';
+  /** Which entry of `colorBys` is drawn, as an index into it */
+  activeColorBy?: Maybe<Scalars['Int']['output']>;
+  /** Which entries of `filterBys` apply, as indices into it */
+  activeFilterBys: Array<Scalars['Int']['output']>;
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one */
+  asAffine?: Maybe<AffinePlacement>;
+  blending: Blending;
+  /** The base colour as RGBA, 0-255. Null lets the viewer choose */
+  color?: Maybe<Scalars['RGBAColor']['output']>;
+  /** The colourings this layer offers: columns of the table or of tables it references */
+  colorBys: Array<ColorBy>;
+  /** The colormap the active colour-by is drawn through */
+  colormap?: Maybe<ColorMap>;
+  experiment: Experiment;
+  /** The filters this layer offers: columns of the table or of tables it references */
+  filterBys: Array<FilterBy>;
+  id: Scalars['ID']['output'];
+  kind: ExperimentLayerKind;
+  /** A column naming each point */
+  labelColumn?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** The path of transformation edges from this layer's source coordinate system to its experiment's world. A layer belongs to exactly one experiment, so this is the one 'to world' question with a single right answer -- the path uses the data's own facts (a lens shift, a sampling law or time lookup) plus the world's registrations and the clocks chained into it. Null when the layer is unregistered or has no source system; empty when the source already is the world. Every step is here in full, with its own validity, invariance and provenance; `asAffine` is the same path composed */
+  pathToWorld?: Maybe<Array<PlacementStep>>;
+  /** Whether this layer has a place on its experiment's timeline, and if not, why not. UNREGISTERED is a gap to close (nobody has related this data's clock to the world); UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored */
+  placement: PlacementState;
+  /** Which geometric properties survive the whole walk from this layer's data to its experiment's world: the weakest edge on its path. AFFINE or stronger means a duration measured in samples is a duration on the timeline up to one factor; DIFFEOMORPHIC means the path crosses a time lookup; NONE means there is no path. Derived, never stored */
+  placementInvariance: TransformInvariance;
+  /** How much this layer's placement is actually known: the weakest edge on its path to world. INFERRED when it rests on a sampling law read from metadata, MANUAL once someone authored an offset, VALIDATED once it was checked, UNKNOWN when there is no path at all. Derived, never stored */
+  placementValidity: PlacementValidity;
+  /** A point's size, in screen pixels */
+  pointSize?: Maybe<Scalars['Float']['output']>;
+  /** A numeric column scaling each point's size */
+  sizeColumn?: Maybe<Scalars['String']['output']>;
+  /** The table this layer draws */
+  tableDataset: TableDataset;
+  visible: Scalars['Boolean']['output'];
+  /** The SPACE coordinate column read as x: the one named `x`, else the last SPACE column */
+  xColumn?: Maybe<Scalars['String']['output']>;
+  /** The SPACE coordinate column read as y: the one named `y`, else the one before the last */
+  yColumn?: Maybe<Scalars['String']['output']>;
+  /** The SPACE coordinate column read as z, if the table has three */
+  zColumn?: Maybe<Scalars['String']['output']>;
+};
+
+
+/** Points: a table placed in space drawn as a point per row -- a probe's channel map, units at their positions. The table's SPACE coordinate columns place the rows (`xColumn`, `yColumn`, `zColumn`, derived from its declaration), so this layer lives in an experiment over a space. mikro's point layer */
+export type PointLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+  strict?: Scalars['Boolean']['input'];
+};
+
+
+/** Points: a table placed in space drawn as a point per row -- a probe's channel map, units at their positions. The table's SPACE coordinate columns place the rows (`xColumn`, `yColumn`, `zColumn`, derived from its declaration), so this layer lives in an experiment over a space. mikro's point layer */
+export type PointLayerPathToWorldArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** Points: a table placed in space drawn as a point per row -- a probe's channel map, units at their positions. The table's SPACE coordinate columns place the rows (`xColumn`, `yColumn`, `zColumn`, derived from its declaration), so this layer lives in an experiment over a space. mikro's point layer */
+export type PointLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** Points: a table placed in space drawn as a point per row -- a probe's channel map, units at their positions. The table's SPACE coordinate columns place the rows (`xColumn`, `yColumn`, `zColumn`, derived from its declaration), so this layer lives in an experiment over a space. mikro's point layer */
+export type PointLayerPlacementInvarianceArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** Points: a table placed in space drawn as a point per row -- a probe's channel map, units at their positions. The table's SPACE coordinate columns place the rows (`xColumn`, `yColumn`, `zColumn`, derived from its declaration), so this layer lives in an experiment over a space. mikro's point layer */
+export type PointLayerPlacementValidityArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
 
 /** A provenance event for a model. */
 export type ProvenanceEntry = {
@@ -5115,6 +5449,98 @@ export type SequenceTransformation = Transformation & {
 /** An ordered composition of child transformations, applied first to last */
 export type SequenceTransformationProvenanceEntriesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** How a series layer joins its rows */
+export enum SeriesInterpolation {
+  /** A straight line between consecutive rows: a sampled quantity. */
+  Linear = 'LINEAR',
+  /** A marker per row, unjoined: measurements that are not a continuum. */
+  Points = 'POINTS',
+  /** Each value holds until the next row: a state that changes at instants (a valve, a reward count). */
+  Step = 'STEP'
+}
+
+/** A series: one numeric column of a table with a TIME column, drawn as a line over time -- running speed, pupil size, a temperature: a signal that arrives as rows rather than as an array. Placed by the table's own space, exactly as an events layer is */
+export type SeriesLayer = ExperimentLayer & {
+  __typename?: 'SeriesLayer';
+  /** Which entry of `colorBys` is drawn, as an index into it */
+  activeColorBy?: Maybe<Scalars['Int']['output']>;
+  /** Which entries of `filterBys` apply, as indices into it */
+  activeFilterBys: Array<Scalars['Int']['output']>;
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one */
+  asAffine?: Maybe<AffinePlacement>;
+  blending: Blending;
+  /** The top of the value range, in the column's unit */
+  climMax?: Maybe<Scalars['Float']['output']>;
+  /** The bottom of the value range, in the column's unit */
+  climMin?: Maybe<Scalars['Float']['output']>;
+  /** The base colour as RGBA, 0-255. Null lets the viewer choose */
+  color?: Maybe<Scalars['RGBAColor']['output']>;
+  /** The colourings this layer offers: columns of the table or of tables it references */
+  colorBys: Array<ColorBy>;
+  /** The colormap the active colour-by is drawn through */
+  colormap?: Maybe<ColorMap>;
+  experiment: Experiment;
+  /** The filters this layer offers: columns of the table or of tables it references */
+  filterBys: Array<FilterBy>;
+  id: Scalars['ID']['output'];
+  /** How consecutive rows are joined */
+  interpolation: SeriesInterpolation;
+  kind: ExperimentLayerKind;
+  /** A categorical column giving each distinct value its own line; null draws one */
+  laneColumn?: Maybe<Scalars['String']['output']>;
+  /** The line width, in screen pixels */
+  lineWidth?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** The path of transformation edges from this layer's source coordinate system to its experiment's world. A layer belongs to exactly one experiment, so this is the one 'to world' question with a single right answer -- the path uses the data's own facts (a lens shift, a sampling law or time lookup) plus the world's registrations and the clocks chained into it. Null when the layer is unregistered or has no source system; empty when the source already is the world. Every step is here in full, with its own validity, invariance and provenance; `asAffine` is the same path composed */
+  pathToWorld?: Maybe<Array<PlacementStep>>;
+  /** Whether this layer has a place on its experiment's timeline, and if not, why not. UNREGISTERED is a gap to close (nobody has related this data's clock to the world); UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored */
+  placement: PlacementState;
+  /** Which geometric properties survive the whole walk from this layer's data to its experiment's world: the weakest edge on its path. AFFINE or stronger means a duration measured in samples is a duration on the timeline up to one factor; DIFFEOMORPHIC means the path crosses a time lookup; NONE means there is no path. Derived, never stored */
+  placementInvariance: TransformInvariance;
+  /** How much this layer's placement is actually known: the weakest edge on its path to world. INFERRED when it rests on a sampling law read from metadata, MANUAL once someone authored an offset, VALIDATED once it was checked, UNKNOWN when there is no path at all. Derived, never stored */
+  placementValidity: PlacementValidity;
+  /** The table this layer draws */
+  tableDataset: TableDataset;
+  /** The table's TIME coordinate column: where each row sits in the table's own space. Derived from the table's declaration, never stored per layer */
+  timeColumn?: Maybe<Scalars['String']['output']>;
+  /** The numeric column drawn as the value */
+  valueColumn?: Maybe<Scalars['String']['output']>;
+  visible: Scalars['Boolean']['output'];
+};
+
+
+/** A series: one numeric column of a table with a TIME column, drawn as a line over time -- running speed, pupil size, a temperature: a signal that arrives as rows rather than as an array. Placed by the table's own space, exactly as an events layer is */
+export type SeriesLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+  strict?: Scalars['Boolean']['input'];
+};
+
+
+/** A series: one numeric column of a table with a TIME column, drawn as a line over time -- running speed, pupil size, a temperature: a signal that arrives as rows rather than as an array. Placed by the table's own space, exactly as an events layer is */
+export type SeriesLayerPathToWorldArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A series: one numeric column of a table with a TIME column, drawn as a line over time -- running speed, pupil size, a temperature: a signal that arrives as rows rather than as an array. Placed by the table's own space, exactly as an events layer is */
+export type SeriesLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A series: one numeric column of a table with a TIME column, drawn as a line over time -- running speed, pupil size, a temperature: a signal that arrives as rows rather than as an array. Placed by the table's own space, exactly as an events layer is */
+export type SeriesLayerPlacementInvarianceArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** A series: one numeric column of a table with a TIME column, drawn as a line over time -- running speed, pupil size, a temperature: a signal that arrives as rows rather than as an array. Placed by the table's own space, exactly as an events layer is */
+export type SeriesLayerPlacementValidityArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 /** One named device setting, exactly one value slot filled */
@@ -6094,6 +6520,22 @@ export type UpdateExperimentInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Restyle a heatmap layer, or point it at another lens. Only the supplied fields change */
+export type UpdateHeatmapLayerInput = {
+  blending?: InputMaybe<Blending>;
+  climMax?: InputMaybe<Scalars['Float']['input']>;
+  climMin?: InputMaybe<Scalars['Float']['input']>;
+  colormap?: InputMaybe<ColorMap>;
+  gamma?: InputMaybe<Scalars['Float']['input']>;
+  id: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  rowAxis?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** Restyle any layer's compositing: its name, blending, opacity, visibility and position. Its source and render settings are the per-kind update's */
 export type UpdateLayerInput = {
   blending?: InputMaybe<Blending>;
@@ -6108,6 +6550,51 @@ export type UpdateModelWorkspaceInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Restyle a point layer. Only the supplied fields change; a picker is replaced whole */
+export type UpdatePointLayerInput = {
+  activeColorBy?: InputMaybe<Scalars['Int']['input']>;
+  activeFilterBys?: InputMaybe<Array<Scalars['Int']['input']>>;
+  blending?: InputMaybe<Blending>;
+  color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  colorBys?: InputMaybe<Array<ColorByInput>>;
+  colormap?: InputMaybe<ColorMap>;
+  /** The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  filterBys?: InputMaybe<Array<FilterByInput>>;
+  id: Scalars['ID']['input'];
+  labelColumn?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  pointSize?: InputMaybe<Scalars['Float']['input']>;
+  sizeColumn?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** Restyle a series layer. Only the supplied fields change; a picker is replaced whole */
+export type UpdateSeriesLayerInput = {
+  activeColorBy?: InputMaybe<Scalars['Int']['input']>;
+  activeFilterBys?: InputMaybe<Array<Scalars['Int']['input']>>;
+  blending?: InputMaybe<Blending>;
+  climMax?: InputMaybe<Scalars['Float']['input']>;
+  climMin?: InputMaybe<Scalars['Float']['input']>;
+  color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  colorBys?: InputMaybe<Array<ColorByInput>>;
+  colormap?: InputMaybe<ColorMap>;
+  /** The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  filterBys?: InputMaybe<Array<FilterByInput>>;
+  id: Scalars['ID']['input'];
+  interpolation?: InputMaybe<SeriesInterpolation>;
+  laneColumn?: InputMaybe<Scalars['String']['input']>;
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  valueColumn?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Input for renaming or redescribing a sparse dataset */
@@ -6175,6 +6662,29 @@ export type UpdateTransformationInput = {
   validity?: InputMaybe<PlacementValidity>;
 };
 
+/** Restyle a waveform layer. Only the supplied fields change; a picker is replaced whole */
+export type UpdateWaveformLayerInput = {
+  activeColorBy?: InputMaybe<Scalars['Int']['input']>;
+  activeFilterBys?: InputMaybe<Array<Scalars['Int']['input']>>;
+  blending?: InputMaybe<Blending>;
+  channelIndex?: InputMaybe<Scalars['Int']['input']>;
+  climMax?: InputMaybe<Scalars['Float']['input']>;
+  climMin?: InputMaybe<Scalars['Float']['input']>;
+  color?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  colorBys?: InputMaybe<Array<ColorByInput>>;
+  colormap?: InputMaybe<ColorMap>;
+  /** The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker */
+  filterBys?: InputMaybe<Array<FilterByInput>>;
+  id: Scalars['ID']['input'];
+  lineWidth?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  opacity?: InputMaybe<Scalars['Float']['input']>;
+  order?: InputMaybe<Scalars['Int']['input']>;
+  unitAxis?: InputMaybe<Scalars['String']['input']>;
+  visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 export type UpdateWorkspaceMappingInput = {
   id: Scalars['ID']['input'];
   workspaceGroup: Scalars['String']['input'];
@@ -6238,6 +6748,88 @@ export type ValueUnitInput = {
   unit: Scalars['Unit']['input'];
 };
 
+/** Waveforms: per-unit templates -- an array dataset (unit, [c,] w) derived from a spike raster -- drawn per unit in peri-spike time. `w` is timed by a sampling law onto a clock whose zero is the spike, so this layer lives in an experiment over that clock. Colour and order come from the raster's units table */
+export type WaveformLayer = ExperimentLayer & {
+  __typename?: 'WaveformLayer';
+  /** Which entry of `colorBys` is drawn, as an index into it */
+  activeColorBy?: Maybe<Scalars['Int']['output']>;
+  /** Which entries of `filterBys` apply, as indices into it */
+  activeFilterBys: Array<Scalars['Int']['output']>;
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one */
+  asAffine?: Maybe<AffinePlacement>;
+  blending: Blending;
+  /** The one channel drawn; null draws every channel */
+  channelIndex?: Maybe<Scalars['Int']['output']>;
+  /** The top of the value range, in the templates' value unit */
+  climMax?: Maybe<Scalars['Float']['output']>;
+  /** The bottom of the value range, in the templates' value unit */
+  climMin?: Maybe<Scalars['Float']['output']>;
+  /** The base colour as RGBA, 0-255. Null lets the viewer choose */
+  color?: Maybe<Scalars['RGBAColor']['output']>;
+  /** The colourings this layer offers: columns of the units table or of tables it references */
+  colorBys: Array<ColorBy>;
+  /** The colormap the active colour-by is drawn through */
+  colormap?: Maybe<ColorMap>;
+  /** How much peri-spike time a template spans: its extent along `w` over the sampling law's rate */
+  duration?: Maybe<Scalars['Duration']['output']>;
+  experiment: Experiment;
+  /** The filters this layer offers: columns of the units table or of tables it references */
+  filterBys: Array<FilterBy>;
+  id: Scalars['ID']['output'];
+  kind: ExperimentLayerKind;
+  /** The selection of templates this layer draws */
+  lens: Lens;
+  /** The line width, in screen pixels */
+  lineWidth?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  opacity: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  /** The path of transformation edges from this layer's source coordinate system to its experiment's world. A layer belongs to exactly one experiment, so this is the one 'to world' question with a single right answer -- the path uses the data's own facts (a lens shift, a sampling law or time lookup) plus the world's registrations and the clocks chained into it. Null when the layer is unregistered or has no source system; empty when the source already is the world. Every step is here in full, with its own validity, invariance and provenance; `asAffine` is the same path composed */
+  pathToWorld?: Maybe<Array<PlacementStep>>;
+  /** Whether this layer has a place on its experiment's timeline, and if not, why not. UNREGISTERED is a gap to close (nobody has related this data's clock to the world); UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored */
+  placement: PlacementState;
+  /** Which geometric properties survive the whole walk from this layer's data to its experiment's world: the weakest edge on its path. AFFINE or stronger means a duration measured in samples is a duration on the timeline up to one factor; DIFFEOMORPHIC means the path crosses a time lookup; NONE means there is no path. Derived, never stored */
+  placementInvariance: TransformInvariance;
+  /** How much this layer's placement is actually known: the weakest edge on its path to world. INFERRED when it rests on a sampling law read from metadata, MANUAL once someone authored an offset, VALIDATED once it was checked, UNKNOWN when there is no path at all. Derived, never stored */
+  placementValidity: PlacementValidity;
+  /** The axis enumerating the units: the stated one, or the templates' one INDEX axis -- resolved when the layer was written */
+  unitAxis?: Maybe<Scalars['String']['output']>;
+  /** The units table the templates' raster names: where colour-bys and filter-bys start. Null when the templates were derived from no raster */
+  unitTable?: Maybe<TableDataset>;
+  visible: Scalars['Boolean']['output'];
+};
+
+
+/** Waveforms: per-unit templates -- an array dataset (unit, [c,] w) derived from a spike raster -- drawn per unit in peri-spike time. `w` is timed by a sampling law onto a clock whose zero is the spike, so this layer lives in an experiment over that clock. Colour and order come from the raster's units table */
+export type WaveformLayerAsAffineArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+  strict?: Scalars['Boolean']['input'];
+};
+
+
+/** Waveforms: per-unit templates -- an array dataset (unit, [c,] w) derived from a spike raster -- drawn per unit in peri-spike time. `w` is timed by a sampling law onto a clock whose zero is the spike, so this layer lives in an experiment over that clock. Colour and order come from the raster's units table */
+export type WaveformLayerPathToWorldArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** Waveforms: per-unit templates -- an array dataset (unit, [c,] w) derived from a spike raster -- drawn per unit in peri-spike time. `w` is timed by a sampling law onto a clock whose zero is the spike, so this layer lives in an experiment over that clock. Colour and order come from the raster's units table */
+export type WaveformLayerPlacementArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** Waveforms: per-unit templates -- an array dataset (unit, [c,] w) derived from a spike raster -- drawn per unit in peri-spike time. `w` is timed by a sampling law onto a clock whose zero is the spike, so this layer lives in an experiment over that clock. Colour and order come from the raster's units table */
+export type WaveformLayerPlacementInvarianceArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+
+/** Waveforms: per-unit templates -- an array dataset (unit, [c,] w) derived from a spike raster -- drawn per unit in peri-spike time. `w` is timed by a sampling law onto a clock whose zero is the spike, so this layer lives in an experiment over that clock. Colour and order come from the raster's units table */
+export type WaveformLayerPlacementValidityArgs = {
+  at?: InputMaybe<Array<CoordinateInput>>;
+};
+
 /** A stretch of time on the dataset's OWN clock, e.g. the first 200 ms of a sweep. Lowered to a lens by inverting the sampling law, so it needs one */
 export type WindowInput = {
   start?: InputMaybe<Scalars['Duration']['input']>;
@@ -6288,6 +6880,7 @@ export type ZarrStore = {
   attributes?: Maybe<Scalars['JSON']['output']>;
   bucket: Scalars['String']['output'];
   chunkKeyEncoding?: Maybe<Scalars['JSON']['output']>;
+  /** Effective inner chunk shape — the brick/residency unit a reader can decode. For sharded arrays this is the sharding codec's inner chunk_shape, not the chunk-grid (shard) shape. */
   chunks: Array<Scalars['Int']['output']>;
   codecs?: Maybe<Scalars['JSON']['output']>;
   dimensionNames?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
@@ -6297,6 +6890,8 @@ export type ZarrStore = {
   key: Scalars['String']['output'];
   path: Scalars['String']['output'];
   shape: Array<Scalars['Int']['output']>;
+  /** Shard (outer storage object) shape for zarr v3 sharding_indexed arrays; null when unsharded. Shards exist to cut object count — readers should still treat `chunks` as the brick unit. */
+  shards?: Maybe<Array<Scalars['Int']['output']>>;
   storageTransformers?: Maybe<Scalars['JSON']['output']>;
   version?: Maybe<Scalars['String']['output']>;
 };
@@ -6326,7 +6921,7 @@ export type ZarrUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
-export type _Entity = AcquisitionMetadata | AffineTransformation | Annotation | AnnotationCollection | AnnotationLayer | App | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | EventsLayer | FieldTransformation | File | FileLink | Folder | IdentityTransformation | Lens | MapAxisTransformation | MediaStore | ModEnvironment | Organization | ParquetStore | RecordingSite | Release | RigState | RotationTransformation | ScaleTransformation | SequenceTransformation | SparseArray | SparseAxisReference | SparseDataset | SparseStore | SpikesLayer | StimulusSite | TableDataset | TraceLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | ValueUnit | ZarrStore;
+export type _Entity = AcquisitionMetadata | AffineTransformation | Annotation | AnnotationCollection | AnnotationLayer | App | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | EventsLayer | FieldTransformation | File | FileLink | Folder | HeatmapLayer | IdentityTransformation | Lens | MapAxisTransformation | MediaStore | ModEnvironment | Organization | ParquetStore | PointLayer | RecordingSite | Release | RigState | RotationTransformation | ScaleTransformation | SequenceTransformation | SeriesLayer | SparseArray | SparseAxisReference | SparseDataset | SparseStore | SpikesLayer | StimulusSite | TableDataset | TraceLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | ValueUnit | WaveformLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -6338,10 +6933,42 @@ export type ExpAnnotationFragment = { __typename?: 'Annotation', id: string, nam
 export type ExpAnnotationCollectionFragment = { __typename?: 'AnnotationCollection', id: string, name: string, description?: string | null, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
     & ExpCoordinateSystemFragment
-  ), annotations: Array<(
+  ), derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null } | { __typename?: 'UnmappableTransformation', id: string, kind: TransformKind, inputAxes: Array<string>, outputAxes: Array<string>, output?: (
+      { __typename?: 'CoordinateSystem' }
+      & ExpCoordinateSystemRefFragment
+    ) | null }>, annotations: Array<(
     { __typename?: 'Annotation' }
     & ExpAnnotationFragment
   )> };
+
+export type ExpDefaultAnnotationCollectionFragment = { __typename?: 'Experiment', id: string, annotationCollection?: { __typename?: 'AnnotationCollection', id: string } | null };
 
 export type ExpDataArrayFragment = { __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, scaleMethod?: ScaleMethod | null, toParent?: (
     { __typename?: 'AffineTransformation' }
@@ -6415,6 +7042,11 @@ export type ExpLensFragment = { __typename?: 'Lens', id: string, axisNames: Arra
   ) };
 
 export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, valueUnit?: Unit | null };
+
+export type ExpFullAnchorFragment = (
+  { __typename?: 'CoordinateAnchor', valueHistogram?: { __typename?: 'ValueHistogram', id: string, bins: Array<number>, histogram: Array<number> } | null, rig?: { __typename?: 'RigState', id: string, state: { __typename?: 'RigStateGraph', mode?: ClampMode | null, holdingPotential?: ElectricPotential | null, holdingCurrent?: any | null, seriesResistance?: any | null, membraneCapacitance?: any | null, temperature?: Temperature | null, devices: Array<{ __typename?: 'DeviceState', kind?: string | null, label: string, settings: Array<{ __typename?: 'Setting', name: string, text?: string | null, number?: number | null, flag?: boolean | null, quantity?: GenericQuantity | null }> }> } } | null, acquisitionMetadata?: { __typename?: 'AcquisitionMetadata', id: string, metadata: any } | null }
+  & ExpAnchorFragment
+);
 
 export type ExpAxisFragment = { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: Unit | null, longName?: string | null };
 
@@ -6684,6 +7316,30 @@ type ExpLayerCommon_EventsLayer_Fragment = { __typename: 'EventsLayer', id: stri
     & ExpPlacementStepFragment
   )> | null };
 
+type ExpLayerCommon_HeatmapLayer_Fragment = { __typename: 'HeatmapLayer', id: string, kind: ExperimentLayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, asAffine?: (
+    { __typename?: 'AffinePlacement' }
+    & ExpAffinePlacementFragment
+  ) | null, pathToWorld?: Array<(
+    { __typename?: 'PlacementStep' }
+    & ExpPlacementStepFragment
+  )> | null };
+
+type ExpLayerCommon_PointLayer_Fragment = { __typename: 'PointLayer', id: string, kind: ExperimentLayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, asAffine?: (
+    { __typename?: 'AffinePlacement' }
+    & ExpAffinePlacementFragment
+  ) | null, pathToWorld?: Array<(
+    { __typename?: 'PlacementStep' }
+    & ExpPlacementStepFragment
+  )> | null };
+
+type ExpLayerCommon_SeriesLayer_Fragment = { __typename: 'SeriesLayer', id: string, kind: ExperimentLayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, asAffine?: (
+    { __typename?: 'AffinePlacement' }
+    & ExpAffinePlacementFragment
+  ) | null, pathToWorld?: Array<(
+    { __typename?: 'PlacementStep' }
+    & ExpPlacementStepFragment
+  )> | null };
+
 type ExpLayerCommon_SpikesLayer_Fragment = { __typename: 'SpikesLayer', id: string, kind: ExperimentLayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ExpAffinePlacementFragment
@@ -6700,7 +7356,15 @@ type ExpLayerCommon_TraceLayer_Fragment = { __typename: 'TraceLayer', id: string
     & ExpPlacementStepFragment
   )> | null };
 
-export type ExpLayerCommonFragment = ExpLayerCommon_AnnotationLayer_Fragment | ExpLayerCommon_EventsLayer_Fragment | ExpLayerCommon_SpikesLayer_Fragment | ExpLayerCommon_TraceLayer_Fragment;
+type ExpLayerCommon_WaveformLayer_Fragment = { __typename: 'WaveformLayer', id: string, kind: ExperimentLayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, asAffine?: (
+    { __typename?: 'AffinePlacement' }
+    & ExpAffinePlacementFragment
+  ) | null, pathToWorld?: Array<(
+    { __typename?: 'PlacementStep' }
+    & ExpPlacementStepFragment
+  )> | null };
+
+export type ExpLayerCommonFragment = ExpLayerCommon_AnnotationLayer_Fragment | ExpLayerCommon_EventsLayer_Fragment | ExpLayerCommon_HeatmapLayer_Fragment | ExpLayerCommon_PointLayer_Fragment | ExpLayerCommon_SeriesLayer_Fragment | ExpLayerCommon_SpikesLayer_Fragment | ExpLayerCommon_TraceLayer_Fragment | ExpLayerCommon_WaveformLayer_Fragment;
 
 export type ExpColorByFragment = { __typename?: 'ColorBy', kind: string, table: string, column: string, colormap?: ColorMap | null, min?: number | null, max?: number | null, label?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> };
 
@@ -6762,13 +7426,13 @@ export type ExperimentSceneFragment = { __typename?: 'Experiment', id: string, n
   ) | (
     { __typename?: 'EventsLayer' }
     & ExpEventsLayerFragment
-  ) | (
+  ) | { __typename?: 'HeatmapLayer' } | { __typename?: 'PointLayer' } | { __typename?: 'SeriesLayer' } | (
     { __typename?: 'SpikesLayer' }
     & ExpSpikesLayerFragment
   ) | (
     { __typename?: 'TraceLayer' }
     & ExpTraceLayerFragment
-  )> };
+  ) | { __typename?: 'WaveformLayer' }> };
 
 export type ListExperimentFragment = { __typename?: 'Experiment', id: string, name: string, description?: string | null, createdAt: any, pinned: boolean };
 
@@ -6994,7 +7658,7 @@ export type CreateExperimentAnnotationMutationVariables = Exact<{
 
 
 export type CreateExperimentAnnotationMutation = { __typename?: 'Mutation', createAnnotation: (
-    { __typename?: 'Annotation' }
+    { __typename?: 'Annotation', collection: { __typename?: 'AnnotationCollection', id: string } }
     & ExpAnnotationFragment
   ) };
 
@@ -7004,6 +7668,16 @@ export type DeleteExperimentAnnotationMutationVariables = Exact<{
 
 
 export type DeleteExperimentAnnotationMutation = { __typename?: 'Mutation', deleteAnnotation: string };
+
+export type CreateExperimentAnnotationCollectionMutationVariables = Exact<{
+  input: CreateAnnotationCollectionInput;
+}>;
+
+
+export type CreateExperimentAnnotationCollectionMutation = { __typename?: 'Mutation', createAnnotationCollection: (
+    { __typename?: 'AnnotationCollection' }
+    & ExpAnnotationCollectionFragment
+  ) };
 
 export type FinishBigfileUploadMutationVariables = Exact<{
   input: FinishBigFileUploadInput;
@@ -7286,7 +7960,7 @@ export type UpdateLayerMutationVariables = Exact<{
 }>;
 
 
-export type UpdateLayerMutation = { __typename?: 'Mutation', updateLayer: { __typename: 'AnnotationLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'EventsLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'SpikesLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'TraceLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } };
+export type UpdateLayerMutation = { __typename?: 'Mutation', updateLayer: { __typename: 'AnnotationLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'EventsLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'HeatmapLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'PointLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'SeriesLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'SpikesLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'TraceLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } | { __typename: 'WaveformLayer', id: string, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number } };
 
 export type UpdateTraceLayerMutationVariables = Exact<{
   input: UpdateTraceLayerInput;
@@ -7579,6 +8253,16 @@ export type HomePageQuery = { __typename?: 'Query', experiments: Array<(
     & ListNeuronModelFragment
   )> };
 
+export type GetExpLensAnchorsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetExpLensAnchorsQuery = { __typename?: 'Query', lens: { __typename?: 'Lens', id: string, activeAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & ExpFullAnchorFragment
+    )> } };
+
 export type DetailMechanismQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -7792,6 +8476,99 @@ export type SimulationClockQueryVariables = Exact<{
 
 export type SimulationClockQuery = { __typename?: 'Query', simulation: { __typename?: 'Simulation', id: string, name: string, clock?: { __typename?: 'CoordinateSystem', id: string } | null } };
 
+export const ExpDefaultAnnotationCollectionFragmentDoc = gql`
+    fragment ExpDefaultAnnotationCollection on Experiment {
+  id
+  annotationCollection {
+    id
+  }
+}
+    `;
+export const ExpRecordingSiteFragmentDoc = gql`
+    fragment ExpRecordingSite on RecordingSite {
+  id
+  kind
+  cell
+  location
+  position
+  label
+}
+    `;
+export const ExpStimulusSiteFragmentDoc = gql`
+    fragment ExpStimulusSite on StimulusSite {
+  id
+  kind
+  cell
+  location
+  position
+  label
+}
+    `;
+export const ExpAnchorFragmentDoc = gql`
+    fragment ExpAnchor on CoordinateAnchor {
+  id
+  coordinates
+  channelLabel {
+    id
+    label
+  }
+  valueUnit {
+    id
+    unit
+    dimension
+  }
+  valueHistogram {
+    id
+    min
+    max
+    p1
+    p99
+  }
+  recordingSite {
+    ...ExpRecordingSite
+  }
+  stimulusSite {
+    ...ExpStimulusSite
+  }
+}
+    ${ExpRecordingSiteFragmentDoc}
+${ExpStimulusSiteFragmentDoc}`;
+export const ExpFullAnchorFragmentDoc = gql`
+    fragment ExpFullAnchor on CoordinateAnchor {
+  ...ExpAnchor
+  valueHistogram {
+    id
+    bins
+    histogram
+  }
+  rig {
+    id
+    state {
+      mode
+      holdingPotential
+      holdingCurrent
+      seriesResistance
+      membraneCapacitance
+      temperature
+      devices {
+        kind
+        label
+        settings {
+          name
+          text
+          number
+          flag
+          quantity
+        }
+      }
+    }
+  }
+  acquisitionMetadata {
+    id
+    metadata
+  }
+}
+    ${ExpAnchorFragmentDoc}`;
 export const BigFileAccessGrantFragmentDoc = gql`
     fragment BigFileAccessGrant on BigFileAccessGrant {
   accessKey
@@ -7952,55 +8729,6 @@ export const ExpLayerCommonFragmentDoc = gql`
 }
     ${ExpAffinePlacementFragmentDoc}
 ${ExpPlacementStepFragmentDoc}`;
-export const ExpRecordingSiteFragmentDoc = gql`
-    fragment ExpRecordingSite on RecordingSite {
-  id
-  kind
-  cell
-  location
-  position
-  label
-}
-    `;
-export const ExpStimulusSiteFragmentDoc = gql`
-    fragment ExpStimulusSite on StimulusSite {
-  id
-  kind
-  cell
-  location
-  position
-  label
-}
-    `;
-export const ExpAnchorFragmentDoc = gql`
-    fragment ExpAnchor on CoordinateAnchor {
-  id
-  coordinates
-  channelLabel {
-    id
-    label
-  }
-  valueUnit {
-    id
-    unit
-    dimension
-  }
-  valueHistogram {
-    id
-    min
-    max
-    p1
-    p99
-  }
-  recordingSite {
-    ...ExpRecordingSite
-  }
-  stimulusSite {
-    ...ExpStimulusSite
-  }
-}
-    ${ExpRecordingSiteFragmentDoc}
-${ExpStimulusSiteFragmentDoc}`;
 export const ExpArrayDatasetRefFragmentDoc = gql`
     fragment ExpArrayDatasetRef on ArrayDataset {
   id
@@ -8288,11 +9016,21 @@ export const ExpAnnotationCollectionFragmentDoc = gql`
   coordinateSystem {
     ...ExpCoordinateSystem
   }
+  derivedFrom {
+    id
+    kind
+    inputAxes
+    outputAxes
+    output {
+      ...ExpCoordinateSystemRef
+    }
+  }
   annotations {
     ...ExpAnnotation
   }
 }
     ${ExpCoordinateSystemFragmentDoc}
+${ExpCoordinateSystemRefFragmentDoc}
 ${ExpAnnotationFragmentDoc}`;
 export const ExpAnnotationLayerFragmentDoc = gql`
     fragment ExpAnnotationLayer on AnnotationLayer {
@@ -8910,6 +9648,9 @@ export const CreateExperimentAnnotationDocument = gql`
     mutation CreateExperimentAnnotation($input: CreateAnnotationInput!) {
   createAnnotation(input: $input) {
     ...ExpAnnotation
+    collection {
+      id
+    }
   }
 }
     ${ExpAnnotationFragmentDoc}`;
@@ -8970,6 +9711,39 @@ export function useDeleteExperimentAnnotationMutation(baseOptions?: ApolloReactH
 export type DeleteExperimentAnnotationMutationHookResult = ReturnType<typeof useDeleteExperimentAnnotationMutation>;
 export type DeleteExperimentAnnotationMutationResult = Apollo.MutationResult<DeleteExperimentAnnotationMutation>;
 export type DeleteExperimentAnnotationMutationOptions = Apollo.BaseMutationOptions<DeleteExperimentAnnotationMutation, DeleteExperimentAnnotationMutationVariables>;
+export const CreateExperimentAnnotationCollectionDocument = gql`
+    mutation CreateExperimentAnnotationCollection($input: CreateAnnotationCollectionInput!) {
+  createAnnotationCollection(input: $input) {
+    ...ExpAnnotationCollection
+  }
+}
+    ${ExpAnnotationCollectionFragmentDoc}`;
+export type CreateExperimentAnnotationCollectionMutationFn = Apollo.MutationFunction<CreateExperimentAnnotationCollectionMutation, CreateExperimentAnnotationCollectionMutationVariables>;
+
+/**
+ * __useCreateExperimentAnnotationCollectionMutation__
+ *
+ * To run a mutation, you first call `useCreateExperimentAnnotationCollectionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateExperimentAnnotationCollectionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createExperimentAnnotationCollectionMutation, { data, loading, error }] = useCreateExperimentAnnotationCollectionMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateExperimentAnnotationCollectionMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateExperimentAnnotationCollectionMutation, CreateExperimentAnnotationCollectionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateExperimentAnnotationCollectionMutation, CreateExperimentAnnotationCollectionMutationVariables>(CreateExperimentAnnotationCollectionDocument, options);
+      }
+export type CreateExperimentAnnotationCollectionMutationHookResult = ReturnType<typeof useCreateExperimentAnnotationCollectionMutation>;
+export type CreateExperimentAnnotationCollectionMutationResult = Apollo.MutationResult<CreateExperimentAnnotationCollectionMutation>;
+export type CreateExperimentAnnotationCollectionMutationOptions = Apollo.BaseMutationOptions<CreateExperimentAnnotationCollectionMutation, CreateExperimentAnnotationCollectionMutationVariables>;
 export const FinishBigfileUploadDocument = gql`
     mutation FinishBigfileUpload($input: FinishBigFileUploadInput!) {
   finishBigfileUpload(input: $input) {
@@ -10802,6 +11576,44 @@ export function useHomePageLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type HomePageQueryHookResult = ReturnType<typeof useHomePageQuery>;
 export type HomePageLazyQueryHookResult = ReturnType<typeof useHomePageLazyQuery>;
 export type HomePageQueryResult = Apollo.QueryResult<HomePageQuery, HomePageQueryVariables>;
+export const GetExpLensAnchorsDocument = gql`
+    query GetExpLensAnchors($id: ID!) {
+  lens(id: $id) {
+    id
+    activeAnchors {
+      ...ExpFullAnchor
+    }
+  }
+}
+    ${ExpFullAnchorFragmentDoc}`;
+
+/**
+ * __useGetExpLensAnchorsQuery__
+ *
+ * To run a query within a React component, call `useGetExpLensAnchorsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetExpLensAnchorsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetExpLensAnchorsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetExpLensAnchorsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetExpLensAnchorsQuery, GetExpLensAnchorsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetExpLensAnchorsQuery, GetExpLensAnchorsQueryVariables>(GetExpLensAnchorsDocument, options);
+      }
+export function useGetExpLensAnchorsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetExpLensAnchorsQuery, GetExpLensAnchorsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetExpLensAnchorsQuery, GetExpLensAnchorsQueryVariables>(GetExpLensAnchorsDocument, options);
+        }
+export type GetExpLensAnchorsQueryHookResult = ReturnType<typeof useGetExpLensAnchorsQuery>;
+export type GetExpLensAnchorsLazyQueryHookResult = ReturnType<typeof useGetExpLensAnchorsLazyQuery>;
+export type GetExpLensAnchorsQueryResult = Apollo.QueryResult<GetExpLensAnchorsQuery, GetExpLensAnchorsQueryVariables>;
 export const DetailMechanismDocument = gql`
     query DetailMechanism($id: ID!) {
   mechanism(id: $id) {

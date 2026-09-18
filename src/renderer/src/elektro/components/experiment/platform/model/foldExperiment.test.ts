@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { foldExperiment, type ExperimentLike } from "./foldExperiment";
+import { foldExperiment, selectedLayers, type ExperimentLike } from "./foldExperiment";
 
 const TIME = { name: "t", type: "TIME", order: 0 };
 
@@ -145,5 +145,15 @@ describe("foldExperiment reuse", () => {
     foldExperiment(experiment([trace("1")]), new Map(), null);
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
+  });
+});
+
+describe("selectedLayers", () => {
+  it("drops layer kinds the query did not select, keeping identity when there are none", () => {
+    const known = { __typename: "TraceLayer", id: "t" };
+    const clean = { id: "e", layers: [known] };
+    expect(selectedLayers(clean as never)).toBe(clean);
+    const served = { id: "e", layers: [known, { __typename: "HeatmapLayer" }] };
+    expect((selectedLayers(served as never) as { layers: unknown[] }).layers).toEqual([known]);
   });
 });

@@ -2,15 +2,10 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { Line2NodeMaterial } from "three/webgpu";
-import { bindFields } from "@/lib/scene/stores/bindStore";
 import { useSegmentGeometry, writeSegments } from "../../platform/marks/segmentGeometry";
 import type { LayerState } from "../../platform/model/layerModel";
-import {
-  bandKey,
-  effectiveClim,
-  useViewerStoreApi,
-} from "../../platform/stores/viewerStore";
-import { valueToY } from "../../platform/coords/rowMap";
+import { bandKey } from "../../platform/stores/viewerStore";
+import { useBandValueMatrix } from "../../platform/marks/bandValueMatrix";
 import type { PackedChannel } from "./tracePacking";
 import { useTraceStore } from "./store/traceSlice";
 
@@ -75,7 +70,6 @@ const ChannelLine = ({
   packed: PackedChannel;
 }) => {
   const invalidate = useThree((s) => s.invalidate);
-  const viewerApi = useViewerStoreApi();
 
   const material = useMemo(() => {
     const m = new Line2NodeMaterial();
@@ -133,47 +127,9 @@ const ChannelLine = ({
   }, [packed, geometry, line, material, invalidate]);
 
   // --- render plane: band + clim → object matrix ---
-  useEffect(() => {
-    const key = bandKey(layerId, channel);
-    const apply = () => {
-      const state = viewerApi.getState();
-      const band = state.bands[key];
-      const clim = band ? effectiveClim(state.clims, band) : null;
-      // No band (not laid out yet) or no clim (no data seeded yet): draw nothing
-      // rather than at a guessed scale that snaps on the first real window.
-      if (!band || !clim || packed.segmentCount === 0) {
-        line.visible = false;
-        invalidate();
-        return;
-      }
-      const { scale, offset } = valueToY(band, clim);
-      line.matrix.set(
-        1, 0, 0, 0,
-        0, scale, 0, offset,
-        0, 0, 1, 0,
-        0, 0, 0, 1,
-      );
-      line.matrixWorldNeedsUpdate = true;
-      line.visible = true;
-      invalidate();
-    };
-
-    return bindFields(
-      viewerApi,
-      [
-        (s) => s.bands[key],
-        (s) => {
-          const band = s.bands[key];
-          return band ? effectiveClim(s.clims, band)?.lo : undefined;
-        },
-        (s) => {
-          const band = s.bands[key];
-          return band ? effectiveClim(s.clims, band)?.hi : undefined;
-        },
-      ],
-      apply,
-    );
-  }, [viewerApi, layerId, channel, line, packed, invalidate]);
+  // `enabled` flips when the channel empties or refills, which is what re-shows
+  // a line the layout effect above hid.
+  useBandValueMatrix(line, bandKey(layerId, channel), packed.segmentCount > 0);
 
   return <primitive object={line} renderOrder={2} />;
 };

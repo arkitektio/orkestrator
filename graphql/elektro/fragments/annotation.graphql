@@ -36,7 +36,31 @@ fragment ExpAnnotationCollection on AnnotationCollection {
   coordinateSystem {
     ...ExpCoordinateSystem
   }
+  # The edges back into what the shapes are drawn over; the FIRST places it. A
+  # collection drawn over a trace's lens is how a value shape knows its row: the
+  # edge's `output` is that lens' coordinate system. Empty for the experiment's
+  # own (world-registered) collection.
+  derivedFrom {
+    id
+    kind
+    inputAxes
+    outputAxes
+    output {
+      ...ExpCoordinateSystemRef
+    }
+  }
   annotations {
     ...ExpAnnotation
+  }
+}
+
+# Read from the cache (never queried on its own): the experiment's default
+# collection, where `createAnnotation(experiment:)` lands once it is minted. Known
+# → a time mark is written optimistically; unknown → the first draw mints the
+# collection and its layer, and the scene is refetched.
+fragment ExpDefaultAnnotationCollection on Experiment {
+  id
+  annotationCollection {
+    id
   }
 }

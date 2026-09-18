@@ -1752,12 +1752,13 @@ input CreateArrayDatasetInput {
 }
 
 """
-State where one clock's zero sits on another: a segment within its session, a session or a run within an experiment's world. One edge, shared by everything timed on `clock` -- which is why an offset is stated here once and never per layer. A bare offset when the two clocks count in one unit, a one-axis affine when they do not
+State where one clock's zero sits on another, and how fast it ticks against it: a segment within its session, a session or a run within an experiment's world, a probe's clock against a DAQ's. One edge, shared by everything timed on `clock` -- which is why an offset is stated here once and never per layer. A bare offset when the two clocks count in one unit and do not drift, a one-axis affine otherwise
 """
 input CreateClockOffsetInput {
   clock: ID!
+  driftPpm: Float! = 0
   name: String = null
-  offset: Duration!
+  offset: Duration = null
   onto: ID!
   validity: PlacementValidity = null
 }
@@ -1819,12 +1820,12 @@ input CreateEventsLayerInput {
 }
 
 """
-Stage what is already laid out on a coordinate system as an experiment over it: a layer for every trace, spike raster, event table and annotation collection that reaches it -- through a sampling law, a time lookup, or a chain of clock offsets. CS-first: time the data on a clock, then point this at the clock. Authors no edges. mikro's createSceneFromCoordinateSystem
+Stage what is already laid out on a coordinate system as an experiment over it: a layer for every trace, spectrogram, waveform template, spike raster, event or series table, point table and annotation collection that reaches it -- through a sampling law, a time lookup, a chain of clock offsets, or a registration into a space. CS-first: time the data on a clock, then point this at the clock. Authors no edges. mikro's createSceneFromCoordinateSystem
 """
 input CreateExperimentFromCoordinateSystemInput {
   coordinateSystem: ID!
   name: String = null
-  policy: ExperimentPolicyInput = {includeAnnotations: true, includeEvents: true, includeSpikes: true, includeTraces: true, nchildren: 32, skipUnplaceable: false}
+  policy: ExperimentPolicyInput = {includeAnnotations: true, includeEvents: true, includeHeatmaps: true, includePoints: true, includeSeries: true, includeSpikes: true, includeTraces: true, includeWaveforms: true, nchildren: 32, skipUnplaceable: false}
 }
 
 """
@@ -1847,6 +1848,27 @@ input CreateFolderInput {
 
   """The ID of the parent folder to nest this folder under"""
   parent: ID = null
+}
+
+"""
+Draw an array dataset as an image, time across and one other axis down: a spectrogram (t, f), a depth or current-source-density plot (t, c). Every other axis of the lens must be fixed to one position. mikro's intensity layer, over time
+"""
+input CreateHeatmapLayerInput {
+  blending: Blending = null
+  climMax: Float = null
+  climMin: Float = null
+  clock: ID = null
+  colormap: ColorMap = null
+  dataset: ID = null
+  experiment: ID!
+  gamma: Float = null
+  lens: ID = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  rowAxis: String = null
+  visible: Boolean = null
+  window: WindowInput = null
 }
 
 """
@@ -1900,6 +1922,50 @@ input CreateNeuronModelInput {
 }
 
 """
+Draw a table placed in space as a point per row: a probe's channel map, units at their positions. The table's SPACE coordinate columns place the rows, so the experiment is one over a space -- a probe's -- rather than a clock. mikro's point layer
+"""
+input CreatePointLayerInput {
+  activeColorBy: Int = null
+  activeFilterBys: [Int!] = null
+  blending: Blending = null
+
+  """The base colour as RGBA, 0-255"""
+  color: [Int!] = null
+
+  """
+  The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  colorBys: [ColorByInput!] = null
+  colormap: ColorMap = null
+  experiment: ID!
+
+  """
+  The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  filterBys: [FilterByInput!] = null
+
+  """A column naming each point (a channel id, a unit label)"""
+  labelColumn: String = null
+  name: String = null
+  opacity: Float = null
+
+  """The position top to bottom. Omit to append"""
+  order: Int = null
+
+  """A point's size, in screen pixels"""
+  pointSize: Float = null
+
+  """A numeric column scaling each point's size"""
+  sizeColumn: String = null
+
+  """
+  The table to draw: at least two SPACE coordinate columns and no TIME column; its space must reach the world
+  """
+  tableDataset: ID!
+  visible: Boolean = null
+}
+
+"""
 State `t = sample / samplingRate + tStart` as one edge from a sample grid onto a clock: how a regularly sampled signal -- or a spike raster's sample axis -- is timed. One BY_DIMENSION edge over the grid's TIME axis, in the clock's unit; the same edge `createTransformation` would write, with the arithmetic done for you
 """
 input CreateSamplingLawInput {
@@ -1909,6 +1975,63 @@ input CreateSamplingLawInput {
   source: ID!
   tStart: Duration! = "0 s"
   validity: PlacementValidity = null
+}
+
+"""
+Draw one numeric column of a table with a TIME column as a line over time: running speed, pupil size, a temperature -- a signal that arrives as rows
+"""
+input CreateSeriesLayerInput {
+  activeColorBy: Int = null
+  activeFilterBys: [Int!] = null
+  blending: Blending = null
+
+  """The top of the value range, in the column's unit"""
+  climMax: Float = null
+
+  """The bottom of the value range, in the column's unit"""
+  climMin: Float = null
+
+  """The base colour as RGBA, 0-255"""
+  color: [Int!] = null
+
+  """
+  The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  colorBys: [ColorByInput!] = null
+  colormap: ColorMap = null
+  experiment: ID!
+
+  """
+  The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  filterBys: [FilterByInput!] = null
+
+  """How consecutive rows are joined. LINEAR by default"""
+  interpolation: SeriesInterpolation = null
+
+  """
+  A categorical column giving each distinct value its own line (per subject, per wheel)
+  """
+  laneColumn: String = null
+
+  """The line width, in screen pixels"""
+  lineWidth: Float = null
+  name: String = null
+  opacity: Float = null
+
+  """The position top to bottom. Omit to append"""
+  order: Int = null
+
+  """
+  The table to draw. It needs a TIME coordinate column, and its space must reach the world
+  """
+  tableDataset: ID!
+
+  """
+  The numeric column drawn as the value. Omit when the table has exactly one numeric, non-time attribute
+  """
+  valueColumn: String = null
+  visible: Boolean = null
 }
 
 """
@@ -2035,6 +2158,59 @@ input CreateTransformationInput {
   transform: TransformInput!
   validity: PlacementValidity = null
   valueRelation: ValueRelation = null
+}
+
+"""
+Draw per-unit waveform templates -- an array dataset (unit, [c,] w) derived from a spike raster -- in peri-spike time: `w` is timed by a sampling law onto a clock whose zero is the spike, so the layer belongs in an experiment over that clock. Colour and order come from the raster's units table
+"""
+input CreateWaveformLayerInput {
+  activeColorBy: Int = null
+  activeFilterBys: [Int!] = null
+  blending: Blending = null
+
+  """Draw only this channel of the CHANNEL axis. Omit to draw every channel"""
+  channelIndex: Int = null
+
+  """The top of the value range, in the templates' value unit"""
+  climMax: Float = null
+
+  """The bottom of the value range, in the templates' value unit"""
+  climMin: Float = null
+
+  """The base colour as RGBA, 0-255"""
+  color: [Int!] = null
+
+  """
+  The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  colorBys: [ColorByInput!] = null
+  colormap: ColorMap = null
+
+  """The templates, drawn whole. Exactly one of `lens` and `dataset`"""
+  dataset: ID = null
+  experiment: ID!
+
+  """
+  The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  filterBys: [FilterByInput!] = null
+
+  """
+  An existing lens over the templates. Exactly one of `lens` and `dataset`
+  """
+  lens: ID = null
+
+  """The line width, in screen pixels"""
+  lineWidth: Float = null
+  name: String = null
+  opacity: Float = null
+
+  """The position top to bottom. Omit to append"""
+  order: Int = null
+
+  """The axis enumerating the units. Omit for the dataset's one INDEX axis"""
+  unitAxis: String = null
+  visible: Boolean = null
 }
 
 """
@@ -2553,7 +2729,7 @@ input ExperimentFilter {
 }
 
 """
-One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer (a lens over an array dataset), SpikesLayer (a spike raster), EventsLayer (an event table), AnnotationLayer (hand-drawn marks)
+One thing drawn in an experiment, alpha-blended over the layers below it. mikro's Layer, over time. It carries view state only: where its data sits on the timeline is a coordinate system and the edges out of it, and every placement question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so correcting one sampling law moves every layer that looks through it. The concrete kind carries its own source and render settings: TraceLayer and HeatmapLayer (a lens over an array dataset, as lines or as an image), SpikesLayer (a spike raster), WaveformLayer (per-unit templates in peri-spike time), EventsLayer and SeriesLayer (a table with a TIME column, as marks or as a line), PointLayer (a table placed in space), AnnotationLayer (hand-drawn marks)
 """
 interface ExperimentLayer {
   """
@@ -2631,6 +2807,21 @@ enum ExperimentLayerKind {
   EVENTS
 
   """
+  A lens over an array dataset drawn as an image -- time across, one other axis down: a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time.
+  """
+  HEATMAP
+
+  """
+  A table with SPACE coordinate columns drawn as a point per row, in a spatial world: a probe's channel map, units at their positions. mikro's point layer.
+  """
+  POINT
+
+  """
+  A numeric column of a table with a TIME column, drawn as a line: running speed, pupil size, a temperature -- a signal that arrives as rows rather than as an array.
+  """
+  SERIES
+
+  """
   A sparse dataset with a TIME axis -- a spike raster, units by samples -- drawn as a tick per nonzero and a row per unit. Colour and order come from the table identifying its unit axis.
   """
   SPIKES
@@ -2639,6 +2830,11 @@ enum ExperimentLayerKind {
   A lens over an array dataset -- a recording, a stimulus, an analog or irregularly sampled signal alike -- drawn as a line per channel. Its window is the lens' slices.
   """
   TRACE
+
+  """
+  A lens over per-unit templates (unit, [c,] w), drawn per unit in peri-spike time: the w axis is timed on a clock whose zero is the spike. Colour and order come from the units table the templates' raster names.
+  """
+  WAVEFORM
 }
 
 input ExperimentLayerOrder @oneOf {
@@ -2657,8 +2853,12 @@ What `createExperimentFromCoordinateSystem` stages. mikro's ScenePolicyInput, fo
 input ExperimentPolicyInput {
   includeAnnotations: Boolean! = true
   includeEvents: Boolean! = true
+  includeHeatmaps: Boolean! = true
+  includePoints: Boolean! = true
+  includeSeries: Boolean! = true
   includeSpikes: Boolean! = true
   includeTraces: Boolean! = true
+  includeWaveforms: Boolean! = true
   nchildren: Int! = 32
   skipUnplaceable: Boolean! = false
 }
@@ -3370,6 +3570,76 @@ it is a string; validating it against an expected dimension (e.g. a declared
 mechanism parameter) is the caller's job.
 """
 scalar GenericQuantity
+
+"""
+A heatmap: a lens over an array dataset drawn as an image, time across and one other axis down -- a spectrogram (t, f), a depth or current-source-density plot (t, c). mikro's intensity layer, over time: a continuous colormap between `climMin` and `climMax`, through `gamma`
+"""
+type HeatmapLayer implements ExperimentLayer {
+  """
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one
+  """
+  asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
+  blending: Blending!
+
+  """The value at the top of the colormap, in the dataset's value unit"""
+  climMax: Float
+
+  """The value at the bottom of the colormap, in the dataset's value unit"""
+  climMin: Float
+
+  """The continuous colormap the values are drawn through"""
+  colormap: ColorMap
+
+  """
+  How much time this layer shows: its lens' extent along the sample axis over the sampling law's rate. Null over a lookup
+  """
+  duration: Duration
+  experiment: Experiment!
+
+  """The gamma the colour range is drawn through; null is linear"""
+  gamma: Float
+  id: ID!
+  kind: ExperimentLayerKind!
+
+  """
+  The selection this layer draws. Every axis but TIME and `rowAxis` is fixed to one position
+  """
+  lens: Lens!
+
+  """
+  Per pyramid level, the path from that level's sample grid to this experiment's world: what a client zoomed out over an hour of data reads
+  """
+  levelPaths: [LevelPlacement!]!
+  name: String
+  opacity: Float!
+  order: Int!
+
+  """
+  The path of transformation edges from this layer's source coordinate system to its experiment's world. A layer belongs to exactly one experiment, so this is the one 'to world' question with a single right answer -- the path uses the data's own facts (a lens shift, a sampling law or time lookup) plus the world's registrations and the clocks chained into it. Null when the layer is unregistered or has no source system; empty when the source already is the world. Every step is here in full, with its own validity, invariance and provenance; `asAffine` is the same path composed
+  """
+  pathToWorld(at: [CoordinateInput!] = null): [PlacementStep!]
+
+  """
+  Whether this layer has a place on its experiment's timeline, and if not, why not. UNREGISTERED is a gap to close (nobody has related this data's clock to the world); UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored
+  """
+  placement(at: [CoordinateInput!] = null): PlacementState!
+
+  """
+  Which geometric properties survive the whole walk from this layer's data to its experiment's world: the weakest edge on its path. AFFINE or stronger means a duration measured in samples is a duration on the timeline up to one factor; DIFFEOMORPHIC means the path crosses a time lookup; NONE means there is no path. Derived, never stored
+  """
+  placementInvariance(at: [CoordinateInput!] = null): TransformInvariance!
+
+  """
+  How much this layer's placement is actually known: the weakest edge on its path to world. INFERRED when it rests on a sampling law read from metadata, MANUAL once someone authored an offset, VALIDATED once it was checked, UNKNOWN when there is no path at all. Derived, never stored
+  """
+  placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """
+  The axis drawn down the image: the stated one, or the dataset's FREQUENCY axis, else CHANNEL, else INDEX -- resolved and checked when the layer was written
+  """
+  rowAxis: String
+  visible: Boolean!
+}
 
 """The type of change that was made."""
 enum HistoryKind {
@@ -4175,6 +4445,11 @@ type Mutation {
   """Create a new folder to organize data"""
   createFolder(input: CreateFolderInput!): Folder!
 
+  """
+  Draw an array dataset as an image, time across and one other axis down: a spectrogram, a depth or CSD plot
+  """
+  createHeatmapLayer(input: CreateHeatmapLayerInput!): HeatmapLayer!
+
   """Add a layer of any kind to an experiment, with default render settings"""
   createLayer(input: CreateLayerInput!): ExperimentLayer!
 
@@ -4196,9 +4471,19 @@ type Mutation {
   createNeuronModel(input: CreateNeuronModelInput!): NeuronModel!
 
   """
+  Draw a table placed in space -- a channel map, units at their positions -- as a point per row
+  """
+  createPointLayer(input: CreatePointLayerInput!): PointLayer!
+
+  """
   Time a sample grid (an array dataset's, or a spike raster's) on a clock: one BY_DIMENSION edge stating `t = sample / samplingRate + tStart`, in the clock's unit. Refused when the grid is already timed on that clock
   """
   createSamplingLaw(input: CreateSamplingLawInput!): Transformation!
+
+  """
+  Draw a numeric column of a table with a TIME column as a line over time
+  """
+  createSeriesLayer(input: CreateSeriesLayerInput!): SeriesLayer!
 
   """
   Create a simulation: a run of a neuron model, its integrator parameters and its clock, and a timing edge onto that clock for each array dataset named. Creates no data; what was recorded where is each dataset's `recordingSite` / `stimulusSite`
@@ -4229,6 +4514,11 @@ type Mutation {
   Create one edge of the coordinate graph, mapping an input coordinate system to an output one. This is where a sampling law is corrected, two clocks are synchronised, and a recording is registered into a world
   """
   createTransformation(input: CreateTransformationInput!): Transformation!
+
+  """
+  Draw per-unit waveform templates in peri-spike time, coloured by the raster's units table
+  """
+  createWaveformLayer(input: CreateWaveformLayerInput!): WaveformLayer!
 
   """
   Delete an annotation. Its collection, and the space it was drawn in, stay
@@ -4492,6 +4782,9 @@ type Mutation {
   """Update folder metadata"""
   updateFolder(input: ChangeFolderInput!): Folder!
 
+  """Restyle a heatmap layer, or point it at another lens"""
+  updateHeatmapLayer(input: UpdateHeatmapLayerInput!): HeatmapLayer!
+
   """
   Restyle any layer's compositing: name, blending, opacity, visibility, order
   """
@@ -4499,6 +4792,12 @@ type Mutation {
 
   """Update an existing model workspace"""
   updateModelWorkspace(input: UpdateModelWorkspaceInput!): ModelWorkspace!
+
+  """Restyle a point layer"""
+  updatePointLayer(input: UpdatePointLayerInput!): PointLayer!
+
+  """Restyle a series layer"""
+  updateSeriesLayer(input: UpdateSeriesLayerInput!): SeriesLayer!
 
   """
   Rename a sparse dataset or redescribe it. Its store, axes and coordinate system are fixed at creation
@@ -4520,6 +4819,9 @@ type Mutation {
   Refine a transformation's parameters in place. Everything that looks through the edge moves with it, because nothing stores a composed path
   """
   updateTransformation(input: UpdateTransformationInput!): Transformation!
+
+  """Restyle a waveform layer"""
+  updateWaveformLayer(input: UpdateWaveformLayerInput!): WaveformLayer!
 
   """Update a workspace mapping (e.g. change its group)"""
   updateWorkspaceMapping(input: UpdateWorkspaceMappingInput!): WorkspaceMapping!
@@ -4920,6 +5222,91 @@ enum PlacementValidity {
   Exact or checked: either the server derived the map from shapes and slices, so it cannot be wrong, or someone validated an authored registration against the data.
   """
   VALIDATED
+}
+
+"""
+Points: a table placed in space drawn as a point per row -- a probe's channel map, units at their positions. The table's SPACE coordinate columns place the rows (`xColumn`, `yColumn`, `zColumn`, derived from its declaration), so this layer lives in an experiment over a space. mikro's point layer
+"""
+type PointLayer implements ExperimentLayer {
+  """Which entry of `colorBys` is drawn, as an index into it"""
+  activeColorBy: Int
+
+  """Which entries of `filterBys` apply, as indices into it"""
+  activeFilterBys: [Int!]!
+
+  """
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one
+  """
+  asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
+  blending: Blending!
+
+  """The base colour as RGBA, 0-255. Null lets the viewer choose"""
+  color: RGBAColor
+
+  """
+  The colourings this layer offers: columns of the table or of tables it references
+  """
+  colorBys: [ColorBy!]!
+
+  """The colormap the active colour-by is drawn through"""
+  colormap: ColorMap
+  experiment: Experiment!
+
+  """
+  The filters this layer offers: columns of the table or of tables it references
+  """
+  filterBys: [FilterBy!]!
+  id: ID!
+  kind: ExperimentLayerKind!
+
+  """A column naming each point"""
+  labelColumn: String
+  name: String
+  opacity: Float!
+  order: Int!
+
+  """
+  The path of transformation edges from this layer's source coordinate system to its experiment's world. A layer belongs to exactly one experiment, so this is the one 'to world' question with a single right answer -- the path uses the data's own facts (a lens shift, a sampling law or time lookup) plus the world's registrations and the clocks chained into it. Null when the layer is unregistered or has no source system; empty when the source already is the world. Every step is here in full, with its own validity, invariance and provenance; `asAffine` is the same path composed
+  """
+  pathToWorld(at: [CoordinateInput!] = null): [PlacementStep!]
+
+  """
+  Whether this layer has a place on its experiment's timeline, and if not, why not. UNREGISTERED is a gap to close (nobody has related this data's clock to the world); UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored
+  """
+  placement(at: [CoordinateInput!] = null): PlacementState!
+
+  """
+  Which geometric properties survive the whole walk from this layer's data to its experiment's world: the weakest edge on its path. AFFINE or stronger means a duration measured in samples is a duration on the timeline up to one factor; DIFFEOMORPHIC means the path crosses a time lookup; NONE means there is no path. Derived, never stored
+  """
+  placementInvariance(at: [CoordinateInput!] = null): TransformInvariance!
+
+  """
+  How much this layer's placement is actually known: the weakest edge on its path to world. INFERRED when it rests on a sampling law read from metadata, MANUAL once someone authored an offset, VALIDATED once it was checked, UNKNOWN when there is no path at all. Derived, never stored
+  """
+  placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """A point's size, in screen pixels"""
+  pointSize: Float
+
+  """A numeric column scaling each point's size"""
+  sizeColumn: String
+
+  """The table this layer draws"""
+  tableDataset: TableDataset!
+  visible: Boolean!
+
+  """
+  The SPACE coordinate column read as x: the one named `x`, else the last SPACE column
+  """
+  xColumn: String
+
+  """
+  The SPACE coordinate column read as y: the one named `y`, else the one before the last
+  """
+  yColumn: String
+
+  """The SPACE coordinate column read as z, if the table has three"""
+  zColumn: String
 }
 
 """A provenance event for a model."""
@@ -5780,6 +6167,108 @@ type SequenceTransformation implements Transformation {
   How many times this edge has been written, counting the row that created it -- so a new edge reads 1. Only comparison is meaningful: this and the edge's `id` together are the cache key for anything derived from the edge, and a change means refetch. It counts the same provenance rows `provenanceEntries` lists, so the audit trail and the token cannot disagree; a rename moves it too, which errs towards refetching something that did not change rather than trusting something that did
   """
   version: Int!
+}
+
+"""How a series layer joins its rows"""
+enum SeriesInterpolation {
+  """A straight line between consecutive rows: a sampled quantity."""
+  LINEAR
+
+  """A marker per row, unjoined: measurements that are not a continuum."""
+  POINTS
+
+  """
+  Each value holds until the next row: a state that changes at instants (a valve, a reward count).
+  """
+  STEP
+}
+
+"""
+A series: one numeric column of a table with a TIME column, drawn as a line over time -- running speed, pupil size, a temperature: a signal that arrives as rows rather than as an array. Placed by the table's own space, exactly as an events layer is
+"""
+type SeriesLayer implements ExperimentLayer {
+  """Which entry of `colorBys` is drawn, as an index into it"""
+  activeColorBy: Int
+
+  """Which entries of `filterBys` apply, as indices into it"""
+  activeFilterBys: [Int!]!
+
+  """
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one
+  """
+  asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
+  blending: Blending!
+
+  """The top of the value range, in the column's unit"""
+  climMax: Float
+
+  """The bottom of the value range, in the column's unit"""
+  climMin: Float
+
+  """The base colour as RGBA, 0-255. Null lets the viewer choose"""
+  color: RGBAColor
+
+  """
+  The colourings this layer offers: columns of the table or of tables it references
+  """
+  colorBys: [ColorBy!]!
+
+  """The colormap the active colour-by is drawn through"""
+  colormap: ColorMap
+  experiment: Experiment!
+
+  """
+  The filters this layer offers: columns of the table or of tables it references
+  """
+  filterBys: [FilterBy!]!
+  id: ID!
+
+  """How consecutive rows are joined"""
+  interpolation: SeriesInterpolation!
+  kind: ExperimentLayerKind!
+
+  """
+  A categorical column giving each distinct value its own line; null draws one
+  """
+  laneColumn: String
+
+  """The line width, in screen pixels"""
+  lineWidth: Float
+  name: String
+  opacity: Float!
+  order: Int!
+
+  """
+  The path of transformation edges from this layer's source coordinate system to its experiment's world. A layer belongs to exactly one experiment, so this is the one 'to world' question with a single right answer -- the path uses the data's own facts (a lens shift, a sampling law or time lookup) plus the world's registrations and the clocks chained into it. Null when the layer is unregistered or has no source system; empty when the source already is the world. Every step is here in full, with its own validity, invariance and provenance; `asAffine` is the same path composed
+  """
+  pathToWorld(at: [CoordinateInput!] = null): [PlacementStep!]
+
+  """
+  Whether this layer has a place on its experiment's timeline, and if not, why not. UNREGISTERED is a gap to close (nobody has related this data's clock to the world); UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored
+  """
+  placement(at: [CoordinateInput!] = null): PlacementState!
+
+  """
+  Which geometric properties survive the whole walk from this layer's data to its experiment's world: the weakest edge on its path. AFFINE or stronger means a duration measured in samples is a duration on the timeline up to one factor; DIFFEOMORPHIC means the path crosses a time lookup; NONE means there is no path. Derived, never stored
+  """
+  placementInvariance(at: [CoordinateInput!] = null): TransformInvariance!
+
+  """
+  How much this layer's placement is actually known: the weakest edge on its path to world. INFERRED when it rests on a sampling law read from metadata, MANUAL once someone authored an offset, VALIDATED once it was checked, UNKNOWN when there is no path at all. Derived, never stored
+  """
+  placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """The table this layer draws"""
+  tableDataset: TableDataset!
+
+  """
+  The table's TIME coordinate column: where each row sits in the table's own space. Derived from the table's declaration, never stored per layer
+  """
+  timeColumn: String
+
+  """The numeric column drawn as the value"""
+  valueColumn: String
+  visible: Boolean!
 }
 
 """One named device setting, exactly one value slot filled"""
@@ -7140,6 +7629,24 @@ input UpdateExperimentInput {
 }
 
 """
+Restyle a heatmap layer, or point it at another lens. Only the supplied fields change
+"""
+input UpdateHeatmapLayerInput {
+  blending: Blending = null
+  climMax: Float = null
+  climMin: Float = null
+  colormap: ColorMap = null
+  gamma: Float = null
+  id: ID!
+  lens: ID = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  rowAxis: String = null
+  visible: Boolean = null
+}
+
+"""
 Restyle any layer's compositing: its name, blending, opacity, visibility and position. Its source and render settings are the per-kind update's
 """
 input UpdateLayerInput {
@@ -7155,6 +7662,67 @@ input UpdateModelWorkspaceInput {
   description: String = null
   id: ID!
   name: String = null
+}
+
+"""
+Restyle a point layer. Only the supplied fields change; a picker is replaced whole
+"""
+input UpdatePointLayerInput {
+  activeColorBy: Int = null
+  activeFilterBys: [Int!] = null
+  blending: Blending = null
+  color: [Int!] = null
+
+  """
+  The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  colorBys: [ColorByInput!] = null
+  colormap: ColorMap = null
+
+  """
+  The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  filterBys: [FilterByInput!] = null
+  id: ID!
+  labelColumn: String = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  pointSize: Float = null
+  sizeColumn: String = null
+  visible: Boolean = null
+}
+
+"""
+Restyle a series layer. Only the supplied fields change; a picker is replaced whole
+"""
+input UpdateSeriesLayerInput {
+  activeColorBy: Int = null
+  activeFilterBys: [Int!] = null
+  blending: Blending = null
+  climMax: Float = null
+  climMin: Float = null
+  color: [Int!] = null
+
+  """
+  The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  colorBys: [ColorByInput!] = null
+  colormap: ColorMap = null
+
+  """
+  The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  filterBys: [FilterByInput!] = null
+  id: ID!
+  interpolation: SeriesInterpolation = null
+  laneColumn: String = null
+  lineWidth: Float = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  valueColumn: String = null
+  visible: Boolean = null
 }
 
 """Input for renaming or redescribing a sparse dataset"""
@@ -7236,6 +7804,37 @@ input UpdateTransformationInput {
   validity: PlacementValidity = null
 }
 
+"""
+Restyle a waveform layer. Only the supplied fields change; a picker is replaced whole
+"""
+input UpdateWaveformLayerInput {
+  activeColorBy: Int = null
+  activeFilterBys: [Int!] = null
+  blending: Blending = null
+  channelIndex: Int = null
+  climMax: Float = null
+  climMin: Float = null
+  color: [Int!] = null
+
+  """
+  The colour picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  colorBys: [ColorByInput!] = null
+  colormap: ColorMap = null
+
+  """
+  The filter picker: columns of the layer's table, or of tables it references along `joinPath`. Replaces the whole picker
+  """
+  filterBys: [FilterByInput!] = null
+  id: ID!
+  lineWidth: Float = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  unitAxis: String = null
+  visible: Boolean = null
+}
+
 input UpdateWorkspaceMappingInput {
   id: ID!
   workspaceGroup: String!
@@ -7313,6 +7912,96 @@ input ValueUnitInput {
 }
 
 """
+Waveforms: per-unit templates -- an array dataset (unit, [c,] w) derived from a spike raster -- drawn per unit in peri-spike time. `w` is timed by a sampling law onto a clock whose zero is the spike, so this layer lives in an experiment over that clock. Colour and order come from the raster's units table
+"""
+type WaveformLayer implements ExperimentLayer {
+  """Which entry of `colorBys` is drawn, as an index into it"""
+  activeColorBy: Int
+
+  """Which entries of `filterBys` apply, as indices into it"""
+  activeFilterBys: [Int!]!
+
+  """
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. For a sampled recording or a spike raster it reads `t_world = sample * period + start`, the sampling law and every clock offset multiplied out. Derived on read and stored nowhere. **Null when `pathToWorld` is null.** It errors rather than returning null when a path exists but does not condense: a FIELD step (an irregularly sampled signal, a variable-step run) has no closed form, and the error names the transformation that stopped it. Pass `strict: true` to be refused a partial map instead of handed one
+  """
+  asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
+  blending: Blending!
+
+  """The one channel drawn; null draws every channel"""
+  channelIndex: Int
+
+  """The top of the value range, in the templates' value unit"""
+  climMax: Float
+
+  """The bottom of the value range, in the templates' value unit"""
+  climMin: Float
+
+  """The base colour as RGBA, 0-255. Null lets the viewer choose"""
+  color: RGBAColor
+
+  """
+  The colourings this layer offers: columns of the units table or of tables it references
+  """
+  colorBys: [ColorBy!]!
+
+  """The colormap the active colour-by is drawn through"""
+  colormap: ColorMap
+
+  """
+  How much peri-spike time a template spans: its extent along `w` over the sampling law's rate
+  """
+  duration: Duration
+  experiment: Experiment!
+
+  """
+  The filters this layer offers: columns of the units table or of tables it references
+  """
+  filterBys: [FilterBy!]!
+  id: ID!
+  kind: ExperimentLayerKind!
+
+  """The selection of templates this layer draws"""
+  lens: Lens!
+
+  """The line width, in screen pixels"""
+  lineWidth: Float
+  name: String
+  opacity: Float!
+  order: Int!
+
+  """
+  The path of transformation edges from this layer's source coordinate system to its experiment's world. A layer belongs to exactly one experiment, so this is the one 'to world' question with a single right answer -- the path uses the data's own facts (a lens shift, a sampling law or time lookup) plus the world's registrations and the clocks chained into it. Null when the layer is unregistered or has no source system; empty when the source already is the world. Every step is here in full, with its own validity, invariance and provenance; `asAffine` is the same path composed
+  """
+  pathToWorld(at: [CoordinateInput!] = null): [PlacementStep!]
+
+  """
+  Whether this layer has a place on its experiment's timeline, and if not, why not. UNREGISTERED is a gap to close (nobody has related this data's clock to the world); UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Derived, never stored
+  """
+  placement(at: [CoordinateInput!] = null): PlacementState!
+
+  """
+  Which geometric properties survive the whole walk from this layer's data to its experiment's world: the weakest edge on its path. AFFINE or stronger means a duration measured in samples is a duration on the timeline up to one factor; DIFFEOMORPHIC means the path crosses a time lookup; NONE means there is no path. Derived, never stored
+  """
+  placementInvariance(at: [CoordinateInput!] = null): TransformInvariance!
+
+  """
+  How much this layer's placement is actually known: the weakest edge on its path to world. INFERRED when it rests on a sampling law read from metadata, MANUAL once someone authored an offset, VALIDATED once it was checked, UNKNOWN when there is no path at all. Derived, never stored
+  """
+  placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """
+  The axis enumerating the units: the stated one, or the templates' one INDEX axis -- resolved when the layer was written
+  """
+  unitAxis: String
+
+  """
+  The units table the templates' raster names: where colour-bys and filter-bys start. Null when the templates were derived from no raster
+  """
+  unitTable: TableDataset
+  visible: Boolean!
+}
+
+"""
 A stretch of time on the dataset's OWN clock, e.g. the first 200 ms of a sweep. Lowered to a lens by inverting the sampling law, so it needs one
 """
 input WindowInput {
@@ -7362,6 +8051,10 @@ type ZarrStore {
   attributes: JSON
   bucket: String!
   chunkKeyEncoding: JSON
+
+  """
+  Effective inner chunk shape — the brick/residency unit a reader can decode. For sharded arrays this is the sharding codec's inner chunk_shape, not the chunk-grid (shard) shape.
+  """
   chunks: [Int!]!
   codecs: JSON
   dimensionNames: [String]
@@ -7371,6 +8064,11 @@ type ZarrStore {
   key: String!
   path: String!
   shape: [Int!]!
+
+  """
+  Shard (outer storage object) shape for zarr v3 sharding_indexed arrays; null when unsharded. Shards exist to cut object count — readers should still treat `chunks` as the brick unit.
+  """
+  shards: [Int!]
   storageTransformers: JSON
   version: String
 }
@@ -7396,7 +8094,7 @@ type ZarrUploadGrant {
 
 scalar _Any
 
-union _Entity = AcquisitionMetadata | AffineTransformation | Annotation | AnnotationCollection | AnnotationLayer | App | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | EventsLayer | FieldTransformation | File | FileLink | Folder | IdentityTransformation | Lens | MapAxisTransformation | MediaStore | ModEnvironment | Organization | ParquetStore | RecordingSite | Release | RigState | RotationTransformation | ScaleTransformation | SequenceTransformation | SparseArray | SparseAxisReference | SparseDataset | SparseStore | SpikesLayer | StimulusSite | TableDataset | TraceLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | ValueUnit | ZarrStore
+union _Entity = AcquisitionMetadata | AffineTransformation | Annotation | AnnotationCollection | AnnotationLayer | App | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | EventsLayer | FieldTransformation | File | FileLink | Folder | HeatmapLayer | IdentityTransformation | Lens | MapAxisTransformation | MediaStore | ModEnvironment | Organization | ParquetStore | PointLayer | RecordingSite | Release | RigState | RotationTransformation | ScaleTransformation | SequenceTransformation | SeriesLayer | SparseArray | SparseAxisReference | SparseDataset | SparseStore | SpikesLayer | StimulusSite | TableDataset | TraceLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | ValueUnit | WaveformLayer | ZarrStore
 
 type _Service {
   sdl: String!

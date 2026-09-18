@@ -50,6 +50,47 @@ describe("AnnotationMarksIndexer", () => {
     expect(viewer.getState().annotationMarks.b.events).toHaveLength(1);
   });
 
+  it("draws a value collection's shapes in the rows of the traces over its lens", () => {
+    const { a, experiment, viewer } = setup();
+    const lens = {
+      id: "lens",
+      coordinateSystem: { id: "cs-lens", axes: [{ name: "t", type: "TIME" }] },
+      dataset: { intrinsicSystem: null },
+    };
+    const values = {
+      __typename: "AnnotationLayer",
+      id: "v",
+      placement: "PLACED",
+      asAffine: { matrix: [[1, 0]], inputAxes: ["t"], outputAxes: ["t"], total: true },
+      annotationCollection: {
+        name: "v",
+        coordinateSystem: {
+          axes: [
+            { name: "t", type: "TIME", order: 0 },
+            { name: "value", type: "VALUE", order: 1 },
+          ],
+        },
+        derivedFrom: [{ output: { id: "cs-lens" } }],
+        annotations: [{ id: "l1", name: null, kind: "LINE", vectors: [[1, 0], [2, 5]] }],
+      },
+    };
+    experiment.getState().syncLayers(experiment.getState().serverLayers, { a, v: values } as never, null);
+    // No trace reads the lens yet: shown by time only.
+    expect(viewer.getState().annotationMarks.v.rowScoped).toBe(1);
+    const before = viewer.getState().annotationMarks.v;
+
+    // A trace over that lens arrives: the SAME collection fragment re-indexes.
+    const trace = { __typename: "TraceLayer", id: "tr", lens, channelIndex: null };
+    experiment
+      .getState()
+      .syncLayers(experiment.getState().serverLayers, { a, v: values, tr: trace } as never, null);
+    const after = viewer.getState().annotationMarks.v;
+    expect(after).not.toBe(before);
+    expect(after.rows).toHaveLength(1);
+    expect(after.rows[0]).toMatchObject({ traceLayerId: "tr", channel: 0 });
+    expect(after.rowScoped).toBe(0);
+  });
+
   it("clears on dispose", () => {
     const { viewer, indexer } = setup();
     indexer.dispose();

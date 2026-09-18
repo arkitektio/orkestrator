@@ -7,6 +7,8 @@ import { experimentScopeSignature } from "../platform/model/experimentStructure"
 import {
   foldExperiment,
   type ExperimentLike,
+  selectedLayers,
+  type ServedExperimentLike,
   type SourceMemo,
 } from "../platform/model/foldExperiment";
 import {
@@ -66,11 +68,14 @@ type Scope = {
 };
 
 
-/** What the provider builds a scope from: an experiment's scene fragment. */
-export type SceneSource = ExperimentLike & { id: string };
+/**
+ * What the provider builds a scope from: an experiment's scene fragment, which
+ * may list layer kinds the query does not select (dropped at intake).
+ */
+export type SceneSource = ServedExperimentLike<ExperimentLike & { id: string }>;
 
 export const ExperimentSceneProvider = ({
-  experiment,
+  experiment: served,
   placementErrors,
   initialRange,
   annotatable = true,
@@ -88,6 +93,10 @@ export const ExperimentSceneProvider = ({
   initialRange?: TimeWindow | null;
   children: ReactNode;
 }) => {
+  const experiment = useMemo(
+    () => (served ? selectedLayers<ExperimentLike & { id: string }>(served) : served),
+    [served],
+  );
   const [scope, setScope] = useState<Scope | null>(null);
   const [status, setStatus] = useState<ExperimentScopeStatus>({
     phase: "no-experiment",

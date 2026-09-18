@@ -4,7 +4,9 @@ import { useTabVisible } from "@/command/tabs/TabVisibilityContext";
 import { isTypingTarget } from "@/lib/input/keyboardTarget";
 import { createWebGPURendererFactory } from "@/lib/scene/gpu/createWebGPURenderer";
 import { AnnotationDrawer } from "../features/annotations/AnnotationDrawer";
+import { AnnotationToolbar } from "../features/annotations/AnnotationToolbar";
 import { MarkLabelsOverlay } from "../features/events/MarkLabelsOverlay";
+import { ExperimentMetadataOverlay } from "../features/metadata/ExperimentMetadataOverlay";
 import { CenterLodReadout } from "../features/traces/CenterLodReadout";
 import { ProbeReadout } from "../features/probe/ProbeReadout";
 import { StackLayoutManager } from "../features/stacking/StackLayoutManager";
@@ -86,7 +88,11 @@ const ReadyViewport = () => {
       <OverviewStrip />
       <CenterLodReadout />
       <TimeAxis />
+      {/* Bottom-right, above the mode controls: what was RECORDED about what is
+          on screen — the drawn traces' in-view anchors, folded to one button. */}
+      <ExperimentMetadataOverlay />
       <ExperimentModeControls />
+      <AnnotationToolbar />
       <LoadingBar />
     </div>
   );
@@ -119,7 +125,10 @@ const LoadingBar = () => {
  *    (mikro's hold-to-mode, including its two edge cases: a toolbar click during
  *    the hold wins over the restore, and alt-tabbing mid-hold — which never fires
  *    keyup — restores on blur rather than stranding the viewer in ANNOTATE);
- *  - **Esc** — back to explore;
+ *  - **Esc** — back to explore (unless the annotate drawer consumed it to cancel
+ *    a shape in progress);
+ *  - in ANNOTATE, the tool keys (`annotationTools.ts`) and Enter / Esc are the
+ *    drawer's own — see `AnnotationDrawer`;
  *  - **F** — fit the whole timeline;
  *  - **← / →** — pan by a tenth of the window;
  *  - **⌘/Ctrl-Z**, **⇧⌘/Ctrl-Z** — step the zoom history (box zooms are in it).
@@ -162,7 +171,10 @@ const KeyboardShortcuts = () => {
         return;
       }
       if (key === "f") rangeApi.getState().fit();
-      if (event.key === "Escape") viewerApi.getState().setInteractionMode("EXPLORE");
+      // A consumed Esc (the annotate drawer cancelling a shape) is not "back to explore".
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        viewerApi.getState().setInteractionMode("EXPLORE");
+      }
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
         const { liveRange } = rangeApi.getState();

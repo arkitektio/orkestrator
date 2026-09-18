@@ -17,3 +17,16 @@ export const valueToY = (
   const scale = (band.top - band.bottom) / span;
   return { scale, offset: band.bottom - clim.lo * scale };
 };
+
+/**
+ * The inverse: the value a world y reads as inside a band. How a shape drawn over
+ * a row turns the pointer's height back into the recording's units.
+ */
+export const yToValue = (
+  y: number,
+  band: { bottom: number; top: number },
+  clim: { lo: number; hi: number },
+): number => {
+  const { scale, offset } = valueToY(band, clim);
+  return scale === 0 ? clim.lo : (y - offset) / scale;
+};

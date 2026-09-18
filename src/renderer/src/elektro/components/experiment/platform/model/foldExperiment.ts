@@ -44,6 +44,34 @@ export type ExperimentLike = {
   layers?: readonly AnyLayerLike[] | null;
 };
 
+/**
+ * A layer of a kind the scene query does not select (a newer server's
+ * `HeatmapLayer`, `WaveformLayer`, …): only its `__typename` comes back.
+ */
+export type UnselectedLayerLike = { __typename?: string; id?: undefined };
+
+/** An experiment as the server returns it: known layers mixed with unselected ones. */
+export type ServedExperimentLike<E extends ExperimentLike> = Omit<E, "layers"> & {
+  layers?: readonly (AnyLayerLike | UnselectedLayerLike)[] | null;
+};
+
+/**
+ * Drop the layers this client did not select. Every downstream step (the
+ * signatures, the fold, the registries) keys on a layer's id, which an
+ * unselected kind does not carry — skipping it here is the fold's own
+ * "a kind this client does not know" rule, applied before anything reads it.
+ */
+export const selectedLayers = <E extends ExperimentLike>(
+  experiment: ServedExperimentLike<E>,
+): E => {
+  const layers = experiment.layers;
+  if (!layers || layers.every((l) => typeof l.id === "string")) return experiment as unknown as E;
+  return {
+    ...experiment,
+    layers: layers.filter((l): l is AnyLayerLike => typeof l.id === "string"),
+  } as unknown as E;
+};
+
 export type FoldedExperiment = {
   /** Normalized, in display order. Unknown kinds are dropped (and said so). */
   layers: LayerState[];
