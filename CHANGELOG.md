@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/arkitektio/orkestrator/compare/v2.6.0...v2.7.0) (2026-09-19)
+
+
+### Features
+
+* massively better neuron and traced render ([02d13f2](https://github.com/arkitektio/orkestrator/commit/02d13f289081e34a0c59935d44e5c19f316f95de))
+
 # [2.6.0](https://github.com/arkitektio/orkestrator/compare/v2.5.0...v2.6.0) (2026-09-18)
 
 
