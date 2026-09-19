@@ -1,3 +1,10 @@
+# [2.8.0](https://github.com/arkitektio/orkestrator/compare/v2.7.0...v2.8.0) (2026-09-19)
+
+
+### Features
+
+* with detail pages for sections ([0c8e1f1](https://github.com/arkitektio/orkestrator/commit/0c8e1f1ab83c7c0f48cf4f53c60093be9cec4272))
+
 # [2.7.0](https://github.com/arkitektio/orkestrator/compare/v2.6.0...v2.7.0) (2026-09-19)
 
 
