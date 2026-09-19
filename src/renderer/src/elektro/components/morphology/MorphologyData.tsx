@@ -7,6 +7,7 @@ import type {
 import { type ImportanceColors, useImportanceColors } from "../../lib/importance";
 import { buildMorphology, type Morphology } from "./model/buildMorphology";
 import { compartmentColors } from "./model/colouring";
+import { type Frame, focusFrame, wholeFrame } from "./model/focus";
 import { buildNetworkLayout, type NetworkLayout } from "./model/networkLayout";
 import { useMorphologyStore } from "./stores/morphologyStore";
 
@@ -27,6 +28,10 @@ export type MorphologyData = {
   /** Section id → the cell it belongs to (the sessions query is per cell). */
   cellOf: Map<string, string>;
   importance: ImportanceColors;
+  /** The zoomed-in render's focus — null for the whole model. */
+  focus: ReadonlySet<string> | null;
+  /** What the camera frames and orbits: the focus, or the whole model. */
+  frame: Frame;
 };
 
 const MorphologyDataContext = createContext<MorphologyData | null>(null);
@@ -40,9 +45,11 @@ export const useMorphologyData = (): MorphologyData => {
 /** Must sit inside the store provider: the importance weights live there. */
 export const MorphologyDataProvider = ({
   model,
+  focus: focusIds,
   children,
 }: {
   model: DetailNeuronModelFragment;
+  focus?: readonly string[] | null;
   children: React.ReactNode;
 }) => {
   const cells = model.config.cells;
@@ -50,6 +57,16 @@ export const MorphologyDataProvider = ({
   const network = useMemo(
     () => buildNetworkLayout(model.config, morphology),
     [model.config, morphology],
+  );
+  // By value: a page that rebuilds its id list each render must not re-frame.
+  const focusKey = focusIds ? focusIds.join("\u0000") : null;
+  const focus = useMemo(
+    () => (focusKey === null ? null : new Set(focusKey.split("\u0000"))),
+    [focusKey],
+  );
+  const frame = useMemo(
+    () => (focus && focusFrame(morphology, focus)) || wholeFrame(morphology),
+    [focus, morphology],
   );
   const weights = useMorphologyStore((s) => s.importanceWeights);
   const importance = useImportanceColors(model, weights);
@@ -71,8 +88,8 @@ export const MorphologyDataProvider = ({
   );
 
   const value = useMemo(
-    () => ({ model, morphology, network, importance, ...derived }),
-    [model, morphology, network, importance, derived],
+    () => ({ model, morphology, network, importance, focus, frame, ...derived }),
+    [model, morphology, network, importance, focus, frame, derived],
   );
 
   return <MorphologyDataContext.Provider value={value}>{children}</MorphologyDataContext.Provider>;

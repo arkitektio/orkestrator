@@ -10,6 +10,7 @@ import {
   useMorphologyStore,
   useMorphologyStoreApi,
 } from "../stores/morphologyStore";
+import { INSTANCE_UPLOAD_FRAMES } from "./instanceUpload";
 
 /**
  * The morphology as two instanced meshes — every centreline segment one
@@ -24,7 +25,8 @@ import {
  *
  * Geometry is rebuilt only when the MORPHOLOGY changes. Radius scaling,
  * colour and highlight are written into the instance buffers in place from a
- * `store.subscribe`, followed by `invalidate()` — the frame loop is on
+ * `store.subscribe`, followed by `invalidate(INSTANCE_UPLOAD_FRAMES)` (see
+ * `instanceUpload.ts` for why one frame is not enough) — the frame loop is on
  * demand, so nothing draws unless something changed.
  */
 
@@ -131,9 +133,13 @@ const writeMatrices = (
   morphology: Morphology,
   buffers: Buffers,
   settings: MorphologyState["morphology"],
+  hidden: ReadonlySet<string>,
 ) => {
   const { tubes, joints, pick, jointSection, jointPoint } = buffers;
   const drawn = (r: number) => Math.max(r * settings.radiusScale, settings.minRadius);
+  // A hidden section collapses to nothing: not drawn, and not pickable.
+  const isHidden = (ordinal: number) =>
+    hidden.size > 0 && hidden.has(morphology.sections[ordinal].id);
   const matrix = new THREE.Matrix4();
   const scratch = {
     a: new THREE.Vector3(),
@@ -143,6 +149,12 @@ const writeMatrices = (
   };
 
   for (let i = 0; i < morphology.segmentCount; i++) {
+    if (isHidden(morphology.segSection[i])) {
+      matrix.makeScale(0, 0, 0);
+      tubes.setMatrixAt(i, matrix);
+      pick.setMatrixAt(i, matrix);
+      continue;
+    }
     const r = drawn(morphology.segRadius[i]);
     segmentMatrix(morphology, i, r, matrix, scratch);
     tubes.setMatrixAt(i, matrix);
@@ -152,7 +164,7 @@ const writeMatrices = (
   for (let j = 0; j < joints.count; j++) {
     const section = morphology.sections[jointSection[j]];
     const p = jointPoint[j];
-    const r = drawn(section.radii[p]);
+    const r = isHidden(section.ordinal) ? 0 : drawn(section.radii[p]);
     matrix.makeScale(r, r, r).setPosition(section.points[p]);
     joints.setMatrixAt(j, matrix);
   }
@@ -193,6 +205,7 @@ const highlightedIds = (state: MorphologyState, extra: readonly string[]): Set<s
 };
 
 const EMPTY: readonly string[] = [];
+const NONE_HIDDEN: ReadonlySet<string> = new Set();
 
 export type SectionTubesProps = {
   morphology: Morphology;
@@ -200,6 +213,8 @@ export type SectionTubesProps = {
   baseColors: Float32Array;
   /** Sections to highlight besides the hovered and panel-open ones (the editor's selection). */
   highlight?: readonly string[];
+  /** Sections not drawn at all (a zoomed-in render hiding its context). */
+  hidden?: ReadonlySet<string>;
   onSectionClick?: (hit: SectionHit, e: ThreeEvent<MouseEvent>) => void;
   /** Fires on every move over a section — the editor's add-child cursor. */
   onSectionMove?: (hit: SectionHit | null) => void;
@@ -209,6 +224,7 @@ export const SectionTubes = ({
   morphology,
   baseColors,
   highlight = EMPTY,
+  hidden = NONE_HIDDEN,
   onSectionClick,
   onSectionMove,
 }: SectionTubesProps) => {
@@ -233,16 +249,16 @@ export const SectionTubes = ({
   // Matrices: on mount and whenever the radius settings change.
   useLayoutEffect(() => {
     let last = store.getState().morphology;
-    writeMatrices(morphology, buffers, last);
-    invalidate();
+    writeMatrices(morphology, buffers, last, hidden);
+    invalidate(INSTANCE_UPLOAD_FRAMES);
     return store.subscribe((state) => {
       const next = state.morphology;
       if (next.radiusScale === last.radiusScale && next.minRadius === last.minRadius) return;
       last = next;
-      writeMatrices(morphology, buffers, next);
-      invalidate();
+      writeMatrices(morphology, buffers, next, hidden);
+      invalidate(INSTANCE_UPLOAD_FRAMES);
     });
-  }, [store, morphology, buffers, invalidate]);
+  }, [store, morphology, buffers, hidden, invalidate]);
 
   // Colours: base colours are props (they change with colour-by), highlight
   // is store state — written in place either way.
@@ -254,7 +270,7 @@ export const SectionTubes = ({
       if (key === lastKey) return;
       lastKey = key;
       writeColors(morphology, buffers, baseColors, ids);
-      invalidate();
+      invalidate(INSTANCE_UPLOAD_FRAMES);
     };
     sync(store.getState());
     return store.subscribe(sync);

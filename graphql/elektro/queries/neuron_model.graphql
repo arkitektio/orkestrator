@@ -43,3 +43,16 @@ query SectionSessions($model: ID!, $cell: ID!, $section: ID!) {
     }
   }
 }
+
+# Compound ids: 'model:cell' and 'model:cell:section', each part percent-encoded.
+query DetailCell($id: ID!) {
+  cell(id: $id) {
+    ...DetailCell
+  }
+}
+
+query DetailSection($id: ID!) {
+  section(id: $id) {
+    ...DetailSection
+  }
+}

@@ -7504,7 +7504,7 @@ export type DetailModelWorkspaceFragment = { __typename?: 'ModelWorkspace', id: 
 
 export type CoordFragment = { __typename?: 'Coord', x: Length, y: Length, z: Length, diam?: Length | null };
 
-export type SectionFragment = { __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<(
+export type SectionFragment = { __typename?: 'Section', id: string, compoundId?: string | null, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<(
     { __typename?: 'Coord' }
     & CoordFragment
   )> | null, parent?: (
@@ -7533,7 +7533,7 @@ export type DetailNeuronModelFragment = { __typename?: 'NeuronModel', id: string
     )>, mechanismGlobals: Array<(
       { __typename?: 'MechanismGlobalParam' }
       & MechanismGlobalParamFragment
-    )>, cells: Array<{ __typename?: 'Cell', id: string, biophysics: { __typename?: 'Biophysics', compartments: Array<(
+    )>, cells: Array<{ __typename?: 'Cell', id: string, compoundId?: string | null, biophysics: { __typename?: 'Biophysics', compartments: Array<(
           { __typename?: 'Compartment' }
           & CompartmentFragment
         )> }, topology: { __typename?: 'Topology', sections: Array<(
@@ -7559,6 +7559,31 @@ export type NeuronModelSessionFragment = { __typename?: 'NeuronModelSession', cl
   )> };
 
 export type ListNeuronModelFragment = { __typename?: 'NeuronModel', id: string, name: string };
+
+export type DetailCellFragment = { __typename?: 'Cell', id: string, compoundId?: string | null, model?: (
+    { __typename?: 'NeuronModel' }
+    & DetailNeuronModelFragment
+  ) | null, sessions: Array<(
+    { __typename?: 'NeuronModelSession' }
+    & NeuronModelSessionFragment
+  )>, biophysics: { __typename?: 'Biophysics', compartments: Array<(
+      { __typename?: 'Compartment' }
+      & CompartmentFragment
+    )> }, topology: { __typename?: 'Topology', sections: Array<(
+      { __typename?: 'Section' }
+      & SectionFragment
+    )> } };
+
+export type DetailSectionFragment = (
+  { __typename?: 'Section', model?: (
+    { __typename?: 'NeuronModel' }
+    & DetailNeuronModelFragment
+  ) | null, cell?: { __typename?: 'Cell', id: string, compoundId?: string | null } | null, sessions: Array<(
+    { __typename?: 'NeuronModelSession' }
+    & NeuronModelSessionFragment
+  )> }
+  & SectionFragment
+);
 
 export type ExpSparseLayoutFragment = { __typename?: 'SparseLayout', path: string, encoding: string, indexedAxis: number, indexOrder: Array<number>, nnz: number, dtype: string, rangeReadable: boolean };
 
@@ -8376,6 +8401,26 @@ export type SectionSessionsQuery = { __typename?: 'Query', sections: Array<{ __t
       { __typename?: 'NeuronModelSession' }
       & NeuronModelSessionFragment
     )> }> };
+
+export type DetailCellQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DetailCellQuery = { __typename?: 'Query', cell: (
+    { __typename?: 'Cell' }
+    & DetailCellFragment
+  ) };
+
+export type DetailSectionQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DetailSectionQuery = { __typename?: 'Query', section: (
+    { __typename?: 'Section' }
+    & DetailSectionFragment
+  ) };
 
 export type LayerPickerArrayDatasetsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -9363,6 +9408,7 @@ export const ConnectionFragmentDoc = gql`
 export const SectionFragmentDoc = gql`
     fragment Section on Section {
   id
+  compoundId
   diam
   length
   category
@@ -9431,6 +9477,7 @@ export const DetailNeuronModelFragmentDoc = gql`
     }
     cells {
       id
+      compoundId
       biophysics {
         compartments {
           ...Compartment
@@ -9505,6 +9552,48 @@ ${SectionDominanceFragmentDoc}
 ${NeuronModelSessionFragmentDoc}
 ${ModEnvironmentFragmentDoc}
 ${ProvenanceEntryFragmentDoc}`;
+export const DetailCellFragmentDoc = gql`
+    fragment DetailCell on Cell {
+  id
+  compoundId
+  model {
+    ...DetailNeuronModel
+  }
+  sessions {
+    ...NeuronModelSession
+  }
+  biophysics {
+    compartments {
+      ...Compartment
+    }
+  }
+  topology {
+    sections {
+      ...Section
+    }
+  }
+}
+    ${DetailNeuronModelFragmentDoc}
+${NeuronModelSessionFragmentDoc}
+${CompartmentFragmentDoc}
+${SectionFragmentDoc}`;
+export const DetailSectionFragmentDoc = gql`
+    fragment DetailSection on Section {
+  ...Section
+  model {
+    ...DetailNeuronModel
+  }
+  cell {
+    id
+    compoundId
+  }
+  sessions {
+    ...NeuronModelSession
+  }
+}
+    ${SectionFragmentDoc}
+${DetailNeuronModelFragmentDoc}
+${NeuronModelSessionFragmentDoc}`;
 export const GeneralSparseAccessGrantFragmentDoc = gql`
     fragment GeneralSparseAccessGrant on GeneralSparseAccessGrant {
   accessKey
@@ -12109,6 +12198,76 @@ export function useSectionSessionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
 export type SectionSessionsQueryHookResult = ReturnType<typeof useSectionSessionsQuery>;
 export type SectionSessionsLazyQueryHookResult = ReturnType<typeof useSectionSessionsLazyQuery>;
 export type SectionSessionsQueryResult = Apollo.QueryResult<SectionSessionsQuery, SectionSessionsQueryVariables>;
+export const DetailCellDocument = gql`
+    query DetailCell($id: ID!) {
+  cell(id: $id) {
+    ...DetailCell
+  }
+}
+    ${DetailCellFragmentDoc}`;
+
+/**
+ * __useDetailCellQuery__
+ *
+ * To run a query within a React component, call `useDetailCellQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailCellQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailCellQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailCellQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DetailCellQuery, DetailCellQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DetailCellQuery, DetailCellQueryVariables>(DetailCellDocument, options);
+      }
+export function useDetailCellLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DetailCellQuery, DetailCellQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DetailCellQuery, DetailCellQueryVariables>(DetailCellDocument, options);
+        }
+export type DetailCellQueryHookResult = ReturnType<typeof useDetailCellQuery>;
+export type DetailCellLazyQueryHookResult = ReturnType<typeof useDetailCellLazyQuery>;
+export type DetailCellQueryResult = Apollo.QueryResult<DetailCellQuery, DetailCellQueryVariables>;
+export const DetailSectionDocument = gql`
+    query DetailSection($id: ID!) {
+  section(id: $id) {
+    ...DetailSection
+  }
+}
+    ${DetailSectionFragmentDoc}`;
+
+/**
+ * __useDetailSectionQuery__
+ *
+ * To run a query within a React component, call `useDetailSectionQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDetailSectionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDetailSectionQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDetailSectionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DetailSectionQuery, DetailSectionQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DetailSectionQuery, DetailSectionQueryVariables>(DetailSectionDocument, options);
+      }
+export function useDetailSectionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DetailSectionQuery, DetailSectionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DetailSectionQuery, DetailSectionQueryVariables>(DetailSectionDocument, options);
+        }
+export type DetailSectionQueryHookResult = ReturnType<typeof useDetailSectionQuery>;
+export type DetailSectionLazyQueryHookResult = ReturnType<typeof useDetailSectionLazyQuery>;
+export type DetailSectionQueryResult = Apollo.QueryResult<DetailSectionQuery, DetailSectionQueryVariables>;
 export const LayerPickerArrayDatasetsDocument = gql`
     query LayerPickerArrayDatasets($search: String, $pagination: OffsetPaginationInput) {
   arrayDatasets(

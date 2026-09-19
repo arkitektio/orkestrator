@@ -278,6 +278,21 @@ export const ElektroNeuronModel = buildSmart({
   datum: true,
 });
 
+// A neuron model's cell and section. Their object id is the COMPOUND id
+// (`model:cell`, `model:cell:section`, each part percent-encoded) — the config
+// id alone repeats across models. Pass `{ id: compoundId }` to their links.
+export const ElektroCell = buildSmart({
+  identifier: "@elektro/cell",
+  path: "elektro/cells",
+  name: "Cell",
+});
+
+export const ElektroSection = buildSmart({
+  identifier: "@elektro/section",
+  path: "elektro/sections",
+  name: "Section",
+});
+
 export const ElektroModelWorkspace = buildSmart({
   identifier: "@elektro/modelworkspace",
   path: "elektro/modelworkspaces",

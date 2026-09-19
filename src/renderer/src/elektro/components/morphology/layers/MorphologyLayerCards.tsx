@@ -21,6 +21,7 @@ import {
 import { heatmapGradientCss } from "../../../lib/heatmap";
 import type { Morphology } from "../model/buildMorphology";
 import { COLOR_BY_OPTIONS } from "../model/colouring";
+import { FOCUS_CONTEXT_OPTIONS } from "../model/focus";
 import {
   type NetworkLayout,
   STIMULATOR_COLOR,
@@ -145,10 +146,13 @@ const ImportanceSection = ({ importance }: { importance: ImportanceColors }) => 
 export const MorphologyLayerCard = ({
   morphology,
   importance,
+  zoomed = false,
 }: {
   morphology: Morphology;
   /** Null where there is no dominance score to colour by (the editor). */
   importance: ImportanceColors | null;
+  /** A zoomed-in render: offer what to do with the model around the focus. */
+  zoomed?: boolean;
 }) => {
   const settings = useMorphologyStore((s) => s.morphology);
   const setMorphology = useMorphologyStore((s) => s.setMorphology);
@@ -207,6 +211,25 @@ export const MorphologyLayerCard = ({
           />
         )}
       </CardSection>
+
+      {zoomed && (
+        <CardSection title="rest of the model">
+          <div>
+            <SegmentGroup>
+              {FOCUS_CONTEXT_OPTIONS.map((o) => (
+                <Segment
+                  key={o.value}
+                  active={settings.context === o.value}
+                  title={o.title}
+                  onClick={() => setMorphology({ context: o.value })}
+                >
+                  {o.label}
+                </Segment>
+              ))}
+            </SegmentGroup>
+          </div>
+        </CardSection>
+      )}
 
       {settings.colorBy === "importance" && importance?.hasData && (
         <ImportanceSection importance={importance} />
@@ -319,10 +342,10 @@ export const NetworkLayerCard = ({ network }: { network: NetworkLayout }) => {
 
 /** The Layers tab: the viewer's cards, fed from the model data. */
 export const MorphologyLayerCards = () => {
-  const { morphology, importance, network } = useMorphologyData();
+  const { morphology, importance, network, focus } = useMorphologyData();
   return (
     <div className="flex flex-col gap-1.5 p-2">
-      <MorphologyLayerCard morphology={morphology} importance={importance} />
+      <MorphologyLayerCard morphology={morphology} importance={importance} zoomed={focus !== null} />
       <NetworkLayerCard network={network} />
     </div>
   );

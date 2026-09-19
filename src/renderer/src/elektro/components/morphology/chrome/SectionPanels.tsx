@@ -8,7 +8,7 @@ import {
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
-import { ElektroArrayDataset } from "@/linkers";
+import { ElektroArrayDataset, ElektroSection } from "@/linkers";
 import { AudioLines, PanelRightClose, PanelRightOpen } from "lucide-react";
 import {
   CompartmentFragment,
@@ -213,8 +213,21 @@ const NeuronPanelCard = ({
   return (
     <ThreeDPopoutCard
       eyebrow={section.category ? `Section · ${section.category}` : "Section"}
-      title={section.id}
-      titleHint={section.id}
+      title={
+        // The section's own page, where it is the zoomed-in focus. The compound
+        // id is what that page takes; without one there is nowhere to go.
+        section.compoundId ? (
+          <ElektroSection.DetailLink
+            object={{ id: section.compoundId }}
+            className="hover:underline"
+          >
+            {section.id}
+          </ElektroSection.DetailLink>
+        ) : (
+          section.id
+        )
+      }
+      titleHint={section.compoundId ? `Open section ${section.id}` : section.id}
       swatch={rgbaToCss(compartment?.color)}
       onClose={onClose}
       aside={inline && <InlineTraceViewer key={inline.id} dataset={inline} />}

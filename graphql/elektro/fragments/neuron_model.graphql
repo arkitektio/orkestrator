@@ -7,6 +7,9 @@ fragment Coord on Coord {
 
 fragment Section on Section {
   id
+  # 'model:cell:section' — the cache key (a bare section id repeats across
+  # models: every model has a soma) and the section detail page's id.
+  compoundId
   diam
   length
   category
@@ -108,6 +111,8 @@ fragment DetailNeuronModel on NeuronModel {
     }
     cells {
       id
+      # 'model:cell' — the cache key and the cell detail page's id.
+      compoundId
       biophysics {
         compartments {
           ...Compartment
@@ -197,4 +202,43 @@ fragment NeuronModelSession on NeuronModelSession {
 fragment ListNeuronModel on NeuronModel {
   id
   name
+}
+
+# A cell on its own page: the whole model rides along, because the zoomed-in
+# render draws the cell inside the model it belongs to.
+fragment DetailCell on Cell {
+  id
+  compoundId
+  model {
+    ...DetailNeuronModel
+  }
+  sessions {
+    ...NeuronModelSession
+  }
+  biophysics {
+    compartments {
+      ...Compartment
+    }
+  }
+  topology {
+    sections {
+      ...Section
+    }
+  }
+}
+
+# A section on its own page, with its model (for the render) and its cell (for
+# the way back up).
+fragment DetailSection on Section {
+  ...Section
+  model {
+    ...DetailNeuronModel
+  }
+  cell {
+    id
+    compoundId
+  }
+  sessions {
+    ...NeuronModelSession
+  }
 }

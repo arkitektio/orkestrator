@@ -193,7 +193,24 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
 };
 
 export const ALPAKA_TYPE_POLICIES = buildOffsetPaginationPolicies(ALPAKA_PAGINATED_FIELDS);
-export const ELEKTRO_TYPE_POLICIES = buildOffsetPaginationPolicies(ELEKTRO_PAGINATED_FIELDS);
+/**
+ * A neuron model's cells and sections carry the id from the model's config,
+ * which is unique only WITHIN a model — every model has a `soma`. Keyed on
+ * that, Apollo merged one model's sections into another's. `compoundId`
+ * (`model:cell[:section]`) is the global one. An object fetched without it (a
+ * selection that doesn't ask for it) is left un-normalized — embedded in its
+ * parent — rather than merged under a key it doesn't have.
+ */
+export const compoundKey = (object: Readonly<Record<string, unknown>>): string | false =>
+  typeof object.compoundId === "string" && object.compoundId.length > 0
+    ? `${String(object.__typename)}:${object.compoundId}`
+    : false;
+
+export const ELEKTRO_TYPE_POLICIES: TypePolicies = {
+  ...buildOffsetPaginationPolicies(ELEKTRO_PAGINATED_FIELDS),
+  Cell: { keyFields: compoundKey },
+  Section: { keyFields: compoundKey },
+};
 export const FLUSS_TYPE_POLICIES = buildOffsetPaginationPolicies(FLUSS_PAGINATED_FIELDS);
 export const KABINET_TYPE_POLICIES = buildOffsetPaginationPolicies(KABINET_PAGINATED_FIELDS);
 export const KRAPH_TYPE_POLICIES = buildOffsetPaginationPolicies(KRAPH_PAGINATED_FIELDS);

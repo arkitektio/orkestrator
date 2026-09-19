@@ -15,6 +15,8 @@ import NeuronModelEditorPage from "./pages/NeuronModelEditorPage";
 import NeuronModelPage from "./pages/NeuronModelPage";
 import NeuronModelTreePage from "./pages/NeuronModelTreePage";
 import NeuronModelsPage from "./pages/NeuronModelsPage";
+import CellPage from "./pages/CellPage";
+import SectionPage from "./pages/SectionPage";
 import ArrayDatasetPage from "./pages/ArrayDatasetPage";
 import ArrayDatasetSpecPage from "./pages/ArrayDatasetSpecPage";
 import ArrayDatasetsPage from "./pages/ArrayDatasetsPage";
@@ -41,6 +43,8 @@ export const ElektroModule: React.FC<Props> = () => {
           <Route path="neuronmodels/:id" element={<NeuronModelPage />} />
           <Route path="neuronmodels/:id/edit" element={<NeuronModelEditorPage />} />
           <Route path="neuronmodels/:id/tree" element={<NeuronModelTreePage />} />
+          <Route path="cells/:id" element={<CellPage />} />
+          <Route path="sections/:id" element={<SectionPage />} />
           <Route
             path="modelcollections/:id"
             element={<ModelCollectionPage />}

@@ -2,6 +2,7 @@ import { createStore } from "zustand/vanilla";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
 import { DEFAULT_WEIGHTS, type DominanceWeights } from "../../../lib/importance";
 import type { ColorBy } from "../model/colouring";
+import type { FocusContext } from "../model/focus";
 
 /**
  * The morphology viewer's view state — one store per mounted viewer (the
@@ -28,6 +29,8 @@ export type MorphologyLayerSettings = {
   radiusScale: number;
   /** Floor (µm) under every drawn radius, applied after the scale. */
   minRadius: number;
+  /** In a zoomed-in render, what happens to the model outside the focus. */
+  context: FocusContext;
 };
 
 export type NetworkLayerSettings = {
@@ -114,6 +117,7 @@ export const DEFAULT_MORPHOLOGY_SETTINGS: MorphologyLayerSettings = {
   uniformColor: "#e5e7eb",
   radiusScale: 1,
   minRadius: 0,
+  context: "dim",
 };
 
 export const createMorphologyStore = (

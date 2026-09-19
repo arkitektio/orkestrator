@@ -10,6 +10,7 @@ import { NetworkMarks } from "./gpu/NetworkMarks";
 import { SectionTubes } from "./gpu/SectionTubes";
 import { MorphologyLayerCards } from "./layers/MorphologyLayerCards";
 import { sectionColors } from "./model/colouring";
+import { dimOutsideFocus, hiddenOutsideFocus } from "./model/focus";
 import { MorphologyDataProvider, useMorphologyData } from "./MorphologyData";
 import {
   createMorphologyStore,
@@ -39,10 +40,16 @@ const PhaseContext = createContext<WebGPUGate>({ phase: "checking", message: nul
 
 const Provider = ({
   model,
+  focus,
   embedded = false,
   children,
 }: {
   model: DetailNeuronModelFragment;
+  /**
+   * Section ids to zoom in on (a cell's, or one section) — framed and orbited,
+   * the rest of the model kept as context. Omit for the whole model.
+   */
+  focus?: readonly string[] | null;
   /** Previews always open in 3D and never remember a display mode. */
   embedded?: boolean;
   children: React.ReactNode;
@@ -55,7 +62,9 @@ const Provider = ({
   return (
     <MorphologyStoreContext.Provider value={store}>
       <PhaseContext.Provider value={gate}>
-        <MorphologyDataProvider model={model}>{children}</MorphologyDataProvider>
+        <MorphologyDataProvider model={model} focus={focus}>
+          {children}
+        </MorphologyDataProvider>
       </PhaseContext.Provider>
     </MorphologyStoreContext.Provider>
   );
@@ -78,30 +87,45 @@ const CloseAllPanels = () => {
 
 /** The 3D view: canvas, section panels and readouts. */
 const MorphologyView = () => {
-  const { model, morphology, network, compartments, importance, cellOf, sectionMap, compartmentMap } =
-    useMorphologyData();
+  const {
+    model,
+    morphology,
+    network,
+    compartments,
+    importance,
+    cellOf,
+    sectionMap,
+    compartmentMap,
+    focus,
+    frame,
+  } = useMorphologyData();
   const colorBy = useMorphologyStore((s) => s.morphology.colorBy);
+  const context = useMorphologyStore((s) => s.morphology.context);
   const uniform = useMorphologyStore((s) => s.morphology.uniformColor);
   const store = useMorphologyStoreApi();
   const nodes = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  const baseColors = useMemo(
-    () =>
-      sectionColors(morphology, {
-        colorBy,
-        compartments,
-        importance: importance.hasData ? importance.colors : null,
-        uniform,
-      }),
-    [morphology, colorBy, compartments, importance, uniform],
+  const baseColors = useMemo(() => {
+    const colors = sectionColors(morphology, {
+      colorBy,
+      compartments,
+      importance: importance.hasData ? importance.colors : null,
+      uniform,
+    });
+    return focus && context === "dim" ? dimOutsideFocus(colors, morphology, focus) : colors;
+  }, [morphology, colorBy, compartments, importance, uniform, focus, context]);
+  const hidden = useMemo(
+    () => (focus && context === "hide" ? hiddenOutsideFocus(morphology, focus) : undefined),
+    [morphology, focus, context],
   );
 
   return (
     <>
-      <MorphologyCanvas morphology={morphology}>
+      <MorphologyCanvas morphology={morphology} frame={frame}>
         <SectionTubes
           morphology={morphology}
           baseColors={baseColors}
+          hidden={hidden}
           onSectionClick={(hit, e) => {
             // Anchor the panel at the exact point on the branch that was clicked.
             const panel = {

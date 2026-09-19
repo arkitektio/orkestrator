@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { ElektroEnvironment, ElektroModelCollection } from "@/linkers";
+import { ElektroCell, ElektroEnvironment, ElektroModelCollection } from "@/linkers";
 import { DetailNeuronModelFragment } from "../../api/graphql";
 import HistoryCard from "../cards/HistoryCard";
 import SessionCard from "../cards/SessionCard";
@@ -62,6 +62,30 @@ export const NeuronModelInfoSidebar = ({
           </>
         )}
       </div>
+
+      {/* Each cell opens zoomed in on its own page. */}
+      {config.cells.some((cell) => cell.compoundId) && (
+        <div className="flex flex-col gap-1">
+          <SectionHeader title="Cells" count={config.cells.length} />
+          {config.cells.map((cell) => (
+            <div key={cell.id} className="flex items-baseline justify-between gap-2 text-xs">
+              {cell.compoundId ? (
+                <ElektroCell.DetailLink
+                  object={{ id: cell.compoundId }}
+                  className="min-w-0 truncate font-mono hover:underline"
+                >
+                  {cell.id}
+                </ElektroCell.DetailLink>
+              ) : (
+                <span className="min-w-0 truncate font-mono">{cell.id}</span>
+              )}
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                {cell.topology.sections.length} sections
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {config.ions.length > 0 && (
         <div className="flex flex-col gap-1">

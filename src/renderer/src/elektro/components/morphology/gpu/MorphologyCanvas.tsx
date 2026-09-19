@@ -21,6 +21,7 @@ import {
 import { getNiceNumber } from "@/lib/scene/chrome/ScaleBar";
 import { createWebGPURendererFactory } from "@/lib/scene/gpu/createWebGPURenderer";
 import type { Morphology } from "../model/buildMorphology";
+import { type Frame, wholeFrame } from "../model/focus";
 import { useMorphologyStore, useMorphologyStoreApi } from "../stores/morphologyStore";
 
 /**
@@ -40,26 +41,26 @@ const rendererFactory = createWebGPURendererFactory({ label: "morphology" });
 const FOV = 34;
 
 /**
- * Frames the morphology: orbiting its root sections' centroid, the whole arbor
- * inside the view. On mount, when the morphology's extent changes, and on every
- * `requestFit` (F, the fit button). Keeps the current view direction, so a
- * re-fit never yanks the camera's orientation around.
+ * Frames `frame` — the whole arbor orbiting its roots, or a zoomed-in render's
+ * focus. On mount, when the frame changes, and on every `requestFit` (F, the
+ * fit button). Keeps the current view direction, so a re-fit never yanks the
+ * camera's orientation around.
  */
-const FitController = ({ morphology }: { morphology: Morphology }) => {
+const FitController = ({ frame, empty }: { frame: Frame; empty: boolean }) => {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const controls = useThree((s) => s.controls);
   const size = useThree((s) => s.size);
   const invalidate = useThree((s) => s.invalidate);
   const fitRequest = useMorphologyStore((s) => s.fitRequest);
-  const { rootCentroid, radius } = morphology;
+  const { center, radius } = frame;
   // Extent, not identity: an editor edit that leaves the arbor where it was
   // must not re-frame what the user has navigated to.
-  const extentKey = `${rootCentroid.x.toFixed(1)}|${rootCentroid.y.toFixed(1)}|${rootCentroid.z.toFixed(1)}|${radius.toFixed(1)}`;
+  const extentKey = `${center.x.toFixed(1)}|${center.y.toFixed(1)}|${center.z.toFixed(1)}|${radius.toFixed(1)}`;
 
   useEffect(() => {
     const ctrl = asNavControls(controls);
-    if (!ctrl || morphology.sections.length === 0) return;
-    const pose = computeSphereFitPose(rootCentroid, Math.max(radius, 1), {
+    if (!ctrl || empty) return;
+    const pose = computeSphereFitPose(center, Math.max(radius, 1), {
       fov: camera.fov,
       aspect: size.width / Math.max(size.height, 1),
       viewDirection: camera.position.clone().sub(ctrl.target),
@@ -222,10 +223,13 @@ const Furniture = ({ morphology }: { morphology: Morphology }) => {
 
 export const MorphologyCanvas = ({
   morphology,
+  frame,
   onPointerMissed,
   children,
 }: {
   morphology: Morphology;
+  /** What to frame; the whole morphology when omitted. */
+  frame?: Frame;
   onPointerMissed?: (event: MouseEvent) => void;
   children: React.ReactNode;
 }) => {
@@ -250,7 +254,10 @@ export const MorphologyCanvas = ({
         zoomToCursor={zoomToCursor}
         mouseButtons={NAVIGATE_BUTTONS_3D}
       />
-      <FitController morphology={morphology} />
+      <FitController
+        frame={frame ?? wholeFrame(morphology)}
+        empty={morphology.sections.length === 0}
+      />
       <KeyboardNavigation />
       <ScaleSync />
       <ScreenshotBinding />

@@ -11,6 +11,7 @@ import {
   STIMULATOR_COLOR,
 } from "../model/networkLayout";
 import { useMorphologyStore } from "../stores/morphologyStore";
+import { INSTANCE_UPLOAD_FRAMES } from "./instanceUpload";
 
 /**
  * The network layer in the canvas — synapse markers on the morphology,
@@ -134,7 +135,7 @@ const Markers = <T,>({
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.computeBoundingSphere();
-    invalidate();
+    invalidate(INSTANCE_UPLOAD_FRAMES);
   }, [mesh, items, pointOf, colorOf, radius, invalidate]);
 
   if (items.length === 0) return null;
