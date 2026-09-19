@@ -8,10 +8,11 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useSpringLoaded } from "@/lib/dnd/react";
-import { useSortableList, useSortableRow, type SortableList } from "@/lib/dnd/sortable";
+import { SortableList, type SortableRowProps } from "@/lib/dnd/SortableList";
 import { cn } from "@/lib/utils";
 import { acceptsSmartDrag } from "@/providers/smart/dragPayload";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { useRef, useState } from "react";
 import { Pin, Plus, X } from "lucide-react";
 
 /**
@@ -43,6 +44,8 @@ const useSpringLoadedTab = (tabId: string, active: boolean, focus: (id: string) 
     enabled: !active,
   });
 
+const getTabId = (tab: TabRecord) => tab.id;
+
 /** Pinned tabs keep to the top: a tab is dragged among its own kind. */
 const blockOf = (tab: TabRecord) => (tab.pinned ? "pinned" : "open");
 
@@ -50,36 +53,49 @@ const blockOf = (tab: TabRecord) => (tab.pinned ? "pinned" : "open");
  * One row of the strip. Its own component so each can hold a drop target.
  *
  * Two nodes, two jobs. The outer one is what is dragged to reorder the strip
- * (the strip itself takes that drop, the rows parting as it goes), and its
+ * (`row.ref` from the strip's `SortableList`, which takes that drop, the rows
+ * parting as it goes), and its
  * slot is the gap while it is in the air. The inner one is the spring-loaded
  * target for a *card* dragged over the rail — a tab being dragged is not a
  * card, so resting it on another tab opens nothing.
  */
 const TabRow = ({
   tab,
-  index,
+  row,
   active,
-  list,
+  animateIn,
 }: {
   tab: TabRecord;
-  /** Its place in the real order, not in the one shown mid-drag. */
-  index: number;
+  row: SortableRowProps;
   active: boolean;
-  list: SortableList;
+  /** Opened after the strip first rendered — it arrives rather than just being there. */
+  animateIn: boolean;
 }) => {
   const { focus, close, closeOthers, open, setPinned, move } = useTabs();
+  const reduceMotion = useReducedMotion();
+  // Read once, at mount: a tab that arrived in the BACKGROUND (⌘-click,
+  // middle-click) gets a brief tint, since nothing else on screen changed to
+  // say it is there. A focused new tab needs none — its page is the sign.
+  const [arrivedInBackground] = useState(() => animateIn && !active);
   const { isOver, ref } = useSpringLoadedTab(tab.id, active, focus);
-  const { ref: rowRef } = useSortableRow(list, tab.id);
+  // Its place in the real order, not in the one shown mid-drag.
+  const { index } = row;
   const pinned = Boolean(tab.pinned);
   const togglePin = () => setPinned(tab.id, !pinned);
 
   return (
     <motion.div
-      ref={rowRef}
+      ref={row.ref}
       // The rows hold no position of their own: they slide to wherever the
       // order puts them, which mid-drag is around the gap.
       layout="position"
       transition={{ duration: 0.15 }}
+      // A new tab slides in from the rail's edge while the rows below part for
+      // it; restored tabs are simply there. Reduced motion: a fade only.
+      initial={
+        animateIn ? (reduceMotion ? { opacity: 0 } : { opacity: 0, x: -12, height: 0 }) : false
+      }
+      animate={{ opacity: 1, x: 0, height: "auto" }}
       className="min-w-0 dragging:opacity-0"
     >
       <ContextMenu>
@@ -111,7 +127,7 @@ const TabRow = ({
               }
             }}
             className={cn(
-              "group flex min-w-0 cursor-pointer items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-sm transition-colors",
+              "group relative flex min-w-0 cursor-pointer items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-sm transition-colors",
               active
                 ? "bg-background/70 text-foreground shadow-sm ring-1 ring-border/40 backdrop-blur-sm"
                 : "text-muted-foreground hover:bg-background/35 hover:text-foreground",
@@ -119,6 +135,15 @@ const TabRow = ({
               isOver && !active && "bg-background/50 text-foreground ring-1 ring-primary/50",
             )}
           >
+            {arrivedInBackground && (
+              <motion.span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-md bg-primary/20"
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 0 }}
+                transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
+              />
+            )}
             <span
               aria-hidden
               className={cn(
@@ -201,15 +226,10 @@ const TabRow = ({
  */
 export const RailTabs = () => {
   const { tabs, activeId, open, move } = useTabs();
-  const byId = new Map(tabs.map((tab, index) => [tab.id, { tab, index }]));
-  const list = useSortableList({
-    ids: tabs.map((tab) => tab.id),
-    onReorder: move,
-    groupOf: (id) => {
-      const entry = byId.get(id);
-      return entry ? blockOf(entry.tab) : "open";
-    },
-  });
+  // The tabs the strip first rendered with (restored ones) do not animate in.
+  const bootRef = useRef<ReadonlySet<string> | null>(null);
+  bootRef.current ??= new Set(tabs.map((tab) => tab.id));
+  const bootIds = bootRef.current;
 
   return (
     // `app-no-drag`: the rail is a window-drag region, and a drag region eats
@@ -232,20 +252,22 @@ export const RailTabs = () => {
       </div>
 
       {/* The rows and nothing else: their places are measured from this box. */}
-      <div ref={list.ref} className="flex min-w-0 flex-col gap-0.5">
-        {list.order.map((id) => {
-          const entry = byId.get(id);
-          return entry ? (
-            <TabRow
-              key={id}
-              tab={entry.tab}
-              index={entry.index}
-              active={id === activeId}
-              list={list}
-            />
-          ) : null;
-        })}
-      </div>
+      <SortableList
+        items={tabs}
+        getId={getTabId}
+        onReorder={move}
+        groupOf={blockOf}
+        className="flex min-w-0 flex-col gap-0.5"
+      >
+        {(tab, row) => (
+          <TabRow
+            tab={tab}
+            row={row}
+            active={tab.id === activeId}
+            animateIn={!bootIds.has(tab.id)}
+          />
+        )}
+      </SortableList>
     </div>
   );
 };

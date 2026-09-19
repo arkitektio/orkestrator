@@ -1,4 +1,4 @@
-import { MapPin, Zap } from "lucide-react";
+import { MapPin, PanelRightClose, PanelRightOpen, Zap } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import {
   PopoutFact,
@@ -7,6 +7,7 @@ import {
   ThreeDPopoutCard,
 } from "@/components/popout/ThreeDPopoutCard";
 import { useGetExpLensAnchorsQuery, type ExpFullAnchorFragment } from "@/elektro/api/graphql";
+import { InlineSectionViewer } from "@/elektro/components/morphology/InlineSectionViewer";
 import { ElektroArrayDataset, ElektroNeuronModel } from "@/linkers";
 import { formatDisplay } from "@/lib/quantities";
 import {
@@ -101,22 +102,48 @@ export const ChannelTag = ({
   );
 };
 
-/** The site as a chip, then where it sits and on which model. */
+/**
+ * The site as a chip, then where it sits and on which model. A site on a
+ * section of a known model can open that section inline — the card expands to
+ * the right with the model, the section framed and the rest dimmed.
+ */
 const SiteSection = ({
   site,
   model,
+  sectionOpen,
+  onToggleSection,
 }: {
   site: ChannelSite;
   model: { id: string; name: string } | null;
+  sectionOpen: boolean;
+  onToggleSection: () => void;
 }) => {
   const kind = site.kind ? (KIND_LABELS[site.kind] ?? site.kind.toLowerCase()) : null;
   const Icon = site.role === "recording" ? MapPin : Zap;
+  const ToggleIcon = sectionOpen ? PanelRightClose : PanelRightOpen;
   return (
     <PopoutSection title={site.role === "recording" ? "Recorded at" : "Stimulated through"}>
-      <span className="flex w-fit max-w-full items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
-        <Icon className="h-2.5 w-2.5 shrink-0 opacity-70" />
-        <span className="truncate">{site.label}</span>
-      </span>
+      <div className="flex min-w-0 items-center gap-1">
+        <span className="flex w-fit min-w-0 max-w-full items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
+          <Icon className="h-2.5 w-2.5 shrink-0 opacity-70" />
+          <span className="truncate">{site.label}</span>
+        </span>
+        {model && site.location && (
+          <button
+            type="button"
+            onClick={onToggleSection}
+            className={cn(
+              "ml-auto shrink-0 rounded p-0.5 transition-colors hover:bg-muted hover:text-foreground",
+              sectionOpen ? "text-foreground" : "text-muted-foreground",
+            )}
+            title={sectionOpen ? "Close the section" : "Show the section on its model"}
+            aria-label={sectionOpen ? "Close the section" : "Show the section on its model"}
+            aria-pressed={sectionOpen}
+          >
+            <ToggleIcon className="size-3.5" />
+          </button>
+        )}
+      </div>
       {site.cell && <PopoutFact label="cell">{site.cell}</PopoutFact>}
       {site.location && (
         <PopoutFact label="section">
@@ -218,6 +245,8 @@ const ChannelCard = memo(function ChannelCard({
 }) {
   const layer = useLayerState(layerId);
   const raw = useRawLayer(layerId, "TraceLayer");
+  // The site's section, drawn in the card's right-hand expansion.
+  const [sectionOpen, setSectionOpen] = useState(false);
   // Settled, not live: the card is read once the view stops moving.
   const visibleWindow = useRangeStore((s) => s.committedRange);
   const lensId = raw?.lens.id;
@@ -271,8 +300,20 @@ const ChannelCard = memo(function ChannelCard({
       titleHint={name}
       swatch={layer?.color}
       onClose={onClose}
+      aside={
+        sectionOpen && site?.location && model ? (
+          <InlineSectionViewer modelId={model.id} cell={site.cell} section={site.location} />
+        ) : null
+      }
     >
-      {site && <SiteSection site={site} model={model} />}
+      {site && (
+        <SiteSection
+          site={site}
+          model={model}
+          sectionOpen={sectionOpen}
+          onToggleSection={() => setSectionOpen((v) => !v)}
+        />
+      )}
 
       {sourceDataset && (
         <PopoutSection title="Source">

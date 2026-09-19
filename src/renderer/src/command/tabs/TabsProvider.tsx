@@ -30,6 +30,7 @@ import {
   type TabRecord,
   type TabsState,
 } from "./tabs";
+import { linkClickIntent } from "./linkClicks";
 
 /**
  * The open tabs, as a store the rest of the app subscribes to.
@@ -269,6 +270,39 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [store, close, focus, open]);
+
+  // Links, the browser's way: ⌘/Ctrl-click and middle-click open an in-app
+  // link in a background tab (`linkClicks.ts`). Capture phase on `window`, so
+  // the claim lands before the link's own handler — react-router's `Link`
+  // skips a prevented click, and the propagation stop keeps a card's click
+  // handler from also acting on it. `evict`, as for deep links: a link the
+  // user clicked must land even when the strip is full.
+  useEffect(() => {
+    const claim = (e: MouseEvent) => {
+      const anchor = (e.target as Element | null)?.closest?.("a[href]");
+      if (!anchor) return null;
+      return linkClickIntent(e, anchor);
+    };
+    const onClick = (e: MouseEvent) => {
+      const intent = claim(e);
+      if (!intent) return;
+      e.preventDefault();
+      e.stopPropagation();
+      open(intent.to, { background: intent.background, evict: true });
+    };
+    // Middle-button mousedown starts autoscroll on Windows/Linux; not on a link.
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button === 1 && claim(e)) e.preventDefault();
+    };
+    window.addEventListener("click", onClick, true);
+    window.addEventListener("auxclick", onClick, true);
+    window.addEventListener("mousedown", onMouseDown, true);
+    return () => {
+      window.removeEventListener("click", onClick, true);
+      window.removeEventListener("auxclick", onClick, true);
+      window.removeEventListener("mousedown", onMouseDown, true);
+    };
+  }, [open]);
 
   const actions = useMemo(
     () => ({ open, focus, close, closeOthers, move, setLabel, setPinned }),
