@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * The shared card surface every layer kind renders into — one dialect for all of
- * them, as mikro's `platform/layerui/cardControls` is for its layer cards.
+ * them, as `@/lib/scene/layerui/cardControls` is for mikro's layer cards.
  *
  * One prop shape for every kind, deliberately: a card that needs fewer props is
  * still assignable where more are passed, so the registry can hand every card the

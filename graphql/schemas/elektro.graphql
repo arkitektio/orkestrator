@@ -521,9 +521,9 @@ type ArrayDataset {
   shape: [Int!]!
 
   """
-  The simulation runs this dataset is timed on: those whose clock its sample grid has a sampling law or a time lookup onto. Read off the graph, never stored
+  What computed this dataset, if it was simulated: the `simulation` spoke of its whole-dataset anchor -- the model that was integrated, its dt and duration. Null for a recording, and for a run's input
   """
-  simulations: [Simulation!]!
+  simulation: SimulationState
 
   """
   The files this dataset was converted from -- the ABF or NWB file a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete
@@ -1013,8 +1013,23 @@ type Cell {
   """
   biophysics: Biophysics!
 
+  """
+  This cell's id from outside its model, 'model:cell' (each part percent-encoded): what the `cell` query takes. `id` is only unique within the model. Null when the cell was not read from a stored model
+  """
+  compoundId: ID
+
   """The unique identifier of the cell within the model."""
   id: String!
+
+  """
+  The neuron model this cell is part of. Null when the cell was not read from a stored model
+  """
+  model: NeuronModel
+
+  """
+  Where this cell was recorded: the datasets with a recording site on it, grouped by the clock they are timed onto -- one session per run. Read from the model's recording sites, in the viewer's organization; untimed datasets come last, under a null clock. Empty when the cell was not read from a stored model
+  """
+  sessions: [NeuronModelSession!]!
 
   """
   The topology of the cell, which defines the structure of the cell such as its morphology and connectivity.
@@ -1474,6 +1489,11 @@ type CoordinateAnchor {
   rig: RigState
 
   """
+  (simulation) The model and integrator parameters that computed the values at this coordinate
+  """
+  simulation: SimulationState
+
+  """
   (simulation) Where on the model the values at this coordinate were injected
   """
   stimulusSite: StimulusSite
@@ -1502,6 +1522,7 @@ input CoordinateAnchorInput {
   label: LabelInput = null
   recordingSite: RecordingSiteInput = null
   rig: RigStateInput = null
+  simulation: SimulationStateInput = null
   stimulusSite: StimulusSiteInput = null
   valueHistogram: ValueHistogramInput = null
   valueUnit: ValueUnitInput = null
@@ -1562,9 +1583,9 @@ type CoordinateSystem {
   name: String!
 
   """
-  Every space whose data can be composed here: those reaching this one across steps that compose into one affine map, walking the transformation edges. Composed, not merely connected -- a space reaching this one only across a FIELD relates to it by the values of an array and yields no matrix to draw with, so it is not here. The same set the `placeableIn` filters answer from, so a picker and a layer mutation cannot disagree. Distinct from `coordinateGraph`, which walks the undirected *neighbourhood* -- this is directed, and asks who can get in
+  Every space whose data can be composed here: those reaching this one across steps that compose into one affine map, walking the transformation edges. Composed, not merely connected -- a space reaching this one only across a FIELD relates to it by the values of an array and yields no matrix to draw with, so it is not here. The same set the `placeableIn` filters answer from, so a picker and a layer mutation cannot disagree. Distinct from `coordinateGraph`, which walks the undirected *neighbourhood* -- this is directed, and asks who can get in. With `requireAffine: false` (elektro's) it answers *what is in* this space instead: a variable-step run timed onto a clock by a lookup is in the clock's session though no matrix draws it
   """
-  placedSystems: [CoordinateSystem!]!
+  placedSystems(requireAffine: Boolean! = true): [CoordinateSystem!]!
 
   """
   Provenance entries for this coordinate system: who created it, and every subsequent change
@@ -1604,7 +1625,7 @@ input CoordinateSystemFilter {
   OR: CoordinateSystemFilter
 
   """
-  Filter to the spaces something composes over without living in them: an experiment's world, a block's or a segment's or a simulation's clock. False finds the spaces nothing is laid out in
+  Filter to the spaces something composes over without living in them: an experiment's world. False finds the spaces nothing is laid out in
   """
   composedOver: Boolean
 
@@ -2035,18 +2056,15 @@ input CreateSeriesLayerInput {
 }
 
 """
-One run of a neuron model: the model, the integrator's parameters, and a clock. Optionally, the array datasets it produced and how their samples are timed on that clock. What was recorded or injected where is not stated here: it is a `recordingSite` / `stimulusSite` on each dataset's anchors, said at `createArrayDataset`
+Array datasets recorded together, timed onto one clock: one sampling law (or one time lookup) per dataset, onto a new clock or an existing one. A recording session, or one run of a neuron model -- a run is its clock, and the outputs timed onto one clock must agree on what was run (their `simulation` anchors)
 """
-input CreateSimulationInput {
-  datasets: [ID!]! = []
-  description: String = null
-  dt: Duration = null
-  duration: Duration!
-  model: ID!
-  name: String!
+input CreateSessionInput {
+  clock: ID = null
+  datasets: [ID!]!
+  name: String = null
   sampling: SamplingInput = null
   timeDataset: ID = null
-  timeUnit: Unit! = "millisecond"
+  timeUnit: Unit! = "second"
 }
 
 """
@@ -2360,11 +2378,6 @@ input DeleteRegistrationInput {
 
   """The shared space the registration goes into"""
   world: ID!
-}
-
-"""Input for deleting a simulation by ID"""
-input DeleteSimulationInput {
-  id: ID!
 }
 
 """Input for deleting a sparse dataset by ID"""
@@ -4486,9 +4499,9 @@ type Mutation {
   createSeriesLayer(input: CreateSeriesLayerInput!): SeriesLayer!
 
   """
-  Create a simulation: a run of a neuron model, its integrator parameters and its clock, and a timing edge onto that clock for each array dataset named. Creates no data; what was recorded where is each dataset's `recordingSite` / `stimulusSite`
+  Time the named array datasets onto one clock -- a new one, or an existing one for a second batch -- one sampling law (or time lookup) each: a recording session, or one run of a neuron model. Refused unless every dataset has a TIME axis with the same number of samples, and unless the simulated outputs on the clock agree on what was run
   """
-  createSimulation(input: CreateSimulationInput!): Simulation!
+  createSession(input: CreateSessionInput!): CoordinateSystem!
 
   """
   Create a sparse dataset from an uploaded sparse store. Each INDEX axis says what its positions are through `identifiedBy`; one axis may be TIME (elektro's own) -- a spike raster's samples, identified by nothing and placed on a clock with `createSamplingLaw`. The spec, shape and layouts are read from the store, never declared
@@ -4536,7 +4549,7 @@ type Mutation {
   deleteArrayDataset(input: DeleteArrayDatasetInput!): ID!
 
   """
-  Delete an unused shared coordinate system. Refused while data lives in it, while anything is laid out over it (an experiment, a simulation), or while any transformation edge touches it. This is the only door a shared space leaves through -- deleting an experiment never deletes one
+  Delete an unused shared coordinate system. Refused while data lives in it, while anything is laid out over it (an experiment), or while any transformation edge touches it. This is the only door a shared space leaves through -- deleting an experiment never deletes one
   """
   deleteCoordinateSystem(input: DeleteCoordinateSystemInput!): ID!
 
@@ -4588,11 +4601,6 @@ type Mutation {
   Un-register a source from a space by naming the source and the space rather than the edge. Deletes every edge from the source's spaces into that one -- rivals are allowed, so there is no single edge to mean -- and returns their ids. An UNMAPPABLE declaration is not a placement and is never matched
   """
   deleteRegistration(input: DeleteRegistrationInput!): [ID!]!
-
-  """
-  Delete a simulation and its clock, which takes the timing edges onto it along. The array datasets it timed stay
-  """
-  deleteSimulation(input: DeleteSimulationInput!): ID!
 
   """
   Delete a sparse dataset, and the coordinate system it owned if nothing else lives in it. Refused while a layer's picker names it
@@ -4994,7 +5002,16 @@ type NeuronModel {
     """
     weightConductance: Float = null
   ): [SectionDominance!]!
-  simulations(filters: SimulationFilter, ordering: [SimulationOrder!]! = [], pagination: OffsetPaginationInput): [Simulation!]!
+
+  """
+  The model's simulated datasets grouped by the clock they are timed onto: one session per run, since a run is its clock. Read off the graph, never stored. A dataset timed onto two clocks is in both; the datasets timed onto none come last, under a null clock
+  """
+  sessions: [NeuronModelSession!]!
+
+  """
+  The array datasets computed by integrating this model: those carrying a `simulation` anchor on it, in the viewer's organization. A run is its clock: the outputs of one run are those timed onto one clock
+  """
+  simulatedDatasets: [ArrayDataset!]!
 
   """
   The stimulus sites that are part of this model: every place on it some dataset's values were injected at, in the viewer's organization
@@ -5024,6 +5041,19 @@ input NeuronModelFilter {
 input NeuronModelOrder @oneOf {
   createdAt: Ordering
   id: Ordering
+}
+
+"""
+One session of a neuron model: a clock, and the model's datasets timed onto it -- one run, since a run is its clock
+"""
+type NeuronModelSession {
+  """
+  The clock the datasets are timed onto: the run. Null for the model's simulated datasets timed onto no clock yet
+  """
+  clock: CoordinateSystem
+
+  """The datasets timed onto this clock, in creation order"""
+  datasets: [ArrayDataset!]!
 }
 
 input OffsetPaginationInput {
@@ -5164,6 +5194,11 @@ input PlaceableFilter {
   Keep only what *needed* a lineage tree to get here: the filtered, decimated and sorted datasets placed by an ancestor's registration. What the space registers directly is dropped
   """
   derivedOnly: Boolean = null
+
+  """
+  (elektro) Set false to ask *what is in this space* rather than *what can be drawn in it*: also admit what reaches it across a FIELD -- a variable-step run timed onto its clock by a lookup, a spike train. What is in a session is what is placed onto its clock; a picker keeps the strict default, which only offers what one affine map can draw
+  """
+  requireAffine: Boolean = null
 
   """
   The space to be placed into. A *space*, not an experiment: every experiment over one world offers the same candidates. Pass `experiment.world.id` to ask it of an experiment
@@ -5379,6 +5414,14 @@ type Query {
   """
   arrayDatasets(filters: ArrayDatasetFilter, ordering: [ArrayDatasetOrder!]! = [], pagination: OffsetPaginationInput): [ArrayDataset!]!
 
+  """
+  Get one cell of a neuron model by its compound id, 'model:cell' (see `Cell.compoundId`)
+  """
+  cell(
+    """The unique identifier of an object"""
+    id: ID!
+  ): Cell!
+
   """Returns a list of cells in a model"""
   cells(
     ids: [ID!] = null
@@ -5511,6 +5554,14 @@ type Query {
   neuronModels(filters: NeuronModelFilter, ordering: [NeuronModelOrder!]! = [], pagination: OffsetPaginationInput): [NeuronModel!]!
 
   """
+  Get one section of a cell of a neuron model by its compound id, 'model:cell:section' (see `Section.compoundId`)
+  """
+  section(
+    """The unique identifier of an object"""
+    id: ID!
+  ): Section!
+
+  """
   The sections of one cell of a neuron model, read from the model's config
   """
   sections(
@@ -5522,11 +5573,6 @@ type Query {
     modelId: ID!
     search: String = null
   ): [Section!]!
-  simulation(
-    """The unique identifier of an object"""
-    id: ID!
-  ): Simulation!
-  simulations(filters: SimulationFilter, ordering: [SimulationOrder!]! = [], pagination: OffsetPaginationInput): [Simulation!]!
 
   """Get a single sparse dataset by ID"""
   sparseDataset(
@@ -5825,7 +5871,7 @@ type RotationTransformation implements Transformation {
 }
 
 """
-A fixed recording interval: the run recorded one sample every 1/rate, starting at tStart
+A fixed recording interval: one sample every 1/rate, starting at tStart
 """
 input SamplingInput {
   rate: Frequency!
@@ -5959,9 +6005,19 @@ type Section {
   category: String
 
   """
+  The cell this section belongs to. Null when the section was not read from a stored model
+  """
+  cell: Cell
+
+  """
   Specific membrane capacitance (NEURON cm). Unset inherits the model-wide default, then NEURON's built-in 1 µF/cm².
   """
   cm: SpecificCapacitance
+
+  """
+  This section's id from outside its model, 'model:cell:section' (each part percent-encoded): what the `section` query takes. `id` is only unique within its cell. Null when the section was not read from a stored model
+  """
+  compoundId: ID
 
   """
   The 3D coordinates (NEURON pt3d) describing the section's geometry. Required if length is not provided; when supplied they take precedence over length/diam. At least two points are needed to define a cable.
@@ -5987,6 +6043,11 @@ type Section {
   length: Length
 
   """
+  The neuron model this section is part of. Null when the section was not read from a stored model
+  """
+  model: NeuronModel
+
+  """
   The number of segments the section is discretized into (used when d_lambda is not set). NEURON convention prefers an odd count so the section has a true midpoint node.
   """
   nseg: Int!
@@ -6000,6 +6061,11 @@ type Section {
   Axial resistivity (NEURON Ra). Unset inherits the model-wide default, then NEURON's built-in 35.4 Ω·cm.
   """
   ra: Resistivity
+
+  """
+  Where this section was recorded: the datasets with a recording site on it, grouped by the clock they are timed onto -- one session per run. Read from the model's recording sites, in the viewer's organization; untimed datasets come last, under a null clock. Empty when the section was not read from a stored model
+  """
+  sessions: [NeuronModelSession!]!
 }
 
 type SectionDominance {
@@ -6305,75 +6371,30 @@ input SettingInput {
   text: String = null
 }
 
-type Simulation {
+"""
+The integrator truth: the anchored values were computed by integrating a neuron model -- the model, NEURON's dt and tstop. elektro's own spoke, the synthetic rig. A run is its clock: the outputs timed onto one clock are one run, and agree on it
+"""
+type SimulationState {
   """
-  The clock the run's datasets are timed against: a coordinate system with one TIME axis, in milliseconds by default. Laying a run into an experiment is one edge from this clock into the experiment's world
-  """
-  clock: CoordinateSystem
-  createdAt: DateTime!
-  creator: User
-
-  """
-  The array datasets timed on this run's clock -- recordings and stimuli alike, each by its own sampling law or time lookup. Read off the graph, never stored: timing a dataset on the clock is what makes it part of the run
-  """
-  datasets: [ArrayDataset!]!
-  description: String
-
-  """
-  The integration time step (NEURON's dt). An integrator parameter, not the sampling period: a run can record more coarsely than it integrates. Null when unstated
+  The integration time step (NEURON's dt). Not the sampling period: a run can record more coarsely than it integrates. Null when unstated
   """
   dt: Duration
 
   """How long the model was run for (NEURON's tstop)"""
   duration: Duration!
   id: ID!
+
+  """The neuron model that was integrated"""
   model: NeuronModel!
-  name: String!
-  provenanceEntries(pagination: OffsetPaginationInput): [ProvenanceEntry!]!
-
-  """
-  The datasets of this run carrying a `recordingSite` on some anchor: what was recorded, and where
-  """
-  recordings: [ArrayDataset!]!
-
-  """
-  The rate the run's samples were recorded at, when every dataset timed on its clock agrees on one. Derived from their sampling laws -- each has its own edge onto the clock, and this is their common value. Null for a run timed by `timeDataset`, and null when the edges have been corrected apart
-  """
-  samplingRate: Frequency
-
-  """
-  The datasets of this run carrying a `stimulusSite` on some anchor: what was injected, and where
-  """
-  stimuli: [ArrayDataset!]!
-
-  """
-  The dataset whose values are the instants the run's samples were recorded at. Derived: it is the field of the time lookups from the run's datasets onto its clock. Null for a run recorded at a fixed interval, which has a sampling law instead -- see `samplingRate`
-  """
-  timeDataset: ArrayDataset
 }
 
-input SimulationFilter {
-  AND: SimulationFilter
-  DISTINCT: Boolean
-  NOT: SimulationFilter
-  OR: SimulationFilter
-  createdAfter: DateTime
-  createdBefore: DateTime
-  createdBy: ID
-  createdByAgent: Boolean
-  createdWith: String
-  id: ID
-  ids: [ID!]
-  mine: Boolean
-  name: StrFilterLookup
-  provenanceRootTask: String
-  provenanceTask: String
-  search: String
-}
-
-input SimulationOrder @oneOf {
-  createdAt: Ordering
-  id: Ordering
+"""
+The anchored values were COMPUTED, by integrating a neuron model: the model that was run and NEURON's dt and tstop. elektro's own spoke -- the synthetic rig, a simulated output's counterpart of `rig`. A run is its clock: the outputs timed onto one clock are one run, and must agree on it. An input (a stimulus waveform) carries none
+"""
+input SimulationStateInput {
+  dt: Duration = null
+  duration: Duration!
+  model: ID!
 }
 
 """A slice along a named axis, with optional start, stop and step"""
@@ -8112,7 +8133,7 @@ type ZarrUploadGrant {
 
 scalar _Any
 
-union _Entity = AcquisitionMetadata | AffineTransformation | Annotation | AnnotationCollection | AnnotationLayer | App | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | EventsLayer | FieldTransformation | File | FileLink | Folder | HeatmapLayer | IdentityTransformation | Lens | MapAxisTransformation | MediaStore | ModEnvironment | Organization | ParquetStore | PointLayer | RecordingSite | Release | RigState | RotationTransformation | ScaleTransformation | SequenceTransformation | SeriesLayer | SparseArray | SparseAxisReference | SparseDataset | SparseStore | SpikesLayer | StimulusSite | TableDataset | TraceLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | ValueUnit | WaveformLayer | ZarrStore
+union _Entity = AcquisitionMetadata | AffineTransformation | Annotation | AnnotationCollection | AnnotationLayer | App | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | EventsLayer | FieldTransformation | File | FileLink | Folder | HeatmapLayer | IdentityTransformation | Lens | MapAxisTransformation | MediaStore | ModEnvironment | Organization | ParquetStore | PointLayer | RecordingSite | Release | RigState | RotationTransformation | ScaleTransformation | SequenceTransformation | SeriesLayer | SimulationState | SparseArray | SparseAxisReference | SparseDataset | SparseStore | SpikesLayer | StimulusSite | TableDataset | TraceLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | ValueUnit | WaveformLayer | ZarrStore
 
 type _Service {
   sdl: String!

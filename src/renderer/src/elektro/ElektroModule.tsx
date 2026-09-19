@@ -15,8 +15,9 @@ import NeuronModelEditorPage from "./pages/NeuronModelEditorPage";
 import NeuronModelPage from "./pages/NeuronModelPage";
 import NeuronModelTreePage from "./pages/NeuronModelTreePage";
 import NeuronModelsPage from "./pages/NeuronModelsPage";
-import SimulationPage from "./pages/SimulationPage";
-import SimulationsPage from "./pages/SimulationsPage";
+import ArrayDatasetPage from "./pages/ArrayDatasetPage";
+import ArrayDatasetSpecPage from "./pages/ArrayDatasetSpecPage";
+import ArrayDatasetsPage from "./pages/ArrayDatasetsPage";
 import StandardPane from "./panes/StandardPane";
 import { MechanismPage } from "./pages/MechanismPage";
 import { EnvironmentPage } from "./pages/EnvironmentPage";
@@ -34,7 +35,8 @@ export const ElektroModule: React.FC<Props> = () => {
         <Routes>
           <Route path="files/:id" element={<FilePage />} />
           <Route path="files" element={<FilesPage />} />
-          <Route path="simulations/:id" element={<SimulationPage />} />
+          <Route path="arraydatasets/spec/:spec" element={<ArrayDatasetSpecPage />} />
+          <Route path="arraydatasets/:id" element={<ArrayDatasetPage />} />
           <Route path="experiments/:id" element={<ExperimentPage />} />
           <Route path="neuronmodels/:id" element={<NeuronModelPage />} />
           <Route path="neuronmodels/:id/edit" element={<NeuronModelEditorPage />} />
@@ -48,7 +50,7 @@ export const ElektroModule: React.FC<Props> = () => {
             element={<ModelWorkspacePage />}
           />
           <Route path="modelworkspaces" element={<ModelWorkspacesPage />} />
-          <Route path="simulations" element={<SimulationsPage />} />
+          <Route path="arraydatasets" element={<ArrayDatasetsPage />} />
           <Route path="experiments" element={<ExperimentsPage />} />
           <Route path="neuronmodels" element={<NeuronModelsPage />} />
           <Route path="mechanisms/:id" element={<MechanismPage />} />

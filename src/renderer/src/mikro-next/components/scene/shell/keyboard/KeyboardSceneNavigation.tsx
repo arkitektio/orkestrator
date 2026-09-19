@@ -1,39 +1,19 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
-import * as THREE from "three";
+import { navigationActionForKey, stepSceneZ } from "@/lib/scene/camera/sceneNavigation";
 import {
-  ORBIT_STEP_RAD,
-  ZOOM_STEP,
-  navigationActionForKey,
-  panDistance,
-  stepSceneZ,
-} from "../../platform/camera/sceneNavigation";
-import { applyFitToCamera } from "../../platform/camera/cameraFit";
+  asNavControls,
+  orbitCamera,
+  panCamera,
+  zoomCamera,
+} from "@/lib/scene/camera/keyboardNavigation";
+import { applyFitToCamera } from "@/lib/scene/camera/cameraFit";
 import { computeSceneWorldBox } from "../../platform/camera/sceneFit";
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { isSceneNavigationTarget } from "../../platform/input/keyboardTarget";
-
-/**
- * The camera surface this needs. OrbitControls is all of it and more; narrowing
- * structurally is what every other camera-toucher in the tree does, and it keeps
- * this honest about the four things it actually touches.
- */
-type NavControls = {
-  target: THREE.Vector3;
-  update: () => void;
-  minZoom?: number;
-  maxZoom?: number;
-  getAzimuthalAngle?: () => number;
-  setAzimuthalAngle?: (value: number) => void;
-  dispatchEvent?: (event: { type: string }) => void;
-};
-
-const scratchRight = new THREE.Vector3();
-const scratchUp = new THREE.Vector3();
-const scratchDelta = new THREE.Vector3();
 
 /**
  * Arrow keys drive the scene: bare arrows pan, Shift+←/→ walks the Z stack,
@@ -55,8 +35,7 @@ export const KeyboardSceneNavigation = () => {
   const modeApi = useModeStoreApi();
 
   useEffect(() => {
-    const ctrl =
-      controls && "target" in controls ? (controls as unknown as NavControls) : null;
+    const ctrl = asNavControls(controls);
     if (!ctrl) return;
 
     /**
@@ -75,59 +54,9 @@ export const KeyboardSceneNavigation = () => {
       ctrl.dispatchEvent?.({ type: "end" });
     };
 
-    const pan = (dx: number, dy: number) => {
-      const distance = panDistance(
-        camera as { isOrthographicCamera?: boolean; zoom?: number; fov?: number },
-        camera.position.distanceTo(ctrl.target),
-        size.height,
-      );
-
-      // The camera's own screen basis, so "right" means right on screen in
-      // either display mode and at any orientation.
-      scratchRight.setFromMatrixColumn(camera.matrix, 0);
-      scratchUp.setFromMatrixColumn(camera.matrix, 1);
-      scratchDelta
-        .copy(scratchRight)
-        .multiplyScalar(dx * distance)
-        .addScaledVector(scratchUp, dy * distance);
-
-      // Both ends move together, so the target-relative offset `update()`
-      // rebuilds the position from is unchanged and the pan survives it.
-      camera.position.add(scratchDelta);
-      ctrl.target.add(scratchDelta);
-      ctrl.update();
-    };
-
-    const zoom = (direction: 1 | -1) => {
-      const factor = direction === 1 ? ZOOM_STEP : 1 / ZOOM_STEP;
-      const ortho = camera as THREE.OrthographicCamera;
-
-      if (ortho.isOrthographicCamera) {
-        // Safe against `update()`: it only rewrites `zoom` when its internal
-        // dolly scale is not 1, which a direct write never sets. It does not
-        // clamp in that case either, hence the explicit bounds.
-        ortho.zoom = Math.min(
-          ctrl.maxZoom ?? Infinity,
-          Math.max(ctrl.minZoom ?? 0, ortho.zoom * factor),
-        );
-        ortho.updateProjectionMatrix();
-      } else {
-        // Dolly along the view ray. `update()` clamps the resulting radius to
-        // the controls' min/max distance for us.
-        scratchDelta.copy(camera.position).sub(ctrl.target).multiplyScalar(1 / factor);
-        camera.position.copy(ctrl.target).add(scratchDelta);
-      }
-      ctrl.update();
-    };
-
-    const orbit = (direction: 1 | -1) => {
-      const { getAzimuthalAngle, setAzimuthalAngle } = ctrl;
-      if (!getAzimuthalAngle || !setAzimuthalAngle) return;
-      // Subtracted, so → turns the camera to the right: OrbitControls decreases
-      // theta for a rightward drag, and the key should feel like the gesture.
-      // The setter calls `update()` itself.
-      setAzimuthalAngle(getAzimuthalAngle() - direction * ORBIT_STEP_RAD);
-    };
+    const pan = (dx: number, dy: number) => panCamera(camera, ctrl, size.height, dx, dy);
+    const zoom = (direction: 1 | -1) => zoomCamera(camera, ctrl, direction);
+    const orbit = (direction: 1 | -1) => orbitCamera(ctrl, direction);
 
     const stepZ = (direction: 1 | -1) => {
       const extent = sceneZExtent(sceneApi.getState().layers);

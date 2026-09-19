@@ -12,12 +12,15 @@ import type { AffinePlacementLike } from "../coords/timeMap";
 import {
   anchorUnitOf,
   channelLabelsOf,
+  channelSitesOf,
   climSeedOf,
   histogramClimOf,
   siteLabelOf,
   type AnchorLike,
+  type ChannelSite,
 } from "./anchors";
 import { placeabilityOf, type Placeability } from "./placeable";
+import { channelColoringOf, type ChannelColoring } from "./channelColor";
 
 /**
  * A layer, normalized into what the renderer and the panel read.
@@ -48,6 +51,12 @@ export type PersistedLayer = {
   lineWidth: number | null;
   climMin: number | null;
   climMax: number | null;
+  /**
+   * Traces: whether each channel gets its own colour (`channelColor.ts`).
+   * Read from `TraceLayer.channelColoring` once the backend serves it; until
+   * then absent, so "OVERLAY", and edited locally (see `useLayerWrite`).
+   */
+  channelColoring: ChannelColoring;
 };
 
 export type LayerState = {
@@ -89,6 +98,8 @@ export type LayerState = {
   channelCount: number;
   /** One label per drawn channel, from the lens' anchors (null where unnamed). */
   channelLabels: (string | null)[];
+  /** One site per drawn channel (one for a channel-less trace), from the anchors. */
+  channelSites: (ChannelSite | null)[];
   /** Where it was recorded or stimulated, from the anchors. */
   siteLabel: string | null;
   /** "12 s", or null when the layer is timed by a lookup. */
@@ -128,6 +139,7 @@ export type TraceLayerLike = LayerCommonLike & {
   lineWidth?: number | null;
   color?: readonly number[] | null;
   duration?: string | null;
+  channelColoring?: string | null;
 };
 
 export type SpikesLayerLike = LayerCommonLike & {
@@ -195,6 +207,7 @@ const persistedOf = (
     lineWidth?: number | null;
     climMin?: number | null;
     climMax?: number | null;
+    channelColoring?: string | null;
   },
 ): PersistedLayer => ({
   name: layer.name ?? null,
@@ -205,6 +218,7 @@ const persistedOf = (
   lineWidth: layer.lineWidth ?? null,
   climMin: layer.climMin ?? null,
   climMax: layer.climMax ?? null,
+  channelColoring: channelColoringOf(layer.channelColoring),
 });
 
 /**
@@ -257,6 +271,7 @@ const base = (
   span: null,
   channelCount: 0,
   channelLabels: [],
+  channelSites: [],
   siteLabel: null,
   duration: null,
   climSeed: null,
@@ -321,6 +336,7 @@ export const normalizeTraceLayer = (
     span: source ? spanOfSource(source) : null,
     channelCount: source?.channelCount ?? 1,
     channelLabels: channelLabelsOf(anchors, channelAxis, channelIndices),
+    channelSites: channelSitesOf(anchors, channelAxis, channelIndices),
     siteLabel,
     duration: layer.duration ?? null,
     climSeed: climSeedOf(persisted, histogramClim),

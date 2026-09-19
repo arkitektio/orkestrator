@@ -1,6 +1,5 @@
 import { ModelWorkspaceDisplay } from "@/elektro/displays/ModelWorkspaceDisplay";
 import { NeuronModelDisplay } from "@/elektro/displays/NeuronModelDisplay";
-import { SimulationDisplay } from "@/elektro/displays/SimulationDisplay";
 import { PodDisplay } from "@/kabinet/displays/PodDisplay";
 import { EntityCategoryDisplay } from "@/kraph/displays/EntityCategoryDisplay";
 import { EntityDisplay } from "@/kraph/displays/EntityDisplay";
@@ -43,7 +42,6 @@ export const { DisplayProvider, useDisplay, useDisplayComponent } =
     "@mikro/folder": FolderDisplay,
     "@mikro/tabledataset": TableDatasetDisplay,
     // elektro
-    "@elektro/simulation": SimulationDisplay,
     "@elektro/neuronmodel": NeuronModelDisplay,
     "@elektro/modelworkspace": ModelWorkspaceDisplay,
     // kraph — claims (organization grain, a bare uuid)

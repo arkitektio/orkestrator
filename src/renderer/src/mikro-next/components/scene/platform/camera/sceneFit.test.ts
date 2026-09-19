@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { computeFitPose, computeSceneWorldBox } from "./sceneFit";
+import { computeFitPose } from "@/lib/scene/camera/fitPose";
+import { computeSceneWorldBox } from "./sceneFit";
 import type { LayerState } from "../model/layerModel";
 
 /** Minimal layer for the metadata box math (same casting style as visibility.test.ts). */

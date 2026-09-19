@@ -6,7 +6,7 @@ import {
   worldExtentToBox3,
   type AnnotationLayerVariant,
 } from "./annotationBounds";
-import { applyFitToCamera } from "../../platform/camera/cameraFit";
+import { applyFitToCamera } from "@/lib/scene/camera/cameraFit";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";

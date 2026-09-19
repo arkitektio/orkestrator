@@ -2,41 +2,14 @@ import { Badge } from "@/components/ui/badge";
 import { ElektroEnvironment, ElektroModelCollection } from "@/linkers";
 import { DetailNeuronModelFragment } from "../../api/graphql";
 import HistoryCard from "../cards/HistoryCard";
-import NeuronModelSimulationCard from "../cards/NeuronModelSimulationCard";
+import SessionCard from "../cards/SessionCard";
 import { neuronModelCounts } from "../neuronmodel/counts";
-
-/** One labelled fact, in the rail's usual label / value row. */
-const Fact = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode | null | undefined;
-}) => {
-  // Null is "not set", and an unset field is not a fact worth a row.
-  if (value === null || value === undefined || value === "") return null;
-  return (
-    <div className="flex items-baseline gap-2">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="font-mono text-xs">{value}</span>
-    </div>
-  );
-};
-
-/** Section heading with the count of what it lists, like the dataset rail. */
-const SectionHeader = ({ title, count }: { title: string; count?: number }) => (
-  <div className="flex flex-row items-baseline justify-between gap-2">
-    <div className="text-xs font-semibold">{title}</div>
-    {count !== undefined && (
-      <span className="text-xs tabular-nums text-muted-foreground">{count}</span>
-    )}
-  </div>
-);
+import { Fact, SectionHeader } from "./sidebarParts";
 
 /**
  * Everything about the model that is not the picture: the name, the global
  * biophysics it runs under, what it is built from, the environment it needs,
- * how it differs from its collections, what has been simulated with it, and
+ * how it differs from its collections, the sessions it was run in, and
  * how it has been edited since.
  *
  * Mirrors `mikro-next`'s `DatasetInfoSidebar`: the page's content area is the
@@ -197,18 +170,16 @@ export const NeuronModelInfoSidebar = ({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <SectionHeader title="Simulations" count={model.simulations.length} />
-        {model.simulations.length === 0 ? (
-          <span className="text-xs text-muted-foreground">
-            Nothing has been simulated with this model yet.
-          </span>
-        ) : (
-          model.simulations.map((simulation) => (
-            <NeuronModelSimulationCard key={simulation.id} item={simulation} />
-          ))
-        )}
-      </div>
+      {/* One per run — a run is its clock. Nothing simulated yet is the common
+          case for a fresh model, not something worth an empty section. */}
+      {model.sessions.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <SectionHeader title="Sessions" count={model.sessions.filter((s) => s.clock).length} />
+          {model.sessions.map((session) => (
+            <SessionCard key={session.clock?.id ?? "untimed"} session={session} />
+          ))}
+        </div>
+      )}
 
       {/* No separate Provenance tab: the history sits next to the facts it
           explains, as on the dataset page. */}

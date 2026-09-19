@@ -28,7 +28,7 @@ import { parseBrushRange } from "../components/experiment/platform/coords/brushR
  * and writes it back (`TimeRangeUrlSync`). The numbers are milliseconds of world
  * time now, not sample indices — see `brushRange.ts`.
  *
- * Laid out like `SimulationPage` / mikro's `ScenePage`: the Provider wraps the whole
+ * Laid out like mikro's `ScenePage`: the Provider wraps the whole
  * ModelPage, because the rail is a sibling of the content area and must reach the
  * same stores.
  */

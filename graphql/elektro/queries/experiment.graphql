@@ -20,3 +20,12 @@ query ListExperiments(
     ...ListExperiment
   }
 }
+
+# The experiments composed over one world — how a run (a clock) or a dataset's
+# own grid finds the timeline it is already on before minting another.
+query ExperimentsForWorld($world: ID!) {
+  experiments(filters: { world: $world }) {
+    id
+    name
+  }
+}

@@ -29,7 +29,7 @@ import {
   qualitativePalette,
   sampleColormapCSS,
 } from "./colormap-utils";
-import { ColormapSelect, type ColormapChoice } from "./ColormapSelect";
+import { ColormapSelect, type ColormapChoice } from "@/lib/scene/layerui/ColormapSelect";
 import { SparsePositionPicker } from "./SparsePositionPicker";
 import {
   DEFAULT_INSTANCE_COLORMAP,

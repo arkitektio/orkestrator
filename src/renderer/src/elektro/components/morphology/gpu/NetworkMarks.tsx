@@ -1,26 +1,37 @@
-import { Html, Line } from "@react-three/drei";
+import { Html, useCursor } from "@react-three/drei";
+import { type ThreeEvent, useThree } from "@react-three/fiber";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import * as THREE from "three";
+import { MeshStandardNodeMaterial } from "three/webgpu";
+import { Line } from "@/lib/scene/draw/Line";
 import {
   NetworkLayout,
-  PlacedConnection,
   PlacedStimulator,
   PlacedSynapse,
   STIMULATOR_COLOR,
-} from "../lib/networkLayout";
+} from "../model/networkLayout";
+import { useMorphologyStore } from "../stores/morphologyStore";
 
 /**
- * In-canvas rendering of the neuron model's network layer — synapse markers on
- * the morphology, floating stimulator glyphs, and connection lines — plus a
- * hover tooltip. Shared by the 3D `NeuronVisualizer` and the `NeuronEditor` so
- * both draw the network identically.
+ * The network layer in the canvas — synapse markers on the morphology,
+ * floating stimulator glyphs and stimulator→synapse connections — plus a hover
+ * tooltip. Shared by the viewer and the editor so both draw it identically.
+ *
+ * Markers are instanced (one draw per kind, colour per instance); the
+ * connections are the WebGPU fat line (`@/lib/scene/draw/Line`), which drei's
+ * WebGL `<Line>` cannot be under this renderer. Visibility of each part comes
+ * from the store's network layer settings.
  */
 
-export type HoveredNet =
+type Hovered =
   | { kind: "synapse"; point: THREE.Vector3; data: PlacedSynapse }
-  | { kind: "stimulator"; point: THREE.Vector3; data: PlacedStimulator }
-  | { kind: "connection"; point: THREE.Vector3; data: PlacedConnection };
+  | { kind: "stimulator"; point: THREE.Vector3; data: PlacedStimulator };
 
-export type SetHovered = (h: HoveredNet | null) => void;
+/** A dimmed stimulator violet: the lines are context, the markers the data. */
+const CONNECTION_COLOR = new THREE.Color(STIMULATOR_COLOR).multiplyScalar(0.6);
+
+const SYNAPSE_GEOMETRY = new THREE.SphereGeometry(1, 16, 12);
+const STIMULATOR_GEOMETRY = new THREE.OctahedronGeometry(1.6, 0);
 
 const TipRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="flex items-baseline justify-between gap-3">
@@ -29,8 +40,8 @@ const TipRow = ({ label, value }: { label: string; value: React.ReactNode }) => 
   </div>
 );
 
-/** Small hover card anchored to the hovered network element (drei Html). */
-export const NetworkTooltip = ({ hovered }: { hovered: HoveredNet }) => {
+/** Small hover card anchored to the hovered marker. */
+const NetworkTooltip = ({ hovered }: { hovered: Hovered }) => {
   let title: string;
   let badge: string | null = null;
   let rows: { label: string; value: React.ReactNode }[];
@@ -46,21 +57,13 @@ export const NetworkTooltip = ({ hovered }: { hovered: HoveredNet }) => {
       { label: "e", value: s.e },
       ...(s.delay ? [{ label: "delay", value: s.delay }] : []),
     ];
-  } else if (hovered.kind === "stimulator") {
+  } else {
     const st = hovered.data.stim;
     title = "Stimulator";
     rows = [
       { label: "start", value: st.start },
       { label: "number", value: st.number },
       ...(st.interval ? [{ label: "interval", value: st.interval }] : []),
-    ];
-  } else {
-    const c = hovered.data.connection;
-    title = "Connection";
-    rows = [
-      ...(c.weight ? [{ label: "weight", value: c.weight }] : []),
-      ...(c.delay ? [{ label: "delay", value: c.delay }] : []),
-      ...(c.threshold ? [{ label: "threshold", value: c.threshold }] : []),
     ];
   }
 
@@ -85,134 +88,136 @@ export const NetworkTooltip = ({ hovered }: { hovered: HoveredNet }) => {
   );
 };
 
-const SynapseMarker = ({
-  placed,
+/** One instanced marker kind: positions, per-instance colours, hover by instance. */
+const Markers = <T,>({
+  items,
+  pointOf,
+  colorOf,
+  geometry,
   radius,
   onHover,
 }: {
-  placed: PlacedSynapse;
+  items: readonly T[];
+  pointOf: (item: T) => THREE.Vector3;
+  colorOf: (item: T) => string;
+  geometry: THREE.BufferGeometry;
   radius: number;
-  onHover: SetHovered;
-}) => (
-  <mesh
-    position={placed.point.toArray()}
-    onPointerOver={(e) => {
-      e.stopPropagation();
-      onHover({ kind: "synapse", point: placed.point, data: placed });
-    }}
-    onPointerOut={() => onHover(null)}
-  >
-    <sphereGeometry args={[radius, 16, 16]} />
-    <meshStandardMaterial
-      color={placed.color}
-      emissive={placed.color}
-      emissiveIntensity={0.35}
-      roughness={0.4}
-    />
-  </mesh>
-);
-
-const StimulatorGlyph = ({
-  placed,
-  radius,
-  onHover,
-}: {
-  placed: PlacedStimulator;
-  radius: number;
-  onHover: SetHovered;
-}) => (
-  <mesh
-    position={placed.point.toArray()}
-    onPointerOver={(e) => {
-      e.stopPropagation();
-      onHover({ kind: "stimulator", point: placed.point, data: placed });
-    }}
-    onPointerOut={() => onHover(null)}
-  >
-    <octahedronGeometry args={[radius * 1.6, 0]} />
-    <meshStandardMaterial
-      color={STIMULATOR_COLOR}
-      emissive={STIMULATOR_COLOR}
-      emissiveIntensity={0.4}
-      roughness={0.3}
-    />
-  </mesh>
-);
-
-const ConnectionLine = ({
-  placed,
-  maxWeight,
-  onHover,
-}: {
-  placed: PlacedConnection;
-  maxWeight: number;
-  onHover: SetHovered;
+  onHover: (item: T | null) => void;
 }) => {
-  const w = Number.isFinite(placed.weight) ? placed.weight : null;
-  const lineWidth =
-    w != null && maxWeight > 0 ? 0.75 + 2.25 * (w / maxWeight) : 1.25;
-  const mid = placed.from.clone().lerp(placed.to, 0.5);
+  const invalidate = useThree((s) => s.invalidate);
+  const mesh = useMemo(() => {
+    const material = new MeshStandardNodeMaterial({ roughness: 0.35 });
+    const instanced = new THREE.InstancedMesh(geometry, material, Math.max(1, items.length));
+    instanced.count = items.length;
+    instanced.frustumCulled = false;
+    return instanced;
+  }, [geometry, items.length]);
 
+  useEffect(
+    () => () => {
+      (mesh.material as THREE.Material).dispose();
+      mesh.dispose();
+    },
+    [mesh],
+  );
+
+  useLayoutEffect(() => {
+    const matrix = new THREE.Matrix4();
+    const color = new THREE.Color();
+    items.forEach((item, i) => {
+      matrix.makeScale(radius, radius, radius).setPosition(pointOf(item));
+      mesh.setMatrixAt(i, matrix);
+      // Emissive-ish: lift the colour so markers read against lit tubes.
+      mesh.setColorAt(i, color.setStyle(colorOf(item)).multiplyScalar(1.25));
+    });
+    if (items.length === 0) mesh.setColorAt(0, color.set(0, 0, 0));
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.computeBoundingSphere();
+    invalidate();
+  }, [mesh, items, pointOf, colorOf, radius, invalidate]);
+
+  if (items.length === 0) return null;
   return (
-    <Line
-      points={[placed.from.toArray(), placed.to.toArray()]}
-      color={STIMULATOR_COLOR}
-      lineWidth={lineWidth}
-      transparent
-      opacity={0.5}
-      dashed
-      dashSize={4}
-      gapSize={2}
-      onPointerOver={(e) => {
+    <primitive
+      object={mesh}
+      onPointerMove={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
-        onHover({ kind: "connection", point: mid, data: placed });
+        onHover(e.instanceId != null ? items[e.instanceId] ?? null : null);
       }}
       onPointerOut={() => onHover(null)}
     />
   );
 };
 
-export const NetworkLayer = ({
-  network,
-  onHover,
-}: {
-  network: NetworkLayout;
-  onHover: SetHovered;
-}) => {
-  // Marker radius is computed in the layout (also used to lift synapses onto
-  // the mesh hull), so markers and their offsets stay in sync.
-  const radius = network.markerRadius;
-  const maxWeight = network.connections.reduce(
-    (m, c) => (Number.isFinite(c.weight) ? Math.max(m, c.weight) : m),
-    0,
+const synapsePoint = (s: PlacedSynapse) => s.point;
+const synapseColor = (s: PlacedSynapse) => s.color;
+const stimulatorPoint = (s: PlacedStimulator) => s.point;
+const stimulatorColor = () => STIMULATOR_COLOR;
+
+export const NetworkMarks = ({ network }: { network: NetworkLayout }) => {
+  const settings = useMorphologyStore((s) => s.network);
+  const [hovered, setHovered] = useState<Hovered | null>(null);
+  useCursor(Boolean(hovered));
+
+  const maxWeight = useMemo(
+    () =>
+      network.connections.reduce(
+        (m, c) => (Number.isFinite(c.weight) ? Math.max(m, c.weight) : m),
+        0,
+      ),
+    [network.connections],
   );
+
+  // Hidden parts can't stay hovered.
+  useEffect(() => {
+    if (!settings.visible) setHovered(null);
+  }, [settings.visible]);
+
+  if (!settings.visible || !network.hasData) return null;
 
   return (
     <group>
-      {network.connections.map((c) => (
-        <ConnectionLine
-          key={c.connection.id}
-          placed={c}
-          maxWeight={maxWeight}
-          onHover={onHover}
+      {settings.connections &&
+        network.connections.map((c) => {
+          const w = Number.isFinite(c.weight) ? c.weight : null;
+          return (
+            <Line
+              key={c.connection.id}
+              points={[c.from, c.to]}
+              color={CONNECTION_COLOR}
+              lineWidth={w != null && maxWeight > 0 ? 0.75 + 2.25 * (w / maxWeight) : 1.25}
+              dashed
+              dashSize={4}
+              gapSize={2}
+            />
+          );
+        })}
+      {settings.synapses && (
+        <Markers
+          items={network.synapses}
+          pointOf={synapsePoint}
+          colorOf={synapseColor}
+          geometry={SYNAPSE_GEOMETRY}
+          radius={network.markerRadius}
+          onHover={(s) =>
+            setHovered(s ? { kind: "synapse", point: s.point, data: s } : null)
+          }
         />
-      ))}
-      {network.synapses.map((s) => (
-        <SynapseMarker
-          key={s.synapse.id}
-          placed={s}
-          radius={radius}
-          onHover={onHover}
+      )}
+      {settings.stimulators && (
+        <Markers
+          items={network.stimulators}
+          pointOf={stimulatorPoint}
+          colorOf={stimulatorColor}
+          geometry={STIMULATOR_GEOMETRY}
+          radius={network.markerRadius}
+          onHover={(s) =>
+            setHovered(s ? { kind: "stimulator", point: s.point, data: s } : null)
+          }
         />
-      ))}
-      {network.stimulators.map((s) => (
-        <StimulatorGlyph
-          key={s.stim.id}
-          placed={s}
-          radius={radius}
-          onHover={onHover}
-        />
-      ))}
+      )}
+      {hovered && <NetworkTooltip hovered={hovered} />}
     </group>
   );
 };

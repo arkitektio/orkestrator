@@ -3,8 +3,10 @@ import {
   anchorInView,
   anchorsForChannel,
   channelLabelsOf,
+  channelSitesOf,
   climSeedOf,
   histogramClimOf,
+  mergeChannelAnchors,
   partitionAnchors,
   pinOf,
   sampleWindowOf,
@@ -119,5 +121,51 @@ describe("partitionAnchors", () => {
     const b = anchor({ c: 1 }, { id: "b" });
     const g = anchor({}, { id: "g" });
     expect(partitionAnchors([a, b, g], coverage)).toEqual({ inView: [a, g], outOfView: [b] });
+  });
+});
+
+describe("channelSitesOf", () => {
+  it("gives each drawn channel its own site, a recording site before a stimulus site", () => {
+    const anchors = [
+      anchor({ c: 0 }, { recordingSite: { id: "r0", label: "soma_v" } }),
+      anchor({ c: 1 }, { stimulusSite: { id: "s1", label: "iclamp" } }),
+      anchor({ c: 1 }, { recordingSite: { id: "r1", label: "dend_v" } }),
+    ];
+    expect(channelSitesOf(anchors, "c", [0, 1, 2])).toEqual([
+      { id: "r0", label: "soma_v", role: "recording" },
+      { id: "r1", label: "dend_v", role: "recording" },
+      null,
+    ]);
+  });
+
+  it("gives a trace without a channel axis one entry", () => {
+    const anchors = [anchor({}, { stimulusSite: { id: "s", label: "iclamp" } })];
+    expect(channelSitesOf(anchors, null, [])).toEqual([{ id: "s", label: "iclamp", role: "stimulus" }]);
+  });
+});
+
+describe("mergeChannelAnchors", () => {
+  it("takes each field from the most specific anchor that states it", () => {
+    const pinned = {
+      channelLabel: { label: "Vm" },
+      acquisitionMetadata: { metadata: { gain: 10, amp: "" } },
+    };
+    const global = {
+      channelLabel: { label: "all" },
+      valueUnit: { unit: "mV" },
+      rig: { id: "r" },
+      acquisitionMetadata: { metadata: { gain: 1, amp: "Axopatch", nested: { a: 1 } } },
+    };
+    expect(mergeChannelAnchors([pinned, global])).toEqual({
+      label: "Vm",
+      unit: "mV",
+      histogram: null,
+      rig: { id: "r" },
+      acquisition: [
+        ["gain", 10],
+        ["amp", "Axopatch"],
+        ["nested", { a: 1 }],
+      ],
+    });
   });
 });

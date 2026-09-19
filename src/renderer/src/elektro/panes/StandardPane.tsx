@@ -1,6 +1,6 @@
 import { ListRender } from "@/components/layout/ListRender";
 import ExperimentCard from "../components/cards/ExperimentCard";
-import SimulationCard from "../components/cards/SimulationCard";
+import ArrayDatasetCard from "../components/cards/ArrayDatasetCard";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { FancyInput } from "@/components/ui/fancy-input";
 import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { RiCheckboxMultipleLine } from "react-icons/ri";
+import { ARRAY_DATASET_SPECS, arrayDatasetSpecLink } from "../specs";
 import {
   GlobalSearchQueryVariables,
   useGlobalSearchQuery,
@@ -27,10 +28,6 @@ export const NavigationPane = () => {
         <PaneLink to="/elektro">
           <Home />
           Home
-        </PaneLink>
-        <PaneLink to="/elektro/simulations">
-          <LineChartIcon />
-          Simulations
         </PaneLink>
         <PaneLink to="/elektro/experiments">
           <RiCheckboxMultipleLine />
@@ -51,10 +48,25 @@ export const NavigationPane = () => {
       </SidePaneGroup>
 
       <SidePaneGroup title="Ephys">
+        <PaneLink to="/elektro/arraydatasets">
+          <LineChartIcon />
+          Datasets
+        </PaneLink>
         <PaneLink to="/elektro/files">
           <FileIcon />
           Files
         </PaneLink>
+      </SidePaneGroup>
+
+      {/* One link per spec, generated from the catalogue so the nav and the
+          pages behind it cannot drift apart. */}
+      <SidePaneGroup title="By kind">
+        {ARRAY_DATASET_SPECS.map((entry) => (
+          <PaneLink key={entry.slug} to={arrayDatasetSpecLink(entry.slug)}>
+            <entry.icon />
+            {entry.label}
+          </PaneLink>
+        ))}
       </SidePaneGroup>
     </SidePaneNav>
   );
@@ -99,8 +111,8 @@ const Pane: React.FunctionComponent = () => {
           <ListRender array={data?.experiments}>
             {(item, i) => <ExperimentCard item={item} key={i} />}
           </ListRender>
-          <ListRender array={data?.simulations}>
-            {(item, i) => <SimulationCard item={item} key={i} />}
+          <ListRender array={data?.arrayDatasets}>
+            {(item, i) => <ArrayDatasetCard item={item} key={i} />}
           </ListRender>
         </>
       )}

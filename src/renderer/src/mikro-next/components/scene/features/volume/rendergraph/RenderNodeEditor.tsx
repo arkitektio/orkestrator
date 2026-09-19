@@ -23,7 +23,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { RgbColorPicker } from "react-colorful";
+import { SwatchColorPicker } from "@/components/color/SwatchColorPicker";
 import {
   Blending,
   ColorMap,
@@ -139,30 +139,16 @@ const StopsEditor = ({
       />
       {stops.map((stop, index) => (
         <div key={index} className="flex items-center gap-1.5">
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                title="Stop color"
-                className="h-5 w-5 shrink-0 rounded border border-border/60"
-                style={{
-                  background: `rgb(${stop.color[0] ?? 0}, ${stop.color[1] ?? 0}, ${stop.color[2] ?? 0})`,
-                }}
-              />
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-auto p-2">
-              <RgbColorPicker
-                color={colorToObj(stop.color)}
-                onChange={(c) =>
-                  commit(
-                    stops.map((s, i) =>
-                      i === index ? { ...s, color: [c.r, c.g, c.b, 255] } : s,
-                    ),
-                  )
-                }
-              />
-            </PopoverContent>
-          </Popover>
+          <SwatchColorPicker
+            title="Stop color"
+            align="start"
+            value={stop.color}
+            onChange={([r, g, b]) =>
+              commit(
+                stops.map((s, i) => (i === index ? { ...s, color: [r, g, b, 255] } : s)),
+              )
+            }
+          />
           <Slider
             min={0}
             max={100}
@@ -289,22 +275,12 @@ const ColormapControl = ({
         </Popover>
 
         {isIntensity && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                title="Base color"
-                className="h-6 w-6 shrink-0 rounded border border-border/60"
-                style={{ background: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` }}
-              />
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-2">
-              <RgbColorPicker
-                color={rgb}
-                onChange={(c) => set({ color: [c.r, c.g, c.b, 255] })}
-              />
-            </PopoverContent>
-          </Popover>
+          <SwatchColorPicker
+            title="Base color"
+            className="h-6 w-6"
+            value={[rgb.r, rgb.g, rgb.b]}
+            onChange={([r, g, b]) => set({ color: [r, g, b, 255] })}
+          />
         )}
       </div>
 

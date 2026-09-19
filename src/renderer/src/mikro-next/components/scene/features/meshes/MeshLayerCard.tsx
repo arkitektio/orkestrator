@@ -34,9 +34,9 @@ import {
   Segment,
   SegmentGroup,
   formatCount,
-} from "../../platform/layerui/cardControls";
+} from "@/lib/scene/layerui/cardControls";
 import { instancePaletteCSS } from "../../platform/layerui/colormap-utils";
-import { ColormapSelect, type ColormapChoice } from "../../platform/layerui/ColormapSelect";
+import { ColormapSelect, type ColormapChoice } from "@/lib/scene/layerui/ColormapSelect";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import {
   ColorBySection,

@@ -79,27 +79,87 @@ const SmartContextHeader = ({ objects, partners }: SmartContextProps) => {
   );
 };
 
+/**
+ * Keeps the first item highlighted while the results settle, so Enter runs the
+ * top match. cmdk only picks the first item on the keystroke itself, but the
+ * sections here fetch their items asynchronously (debounced), so its pick lands
+ * on the stale list and sticks. Until the user moves the highlight themselves
+ * (arrow keys / pointer), any change to the rendered items re-selects the first.
+ */
+const useFirstItemSelection = () => {
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  const [value, setValue] = React.useState("");
+  const pinned = React.useRef(true);
+
+  const selectFirst = React.useCallback(() => {
+    const first = rootRef.current?.querySelector(
+      '[cmdk-item=""]:not([aria-disabled="true"])',
+    );
+    const next = first?.getAttribute("data-value") ?? "";
+    setValue((current) => (current === next ? current : next));
+  }, []);
+
+  React.useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const observer = new MutationObserver(() => {
+      if (pinned.current) selectFirst();
+    });
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-value", "aria-disabled", "hidden"],
+    });
+    return () => observer.disconnect();
+  }, [selectFirst]);
+
+  const repin = React.useCallback(() => {
+    pinned.current = true;
+    selectFirst();
+  }, [selectFirst]);
+
+  const onKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    if (["ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(e.key)) {
+      pinned.current = false;
+    }
+  }, []);
+
+  const onPointerMove = React.useCallback(() => {
+    pinned.current = false;
+  }, []);
+
+  return { rootRef, value, setValue, repin, onKeyDown, onPointerMove };
+};
+
 export const SmartContext = (props: SmartContextProps) => {
   const [filter, setFilterValue] = React.useState<string | undefined>(undefined);
   // The raw value drives the input; the children put the filter straight into
   // query variables, so hand them a debounced copy to avoid a request per key.
   const debouncedFilter = useDebounce(filter, 200);
+  const selection = useFirstItemSelection();
 
   return (
-    <>
+    <div ref={selection.rootRef} className="contents">
       <SmartContextHeader {...props} />
 
-      <Command shouldFilter={false}>
+      <Command
+        shouldFilter={false}
+        value={selection.value}
+        onValueChange={selection.setValue}
+        onKeyDown={selection.onKeyDown}
+      >
         <CommandInput
           placeholder="Search"
           className="h-10 text-sm"
           onValueChange={(value) => {
             setFilterValue(value);
+            selection.repin();
           }}
           autoFocus
         />
 
-        <CommandList className="mt-2">
+        <CommandList className="mt-2" onPointerMove={selection.onPointerMove}>
           <ApplicableLocalActions {...props} filter={debouncedFilter} />
           <CommandEmpty>No Action available</CommandEmpty>
           <Guard.Alpaka unavailable={<></>}>
@@ -139,6 +199,6 @@ export const SmartContext = (props: SmartContextProps) => {
           </Guard.Kabinet>
         </CommandList>
       </Command>
-    </>
+    </div>
   );
 };

@@ -11,7 +11,7 @@ import {
 } from "@/lib/scene/coords/transformGraph";
 
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
-import { padDegenerateAxes } from "../../platform/camera/cameraFit";
+import { padDegenerateAxes } from "@/lib/scene/camera/cameraFit";
 import { type ZSpan } from "./annotationVisibility";
 import type { SceneTransformContext } from "../../platform/model/layerModel";
 import type { RoiBounds } from "./roiSelectionStore";

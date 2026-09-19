@@ -1,4 +1,5 @@
 import {
+  Blend,
   Hand,
   Layers,
   Maximize2,
@@ -20,6 +21,7 @@ import {
   useViewerStore,
   useViewerStoreApi,
   type InteractionMode,
+  type LayoutMode,
 } from "../../platform/stores/viewerStore";
 
 /**
@@ -32,6 +34,24 @@ import {
  * and SquarePen, so the two viewers read alike), how rows share a scale (stacked /
  * shared), autoscale, fit, undo / redo. Every control subscribes to one scalar.
  */
+
+const LAYOUT_OPTIONS: { value: LayoutMode; icon: LucideIcon; title: string }[] = [
+  {
+    value: "STACKED",
+    icon: Rows3,
+    title: "Stacked — one row per layer, each on its own scale",
+  },
+  {
+    value: "SHARED",
+    icon: Layers,
+    title: "Shared — layers with the same unit overlaid on ONE scale, so amplitudes compare",
+  },
+  {
+    value: "OVERLAY",
+    icon: Blend,
+    title: "Overlay — every trace in one plot, each on its own scale, so timing lines up",
+  },
+];
 
 /** Same icons as mikro's `SceneModeControls`, for the same meanings. */
 const INTERACTION_ICONS: Record<InteractionMode, LucideIcon> = {
@@ -80,23 +100,28 @@ export const ExperimentModeControls = () => {
         </ButtonGroup>
       )}
 
+      {/* How rows are laid out: one per layer, same units overlaid on one
+          scale, or every trace in one plot on its own scale. */}
       <ButtonGroup>
-        <Button
-          size="icon-sm"
-          variant="outline"
-          title={
-            layoutMode === "STACKED"
-              ? "Stacked: one row per view, each on its own scale. Click to overlay same-unit views."
-              : "Shared: same-unit views overlaid on one scale. Click to stack."
-          }
-          onClick={() =>
-            viewerApi
-              .getState()
-              .setLayoutMode(layoutMode === "STACKED" ? "SHARED" : "STACKED")
-          }
-        >
-          {layoutMode === "STACKED" ? <Rows3 /> : <Layers />}
-        </Button>
+        {LAYOUT_OPTIONS.map((option) => {
+          const active = layoutMode === option.value;
+          return (
+            <Button
+              key={option.value}
+              variant={active ? "default" : "outline"}
+              size="xs"
+              className={active ? "h-7 w-8 p-0" : "h-7 w-8 bg-black p-0"}
+              title={option.title}
+              aria-pressed={active}
+              onClick={() => viewerApi.getState().setLayoutMode(option.value)}
+            >
+              <option.icon className="h-3.5 w-3.5" />
+            </Button>
+          );
+        })}
+      </ButtonGroup>
+
+      <ButtonGroup>
         <Button
           size="icon-sm"
           variant="outline"

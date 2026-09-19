@@ -8,6 +8,7 @@ import { bandKey } from "../../platform/stores/viewerStore";
 import { useBandValueMatrix } from "../../platform/marks/bandValueMatrix";
 import type { PackedChannel } from "./tracePacking";
 import { useTraceStore } from "./store/traceSlice";
+import { useChannelColors } from "../../platform/stores/channelColors";
 
 /**
  * A trace layer drawn as fat lines, one `Line2` per channel.
@@ -40,6 +41,8 @@ const NO_CHANNELS: PackedChannel[] = [];
  */
 export const TraceLines = ({ layer }: { layer: LayerState }) => {
   const channels = useTraceStore((s) => s.packed[layer.id]?.channels ?? NO_CHANNELS);
+  // One colour per channel where the setting says so (see `useChannelColors`).
+  const colors = useChannelColors(layer.id);
   return (
     <>
       {channels.map((packed, channel) => (
@@ -47,7 +50,7 @@ export const TraceLines = ({ layer }: { layer: LayerState }) => {
           key={channel}
           layerId={layer.id}
           channel={channel}
-          color={layer.color}
+          color={colors[channel] ?? layer.color}
           lineWidth={layer.lineWidth}
           packed={packed}
         />

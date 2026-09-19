@@ -6,14 +6,14 @@ import {
   CreateModelWorkspaceMutation,
   CreateModelWorkspaceMutationVariables,
   DeleteExperimentDocument,
-  SimulationClockDocument,
-  SimulationClockQuery,
-  SimulationClockQueryVariables,
+  GetArrayDatasetDocument,
+  GetArrayDatasetQuery,
+  GetArrayDatasetQueryVariables,
   DeleteModelWorkspaceDocument,
   DeleteNeuronModelDocument,
 } from '@/elektro/api/graphql'
 import { useActiveWorkspaceStore } from '@/elektro/lib/activeWorkspaceStore'
-import { openClockOnTimeline } from '@/elektro/lib/openOnTimeline'
+import { findOrCreateExperimentForWorld } from '@/elektro/lib/openOnTimeline'
 import { ElektroExperiment, ElektroModelWorkspace } from '@/linkers'
 import { ApolloClient, NormalizedCache } from '@apollo/client'
 import { AudioLines, Download, LayoutDashboard, Layers } from 'lucide-react'
@@ -106,40 +106,46 @@ const exportNeuronModel: Action = {
 }
 
 /**
- * Lay a simulation run out on a timeline: stage an experiment over the run's
- * clock. The server adds a layer for every recording and stimulus placed on it
- * (and for any spike set, event table or annotation collection timed on it),
- * so this is one mutation, not a composition built here.
+ * Open a dataset on a timeline: the first experiment already drawing it, else
+ * the experiment composed over its own grid (found, or staged — the server adds
+ * a layer for everything placeable there). Same answer as the dataset page's
+ * backdrop, reachable from any card or menu the dataset appears in.
  */
-const createExperimentFromSimulation: Action = {
-  title: 'Open Run on Timeline',
-  description: 'Stage an experiment over this run\'s clock, with a layer per recording and stimulus',
+const openArrayDatasetOnTimeline: Action = {
+  title: 'Open on Timeline',
+  description: 'Open the experiment drawing this dataset, or stage one over its own grid',
   icon: AudioLines,
   collections: ['io'],
   conditions: [
-    { type: 'identifier', identifier: '@elektro/simulation' },
+    { type: 'identifier', identifier: '@elektro/arraydataset' },
     { type: 'nopartner' },
   ],
   execute: async ({ state, services, navigate }) => {
-    const simulation = state.left[0]?.object
-    if (!simulation) {
-      throw new Error('No simulation provided for Open on Timeline action')
+    const dataset = state.left[0]?.object
+    if (!dataset) {
+      throw new Error('No dataset provided for Open on Timeline action')
     }
     const client = services.elektro.client as ApolloClient<NormalizedCache>
     if (!client) {
       throw new Error('Elektro service not available')
     }
 
-    const run = await client.query<SimulationClockQuery, SimulationClockQueryVariables>({
-      query: SimulationClockDocument,
-      variables: { id: simulation.id },
+    const result = await client.query<GetArrayDatasetQuery, GetArrayDatasetQueryVariables>({
+      query: GetArrayDatasetDocument,
+      variables: { id: dataset.id },
       fetchPolicy: 'network-only',
     })
-    const clock = run.data?.simulation?.clock?.id
-    if (!clock) {
-      throw new Error('This run has no clock, so there is no timeline to lay it out on')
+    const detail = result.data?.arrayDataset
+    const drawnIn = detail?.experimentLayers.at(0)?.experiment.id
+    if (drawnIn) {
+      navigate(ElektroExperiment.linkBuilder(drawnIn))
+      return
     }
-    const experimentId = await openClockOnTimeline(client, clock, run.data.simulation.name)
+    const grid = detail?.intrinsicSystem?.id
+    if (!grid) {
+      throw new Error('This dataset has no coordinate system of its own, so there is no timeline to lay it out on')
+    }
+    const experimentId = await findOrCreateExperimentForWorld(client, grid, detail.name)
     navigate(ElektroExperiment.linkBuilder(experimentId))
   },
 }
@@ -169,7 +175,7 @@ const addExperimentLayer: Action = {
 
 export const ELEKTRO_ACTIONS: Record<string, Action> = {
   addElektroExperimentLayer: addExperimentLayer,
-  createElektroExperimentFromSimulation: createExperimentFromSimulation,
+  openElektroArrayDatasetOnTimeline: openArrayDatasetOnTimeline,
   deleteElektroExperiment: buildDeleteAction({
     title: 'Delete Experiment',
     identifier: '@elektro/experiment',

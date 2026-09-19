@@ -3,7 +3,7 @@ import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 
 import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro-next/api/graphql";
-import { Line } from "../../../platform/draw/Line";
+import { Line } from "@/lib/scene/draw/Line";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { ellipsoidCrossSectionScale } from "../primitiveDraw";
 import { MIN_DEPTH, ellipseRing, getVectorPoint } from "../annotationBounds";

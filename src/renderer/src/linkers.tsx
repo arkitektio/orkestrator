@@ -214,10 +214,13 @@ export const MikroLens = buildSmart({
   name: "Lens",
 });
 
-export const ElektroSimulation = buildSmart({
-  identifier: "@elektro/simulation",
-  path: "elektro/simulations",
-  name: "Simulation",
+// Elektro's own array datasets — recordings and simulated traces. Federated
+// with mikro's `ArrayDataset` but a separate route and page: this one opens on
+// the timeline (its experiments), not a spatial scene.
+export const ElektroArrayDataset = buildSmart({
+  identifier: "@elektro/arraydataset",
+  path: "elektro/arraydatasets",
+  name: "Array Dataset (Elektro)",
   datum: true,
 });
 

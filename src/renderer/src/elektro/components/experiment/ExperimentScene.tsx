@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { ExperimentSceneProvider } from "./shell/ExperimentSceneProvider";
-import { ExperimentViewport } from "./shell/ExperimentViewport";
+import { ExperimentMiniViewport, ExperimentViewport } from "./shell/ExperimentViewport";
 import {
   ExperimentAnnotationsSidebar,
   ExperimentLayersSidebar,
@@ -48,6 +48,8 @@ export const experimentHasAnnotationLayer = (
 export const ExperimentScene = Object.assign(ExperimentSceneRoot, {
   Provider: ExperimentSceneProvider,
   Viewport: ExperimentViewport,
+  /** An embedded, read-only-chrome timeline — see `ExperimentViewportVariant`. */
+  MiniViewport: ExperimentMiniViewport,
   LayersSidebar: ExperimentLayersSidebar,
   AnnotationsSidebar: ExperimentAnnotationsSidebar,
   hasAnnotationLayer: experimentHasAnnotationLayer,

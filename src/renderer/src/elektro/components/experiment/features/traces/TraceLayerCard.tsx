@@ -9,6 +9,20 @@ import { formatValue } from "../../platform/probe/formatValue";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { CardFact, CardShell, type LayerCardProps } from "../../platform/layerui/cardShell";
 import { ColorInput, LayerMenu, LineWidthSelect } from "../../platform/layerui/layerControls";
+import type { ChannelColoring } from "../../platform/model/channelColor";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const CHANNEL_COLORING_OPTIONS: { value: ChannelColoring; label: string; title: string }[] = [
+  { value: "OVERLAY", label: "In overlay", title: "Each channel its own colour when traces share one plot" },
+  { value: "ALWAYS", label: "Always", title: "Each channel its own colour in every layout" },
+  { value: "NEVER", label: "Never", title: "Every channel in the layer's colour" },
+];
 
 /**
  * The card for a trace layer.
@@ -100,13 +114,36 @@ export const TraceLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProps
           <div className="flex items-center gap-2 text-[11px]">
             <span className="text-muted-foreground">Style</span>
             <span className="ml-auto flex items-center gap-1.5">
-              <ColorInput value={layer.persisted.color} onCommit={(color) => void write(layer.id, { color })} />
+              <ColorInput value={layer.persisted.color} resolved={layer.color} onCommit={(color) => void write(layer.id, { color })} />
               <LineWidthSelect
                 value={layer.lineWidth}
                 onCommit={(lineWidth) => void write(layer.id, { lineWidth })}
               />
             </span>
           </div>
+          {/* Only a layer with several channels has anything to tell apart. */}
+          {layer.channelCount > 1 && (
+            <div className="flex items-center gap-2 text-[11px]">
+              <span className="text-muted-foreground">Channel colours</span>
+              <Select
+                value={layer.persisted.channelColoring}
+                onValueChange={(value) =>
+                  void write(layer.id, { channelColoring: value as ChannelColoring })
+                }
+              >
+                <SelectTrigger className="ml-auto h-5 w-24 px-1.5 text-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {CHANNEL_COLORING_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value} title={option.title} className="text-xs">
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <CardFact label="Channels" value={channels || null} />
           <CardFact label="Drawn from" value={levelLine} />
           <CardFact

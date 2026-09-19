@@ -7,6 +7,10 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { ADATASET_SPECS, arrayDatasetSpecLink } from "@/mikro-next/specs";
+import {
+  ARRAY_DATASET_SPECS as ELEKTRO_ARRAY_DATASET_SPECS,
+  arrayDatasetSpecLink as elektroArrayDatasetSpecLink,
+} from "@/elektro/specs";
 
 import { ROUTE_CATALOG, searchRoutes } from "./routeCatalog";
 
@@ -37,6 +41,8 @@ const LINK = /<(PaneLink|DroppableNavLink|NavLink|Link)\b[^>]*?to="(\/[^"]*)"[^>
  */
 const GENERATED: Record<string, () => [route: string, label: string][]> = {
   mikro: () => ADATASET_SPECS.map((spec) => [arrayDatasetSpecLink(spec.slug), spec.label]),
+  elektro: () =>
+    ELEKTRO_ARRAY_DATASET_SPECS.map((spec) => [elektroArrayDatasetSpecLink(spec.slug), spec.label]),
 };
 
 /** The static links a pane's source declares, as `route → label`. */

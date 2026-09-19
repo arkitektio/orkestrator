@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Line } from "../../platform/draw/Line";
+import { Line } from "@/lib/scene/draw/Line";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
 import { VertexHandles } from "./VertexHandles";
 import { isTypingTarget } from "../../platform/input/keyboardTarget";

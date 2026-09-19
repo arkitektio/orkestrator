@@ -5,7 +5,7 @@ import { ElektroModelCollection, ElektroNeuronModel } from "@/linkers";
 import { useDetailModelCollectionQuery, useDetailNeuronModelQuery } from "../api/graphql";
 // NeuronModelCard import removed; inline expandable cards are used instead
 import { useState } from "react";
-import { NeuronVisualizer } from "../components/NeuronRenderer";
+import { MorphologyScene } from "../components/morphology/MorphologyScene";
 
 
 export const ModelCollectionPage = asDetailQueryRoute(
@@ -107,7 +107,7 @@ export const ModelCollectionPage = asDetailQueryRoute(
           <div className="col-span-8 bg-black/5 rounded overflow-hidden">
             <div className="h-full w-full min-h-[500px] bg-black">
               {selectedDetail?.neuronModel ? (
-                <NeuronVisualizer model={selectedDetail.neuronModel} key={selectedDetail.neuronModel.id} />
+                <MorphologyScene.Embedded model={selectedDetail.neuronModel} />
               ) : (
                 <div className="p-6 text-muted-foreground">Select a model to preview visualization</div>
               )}

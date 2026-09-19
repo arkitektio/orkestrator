@@ -22,6 +22,7 @@ import {
   OrthographicCamera,
   PerspectiveCamera,
 } from "@react-three/drei";
+import { NAVIGATE_BUTTONS_3D } from "@/lib/scene/camera/navigateButtons";
 
 /**
  * Button maps per (display mode × interaction mode).
@@ -41,12 +42,6 @@ import {
  * probe) and shift-drag (merge selection) can't be hijacked: three-stdlib swaps
  * PAN↔ROTATE when shift is held.
  */
-const NAVIGATE_BUTTONS_3D = {
-  LEFT: THREE.MOUSE.PAN,
-  MIDDLE: THREE.MOUSE.DOLLY,
-  RIGHT: THREE.MOUSE.ROTATE,
-} as const;
-
 const NAVIGATE_BUTTONS_2D = {
   LEFT: THREE.MOUSE.PAN,
   MIDDLE: THREE.MOUSE.DOLLY,

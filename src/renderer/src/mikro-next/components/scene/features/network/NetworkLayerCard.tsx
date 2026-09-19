@@ -16,7 +16,7 @@ import {
   type NetworkLayerSessionState,
 } from "../../platform/stores/sceneStore";
 import { instancePaletteCSS } from "../../platform/layerui/colormap-utils";
-import { ColormapSelect, type ColormapChoice } from "../../platform/layerui/ColormapSelect";
+import { ColormapSelect, type ColormapChoice } from "@/lib/scene/layerui/ColormapSelect";
 import {
   Badge,
   CardSection,
@@ -26,7 +26,7 @@ import {
   Segment,
   SegmentGroup,
   formatCount,
-} from "../../platform/layerui/cardControls";
+} from "@/lib/scene/layerui/cardControls";
 import type { ColumnOptionSource } from "../../platform/layerui/ColumnOptionPicker";
 import {
   ColorBySection,

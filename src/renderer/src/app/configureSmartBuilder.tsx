@@ -20,7 +20,7 @@ import AgentHoverCard from "@/rekuest/components/hovers/AgentHoverCard";
 import TaskHoverCard from "@/rekuest/components/hovers/TaskHoverCard";
 import ImplementationHoverCard from "@/rekuest/components/hovers/ImplementationHoverCard";
 import NeuronModelHoverCard from "@/elektro/components/hovers/NeuronModelHoverCard";
-import SimulationHoverCard from "@/elektro/components/hovers/SimulationHoverCard";
+import ElektroArrayDatasetHoverCard from "@/elektro/components/hovers/ArrayDatasetHoverCard";
 import ExperimentHoverCard from "@/elektro/components/hovers/ExperimentHoverCard";
 
 // Maps a smart model identifier to the component rendered inside its on-demand
@@ -60,8 +60,8 @@ const hoverCards: Record<string, HoverCardEntry> = {
     Component: NeuronModelHoverCard,
     Guard: Guard.Elektro,
   },
-  "@elektro/simulation": {
-    Component: SimulationHoverCard,
+  "@elektro/arraydataset": {
+    Component: ElektroArrayDatasetHoverCard,
     Guard: Guard.Elektro,
   },
   "@elektro/experiment": {

@@ -13,7 +13,7 @@ import {
   IconToggle,
   LayerCardShell,
   OpacityRow,
-} from "../../platform/layerui/cardControls";
+} from "@/lib/scene/layerui/cardControls";
 import { type ColumnOptionSource } from "../../platform/layerui/ColumnOptionPicker";
 import {
   ColorBySection,

@@ -48,7 +48,7 @@ export const NeuronModelHoverCard = ({ object }: { object: Object }) => {
         <HoverRow label="Temperature" value={config.temperature} />
         <HoverRow label="V init" value={config.vInit} />
         <HoverRow label="Cells" value={config.cells.length} />
-        <HoverRow label="Simulations" value={model.simulations.length} />
+        <HoverRow label="Sessions" value={model.sessions.filter((session) => session.clock).length} />
         <HoverRow label="Environment" value={model.environment.name} />
       </div>
     </HoverShell>

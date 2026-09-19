@@ -10,7 +10,7 @@ export const NODE_HEIGHT = 64;
 export const UNASSIGNED_COLOR = "rgba(136, 136, 136, 1)";
 
 /** Stable, evenly-spread hue for a compartment index (golden-angle spacing —
- * the same scheme the 3D `NeuronVisualizer` uses for depth tinting). */
+ * the same scheme the 3D morphology viewer uses for depth tinting). */
 const getFallbackColor = (index: number) =>
   `hsl(${(index * 137.508) % 360}, 70%, 55%)`;
 
@@ -70,7 +70,7 @@ export const buildCompartmentLegend = (
 /**
  * Map every section (across all cells) to a React Flow node, tinted by its
  * compartment's color (matched on `section.category` → compartment `id`, the
- * same pairing the 3D `NeuronVisualizer` uses). Sections with no matching
+ * same pairing the 3D morphology viewer uses). Sections with no matching
  * compartment fall back to a neutral grey.
  */
 export const sectionsToNodes = (

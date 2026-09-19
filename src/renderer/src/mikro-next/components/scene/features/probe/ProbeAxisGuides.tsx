@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { EXCLUDE_FROM_CAPTURE } from "../../platform/visibility/captureVisibility";
+import { EXCLUDE_FROM_CAPTURE } from "@/lib/scene/capture/captureVisibility";
 import { computeSceneWorldBox } from "../../platform/camera/sceneFit";
 import { layersPlanKey } from "../../platform/model/layerPlanKey";
 import { useModeStore } from "../../platform/stores/modeStore";

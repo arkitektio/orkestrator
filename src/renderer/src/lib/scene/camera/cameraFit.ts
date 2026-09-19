@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { computeFitPose } from "./sceneFit";
+import { computeFitPose } from "./fitPose";
 
 /**
  * The camera/controls surface `fitCameraToObject` needs. Structurally matches

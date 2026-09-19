@@ -1,5 +1,7 @@
 import { MoreHorizontal, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { Color, SRGBColorSpace } from "three";
+import { SwatchColorPicker } from "@/components/color/SwatchColorPicker";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -27,63 +29,42 @@ import { useDeleteLayerMutation } from "@/elektro/api/graphql";
  * change through the caller's optimistic write, so there is no "save".
  */
 
-const toHex = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
-
-/** RGBA 0–255 → "#rrggbb" (the colour input has no alpha). */
-export const rgbaToHex = (color: readonly number[] | null | undefined, fallback = "#8ab4f8"): string =>
-  color && color.length >= 3 ? `#${toHex(color[0])}${toHex(color[1])}${toHex(color[2])}` : fallback;
-
-/** "#rrggbb" → RGBA 0–255, keeping an existing alpha. */
-export const hexToRgba = (hex: string, alpha = 255): number[] => {
-  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-  if (!m) return [255, 255, 255, alpha];
-  return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), alpha];
+/** Any CSS colour the layer resolved to (`hsl(…)`, `rgba(…)`) → RGBA 0–255. */
+const cssToRgba = (css: string): number[] => {
+  const color = new Color().setStyle(css, SRGBColorSpace);
+  const { r, g, b } = color.getRGB({ r: 0, g: 0, b: 0 } as Color, SRGBColorSpace);
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255), 255];
 };
 
 /**
- * A colour swatch that opens the native picker. Commits on the NATIVE `change`
- * event (the picker closing) — React's `onChange` on a colour input fires on
- * every `input` tick, and a drag through the wheel must be one write, not fifty.
+ * A layer's colour — the shared swatch picker (`SwatchColorPicker`, the one
+ * mikro's intensity layers use). Commits ONCE, when the picker closes: every
+ * edit here is a persisted write, and a drag through the square must be one
+ * mutation, not fifty.
+ *
+ * `value` is what is persisted (null: "let the viewer choose"); `resolved` is the
+ * colour the layer is actually drawn in, which the swatch shows until someone
+ * picks one — so it never claims a colour the lines are not.
  */
 export const ColorInput = ({
   value,
+  resolved,
   onCommit,
   title = "Colour",
 }: {
   value: readonly number[] | null;
+  resolved?: string;
   onCommit: (rgba: number[]) => void;
   title?: string;
-}) => {
-  const ref = useRef<HTMLInputElement | null>(null);
-  const latest = useRef({ value, onCommit });
-  latest.current = { value, onCommit };
-  const hex = rgbaToHex(value);
-
-  useEffect(() => {
-    const input = ref.current;
-    if (!input) return;
-    const onChange = () => {
-      const { value: current, onCommit: commit } = latest.current;
-      const next = hexToRgba(input.value, current?.[3] ?? 255);
-      if (rgbaToHex(next) !== rgbaToHex(current)) commit(next);
-    };
-    input.addEventListener("change", onChange);
-    return () => input.removeEventListener("change", onChange);
-    // Re-attach when the keyed input below is remounted.
-  }, [hex]);
-
-  return (
-    <input
-      ref={ref}
-      type="color"
-      title={title}
-      className="h-4 w-5 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
-      // Keyed on the value so an optimistic rollback resets the swatch.
-      key={hex}
-      defaultValue={hex}
-    />
-  );
-};
+}) => (
+  <SwatchColorPicker
+    value={value}
+    fallback={resolved ? cssToRgba(resolved) : undefined}
+    onCommit={onCommit}
+    title={title}
+    className="h-4 w-5"
+  />
+);
 
 const WIDTHS = [0.75, 1.25, 2, 3];
 

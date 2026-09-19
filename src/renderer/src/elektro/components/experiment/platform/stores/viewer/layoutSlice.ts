@@ -5,7 +5,7 @@ import type { ViewerGet, ViewerSet } from "./sliceTypes";
  * the chrome labels, and the clims that map values into bands.
  */
 
-export type LayoutMode = "STACKED" | "SHARED";
+export type LayoutMode = "STACKED" | "SHARED" | "OVERLAY";
 
 /** The value range a row maps to its full height. */
 export type Clim = { lo: number; hi: number };
@@ -31,6 +31,12 @@ export type RowInfo = {
   layerIds: string[];
   /** Per sub-band label (STACKED, multi-channel): what each channel is called. */
   channelLabels?: (string | null)[];
+  /**
+   * OVERLAY's trace row: its layers share the row but NOT a scale, so the row is
+   * labelled as a legend (one entry per layer, each with its own scale) rather
+   * than by one name and one unit.
+   */
+  overlay?: boolean;
 };
 
 export type TraceStats = {

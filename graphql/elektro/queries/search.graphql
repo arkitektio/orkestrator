@@ -1,5 +1,6 @@
-# The module's omnibox. `traces` is gone; what a user searches for now is an array
-# dataset, a composed experiment or a simulation run.
+# The module's omnibox: an array dataset (recorded or simulated) or a composed
+# experiment. Simulation runs are no objects any more — a run is its clock, found
+# through its model's sessions or its datasets.
 query GlobalSearch($search: String, $pagination: OffsetPaginationInput) {
   arrayDatasets: arrayDatasets(
     filters: { search: $search }
@@ -12,11 +13,4 @@ query GlobalSearch($search: String, $pagination: OffsetPaginationInput) {
     pagination: $pagination
   ) {
     ...ListExperiment
-  }
-  simulations: simulations(
-    filters: { search: $search }
-    pagination: $pagination
-  ) {
-    ...ListSimulation
-  }
-}
+  }}

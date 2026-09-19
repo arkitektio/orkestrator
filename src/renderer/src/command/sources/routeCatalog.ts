@@ -1,4 +1,8 @@
 import { ADATASET_SPECS, arrayDatasetSpecLink } from "@/mikro-next/specs";
+import {
+  ARRAY_DATASET_SPECS as ELEKTRO_ARRAY_DATASET_SPECS,
+  arrayDatasetSpecLink as elektroArrayDatasetSpecLink,
+} from "@/elektro/specs";
 
 import { rankByFilter } from "../filter";
 
@@ -21,8 +25,8 @@ export type CatalogRoute = {
  * parses the panes' source and fails the moment one of them adds, renames or
  * drops a link that is not mirrored here — the two cannot drift silently.
  *
- * Sections a pane GENERATES from data (Mikro's one-link-per-spec list:
- * Images, Volumes, …) are generated here from the same data, so those cannot
+ * Sections a pane GENERATES from data (Mikro's and Elektro's one-link-per-spec
+ * lists: Images, Timeseries, …) are generated here from the same data, so those cannot
  * drift at all.
  */
 export const ROUTE_CATALOG: CatalogRoute[] = [
@@ -67,12 +71,19 @@ export const ROUTE_CATALOG: CatalogRoute[] = [
   { module: "kraph", label: "Measurement", route: "/kraph/measurementcategories", keywords: ["measurements"] },
   // elektro
   { module: "elektro", label: "Home", route: "/elektro" },
-  { module: "elektro", label: "Simulations", route: "/elektro/simulations" },
   { module: "elektro", label: "Experiments", route: "/elektro/experiments" },
   { module: "elektro", label: "Neuron models", route: "/elektro/neuronmodels" },
   { module: "elektro", label: "Model Collections", route: "/elektro/modelcollections" },
   { module: "elektro", label: "Workspaces", route: "/elektro/modelworkspaces" },
+  { module: "elektro", label: "Datasets", route: "/elektro/arraydatasets" },
   { module: "elektro", label: "Files", route: "/elektro/files" },
+  // One page per elektro array-dataset spec, exactly as the pane lists them.
+  ...ELEKTRO_ARRAY_DATASET_SPECS.map<CatalogRoute>((spec) => ({
+    module: "elektro",
+    label: spec.label,
+    route: elektroArrayDatasetSpecLink(spec.slug),
+    keywords: ["datasets", "recordings", "spec", spec.slug],
+  })),
   // kabinet
   { module: "kabinet", label: "Dashboard", route: "/kabinet/home" },
   { module: "kabinet", label: "App Store", route: "/kabinet/app-store", keywords: ["install", "apps"] },

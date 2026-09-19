@@ -5,7 +5,7 @@ import { memo } from "react";
 
 /**
  * The chrome both viewers' in-view metadata is drawn with — mikro's scene
- * overlay (`MetadataOverlay`) and elektro's unfolding row labels (`LayerMetadata`).
+ * overlay (`MetadataOverlay`) and elektro's unfolding channel tags (`ChannelMetadata`).
  *
  * Only the presentation is shared. WHICH anchors are in view is each viewer's own
  * question (a channel toggle and a dim slider in the scene, the drawn channels and
@@ -59,8 +59,11 @@ export const MetadataAnchorBox = ({
  * without the memo every tick rebuilt one `<rect>` per bin per anchor. */
 export const HistogramSparkline = memo(function HistogramSparkline({
   histogram,
+  tone = "overlay",
 }: {
   histogram: readonly number[];
+  /** `overlay`: white on the dark viewport chrome; `surface`: theme tokens, for a card. */
+  tone?: "overlay" | "surface";
 }) {
   // reduce, not Math.max(...bins): a fine-grained histogram would blow the
   // argument limit.
@@ -70,7 +73,7 @@ export const HistogramSparkline = memo(function HistogramSparkline({
     <svg
       viewBox="0 0 100 24"
       preserveAspectRatio="none"
-      className="h-6 w-full rounded-sm bg-white/5"
+      className={cn("h-6 w-full rounded-sm", tone === "overlay" ? "bg-white/5" : "bg-muted")}
       aria-hidden
     >
       {histogram.map((count, index) => {
@@ -82,7 +85,7 @@ export const HistogramSparkline = memo(function HistogramSparkline({
             y={24 - height}
             width={step}
             height={height}
-            className="fill-white/50"
+            className={tone === "overlay" ? "fill-white/50" : "fill-foreground/50"}
           />
         );
       })}

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
+import { channelColorsFor } from "../../platform/stores/channelColors";
+import { coloursChannels } from "../../platform/model/channelColor";
 import { bindFields } from "@/lib/scene/stores/bindStore";
 import { pixelAtTime } from "../../platform/camera/rangeToCamera";
 import { sampleAt } from "../../platform/probe/sampleAt";
@@ -86,6 +88,7 @@ const ReadoutPanel = () => {
   const probeVersion = useViewerStore((s) => s.probeVersion);
   const drawnKey = useExperimentStore(drawnLayersKey);
   const experimentApi = useExperimentStoreApi();
+  const layoutMode = useViewerStore((s) => s.layoutMode);
 
   const rows = useMemo(() => {
     if (hoverTime == null) return [];
@@ -104,6 +107,14 @@ const ReadoutPanel = () => {
           id: layer.id,
           label: layer.label,
           color: layer.color,
+          // Each value in its channel's line colour, when channels have their own.
+          channelColors:
+            values.length > 1 && coloursChannels(layer.persisted.channelColoring, layoutMode)
+              ? channelColorsFor(
+                  { color: layer.color, channelCount: layer.channelCount, coloring: layer.persisted.channelColoring },
+                  layoutMode,
+                )
+              : null,
           unit: layer.valueUnit,
           values,
           // Anything coarser than the finest level is a pyramid value, not a sample.
@@ -113,7 +124,7 @@ const ReadoutPanel = () => {
       .filter((row) => row.values.some((v) => v != null));
     // The version and key STAND FOR the records.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hoverTime, probeVersion, drawnKey, timeOrigin, viewerApi, experimentApi]);
+  }, [hoverTime, probeVersion, drawnKey, timeOrigin, layoutMode, viewerApi, experimentApi]);
 
   if (hoverTime == null || rows.length === 0) return null;
   return (
@@ -126,9 +137,16 @@ const ReadoutPanel = () => {
           <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: row.color }} />
           <span className="truncate">{row.label}</span>
           <span className="ml-auto pl-2 font-mono tabular-nums">
-            {row.values
-              .map((v) => (v == null ? "—" : formatValue(v.value)))
-              .join(" / ")}
+            {row.channelColors
+              ? row.values.map((v, c) => (
+                  <span key={c}>
+                    {c > 0 && " / "}
+                    <span style={{ color: row.channelColors?.[c] }}>
+                      {v == null ? "—" : formatValue(v.value)}
+                    </span>
+                  </span>
+                ))
+              : row.values.map((v) => (v == null ? "—" : formatValue(v.value))).join(" / ")}
             {row.unit ? ` ${row.unit}` : ""}
           </span>
           {row.decimated && (

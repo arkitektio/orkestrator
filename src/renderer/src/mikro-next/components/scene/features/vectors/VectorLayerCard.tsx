@@ -33,8 +33,8 @@ import {
   CardSection,
   OpacityRow,
   RowLabel,
-} from "../../platform/layerui/cardControls";
-import { ColormapSelect } from "../../platform/layerui/ColormapSelect";
+} from "@/lib/scene/layerui/cardControls";
+import { ColormapSelect } from "@/lib/scene/layerui/ColormapSelect";
 import { CONTINUOUS_COLORMAP_CHOICES } from "../../platform/layerui/colormap-utils";
 import type { VectorLayerFragment } from "../../platform/model/layerGuards";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";

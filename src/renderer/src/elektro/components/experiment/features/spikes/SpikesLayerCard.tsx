@@ -43,7 +43,7 @@ export const SpikesLayerCard = ({ layer, hidden, onToggleHidden }: LayerCardProp
           <div className="flex items-center gap-2 text-[11px]">
             <span className="text-muted-foreground">Colour</span>
             <span className="ml-auto">
-              <ColorInput value={layer.persisted.color} onCommit={(color) => void write(layer.id, { color })} />
+              <ColorInput value={layer.persisted.color} resolved={layer.color} onCommit={(color) => void write(layer.id, { color })} />
             </span>
           </div>
           <CardFact

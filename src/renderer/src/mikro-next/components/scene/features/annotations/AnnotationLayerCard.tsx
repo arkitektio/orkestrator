@@ -12,7 +12,7 @@ import {
   LayerCardShell,
   RowLabel,
   formatCount,
-} from "../../platform/layerui/cardControls";
+} from "@/lib/scene/layerui/cardControls";
 
 /**
  * A compact card for an `AnnotationLayer` in the Layers panel.

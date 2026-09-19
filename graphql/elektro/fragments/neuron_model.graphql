@@ -2,6 +2,7 @@ fragment Coord on Coord {
   x
   y
   z
+  diam
 }
 
 fragment Section on Section {
@@ -163,14 +164,33 @@ fragment DetailNeuronModel on NeuronModel {
       valueB
     }
   }
-  simulations {
-    ...ListSimulation
+  # One session per run — a run is its clock. Read off the graph: the model's
+  # simulated datasets grouped by the clock they are timed onto (a null clock
+  # holds the ones timed onto none yet, and comes last).
+  sessions {
+    ...NeuronModelSession
   }
   environment {
     ...ModEnvironment
   }
   provenanceEntries {
     ...ProvenanceEntry
+  }
+}
+
+# One run: its clock and the datasets timed onto it. Shared by the model's
+# sessions and a section's (where it was recorded).
+fragment NeuronModelSession on NeuronModelSession {
+  clock {
+    id
+    name
+  }
+  datasets {
+    ...ListArrayDataset
+    # The dataset's own grid: the world an inline viewer draws it in alone.
+    intrinsicSystem {
+      id
+    }
   }
 }
 

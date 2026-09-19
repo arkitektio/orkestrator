@@ -37,7 +37,7 @@ import {
 import { HomePageQuery, Ordering, useHomePageQuery } from "../api/graphql";
 import ExperimentList from "../components/lists/ExperimentList";
 import NeuronModelList from "../components/lists/NeuronModelList";
-import SimulationList from "../components/lists/SimulationList";
+import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 
 export interface IRepresentationScreenProps {}
 
@@ -109,7 +109,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
           <CollapsibleSearch
             value={search}
             onChange={(value) => setSearch(value || null)}
-            placeholder="Search experiments, simulations and models…"
+            placeholder="Search datasets, experiments and models…"
           />
 
           {/* Ordering: field + direction in a dropdown, shared across lists.
@@ -182,7 +182,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
       }
     >
 
-      {data?.experiments.length == 0 && data?.simulations.length == 0 && data?.models.length == 0 ? (
+      {data?.experiments.length == 0 && data?.models.length == 0 ? (
         // Empty State with Hero Design
         <div className="min-h-full w-full flex items-center justify-center rounded-lg">
           <div className="max-w-4xl mx-auto text-center px-6 py-16">
@@ -240,7 +240,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
             </CardDescription>
           </CardHeader>
 
-          <SimulationList filters={listFilters} ordering={listOrdering} />
+          <ArrayDatasetList filters={listFilters} ordering={listOrdering} />
           <NeuronModelList filters={listFilters} ordering={listOrdering} />
           <Separator className="my-4" />
           <ExperimentList filters={listFilters} ordering={listOrdering} />

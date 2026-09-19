@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import type * as THREE from "three";
 
-import { applyFitToCamera } from "./cameraFit";
+import { applyFitToCamera } from "@/lib/scene/camera/cameraFit";
 import { computeSceneWorldBox } from "./sceneFit";
 import { useSceneStoreApi } from "../stores/sceneStore";
 

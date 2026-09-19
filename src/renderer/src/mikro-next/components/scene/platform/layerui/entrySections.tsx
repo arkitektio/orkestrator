@@ -7,7 +7,7 @@ import { readDefaultFilterRule } from "@/mikro-next/lib/attributes/columnStats";
 import { sliceDomain } from "@/mikro-next/lib/sparse/sliceStats";
 import { loadSparseSource } from "@/mikro-next/lib/sparse/sparseSource";
 import { perfMonitor } from "../perf/perfMonitor";
-import { CardSection, EntryRow, RowAction } from "./cardControls";
+import { CardSection, EntryRow, RowAction } from "@/lib/scene/layerui/cardControls";
 import { colormapGradientCSS } from "./colormap-utils";
 import { ColumnEntrySettings } from "./ColumnEntryEditor";
 import { ColumnOptionPicker, type ColumnOptionSource } from "./ColumnOptionPicker";

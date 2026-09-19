@@ -22,6 +22,11 @@ import {
  *    overlay in one row on ONE scale — the union of their clims — so amplitudes are
  *    directly comparable. A layer with no known dimension (a spike raster, an event
  *    table) gets a row of its own rather than being guessed into someone else's.
+ *  - **OVERLAY**: EVERY trace in one row, each channel filling it, each layer on
+ *    its OWN scale — so a voltage and a current line up in time on one plot even
+ *    though no one axis could hold both. What it shows is timing, not amplitude:
+ *    the row is labelled as a legend, one scale per layer. Layers with no value
+ *    scale (spike rasters, event tables) keep rows of their own below it.
  *
  * Pure — no store, no React — so the rules are pinned by tests.
  */
@@ -34,6 +39,8 @@ export type StackableLayer = {
   valueDimension: string | null;
   channelCount: number;
   channelLabels?: (string | null)[];
+  /** Whether OVERLAY may put it in the shared plot: traces yes, rasters/events no. */
+  overlayable?: boolean;
 };
 
 export type StackLayout = {
@@ -80,6 +87,45 @@ export const stackLayout = (
         bands[bandKey(view.id, c)] = bandIn(rowIndex, c, channels, [view.id]);
       }
     });
+    return { rowCount: rows.length, rows, bands };
+  }
+
+  if (mode === "OVERLAY") {
+    const traces = layers.filter((view) => view.overlayable);
+    const rest = layers.filter((view) => !view.overlayable);
+    let rowIndex = 0;
+    if (traces.length > 0) {
+      const units = new Set(traces.map((view) => view.valueUnit));
+      rows.push({
+        index: rowIndex,
+        label: traces.map((view) => view.label).join(", "),
+        // One unit only when every line is in it; otherwise the legend says each.
+        unit: units.size === 1 ? traces[0].valueUnit : null,
+        color: traces[0].color,
+        layerIds: traces.map((view) => view.id),
+        overlay: true,
+      });
+      for (const view of traces) {
+        // Every channel of every trace uses the WHOLE row, on its layer's own clim.
+        for (let c = 0; c < Math.max(1, view.channelCount); c++) {
+          bands[bandKey(view.id, c)] = bandIn(rowIndex, 0, 1, [view.id]);
+        }
+      }
+      rowIndex++;
+    }
+    for (const view of rest) {
+      rows.push({
+        index: rowIndex,
+        label: view.label,
+        unit: view.valueUnit,
+        color: view.color,
+        layerIds: [view.id],
+      });
+      for (let c = 0; c < Math.max(1, view.channelCount); c++) {
+        bands[bandKey(view.id, c)] = bandIn(rowIndex, 0, 1, [view.id]);
+      }
+      rowIndex++;
+    }
     return { rowCount: rows.length, rows, bands };
   }
 

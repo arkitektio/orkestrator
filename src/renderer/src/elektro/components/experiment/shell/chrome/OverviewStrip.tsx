@@ -12,18 +12,43 @@ import { useRangeStoreApi } from "../../platform/stores/rangeStore";
  *
  * It answers the question a zoomed-in timeline cannot — "where am I, and is there
  * anything over there?" — without reading a single sample: each view's extent is a
- * bar, known from its placement alone. Click to centre the window there; drag the
- * window box to move it.
+ * bar, known from its placement alone.
+ *
+ * Gestures (`overviewIntent` decides at pointer-down):
+ *  - **drag across the rail** — select a range; releasing jumps straight to it
+ *    (one undoable jump, like a box zoom);
+ *  - **click** — centre the window there;
+ *  - **drag the window box** — move it. A box covering nearly the whole rail
+ *    (the zoomed-out default) is not grabbable: there, a drag selects instead,
+ *    or there would be nowhere to select from.
  *
  * The window box follows the LIVE range imperatively (one `style` write per change,
  * no React render — P17); the bars change only when the views do.
  */
+/** A press that moves less than this is a click, not a selection. */
+const CLICK_SLOP_PX = 4;
+
+/** A box wider than this share of the world is too wide to grab. */
+const GRABBABLE_MAX_SHARE = 0.9;
+
+/** What a press at world time `t` starts. Pure, so the rule is pinned by tests. */
+export const overviewIntent = (
+  t: number,
+  live: { start: number; end: number },
+  world: { start: number; end: number },
+): "move" | "select" => {
+  const share = (live.end - live.start) / (world.end - world.start);
+  const insideBox = t >= live.start && t <= live.end;
+  return insideBox && share < GRABBABLE_MAX_SHARE ? "move" : "select";
+};
+
 export const OverviewStrip = () => {
   const views = useExperimentStore((s) => s.layers);
   const worldSpan = useExperimentStore((s) => s.worldSpan);
   const rangeApi = useRangeStoreApi();
   const stripRef = useRef<HTMLDivElement | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null);
+  const selectionRef = useRef<HTMLDivElement | null>(null);
 
   const bars = useMemo(
     () =>
@@ -63,32 +88,74 @@ export const OverviewStrip = () => {
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
     const { liveRange } = rangeApi.getState();
-    const half = (liveRange.end - liveRange.start) / 2;
+    const width = liveRange.end - liveRange.start;
     const t = timeAtClientX(event.clientX);
-    const insideBox = t >= liveRange.start && t <= liveRange.end;
-
-    // Clicking outside the box jumps there (a deliberate move, so it is undoable);
-    // pressing inside it starts a drag.
-    if (!insideBox) {
-      rangeApi.getState().jumpTo({ start: t - half, end: t + half });
-      return;
-    }
-    const grabOffset = t - liveRange.start;
     const target = event.currentTarget;
     target.setPointerCapture(event.pointerId);
 
-    const onMove = (move: PointerEvent) => {
-      const start = timeAtClientX(move.clientX) - grabOffset;
-      rangeApi.getState().setLiveRange({ start, end: start + half * 2 });
+    const listen = (onMove: (move: PointerEvent) => void, onUp: (up: PointerEvent) => void) => {
+      const up = (e: PointerEvent) => {
+        target.removeEventListener("pointermove", onMove);
+        target.removeEventListener("pointerup", up);
+        target.removeEventListener("pointercancel", cancel);
+        onUp(e);
+      };
+      const cancel = () => {
+        target.removeEventListener("pointermove", onMove);
+        target.removeEventListener("pointerup", up);
+        target.removeEventListener("pointercancel", cancel);
+        hideSelection();
+      };
+      target.addEventListener("pointermove", onMove);
+      target.addEventListener("pointerup", up);
+      target.addEventListener("pointercancel", cancel);
     };
-    const onUp = () => {
-      target.removeEventListener("pointermove", onMove);
-      target.removeEventListener("pointerup", onUp);
-      target.removeEventListener("pointercancel", onUp);
-    };
-    target.addEventListener("pointermove", onMove);
-    target.addEventListener("pointerup", onUp);
-    target.addEventListener("pointercancel", onUp);
+
+    if (overviewIntent(t, liveRange, worldSpan) === "move") {
+      const grabOffset = t - liveRange.start;
+      listen(
+        (move) => {
+          const start = timeAtClientX(move.clientX) - grabOffset;
+          rangeApi.getState().setLiveRange({ start, end: start + width });
+        },
+        () => {},
+      );
+      return;
+    }
+
+    // Select: draw the range as it is dragged; on release, a real drag jumps to
+    // it and a click centres the current window there. Both are `jumpTo`, so
+    // both are in the undo history.
+    const startX = event.clientX;
+    listen(
+      (move) => {
+        if (Math.abs(move.clientX - startX) < CLICK_SLOP_PX) return hideSelection();
+        showSelection(t, timeAtClientX(move.clientX));
+      },
+      (up) => {
+        hideSelection();
+        if (Math.abs(up.clientX - startX) < CLICK_SLOP_PX) {
+          rangeApi.getState().jumpTo({ start: t - width / 2, end: t + width / 2 });
+          return;
+        }
+        const end = timeAtClientX(up.clientX);
+        rangeApi.getState().jumpTo({ start: Math.min(t, end), end: Math.max(t, end) });
+      },
+    );
+  };
+
+  const showSelection = (a: number, b: number) => {
+    const node = selectionRef.current;
+    if (!node) return;
+    const lo = Math.max(worldSpan.start, Math.min(a, b));
+    const hi = Math.min(worldSpan.end, Math.max(a, b));
+    node.style.display = "block";
+    node.style.left = `${((lo - worldSpan.start) / worldWidth) * 100}%`;
+    node.style.width = `${((hi - lo) / worldWidth) * 100}%`;
+  };
+
+  const hideSelection = () => {
+    if (selectionRef.current) selectionRef.current.style.display = "none";
   };
 
   const laneHeight = bars.length > 0 ? Math.max(1, Math.min(4, 16 / bars.length)) : 0;
@@ -115,6 +182,11 @@ export const OverviewStrip = () => {
       <div
         ref={boxRef}
         className="pointer-events-none absolute inset-y-0 rounded-sm border border-foreground/60 bg-foreground/10"
+      />
+      {/* The range being selected — the same colours as the canvas' zoom box. */}
+      <div
+        ref={selectionRef}
+        className="pointer-events-none absolute inset-y-0 hidden border-x border-sky-400/80 bg-sky-400/25"
       />
     </div>
   );

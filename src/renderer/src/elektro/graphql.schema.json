@@ -3166,25 +3166,13 @@
             "deprecationReason": null
           },
           {
-            "name": "simulations",
-            "description": "The simulation runs this dataset is timed on: those whose clock its sample grid has a sampling law or a time lookup onto. Read off the graph, never stored",
+            "name": "simulation",
+            "description": "What computed this dataset, if it was simulated: the `simulation` spoke of its whole-dataset anchor -- the model that was integrated, its dt and duration. Null for a recording, and for a run's input",
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "Simulation",
-                    "kind": "OBJECT",
-                    "ofType": null
-                  }
-                }
-              }
+              "kind": "OBJECT",
+              "name": "SimulationState",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -5697,6 +5685,18 @@
             "deprecationReason": null
           },
           {
+            "name": "compoundId",
+            "description": "This cell's id from outside its model, 'model:cell' (each part percent-encoded): what the `cell` query takes. `id` is only unique within the model. Null when the cell was not read from a stored model",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": "The unique identifier of the cell within the model.",
             "args": [],
@@ -5707,6 +5707,42 @@
                 "name": "String",
                 "kind": "SCALAR",
                 "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "model",
+            "description": "The neuron model this cell is part of. Null when the cell was not read from a stored model",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "NeuronModel",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "sessions",
+            "description": "Where this cell was recorded: the datasets with a recording site on it, grouped by the clock they are timed onto -- one session per run. Read from the model's recording sites, in the viewer's organization; untimed datasets come last, under a null clock. Empty when the cell was not read from a stored model",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "NeuronModelSession",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
               }
             },
             "isDeprecated": false,
@@ -7724,6 +7760,18 @@
             "deprecationReason": null
           },
           {
+            "name": "simulation",
+            "description": "(simulation) The model and integrator parameters that computed the values at this coordinate",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "SimulationState",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "stimulusSite",
             "description": "(simulation) Where on the model the values at this coordinate were injected",
             "args": [],
@@ -7942,6 +7990,18 @@
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "RigStateInput",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "simulation",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "SimulationStateInput",
               "ofType": null
             },
             "defaultValue": "null",
@@ -8323,8 +8383,25 @@
           },
           {
             "name": "placedSystems",
-            "description": "Every space whose data can be composed here: those reaching this one across steps that compose into one affine map, walking the transformation edges. Composed, not merely connected -- a space reaching this one only across a FIELD relates to it by the values of an array and yields no matrix to draw with, so it is not here. The same set the `placeableIn` filters answer from, so a picker and a layer mutation cannot disagree. Distinct from `coordinateGraph`, which walks the undirected *neighbourhood* -- this is directed, and asks who can get in",
-            "args": [],
+            "description": "Every space whose data can be composed here: those reaching this one across steps that compose into one affine map, walking the transformation edges. Composed, not merely connected -- a space reaching this one only across a FIELD relates to it by the values of an array and yields no matrix to draw with, so it is not here. The same set the `placeableIn` filters answer from, so a picker and a layer mutation cannot disagree. Distinct from `coordinateGraph`, which walks the undirected *neighbourhood* -- this is directed, and asks who can get in. With `requireAffine: false` (elektro's) it answers *what is in* this space instead: a variable-step run timed onto a clock by a lookup is in the clock's session though no matrix draws it",
+            "args": [
+              {
+                "name": "requireAffine",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "Boolean",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": "true",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -8577,7 +8654,7 @@
           },
           {
             "name": "composedOver",
-            "description": "Filter to the spaces something composes over without living in them: an experiment's world, a block's or a segment's or a simulation's clock. False finds the spaces nothing is laid out in",
+            "description": "Filter to the spaces something composes over without living in them: an experiment's world. False finds the spaces nothing is laid out in",
             "type": {
               "kind": "SCALAR",
               "name": "Boolean",
@@ -11316,11 +11393,23 @@
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "CreateSimulationInput",
-        "description": "One run of a neuron model: the model, the integrator's parameters, and a clock. Optionally, the array datasets it produced and how their samples are timed on that clock. What was recorded or injected where is not stated here: it is a `recordingSite` / `stimulusSite` on each dataset's anchors, said at `createArrayDataset`",
+        "name": "CreateSessionInput",
+        "description": "Array datasets recorded together, timed onto one clock: one sampling law (or one time lookup) per dataset, onto a new clock or an existing one. A recording session, or one run of a neuron model -- a run is its clock, and the outputs timed onto one clock must agree on what was run (their `simulation` anchors)",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
+          {
+            "name": "clock",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "datasets",
             "description": null,
@@ -11341,62 +11430,6 @@
                 }
               }
             },
-            "defaultValue": "[]",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "description",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "defaultValue": "null",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "dt",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Duration",
-              "ofType": null
-            },
-            "defaultValue": "null",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "duration",
-            "description": null,
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "Duration",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "model",
-            "description": null,
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "ID",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
             "defaultValue": null,
             "isDeprecated": false,
             "deprecationReason": null
@@ -11405,15 +11438,11 @@
             "name": "name",
             "description": null,
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
-                "kind": "SCALAR",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
-            "defaultValue": null,
+            "defaultValue": "null",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -11453,7 +11482,7 @@
                 "ofType": null
               }
             },
-            "defaultValue": "\"millisecond\"",
+            "defaultValue": "\"second\"",
             "isDeprecated": false,
             "deprecationReason": null
           }
@@ -13459,34 +13488,6 @@
           {
             "name": "world",
             "description": "The shared space the registration goes into",
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "ID",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "DeleteSimulationInput",
-        "description": "Input for deleting a simulation by ID",
-        "isOneOf": false,
-        "fields": null,
-        "inputFields": [
-          {
-            "name": "id",
-            "description": null,
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -26292,8 +26293,8 @@
             "deprecationReason": null
           },
           {
-            "name": "createSimulation",
-            "description": "Create a simulation: a run of a neuron model, its integrator parameters and its clock, and a timing edge onto that clock for each array dataset named. Creates no data; what was recorded where is each dataset's `recordingSite` / `stimulusSite`",
+            "name": "createSession",
+            "description": "Time the named array datasets onto one clock -- a new one, or an existing one for a second batch -- one sampling law (or time lookup) each: a recording session, or one run of a neuron model. Refused unless every dataset has a TIME axis with the same number of samples, and unless the simulated outputs on the clock agree on what was run",
             "args": [
               {
                 "name": "input",
@@ -26302,7 +26303,7 @@
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "name": "CreateSimulationInput",
+                    "name": "CreateSessionInput",
                     "kind": "INPUT_OBJECT",
                     "ofType": null
                   }
@@ -26316,7 +26317,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": "Simulation",
+                "name": "CoordinateSystem",
                 "kind": "OBJECT",
                 "ofType": null
               }
@@ -26623,7 +26624,7 @@
           },
           {
             "name": "deleteCoordinateSystem",
-            "description": "Delete an unused shared coordinate system. Refused while data lives in it, while anything is laid out over it (an experiment, a simulation), or while any transformation edge touches it. This is the only door a shared space leaves through -- deleting an experiment never deletes one",
+            "description": "Delete an unused shared coordinate system. Refused while data lives in it, while anything is laid out over it (an experiment), or while any transformation edge touches it. This is the only door a shared space leaves through -- deleting an experiment never deletes one",
             "args": [
               {
                 "name": "input",
@@ -27077,39 +27078,6 @@
                     "ofType": null
                   }
                 }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "deleteSimulation",
-            "description": "Delete a simulation and its clock, which takes the timing edges onto it along. The array datasets it timed stay",
-            "args": [
-              {
-                "name": "input",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "name": "DeleteSimulationInput",
-                    "kind": "INPUT_OBJECT",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "ID",
-                "kind": "SCALAR",
-                "ofType": null
               }
             },
             "isDeprecated": false,
@@ -30167,58 +30135,9 @@
             "deprecationReason": null
           },
           {
-            "name": "simulations",
-            "description": null,
-            "args": [
-              {
-                "name": "filters",
-                "description": null,
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "SimulationFilter",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
-                "name": "ordering",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "name": null,
-                    "kind": "LIST",
-                    "ofType": {
-                      "name": null,
-                      "kind": "NON_NULL",
-                      "ofType": {
-                        "name": "SimulationOrder",
-                        "kind": "INPUT_OBJECT",
-                        "ofType": null
-                      }
-                    }
-                  }
-                },
-                "defaultValue": "[]",
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
-                "name": "pagination",
-                "description": null,
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "OffsetPaginationInput",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
+            "name": "sessions",
+            "description": "The model's simulated datasets grouped by the clock they are timed onto: one session per run, since a run is its clock. Read off the graph, never stored. A dataset timed onto two clocks is in both; the datasets timed onto none come last, under a null clock",
+            "args": [],
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -30229,7 +30148,31 @@
                   "name": null,
                   "kind": "NON_NULL",
                   "ofType": {
-                    "name": "Simulation",
+                    "name": "NeuronModelSession",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "simulatedDatasets",
+            "description": "The array datasets computed by integrating this model: those carrying a `simulation` anchor on it, in the viewer's organization. A run is its clock: the outputs of one run are those timed onto one clock",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "ArrayDataset",
                     "kind": "OBJECT",
                     "ofType": null
                   }
@@ -30514,6 +30457,54 @@
           }
         ],
         "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "NeuronModelSession",
+        "description": "One session of a neuron model: a clock, and the model's datasets timed onto it -- one run, since a run is its clock",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "clock",
+            "description": "The clock the datasets are timed onto: the run. Null for the model's simulated datasets timed onto no clock yet",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "CoordinateSystem",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "datasets",
+            "description": "The datasets timed onto this clock, in creation order",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "ArrayDataset",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
         "enumValues": null,
         "possibleTypes": null
       },
@@ -31738,6 +31729,18 @@
             "deprecationReason": null
           },
           {
+            "name": "requireAffine",
+            "description": "(elektro) Set false to ask *what is in this space* rather than *what can be drawn in it*: also admit what reaches it across a FIELD -- a variable-step run timed onto its clock by a lookup, a spike train. What is in a session is what is placed onto its clock; a picker keeps the strict default, which only offers what one affine map can draw",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "space",
             "description": "The space to be placed into. A *space*, not an experiment: every experiment over one world offers the same candidates. Pass `experiment.world.id` to ask it of an experiment",
             "type": {
@@ -32913,6 +32916,39 @@
                     "ofType": null
                   }
                 }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "cell",
+            "description": "Get one cell of a neuron model by its compound id, 'model:cell' (see `Cell.compoundId`)",
+            "args": [
+              {
+                "name": "id",
+                "description": "The unique identifier of an object",
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "ID",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Cell",
+                "kind": "OBJECT",
+                "ofType": null
               }
             },
             "isDeprecated": false,
@@ -34789,6 +34825,39 @@
             "deprecationReason": null
           },
           {
+            "name": "section",
+            "description": "Get one section of a cell of a neuron model by its compound id, 'model:cell:section' (see `Section.compoundId`)",
+            "args": [
+              {
+                "name": "id",
+                "description": "The unique identifier of an object",
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "ID",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Section",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "sections",
             "description": "The sections of one cell of a neuron model, read from the model's config",
             "args": [
@@ -34868,112 +34937,6 @@
                   "kind": "NON_NULL",
                   "ofType": {
                     "name": "Section",
-                    "kind": "OBJECT",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "simulation",
-            "description": null,
-            "args": [
-              {
-                "name": "id",
-                "description": "The unique identifier of an object",
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "name": "ID",
-                    "kind": "SCALAR",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "Simulation",
-                "kind": "OBJECT",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "simulations",
-            "description": null,
-            "args": [
-              {
-                "name": "filters",
-                "description": null,
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "SimulationFilter",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
-                "name": "ordering",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "name": null,
-                    "kind": "LIST",
-                    "ofType": {
-                      "name": null,
-                      "kind": "NON_NULL",
-                      "ofType": {
-                        "name": "SimulationOrder",
-                        "kind": "INPUT_OBJECT",
-                        "ofType": null
-                      }
-                    }
-                  }
-                },
-                "defaultValue": "[]",
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
-                "name": "pagination",
-                "description": null,
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "OffsetPaginationInput",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "Simulation",
                     "kind": "OBJECT",
                     "ofType": null
                   }
@@ -37064,7 +37027,7 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "SamplingInput",
-        "description": "A fixed recording interval: the run recorded one sample every 1/rate, starting at tStart",
+        "description": "A fixed recording interval: one sample every 1/rate, starting at tStart",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -37587,12 +37550,36 @@
             "deprecationReason": null
           },
           {
+            "name": "cell",
+            "description": "The cell this section belongs to. Null when the section was not read from a stored model",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Cell",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "cm",
             "description": "Specific membrane capacitance (NEURON cm). Unset inherits the model-wide default, then NEURON's built-in 1 µF/cm².",
             "args": [],
             "type": {
               "kind": "SCALAR",
               "name": "SpecificCapacitance",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "compoundId",
+            "description": "This section's id from outside its model, 'model:cell:section' (each part percent-encoded): what the `section` query takes. `id` is only unique within its cell. Null when the section was not read from a stored model",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
               "ofType": null
             },
             "isDeprecated": false,
@@ -37675,6 +37662,18 @@
             "deprecationReason": null
           },
           {
+            "name": "model",
+            "description": "The neuron model this section is part of. Null when the section was not read from a stored model",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "NeuronModel",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "nseg",
             "description": "The number of segments the section is discretized into (used when d_lambda is not set). NEURON convention prefers an odd count so the section has a true midpoint node.",
             "args": [],
@@ -37710,6 +37709,30 @@
               "kind": "SCALAR",
               "name": "Resistivity",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "sessions",
+            "description": "Where this section was recorded: the datasets with a recording site on it, grouped by the clock they are timed onto -- one session per run. Read from the model's recording sites, in the viewer's organization; untimed datasets come last, under a null clock. Empty when the section was not read from a stored model",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "NeuronModelSession",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -39370,89 +39393,13 @@
       },
       {
         "kind": "OBJECT",
-        "name": "Simulation",
-        "description": null,
+        "name": "SimulationState",
+        "description": "The integrator truth: the anchored values were computed by integrating a neuron model -- the model, NEURON's dt and tstop. elektro's own spoke, the synthetic rig. A run is its clock: the outputs timed onto one clock are one run, and agree on it",
         "isOneOf": null,
         "fields": [
           {
-            "name": "clock",
-            "description": "The clock the run's datasets are timed against: a coordinate system with one TIME axis, in milliseconds by default. Laying a run into an experiment is one edge from this clock into the experiment's world",
-            "args": [],
-            "type": {
-              "kind": "OBJECT",
-              "name": "CoordinateSystem",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "createdAt",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "DateTime",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "creator",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "datasets",
-            "description": "The array datasets timed on this run's clock -- recordings and stimuli alike, each by its own sampling law or time lookup. Read off the graph, never stored: timing a dataset on the clock is what makes it part of the run",
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "ArrayDataset",
-                    "kind": "OBJECT",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "description",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "dt",
-            "description": "The integration time step (NEURON's dt). An integrator parameter, not the sampling period: a run can record more coarsely than it integrates. Null when unstated",
+            "description": "The integration time step (NEURON's dt). Not the sampling period: a run can record more coarsely than it integrates. Null when unstated",
             "args": [],
             "type": {
               "kind": "SCALAR",
@@ -39496,7 +39443,7 @@
           },
           {
             "name": "model",
-            "description": null,
+            "description": "The neuron model that was integrated",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -39509,131 +39456,6 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
-          },
-          {
-            "name": "name",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "provenanceEntries",
-            "description": null,
-            "args": [
-              {
-                "name": "pagination",
-                "description": null,
-                "type": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "OffsetPaginationInput",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "ProvenanceEntry",
-                    "kind": "OBJECT",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "recordings",
-            "description": "The datasets of this run carrying a `recordingSite` on some anchor: what was recorded, and where",
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "ArrayDataset",
-                    "kind": "OBJECT",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "samplingRate",
-            "description": "The rate the run's samples were recorded at, when every dataset timed on its clock agrees on one. Derived from their sampling laws -- each has its own edge onto the clock, and this is their common value. Null for a run timed by `timeDataset`, and null when the edges have been corrected apart",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "Frequency",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "stimuli",
-            "description": "The datasets of this run carrying a `stimulusSite` on some anchor: what was injected, and where",
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "ArrayDataset",
-                    "kind": "OBJECT",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "timeDataset",
-            "description": "The dataset whose values are the instants the run's samples were recorded at. Derived: it is the field of the time lookups from the run's datasets onto its clock. Null for a run recorded at a fixed interval, which has a sampling law instead -- see `samplingRate`",
-            "args": [],
-            "type": {
-              "kind": "OBJECT",
-              "name": "ArrayDataset",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -39643,145 +39465,33 @@
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "SimulationFilter",
-        "description": null,
+        "name": "SimulationStateInput",
+        "description": "The anchored values were COMPUTED, by integrating a neuron model: the model that was run and NEURON's dt and tstop. elektro's own spoke -- the synthetic rig, a simulated output's counterpart of `rig`. A run is its clock: the outputs timed onto one clock are one run, and must agree on it. An input (a stimulus waveform) carries none",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
           {
-            "name": "AND",
-            "description": null,
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "SimulationFilter",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "DISTINCT",
+            "name": "dt",
             "description": null,
             "type": {
               "kind": "SCALAR",
-              "name": "Boolean",
+              "name": "Duration",
               "ofType": null
             },
-            "defaultValue": null,
+            "defaultValue": "null",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "NOT",
+            "name": "duration",
             "description": null,
             "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "SimulationFilter",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "OR",
-            "description": null,
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "SimulationFilter",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "createdAfter",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "DateTime",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "createdBefore",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "DateTime",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "createdBy",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "ID",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "createdByAgent",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Boolean",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "createdWith",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "id",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "ID",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ids",
-            "description": null,
-            "type": {
-              "kind": "LIST",
+              "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": null,
-                "kind": "NON_NULL",
-                "ofType": {
-                  "name": "ID",
-                  "kind": "SCALAR",
-                  "ofType": null
-                }
+                "name": "Duration",
+                "kind": "SCALAR",
+                "ofType": null
               }
             },
             "defaultValue": null,
@@ -39789,96 +39499,16 @@
             "deprecationReason": null
           },
           {
-            "name": "mine",
+            "name": "model",
             "description": null,
             "type": {
-              "kind": "SCALAR",
-              "name": "Boolean",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "name",
-            "description": null,
-            "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "StrFilterLookup",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "provenanceRootTask",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "provenanceTask",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "search",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "SimulationOrder",
-        "description": null,
-        "isOneOf": true,
-        "fields": null,
-        "inputFields": [
-          {
-            "name": "createdAt",
-            "description": null,
-            "type": {
-              "kind": "ENUM",
-              "name": "Ordering",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "id",
-            "description": null,
-            "type": {
-              "kind": "ENUM",
-              "name": "Ordering",
-              "ofType": null
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -50531,6 +50161,11 @@
           {
             "kind": "OBJECT",
             "name": "SeriesLayer",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "SimulationState",
             "ofType": null
           },
           {

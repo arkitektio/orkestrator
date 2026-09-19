@@ -1,7 +1,6 @@
 # Everything a trace row's label unfolds into: every anchor on the lens with its
-# full metadata payload, and where the data came from — the simulation(s) that
-# produced the dataset and the neuron model they ran (the model its recording
-# sites name cells and sections of).
+# full metadata payload, and where the data came from — the dataset, and, when it
+# was simulated, the neuron model that was integrated (with its dt and duration).
 #
 # `ExpLens.activeAnchors` already carries a thin projection (label, unit, the
 # histogram's range, the site) — enough to name and scale a row; this is the
@@ -16,9 +15,11 @@ query GetExpLensAnchors($id: ID!) {
     }
     dataset {
       id
-      simulations {
+      name
+      simulation {
         id
-        name
+        duration
+        dt
         model {
           id
           name

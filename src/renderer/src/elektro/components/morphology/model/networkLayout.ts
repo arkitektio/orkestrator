@@ -1,6 +1,7 @@
 import * as THREE from "three";
-import { DetailNeuronModelFragment } from "../api/graphql";
+import type { DetailNeuronModelFragment } from "../../../api/graphql";
 import { toBase } from "@/lib/quantities";
+import { Morphology, perpendicularTo, pointAlong } from "./buildMorphology";
 
 /**
  * Geometry for the neuron model's "network" layer — the point processes that
@@ -11,8 +12,9 @@ import { toBase } from "@/lib/quantities";
  *   them just outside the arbor near the synapses they drive,
  * - **connections** are edges from a stimulator to a synapse.
  *
- * All positions are derived from the already-computed section geometry, so the
- * network layer lines up exactly with the rendered cylinders.
+ * All positions are derived from the morphology (`buildMorphology`) — real
+ * coords or the synthetic layout alike — so the network layer lines up exactly
+ * with the rendered tubes.
  */
 
 export type NetSynapse = NonNullable<
@@ -31,14 +33,6 @@ export type NetData = Pick<
   DetailNeuronModelFragment["config"],
   "netSynapses" | "netStimulators" | "netConnections"
 >;
-
-/** Per-section world geometry, keyed by section id. `radius` is the cylinder's
- *  radius in µm (diam / 2), used to lift synapses onto the mesh hull. */
-export type SegmentGeom = {
-  start: THREE.Vector3;
-  end: THREE.Vector3;
-  radius: number;
-};
 
 // Amber = excitatory, sky = inhibitory, violet = stimulator source.
 export const SYNAPSE_EXCITATORY_COLOR = "rgb(245, 158, 11)";
@@ -79,18 +73,6 @@ export type NetworkLayout = {
   hasData: boolean;
 };
 
-const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
-
-const UP = new THREE.Vector3(0, 1, 0);
-const RIGHT = new THREE.Vector3(1, 0, 0);
-
-/** A unit vector perpendicular to `axis` (any consistent choice). */
-const getPerpendicular = (axis: THREE.Vector3): THREE.Vector3 => {
-  const n = axis.clone().normalize();
-  const helper = Math.abs(n.dot(UP)) > 0.9 ? RIGHT : UP;
-  return new THREE.Vector3().crossVectors(n, helper).normalize();
-};
-
 const EMPTY: NetworkLayout = {
   synapses: [],
   stimulators: [],
@@ -103,7 +85,7 @@ const EMPTY: NetworkLayout = {
 
 export const buildNetworkLayout = (
   net: NetData,
-  segmentGeom: Map<string, SegmentGeom>,
+  morphology: Morphology,
 ): NetworkLayout => {
   const rawSynapses = net.netSynapses ?? [];
   const rawStimulators = net.netStimulators ?? [];
@@ -120,20 +102,18 @@ export const buildNetworkLayout = (
   // Arbor centroid + radius (used to float stimulators outward and size markers).
   const centroid = new THREE.Vector3();
   let n = 0;
-  segmentGeom.forEach(({ start, end }) => {
-    centroid.add(start).add(end);
-    n += 2;
-  });
+  for (const section of morphology.sections) {
+    for (const point of section.points) centroid.add(point);
+    n += section.points.length;
+  }
   if (n > 0) centroid.multiplyScalar(1 / n);
 
   let arborRadius = 0;
-  segmentGeom.forEach(({ start, end }) => {
-    arborRadius = Math.max(
-      arborRadius,
-      start.distanceTo(centroid),
-      end.distanceTo(centroid),
-    );
-  });
+  for (const section of morphology.sections) {
+    for (const point of section.points) {
+      arborRadius = Math.max(arborRadius, point.distanceTo(centroid));
+    }
+  }
 
   const markerRadius = Math.max(arborRadius * 0.012, 1.5);
 
@@ -143,27 +123,23 @@ export const buildNetworkLayout = (
   let unmatchedSynapses = 0;
 
   rawSynapses.forEach((synapse) => {
-    const geom = segmentGeom.get(synapse.location);
-    if (!geom) {
+    const section = morphology.byId.get(synapse.location);
+    if (!section) {
       unmatchedSynapses += 1;
       return;
     }
-    // Anchor on the section's centerline, then lift out to the cylinder hull so
+    // Anchor on the section's centreline, then lift out to the tube hull so
     // the marker sits on the membrane surface (never buried inside thick
     // sections). A per-synapse angle spreads co-located synapses around the
     // circumference instead of stacking them.
-    const axis = geom.end.clone().sub(geom.start);
-    const perp = getPerpendicular(axis);
-    if (axis.lengthSq() > 1e-9) {
-      const seed = synapse.id
-        .split("")
-        .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      perp.applyAxisAngle(axis.normalize(), (seed % 360) * (Math.PI / 180));
-    }
-    const point = geom.start
-      .clone()
-      .lerp(geom.end, clamp01(synapse.position))
-      .add(perp.multiplyScalar(geom.radius + markerRadius));
+    const { point: onAxis, tangent, segment } = pointAlong(section, synapse.position);
+    const hull = (section.radii[segment] + section.radii[segment + 1]) / 2;
+    const perp = perpendicularTo(tangent);
+    const seed = synapse.id
+      .split("")
+      .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    perp.applyAxisAngle(tangent, (seed % 360) * (Math.PI / 180));
+    const point = onAxis.add(perp.multiplyScalar(hull + markerRadius));
     const eMv = toBase(synapse.e, "voltage", NaN);
     const excitatory = Number.isNaN(eMv) ? true : eMv >= EXC_THRESHOLD_MV;
     synapses.push({

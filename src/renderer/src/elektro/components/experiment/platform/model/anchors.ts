@@ -21,9 +21,22 @@ export type AnchorLike = {
     p1?: number | null;
     p99?: number | null;
   } | null;
-  recordingSite?: { label: string } | null;
-  stimulusSite?: { label: string } | null;
+  recordingSite?: SiteRefLike | null;
+  stimulusSite?: SiteRefLike | null;
 };
+
+/** A recording or stimulus site as the thin anchor projection carries it. */
+export type SiteRefLike = {
+  id?: string;
+  kind?: string | null;
+  label: string;
+  cell?: string | null;
+  location?: string | null;
+  position?: number | null;
+};
+
+/** A channel's site, and which side of the experiment it is on. */
+export type ChannelSite = SiteRefLike & { role: "recording" | "stimulus" };
 
 /** The index an anchor pins `axis` to; null when it is global along it. */
 export const pinOf = (coordinates: unknown, axis: string): number | null => {
@@ -73,6 +86,26 @@ export const channelLabelsOf = (
   channelIndices.map((index) =>
     first(anchorsForChannel(anchors, channelAxis, index), (a) => a.channelLabel?.label),
   );
+
+/**
+ * One site per drawn channel — where it was recorded, else what stimulated it —
+ * from the channel's own anchors, most specific first (null where none names
+ * one). A trace with no channel axis is one line, and gets one entry.
+ */
+export const channelSitesOf = (
+  anchors: readonly AnchorLike[],
+  channelAxis: string | null,
+  channelIndices: readonly number[],
+): (ChannelSite | null)[] => {
+  const indices: (number | null)[] = channelIndices.length > 0 ? [...channelIndices] : [null];
+  return indices.map((index) => {
+    const own = anchorsForChannel(anchors, channelAxis, index);
+    const recording = first(own, (a) => a.recordingSite);
+    if (recording) return { ...recording, role: "recording" as const };
+    const stimulus = first(own, (a) => a.stimulusSite);
+    return stimulus ? { ...stimulus, role: "stimulus" as const } : null;
+  });
+};
 
 /**
  * What the layer was recorded at or stimulated through: the site label of the
@@ -191,4 +224,46 @@ export const partitionAnchors = <A extends { coordinates?: unknown }>(
     (anchorInView(anchor.coordinates, coverage) ? inView : outOfView).push(anchor);
   }
   return { inView, outOfView };
+};
+
+/**
+ * One channel's metadata as ONE record, from its in-view anchors ordered most
+ * specific first (`anchorsForChannel`): each field is the first anchor's that
+ * states it, and acquisition metadata merges key by key the same way — so a
+ * value pinned to the channel overrides the dataset-wide one, and nothing
+ * stated anywhere is lost.
+ */
+export const mergeChannelAnchors = <
+  A extends {
+    channelLabel?: { label: string } | null;
+    valueUnit?: { unit: string } | null;
+    valueHistogram?: unknown;
+    rig?: unknown;
+    acquisitionMetadata?: { metadata: unknown } | null;
+  },
+>(
+  anchors: readonly A[],
+): {
+  label: string | null;
+  unit: string | null;
+  histogram: NonNullable<A["valueHistogram"]> | null;
+  rig: NonNullable<A["rig"]> | null;
+  acquisition: [string, unknown][];
+} => {
+  const acquisition = new Map<string, unknown>();
+  for (const anchor of anchors) {
+    const metadata = anchor.acquisitionMetadata?.metadata;
+    if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) continue;
+    for (const [key, value] of Object.entries(metadata as Record<string, unknown>)) {
+      if (value == null || value === "" || acquisition.has(key)) continue;
+      acquisition.set(key, value);
+    }
+  }
+  return {
+    label: first(anchors, (a) => a.channelLabel?.label),
+    unit: first(anchors, (a) => a.valueUnit?.unit),
+    histogram: first(anchors, (a) => a.valueHistogram as NonNullable<A["valueHistogram"]> | null),
+    rig: first(anchors, (a) => a.rig as NonNullable<A["rig"]> | null),
+    acquisition: [...acquisition],
+  };
 };

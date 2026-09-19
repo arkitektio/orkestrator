@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { ElektroModelWorkspace, ElektroNeuronModel } from "@/linkers";
 import { useEffect } from "react";
 import { useDetailModelWorkspaceQuery, useDetailNeuronModelQuery } from "../api/graphql";
-import { NeuronVisualizer } from "../components/NeuronRenderer";
+import { MorphologyScene } from "../components/morphology/MorphologyScene";
 import { useActiveWorkspaceStore } from "../lib/activeWorkspaceStore";
 
 export const ModelWorkspacePage = asDetailQueryRoute(
@@ -107,10 +107,7 @@ export const ModelWorkspacePage = asDetailQueryRoute(
 
           <div className="col-span-9">
             {selectedDetail?.neuronModel ? (
-              <NeuronVisualizer
-                model={selectedDetail.neuronModel}
-                key={selectedDetail.neuronModel.id}
-              />
+              <MorphologyScene.Embedded model={selectedDetail.neuronModel} />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-muted-foreground">
                 Select a model to preview it

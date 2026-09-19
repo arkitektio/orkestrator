@@ -3,10 +3,6 @@ query HomePage {
     ...ListExperiment
   }
 
-  simulations: simulations(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
-    ...ListSimulation
-  }
-
   models: neuronModels(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
     ...ListNeuronModel
   }

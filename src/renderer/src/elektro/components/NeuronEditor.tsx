@@ -6,16 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Html, OrbitControls, useCursor } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
 import { Check, Copy, GitBranch, HelpCircle, Pencil, Save, Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { useStore } from "zustand";
 import { toast } from "sonner";
-import * as THREE from "three";
 import { v4 as uuidv4 } from 'uuid';
 import { useDialog } from "@/app/dialog";
+import { toBase } from "@/lib/quantities";
 import { DetailNeuronModelFragment, SectionFragment } from "../api/graphql";
-import { computeRootCentroidFit, FitCamera } from "../lib/fitCamera";
 import {
   EditableCompartment,
   EditableModelConfig,
@@ -24,34 +22,28 @@ import {
   EditableNetStimulator,
   EditableNetSynapse,
 } from "../lib/modelSerialization";
-import { rgbaToCss } from "../lib/color";
-import { buildNetworkLayout, SegmentGeom } from "../lib/networkLayout";
-import { toBase } from "@/lib/quantities";
 import { CompartmentEditor } from "./editor/CompartmentEditor";
 import { MechanismCatalogProvider } from "./editor/MechanismCatalog";
 import { ModelConfigPanel } from "./editor/ModelConfigPanel";
 import { NetworkEditor } from "./editor/NetworkEditor";
-import { NetworkControl } from "./NetworkControl";
-import { HoveredNet, NetworkLayer, NetworkTooltip } from "./NetworkLayer3D";
+import { MorphologyModeControls } from "./morphology/chrome/MorphologyModeControls";
+import { MorphologyScaleBar } from "./morphology/chrome/MorphologyScaleBar";
+import {
+  MORPHOLOGY_SHORTCUTS,
+  MorphologyShortcuts,
+  type ShortcutGroups,
+} from "./morphology/chrome/MorphologyShortcuts";
+import { EditorHandles, type HoverFeed } from "./morphology/gpu/EditorHandles";
+import { MorphologyCanvas } from "./morphology/gpu/MorphologyCanvas";
+import { NetworkMarks } from "./morphology/gpu/NetworkMarks";
+import { SectionTubes } from "./morphology/gpu/SectionTubes";
+import { MorphologyLayerCard, NetworkLayerCard } from "./morphology/layers/MorphologyLayerCards";
+import { buildMorphology, locationOf } from "./morphology/model/buildMorphology";
+import { compartmentColors, sectionColor, sectionColors } from "./morphology/model/colouring";
+import { buildNetworkLayout } from "./morphology/model/networkLayout";
+import { createMorphologyStore, MorphologyStoreContext } from "./morphology/stores/morphologyStore";
+import { useWebGPUGate } from "./morphology/useWebGPUGate";
 import { QuantityInput } from "./QuantityInput";
-
-// --- Types & Helpers ---
-
-interface ProcessedSegment {
-  id: string;
-  uniqueKey: string;
-  section: SectionFragment;
-  start: THREE.Vector3;
-  end: THREE.Vector3;
-  direction: THREE.Vector3;
-  color: string;
-  depth: number;
-}
-
-const getColorFromIndex = (index: number) => {
-  const hue = (index * 137.508) % 360;
-  return `hsl(${hue}, 70%, 60%)`;
-};
 
 const getParentInfo = (section: SectionFragment) => {
   if (!section.parent) return null;
@@ -59,261 +51,27 @@ const getParentInfo = (section: SectionFragment) => {
   return { id: conn.parent, location: conn.parentLocation ?? 1 };
 };
 
-const getPerpendicularVector = (vec: THREE.Vector3) => {
-  const v = vec.clone().normalize();
-  const helper = Math.abs(v.dot(new THREE.Vector3(0, 1, 0))) > 0.9
-    ? new THREE.Vector3(1, 0, 0)
-    : new THREE.Vector3(0, 1, 0);
-  return new THREE.Vector3().crossVectors(v, helper).normalize();
+/**
+ * The editor's `?` sheet: the viewer's navigation, minus the section panels
+ * (the editor selects instead), plus the editing gestures.
+ */
+const EDITOR_SHORTCUTS: ShortcutGroups = {
+  "3D view": MORPHOLOGY_SHORTCUTS["3D view"].filter(
+    (s) => !s.action.toLowerCase().includes("panel"),
+  ),
+  Editing: [
+    { keys: ["Click section"], action: "Select it (or pick it as the new parent while rebranching)" },
+    { keys: ["Shift", "Click selected"], action: "Add a child where you clicked" },
+    { keys: ["+"], action: "Add a child at the selected section's end" },
+    { keys: ["Click empty space"], action: "Deselect" },
+  ],
+  General: [
+    { keys: ["F"], action: "Frame the whole model" },
+    { keys: ["?"], action: "Show these shortcuts" },
+  ],
 };
 
-// --- CORE LOGIC: Equidistant Spacing (Copied from NeuronRenderer) ---
-
-const calculateBranchDirection = (
-  parentDir: THREE.Vector3,
-  location: number,
-  siblingIndex: number,
-  siblingCount: number,
-  groupSeed: number
-) => {
-  const axis = parentDir.clone().normalize();
-  const groupPhase = (groupSeed % 100) * 0.01 * Math.PI * 2;
-
-  // Perpendicular "side" direction, with co-located siblings spread evenly
-  // around the parent axis.
-  const radial = getPerpendicularVector(axis);
-  const azimuth = siblingCount > 1 ? (siblingIndex * (Math.PI * 2)) / siblingCount : 0;
-  radial.applyAxisAngle(axis, azimuth + groupPhase);
-
-  // Axial bias runs smoothly from -1 (points back, at the parent's start) through
-  // 0 (points sideways, mid-segment) to +1 (points forward, at the parent's end).
-  // This lets a branch swing continuously onto the side of its parent as it is
-  // moved away from a tip — no dead zone, no discontinuous jump.
-  const axialBias = (location - 0.5) * 2;
-
-  // Split between axial and radial so the result stays unit length.
-  let radialMag = Math.sqrt(Math.max(0, 1 - axialBias * axialBias));
-
-  // Stop co-located siblings collapsing onto each other at the tips by forcing a
-  // minimum sideways spread — this re-creates the classic bifurcation cone.
-  if (siblingCount > 1) radialMag = Math.max(radialMag, Math.sin(Math.PI / 4));
-  const axialMag = Math.sign(axialBias) * Math.sqrt(Math.max(0, 1 - radialMag * radialMag));
-
-  const finalDir = axis.multiplyScalar(axialMag).add(radial.multiplyScalar(radialMag));
-  if (finalDir.lengthSq() < 1e-6) return radial.clone().normalize();
-  return finalDir.normalize();
-};
-
-// --- Layout Hook ---
-
-const useNeuronLayout = (
-  sections: SectionFragment[],
-  categoryColor?: Map<string, string>,
-) => {
-  return useMemo(() => {
-    const sectionMap = new Map<string, SectionFragment>();
-    const childrenMap = new Map<string, SectionFragment[]>();
-
-    sections.forEach(sec => {
-      sectionMap.set(sec.id, sec);
-      const parentInfo = getParentInfo(sec);
-      if (parentInfo) {
-        if (!childrenMap.has(parentInfo.id)) childrenMap.set(parentInfo.id, []);
-        childrenMap.get(parentInfo.id)?.push(sec);
-      }
-    });
-
-    const segments: ProcessedSegment[] = [];
-    const geometryMap = new Map<string, { start: THREE.Vector3, end: THREE.Vector3, direction: THREE.Vector3 }>();
-
-    const processSection = (
-      sectionId: string,
-      parentGeom: { start: THREE.Vector3, end: THREE.Vector3, direction: THREE.Vector3 } | null,
-      depth: number
-    ) => {
-      const section = sectionMap.get(sectionId);
-      if (!section) return;
-
-      const allChildren = childrenMap.get(sectionId) || [];
-      const parentInfo = getParentInfo(section);
-
-      let start: THREE.Vector3;
-      let direction: THREE.Vector3;
-
-      if (parentGeom && parentInfo) {
-        const loc = parentInfo.location;
-
-        start = new THREE.Vector3().lerpVectors(parentGeom.start, parentGeom.end, loc);
-
-        const coLocatedSiblings = (childrenMap.get(parentInfo.id) || []).filter(s => {
-          const p = getParentInfo(s);
-          return p && Math.abs(p.location - loc) < 0.001;
-        });
-
-        coLocatedSiblings.sort((a, b) => a.id.localeCompare(b.id));
-
-        const myIndex = coLocatedSiblings.findIndex(s => s.id === section.id);
-        const siblingCount = coLocatedSiblings.length;
-
-        const parentKey = `${parentInfo.id}-${loc.toFixed(2)}`;
-        const groupSeed = parentKey.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
-        direction = calculateBranchDirection(
-          parentGeom.direction,
-          loc,
-          myIndex,
-          siblingCount,
-          groupSeed
-        );
-
-      } else {
-        start = new THREE.Vector3(0, 0, 0);
-        direction = new THREE.Vector3(0, 1, 0);
-      }
-
-      // `length` is now a `Length` quantity string ("10 µm"); normalise to µm.
-      const length = toBase(section.length, "length", 10);
-      const end = start.clone().add(direction.clone().normalize().multiplyScalar(length));
-
-      segments.push({
-        id: section.id,
-        uniqueKey: section.id,
-        section,
-        start,
-        end,
-        direction,
-        // Tint by the section's compartment color (matched on `category`) when
-        // set; otherwise fall back to the depth-based hue.
-        color: categoryColor?.get(section.category ?? "") ?? getColorFromIndex(depth),
-        depth
-      });
-
-      geometryMap.set(section.id, { start, end, direction });
-
-      allChildren.forEach(child => {
-        processSection(child.id, { start, end, direction }, depth + 1);
-      });
-    };
-
-    const roots = sections.filter(s => !s.parent);
-    const entryPoints = roots.length > 0 ? roots : [sections[0]];
-
-    entryPoints.forEach(root => processSection(root.id, null, 0));
-
-    return segments;
-  }, [sections, categoryColor]);
-};
-
-
-const InteractiveSegment = ({
-  segment,
-  isSelected,
-  onSelect,
-  onAddChild,
-}: {
-  segment: ProcessedSegment,
-  isSelected: boolean,
-  onSelect: (id: string) => void,
-  onAddChild: (parentId: string, location?: number) => void,
-}) => {
-  const { start, end, direction, section, color } = segment;
-  // `diam` is a `Length` quantity string ("1 µm"); normalise to µm for geometry.
-  const diamUm = toBase(section.diam, "length", 1);
-  const length = start.distanceTo(end);
-  const mid = start.clone().add(end).multiplyScalar(0.5);
-
-  const quaternion = new THREE.Quaternion();
-  quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
-
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
-  const [hovered, setHovered] = useState(false);
-  const [hoverLocation, setHoverLocation] = useState<number | null>(null);
-  useCursor(hovered);
-
-  useFrame((state) => {
-    if (isSelected && materialRef.current) {
-      const t = state.clock.getElapsedTime();
-      const intensity = (Math.sin(t * 10) + 1) / 2;
-      materialRef.current.emissive.setHSL(0.9, 1, 0.2 * intensity);
-    } else if (materialRef.current) {
-      materialRef.current.emissive.setHex(0x000000);
-    }
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSegmentClick = (e: any) => {
-    e.stopPropagation();
-    if (isSelected && e.shiftKey) {
-      // Add child at location
-      const point = e.point.clone();
-      const vec = point.sub(start);
-      const projectedLength = vec.dot(direction.clone().normalize());
-      const location = Math.max(0, Math.min(1, projectedLength / length));
-      onAddChild(segment.id, location);
-    } else {
-      onSelect(segment.id);
-    }
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handlePointerMove = (e: any) => {
-    e.stopPropagation();
-    setHovered(true);
-    const point = e.point.clone();
-    const vec = point.sub(start);
-    const projectedLength = vec.dot(direction.clone().normalize());
-    const location = Math.max(0, Math.min(1, projectedLength / length));
-    setHoverLocation(location);
-  };
-
-  // Hit-zone radius: a comfortable minimum so thin branches stay easy to click,
-  // and always a bit fatter than the visible cylinder.
-  const hitRadius = Math.max(diamUm / 2 + 1.5, 2);
-
-  return (
-    <group>
-      {/* Invisible, fatter cylinder that captures pointer events. */}
-      <mesh
-        position={mid}
-        quaternion={quaternion}
-        onClick={handleSegmentClick}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => { setHovered(false); setHoverLocation(null); }}
-        onPointerMove={handlePointerMove}
-      >
-        <cylinderGeometry args={[hitRadius, hitRadius, length, 12]} />
-        <meshStandardMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
-
-      {/* Visible cylinder (non-interactive; the hit-zone above handles input). */}
-      <mesh position={mid} quaternion={quaternion} raycast={() => null}>
-        <cylinderGeometry args={[diamUm / 2, diamUm / 2, length, 8]} />
-        <meshStandardMaterial ref={materialRef} color={isSelected ? "hotpink" : color} />
-      </mesh>
-
-      {/* Hover Location Info */}
-      {hovered && hoverLocation !== null && (
-        <Html position={start.clone().add(direction.clone().normalize().multiplyScalar(length * hoverLocation))}>
-          <div className="pointer-events-none bg-black/80 text-white text-xs px-1 rounded">
-            {(hoverLocation * 100).toFixed(0)}%
-          </div>
-        </Html>
-      )}
-
-      {/* Add Child Button (Visual cue) */}
-      {isSelected && (
-        <Html position={end}>
-          <div className="pointer-events-none flex flex-col items-center">
-            <div className="pointer-events-auto">
-              <Button size="sm" variant="secondary" className="h-6 w-6 rounded-full p-0" onClick={() => onAddChild(segment.id)}>+</Button>
-            </div>
-          </div>
-        </Html>
-      )}
-    </group>
-  );
-};
-
+const NO_HIGHLIGHT: readonly string[] = [];
 
 export const NeuronEditor = ({
   initialModel,
@@ -327,6 +85,13 @@ export const NeuronEditor = ({
   // The fragment has `config.cells`.
 
   const { openSheet } = useDialog();
+  // The editor hosts its own morphology viewer: one store for the HUD, the
+  // layer settings and the hover, shared with the canvas below.
+  const [viewStore] = useState(() => createMorphologyStore({ displayMode: "3D" }));
+  const gate = useWebGPUGate();
+  const colorBy = useStore(viewStore, (s) => s.morphology.colorBy);
+  const uniformColor = useStore(viewStore, (s) => s.morphology.uniformColor);
+  const hoverFeed = useRef<HoverFeed["current"]>(null);
   const [cells, setCells] = useState(initialModel.config.cells);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [rebranchingId, setRebranchingId] = useState<string | null>(null);
@@ -668,47 +433,60 @@ export const NeuronEditor = ({
 
   // Compartment id → CSS color, so the live 3D view (and the section swatches)
   // reflect compartment colors as they're edited.
-  const categoryColor = useMemo(() => {
-    const map = new Map<string, string>();
-    compartments.forEach((c) => {
-      const css = rgbaToCss(c.color);
-      if (css) map.set(c.id, css);
-    });
-    return map;
-  }, [compartments]);
+  const categoryColor = useMemo(
+    () => compartmentColors([{ biophysics: { compartments } }]),
+    [compartments],
+  );
 
-  const segments = useNeuronLayout(sections, categoryColor);
-  const colorMap = useMemo(() => new Map(segments.map(s => [s.id, s.color])), [segments]);
-  const { points, target } = useMemo(() => computeRootCentroidFit(segments), [segments]);
-
-  // Network layer (synapses / stimulators / connections) — placed against the
-  // live section geometry so it tracks edits. Net data comes from the original
-  // model (the editor doesn't mutate it here).
-  const [showNetwork, setShowNetwork] = useState(true);
-  const [hoveredNet, setHoveredNet] = useState<HoveredNet | null>(null);
-  const segmentGeom = useMemo<Map<string, SegmentGeom>>(
+  // The shared morphology — real coords where the section has them, the
+  // synthetic layout for the rest (every section added here starts coords-less).
+  const morphology = useMemo(
+    () => buildMorphology([{ id: activeCellId ?? "cell", topology: { sections } }]),
+    [sections, activeCellId],
+  );
+  const baseColors = useMemo(
+    () =>
+      sectionColors(morphology, {
+        colorBy,
+        compartments: categoryColor,
+        importance: null,
+        uniform: uniformColor,
+      }),
+    [morphology, colorBy, categoryColor, uniformColor],
+  );
+  // Swatches in the section list always show the compartment tint.
+  const colorMap = useMemo(
     () =>
       new Map(
-        segments.map((s) => [
-          s.section.id,
-          {
-            start: s.start,
-            end: s.end,
-            radius: toBase(s.section.diam, "length", 1) / 2,
-          },
+        morphology.sections.map((s) => [
+          s.id,
+          sectionColor(s, {
+            colorBy: "compartment",
+            compartments: categoryColor,
+            importance: null,
+            uniform: uniformColor,
+          }),
         ]),
       ),
-    [segments],
+    [morphology, categoryColor, uniformColor],
   );
+  const selectedSection = selectedSectionId ? morphology.byId.get(selectedSectionId) ?? null : null;
+  const highlight = useMemo(
+    () => (selectedSectionId ? [selectedSectionId] : NO_HIGHLIGHT),
+    [selectedSectionId],
+  );
+
+  // Network layer (synapses / stimulators / connections) — placed against the
+  // live morphology so it tracks edits, from the net data being edited here.
   const network = useMemo(
-    () => buildNetworkLayout(modelWide, segmentGeom),
-    [modelWide, segmentGeom],
+    () => buildNetworkLayout(modelWide, morphology),
+    [modelWide, morphology],
   );
-  useCursor(Boolean(hoveredNet));
 
   return (
+    <MorphologyStoreContext.Provider value={viewStore}>
     <MechanismCatalogProvider>
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative overflow-hidden bg-black">
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 w-80 max-h-[calc(100vh-2rem)]">
         <Card className="p-4 flex flex-col gap-4 h-full bg-card/95 backdrop-blur-sm">
           <div className="flex-none space-y-3">
@@ -1035,43 +813,48 @@ export const NeuronEditor = ({
         </Card>
       </div>
 
-      <Canvas camera={{ position: [50, 50, 50], fov: 50 }} onPointerMissed={() => setSelectedSectionId(null)}>
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} />
-        <OrbitControls makeDefault />
-        <FitCamera points={points} target={target} />
-
-        {segments.map(segment => (
-          <InteractiveSegment
-            key={segment.uniqueKey}
-            segment={segment}
-            isSelected={segment.id === selectedSectionId}
-            onSelect={handleSegmentSelect}
-            onAddChild={addSection}
-          />
-        ))}
-
-        {showNetwork && network.hasData && (
-          <NetworkLayer network={network} onHover={setHoveredNet} />
-        )}
-        {hoveredNet && <NetworkTooltip hovered={hoveredNet} />}
-      </Canvas>
-
-      {network.hasData && (
-        <div className="absolute top-4 right-4 z-10">
-          <NetworkControl
-            show={showNetwork}
-            onToggle={() => setShowNetwork((v) => !v)}
-            counts={{
-              synapses: network.synapses.length,
-              stimulators: network.stimulators.length,
-              connections: network.connections.length,
+      {gate.phase === "ready" ? (
+        <MorphologyCanvas
+          morphology={morphology}
+          onPointerMissed={() => setSelectedSectionId(null)}
+        >
+          <SectionTubes
+            morphology={morphology}
+            baseColors={baseColors}
+            highlight={highlight}
+            onSectionClick={(hit, e) => {
+              if (hit.section.id === selectedSectionId && e.shiftKey) {
+                addSection(hit.section.id, locationOf(hit.section, hit.segment, hit.point));
+              } else {
+                handleSegmentSelect(hit.section.id);
+              }
             }}
-            unmatched={network.unmatchedSynapses}
+            onSectionMove={(hit) => hoverFeed.current?.(hit)}
           />
+          <NetworkMarks network={network} />
+          <EditorHandles
+            hoverFeed={hoverFeed}
+            selected={selectedSection}
+            onAddChild={(parentId) => addSection(parentId)}
+          />
+        </MorphologyCanvas>
+      ) : gate.phase === "unsupported" ? (
+        <div className="absolute inset-0 grid place-items-center p-6 text-center text-xs text-white/60">
+          {gate.message}
         </div>
-      )}
+      ) : null}
+
+      {/* The viewer's layer cards, floating: the editor has no sidebar. */}
+      <div className="pointer-events-auto absolute right-2 top-2 z-10 flex w-64 flex-col gap-1.5">
+        <MorphologyLayerCard morphology={morphology} importance={null} />
+        <NetworkLayerCard network={network} />
+      </div>
+
+      <MorphologyScaleBar />
+      {gate.phase === "ready" && <MorphologyModeControls showDisplaySwitch={false} />}
+      <MorphologyShortcuts groups={EDITOR_SHORTCUTS} />
     </div>
     </MechanismCatalogProvider>
+    </MorphologyStoreContext.Provider>
   );
 };

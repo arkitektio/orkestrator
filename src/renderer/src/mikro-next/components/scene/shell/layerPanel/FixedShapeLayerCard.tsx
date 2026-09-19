@@ -13,7 +13,7 @@ import {
   Segment,
   SegmentGroup,
   layerCardShellClasses,
-} from "../../platform/layerui/cardControls";
+} from "@/lib/scene/layerui/cardControls";
 import type { LayerState } from "../../platform/stores/sceneStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewStoreApi } from "../../platform/stores/viewStore";

@@ -40,7 +40,7 @@ export const StackLayoutManager = () => {
         viewer.layoutMode +
         "|" +
         drawn
-          .map((v) => `${v.id}:${v.channelCount}:${v.valueDimension ?? ""}:${v.label}:${v.color}:${v.channelLabels.join("/")}`)
+          .map((v) => `${v.id}:${v.kind}:${v.channelCount}:${v.valueDimension ?? ""}:${v.label}:${v.color}:${v.channelLabels.join("/")}`)
           .join(",");
       if (key === lastKey) return;
       lastKey = key;
@@ -55,6 +55,7 @@ export const StackLayoutManager = () => {
             valueDimension: v.valueDimension,
             channelCount: v.channelCount,
             channelLabels: v.channelLabels,
+            overlayable: v.kind === "trace",
           })),
           viewer.layoutMode,
         ),

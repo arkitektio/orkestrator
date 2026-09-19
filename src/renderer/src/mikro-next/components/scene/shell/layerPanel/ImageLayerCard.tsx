@@ -5,7 +5,7 @@ import { perfMonitor } from "../../platform/perf/perfMonitor";
 import type { LayerState } from "../../platform/stores/sceneStore";
 import { useRenderGraphEditor } from "../../features/volume/rendergraph/RenderNodeEditor";
 import { LayerGraphFlyout } from "./LayerGraphFlyout";
-import { layerCardShellClasses } from "../../platform/layerui/cardControls";
+import { layerCardShellClasses } from "@/lib/scene/layerui/cardControls";
 import { LayerRow } from "./LayerRow";
 import { UnplannableNotice } from "./UnplannableNotice";
 import { type LayerCardProps } from "./cardShell";

@@ -87,3 +87,38 @@ describe("effectiveClim", () => {
     expect(clim.hi).toBeGreaterThan(clim.lo);
   });
 });
+
+describe("stackLayout OVERLAY", () => {
+  const trace = (id: string, extra: Partial<StackableLayer> = {}) => view(id, { overlayable: true, ...extra });
+
+  it("puts every trace in one row, whatever its dimension", () => {
+    const layout = stackLayout(
+      [trace("a"), trace("b", { valueDimension: "current", valueUnit: "pA" }), trace("c", { channelCount: 3 })],
+      "OVERLAY",
+    );
+    expect(layout.rowCount).toBe(1);
+    expect(layout.rows[0]).toMatchObject({ layerIds: ["a", "b", "c"], overlay: true, unit: null });
+    // Every channel fills the whole row.
+    expect(layout.bands[bandKey("c", 2)].top).toBeCloseTo(layout.bands[bandKey("a", 0)].top, 9);
+    expect(layout.bands[bandKey("c", 2)].bottom).toBeCloseTo(layout.bands[bandKey("a", 0)].bottom, 9);
+  });
+
+  it("keeps each layer on its OWN scale", () => {
+    const layout = stackLayout([trace("a"), trace("b")], "OVERLAY");
+    expect(layout.bands[bandKey("a", 0)].climIds).toEqual(["a"]);
+    expect(layout.bands[bandKey("b", 0)].climIds).toEqual(["b"]);
+  });
+
+  it("names the unit only when every line shares it", () => {
+    expect(stackLayout([trace("a"), trace("b")], "OVERLAY").rows[0].unit).toBe("mV");
+  });
+
+  it("gives rasters and event tables rows of their own, below the plot", () => {
+    const layout = stackLayout(
+      [view("spikes", { overlayable: false, valueUnit: null, valueDimension: null }), trace("a")],
+      "OVERLAY",
+    );
+    expect(layout.rowCount).toBe(2);
+    expect(layout.rows.map((row) => row.layerIds)).toEqual([["a"], ["spikes"]]);
+  });
+});

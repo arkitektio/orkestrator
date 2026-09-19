@@ -134,7 +134,59 @@ fragment ExpLens on Lens {
 fragment ListArrayDataset on ArrayDataset {
   id
   name
+  description
+  axisNames
+  shape
+  multiscale
+  # What the server says it IS from its axes — the "By kind" pages filter on it.
+  spec
   valueUnit
+  createdAt
+  # Set when the dataset was computed by integrating a neuron model.
+  simulation {
+    id
+    duration
+    dt
+    model {
+      id
+      name
+    }
+  }
+}
+
+# The dataset page: the renderer's view of it (`ExpArrayDataset`) plus what the
+# page says about it — where it came from, which experiments already draw it
+# (the page's switcher; there is no nominated one), its folder and provenance.
+fragment DetailArrayDataset on ArrayDataset {
+  ...ExpArrayDataset
+  createdAt
+  creator {
+    sub
+  }
+  folder {
+    id
+    name
+  }
+  spec
+  simulation {
+    id
+    duration
+    dt
+    model {
+      id
+      name
+    }
+  }
+  experimentLayers {
+    id
+    experiment {
+      id
+      name
+    }
+  }
+  provenanceEntries {
+    ...ProvenanceEntry
+  }
 }
 
 # The full metadata payload of one anchor (`GetExpLensAnchors`): `ExpAnchor`

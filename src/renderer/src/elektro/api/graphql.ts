@@ -481,8 +481,8 @@ export type ArrayDataset = {
   pyramidIsLabelCompliant?: Maybe<Scalars['Boolean']['output']>;
   /** The dataset's shape: that of its level-0 array */
   shape: Array<Scalars['Int']['output']>;
-  /** The simulation runs this dataset is timed on: those whose clock its sample grid has a sampling law or a time lookup onto. Read off the graph, never stored */
-  simulations: Array<Simulation>;
+  /** What computed this dataset, if it was simulated: the `simulation` spoke of its whole-dataset anchor -- the model that was integrated, its dt and duration. Null for a recording, and for a run's input */
+  simulation?: Maybe<SimulationState>;
   /** The files this dataset was converted from -- the ABF or NWB file a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
   /** What this dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation: the one spatial spec its SPACE axis count denotes, then a modifier per acquisition axis present. A (t, c) recording is [SCALAR, TIMESERIES, MULTICHANNEL]. Presence, not size: a one-channel CHANNEL axis still counts. Empty while the intrinsic system does not exist yet */
@@ -850,8 +850,14 @@ export type Cell = {
   __typename?: 'Cell';
   /** The biophysics model of the cell, which defines the properties of the cell such as its compartments, mechanisms, and parameters. */
   biophysics: Biophysics;
+  /** This cell's id from outside its model, 'model:cell' (each part percent-encoded): what the `cell` query takes. `id` is only unique within the model. Null when the cell was not read from a stored model */
+  compoundId?: Maybe<Scalars['ID']['output']>;
   /** The unique identifier of the cell within the model. */
   id: Scalars['String']['output'];
+  /** The neuron model this cell is part of. Null when the cell was not read from a stored model */
+  model?: Maybe<NeuronModel>;
+  /** Where this cell was recorded: the datasets with a recording site on it, grouped by the clock they are timed onto -- one session per run. Read from the model's recording sites, in the viewer's organization; untimed datasets come last, under a null clock. Empty when the cell was not read from a stored model */
+  sessions: Array<NeuronModelSession>;
   /** The topology of the cell, which defines the structure of the cell such as its morphology and connectivity. */
   topology: Topology;
 };
@@ -1173,6 +1179,8 @@ export type CoordinateAnchor = {
   recordingSite?: Maybe<RecordingSite>;
   /** The rig state recorded at this coordinate */
   rig?: Maybe<RigState>;
+  /** (simulation) The model and integrator parameters that computed the values at this coordinate */
+  simulation?: Maybe<SimulationState>;
   /** (simulation) Where on the model the values at this coordinate were injected */
   stimulusSite?: Maybe<StimulusSite>;
   valueHistogram?: Maybe<ValueHistogram>;
@@ -1197,6 +1205,7 @@ export type CoordinateAnchorInput = {
   label?: InputMaybe<LabelInput>;
   recordingSite?: InputMaybe<RecordingSiteInput>;
   rig?: InputMaybe<RigStateInput>;
+  simulation?: InputMaybe<SimulationStateInput>;
   stimulusSite?: InputMaybe<StimulusSiteInput>;
   valueHistogram?: InputMaybe<ValueHistogramInput>;
   valueUnit?: InputMaybe<ValueUnitInput>;
@@ -1234,7 +1243,7 @@ export type CoordinateSystem = {
   /** Which registered sources are in view of an axis-aligned region asked in *this* system's coordinates, each with its extent here, the path of edges that places it, and its in-view coordinate anchors. The field hangs off the coordinate system because the system IS the frame the region is written in -- there is no ambient world to be wrong about, and no camera: a region is a box, and projecting a frustum into one is the client's job. `region` names a leading prefix of this system's axes and says nothing about the rest, so a 2D box asked of a 4D space constrains only its first two axes. Sources the server cannot bound (a mesh collection's vertices and a table's rows live in Parquet it never opens) come back with an empty `extent` and an `extentState` saying why, rather than being culled -- refusing to bound something is not the same as knowing it is out of view. Nothing is stored: the extent is composed per request from the shapes and the edges, so refining a registration moves everything that looks through it and no cached box can disagree. A source registered per index -- a per-channel or per-timepoint correction -- comes back with `extentState: CONDITIONAL` and no extent unless you pass `at`: it is genuinely in the space, but which box it occupies depends on the coordinate. Individual annotations are out of scope; selecting those needs the region pulled back into their frame, and this server composes forward only */
   inView: Array<SourcePlacement>;
   name: Scalars['String']['output'];
-  /** Every space whose data can be composed here: those reaching this one across steps that compose into one affine map, walking the transformation edges. Composed, not merely connected -- a space reaching this one only across a FIELD relates to it by the values of an array and yields no matrix to draw with, so it is not here. The same set the `placeableIn` filters answer from, so a picker and a layer mutation cannot disagree. Distinct from `coordinateGraph`, which walks the undirected *neighbourhood* -- this is directed, and asks who can get in */
+  /** Every space whose data can be composed here: those reaching this one across steps that compose into one affine map, walking the transformation edges. Composed, not merely connected -- a space reaching this one only across a FIELD relates to it by the values of an array and yields no matrix to draw with, so it is not here. The same set the `placeableIn` filters answer from, so a picker and a layer mutation cannot disagree. Distinct from `coordinateGraph`, which walks the undirected *neighbourhood* -- this is directed, and asks who can get in. With `requireAffine: false` (elektro's) it answers *what is in* this space instead: a variable-step run timed onto a clock by a lookup is in the clock's session though no matrix draws it */
   placedSystems: Array<CoordinateSystem>;
   /** Provenance entries for this coordinate system: who created it, and every subsequent change */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -1262,6 +1271,12 @@ export type CoordinateSystemInViewArgs = {
 
 
 /** A named coordinate space: a node in the transformation graph. Its axes are ordered, and that order is the order of the array's dimensions */
+export type CoordinateSystemPlacedSystemsArgs = {
+  requireAffine?: Scalars['Boolean']['input'];
+};
+
+
+/** A named coordinate space: a node in the transformation graph. Its axes are ordered, and that order is the order of the array's dimensions */
 export type CoordinateSystemProvenanceEntriesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
@@ -1279,7 +1294,7 @@ export type CoordinateSystemFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<CoordinateSystemFilter>;
   OR?: InputMaybe<CoordinateSystemFilter>;
-  /** Filter to the spaces something composes over without living in them: an experiment's world, a block's or a segment's or a simulation's clock. False finds the spaces nothing is laid out in */
+  /** Filter to the spaces something composes over without living in them: an experiment's world. False finds the spaces nothing is laid out in */
   composedOver?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter for items created after this datetime */
   createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
@@ -1588,14 +1603,11 @@ export type CreateSeriesLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-/** One run of a neuron model: the model, the integrator's parameters, and a clock. Optionally, the array datasets it produced and how their samples are timed on that clock. What was recorded or injected where is not stated here: it is a `recordingSite` / `stimulusSite` on each dataset's anchors, said at `createArrayDataset` */
-export type CreateSimulationInput = {
-  datasets?: Array<Scalars['ID']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  dt?: InputMaybe<Scalars['Duration']['input']>;
-  duration: Scalars['Duration']['input'];
-  model: Scalars['ID']['input'];
-  name: Scalars['String']['input'];
+/** Array datasets recorded together, timed onto one clock: one sampling law (or one time lookup) per dataset, onto a new clock or an existing one. A recording session, or one run of a neuron model -- a run is its clock, and the outputs timed onto one clock must agree on what was run (their `simulation` anchors) */
+export type CreateSessionInput = {
+  clock?: InputMaybe<Scalars['ID']['input']>;
+  datasets: Array<Scalars['ID']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
   sampling?: InputMaybe<SamplingInput>;
   timeDataset?: InputMaybe<Scalars['ID']['input']>;
   timeUnit?: Scalars['Unit']['input'];
@@ -1841,11 +1853,6 @@ export type DeleteRegistrationInput = {
   lens?: InputMaybe<Scalars['ID']['input']>;
   /** The shared space the registration goes into */
   world: Scalars['ID']['input'];
-};
-
-/** Input for deleting a simulation by ID */
-export type DeleteSimulationInput = {
-  id: Scalars['ID']['input'];
 };
 
 /** Input for deleting a sparse dataset by ID */
@@ -3461,8 +3468,8 @@ export type Mutation = {
   createSamplingLaw: Transformation;
   /** Draw a numeric column of a table with a TIME column as a line over time */
   createSeriesLayer: SeriesLayer;
-  /** Create a simulation: a run of a neuron model, its integrator parameters and its clock, and a timing edge onto that clock for each array dataset named. Creates no data; what was recorded where is each dataset's `recordingSite` / `stimulusSite` */
-  createSimulation: Simulation;
+  /** Time the named array datasets onto one clock -- a new one, or an existing one for a second batch -- one sampling law (or time lookup) each: a recording session, or one run of a neuron model. Refused unless every dataset has a TIME axis with the same number of samples, and unless the simulated outputs on the clock agree on what was run */
+  createSession: CoordinateSystem;
   /** Create a sparse dataset from an uploaded sparse store. Each INDEX axis says what its positions are through `identifiedBy`; one axis may be TIME (elektro's own) -- a spike raster's samples, identified by nothing and placed on a clock with `createSamplingLaw`. The spec, shape and layouts are read from the store, never declared */
   createSparseDataset: SparseDataset;
   /** Draw a spike raster: a tick per spike and a row per unit, coloured and ordered by the unit table */
@@ -3481,7 +3488,7 @@ export type Mutation = {
   deleteAnnotationCollection: Scalars['ID']['output'];
   /** Delete an existing array dataset, with its levels, its lenses, every interpretation of it, and the coordinate systems nothing else lives in. Its stores are flagged, not deleted: `purge_orphaned_stores` collects them after a grace period */
   deleteArrayDataset: Scalars['ID']['output'];
-  /** Delete an unused shared coordinate system. Refused while data lives in it, while anything is laid out over it (an experiment, a simulation), or while any transformation edge touches it. This is the only door a shared space leaves through -- deleting an experiment never deletes one */
+  /** Delete an unused shared coordinate system. Refused while data lives in it, while anything is laid out over it (an experiment), or while any transformation edge touches it. This is the only door a shared space leaves through -- deleting an experiment never deletes one */
   deleteCoordinateSystem: Scalars['ID']['output'];
   /** Delete one downsampled level of a dataset. Level 0 cannot be deleted: it is the dataset */
   deleteDataArray: Scalars['ID']['output'];
@@ -3509,8 +3516,6 @@ export type Mutation = {
   deleteOrphanedCoordinateSystems: Array<Scalars['ID']['output']>;
   /** Un-register a source from a space by naming the source and the space rather than the edge. Deletes every edge from the source's spaces into that one -- rivals are allowed, so there is no single edge to mean -- and returns their ids. An UNMAPPABLE declaration is not a placement and is never matched */
   deleteRegistration: Array<Scalars['ID']['output']>;
-  /** Delete a simulation and its clock, which takes the timing edges onto it along. The array datasets it timed stay */
-  deleteSimulation: Scalars['ID']['output'];
   /** Delete a sparse dataset, and the coordinate system it owned if nothing else lives in it. Refused while a layer's picker names it */
   deleteSparseDataset: Scalars['ID']['output'];
   /** Delete a table dataset, and the coordinate system it owned if nothing else lives in it. Refused while a layer's picker or a column elsewhere references it */
@@ -3753,8 +3758,8 @@ export type MutationCreateSeriesLayerArgs = {
 };
 
 
-export type MutationCreateSimulationArgs = {
-  input: CreateSimulationInput;
+export type MutationCreateSessionArgs = {
+  input: CreateSessionInput;
 };
 
 
@@ -3865,11 +3870,6 @@ export type MutationDeleteNeuronModelArgs = {
 
 export type MutationDeleteRegistrationArgs = {
   input: DeleteRegistrationInput;
-};
-
-
-export type MutationDeleteSimulationArgs = {
-  input: DeleteSimulationInput;
 };
 
 
@@ -4285,7 +4285,10 @@ export type NeuronModel = {
   /** The recording sites that are part of this model: every place on it some dataset's values were recorded from, in the viewer's organization */
   recordingSites: Array<RecordingSite>;
   sectionDominance: Array<SectionDominance>;
-  simulations: Array<Simulation>;
+  /** The model's simulated datasets grouped by the clock they are timed onto: one session per run, since a run is its clock. Read off the graph, never stored. A dataset timed onto two clocks is in both; the datasets timed onto none come last, under a null clock */
+  sessions: Array<NeuronModelSession>;
+  /** The array datasets computed by integrating this model: those carrying a `simulation` anchor on it, in the viewer's organization. A run is its clock: the outputs of one run are those timed onto one clock */
+  simulatedDatasets: Array<ArrayDataset>;
   /** The stimulus sites that are part of this model: every place on it some dataset's values were injected at, in the viewer's organization */
   stimulusSites: Array<StimulusSite>;
 };
@@ -4323,13 +4326,6 @@ export type NeuronModelSectionDominanceArgs = {
   weightConductance?: InputMaybe<Scalars['Float']['input']>;
 };
 
-
-export type NeuronModelSimulationsArgs = {
-  filters?: InputMaybe<SimulationFilter>;
-  ordering?: Array<SimulationOrder>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
 export type NeuronModelFilter = {
   AND?: InputMaybe<NeuronModelFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
@@ -4352,6 +4348,15 @@ export type NeuronModelFilter = {
 export type NeuronModelOrder =
   { createdAt: Ordering; id?: never; }
   |  { createdAt?: never; id: Ordering; };
+
+/** One session of a neuron model: a clock, and the model's datasets timed onto it -- one run, since a run is its clock */
+export type NeuronModelSession = {
+  __typename?: 'NeuronModelSession';
+  /** The clock the datasets are timed onto: the run. Null for the model's simulated datasets timed onto no clock yet */
+  clock?: Maybe<CoordinateSystem>;
+  /** The datasets timed onto this clock, in creation order */
+  datasets: Array<ArrayDataset>;
+};
 
 export type OffsetPaginationInput = {
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -4493,6 +4498,8 @@ export type PinModelWorkspaceInput = {
 export type PlaceableFilter = {
   /** Keep only what *needed* a lineage tree to get here: the filtered, decimated and sorted datasets placed by an ancestor's registration. What the space registers directly is dropped */
   derivedOnly?: InputMaybe<Scalars['Boolean']['input']>;
+  /** (elektro) Set false to ask *what is in this space* rather than *what can be drawn in it*: also admit what reaches it across a FIELD -- a variable-step run timed onto its clock by a lookup, a spike train. What is in a session is what is placed onto its clock; a picker keeps the strict default, which only offers what one affine map can draw */
+  requireAffine?: InputMaybe<Scalars['Boolean']['input']>;
   /** The space to be placed into. A *space*, not an experiment: every experiment over one world offers the same candidates. Pass `experiment.world.id` to ask it of an experiment */
   space: Scalars['ID']['input'];
 };
@@ -4644,6 +4651,8 @@ export type Query = {
   arrayDataset: ArrayDataset;
   /** List array datasets: N-dimensional arrays with named dimensions and anchored metadata -- a recording, a stimulus, a vector of sample times, a unit's waveform templates */
   arrayDatasets: Array<ArrayDataset>;
+  /** Get one cell of a neuron model by its compound id, 'model:cell' (see `Cell.compoundId`) */
+  cell: Cell;
   /** Returns a list of cells in a model */
   cells: Array<Cell>;
   /** List everything filed in a folder: its sub-folders, files, array, table and sparse datasets and annotation collections */
@@ -4698,10 +4707,10 @@ export type Query = {
   /** Returns a single neuron model by ID */
   neuronModel: NeuronModel;
   neuronModels: Array<NeuronModel>;
+  /** Get one section of a cell of a neuron model by its compound id, 'model:cell:section' (see `Section.compoundId`) */
+  section: Section;
   /** The sections of one cell of a neuron model, read from the model's config */
   sections: Array<Section>;
-  simulation: Simulation;
-  simulations: Array<Simulation>;
   /** Get a single sparse dataset by ID */
   sparseDataset: SparseDataset;
   /** List sparse datasets: sparse matrices -- a spike raster of units by samples is one, drawn as a spikes layer */
@@ -4757,6 +4766,11 @@ export type QueryArrayDatasetsArgs = {
   filters?: InputMaybe<ArrayDatasetFilter>;
   ordering?: Array<ArrayDatasetOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryCellArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -4969,23 +4983,16 @@ export type QueryNeuronModelsArgs = {
 };
 
 
+export type QuerySectionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QuerySectionsArgs = {
   cellId: Scalars['ID']['input'];
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   modelId: Scalars['ID']['input'];
   search?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QuerySimulationArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QuerySimulationsArgs = {
-  filters?: InputMaybe<SimulationFilter>;
-  ordering?: Array<SimulationOrder>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -5239,7 +5246,7 @@ export type RotationTransformationProvenanceEntriesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** A fixed recording interval: the run recorded one sample every 1/rate, starting at tStart */
+/** A fixed recording interval: one sample every 1/rate, starting at tStart */
 export type SamplingInput = {
   rate: Scalars['Frequency']['input'];
   tStart?: Scalars['Duration']['input'];
@@ -5320,8 +5327,12 @@ export type Section = {
   __typename?: 'Section';
   /** An optional category for the section (e.g. 'soma', 'axon', 'dend'). Biophysics compartments are matched to sections by this category. */
   category?: Maybe<Scalars['String']['output']>;
+  /** The cell this section belongs to. Null when the section was not read from a stored model */
+  cell?: Maybe<Cell>;
   /** Specific membrane capacitance (NEURON cm). Unset inherits the model-wide default, then NEURON's built-in 1 µF/cm². */
   cm?: Maybe<Scalars['SpecificCapacitance']['output']>;
+  /** This section's id from outside its model, 'model:cell:section' (each part percent-encoded): what the `section` query takes. `id` is only unique within its cell. Null when the section was not read from a stored model */
+  compoundId?: Maybe<Scalars['ID']['output']>;
   /** The 3D coordinates (NEURON pt3d) describing the section's geometry. Required if length is not provided; when supplied they take precedence over length/diam. At least two points are needed to define a cable. */
   coords?: Maybe<Array<Coord>>;
   /** If set, nseg is computed from NEURON's d_lambda rule (target fraction of the AC length constant at 100 Hz per segment; 0.1 is typical) and overrides the fixed nseg. */
@@ -5332,12 +5343,16 @@ export type Section = {
   id: Scalars['String']['output'];
   /** Length of the section (stylized geometry). Required if coords is not provided; ignored when coords are supplied. */
   length?: Maybe<Scalars['Length']['output']>;
+  /** The neuron model this section is part of. Null when the section was not read from a stored model */
+  model?: Maybe<NeuronModel>;
   /** The number of segments the section is discretized into (used when d_lambda is not set). NEURON convention prefers an odd count so the section has a true midpoint node. */
   nseg: Scalars['Int']['output'];
   /** The connection to this section's parent section. None for the root section of the cell. */
   parent?: Maybe<Connection>;
   /** Axial resistivity (NEURON Ra). Unset inherits the model-wide default, then NEURON's built-in 35.4 Ω·cm. */
   ra?: Maybe<Scalars['Resistivity']['output']>;
+  /** Where this section was recorded: the datasets with a recording site on it, grouped by the clock they are timed onto -- one session per run. Read from the model's recording sites, in the viewer's organization; untimed datasets come last, under a null clock. Empty when the section was not read from a stored model */
+  sessions: Array<NeuronModelSession>;
 };
 
 export type SectionDominance = {
@@ -5569,60 +5584,24 @@ export type SettingInput = {
   text?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type Simulation = {
-  __typename?: 'Simulation';
-  /** The clock the run's datasets are timed against: a coordinate system with one TIME axis, in milliseconds by default. Laying a run into an experiment is one edge from this clock into the experiment's world */
-  clock?: Maybe<CoordinateSystem>;
-  createdAt: Scalars['DateTime']['output'];
-  creator?: Maybe<User>;
-  /** The array datasets timed on this run's clock -- recordings and stimuli alike, each by its own sampling law or time lookup. Read off the graph, never stored: timing a dataset on the clock is what makes it part of the run */
-  datasets: Array<ArrayDataset>;
-  description?: Maybe<Scalars['String']['output']>;
-  /** The integration time step (NEURON's dt). An integrator parameter, not the sampling period: a run can record more coarsely than it integrates. Null when unstated */
+/** The integrator truth: the anchored values were computed by integrating a neuron model -- the model, NEURON's dt and tstop. elektro's own spoke, the synthetic rig. A run is its clock: the outputs timed onto one clock are one run, and agree on it */
+export type SimulationState = {
+  __typename?: 'SimulationState';
+  /** The integration time step (NEURON's dt). Not the sampling period: a run can record more coarsely than it integrates. Null when unstated */
   dt?: Maybe<Scalars['Duration']['output']>;
   /** How long the model was run for (NEURON's tstop) */
   duration: Scalars['Duration']['output'];
   id: Scalars['ID']['output'];
+  /** The neuron model that was integrated */
   model: NeuronModel;
-  name: Scalars['String']['output'];
-  provenanceEntries: Array<ProvenanceEntry>;
-  /** The datasets of this run carrying a `recordingSite` on some anchor: what was recorded, and where */
-  recordings: Array<ArrayDataset>;
-  /** The rate the run's samples were recorded at, when every dataset timed on its clock agrees on one. Derived from their sampling laws -- each has its own edge onto the clock, and this is their common value. Null for a run timed by `timeDataset`, and null when the edges have been corrected apart */
-  samplingRate?: Maybe<Scalars['Frequency']['output']>;
-  /** The datasets of this run carrying a `stimulusSite` on some anchor: what was injected, and where */
-  stimuli: Array<ArrayDataset>;
-  /** The dataset whose values are the instants the run's samples were recorded at. Derived: it is the field of the time lookups from the run's datasets onto its clock. Null for a run recorded at a fixed interval, which has a sampling law instead -- see `samplingRate` */
-  timeDataset?: Maybe<ArrayDataset>;
 };
 
-
-export type SimulationProvenanceEntriesArgs = {
-  pagination?: InputMaybe<OffsetPaginationInput>;
+/** The anchored values were COMPUTED, by integrating a neuron model: the model that was run and NEURON's dt and tstop. elektro's own spoke -- the synthetic rig, a simulated output's counterpart of `rig`. A run is its clock: the outputs timed onto one clock are one run, and must agree on it. An input (a stimulus waveform) carries none */
+export type SimulationStateInput = {
+  dt?: InputMaybe<Scalars['Duration']['input']>;
+  duration: Scalars['Duration']['input'];
+  model: Scalars['ID']['input'];
 };
-
-export type SimulationFilter = {
-  AND?: InputMaybe<SimulationFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<SimulationFilter>;
-  OR?: InputMaybe<SimulationFilter>;
-  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
-  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
-  createdBy?: InputMaybe<Scalars['ID']['input']>;
-  createdByAgent?: InputMaybe<Scalars['Boolean']['input']>;
-  createdWith?: InputMaybe<Scalars['String']['input']>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  mine?: InputMaybe<Scalars['Boolean']['input']>;
-  name?: InputMaybe<StrFilterLookup>;
-  provenanceRootTask?: InputMaybe<Scalars['String']['input']>;
-  provenanceTask?: InputMaybe<Scalars['String']['input']>;
-  search?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type SimulationOrder =
-  { createdAt: Ordering; id?: never; }
-  |  { createdAt?: never; id: Ordering; };
 
 /** A slice along a named axis, with optional start, stop and step */
 export type Slice = {
@@ -6931,7 +6910,7 @@ export type ZarrUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
-export type _Entity = AcquisitionMetadata | AffineTransformation | Annotation | AnnotationCollection | AnnotationLayer | App | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | EventsLayer | FieldTransformation | File | FileLink | Folder | HeatmapLayer | IdentityTransformation | Lens | MapAxisTransformation | MediaStore | ModEnvironment | Organization | ParquetStore | PointLayer | RecordingSite | Release | RigState | RotationTransformation | ScaleTransformation | SequenceTransformation | SeriesLayer | SparseArray | SparseAxisReference | SparseDataset | SparseStore | SpikesLayer | StimulusSite | TableDataset | TraceLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | ValueUnit | WaveformLayer | ZarrStore;
+export type _Entity = AcquisitionMetadata | AffineTransformation | Annotation | AnnotationCollection | AnnotationLayer | App | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | EventsLayer | FieldTransformation | File | FileLink | Folder | HeatmapLayer | IdentityTransformation | Lens | MapAxisTransformation | MediaStore | ModEnvironment | Organization | ParquetStore | PointLayer | RecordingSite | Release | RigState | RotationTransformation | ScaleTransformation | SequenceTransformation | SeriesLayer | SimulationState | SparseArray | SparseAxisReference | SparseDataset | SparseStore | SpikesLayer | StimulusSite | TableDataset | TraceLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | ValueUnit | WaveformLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -7051,7 +7030,15 @@ export type ExpLensFragment = { __typename?: 'Lens', id: string, axisNames: Arra
     & ExpArrayDatasetFragment
   ) };
 
-export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, valueUnit?: Unit | null };
+export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, valueUnit?: Unit | null, createdAt: any, simulation?: { __typename?: 'SimulationState', id: string, duration: Duration, dt?: Duration | null, model: { __typename?: 'NeuronModel', id: string, name: string } } | null };
+
+export type DetailArrayDatasetFragment = (
+  { __typename?: 'ArrayDataset', createdAt: any, spec: Array<ArrayDatasetSpec>, creator?: { __typename?: 'User', sub: string } | null, folder?: { __typename?: 'Folder', id: string, name: string } | null, simulation?: { __typename?: 'SimulationState', id: string, duration: Duration, dt?: Duration | null, model: { __typename?: 'NeuronModel', id: string, name: string } } | null, experimentLayers: Array<{ __typename?: 'AnnotationLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'EventsLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'HeatmapLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'PointLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'SeriesLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'SpikesLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'TraceLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } } | { __typename?: 'WaveformLayer', id: string, experiment: { __typename?: 'Experiment', id: string, name: string } }>, provenanceEntries: Array<(
+    { __typename?: 'ProvenanceEntry' }
+    & ProvenanceEntryFragment
+  )> }
+  & ExpArrayDatasetFragment
+);
 
 export type ExpFullAnchorFragment = (
   { __typename?: 'CoordinateAnchor', recordingSite?: { __typename?: 'RecordingSite', id: string, model: { __typename?: 'NeuronModel', id: string, name: string } } | null, stimulusSite?: { __typename?: 'StimulusSite', id: string, model: { __typename?: 'NeuronModel', id: string, name: string } } | null, valueHistogram?: { __typename?: 'ValueHistogram', id: string, bins: Array<number>, histogram: Array<number> } | null, rig?: { __typename?: 'RigState', id: string, state: { __typename?: 'RigStateGraph', mode?: ClampMode | null, holdingPotential?: ElectricPotential | null, holdingCurrent?: any | null, seriesResistance?: any | null, membraneCapacitance?: any | null, temperature?: Temperature | null, devices: Array<{ __typename?: 'DeviceState', kind?: string | null, label: string, settings: Array<{ __typename?: 'Setting', name: string, text?: string | null, number?: number | null, flag?: boolean | null, quantity?: GenericQuantity | null }> }> } } | null, acquisitionMetadata?: { __typename?: 'AcquisitionMetadata', id: string, metadata: any } | null }
@@ -7515,7 +7502,7 @@ export type DetailModelWorkspaceFragment = { __typename?: 'ModelWorkspace', id: 
     & WorkspaceMappingFragment
   )> };
 
-export type CoordFragment = { __typename?: 'Coord', x: Length, y: Length, z: Length };
+export type CoordFragment = { __typename?: 'Coord', x: Length, y: Length, z: Length, diam?: Length | null };
 
 export type SectionFragment = { __typename?: 'Section', id: string, diam: Length, length?: Length | null, category?: string | null, nseg: number, ra?: Resistivity | null, cm?: SpecificCapacitance | null, dLambda?: number | null, coords?: Array<(
     { __typename?: 'Coord' }
@@ -7555,9 +7542,9 @@ export type DetailNeuronModelFragment = { __typename?: 'NeuronModel', id: string
         )> } }>, netSynapses?: Array<{ __typename?: 'Exp2Synapse', tau1: Duration, tau2: Duration, e: ElectricPotential, delay?: Duration | null, id: string, cell: string, location: string, position: number }> | null, netStimulators?: Array<{ __typename?: 'NetStimulator', id: string, interval?: Duration | null, number: number, start: Duration }> | null, netConnections?: Array<{ __typename?: 'SynapticConnection', netStimulator: string, synapse: string, id: string, delay?: Duration | null, weight?: ElectricalConductance | null, threshold?: ElectricPotential | null }> | null }, sectionDominance: Array<(
     { __typename?: 'SectionDominance' }
     & SectionDominanceFragment
-  )>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, simulations: Array<(
-    { __typename?: 'Simulation' }
-    & ListSimulationFragment
+  )>, comparisons: Array<{ __typename?: 'Comparison', collection: { __typename?: 'ModelCollection', id: string, name: string }, changes: Array<{ __typename?: 'Change', type: ChangeType, path: Array<string>, valueA?: any | null, valueB?: any | null }> }>, sessions: Array<(
+    { __typename?: 'NeuronModelSession' }
+    & NeuronModelSessionFragment
   )>, environment: (
     { __typename?: 'ModEnvironment' }
     & ModEnvironmentFragment
@@ -7566,34 +7553,12 @@ export type DetailNeuronModelFragment = { __typename?: 'NeuronModel', id: string
     & ProvenanceEntryFragment
   )> };
 
+export type NeuronModelSessionFragment = { __typename?: 'NeuronModelSession', clock?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, datasets: Array<(
+    { __typename?: 'ArrayDataset', intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string } | null }
+    & ListArrayDatasetFragment
+  )> };
+
 export type ListNeuronModelFragment = { __typename?: 'NeuronModel', id: string, name: string };
-
-export type DetailSimulationFragment = { __typename?: 'Simulation', id: string, name: string, description?: string | null, duration: Duration, dt?: Duration | null, samplingRate?: Frequency | null, createdAt: any, model: (
-    { __typename?: 'NeuronModel' }
-    & DetailNeuronModelFragment
-  ), clock?: (
-    { __typename?: 'CoordinateSystem' }
-    & ExpCoordinateSystemFragment
-  ) | null, timeDataset?: (
-    { __typename?: 'ArrayDataset' }
-    & ExpArrayDatasetRefFragment
-  ) | null, recordings: Array<(
-    { __typename?: 'ArrayDataset' }
-    & SimulationTraceFragment
-  )>, stimuli: Array<(
-    { __typename?: 'ArrayDataset' }
-    & SimulationTraceFragment
-  )>, creator?: { __typename?: 'User', sub: string } | null };
-
-export type SimulationTraceFragment = (
-  { __typename?: 'ArrayDataset', anchors: Array<(
-    { __typename?: 'CoordinateAnchor' }
-    & ExpAnchorFragment
-  )> }
-  & ExpArrayDatasetRefFragment
-);
-
-export type ListSimulationFragment = { __typename?: 'Simulation', id: string, name: string, duration: Duration, dt?: Duration | null, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, model: { __typename?: 'NeuronModel', id: string, name: string } };
 
 export type ExpSparseLayoutFragment = { __typename?: 'SparseLayout', path: string, encoding: string, indexedAxis: number, indexOrder: Array<number>, nnz: number, dtype: string, rangeReadable: boolean };
 
@@ -8149,6 +8114,28 @@ export type RequestGeneralZarrAccessMutation = { __typename?: 'Mutation', reques
     & GeneralZarrAccessGrantFragment
   ) };
 
+export type GetArrayDatasetQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetArrayDatasetQuery = { __typename?: 'Query', arrayDataset: (
+    { __typename?: 'ArrayDataset' }
+    & DetailArrayDatasetFragment
+  ) };
+
+export type ListArrayDatasetsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  filters?: InputMaybe<ArrayDatasetFilter>;
+  ordering?: InputMaybe<Array<ArrayDatasetOrder> | ArrayDatasetOrder>;
+}>;
+
+
+export type ListArrayDatasetsQuery = { __typename?: 'Query', arrayDatasets: Array<(
+    { __typename?: 'ArrayDataset' }
+    & ListArrayDatasetFragment
+  )> };
+
 export type DetailModEnvironmentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -8192,6 +8179,13 @@ export type ListExperimentsQuery = { __typename?: 'Query', experiments: Array<(
     { __typename?: 'Experiment' }
     & ListExperimentFragment
   )> };
+
+export type ExperimentsForWorldQueryVariables = Exact<{
+  world: Scalars['ID']['input'];
+}>;
+
+
+export type ExperimentsForWorldQuery = { __typename?: 'Query', experiments: Array<{ __typename?: 'Experiment', id: string, name: string }> };
 
 export type GetFileQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8255,9 +8249,6 @@ export type HomePageQueryVariables = Exact<{ [key: string]: never; }>;
 export type HomePageQuery = { __typename?: 'Query', experiments: Array<(
     { __typename?: 'Experiment' }
     & ListExperimentFragment
-  )>, simulations: Array<(
-    { __typename?: 'Simulation' }
-    & ListSimulationFragment
   )>, models: Array<(
     { __typename?: 'NeuronModel' }
     & ListNeuronModelFragment
@@ -8271,7 +8262,7 @@ export type GetExpLensAnchorsQueryVariables = Exact<{
 export type GetExpLensAnchorsQuery = { __typename?: 'Query', lens: { __typename?: 'Lens', id: string, activeAnchors: Array<(
       { __typename?: 'CoordinateAnchor' }
       & ExpFullAnchorFragment
-    )>, dataset: { __typename?: 'ArrayDataset', id: string, simulations: Array<{ __typename?: 'Simulation', id: string, name: string, model: { __typename?: 'NeuronModel', id: string, name: string } }> } } };
+    )>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, simulation?: { __typename?: 'SimulationState', id: string, duration: Duration, dt?: Duration | null, model: { __typename?: 'NeuronModel', id: string, name: string } } | null } } };
 
 export type DetailMechanismQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8374,6 +8365,18 @@ export type ListNeuronModelsQuery = { __typename?: 'Query', neuronModels: Array<
     & ListNeuronModelFragment
   )> };
 
+export type SectionSessionsQueryVariables = Exact<{
+  model: Scalars['ID']['input'];
+  cell: Scalars['ID']['input'];
+  section: Scalars['ID']['input'];
+}>;
+
+
+export type SectionSessionsQuery = { __typename?: 'Query', sections: Array<{ __typename?: 'Section', sessions: Array<(
+      { __typename?: 'NeuronModelSession' }
+      & NeuronModelSessionFragment
+    )> }> };
+
 export type LayerPickerArrayDatasetsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -8452,39 +8455,7 @@ export type GlobalSearchQuery = { __typename?: 'Query', arrayDatasets: Array<(
   )>, experiments: Array<(
     { __typename?: 'Experiment' }
     & ListExperimentFragment
-  )>, simulations: Array<(
-    { __typename?: 'Simulation' }
-    & ListSimulationFragment
   )> };
-
-export type DetailSimulationQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type DetailSimulationQuery = { __typename?: 'Query', simulation: (
-    { __typename?: 'Simulation' }
-    & DetailSimulationFragment
-  ) };
-
-export type ListSimulationsQueryVariables = Exact<{
-  pagination?: InputMaybe<OffsetPaginationInput>;
-  filters?: InputMaybe<SimulationFilter>;
-  ordering?: InputMaybe<Array<SimulationOrder> | SimulationOrder>;
-}>;
-
-
-export type ListSimulationsQuery = { __typename?: 'Query', simulations: Array<(
-    { __typename?: 'Simulation' }
-    & ListSimulationFragment
-  )> };
-
-export type SimulationClockQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type SimulationClockQuery = { __typename?: 'Query', simulation: { __typename?: 'Simulation', id: string, name: string, clock?: { __typename?: 'CoordinateSystem', id: string } | null } };
 
 export const ExpDefaultAnnotationCollectionFragmentDoc = gql`
     fragment ExpDefaultAnnotationCollection on Experiment {
@@ -8494,6 +8465,191 @@ export const ExpDefaultAnnotationCollectionFragmentDoc = gql`
   }
 }
     `;
+export const ExpAxisFragmentDoc = gql`
+    fragment ExpAxis on Axis {
+  id
+  order
+  name
+  type
+  unit
+  longName
+}
+    `;
+export const ExpCoordinateSystemFragmentDoc = gql`
+    fragment ExpCoordinateSystem on CoordinateSystem {
+  id
+  name
+  epoch
+  axes {
+    ...ExpAxis
+  }
+}
+    ${ExpAxisFragmentDoc}`;
+export const ExpArrayDatasetRefFragmentDoc = gql`
+    fragment ExpArrayDatasetRef on ArrayDataset {
+  id
+  name
+  description
+  axisNames
+  shape
+  multiscale
+  valueUnit
+  valueDimension
+  intrinsicSystem {
+    ...ExpCoordinateSystem
+  }
+}
+    ${ExpCoordinateSystemFragmentDoc}`;
+export const ExpCoordinateSystemRefFragmentDoc = gql`
+    fragment ExpCoordinateSystemRef on CoordinateSystem {
+  id
+  name
+}
+    `;
+export const ExpTransformationLeafFragmentDoc = gql`
+    fragment ExpTransformationLeaf on Transformation {
+  __typename
+  id
+  kind
+  name
+  version
+  validity
+  invariance
+  inputAxes
+  outputAxes
+  selector {
+    axis
+    index
+  }
+  input {
+    ...ExpCoordinateSystemRef
+  }
+  output {
+    ...ExpCoordinateSystemRef
+  }
+  ... on AffineTransformation {
+    affine
+  }
+  ... on ScaleTransformation {
+    scale
+  }
+  ... on TranslationTransformation {
+    translation
+  }
+  ... on FieldTransformation {
+    field {
+      ...ExpCoordinateSystemRef
+    }
+  }
+}
+    ${ExpCoordinateSystemRefFragmentDoc}`;
+export const ExpTransformationFragmentDoc = gql`
+    fragment ExpTransformation on Transformation {
+  ...ExpTransformationLeaf
+  ... on SequenceTransformation {
+    transformations {
+      ...ExpTransformationLeaf
+    }
+  }
+  ... on ByDimensionTransformation {
+    transformations {
+      ...ExpTransformationLeaf
+    }
+  }
+}
+    ${ExpTransformationLeafFragmentDoc}`;
+export const ZarrStoreFragmentDoc = gql`
+    fragment ZarrStore on ZarrStore {
+  id
+  key
+  bucket
+  path
+  shape
+  dtype
+}
+    `;
+export const ExpDataArrayFragmentDoc = gql`
+    fragment ExpDataArray on DataArray {
+  id
+  level
+  shape
+  chunkShape
+  scaleMethod
+  toParent {
+    ...ExpTransformation
+  }
+  store {
+    ...ZarrStore
+  }
+}
+    ${ExpTransformationFragmentDoc}
+${ZarrStoreFragmentDoc}`;
+export const ExpArrayDatasetFragmentDoc = gql`
+    fragment ExpArrayDataset on ArrayDataset {
+  ...ExpArrayDatasetRef
+  dataArrays {
+    ...ExpDataArray
+  }
+}
+    ${ExpArrayDatasetRefFragmentDoc}
+${ExpDataArrayFragmentDoc}`;
+export const ProvenanceEntryFragmentDoc = gql`
+    fragment ProvenanceEntry on ProvenanceEntry {
+  id
+  task {
+    id
+    taskId
+    assigner {
+      sub
+    }
+  }
+  kind
+  user {
+    sub
+  }
+  client {
+    clientId
+  }
+  date
+  effectiveChanges {
+    field
+  }
+}
+    `;
+export const DetailArrayDatasetFragmentDoc = gql`
+    fragment DetailArrayDataset on ArrayDataset {
+  ...ExpArrayDataset
+  createdAt
+  creator {
+    sub
+  }
+  folder {
+    id
+    name
+  }
+  spec
+  simulation {
+    id
+    duration
+    dt
+    model {
+      id
+      name
+    }
+  }
+  experimentLayers {
+    id
+    experiment {
+      id
+      name
+    }
+  }
+  provenanceEntries {
+    ...ProvenanceEntry
+  }
+}
+    ${ExpArrayDatasetFragmentDoc}
+${ProvenanceEntryFragmentDoc}`;
 export const ExpRecordingSiteFragmentDoc = gql`
     fragment ExpRecordingSite on RecordingSite {
   id
@@ -8637,26 +8793,6 @@ export const ListModEnvironmentFragmentDoc = gql`
   }
 }
     ${MechanismFragmentDoc}`;
-export const ExpAxisFragmentDoc = gql`
-    fragment ExpAxis on Axis {
-  id
-  order
-  name
-  type
-  unit
-  longName
-}
-    `;
-export const ExpCoordinateSystemFragmentDoc = gql`
-    fragment ExpCoordinateSystem on CoordinateSystem {
-  id
-  name
-  epoch
-  axes {
-    ...ExpAxis
-  }
-}
-    ${ExpAxisFragmentDoc}`;
 export const ExpAffinePlacementFragmentDoc = gql`
     fragment ExpAffinePlacement on AffinePlacement {
   matrix
@@ -8665,64 +8801,6 @@ export const ExpAffinePlacementFragmentDoc = gql`
   total
 }
     `;
-export const ExpCoordinateSystemRefFragmentDoc = gql`
-    fragment ExpCoordinateSystemRef on CoordinateSystem {
-  id
-  name
-}
-    `;
-export const ExpTransformationLeafFragmentDoc = gql`
-    fragment ExpTransformationLeaf on Transformation {
-  __typename
-  id
-  kind
-  name
-  version
-  validity
-  invariance
-  inputAxes
-  outputAxes
-  selector {
-    axis
-    index
-  }
-  input {
-    ...ExpCoordinateSystemRef
-  }
-  output {
-    ...ExpCoordinateSystemRef
-  }
-  ... on AffineTransformation {
-    affine
-  }
-  ... on ScaleTransformation {
-    scale
-  }
-  ... on TranslationTransformation {
-    translation
-  }
-  ... on FieldTransformation {
-    field {
-      ...ExpCoordinateSystemRef
-    }
-  }
-}
-    ${ExpCoordinateSystemRefFragmentDoc}`;
-export const ExpTransformationFragmentDoc = gql`
-    fragment ExpTransformation on Transformation {
-  ...ExpTransformationLeaf
-  ... on SequenceTransformation {
-    transformations {
-      ...ExpTransformationLeaf
-    }
-  }
-  ... on ByDimensionTransformation {
-    transformations {
-      ...ExpTransformationLeaf
-    }
-  }
-}
-    ${ExpTransformationLeafFragmentDoc}`;
 export const ExpPlacementStepFragmentDoc = gql`
     fragment ExpPlacementStep on PlacementStep {
   inverted
@@ -8753,56 +8831,6 @@ export const ExpLayerCommonFragmentDoc = gql`
 }
     ${ExpAffinePlacementFragmentDoc}
 ${ExpPlacementStepFragmentDoc}`;
-export const ExpArrayDatasetRefFragmentDoc = gql`
-    fragment ExpArrayDatasetRef on ArrayDataset {
-  id
-  name
-  description
-  axisNames
-  shape
-  multiscale
-  valueUnit
-  valueDimension
-  intrinsicSystem {
-    ...ExpCoordinateSystem
-  }
-}
-    ${ExpCoordinateSystemFragmentDoc}`;
-export const ZarrStoreFragmentDoc = gql`
-    fragment ZarrStore on ZarrStore {
-  id
-  key
-  bucket
-  path
-  shape
-  dtype
-}
-    `;
-export const ExpDataArrayFragmentDoc = gql`
-    fragment ExpDataArray on DataArray {
-  id
-  level
-  shape
-  chunkShape
-  scaleMethod
-  toParent {
-    ...ExpTransformation
-  }
-  store {
-    ...ZarrStore
-  }
-}
-    ${ExpTransformationFragmentDoc}
-${ZarrStoreFragmentDoc}`;
-export const ExpArrayDatasetFragmentDoc = gql`
-    fragment ExpArrayDataset on ArrayDataset {
-  ...ExpArrayDatasetRef
-  dataArrays {
-    ...ExpDataArray
-  }
-}
-    ${ExpArrayDatasetRefFragmentDoc}
-${ExpDataArrayFragmentDoc}`;
 export const ExpLensFragmentDoc = gql`
     fragment ExpLens on Lens {
   id
@@ -9118,29 +9146,6 @@ export const BigFileStoreFragmentDoc = gql`
   path
 }
     `;
-export const ProvenanceEntryFragmentDoc = gql`
-    fragment ProvenanceEntry on ProvenanceEntry {
-  id
-  task {
-    id
-    taskId
-    assigner {
-      sub
-    }
-  }
-  kind
-  user {
-    sub
-  }
-  client {
-    clientId
-  }
-  date
-  effectiveChanges {
-    field
-  }
-}
-    `;
 export const FileFragmentDoc = gql`
     fragment File on File {
   id
@@ -9164,7 +9169,22 @@ export const ListArrayDatasetFragmentDoc = gql`
     fragment ListArrayDataset on ArrayDataset {
   id
   name
+  description
+  axisNames
+  shape
+  multiscale
+  spec
   valueUnit
+  createdAt
+  simulation {
+    id
+    duration
+    dt
+    model {
+      id
+      name
+    }
+  }
 }
     `;
 export const ListFileFragmentDoc = gql`
@@ -9330,6 +9350,7 @@ export const CoordFragmentDoc = gql`
   x
   y
   z
+  diam
 }
     `;
 export const ConnectionFragmentDoc = gql`
@@ -9368,22 +9389,20 @@ export const SectionDominanceFragmentDoc = gql`
   electrotonicDistance
 }
     `;
-export const ListSimulationFragmentDoc = gql`
-    fragment ListSimulation on Simulation {
-  id
-  name
-  duration
-  dt
-  createdAt
-  creator {
-    sub
-  }
-  model {
+export const NeuronModelSessionFragmentDoc = gql`
+    fragment NeuronModelSession on NeuronModelSession {
+  clock {
     id
     name
   }
+  datasets {
+    ...ListArrayDataset
+    intrinsicSystem {
+      id
+    }
+  }
 }
-    `;
+    ${ListArrayDatasetFragmentDoc}`;
 export const ModEnvironmentFragmentDoc = gql`
     fragment ModEnvironment on ModEnvironment {
   id
@@ -9468,8 +9487,8 @@ export const DetailNeuronModelFragmentDoc = gql`
       valueB
     }
   }
-  simulations {
-    ...ListSimulation
+  sessions {
+    ...NeuronModelSession
   }
   environment {
     ...ModEnvironment
@@ -9483,50 +9502,9 @@ ${MechanismGlobalParamFragmentDoc}
 ${CompartmentFragmentDoc}
 ${SectionFragmentDoc}
 ${SectionDominanceFragmentDoc}
-${ListSimulationFragmentDoc}
+${NeuronModelSessionFragmentDoc}
 ${ModEnvironmentFragmentDoc}
 ${ProvenanceEntryFragmentDoc}`;
-export const SimulationTraceFragmentDoc = gql`
-    fragment SimulationTrace on ArrayDataset {
-  ...ExpArrayDatasetRef
-  anchors {
-    ...ExpAnchor
-  }
-}
-    ${ExpArrayDatasetRefFragmentDoc}
-${ExpAnchorFragmentDoc}`;
-export const DetailSimulationFragmentDoc = gql`
-    fragment DetailSimulation on Simulation {
-  id
-  name
-  description
-  model {
-    ...DetailNeuronModel
-  }
-  duration
-  dt
-  samplingRate
-  clock {
-    ...ExpCoordinateSystem
-  }
-  timeDataset {
-    ...ExpArrayDatasetRef
-  }
-  recordings {
-    ...SimulationTrace
-  }
-  stimuli {
-    ...SimulationTrace
-  }
-  createdAt
-  creator {
-    sub
-  }
-}
-    ${DetailNeuronModelFragmentDoc}
-${ExpCoordinateSystemFragmentDoc}
-${ExpArrayDatasetRefFragmentDoc}
-${SimulationTraceFragmentDoc}`;
 export const GeneralSparseAccessGrantFragmentDoc = gql`
     fragment GeneralSparseAccessGrant on GeneralSparseAccessGrant {
   accessKey
@@ -11233,6 +11211,78 @@ export function useRequestGeneralZarrAccessMutation(baseOptions?: ApolloReactHoo
 export type RequestGeneralZarrAccessMutationHookResult = ReturnType<typeof useRequestGeneralZarrAccessMutation>;
 export type RequestGeneralZarrAccessMutationResult = Apollo.MutationResult<RequestGeneralZarrAccessMutation>;
 export type RequestGeneralZarrAccessMutationOptions = Apollo.BaseMutationOptions<RequestGeneralZarrAccessMutation, RequestGeneralZarrAccessMutationVariables>;
+export const GetArrayDatasetDocument = gql`
+    query GetArrayDataset($id: ID!) {
+  arrayDataset(id: $id) {
+    ...DetailArrayDataset
+  }
+}
+    ${DetailArrayDatasetFragmentDoc}`;
+
+/**
+ * __useGetArrayDatasetQuery__
+ *
+ * To run a query within a React component, call `useGetArrayDatasetQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetArrayDatasetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetArrayDatasetQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetArrayDatasetQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetArrayDatasetQuery, GetArrayDatasetQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetArrayDatasetQuery, GetArrayDatasetQueryVariables>(GetArrayDatasetDocument, options);
+      }
+export function useGetArrayDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetArrayDatasetQuery, GetArrayDatasetQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetArrayDatasetQuery, GetArrayDatasetQueryVariables>(GetArrayDatasetDocument, options);
+        }
+export type GetArrayDatasetQueryHookResult = ReturnType<typeof useGetArrayDatasetQuery>;
+export type GetArrayDatasetLazyQueryHookResult = ReturnType<typeof useGetArrayDatasetLazyQuery>;
+export type GetArrayDatasetQueryResult = Apollo.QueryResult<GetArrayDatasetQuery, GetArrayDatasetQueryVariables>;
+export const ListArrayDatasetsDocument = gql`
+    query ListArrayDatasets($pagination: OffsetPaginationInput, $filters: ArrayDatasetFilter, $ordering: [ArrayDatasetOrder!]) {
+  arrayDatasets(pagination: $pagination, filters: $filters, ordering: $ordering) {
+    ...ListArrayDataset
+  }
+}
+    ${ListArrayDatasetFragmentDoc}`;
+
+/**
+ * __useListArrayDatasetsQuery__
+ *
+ * To run a query within a React component, call `useListArrayDatasetsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListArrayDatasetsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListArrayDatasetsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *   },
+ * });
+ */
+export function useListArrayDatasetsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListArrayDatasetsQuery, ListArrayDatasetsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListArrayDatasetsQuery, ListArrayDatasetsQueryVariables>(ListArrayDatasetsDocument, options);
+      }
+export function useListArrayDatasetsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListArrayDatasetsQuery, ListArrayDatasetsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListArrayDatasetsQuery, ListArrayDatasetsQueryVariables>(ListArrayDatasetsDocument, options);
+        }
+export type ListArrayDatasetsQueryHookResult = ReturnType<typeof useListArrayDatasetsQuery>;
+export type ListArrayDatasetsLazyQueryHookResult = ReturnType<typeof useListArrayDatasetsLazyQuery>;
+export type ListArrayDatasetsQueryResult = Apollo.QueryResult<ListArrayDatasetsQuery, ListArrayDatasetsQueryVariables>;
 export const DetailModEnvironmentDocument = gql`
     query DetailModEnvironment($id: ID!) {
   modEnvironment(id: $id) {
@@ -11377,6 +11427,42 @@ export function useListExperimentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
 export type ListExperimentsQueryHookResult = ReturnType<typeof useListExperimentsQuery>;
 export type ListExperimentsLazyQueryHookResult = ReturnType<typeof useListExperimentsLazyQuery>;
 export type ListExperimentsQueryResult = Apollo.QueryResult<ListExperimentsQuery, ListExperimentsQueryVariables>;
+export const ExperimentsForWorldDocument = gql`
+    query ExperimentsForWorld($world: ID!) {
+  experiments(filters: {world: $world}) {
+    id
+    name
+  }
+}
+    `;
+
+/**
+ * __useExperimentsForWorldQuery__
+ *
+ * To run a query within a React component, call `useExperimentsForWorldQuery` and pass it any options that fit your needs.
+ * When your component renders, `useExperimentsForWorldQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useExperimentsForWorldQuery({
+ *   variables: {
+ *      world: // value for 'world'
+ *   },
+ * });
+ */
+export function useExperimentsForWorldQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ExperimentsForWorldQuery, ExperimentsForWorldQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ExperimentsForWorldQuery, ExperimentsForWorldQueryVariables>(ExperimentsForWorldDocument, options);
+      }
+export function useExperimentsForWorldLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ExperimentsForWorldQuery, ExperimentsForWorldQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ExperimentsForWorldQuery, ExperimentsForWorldQueryVariables>(ExperimentsForWorldDocument, options);
+        }
+export type ExperimentsForWorldQueryHookResult = ReturnType<typeof useExperimentsForWorldQuery>;
+export type ExperimentsForWorldLazyQueryHookResult = ReturnType<typeof useExperimentsForWorldLazyQuery>;
+export type ExperimentsForWorldQueryResult = Apollo.QueryResult<ExperimentsForWorldQuery, ExperimentsForWorldQueryVariables>;
 export const GetFileDocument = gql`
     query GetFile($id: ID!) {
   file(id: $id) {
@@ -11563,15 +11649,11 @@ export const HomePageDocument = gql`
   experiments: experiments(pagination: {limit: 1}, ordering: [{createdAt: DESC}]) {
     ...ListExperiment
   }
-  simulations: simulations(pagination: {limit: 1}, ordering: [{createdAt: DESC}]) {
-    ...ListSimulation
-  }
   models: neuronModels(pagination: {limit: 1}, ordering: [{createdAt: DESC}]) {
     ...ListNeuronModel
   }
 }
     ${ListExperimentFragmentDoc}
-${ListSimulationFragmentDoc}
 ${ListNeuronModelFragmentDoc}`;
 
 /**
@@ -11609,9 +11691,11 @@ export const GetExpLensAnchorsDocument = gql`
     }
     dataset {
       id
-      simulations {
+      name
+      simulation {
         id
-        name
+        duration
+        dt
         model {
           id
           name
@@ -11986,6 +12070,45 @@ export function useListNeuronModelsLazyQuery(baseOptions?: ApolloReactHooks.Lazy
 export type ListNeuronModelsQueryHookResult = ReturnType<typeof useListNeuronModelsQuery>;
 export type ListNeuronModelsLazyQueryHookResult = ReturnType<typeof useListNeuronModelsLazyQuery>;
 export type ListNeuronModelsQueryResult = Apollo.QueryResult<ListNeuronModelsQuery, ListNeuronModelsQueryVariables>;
+export const SectionSessionsDocument = gql`
+    query SectionSessions($model: ID!, $cell: ID!, $section: ID!) {
+  sections(modelId: $model, cellId: $cell, ids: [$section]) {
+    sessions {
+      ...NeuronModelSession
+    }
+  }
+}
+    ${NeuronModelSessionFragmentDoc}`;
+
+/**
+ * __useSectionSessionsQuery__
+ *
+ * To run a query within a React component, call `useSectionSessionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSectionSessionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSectionSessionsQuery({
+ *   variables: {
+ *      model: // value for 'model'
+ *      cell: // value for 'cell'
+ *      section: // value for 'section'
+ *   },
+ * });
+ */
+export function useSectionSessionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SectionSessionsQuery, SectionSessionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SectionSessionsQuery, SectionSessionsQueryVariables>(SectionSessionsDocument, options);
+      }
+export function useSectionSessionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SectionSessionsQuery, SectionSessionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SectionSessionsQuery, SectionSessionsQueryVariables>(SectionSessionsDocument, options);
+        }
+export type SectionSessionsQueryHookResult = ReturnType<typeof useSectionSessionsQuery>;
+export type SectionSessionsLazyQueryHookResult = ReturnType<typeof useSectionSessionsLazyQuery>;
+export type SectionSessionsQueryResult = Apollo.QueryResult<SectionSessionsQuery, SectionSessionsQueryVariables>;
 export const LayerPickerArrayDatasetsDocument = gql`
     query LayerPickerArrayDatasets($search: String, $pagination: OffsetPaginationInput) {
   arrayDatasets(
@@ -12290,13 +12413,9 @@ export const GlobalSearchDocument = gql`
   experiments: experiments(filters: {search: $search}, pagination: $pagination) {
     ...ListExperiment
   }
-  simulations: simulations(filters: {search: $search}, pagination: $pagination) {
-    ...ListSimulation
-  }
 }
     ${ListArrayDatasetFragmentDoc}
-${ListExperimentFragmentDoc}
-${ListSimulationFragmentDoc}`;
+${ListExperimentFragmentDoc}`;
 
 /**
  * __useGlobalSearchQuery__
@@ -12326,114 +12445,3 @@ export function useGlobalSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
 export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
 export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
-export const DetailSimulationDocument = gql`
-    query DetailSimulation($id: ID!) {
-  simulation(id: $id) {
-    ...DetailSimulation
-  }
-}
-    ${DetailSimulationFragmentDoc}`;
-
-/**
- * __useDetailSimulationQuery__
- *
- * To run a query within a React component, call `useDetailSimulationQuery` and pass it any options that fit your needs.
- * When your component renders, `useDetailSimulationQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useDetailSimulationQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDetailSimulationQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DetailSimulationQuery, DetailSimulationQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<DetailSimulationQuery, DetailSimulationQueryVariables>(DetailSimulationDocument, options);
-      }
-export function useDetailSimulationLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DetailSimulationQuery, DetailSimulationQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<DetailSimulationQuery, DetailSimulationQueryVariables>(DetailSimulationDocument, options);
-        }
-export type DetailSimulationQueryHookResult = ReturnType<typeof useDetailSimulationQuery>;
-export type DetailSimulationLazyQueryHookResult = ReturnType<typeof useDetailSimulationLazyQuery>;
-export type DetailSimulationQueryResult = Apollo.QueryResult<DetailSimulationQuery, DetailSimulationQueryVariables>;
-export const ListSimulationsDocument = gql`
-    query ListSimulations($pagination: OffsetPaginationInput, $filters: SimulationFilter, $ordering: [SimulationOrder!]) {
-  simulations(pagination: $pagination, filters: $filters, ordering: $ordering) {
-    ...ListSimulation
-  }
-}
-    ${ListSimulationFragmentDoc}`;
-
-/**
- * __useListSimulationsQuery__
- *
- * To run a query within a React component, call `useListSimulationsQuery` and pass it any options that fit your needs.
- * When your component renders, `useListSimulationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListSimulationsQuery({
- *   variables: {
- *      pagination: // value for 'pagination'
- *      filters: // value for 'filters'
- *      ordering: // value for 'ordering'
- *   },
- * });
- */
-export function useListSimulationsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListSimulationsQuery, ListSimulationsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListSimulationsQuery, ListSimulationsQueryVariables>(ListSimulationsDocument, options);
-      }
-export function useListSimulationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListSimulationsQuery, ListSimulationsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListSimulationsQuery, ListSimulationsQueryVariables>(ListSimulationsDocument, options);
-        }
-export type ListSimulationsQueryHookResult = ReturnType<typeof useListSimulationsQuery>;
-export type ListSimulationsLazyQueryHookResult = ReturnType<typeof useListSimulationsLazyQuery>;
-export type ListSimulationsQueryResult = Apollo.QueryResult<ListSimulationsQuery, ListSimulationsQueryVariables>;
-export const SimulationClockDocument = gql`
-    query SimulationClock($id: ID!) {
-  simulation(id: $id) {
-    id
-    name
-    clock {
-      id
-    }
-  }
-}
-    `;
-
-/**
- * __useSimulationClockQuery__
- *
- * To run a query within a React component, call `useSimulationClockQuery` and pass it any options that fit your needs.
- * When your component renders, `useSimulationClockQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSimulationClockQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useSimulationClockQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SimulationClockQuery, SimulationClockQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SimulationClockQuery, SimulationClockQueryVariables>(SimulationClockDocument, options);
-      }
-export function useSimulationClockLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SimulationClockQuery, SimulationClockQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SimulationClockQuery, SimulationClockQueryVariables>(SimulationClockDocument, options);
-        }
-export type SimulationClockQueryHookResult = ReturnType<typeof useSimulationClockQuery>;
-export type SimulationClockLazyQueryHookResult = ReturnType<typeof useSimulationClockLazyQuery>;
-export type SimulationClockQueryResult = Apollo.QueryResult<SimulationClockQuery, SimulationClockQueryVariables>;

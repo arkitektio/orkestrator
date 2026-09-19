@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { worldUnitsPerPixelAt } from "../../platform/camera/sceneNavigation";
+import { worldUnitsPerPixelAt } from "@/lib/scene/camera/sceneNavigation";
 import type { OutlinePoint } from "./roiOutline";
 
 /**

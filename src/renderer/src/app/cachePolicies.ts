@@ -60,7 +60,6 @@ export const ELEKTRO_PAGINATED_FIELDS: PaginatedFieldMap = {
   myfiles: ["filters", "ordering"],
   myfolders: ["filters", "ordering"],
   neuronModels: ["filters", "ordering"],
-  simulations: ["filters", "ordering"],
   sparseDatasets: ["filters", "ordering"],
   tableDatasets: ["filters", "ordering"],
   workspaceMappings: ["filters", "ordering"],

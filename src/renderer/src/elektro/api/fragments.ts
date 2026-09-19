@@ -102,6 +102,7 @@
       "ScaleTransformation",
       "SequenceTransformation",
       "SeriesLayer",
+      "SimulationState",
       "SparseArray",
       "SparseAxisReference",
       "SparseDataset",

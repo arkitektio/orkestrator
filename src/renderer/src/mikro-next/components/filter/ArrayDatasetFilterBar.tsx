@@ -145,7 +145,7 @@ export type UseArrayDatasetFilterBarOptions = {
  * and dropping most of it.
  *
  * State lives in the URL (nuqs), so a filtered list is shareable — same idiom as
- * elektro's SimulationsPage. Only non-default choices are written, so the
+ * elektro's list pages. Only non-default choices are written, so the
  * default view has a clean URL.
  *
  * No user filter: ArrayDatasetFilter.owner takes the creator's *sub*, while lok's

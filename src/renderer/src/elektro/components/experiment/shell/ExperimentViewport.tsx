@@ -47,7 +47,16 @@ import { LayerRenderer } from "./LayerRenderer";
 
 const rendererFactory = createWebGPURendererFactory({ label: "experiment" });
 
-export const ExperimentViewport = () => {
+/**
+ * "full" is the page's timeline. "mini" is one embedded in another view (a
+ * trace opened inline next to a neuron section): the canvas, rows, probe and
+ * axes, but nothing that reaches outside its box — no `?brush=` writes into the
+ * HOST page's URL, no window-level keys (the host owns F and Esc), and no mode or
+ * annotation chrome a small frame has no room for (drag-to-zoom stays).
+ */
+export type ExperimentViewportVariant = "full" | "mini";
+
+export const ExperimentViewport = ({ variant = "full" }: { variant?: ExperimentViewportVariant }) => {
   const status = useExperimentScopeStatus();
   if (status.phase !== "ready") {
     return (
@@ -57,10 +66,13 @@ export const ExperimentViewport = () => {
     );
   }
   // Keyed: a different experiment remounts the canvas rather than repopulating it.
-  return <ReadyViewport key={status.experimentId} />;
+  return <ReadyViewport key={status.experimentId} variant={variant} />;
 };
 
-const ReadyViewport = () => {
+export const ExperimentMiniViewport = () => <ExperimentViewport variant="mini" />;
+
+const ReadyViewport = ({ variant }: { variant: ExperimentViewportVariant }) => {
+  const full = variant === "full";
   const visible = useTabVisible();
   const rowCount = useViewerStore((s) => s.rowCount);
 
@@ -68,8 +80,8 @@ const ReadyViewport = () => {
     <div className="relative h-full w-full select-none overflow-hidden bg-black [-webkit-user-select:none]">
       {/* Headless: layout and URL follow the stores. */}
       <StackLayoutManager />
-      <TimeRangeUrlSync />
-      <KeyboardShortcuts />
+      {full && <TimeRangeUrlSync />}
+      {full && <KeyboardShortcuts />}
 
       <div className="absolute inset-x-0 top-0 bottom-12">
         <Canvas frameloop={visible ? "demand" : "never"} gl={rendererFactory}>
@@ -83,12 +95,12 @@ const ReadyViewport = () => {
       <MarkLabelsOverlay />
       <ProbeReadout />
       <ZoomBoxOverlay />
-      <AnnotationDrawer />
+      {full && <AnnotationDrawer />}
       <OverviewStrip />
-      <CenterLodReadout />
+      {full && <CenterLodReadout />}
       <TimeAxis />
-      <ExperimentModeControls />
-      <AnnotationToolbar />
+      {full && <ExperimentModeControls />}
+      {full && <AnnotationToolbar />}
       <LoadingBar />
     </div>
   );

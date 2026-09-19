@@ -31,3 +31,15 @@ query ListNeuronModels(
     ...ListNeuronModel
   }
 }
+
+# Where one section was recorded — asked only when its panel opens, never with
+# the model. No `id` on the section: a section id is unique within its cell, not
+# across models, so it must not normalize into a shared `Section:<id>` entry;
+# the result stays keyed by this field's arguments.
+query SectionSessions($model: ID!, $cell: ID!, $section: ID!) {
+  sections(modelId: $model, cellId: $cell, ids: [$section]) {
+    sessions {
+      ...NeuronModelSession
+    }
+  }
+}

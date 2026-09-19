@@ -1,0 +1,15 @@
+query GetArrayDataset($id: ID!) {
+  arrayDataset(id: $id) {
+    ...DetailArrayDataset
+  }
+}
+
+query ListArrayDatasets(
+  $pagination: OffsetPaginationInput
+  $filters: ArrayDatasetFilter
+  $ordering: [ArrayDatasetOrder!]
+) {
+  arrayDatasets(pagination: $pagination, filters: $filters, ordering: $ordering) {
+    ...ListArrayDataset
+  }
+}
