@@ -3,7 +3,14 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const tabsValue = vi.fn();
-vi.mock("@/command/tabs/TabsProvider", () => ({ useTabs: () => tabsValue() }));
+// One fixture, fanned out across the narrow hooks the strip now reads. The
+// split is the point of the refactor: a row takes only the (stable) actions, so
+// it does not re-render when another tab navigates.
+vi.mock("@/command/tabs/TabsProvider", () => ({
+  useTabList: () => tabsValue().tabs,
+  useActiveTabId: () => tabsValue().activeId,
+  useTabActions: () => tabsValue(),
+}));
 
 import RailTabs, { TAB_SPRING_DELAY_MS } from "./RailTabs";
 import { NEW_TAB_PATH } from "@/command/tabs/tabs";

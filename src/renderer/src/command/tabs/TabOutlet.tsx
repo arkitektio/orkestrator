@@ -7,7 +7,7 @@ import { breadcrumbText } from "@/lib/breadcrumbText";
 import { RouterBoundary } from "./RouterBoundary";
 import { TabIdContext } from "./TabContext";
 import { TabVisibilityContext } from "./TabVisibilityContext";
-import { useTabs } from "./TabsProvider";
+import { useActiveTabId, useTabActions, useWarmTabs } from "./TabsProvider";
 
 /**
  * Names a tab after the page it is showing.
@@ -19,7 +19,7 @@ import { useTabs } from "./TabsProvider";
  * in the rail. A cold tab keeps whatever label it last reported.
  */
 const TabTitleReporter = ({ tabId }: { tabId: string }) => {
-  const { setLabel } = useTabs();
+  const { setLabel } = useTabActions();
   const { pathname } = useLocation();
   const breadcrumbs = useReactRouterBreadcrumbs();
 
@@ -56,15 +56,14 @@ const TabTitleReporter = ({ tabId }: { tabId: string }) => {
  * No `basename`: entries are app-relative; the hash mirror owns `baseName`.
  */
 export const TabOutlet = ({ routes }: { routes: React.ReactNode }) => {
-  const { tabs, activeId, warmIds } = useTabs();
+  const warmTabs = useWarmTabs();
+  const activeId = useActiveTabId();
 
   return (
     <>
-      {tabs
-        .filter((tab) => warmIds.has(tab.id))
-        .map((tab) => {
-          const active = tab.id === activeId;
-          return (
+      {warmTabs.map((tab) => {
+        const active = tab.id === activeId;
+        return (
             <div
               key={tab.id}
               data-tab-id={tab.id}

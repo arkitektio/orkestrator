@@ -11,7 +11,7 @@ vi.mock("@/constants", () => ({ baseName: "" }));
 import { CommandPaletteProvider, useCommandContext, useCommandPalette } from "./CommandPaletteProvider";
 import { ActiveTabRouter } from "./tabs/ActiveTabRouter";
 import { TabOutlet } from "./tabs/TabOutlet";
-import { TabsProvider, useTabs } from "./tabs/TabsProvider";
+import { TabsProvider, useTabActions, useTabList } from "./tabs/TabsProvider";
 
 /** A page that offers one object to the palette, named after its path. */
 const Page = ({ name }: { name: string }) => {
@@ -30,7 +30,8 @@ const routes = (
 /** What the palette would show, and the levers to move between tabs. */
 const Chrome = () => {
   const { pageContext } = useCommandPalette();
-  const { tabs, open, focus } = useTabs();
+  const tabs = useTabList();
+  const { open, focus } = useTabActions();
   return (
     <div>
       <span data-testid="context">

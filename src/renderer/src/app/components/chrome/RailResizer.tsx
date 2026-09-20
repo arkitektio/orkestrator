@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   applyRailWidth,
@@ -37,40 +37,37 @@ export const RailResizer = () => {
     applyRailWidth(stored);
   }, []);
 
-  const onPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     // Pointer capture keeps the drag alive when the pointer outruns the handle,
     // which it will — that is the whole point of dragging an edge.
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);
-  }, []);
+  };
 
-  const onPointerMove = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!dragging) return;
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
 
-      // The rail starts at the viewport's left edge, so the pointer's x IS the
-      // width. Coalesced into one write per frame.
-      const next = clampRailWidth(event.clientX);
-      latest.current = next;
+    // The rail starts at the viewport's left edge, so the pointer's x IS the
+    // width. Coalesced into one write per frame.
+    const next = clampRailWidth(event.clientX);
+    latest.current = next;
 
-      if (frame.current === null) {
-        frame.current = requestAnimationFrame(() => {
-          frame.current = null;
-          applyRailWidth(latest.current);
-        });
-      }
-    },
-    [dragging],
-  );
+    if (frame.current === null) {
+      frame.current = requestAnimationFrame(() => {
+        frame.current = null;
+        applyRailWidth(latest.current);
+      });
+    }
+  };
 
-  const endDrag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+  const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     setDragging(false);
     saveRailWidth(latest.current);
-  }, []);
+  };
 
   useEffect(
     () => () => {
@@ -79,18 +76,18 @@ export const RailResizer = () => {
     [],
   );
 
-  const reset = useCallback(() => {
+  const reset = () => {
     latest.current = DEFAULT_RAIL_WIDTH;
     applyRailWidth(DEFAULT_RAIL_WIDTH);
     saveRailWidth(DEFAULT_RAIL_WIDTH);
-  }, []);
+  };
 
-  const nudge = useCallback((delta: number) => {
+  const nudge = (delta: number) => {
     const next = clampRailWidth(latest.current + delta);
     latest.current = next;
     applyRailWidth(next);
     saveRailWidth(next);
-  }, []);
+  };
 
   return (
     <div

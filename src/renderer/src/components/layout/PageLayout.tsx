@@ -69,9 +69,13 @@ export const PageLayout = ({
 
   const { copy: copyPathToClipboard } = useCopyUniversalLink(location);
 
-  const popOut = useCallback(() => {
+  // Not a `useCallback`: it closed over `location` with an empty dependency
+  // array, so it popped out the first pathname the page ever had rather than
+  // the one it is showing — a page navigated within its tab opened the wrong
+  // window.
+  const popOut = () => {
     window.api.openSecondWindow(location.pathname);
-  }, []);
+  };
 
   // Both toggles edit a COPY of the current params rather than passing an object
   // literal: `setParams({...})` replaces the whole query string, so toggling a

@@ -1,6 +1,6 @@
 import { getChromeMode, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { WindowControls } from "./WindowControls";
 
@@ -60,32 +60,32 @@ export const AutoHideTitleBar = () => {
   const mode = getChromeMode();
   const { maximized } = useWindowState();
   const [revealed, setRevealed] = useState(false);
+  // A timer handle, which is what a ref is actually for — unlike `revealed`,
+  // nothing renders from it. These four are plain functions: the component has
+  // exactly one piece of state and re-renders almost never, so the `useCallback`
+  // chain they used to be existed only to satisfy the dependency arrays it had
+  // itself created.
   const closeTimer = useRef<number | null>(null);
 
-  const cancelClose = useCallback(() => {
+  const cancelClose = () => {
     if (closeTimer.current !== null) {
       window.clearTimeout(closeTimer.current);
       closeTimer.current = null;
     }
-  }, []);
+  };
 
-  const reveal = useCallback(() => {
+  const reveal = () => {
     cancelClose();
     setRevealed(true);
-  }, [cancelClose]);
+  };
 
-  const hide = useCallback(() => {
-    cancelClose();
-    setRevealed(false);
-  }, [cancelClose]);
-
-  const hideSoon = useCallback(() => {
+  const hideSoon = () => {
     cancelClose();
     closeTimer.current = window.setTimeout(() => setRevealed(false), BLUR_DELAY_MS);
-  }, [cancelClose]);
+  };
 
   // A pending close must not fire into an unmounted component.
-  useEffect(() => cancelClose, [cancelClose]);
+  useEffect(() => cancelClose, []);
 
   // The close half of the gesture, and the ONLY thing allowed to close it: a
   // move that landed clearly below the bar.
@@ -102,12 +102,17 @@ export const AutoHideTitleBar = () => {
     if (!revealed) return;
 
     const onMove = (event: MouseEvent) => {
-      if (event.clientY > AUTO_HIDE_BAR_HEIGHT + CLOSE_SLACK) hide();
+      if (event.clientY <= AUTO_HIDE_BAR_HEIGHT + CLOSE_SLACK) return;
+      if (closeTimer.current !== null) {
+        window.clearTimeout(closeTimer.current);
+        closeTimer.current = null;
+      }
+      setRevealed(false);
     };
 
     document.addEventListener("mousemove", onMove);
     return () => document.removeEventListener("mousemove", onMove);
-  }, [revealed, hide]);
+  }, [revealed]);
 
   if (mode !== "autohide") {
     return null;

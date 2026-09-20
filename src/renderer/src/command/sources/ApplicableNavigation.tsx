@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 import { matchesFilter, rankByFilter } from "../filter";
 import { useOpenTarget } from "../useOpenTarget";
-import { useTabs } from "../tabs/TabsProvider";
+import { useActiveTab, useTabActions } from "../tabs/TabsProvider";
 import { APP_COMMANDS } from "./appCommands";
 import { ROUTE_CATALOG, searchRoutes } from "./routeCatalog";
 import { breadcrumbText } from "@/lib/breadcrumbText";
@@ -42,7 +42,8 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   const { setTheme, toggleTheme } = useTheme();
   const actions = Arkitekt.useActions();
   const openTarget = useOpenTarget();
-  const { activeTab, setPinned } = useTabs();
+  const activeTab = useActiveTab();
+  const { setPinned } = useTabActions();
 
   const moduleRows = useMemo(
     () =>

@@ -48,8 +48,8 @@ export type INavigationBarProps = {
 
 
 const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
-  const availableServices = Arkitekt.useAvailableServices();
-  const moduleState = Arkitekt.useAvailableModules().find((entry) => entry.key === moduleKey);
+  const moduleState = Arkitekt.useModuleState(moduleKey);
+  const serviceState = Arkitekt.useServiceState(moduleState?.definition.key ?? "");
 
   if (!moduleState) {
     return (
@@ -58,8 +58,6 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
       </div>
     );
   }
-
-  const serviceState = availableServices.find(service => service.key === moduleState.definition.key);
 
   if (!serviceState) {
     return (
@@ -173,13 +171,18 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
   );
 };
 
-const ModuleNavItem = React.memo(({
-  moduleKey,
-  moduleState,
-}: {
-  moduleKey: string;
-  moduleState?: ReturnType<typeof Arkitekt.useAvailableModules>[number];
-}) => {
+/**
+ * One module's tile.
+ *
+ * It selects its own state rather than being handed it. Passing
+ * `availableModules.find(...)` in meant a fresh object on every health tick —
+ * `lastCheckedAt` moves, the list's shallow compare fails, every tile's prop
+ * changes identity — so `React.memo` never once held and polling any single
+ * service redrew the whole grid. Selecting by key, a tick in kraph re-renders
+ * kraph's tile and nothing else, and the memo is no longer load-bearing.
+ */
+const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
+  const moduleState = Arkitekt.useModuleState(moduleKey);
   const { retryModule } = Arkitekt.useActions();
 
   if (!moduleState) {
@@ -337,24 +340,15 @@ const ModuleNavItem = React.memo(({
     </ContextMenuContent>
   </ContextMenu>
   );
-});
-ModuleNavItem.displayName = "ModuleNavItem";
+};
 
 const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
-  const availableModules = Arkitekt.useAvailableModules();
-
-  const moduleOrder = React.useMemo(
-    () =>
-      Object.keys(moduleRegistry).filter((key) =>
-        availableModules.some((entry) => entry.key === key),
-      ),
-    [availableModules],
-  );
-
-  const readyModules = React.useMemo(
-    () => availableModules.filter((entry) => entry.status === "ready").map((entry) => entry.key),
-    [availableModules],
-  );
+  // Keys, not module objects. Both of these are string lists compared
+  // shallowly, so they hold their identity across a service health tick and the
+  // grid redraws only when a module actually appears or becomes ready.
+  const availableKeys = Arkitekt.useAvailableModuleKeys();
+  const readyModules = Arkitekt.useReadyModuleKeys();
+  const moduleOrder = Object.keys(moduleRegistry).filter((key) => availableKeys.includes(key));
 
   return (
     <>
@@ -393,11 +387,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           )}
         </DroppableNavLink>
         {moduleOrder.map((moduleKey) => (
-          <ModuleNavItem
-            key={moduleKey}
-            moduleKey={moduleKey}
-            moduleState={availableModules.find((entry) => entry.key === moduleKey)}
-          />
+          <ModuleNavItem key={moduleKey} moduleKey={moduleKey} />
         ))}
       </div>
       </ModuleNavHoverGroup>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 /**
  * Who is drawing the window frame, and therefore what the title bar must draw.
@@ -62,6 +62,22 @@ export type WindowChromeState = {
   focused: boolean;
 };
 
+/**
+ * The frame's live state, as one store for the whole window.
+ *
+ * Deliberately module-level rather than a hook's own `useState`. There is one
+ * window and one answer, and the previous shape — `useState` + an effect, per
+ * caller — meant every component that wanted to know whether the window was
+ * maximised opened its own IPC round-trip and registered its own broadcast
+ * listener. With three callers that is three of each for one fact, and three
+ * independent first paints from `INITIAL_STATE`, so the same bar could disagree
+ * with itself for a frame.
+ *
+ * Wired on the 0 -> 1 subscriber transition and torn down on 1 -> 0, rather
+ * than once at import: nothing should be listening to the main process while
+ * no chrome is mounted, and re-reading `window.api` on each wire is what lets a
+ * test mount against its own bridge.
+ */
 const INITIAL_STATE: WindowChromeState = {
   maximized: false,
   fullscreen: false,
@@ -71,37 +87,56 @@ const INITIAL_STATE: WindowChromeState = {
   focused: true,
 };
 
-/**
- * The frame's live state.
- *
- * Seeded from `window:get-state` so the very first paint is right — without it
- * a maximised window briefly shows the "restore" button as "maximise" — and
- * then kept current by the broadcast. Returns the inert default outside
- * Electron, so callers need no branch of their own.
- */
-export const useWindowState = (): WindowChromeState => {
-  const [state, setState] = useState<WindowChromeState>(INITIAL_STATE);
+let windowState: WindowChromeState = INITIAL_STATE;
+const windowStateListeners = new Set<() => void>();
+let unwire: (() => void) | null = null;
 
-  useEffect(() => {
-    const controls = window.api?.windowControls;
-    if (!controls) {
-      return;
-    }
-
-    let cancelled = false;
-    void controls.getState().then((initial) => {
-      if (!cancelled) setState(initial);
-    });
-
-    const dispose = controls.onStateChanged(setState);
-    return () => {
-      cancelled = true;
-      dispose();
-    };
-  }, []);
-
-  return state;
+const publishWindowState = (next: WindowChromeState) => {
+  windowState = next;
+  windowStateListeners.forEach((listener) => listener());
 };
+
+const wire = () => {
+  const controls = window.api?.windowControls;
+  if (!controls) return;
+
+  // Seeded from `window:get-state` so the very first paint is right — without
+  // it a maximised window briefly shows the "restore" button as "maximise".
+  let cancelled = false;
+  void controls.getState().then((initial) => {
+    if (!cancelled) publishWindowState(initial);
+  });
+
+  const dispose = controls.onStateChanged(publishWindowState);
+  unwire = () => {
+    cancelled = true;
+    dispose();
+  };
+};
+
+const subscribeWindowState = (listener: () => void): (() => void) => {
+  windowStateListeners.add(listener);
+  if (windowStateListeners.size === 1) wire();
+  return () => {
+    windowStateListeners.delete(listener);
+    if (windowStateListeners.size > 0) return;
+    unwire?.();
+    unwire = null;
+    // Nothing is observing the frame any more, so the last thing it said is not
+    // something to hand the next subscriber as though it were current.
+    windowState = INITIAL_STATE;
+  };
+};
+
+const getWindowStateSnapshot = (): WindowChromeState => windowState;
+
+/**
+ * The frame's live state. Returns the inert default outside Electron, so
+ * callers need no branch of their own, and shares one subscription however
+ * many components ask.
+ */
+export const useWindowState = (): WindowChromeState =>
+  useSyncExternalStore(subscribeWindowState, getWindowStateSnapshot, getWindowStateSnapshot);
 
 /**
  * Double-clicking a title bar maximises the window — a frame behaviour that

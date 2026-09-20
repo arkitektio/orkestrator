@@ -15,7 +15,7 @@ vi.mock("use-react-router-breadcrumbs", () => ({
 
 import { ActiveTabRouter } from "./ActiveTabRouter";
 import { TabOutlet } from "./TabOutlet";
-import { TabsProvider, useTabs } from "./TabsProvider";
+import { TabsProvider, useActiveTabId, useTabActions, useTabList } from "./TabsProvider";
 import { useTabVisible } from "./TabVisibilityContext";
 import { useTabTitle } from "./useTabTitle";
 import { MAX_WARM } from "./tabs";
@@ -42,7 +42,9 @@ const TitledPage = ({ title }: { title: React.ReactNode }) => {
 
 /** Rendered in the CHROME, outside the outlet. */
 const Chrome = () => {
-  const { tabs, activeId, open, focus } = useTabs();
+  const tabs = useTabList();
+  const activeId = useActiveTabId();
+  const { open, focus } = useTabActions();
   return (
     <div>
       <span data-testid="labels">{tabs.map((t) => t.label).join(",")}</span>

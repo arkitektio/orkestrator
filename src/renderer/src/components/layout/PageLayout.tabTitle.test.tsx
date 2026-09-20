@@ -18,10 +18,10 @@ vi.mock("./Sidebars", () => ({ Sidebars: () => null }));
 
 import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
 import { TabOutlet } from "@/command/tabs/TabOutlet";
-import { TabsProvider, useTabs } from "@/command/tabs/TabsProvider";
+import { TabsProvider, useTabList } from "@/command/tabs/TabsProvider";
 import { PageLayout } from "./PageLayout";
 
-const Labels = () => <span data-testid="labels">{useTabs().tabs.map((t) => t.label).join(",")}</span>;
+const Labels = () => <span data-testid="labels">{useTabList().map((t) => t.label).join(",")}</span>;
 
 const DatasetPage = () => {
   const navigate = useNavigate();

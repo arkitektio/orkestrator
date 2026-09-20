@@ -1,8 +1,6 @@
-import { useMemo } from "react";
 import type { Location, To } from "@remix-run/router";
 
-import { activeTab } from "./tabs";
-import { useTabsState } from "./TabsProvider";
+import { useActiveTabView } from "./TabsProvider";
 
 /**
  * The two things a router cannot give the rail.
@@ -23,33 +21,30 @@ export type ActiveTabNavigation = {
 };
 
 export const useActiveTabNavigation = (): ActiveTabNavigation => {
-  const state = useTabsState();
-  const { history } = activeTab(state);
-  // Read the getters into locals: the history object is stable per tab, so
-  // the memo must key on what actually moves.
-  const { location, canGoBack, canGoForward } = history;
+  // The view is already shallow-compared, so this hook re-renders exactly when
+  // one of the values it returns has changed. There is nothing left for a
+  // `useMemo` to save: `location` was in its dependency array and changes
+  // precisely when this hook re-runs, so the memo never held.
+  const { history, location, canGoBack, canGoForward } = useActiveTabView();
 
-  return useMemo(
-    () => ({
-      location,
-      canGoBack,
-      canGoForward,
-      navigate: (to, options) => {
-        if (typeof to === "number") {
-          history.go(to);
-        } else if (options?.replace) {
-          history.replace(to, options.state);
-        } else {
-          history.push(to, options?.state);
-        }
-      },
-      back: () => {
-        if (canGoBack) history.go(-1);
-      },
-      forward: () => {
-        if (canGoForward) history.go(1);
-      },
-    }),
-    [history, location, canGoBack, canGoForward],
-  );
+  return {
+    location,
+    canGoBack,
+    canGoForward,
+    navigate: (to, options) => {
+      if (typeof to === "number") {
+        history.go(to);
+      } else if (options?.replace) {
+        history.replace(to, options.state);
+      } else {
+        history.push(to, options?.state);
+      }
+    },
+    back: () => {
+      if (canGoBack) history.go(-1);
+    },
+    forward: () => {
+      if (canGoForward) history.go(1);
+    },
+  };
 };

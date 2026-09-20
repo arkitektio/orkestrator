@@ -1,4 +1,8 @@
-import { useTabs } from "@/command/tabs/TabsProvider";
+import {
+  useActiveTabId,
+  useTabActions,
+  useTabList,
+} from "@/command/tabs/TabsProvider";
 import { NEW_TAB_PATH, type TabRecord } from "@/command/tabs/tabs";
 import {
   ContextMenu,
@@ -12,7 +16,7 @@ import { SortableList, type SortableRowProps } from "@/lib/dnd/SortableList";
 import { cn } from "@/lib/utils";
 import { acceptsSmartDrag } from "@/providers/smart/dragPayload";
 import { motion, useReducedMotion } from "framer-motion";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Pin, Plus, X } from "lucide-react";
 
 /**
@@ -71,7 +75,9 @@ const TabRow = ({
   /** Opened after the strip first rendered — it arrives rather than just being there. */
   animateIn: boolean;
 }) => {
-  const { focus, close, closeOthers, open, setPinned, move } = useTabs();
+  // Actions only, and deliberately: these are stable for the provider's
+  // lifetime, so a row does not re-render when some other tab navigates.
+  const { focus, close, closeOthers, open, setPinned, move } = useTabActions();
   const reduceMotion = useReducedMotion();
   // Read once, at mount: a tab that arrived in the BACKGROUND (⌘-click,
   // middle-click) gets a brief tint, since nothing else on screen changed to
@@ -225,11 +231,15 @@ const TabRow = ({
  * the keyboard). The order is the tabs' own — `move` — so it is kept with them.
  */
 export const RailTabs = () => {
-  const { tabs, activeId, open, move } = useTabs();
+  const tabs = useTabList();
+  const activeId = useActiveTabId();
+  const { open, move } = useTabActions();
   // The tabs the strip first rendered with (restored ones) do not animate in.
-  const bootRef = useRef<ReadonlySet<string> | null>(null);
-  bootRef.current ??= new Set(tabs.map((tab) => tab.id));
-  const bootIds = bootRef.current;
+  // Lazy STATE rather than a ref written during render: it is initialised once
+  // and never written again, which is exactly what `useState`'s initialiser
+  // means. A render-phase `ref.current ??=` said the same thing while breaking
+  // the rule that a render must not write to a ref.
+  const [bootIds] = useState<ReadonlySet<string>>(() => new Set(tabs.map((tab) => tab.id)));
 
   return (
     // `app-no-drag`: the rail is a window-drag region, and a drag region eats

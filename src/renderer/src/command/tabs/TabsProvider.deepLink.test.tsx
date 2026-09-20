@@ -9,12 +9,13 @@ vi.mock("@/app/Arkitekt", () => ({
 vi.mock("@/constants", () => ({ baseName: "" }));
 
 import { ActiveTabRouter } from "./ActiveTabRouter";
-import { TabsProvider, useTabs } from "./TabsProvider";
+import { TabsProvider, useTabActions, useTabList } from "./TabsProvider";
 import { MAX_TABS } from "./tabs";
 
 const Probe = () => {
   const { pathname } = useLocation();
-  const { tabs, open } = useTabs();
+  const tabs = useTabList();
+  const { open } = useTabActions();
   return (
     <div>
       <span data-testid="path">{pathname}</span>

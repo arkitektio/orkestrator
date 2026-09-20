@@ -1,8 +1,7 @@
 import React from "react";
 import { Router } from "react-router-dom";
 
-import { activeTab } from "./tabs";
-import { useTabsState } from "./TabsProvider";
+import { useActiveTabView } from "./TabsProvider";
 
 /**
  * The chrome-level router: always the ACTIVE tab.
@@ -25,11 +24,10 @@ import { useTabsState } from "./TabsProvider";
  * what owns the web build's `baseName`.
  */
 export const ActiveTabRouter = ({ children }: { children: React.ReactNode }) => {
-  const state = useTabsState();
-  const { history } = activeTab(state);
+  const { history, location, action } = useActiveTabView();
 
   return (
-    <Router location={history.location} navigationType={history.action} navigator={history}>
+    <Router location={location} navigationType={action} navigator={history}>
       {children}
     </Router>
   );
