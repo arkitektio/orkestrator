@@ -2,6 +2,7 @@ import { Arkitekt } from "@/app/Arkitekt";
 import { useDialog } from "@/app/dialog";
 import { moduleIcon } from "@/app/components/navigation/moduleIcons";
 import { useDebug } from "@/providers/debug/DebugContext";
+import { useSettings } from "@/providers/settings/SettingsContext";
 import { useTheme } from "@/providers/ThemeProvider";
 import { smartRegistry } from "@/providers/smart/registry";
 import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
@@ -40,6 +41,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   const breadcrumbs = useReactRouterBreadcrumbs();
   const { debug, setDebug } = useDebug();
   const { setTheme, toggleTheme } = useTheme();
+  const { settings, setSettings } = useSettings();
   const actions = Arkitekt.useActions();
   const openTarget = useOpenTarget();
   const activeTab = useActiveTab();
@@ -205,6 +207,9 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
                     clearCaches: () => void actions.clearAllServiceCaches(),
                     setTheme,
                     toggleTheme,
+                    zoomLevel: settings.defaultZoomLevel,
+                    setZoomLevel: (level) =>
+                      setSettings({ ...settings, defaultZoomLevel: level }),
                   }),
                 )
               }

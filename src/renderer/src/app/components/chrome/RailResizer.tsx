@@ -8,6 +8,7 @@ import {
   loadRailWidth,
   MAX_RAIL_WIDTH,
   MIN_RAIL_WIDTH,
+  railWidthFromPointer,
   saveRailWidth,
 } from "./railWidth";
 
@@ -49,8 +50,9 @@ export const RailResizer = () => {
     if (!dragging) return;
 
     // The rail starts at the viewport's left edge, so the pointer's x IS the
-    // width. Coalesced into one write per frame.
-    const next = clampRailWidth(event.clientX);
+    // width — once page pixels are turned into the counter-zoomed rail's own
+    // (`railWidthFromPointer`). Coalesced into one write per frame.
+    const next = railWidthFromPointer(event.clientX, event.currentTarget.currentCSSZoom);
     latest.current = next;
 
     if (frame.current === null) {

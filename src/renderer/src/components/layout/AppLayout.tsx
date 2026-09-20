@@ -3,6 +3,7 @@ import { RailChrome } from "@/app/components/chrome/RailChrome";
 import { RailResizer } from "@/app/components/chrome/RailResizer";
 import { dragZoneDoubleClick, getChromeMode } from "@/lib/platform";
 import { cn } from "@/lib/utils";
+import { ChromeSurfaceProvider } from "./ChromeSurface";
 import { PageDialogHost } from "./PageDialogHost";
 
 export type AppLayoutProps = {
@@ -33,10 +34,17 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
     <div className="rail-glass-surface flex flex-col bg-sidebar text-foreground h-screen">
       {/* Windows only, and 0px tall until the pointer touches the top edge;
           nothing at all on macOS, Linux or the web. */}
-      <AutoHideTitleBar />
+      <ChromeSurfaceProvider>
+        <div className="chrome-zoom shrink-0">
+          <AutoHideTitleBar />
+        </div>
+      </ChromeSurfaceProvider>
 
       <div className="flex-1 min-h-0 flex flex-row">
-      {/* The rail — the only chrome this window has. */}
+      {/* The rail — the only chrome this window has. `chrome-zoom` pins it at
+          native size while the page zooms (`ChromeSurface.tsx`); the provider
+          lets the menus and tooltips it opens follow it out of their portals. */}
+      <ChromeSurfaceProvider>
       <div
         // No fill and no hairline of its own: the rail IS the window surface,
         // and a tint a few percent off `bg-sidebar` read as a seam beside the
@@ -51,7 +59,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
         // a drag region swallows clicks in silence, so that opt-out is
         // load-bearing, and `RailChrome.test.tsx` asserts it.
         className={cn(
-          "relative flex-initial flex flex-col w-(--rail-width) shrink-0",
+          "chrome-zoom relative flex-initial flex flex-col w-(--rail-width) shrink-0",
           mode !== "none" && "app-drag",
         )}
         onDoubleClick={dragZoneDoubleClick(mode)}
@@ -72,6 +80,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
         </nav>
         <RailResizer />
       </div>
+      </ChromeSurfaceProvider>
 
       {/* The floating content card. `min-h-0`/`min-w-0` keep its own scroll
           containers scrolling instead of growing the card past the window. */}

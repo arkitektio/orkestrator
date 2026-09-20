@@ -187,7 +187,8 @@ export class WindowManager implements AppModule {
     constructor(ipcTransport: IpcTransport) {
         this.store = new Store();
         this.ipcTransport = ipcTransport;
-        this.zoomFactor = this.store.get("zoomFactor", 0.7) as number;
+        // Same default as the renderer's `defaultZoomLevel` (settings validator).
+        this.zoomFactor = this.store.get("zoomFactor", 0.8) as number;
         this.railGlass = this.store.get(RAIL_GLASS_KEY, false) === true;
         this.debouncedSetZoomFactor = debounce((zoomLevel: number, window: BrowserWindow) => {
             window.webContents.setZoomFactor(zoomLevel);
@@ -305,7 +306,6 @@ export class WindowManager implements AppModule {
 
         this.mainWindow.on('ready-to-show', () => {
             this.mainWindow?.show();
-            this.mainWindow?.webContents.setZoomFactor(1.0);
             if (is.dev) {
                 this.mainWindow?.webContents.openDevTools({ mode: this.devToolsMode() });
             }

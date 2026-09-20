@@ -68,9 +68,22 @@ function applyBrandSettings(settings: Settings) {
   setBrandBase({ hue: settings.brandHue, chroma: settings.brandChroma });
 }
 
+/**
+ * The page zoom has two halves. Main zooms the whole webContents (a Chromium
+ * zoom factor, so the page's viewers and drag maths keep one coordinate
+ * space); the chrome counters it with CSS `zoom: calc(1 / var(--page-zoom))`
+ * so the rail stays at a fixed native size (`.chrome-zoom` in `index.css`,
+ * `ChromeSurface.tsx`). The token is only ever the factor main was actually
+ * asked for: in the web build nothing zooms the window, so the rail must not
+ * counter a zoom that never happened.
+ */
 function applyZoomLevel(zoomLevel: number) {
-  if (typeof window !== "undefined" && window.api) {
+  const bridged = typeof window !== "undefined" && !!window.api;
+  if (bridged) {
     window.api.setZoomLevel(zoomLevel).catch(console.error);
+  }
+  if (typeof document !== "undefined") {
+    document.documentElement.style.setProperty("--page-zoom", String(bridged ? zoomLevel : 1));
   }
 }
 

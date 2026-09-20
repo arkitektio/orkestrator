@@ -45,6 +45,20 @@
    * tabs, so it is a real sidebar rather than an icon strip. One token so the
    * width is changed in one place. */
   --rail-width: 15rem;
+  /* The window's Chromium zoom factor, as the settings store last applied it
+   * (`applyZoomLevel`). The chrome counters it so the rail keeps one size
+   * while the page zooms; see `.chrome-zoom` below. */
+  --page-zoom: 1;
+  --chrome-zoom: calc(1 / var(--page-zoom));
+}
+
+/* Window chrome renders at native size whatever the page zoom is: the rail
+   carries this, and so does any overlay opened from it (they portal to `body`,
+   so they cannot inherit it — `ChromeSurface.tsx`). Unlayered so it is never
+   outranked by a utility. CSS `zoom` reflows, unlike `transform`, and since
+   Chromium 128 the client rects it reports match the pointer's coordinates. */
+.chrome-zoom {
+  zoom: var(--chrome-zoom);
 }
 
 /* The command palette's open and close are box animations driven from
@@ -86,7 +100,6 @@
   }
   @keyframes task-pulse {
     from, to { opacity: 0; }
-  }
   }
 }
 

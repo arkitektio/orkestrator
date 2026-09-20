@@ -22,6 +22,17 @@ export const DEFAULT_RAIL_WIDTH = 240;
 export const clampRailWidth = (width: number): number =>
   Math.min(MAX_RAIL_WIDTH, Math.max(MIN_RAIL_WIDTH, Math.round(width)));
 
+/**
+ * The rail width a pointer at `clientX` asks for.
+ *
+ * The rail starts at the viewport's left edge, so the pointer's x IS the
+ * width — in the page's coordinates. The rail is counter-zoomed against the
+ * page zoom (`.chrome-zoom`), so its own pixels are `cssZoom` times larger
+ * than the page's; `cssZoom` is the handle's `Element.currentCSSZoom`.
+ */
+export const railWidthFromPointer = (clientX: number, cssZoom: number): number =>
+  clampRailWidth(clientX / (Number.isFinite(cssZoom) && cssZoom > 0 ? cssZoom : 1));
+
 export const loadRailWidth = (storage: Storage = localStorage): number => {
   let raw: string | null = null;
   try {

@@ -559,10 +559,14 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
                     render={({ field }) => (
                       <FormItem>
                         <div className="flex flex-row items-center justify-between w-full gap-2">
-                          <FormLabel>
-                            Default Zoom Level (
-                            {Math.round((field.value || 1.0) * 100)}%)
-                          </FormLabel>
+                          <div className="flex flex-col gap-1">
+                            <FormLabel>
+                              Page zoom ({Math.round((field.value || 1.0) * 100)}%)
+                            </FormLabel>
+                            <FormDescription>
+                              Scales the page content. The sidebar keeps its size.
+                            </FormDescription>
+                          </div>
                           <FormControl>
                             <div className="flex items-center gap-2">
                               <Button
