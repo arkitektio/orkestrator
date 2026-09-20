@@ -18,6 +18,16 @@ export const settingsValidator = zod.object({
   brandChroma: zod.number().min(0).max(1).optional(),
   /** Let the open scene's main layer drive the brand hue. */
   sceneThemeSync: zod.boolean(),
+  /**
+   * Translucent sidebar: the OS blurs the desktop behind the rail (macOS
+   * vibrancy, Windows acrylic). Ignored where the platform cannot draw it.
+   */
+  railGlass: zod.boolean(),
+  /**
+   * How see-through the glass rail is, 0 (the flat sidebar colour) to 1 (the
+   * bare OS blur). What is left is the sidebar colour laid over the blur.
+   */
+  railGlassTransparency: zod.number().min(0).max(1),
 
   // ── Voice input (see `src/renderer/src/voice`) ──
   /** Master switch. Off means nothing voice-related is loaded or run. */
@@ -57,6 +67,8 @@ export const defaultSettings: Settings = {
   brandHue: 267.256,
   brandChroma: 0.20962,
   sceneThemeSync: true,
+  railGlass: false,
+  railGlassTransparency: 0.7,
   voiceControl: false,
   voiceEngine: "native",
   voiceLanguage: "auto",

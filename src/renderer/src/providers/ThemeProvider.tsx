@@ -72,9 +72,12 @@ export function ThemeProvider({
     root.classList.add(resolvedTheme);
     // The window frame has parts CSS cannot reach (the background Chromium
     // paints during a resize, Windows' overlay glyphs); main recolours them.
-    // Optional all the way down: a browser tab has no frame of ours.
-    window.api?.windowControls?.setTheme?.(resolvedTheme);
-  }, [resolvedTheme]);
+    // Optional all the way down: a browser tab has no frame of ours. The
+    // chosen mode rides along because main mirrors it into the native theme
+    // (the vibrancy material follows it), and "system" must stay "system"
+    // there or the OS query this component resolves it from stops changing.
+    window.api?.windowControls?.setTheme?.(resolvedTheme, theme);
+  }, [resolvedTheme, theme]);
 
   const setTheme = useCallback(
     (next: Theme) => {

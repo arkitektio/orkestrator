@@ -31,7 +31,9 @@ import { VoiceFillBadge } from "./ui/VoiceMicBadge";
  *    whatever was said in that moment, usually nothing.
  */
 
-const PALETTE_INPUT_SELECTOR = '[data-slot="command-input"]';
+// The palette's OWN input. `command-input` is shared with every combobox and
+// the New Tab page's search, and a query for it found those first.
+const PALETTE_INPUT_SELECTOR = '[data-slot="palette-input"]';
 const PALETTE_INPUT_WAIT_MS = 1_500;
 /** Two presses this close together mean hands-free. */
 const DOUBLE_TAP_MS = 450;

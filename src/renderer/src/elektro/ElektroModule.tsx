@@ -1,3 +1,4 @@
+import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
 import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import React from "react";
@@ -30,7 +31,7 @@ interface Props { }
 
 export const ElektroModule: React.FC<Props> = () => {
   return (
-    <Guard.Elektro unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>}>
+    <Guard.Elektro fallback={<ServiceUnavailable serviceKey="elektro" />}>
       <ElektroZarrStoreProvider>
         <ElektroParquetProvider>
         <ModuleLayout pane={<StandardPane />}>

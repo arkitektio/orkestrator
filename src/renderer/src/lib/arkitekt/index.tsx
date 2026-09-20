@@ -31,23 +31,39 @@ import {
 } from "./hooks";
 // When using the Tauri API npm package:
 
+export type ServiceGuardProps = {
+  children: React.ReactNode;
+  /**
+   * What to show for EVERY non-ready state a specific prop below does not
+   * cover. A page-level fallback that reads the service's own state (why it
+   * is down, a retry) belongs here; the per-state props are for callers that
+   * want to render nothing, or something different, for one state.
+   */
+  fallback?: React.ReactNode;
+  unavailable?: React.ReactNode;
+  unconfigured?: React.ReactNode;
+  configuring?: React.ReactNode;
+  challenging?: React.ReactNode;
+};
+
 export const buildGuard =
   (key: string) =>
-    (props: { children: React.ReactNode; unavailable?: React.ReactNode; unconfigured?: React.ReactNode; configuring?: React.ReactNode; challenging?: React.ReactNode }) => {
+    (props: ServiceGuardProps) => {
       const serviceState = useServiceState(key);
+      const fallback = props.fallback ?? null;
 
       if (!serviceState) {
-        return props.unavailable ?? null;
+        return props.unavailable ?? fallback;
       }
 
       switch (serviceState.status) {
         case "unconfigured":
         case "invalid":
-          return props.unconfigured ?? null;
+          return props.unconfigured ?? fallback;
         case "configured":
-          return props.configuring ?? null;
+          return props.configuring ?? fallback;
         case "checking":
-          return props.challenging ?? null;
+          return props.challenging ?? fallback;
         case "ready":
           return props.children;
         default:

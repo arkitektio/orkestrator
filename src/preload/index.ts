@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 import { Assign } from "../main/message";
-import type { ChromeTheme, WindowChromeState } from "../main/modules/WindowManager";
+import type { ChromeTheme, ChromeThemeSource, WindowChromeState } from "../main/modules/WindowManager";
 import type {
   VoiceCatalogEntry,
   VoiceEvent,
@@ -58,7 +58,14 @@ const api = {
      * shows during a resize, the Windows overlay glyphs — so it is told the
      * resolved theme and colours them itself.
      */
-    setTheme: (theme: ChromeTheme) => ipcRenderer.send("window:set-theme", theme),
+    setTheme: (theme: ChromeTheme, source?: ChromeThemeSource) =>
+      ipcRenderer.send("window:set-theme", theme, source),
+    /**
+     * The translucent sidebar is the OS blurring the desktop behind the
+     * window, which only main can switch on (`vibrancy` / `backgroundMaterial`).
+     * Global: one preference, every window follows it.
+     */
+    setRailGlass: (enabled: boolean) => ipcRenderer.send("window:set-rail-glass", enabled),
   },
   /**
    * Deep links land here: main asks the renderer to open a path as a tab

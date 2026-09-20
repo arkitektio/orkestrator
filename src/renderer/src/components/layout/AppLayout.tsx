@@ -27,7 +27,10 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
   const mode = getChromeMode();
 
   return (
-    <div className="flex flex-col bg-sidebar text-foreground h-screen">
+    // `rail-glass-surface`: with the translucent sidebar on, this is the
+    // desktop seen through the OS blur, with the sidebar colour laid back over
+    // it at the share the transparency setting leaves (`index.css`).
+    <div className="rail-glass-surface flex flex-col bg-sidebar text-foreground h-screen">
       {/* Windows only, and 0px tall until the pointer touches the top edge;
           nothing at all on macOS, Linux or the web. */}
       <AutoHideTitleBar />

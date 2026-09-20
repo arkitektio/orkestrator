@@ -38,6 +38,8 @@ import {
 import type { Action } from "@/lib/localactions/LocalActionProvider";
 import { useDebug } from "@/providers/debug/DebugContext";
 import { useSettings } from "@/providers/settings/SettingsContext";
+import { getPlatform } from "@/lib/platform";
+import { Slider } from "@/components/ui/slider";
 import {
   Bug,
   CheckCircle,
@@ -477,6 +479,45 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
                   label="Scene Theme Sync"
                   description="Tint the app to the main layer's colormap while a scene or image is open"
                 />
+                {/* The OS draws this (macOS vibrancy, Windows acrylic); Linux
+                    and the browser have nothing to switch on. */}
+                {(getPlatform() === "darwin" || getPlatform() === "win32") && (
+                  <>
+                    <SwitchField
+                      name="railGlass"
+                      label="Translucent sidebar"
+                      description="Let the desktop show through the sidebar, blurred, the way macOS windows do"
+                    />
+                    {data.railGlass && (
+                      <FormField
+                        control={form.control}
+                        name="railGlassTransparency"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex flex-row items-center justify-between gap-4">
+                              <FormLabel>
+                                Sidebar transparency ({Math.round((field.value ?? 0.7) * 100)}%)
+                              </FormLabel>
+                              <FormControl>
+                                <Slider
+                                  className="w-40"
+                                  min={0}
+                                  max={100}
+                                  step={5}
+                                  value={[Math.round((field.value ?? 0.7) * 100)]}
+                                  onValueChange={([value]) => field.onChange(value / 100)}
+                                />
+                              </FormControl>
+                            </div>
+                            <FormDescription>
+                              How much of the desktop shows through. Lower keeps more of the sidebar colour for legibility.
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </>
+                )}
                 <ThemeCustomizer control={form.control} />
               </CardContent>
             </Card>

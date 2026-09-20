@@ -1,3 +1,4 @@
+import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
 import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import React from "react";
@@ -20,7 +21,7 @@ interface Props { }
 
 export const KabinetModule: React.FC<Props> = () => {
   return (
-    <Guard.Kabinet unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>}>
+    <Guard.Kabinet fallback={<ServiceUnavailable serviceKey="kabinet" />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route path="app-store" element={<AppStorePage />} />

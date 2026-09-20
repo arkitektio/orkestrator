@@ -1,9 +1,16 @@
 import { dragZoneDoubleClick, getChromeMode, trafficLightGutter, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight, Check, RotateCw, Share2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, MoreHorizontal, RotateCw, Share2 } from "lucide-react";
 
 import { useActiveTabNavigation } from "@/command/tabs/useActiveTabNavigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCopyUniversalLink } from "@/hooks/use-copy-universal-link";
+import { useMeasuredWidth, visibleNavCount } from "./navOverflow";
 import { TitleSearchBar } from "./TitleSearchBar";
 import { WindowControls } from "./WindowControls";
 
@@ -26,6 +33,15 @@ import { WindowControls } from "./WindowControls";
 const navButtonClass =
   "app-no-drag flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent";
 
+type NavItem = {
+  key: string;
+  label: string;
+  title?: string;
+  icon: React.ReactNode;
+  disabled?: boolean;
+  onSelect: () => void;
+};
+
 /**
  * Back, forward, reload, share — the row above the search, as a browser has.
  *
@@ -34,10 +50,16 @@ const navButtonClass =
  * rather than silently doing nothing. Share copies the active tab's universal
  * link (`lib/universalLink.ts`): the one URL that opens this page from a chat
  * or an email, whatever machine it is read on.
+ *
+ * The rail can be dragged narrow, and on macOS the traffic lights take the
+ * first 78px of this row, so the buttons do not always fit. The row measures
+ * itself and folds buttons from the right behind a "…" menu — Share goes
+ * first, Back last, in the order they are least missed.
  */
 const NavButtons = () => {
   const { back, forward, canGoBack, canGoForward, location } = useActiveTabNavigation();
   const { copy, copied } = useCopyUniversalLink(location);
+  const { ref, width } = useMeasuredWidth<HTMLDivElement>();
 
   const reload = () => {
     if (window.api) {
@@ -47,44 +69,58 @@ const NavButtons = () => {
     }
   };
 
+  const items: NavItem[] = [
+    { key: "back", label: "Back", icon: <ArrowLeft className="h-3.5 w-3.5" />, disabled: !canGoBack, onSelect: back },
+    { key: "forward", label: "Forward", icon: <ArrowRight className="h-3.5 w-3.5" />, disabled: !canGoForward, onSelect: forward },
+    { key: "reload", label: "Reload", icon: <RotateCw className="h-3.5 w-3.5" />, onSelect: reload },
+    {
+      key: "share",
+      label: "Share",
+      title: copied ? "Link copied" : "Copy a link to this page",
+      icon: copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Share2 className="h-3.5 w-3.5" />,
+      onSelect: () => void copy(),
+    },
+  ];
+
+  const visible = visibleNavCount(width, items.length);
+  const inline = items.slice(0, visible);
+  const overflow = items.slice(visible);
+
   return (
-    <>
-      <button
-        type="button"
-        aria-label="Back"
-        className={navButtonClass}
-        disabled={!canGoBack}
-        onClick={back}
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        aria-label="Forward"
-        className={navButtonClass}
-        disabled={!canGoForward}
-        onClick={forward}
-      >
-        <ArrowRight className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        aria-label="Reload"
-        className={navButtonClass}
-        onClick={reload}
-      >
-        <RotateCw className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        aria-label="Share"
-        title={copied ? "Link copied" : "Copy a link to this page"}
-        className={navButtonClass}
-        onClick={() => void copy()}
-      >
-        {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Share2 className="h-3.5 w-3.5" />}
-      </button>
-    </>
+    // `min-w-0` so this can shrink below its content and report the width
+    // that is actually there, instead of pushing the row wider.
+    <div ref={ref} className="flex min-w-0 flex-1 items-center gap-0.5">
+      {inline.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          aria-label={item.label}
+          title={item.title}
+          className={navButtonClass}
+          disabled={item.disabled}
+          onClick={item.onSelect}
+        >
+          {item.icon}
+        </button>
+      ))}
+      {overflow.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" aria-label="More" title="More" className={navButtonClass}>
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-36">
+            {overflow.map((item) => (
+              <DropdownMenuItem key={item.key} disabled={item.disabled} onSelect={item.onSelect}>
+                {item.icon}
+                {item.title ?? item.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
   );
 };
 
@@ -113,8 +149,6 @@ export const RailChrome = () => {
         )}
 
         <NavButtons />
-
-        <div className="flex-1" />
 
         {/* Linux is the one genuinely frameless platform, so it is the one that
             needs us to supply these — inline here rather than stranded at the

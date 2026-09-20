@@ -246,7 +246,10 @@ export const RailTabs = () => {
     // the clicks — and the drag-to-reorder — of everything inside it that has
     // not opted out. The empty rail BELOW this list still moves the window.
     <div className="app-no-drag flex min-w-0 flex-col gap-0.5 px-2 pb-2">
-      <div className="sticky top-0 z-10 flex items-center justify-between bg-sidebar px-2 pb-1 pt-0.5">
+      {/* Opaque so the list scrolls under it, not through it. Under glass an
+          opaque block would be the one solid patch on a see-through rail, so
+          it blurs what scrolls beneath instead. */}
+      <div className="sticky top-0 z-10 flex items-center justify-between bg-sidebar glass:bg-transparent glass:backdrop-blur-sm px-2 pb-1 pt-0.5">
         <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
           Open
         </span>

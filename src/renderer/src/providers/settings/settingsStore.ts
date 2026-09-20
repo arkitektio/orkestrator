@@ -1,3 +1,4 @@
+import { getPlatform } from "@/lib/platform";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import { setBrandBase } from "./brandTheme";
 import { defaultSettings, type Settings, settingsValidator } from "./validator";
@@ -73,6 +74,29 @@ function applyZoomLevel(zoomLevel: number) {
   }
 }
 
+/**
+ * The translucent sidebar has two halves. Main switches the OS effect on the
+ * window; the page has to stop painting under the rail, which the `rail-glass`
+ * class on the root does (`.rail-glass body` and the `glass:` variant in
+ * `index.css`). Neither half applies where the platform cannot draw it, so
+ * the web build and Linux keep the flat rail whatever the stored value says.
+ */
+function applyRailGlass(enabled: boolean, transparency: number, notifyMain: boolean) {
+  if (typeof document === "undefined") return;
+  const platform = getPlatform();
+  const supported = platform === "darwin" || platform === "win32";
+  const on = enabled && supported;
+  const root = document.documentElement;
+  root.classList.toggle("rail-glass", on);
+  // The share of the sidebar colour painted back over the blur. The page
+  // reads it in `index.css`; 0 is the bare OS blur, 1 the flat rail. Pure
+  // CSS, so a change of amount never has to cross to main.
+  root.style.setProperty("--rail-glass-tint", String(1 - transparency));
+  if (supported && notifyMain) {
+    window.api?.windowControls?.setRailGlass?.(on);
+  }
+}
+
 export function createSettingsStore(
   initialDefaultSettings: Settings = defaultSettings,
 ): SettingsStore {
@@ -96,6 +120,19 @@ export function createSettingsStore(
           normalizedSettings.defaultZoomLevel !== previousSettings?.defaultZoomLevel
         ) {
           applyZoomLevel(normalizedSettings.defaultZoomLevel);
+        }
+
+        const glassToggled =
+          isHydrating || normalizedSettings.railGlass !== previousSettings?.railGlass;
+        if (
+          glassToggled ||
+          normalizedSettings.railGlassTransparency !== previousSettings?.railGlassTransparency
+        ) {
+          applyRailGlass(
+            normalizedSettings.railGlass,
+            normalizedSettings.railGlassTransparency,
+            glassToggled,
+          );
         }
       }
       set({ settings: normalizedSettings });

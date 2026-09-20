@@ -1,3 +1,4 @@
+import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
 import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import React from "react";
@@ -12,7 +13,7 @@ interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {
   return (
-    <Guard.Lovekit unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>}>
+    <Guard.Lovekit fallback={<ServiceUnavailable serviceKey="lovekit" />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route path="streams/:id" element={<StreamPage />} />

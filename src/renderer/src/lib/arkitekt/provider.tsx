@@ -11,6 +11,7 @@ import {
   StoredArkitektSession,
 } from "./fakts/sessionStorageSchema";
 import {
+  adoptPersistedBook,
   emptyProfileBook,
   createProfileFromSession,
   getActiveProfile,
@@ -26,6 +27,7 @@ import {
   upsertProfile,
   writeStoredProfileBook,
   deriveProfileId,
+  PROFILE_BOOK_STORAGE_KEY,
   type StoredProfileBook,
 } from "./fakts/profileStorageSchema";
 import {
@@ -59,14 +61,15 @@ import { enhanceManifest, report } from "./utils";
 import {
   isAbortLikeError,
   normalizeToken,
-  refreshAccessToken,
+  RefreshTokenError,
   shouldRefreshToken,
 } from "./runtime/auth";
 import { disposeConnection, instantiateConnection, type ServiceMap } from "./runtime/connection";
 import {
   describeRefreshFailure,
-  refreshProfileToken,
+  refreshSession,
 } from "./runtime/profileAuth";
+import { rotateProfileSession } from "./runtime/sharedRefresh";
 import {
   buildConfigurationIssues,
   buildModuleStates,
@@ -161,11 +164,50 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     async (
       update: (book: StoredProfileBook) => StoredProfileBook,
     ): Promise<StoredProfileBook> => {
-      const next = update(store.getState().profileBook);
-      store.setState({ profileBook: next });
       const storage = await storageProviderRef.current();
+      // Compose off what is PERSISTED, not off this window's copy. Popouts
+      // share the book, and another window may have rotated a token for a
+      // profile that is parked here; writing our stale copy over it would
+      // hand that profile a spent refresh token on its next launch. Which
+      // profile is active stays a per-window notion.
+      const base = adoptPersistedBook(loadStoredProfileBook(storage), store.getState().profileBook);
+      const next = update(base);
+      store.setState({ profileBook: next });
       writeStoredProfileBook(next, storage);
       return next;
+    },
+    [store],
+  );
+
+  /** The session for a profile as it is persisted right now. */
+  const readPersistedSession = useCallback(
+    async (profileId: string): Promise<StoredArkitektSession | null> => {
+      const storage = await storageProviderRef.current();
+      return loadStoredProfileBook(storage).profiles[profileId]?.session ?? null;
+    },
+    [],
+  );
+
+  /**
+   * Put a rotated session under the live connection — but only if that
+   * profile is still the live one; otherwise it belongs to a parked profile
+   * now and has already been written to that profile's slot.
+   */
+  const adoptLiveSession = useCallback(
+    (profileId: string, nextSession: StoredArkitektSession) => {
+      if (store.getState().profileBook.activeProfileId !== profileId) return;
+      const connection = store.getState().connection;
+      store.setState({
+        storedSession: nextSession,
+        connection: connection
+          ? {
+              ...connection,
+              token: nextSession.token,
+              fakts: nextSession.fakts,
+              serviceInstanceMap: nextSession.fakts.instances,
+            }
+          : connection,
+      });
     },
     [store],
   );
@@ -204,45 +246,38 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       try {
         // Every refresh response re-renders the fakts envelope, so this is
         // also how instance/alias changes reach us without re-approval.
-        const { token: nextToken, fakts: refreshedFakts } = await refreshAccessToken(
-          session.endpoint.token_endpoint,
-          currentToken,
-          controllerRef.current || undefined,
-        );
-        // No envelope on the response means the server could not re-render it,
-        // not that our config went away.
-        const nextFakts = refreshedFakts ?? session.fakts;
+        // Under the cross-window lock: another window may have rotated this
+        // very token, in which case its rotation is adopted instead of ours
+        // being replayed (which would revoke the whole chain server-side).
+        const held = { ...session, token: currentToken };
+        const lockId = activeProfileId ?? session.endpoint.base_url;
+        const { session: nextSession, refreshed } = await rotateProfileSession({
+          profileId: lockId,
+          held,
+          readPersisted: () =>
+            activeProfileId ? readPersistedSession(activeProfileId) : Promise.resolve(null),
+          refresh: (s) => refreshSession(s, controllerRef.current || undefined),
+          persist: async (s) => {
+            if (!activeProfileId) return;
+            // `updateProfileSession` drops the write if the profile is gone —
+            // the user can remove a profile while its refresh is in flight.
+            await persistBook((book) => updateProfileSession(book, activeProfileId, s));
+          },
+        });
 
-        dlog("[ArkitektProvider] Token refresh succeeded");
-        const nextSession = { ...session, token: nextToken, fakts: nextFakts };
+        dlog(
+          refreshed
+            ? "[ArkitektProvider] Token refresh succeeded"
+            : "[ArkitektProvider] Adopted a token rotated by another window",
+        );
 
         if (activeProfileId) {
-          // `updateProfileSession` drops the write if the profile is gone —
-          // the user can remove a profile while its refresh is in flight.
-          await persistBook((book) =>
-            updateProfileSession(book, activeProfileId, nextSession),
-          );
+          adoptLiveSession(activeProfileId, nextSession);
+        } else {
+          store.setState({ storedSession: nextSession });
         }
 
-        // Only patch the LIVE connection if the profile we refreshed is still
-        // the live one. Otherwise this token belongs to a parked profile now,
-        // and it has already been written to that profile's slot above.
-        if (store.getState().profileBook.activeProfileId === activeProfileId) {
-          const connection = store.getState().connection;
-          store.setState({
-            storedSession: nextSession,
-            connection: connection
-              ? {
-                  ...connection,
-                  token: nextToken,
-                  fakts: nextFakts,
-                  serviceInstanceMap: nextFakts.instances,
-                }
-              : connection,
-          });
-        }
-
-        return nextToken;
+        return nextSession.token;
       } catch (refreshError) {
         console.error("[ArkitektProvider] Token refresh failed:", refreshError);
         throw refreshError;
@@ -536,9 +571,18 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         }
 
         if (profileId) {
-          await persistBook((book) =>
-            updateProfileSession(book, profileId, nextPersistedSession),
-          );
+          // Patch the alias map onto whatever is PERSISTED rather than writing
+          // our in-memory session over it: only the rotation paths may write a
+          // token, or an alias fix landing after another window's refresh
+          // would put the spent token back.
+          await persistBook((book) => {
+            const persisted = book.profiles[profileId]?.session;
+            if (!persisted) return book;
+            return updateProfileSession(book, profileId, {
+              ...persisted,
+              aliasMap: nextPersistedSession.aliasMap,
+            });
+          });
         }
 
         dlog("[ArkitektProvider] validateService succeeded:", serviceKey, "alias:", alias);
@@ -760,15 +804,22 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
 
       try {
         const manifest = await resolveEnhancedManifest();
-        const nextSession = await refreshProfileToken(profile);
-
-        // (2) — persist the rotation before the swap can throw.
-        await persistBook((book) =>
-          setActiveProfile(
-            updateProfileSession(markProfileOk(book, profileId), profileId, nextSession),
-            profileId,
-          ),
-        );
+        // (2) — the rotation is persisted (inside `rotateProfileSession`,
+        // under the cross-window lock) before the swap can throw.
+        const { session: nextSession } = await rotateProfileSession({
+          profileId,
+          held: profile.session,
+          readPersisted: () => readPersistedSession(profileId),
+          refresh: (s) => refreshSession(s),
+          persist: async (s) => {
+            await persistBook((book) =>
+              setActiveProfile(
+                updateProfileSession(markProfileOk(book, profileId), profileId, s),
+                profileId,
+              ),
+            );
+          },
+        });
 
         // The profile may have been removed while its refresh was in flight.
         if (!store.getState().profileBook.profiles[profileId]) {
@@ -1006,11 +1057,20 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
 
         // The same path a switch takes — prove the credential, persist the
         // rotation, then hydrate — so there is one implementation of "bring a
-        // profile up" rather than two that drift.
-        const nextSession = await refreshProfileToken(active);
-        await persistBook((current) =>
-          updateProfileSession(markProfileOk(current, active.id), active.id, nextSession),
-        );
+        // profile up" rather than two that drift. A popout starting next to
+        // the main window adopts the main window's rotation here rather than
+        // spending the same refresh token a second time.
+        const { session: nextSession } = await rotateProfileSession({
+          profileId: active.id,
+          held: active.session,
+          readPersisted: () => readPersistedSession(active.id),
+          refresh: (s) => refreshSession(s),
+          persist: async (s) => {
+            await persistBook((current) =>
+              updateProfileSession(markProfileOk(current, active.id), active.id, s),
+            );
+          },
+        });
 
         hydrateConnection(
           nextSession,
@@ -1030,7 +1090,13 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       } catch (error) {
         const message = error instanceof Error ? error.message : "Auto-login failed";
 
-        console.error("[ArkitektProvider] Bootstrap error:", error);
+        console.error(
+          "[ArkitektProvider] Bootstrap error:",
+          error,
+          // The OAuth2 `error` member is what tells a dead refresh chain
+          // (`invalid_grant`) apart from a misconfigured client.
+          error instanceof RefreshTokenError ? { status: error.status, code: error.code } : "",
+        );
 
         // Mark the profile stale only if the server actually refused its
         // credential, so an offline start does not present every login as
@@ -1053,6 +1119,41 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     void run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // runs once on mount
+
+  // ── Follow the book as OTHER windows write it ──
+  // `storage` fires only in windows that did not do the write. When a popout
+  // rotates the token of the profile live here, our in-memory copy becomes a
+  // spent credential; adopt theirs so nothing here ever replays it.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== PROFILE_BOOK_STORAGE_KEY) return;
+      void (async () => {
+        const storage = await storageProviderRef.current();
+        const persisted = loadStoredProfileBook(storage);
+        const merged = adoptPersistedBook(persisted, store.getState().profileBook);
+        store.setState({ profileBook: merged });
+
+        const activeId = merged.activeProfileId;
+        const live = store.getState().storedSession;
+        const theirs = activeId ? merged.profiles[activeId]?.session : undefined;
+        if (
+          activeId &&
+          live &&
+          theirs &&
+          theirs.token.refresh_token &&
+          theirs.token.refresh_token !== live.token.refresh_token
+        ) {
+          dlog("[ArkitektProvider] Adopting a session rotated by another window");
+          adoptLiveSession(activeId, { ...live, token: theirs.token, fakts: theirs.fakts });
+        }
+      })();
+    };
+
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [store, adoptLiveSession]);
 
   // Ctrl/Cmd+X to clear caches
   useEffect(() => {

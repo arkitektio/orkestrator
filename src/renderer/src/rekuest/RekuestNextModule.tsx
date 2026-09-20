@@ -1,3 +1,4 @@
+import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import { Guard } from "@/app/Arkitekt";
 import React from "react";
@@ -52,9 +53,9 @@ import { NotFound } from "@/app/components/fallbacks/NotFound";
  */
 const Module: React.FC = () => {
   return (
-      <ModuleLayout pane={<Guard.Rekuest unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>} key={"rekuest"}><Standardpane /></Guard.Rekuest>}>
+      <ModuleLayout pane={<Guard.Rekuest fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}><Standardpane /></Guard.Rekuest>}>
 
-    <Guard.Rekuest unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>} key={"rekuest"}>
+    <Guard.Rekuest fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
         <Routes>
           <Route index element={<Home />} />
           <Route path="home" element={<Home />} />

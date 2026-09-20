@@ -1,3 +1,5 @@
+import { NotConnected } from "@/app/components/fallbacks/NotConnected";
+import { ConnectingFallback } from "@/app/components/fallbacks/Connecting";
 import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import React from "react";
@@ -29,7 +31,7 @@ interface Props { }
 
 export const LokNextModule: React.FC<Props> = () => {
   return (
-    <Guard.Lok notConnectedFallback={<>Loading</>} connectingFallback={<>Loading</>}>
+    <Guard.Lok notConnectedFallback={<NotConnected />} connectingFallback={<ConnectingFallback />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route path="me" element={<MePage />} />
