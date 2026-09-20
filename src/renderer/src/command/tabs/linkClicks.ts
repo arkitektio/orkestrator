@@ -40,6 +40,20 @@ export const inAppPath = (anchor: AnchorLike): string | null => {
   return href;
 };
 
+/**
+ * The in-app link under an event target, if any: the nearest enclosing
+ * `<a href>` and where it goes. What the right-click menu and the click
+ * gestures both start from.
+ */
+export const inAppLinkAt = (
+  target: EventTarget | null,
+): { anchor: Element; to: string } | null => {
+  const anchor = (target as Element | null)?.closest?.("a[href]");
+  if (!anchor) return null;
+  const to = inAppPath(anchor);
+  return to ? { anchor, to } : null;
+};
+
 export const linkClickIntent = (
   event: LinkClickLike,
   anchor: AnchorLike,

@@ -15,6 +15,7 @@ vi.mock("use-react-router-breadcrumbs", () => ({
 
 import { ActiveTabRouter } from "./ActiveTabRouter";
 import { TabOutlet } from "./TabOutlet";
+import { useTabPane } from "./TabPaneContext";
 import { TabsProvider, useActiveTabId, useTabActions, useTabList } from "./TabsProvider";
 import { useTabVisible } from "./TabVisibilityContext";
 import { useTabTitle } from "./useTabTitle";
@@ -25,8 +26,9 @@ const PageProbe = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const visible = useTabVisible();
+  const pane = useTabPane();
   return (
-    <div data-testid="page" data-visible={visible}>
+    <div data-testid="page" data-visible={visible} data-pane={pane ?? ""}>
       <span data-testid="page-path">{pathname}</span>
       <button onClick={() => navigate(`${pathname}/deeper`)}>deeper</button>
     </div>
@@ -44,10 +46,12 @@ const TitledPage = ({ title }: { title: React.ReactNode }) => {
 const Chrome = () => {
   const tabs = useTabList();
   const activeId = useActiveTabId();
-  const { open, focus } = useTabActions();
+  const { open, focus, toggleSplit, swapSplit } = useTabActions();
   return (
     <div>
       <span data-testid="labels">{tabs.map((t) => t.label).join(",")}</span>
+      <button onClick={toggleSplit}>toggle-split</button>
+      <button onClick={swapSplit}>swap-split</button>
       <button onClick={() => open("/b")}>open-b</button>
       <button onClick={() => open("/c")}>open-c</button>
       <button onClick={() => open("/dataset/5")}>open-dataset</button>
@@ -134,6 +138,70 @@ describe("TabOutlet", () => {
     // MAX_WARM + 2 tabs exist; only MAX_WARM are mounted.
     expect(screen.getByTestId("labels").textContent?.split(",")).toHaveLength(MAX_WARM + 2);
     expect(pages()).toHaveLength(MAX_WARM);
+  });
+
+  describe("split view", () => {
+    const divider = () => document.querySelector("[data-split-divider]");
+
+    it("shows both panes, left then right, with the divider between", () => {
+      renderApp();
+      click("open-b"); // A, B(active)
+      click("toggle-split"); // B left (focused), A right
+      const [a, b] = pages();
+      expect(a.dataset.visible).toBe("true");
+      expect(b.dataset.visible).toBe("true");
+      expect(a.dataset.pane).toBe("right");
+      expect(b.dataset.pane).toBe("left");
+      expect(wrapperOf(b).style.order).toBe("0");
+      expect(wrapperOf(a).style.order).toBe("2");
+      expect(divider()).not.toBeNull();
+      expect((divider() as HTMLElement).style.order).toBe("1");
+      expect(wrapperOf(b).dataset.active).toBe("true");
+      expect(wrapperOf(a).dataset.active).toBe("false");
+    });
+
+    it("pressing in the other pane focuses it without moving anything", () => {
+      renderApp();
+      click("open-b");
+      click("toggle-split");
+      const [a] = pages();
+      act(() => {
+        wrapperOf(a).dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+      });
+      expect(screen.getByTestId("active-index").textContent).toBe("0");
+      const [aAfter, bAfter] = pages();
+      expect(aAfter.dataset.pane).toBe("right");
+      expect(bAfter.dataset.pane).toBe("left");
+      expect(wrapperOf(aAfter).dataset.active).toBe("true");
+    });
+
+    it("keeps the same DOM node across split, swap and unsplit — no remount", () => {
+      renderApp();
+      click("open-b");
+      const [a0, b0] = pages();
+      click("toggle-split");
+      click("swap-split");
+      click("toggle-split");
+      const [a1, b1] = pages();
+      expect(a1).toBe(a0);
+      expect(b1).toBe(b0);
+      expect(divider()).toBeNull();
+      expect(wrapperOf(a1).className).toBe("hidden");
+      expect(a1.dataset.pane).toBe("");
+      expect(b1.dataset.pane).toBe("");
+    });
+
+    it("chrome navigation and the hash follow the focused pane", () => {
+      renderApp();
+      click("open-b");
+      click("toggle-split"); // B focused
+      expect(window.location.hash).toBe("#/b");
+      const [a] = pages();
+      act(() => {
+        wrapperOf(a).dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+      });
+      expect(window.location.hash).toBe("#/");
+    });
   });
 
   it("names each tab from its own breadcrumbs", () => {

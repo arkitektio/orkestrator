@@ -36,10 +36,20 @@ export type TabRecord = {
   lastActiveAt: number;
 };
 
+/**
+ * Two tabs shown side by side. Both ids are tabs in `tabs`, and `activeId` is
+ * always one of them: the active tab is the FOCUSED pane, so everything that
+ * already means "the active tab" — the chrome's Back/Forward, the hash mirror,
+ * the palette's navigate — keeps meaning "the pane you last touched".
+ */
+export type SplitPanes = { left: string; right: string };
+
 export type TabsState = {
   tabs: TabRecord[];
   /** Always the id of a tab in `tabs` — there is never zero tabs. */
   activeId: string;
+  /** Absent when one tab fills the content area, which is the usual case. */
+  split?: SplitPanes;
 };
 
 /** Past this the strip stops being scannable and starts being a list. */
@@ -94,6 +104,39 @@ export const createTab = (
 export const activeTab = (state: TabsState): TabRecord =>
   state.tabs.find((t) => t.id === state.activeId) ?? state.tabs[0];
 
+export const inSplit = (split: SplitPanes | undefined, id: string): boolean =>
+  split !== undefined && (split.left === id || split.right === id);
+
+/** The tab sharing the screen with the active one, or `null` when not split. */
+export const splitPartnerId = (state: TabsState): string | null => {
+  if (!state.split) return null;
+  return state.split.left === state.activeId ? state.split.right : state.split.left;
+};
+
+/**
+ * Where focus moving from `from` to `to` leaves the split. Focusing a tab that
+ * is already a pane changes nothing; focusing one outside the split puts it in
+ * the pane that had focus, so the strip drives the focused pane and the split
+ * itself persists — as a browser's split view does.
+ */
+const focusInto = (
+  split: SplitPanes | undefined,
+  from: string,
+  to: string,
+): SplitPanes | undefined => {
+  if (!split || inSplit(split, to)) return split;
+  return split.left === from ? { ...split, left: to } : { ...split, right: to };
+};
+
+/** `state` with `split` dropped, not set to `undefined` — no dangling key. */
+const withoutSplit = (state: TabsState): TabsState => {
+  const { split: _split, ...rest } = state;
+  return rest;
+};
+
+const withSplit = (state: TabsState, split: SplitPanes | undefined): TabsState =>
+  split ? { ...state, split } : withoutSplit(state);
+
 export const locationPathOf = (tab: TabRecord): string => createPath(tab.history.location);
 
 // ── transitions ──
@@ -119,26 +162,32 @@ export const openTab = (state: TabsState, to: string, options: OpenOptions = {})
   if (tabs.length >= MAX_TABS) {
     if (!options.evict) return state;
     const victim = [...tabs]
-      // Never a pinned one: pinning is how the user said "not this".
-      .filter((t) => t.id !== state.activeId && !t.pinned)
+      // Never a pinned one: pinning is how the user said "not this". Nor a
+      // pane of the split: it is on screen.
+      .filter((t) => t.id !== state.activeId && !t.pinned && !inSplit(state.split, t.id))
       .sort((a, b) => a.lastActiveAt - b.lastActiveAt)[0];
     if (!victim) return state;
     tabs = tabs.filter((t) => t.id !== victim.id);
   }
 
   const tab = createTab(to, { label: options.label, now });
-  return {
-    tabs: [...tabs, tab],
-    activeId: options.background ? state.activeId : tab.id,
-  };
+  if (options.background) return { ...state, tabs: [...tabs, tab] };
+  return withSplit(
+    { ...state, tabs: [...tabs, tab], activeId: tab.id },
+    focusInto(state.split, state.activeId, tab.id),
+  );
 };
 
 export const focusTab = (state: TabsState, id: string, now: number = Date.now()): TabsState => {
   if (!state.tabs.some((t) => t.id === id) || state.activeId === id) return state;
-  return {
-    tabs: state.tabs.map((t) => (t.id === id ? { ...t, lastActiveAt: now } : t)),
-    activeId: id,
-  };
+  return withSplit(
+    {
+      ...state,
+      tabs: state.tabs.map((t) => (t.id === id ? { ...t, lastActiveAt: now } : t)),
+      activeId: id,
+    },
+    focusInto(state.split, state.activeId, id),
+  );
 };
 
 /**
@@ -157,18 +206,90 @@ export const closeTab = (state: TabsState, id: string, now: number = Date.now())
     return { tabs: [fresh], activeId: fresh.id };
   }
 
+  // Closing a pane ends the split; the other pane fills the card.
+  if (inSplit(state.split, id)) {
+    const other = state.split!.left === id ? state.split!.right : state.split!.left;
+    const base = withoutSplit({ ...state, tabs: remaining });
+    return state.activeId === id ? focusTab(base, other, now) : base;
+  }
+
   if (state.activeId !== id) {
-    return { tabs: remaining, activeId: state.activeId };
+    return { ...state, tabs: remaining };
   }
 
   const next = remaining[Math.min(index, remaining.length - 1)];
-  return focusTab({ tabs: remaining, activeId: next.id }, next.id, now);
+  return focusTab({ ...state, tabs: remaining, activeId: next.id }, next.id, now);
 };
 
-/** Close every other tab — except the pinned ones, which is what pinning is for. */
+/**
+ * Close every other tab — except the pinned ones, which is what pinning is
+ * for, and the other pane of a split, which is on screen.
+ */
 export const closeOtherTabs = (state: TabsState, id: string): TabsState => {
   if (!state.tabs.some((t) => t.id === id)) return state;
-  return { tabs: state.tabs.filter((t) => t.id === id || t.pinned), activeId: id };
+  const keep = (t: TabRecord) => t.id === id || Boolean(t.pinned) || inSplit(state.split, t.id);
+  return focusTab({ ...state, tabs: state.tabs.filter(keep) }, id);
+};
+
+// ── split view ──
+
+/**
+ * Show `id` beside the active tab. `side` is where `id` goes; the active tab
+ * takes the other pane and keeps focus. Splitting with a tab that is already
+ * the other pane moves it to the named side (a swap); splitting with the active
+ * tab itself is a no-op — one tab cannot be both panes.
+ */
+export const splitTab = (
+  state: TabsState,
+  id: string,
+  side: "left" | "right" = "right",
+): TabsState => {
+  if (id === state.activeId || !state.tabs.some((t) => t.id === id)) return state;
+  const split: SplitPanes =
+    side === "right" ? { left: state.activeId, right: id } : { left: id, right: state.activeId };
+  if (state.split?.left === split.left && state.split.right === split.right) return state;
+  return { ...state, split };
+};
+
+/**
+ * Open `to` in a new tab shown BESIDE the active one — "open to the side".
+ * Focus stays where it is, as with a background tab: you asked to see the
+ * page next to this one, not to leave this one. Not split yet: the new tab
+ * takes the right pane. Already split: it takes the other pane, whichever
+ * side that is, so the page you are on never moves.
+ */
+export const openTabBeside = (
+  state: TabsState,
+  to: string,
+  options: Omit<OpenOptions, "background"> = {},
+): TabsState => {
+  const opened = openTab(state, to, { ...options, background: true });
+  if (opened === state) return state;
+  const fresh = opened.tabs[opened.tabs.length - 1];
+  const side = opened.split && opened.split.right === opened.activeId ? "left" : "right";
+  return splitTab(opened, fresh.id, side);
+};
+
+export const unsplit = (state: TabsState): TabsState =>
+  state.split ? withoutSplit(state) : state;
+
+export const swapSplit = (state: TabsState): TabsState =>
+  state.split ? { ...state, split: { left: state.split.right, right: state.split.left } } : state;
+
+/**
+ * What ⌘\ does. Split: end it. Not split: show the most recently used other
+ * tab on the right — the one you were just in is the one you most likely
+ * want beside this — or, with nothing else open, a fresh new-tab page there.
+ */
+export const toggleSplit = (state: TabsState, now: number = Date.now()): TabsState => {
+  if (state.split) return unsplit(state);
+  const recent = [...state.tabs]
+    .filter((t) => t.id !== state.activeId)
+    .sort((a, b) => b.lastActiveAt - a.lastActiveAt)[0];
+  if (recent) return splitTab(state, recent.id);
+  const opened = openTab(state, NEW_TAB_PATH, { background: true, evict: true, now });
+  if (opened === state) return state;
+  return splitTab(opened, opened.tabs[opened.tabs.length - 1].id);
 };
 
 const pinnedCount = (tabs: TabRecord[]): number => tabs.filter((t) => t.pinned).length;
@@ -246,14 +367,19 @@ export const setTabLabel = (
   };
 };
 
-/** The ids that stay mounted: the active one, then the most recent up to the cap. */
+/**
+ * The ids that stay mounted: whatever is on screen — the active tab, and the
+ * other pane of a split — then the most recent up to the cap.
+ */
 export const warmIds = (state: TabsState): Set<string> => {
+  const partner = splitPartnerId(state);
+  const shown = partner ? [state.activeId, partner] : [state.activeId];
   const byRecency = [...state.tabs]
-    .filter((t) => t.id !== state.activeId)
+    .filter((t) => !shown.includes(t.id))
     .sort((a, b) => b.lastActiveAt - a.lastActiveAt)
-    .slice(0, Math.max(0, MAX_WARM - 1))
+    .slice(0, Math.max(0, MAX_WARM - shown.length))
     .map((t) => t.id);
-  return new Set([state.activeId, ...byRecency]);
+  return new Set([...shown, ...byRecency]);
 };
 
 // ── persistence ──
@@ -276,9 +402,13 @@ const PersistedTabSchema = z.object({
   }),
 });
 
+const SplitSchema = z.object({ left: z.string(), right: z.string() });
+
 export const TabsPersistedSchema = z.object({
   version: z.literal(1),
   activeId: z.string(),
+  // Added later; a payload without it is simply not split.
+  split: SplitSchema.optional(),
   tabs: z.array(PersistedTabSchema),
 });
 
@@ -289,6 +419,7 @@ export const tabsStorageKey = (profileId: string): string => `orkestrator:tabs:v
 export const serializeTabs = (state: TabsState): TabsPersisted => ({
   version: 1,
   activeId: state.activeId,
+  ...(state.split ? { split: state.split } : {}),
   tabs: state.tabs.map((t) => ({
     id: t.id,
     label: t.label,
@@ -333,7 +464,12 @@ export const loadTabs = (
   }
 
   const outer = z
-    .object({ version: z.literal(1), activeId: z.string(), tabs: z.array(z.unknown()) })
+    .object({
+      version: z.literal(1),
+      activeId: z.string(),
+      split: SplitSchema.optional(),
+      tabs: z.array(z.unknown()),
+    })
     .safeParse(parsed);
   if (!outer.success) return null;
 
@@ -347,7 +483,19 @@ export const loadTabs = (
     ? outer.data.activeId
     : tabs[tabs.length - 1].id;
 
-  return { tabs, activeId };
+  // A split survives only whole: both panes present, and the focus in one of
+  // them. Anything less is dropped rather than repaired — the tabs themselves
+  // are what matter.
+  const split = outer.data.split;
+  const has = (id: string) => tabs.some((t) => t.id === id);
+  const splitIntact =
+    split !== undefined &&
+    split.left !== split.right &&
+    has(split.left) &&
+    has(split.right) &&
+    inSplit(split, activeId);
+
+  return splitIntact ? { tabs, activeId, split } : { tabs, activeId };
 };
 
 /** Refuses for a signed-out user: tabs hold tenant-scoped ids, so there is no

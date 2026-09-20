@@ -25,13 +25,19 @@ import {
   focusTab,
   moveTab,
   openTab,
+  openTabBeside,
   saveTabs,
   setTabLabel,
   setTabPinned,
+  splitTab,
+  swapSplit,
+  toggleSplit,
+  unsplit,
   warmIds as warmIdsOf,
   type LabelSource,
   NEW_TAB_PATH,
   type OpenOptions,
+  type SplitPanes,
   type TabRecord,
   type TabsState,
 } from "./tabs";
@@ -75,6 +81,8 @@ export type TabsSnapshot = TabsState & {
 
 export type TabActions = {
   open: (to: string, options?: OpenOptions) => void;
+  /** Open in a new tab shown beside this one — see `openTabBeside`. */
+  openBeside: (to: string, options?: Omit<OpenOptions, "background">) => void;
   focus: (id: string) => void;
   close: (id: string) => void;
   closeOthers: (id: string) => void;
@@ -82,6 +90,12 @@ export type TabActions = {
   setLabel: (id: string, label: string, origin?: LabelSource) => void;
   /** Pin or unpin a tab — see `setTabPinned`. */
   setPinned: (id: string, pinned: boolean) => void;
+  /** Show a tab beside the active one — see `splitTab`. */
+  split: (id: string, side?: "left" | "right") => void;
+  unsplit: () => void;
+  swapSplit: () => void;
+  /** ⌘\: end the split, or start one with the most recent other tab. */
+  toggleSplit: () => void;
 };
 
 /**
@@ -250,6 +264,10 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     (to, options) => store.set((s) => openTab(s, to, options)),
     [store],
   );
+  const openBeside = useCallback<TabActions["openBeside"]>(
+    (to, options) => store.set((s) => openTabBeside(s, to, options)),
+    [store],
+  );
   const focus = useCallback((id: string) => store.set((s) => focusTab(s, id)), [store]);
   const close = useCallback((id: string) => store.set((s) => closeTab(s, id)), [store]);
   const closeOthers = useCallback(
@@ -268,6 +286,13 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     (id, pinned) => store.set((s) => setTabPinned(s, id, pinned)),
     [store],
   );
+  const split = useCallback<TabActions["split"]>(
+    (id, side) => store.set((s) => splitTab(s, id, side)),
+    [store],
+  );
+  const unsplitAction = useCallback(() => store.set(unsplit), [store]);
+  const swapSplitAction = useCallback(() => store.set(swapSplit), [store]);
+  const toggleSplitAction = useCallback(() => store.set((s) => toggleSplit(s)), [store]);
 
   // Deep links. Main sends `tabs:open` instead of spawning a window; the web
   // build has no bridge, hence the guards. `evict` because a link the user
@@ -304,6 +329,15 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
+      // ⌘\ splits the view with the tab you were just in, or ends the split;
+      // ⌘⇧\ swaps the two panes.
+      if (meta && e.key === "\\") {
+        e.preventDefault();
+        if (e.shiftKey) swapSplitAction();
+        else toggleSplitAction();
+        return;
+      }
+
       // Ctrl+Tab / Ctrl+Shift+Tab cycle, as every browser does.
       if (e.ctrlKey && e.key === "Tab") {
         e.preventDefault();
@@ -316,7 +350,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [store, close, focus, open]);
+  }, [store, close, focus, open, toggleSplitAction, swapSplitAction]);
 
   // Links, the browser's way: ⌘/Ctrl-click and middle-click open an in-app
   // link in a background tab (`linkClicks.ts`). Capture phase on `window`, so
@@ -358,8 +392,34 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   // re-render on every provider render and the selector work above would be
   // undone in one line. `TabsProvider.isolation.test.tsx` holds us to it.
   const actions = useMemo(
-    () => ({ open, focus, close, closeOthers, move, setLabel, setPinned }),
-    [open, focus, close, closeOthers, move, setLabel, setPinned],
+    () => ({
+      open,
+      openBeside,
+      focus,
+      close,
+      closeOthers,
+      move,
+      setLabel,
+      setPinned,
+      split,
+      unsplit: unsplitAction,
+      swapSplit: swapSplitAction,
+      toggleSplit: toggleSplitAction,
+    }),
+    [
+      open,
+      openBeside,
+      focus,
+      close,
+      closeOthers,
+      move,
+      setLabel,
+      setPinned,
+      split,
+      unsplitAction,
+      swapSplitAction,
+      toggleSplitAction,
+    ],
   );
 
   return (
@@ -372,12 +432,17 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
 const noop = () => {};
 const ActionsContext = createContext<TabActions>({
   open: noop,
+  openBeside: noop,
   focus: noop,
   close: noop,
   closeOthers: noop,
   move: noop,
   setLabel: noop,
   setPinned: noop,
+  split: noop,
+  unsplit: noop,
+  swapSplit: noop,
+  toggleSplit: noop,
 });
 
 const useStore = (): Store => {
@@ -439,6 +504,12 @@ export const useActiveTabId = (): string => useTabsSelector((s) => s.activeId);
 
 /** The active tab itself — for callers that need its label or pinned flag. */
 export const useActiveTab = (): TabRecord => useTabsSelector(activeTabOf);
+
+/**
+ * The two panes when the view is split, else `undefined`. The object keeps its
+ * identity across navigation, so this sleeps through it like `activeId`.
+ */
+export const useSplit = (): SplitPanes | undefined => useTabsSelector((s) => s.split);
 
 /**
  * Where the active tab is, and whether it can go back or forward.

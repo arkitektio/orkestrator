@@ -83,8 +83,14 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
       </ChromeSurfaceProvider>
 
       {/* The floating content card. `min-h-0`/`min-w-0` keep its own scroll
-          containers scrolling instead of growing the card past the window. */}
-      <div className="relative flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background rounded-xl border border-border/60 shadow-sm m-2">
+          containers scrolling instead of growing the card past the window.
+
+          Split view (`TabOutlet`) puts a divider in here, and then each pane
+          is its own card: this one gives up its fill, border and shadow so the
+          window surface shows through the gap between the two — the same
+          material as around them. A `has-` variant rather than a prop, so the
+          layout need not know about tabs. */}
+      <div className="relative flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background rounded-xl border border-border/60 shadow-sm m-2 has-[[data-split-divider]]:bg-transparent has-[[data-split-divider]]:border-transparent has-[[data-split-divider]]:shadow-none">
         {/* Dialogs opened from the page cover the card, not the rail beside it. */}
         <PageDialogHost>{children}</PageDialogHost>
       </div>

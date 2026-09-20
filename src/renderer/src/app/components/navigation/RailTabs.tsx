@@ -1,9 +1,10 @@
 import {
   useActiveTabId,
+  useSplit,
   useTabActions,
   useTabList,
 } from "@/command/tabs/TabsProvider";
-import { NEW_TAB_PATH, type TabRecord } from "@/command/tabs/tabs";
+import { inSplit, NEW_TAB_PATH, type TabRecord } from "@/command/tabs/tabs";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -17,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { acceptsSmartDrag } from "@/providers/smart/dragPayload";
 import { motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
-import { Pin, Plus, X } from "lucide-react";
+import { Columns2, Pin, Plus, X } from "lucide-react";
 
 /**
  * How long a drag has to rest on a tab before the tab opens.
@@ -67,17 +68,23 @@ const TabRow = ({
   tab,
   row,
   active,
+  pane,
   animateIn,
 }: {
   tab: TabRecord;
   row: SortableRowProps;
   active: boolean;
+  /** One of the two panes of a split — the focused one, or the other. */
+  pane: boolean;
   /** Opened after the strip first rendered — it arrives rather than just being there. */
   animateIn: boolean;
 }) => {
   // Actions only, and deliberately: these are stable for the provider's
   // lifetime, so a row does not re-render when some other tab navigates.
-  const { focus, close, closeOthers, open, setPinned, move } = useTabActions();
+  const { focus, close, closeOthers, open, setPinned, move, split, unsplit, swapSplit } =
+    useTabActions();
+  // On screen as the OTHER pane: visible, but not the focused one.
+  const shown = pane && !active;
   const reduceMotion = useReducedMotion();
   // Read once, at mount: a tab that arrived in the BACKGROUND (⌘-click,
   // middle-click) gets a brief tint, since nothing else on screen changed to
@@ -136,7 +143,10 @@ const TabRow = ({
               "group relative flex min-w-0 cursor-pointer items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-sm transition-colors",
               active
                 ? "bg-background/70 text-foreground shadow-sm ring-1 ring-border/40 backdrop-blur-sm"
-                : "text-muted-foreground hover:bg-background/35 hover:text-foreground",
+                : shown
+                  ? // The other pane: on screen, so lit — but not the one with focus.
+                    "bg-background/40 text-foreground ring-1 ring-border/25"
+                  : "text-muted-foreground hover:bg-background/35 hover:text-foreground",
               // A drag resting here is about to open this tab; say so before it does.
               isOver && !active && "bg-background/50 text-foreground ring-1 ring-primary/50",
             )}
@@ -154,10 +164,18 @@ const TabRow = ({
               aria-hidden
               className={cn(
                 "h-1.5 w-1.5 shrink-0 rounded-full",
-                active ? "bg-primary" : "bg-muted-foreground/40",
+                active ? "bg-primary" : shown ? "bg-primary/50" : "bg-muted-foreground/40",
               )}
             />
             <span className="min-w-0 flex-1 truncate">{tab.label}</span>
+            {pane && (
+              // Both panes of a split carry the mark, so the pair reads as one.
+              <Columns2
+                aria-label="In split view"
+                className="h-3 w-3 shrink-0 text-muted-foreground/70"
+                data-split-mark
+              />
+            )}
             <button
               type="button"
               aria-label={`${pinned ? "Unpin" : "Pin"} ${tab.label}`}
@@ -209,6 +227,18 @@ const TabRow = ({
           <ContextMenuItem onSelect={() => close(tab.id)}>Close</ContextMenuItem>
           <ContextMenuItem onSelect={() => closeOthers(tab.id)}>Close others</ContextMenuItem>
           <ContextMenuSeparator />
+          {/* Split: put THIS tab beside the active one. Once split, the pair
+              can be swapped or dissolved from either row. */}
+          {!active && !pane && (
+            <ContextMenuItem onSelect={() => split(tab.id)}>Split with current</ContextMenuItem>
+          )}
+          {pane && (
+            <>
+              <ContextMenuItem onSelect={swapSplit}>Swap sides</ContextMenuItem>
+              <ContextMenuItem onSelect={unsplit}>Unsplit</ContextMenuItem>
+            </>
+          )}
+          <ContextMenuSeparator />
           <ContextMenuItem onSelect={() => open(NEW_TAB_PATH)}>New tab</ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -233,6 +263,7 @@ const TabRow = ({
 export const RailTabs = () => {
   const tabs = useTabList();
   const activeId = useActiveTabId();
+  const split = useSplit();
   const { open, move } = useTabActions();
   // The tabs the strip first rendered with (restored ones) do not animate in.
   // Lazy STATE rather than a ref written during render: it is initialised once
@@ -277,6 +308,7 @@ export const RailTabs = () => {
             tab={tab}
             row={row}
             active={tab.id === activeId}
+            pane={inSplit(split, tab.id)}
             animateIn={!bootIds.has(tab.id)}
           />
         )}

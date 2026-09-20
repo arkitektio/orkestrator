@@ -137,7 +137,7 @@ export type ActionParams<TAppOrServices = ServiceMap> = {
   dialog: ReturnType<typeof useDialog>;
   navigate: ReturnType<typeof useNavigate>;
   /** The rail's tabs, for an action that opens one rather than navigating. */
-  tabs: Pick<TabActions, "open">;
+  tabs: Pick<TabActions, "open" | "openBeside">;
 };
 
 export type SetAction = ActionState;

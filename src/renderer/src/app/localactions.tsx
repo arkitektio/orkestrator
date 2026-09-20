@@ -4,6 +4,7 @@ import { ELEKTRO_ACTIONS } from "@/lib/elektro/actions";
 import { KABINET_ACTIONS } from "@/lib/kabinet/actions";
 import {
   Action,
+  ActionParams,
   createLocalActionProvider,
 } from "@/lib/localactions/LocalActionProvider";
 import { LOK_ACTIONS } from "@/lib/lok/actions";
@@ -11,7 +12,7 @@ import { MIKRO_ACTIONS } from "@/lib/mikro/actions";
 import { REKUEST_ACTIONS } from "@/lib/rekuest/actions";
 import { linkBuilder } from "@/providers/smart/builder";
 import { smartRegistry } from "@/providers/smart/registry";
-import { ExternalLink, FolderOpen, PanelLeftOpen } from "lucide-react";
+import { Columns2, ExternalLink, FolderOpen, PanelLeftOpen } from "lucide-react";
 
 const NavigateAction: Action = {
   title: "Open",
@@ -38,6 +39,24 @@ const NavigateAction: Action = {
   },
   collections: ["smart"],
 };
+/** Where each selected structure's page is, and what to call its tab. */
+const tabTargets = (state: ActionParams["state"]) =>
+  state.left.map(({ identifier, object }) => {
+    const path = smartRegistry.buildModelPath(identifier, object.id);
+    if (!path) {
+      throw new Error(`No path found for identifier ${identifier}`);
+    }
+
+    const named = object.label ?? object.name;
+    return {
+      to: path.startsWith("/") ? path : `/${path}`,
+      label:
+        typeof named === "string" && named
+          ? named
+          : `${smartRegistry.getDisplayName(identifier)} ${object.id}`,
+    };
+  });
+
 const OpenInNewTabAction: Action = {
   title: "Open in new tab",
   description: "Open the structure in a tab of its own",
@@ -48,21 +67,7 @@ const OpenInNewTabAction: Action = {
     },
   ],
   execute: async ({ state, tabs }) => {
-    const targets = state.left.map(({ identifier, object }) => {
-      const path = smartRegistry.buildModelPath(identifier, object.id);
-      if (!path) {
-        throw new Error(`No path found for identifier ${identifier}`);
-      }
-
-      const named = object.label ?? object.name;
-      return {
-        to: path.startsWith("/") ? path : `/${path}`,
-        label:
-          typeof named === "string" && named
-            ? named
-            : `${smartRegistry.getDisplayName(identifier)} ${object.id}`,
-      };
-    });
+    const targets = tabTargets(state);
 
     // Every selected structure gets a tab; the last one is the one shown.
     // `evict`: this was asked for by name, so at the cap it takes the place of
@@ -70,6 +75,24 @@ const OpenInNewTabAction: Action = {
     targets.forEach(({ to, label }, index) =>
       tabs.open(to, { label, evict: true, background: index < targets.length - 1 }),
     );
+  },
+  collections: ["smart"],
+};
+
+const OpenToTheSideAction: Action = {
+  title: "Open to the side",
+  description: "Show the structure beside this page, in a split view",
+  icon: Columns2,
+  conditions: [
+    {
+      type: "nopartner",
+    },
+  ],
+  execute: async ({ state, tabs }) => {
+    // One pane beside this one, so one structure: the first selected. Each
+    // further one would only replace the last in that pane.
+    const [target] = tabTargets(state);
+    if (target) tabs.openBeside(target.to, { label: target.label, evict: true });
   },
   collections: ["smart"],
 };
@@ -125,5 +148,6 @@ export const {
     ...ALPAKA_ACTIONS,
     popout: PopOutAction,
     newtab: OpenInNewTabAction,
+    opentotheside: OpenToTheSideAction,
     navigate: NavigateAction,
   } as const);
