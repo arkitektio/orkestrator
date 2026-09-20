@@ -1,3 +1,21 @@
+# [2.9.0](https://github.com/arkitektio/orkestrator/compare/v2.8.0...v2.9.0) (2026-09-20)
+
+
+### Bug Fixes
+
+* github repo ([7164e05](https://github.com/arkitektio/orkestrator/commit/7164e05f2421464cd253b22095a5f5fed428af5b))
+
+
+### Features
+
+* better resized ([bbfd317](https://github.com/arkitektio/orkestrator/commit/bbfd31773e8ddcabb2a28e1a4f113c0001111a82))
+* better serachbar ([80f4a66](https://github.com/arkitektio/orkestrator/commit/80f4a6677d41ede274347b38e257f0ac511bf77a))
+* better tabs ([292c487](https://github.com/arkitektio/orkestrator/commit/292c48751bed248c43695a212da51719d3b8b83b))
+* betterfeat: better tabs ([6e4b767](https://github.com/arkitektio/orkestrator/commit/6e4b767245163b585998a05b39529c0a71b6e323))
+* sortable list ([b595005](https://github.com/arkitektio/orkestrator/commit/b595005ce959e22dec5a3a4cacbd343c0ec0a318))
+* update default zoom level to 1 ([4700c7f](https://github.com/arkitektio/orkestrator/commit/4700c7ffacd40da18d19525702ae769ca90e7595))
+* with voice search ([7bbf71b](https://github.com/arkitektio/orkestrator/commit/7bbf71b31f3c43b1c11390dff953e85ce15cfe8a))
+
 # [2.8.0](https://github.com/arkitektio/orkestrator/compare/v2.7.0...v2.8.0) (2026-09-19)
 
 
