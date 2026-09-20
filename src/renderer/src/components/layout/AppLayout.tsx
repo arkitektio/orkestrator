@@ -3,6 +3,7 @@ import { RailChrome } from "@/app/components/chrome/RailChrome";
 import { RailResizer } from "@/app/components/chrome/RailResizer";
 import { dragZoneDoubleClick, getChromeMode } from "@/lib/platform";
 import { cn } from "@/lib/utils";
+import { ChromeSurfaceProvider } from "./ChromeSurface";
 import { PageDialogHost } from "./PageDialogHost";
 
 export type AppLayoutProps = {
@@ -27,13 +28,23 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
   const mode = getChromeMode();
 
   return (
-    <div className="flex flex-col bg-sidebar text-foreground h-screen">
+    // `rail-glass-surface`: with the translucent sidebar on, this is the
+    // desktop seen through the OS blur, with the sidebar colour laid back over
+    // it at the share the transparency setting leaves (`index.css`).
+    <div className="rail-glass-surface flex flex-col bg-sidebar text-foreground h-screen">
       {/* Windows only, and 0px tall until the pointer touches the top edge;
           nothing at all on macOS, Linux or the web. */}
-      <AutoHideTitleBar />
+      <ChromeSurfaceProvider>
+        <div className="chrome-zoom shrink-0">
+          <AutoHideTitleBar />
+        </div>
+      </ChromeSurfaceProvider>
 
       <div className="flex-1 min-h-0 flex flex-row">
-      {/* The rail — the only chrome this window has. */}
+      {/* The rail — the only chrome this window has. `chrome-zoom` pins it at
+          native size while the page zooms (`ChromeSurface.tsx`); the provider
+          lets the menus and tooltips it opens follow it out of their portals. */}
+      <ChromeSurfaceProvider>
       <div
         // No fill and no hairline of its own: the rail IS the window surface,
         // and a tint a few percent off `bg-sidebar` read as a seam beside the
@@ -48,7 +59,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
         // a drag region swallows clicks in silence, so that opt-out is
         // load-bearing, and `RailChrome.test.tsx` asserts it.
         className={cn(
-          "relative flex-initial flex flex-col w-(--rail-width) shrink-0",
+          "chrome-zoom relative flex-initial flex flex-col w-(--rail-width) shrink-0",
           mode !== "none" && "app-drag",
         )}
         onDoubleClick={dragZoneDoubleClick(mode)}
@@ -69,10 +80,17 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
         </nav>
         <RailResizer />
       </div>
+      </ChromeSurfaceProvider>
 
       {/* The floating content card. `min-h-0`/`min-w-0` keep its own scroll
-          containers scrolling instead of growing the card past the window. */}
-      <div className="relative flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background rounded-xl border border-border/60 shadow-sm m-2">
+          containers scrolling instead of growing the card past the window.
+
+          Split view (`TabOutlet`) puts a divider in here, and then each pane
+          is its own card: this one gives up its fill, border and shadow so the
+          window surface shows through the gap between the two — the same
+          material as around them. A `has-` variant rather than a prop, so the
+          layout need not know about tabs. */}
+      <div className="relative flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background rounded-xl border border-border/60 shadow-sm m-2 has-[[data-split-divider]]:bg-transparent has-[[data-split-divider]]:border-transparent has-[[data-split-divider]]:shadow-none">
         {/* Dialogs opened from the page cover the card, not the rail beside it. */}
         <PageDialogHost>{children}</PageDialogHost>
       </div>

@@ -10,8 +10,13 @@ import React, {
   useState,
   useSyncExternalStore,
 } from "react";
+import { shallow } from "zustand/shallow";
+import { useStoreWithEqualityFn } from "zustand/traditional";
 
 import { hashFor, normalizeDeepLinkPath, readBootPath } from "./hashMirror";
+import type { Action, Location } from "@remix-run/router";
+
+import type { TabHistory } from "./tabHistory";
 import {
   activeTab as activeTabOf,
   bootTabs,
@@ -20,16 +25,23 @@ import {
   focusTab,
   moveTab,
   openTab,
+  openTabBeside,
   saveTabs,
   setTabLabel,
   setTabPinned,
+  splitTab,
+  swapSplit,
+  toggleSplit,
+  unsplit,
   warmIds as warmIdsOf,
   type LabelSource,
   NEW_TAB_PATH,
   type OpenOptions,
+  type SplitPanes,
   type TabRecord,
   type TabsState,
 } from "./tabs";
+import { linkClickIntent } from "./linkClicks";
 
 /**
  * The open tabs, as a store the rest of the app subscribes to.
@@ -41,18 +53,36 @@ import {
  * `ActiveTabRouter` re-render on navigation and lets Back/Forward grey
  * themselves without any component polling a history object.
  *
+ * Every read goes through a SELECTOR (`useTabsSelector`), and that is
+ * load-bearing rather than a nicety. A republished snapshot is a new object
+ * even when only one background tab moved, so an unfiltered subscriber would
+ * re-render on every navigation anywhere in the app — including
+ * `ActiveTabRouter`, which wraps the whole tree and would hand every
+ * `useLocation` consumer in every warm tab a fresh router context. Selectors
+ * make a subscriber wake only for the part of the state it named.
+ *
  * Sits above `ProfileScope`: tabs are per membership, and re-booting them on a
  * profile change is exactly what the (now deleted) `ProfileSwitchEffects` was
  * trying to do from inside the subtree it needed to outlive.
  */
 
-export type TabsValue = {
-  tabs: TabRecord[];
-  activeId: string;
-  activeTab: TabRecord;
+/**
+ * The published state: the reducers' `TabsState` plus the derived warm set.
+ *
+ * `warmIds` is derived rather than reduced — `tabs.ts` stays pure over
+ * `{ tabs, activeId }` — but it is derived ONCE, here, on the transitions that
+ * can change it. A navigation tick republishes the snapshot by spreading it,
+ * so the warm set (and its identity) rides along untouched.
+ */
+export type TabsSnapshot = TabsState & {
   /** The ids that stay mounted; the rest are cold. */
-  warmIds: Set<string>;
+  warmIds: ReadonlySet<string>;
+};
+
+export type TabActions = {
   open: (to: string, options?: OpenOptions) => void;
+  /** Open in a new tab shown beside this one — see `openTabBeside`. */
+  openBeside: (to: string, options?: Omit<OpenOptions, "background">) => void;
   focus: (id: string) => void;
   close: (id: string) => void;
   closeOthers: (id: string) => void;
@@ -60,12 +90,28 @@ export type TabsValue = {
   setLabel: (id: string, label: string, origin?: LabelSource) => void;
   /** Pin or unpin a tab — see `setTabPinned`. */
   setPinned: (id: string, pinned: boolean) => void;
+  /** Show a tab beside the active one — see `splitTab`. */
+  split: (id: string, side?: "left" | "right") => void;
+  unsplit: () => void;
+  swapSplit: () => void;
+  /** ⌘\: end the split, or start one with the most recent other tab. */
+  toggleSplit: () => void;
 };
 
+/**
+ * Shaped as a zustand `ReadonlyStoreApi` so `useStoreWithEqualityFn` can drive
+ * it. That is the same `useSyncExternalStoreWithSelector` every other store in
+ * this app is read through (`lib/arkitekt/hooks.tsx`), rather than a second,
+ * hand-rolled selector path that would have to get the tearing rules right on
+ * its own.
+ */
+type Listener = (state: TabsSnapshot, previous: TabsSnapshot) => void;
+
 type Store = {
-  get: () => TabsState;
+  getState: () => TabsSnapshot;
+  getInitialState: () => TabsSnapshot;
   set: (next: TabsState | ((current: TabsState) => TabsState)) => void;
-  subscribe: (listener: () => void) => () => void;
+  subscribe: (listener: Listener) => () => void;
 };
 
 const StoreContext = createContext<Store | null>(null);
@@ -73,12 +119,21 @@ const StoreContext = createContext<Store | null>(null);
 const readBoot = () =>
   typeof window === "undefined" ? null : readBootPath(window.location.hash, baseName);
 
+const withWarmIds = (state: TabsState): TabsSnapshot => ({
+  ...state,
+  warmIds: warmIdsOf(state),
+});
+
 const createStore = (initial: TabsState): Store => {
-  let state = initial;
-  const listeners = new Set<() => void>();
+  const initialState = withWarmIds(initial);
+  let state = initialState;
+  const listeners = new Set<Listener>();
   const historySubscriptions = new Map<string, () => void>();
 
-  const emit = () => listeners.forEach((l) => l());
+  // Listeners take (state, previous) so this is a genuine zustand
+  // `ReadonlyStoreApi` and can be read with the same
+  // `useSyncExternalStoreWithSelector` every other store in the app uses.
+  const emit = (previous: TabsSnapshot) => listeners.forEach((l) => l(state, previous));
 
   // Keep exactly one subscription per live tab history, so a tab navigating
   // republishes a snapshot; tabs that are closed are unsubscribed.
@@ -98,8 +153,11 @@ const createStore = (initial: TabsState): Store => {
           // Same tabs, new identity: `useSyncExternalStore` compares snapshots
           // by reference, and a navigation changed something worth
           // re-rendering for (location, canGoBack) without changing the list.
+          // Selectors are what keep that from waking everyone: `tabs`,
+          // `activeId` and `warmIds` all ride across unchanged.
+          const previous = state;
           state = { ...state };
-          emit();
+          emit(previous);
         }),
       );
     }
@@ -108,13 +166,18 @@ const createStore = (initial: TabsState): Store => {
   syncHistorySubscriptions();
 
   return {
-    get: () => state,
+    getState: () => state,
+    getInitialState: () => initialState,
     set: (next) => {
       const resolved = typeof next === "function" ? next(state) : next;
       if (resolved === state) return;
-      state = resolved;
+      // The one place the warm set is derived. `set` is only ever called from a
+      // real transition (open, close, focus, move, pin, label) — never from a
+      // navigation tick — so this sorts once per user action, not per keystroke.
+      const previous = state;
+      state = withWarmIds(resolved);
       syncHistorySubscriptions();
-      emit();
+      emit(previous);
     },
     subscribe: (listener) => {
       listeners.add(listener);
@@ -124,7 +187,6 @@ const createStore = (initial: TabsState): Store => {
     },
   };
 };
-
 export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   const profileId = Arkitekt.useActiveProfileId();
 
@@ -152,14 +214,14 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         timer = null;
-        saveTabs(profileId, store.get());
+        saveTabs(profileId, store.getState());
       }, 200);
     });
     return () => {
       unsubscribe();
       if (timer) {
         clearTimeout(timer);
-        saveTabs(profileId, store.get());
+        saveTabs(profileId, store.getState());
       }
     };
   }, [profileId, store]);
@@ -172,7 +234,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     if (typeof window === "undefined") return;
     let last = "";
     const mirror = () => {
-      const next = hashFor(activeTabOf(store.get()).history.location, baseName);
+      const next = hashFor(activeTabOf(store.getState()).history.location, baseName);
       if (next === last) return;
       last = next;
       if (window.location.hash !== next) {
@@ -186,7 +248,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     const onHashChange = () => {
       const path = readBootPath(window.location.hash, baseName);
       if (!path) return;
-      const tab = activeTabOf(store.get());
+      const tab = activeTabOf(store.getState());
       const current = `${tab.history.location.pathname}${tab.history.location.search}${tab.history.location.hash}`;
       if (path !== current) tab.history.push(path);
     };
@@ -198,8 +260,12 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   }, [store]);
 
   // Actions. All stable: they close over the store, never over state.
-  const open = useCallback<TabsValue["open"]>(
+  const open = useCallback<TabActions["open"]>(
     (to, options) => store.set((s) => openTab(s, to, options)),
+    [store],
+  );
+  const openBeside = useCallback<TabActions["openBeside"]>(
+    (to, options) => store.set((s) => openTabBeside(s, to, options)),
     [store],
   );
   const focus = useCallback((id: string) => store.set((s) => focusTab(s, id)), [store]);
@@ -212,14 +278,21 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     (id: string, toIndex: number) => store.set((s) => moveTab(s, id, toIndex)),
     [store],
   );
-  const setLabel = useCallback<TabsValue["setLabel"]>(
+  const setLabel = useCallback<TabActions["setLabel"]>(
     (id, label, origin) => store.set((s) => setTabLabel(s, id, label, origin)),
     [store],
   );
-  const setPinned = useCallback<TabsValue["setPinned"]>(
+  const setPinned = useCallback<TabActions["setPinned"]>(
     (id, pinned) => store.set((s) => setTabPinned(s, id, pinned)),
     [store],
   );
+  const split = useCallback<TabActions["split"]>(
+    (id, side) => store.set((s) => splitTab(s, id, side)),
+    [store],
+  );
+  const unsplitAction = useCallback(() => store.set(unsplit), [store]);
+  const swapSplitAction = useCallback(() => store.set(swapSplit), [store]);
+  const toggleSplitAction = useCallback(() => store.set((s) => toggleSplit(s)), [store]);
 
   // Deep links. Main sends `tabs:open` instead of spawning a window; the web
   // build has no bridge, hence the guards. `evict` because a link the user
@@ -243,7 +316,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (meta && !e.shiftKey && e.key === "w") {
         e.preventDefault();
-        close(store.get().activeId);
+        close(store.getState().activeId);
         return;
       }
 
@@ -256,10 +329,19 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
+      // ⌘\ splits the view with the tab you were just in, or ends the split;
+      // ⌘⇧\ swaps the two panes.
+      if (meta && e.key === "\\") {
+        e.preventDefault();
+        if (e.shiftKey) swapSplitAction();
+        else toggleSplitAction();
+        return;
+      }
+
       // Ctrl+Tab / Ctrl+Shift+Tab cycle, as every browser does.
       if (e.ctrlKey && e.key === "Tab") {
         e.preventDefault();
-        const s = store.get();
+        const s = store.getState();
         const i = s.tabs.findIndex((t) => t.id === s.activeId);
         const n = s.tabs.length;
         const next = s.tabs[(i + (e.shiftKey ? -1 : 1) + n) % n];
@@ -268,11 +350,76 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [store, close, focus, open]);
+  }, [store, close, focus, open, toggleSplitAction, swapSplitAction]);
 
+  // Links, the browser's way: ⌘/Ctrl-click and middle-click open an in-app
+  // link in a background tab (`linkClicks.ts`). Capture phase on `window`, so
+  // the claim lands before the link's own handler — react-router's `Link`
+  // skips a prevented click, and the propagation stop keeps a card's click
+  // handler from also acting on it. `evict`, as for deep links: a link the
+  // user clicked must land even when the strip is full.
+  useEffect(() => {
+    const claim = (e: MouseEvent) => {
+      const anchor = (e.target as Element | null)?.closest?.("a[href]");
+      if (!anchor) return null;
+      return linkClickIntent(e, anchor);
+    };
+    const onClick = (e: MouseEvent) => {
+      const intent = claim(e);
+      if (!intent) return;
+      e.preventDefault();
+      e.stopPropagation();
+      open(intent.to, { background: intent.background, evict: true });
+    };
+    // Middle-button mousedown starts autoscroll on Windows/Linux; not on a link.
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button === 1 && claim(e)) e.preventDefault();
+    };
+    window.addEventListener("click", onClick, true);
+    window.addEventListener("auxclick", onClick, true);
+    window.addEventListener("mousedown", onMouseDown, true);
+    return () => {
+      window.removeEventListener("click", onClick, true);
+      window.removeEventListener("auxclick", onClick, true);
+      window.removeEventListener("mousedown", onMouseDown, true);
+    };
+  }, [open]);
+
+  // Not an optimization: the identity of this object is a CONTRACT.
+  // `useTabActions` promises callers — every page in the app through
+  // `useTabTitle`, every row of the strip — that reading the actions never
+  // re-renders them. If this value changed identity, all of them would
+  // re-render on every provider render and the selector work above would be
+  // undone in one line. `TabsProvider.isolation.test.tsx` holds us to it.
   const actions = useMemo(
-    () => ({ open, focus, close, closeOthers, move, setLabel, setPinned }),
-    [open, focus, close, closeOthers, move, setLabel, setPinned],
+    () => ({
+      open,
+      openBeside,
+      focus,
+      close,
+      closeOthers,
+      move,
+      setLabel,
+      setPinned,
+      split,
+      unsplit: unsplitAction,
+      swapSplit: swapSplitAction,
+      toggleSplit: toggleSplitAction,
+    }),
+    [
+      open,
+      openBeside,
+      focus,
+      close,
+      closeOthers,
+      move,
+      setLabel,
+      setPinned,
+      split,
+      unsplitAction,
+      swapSplitAction,
+      toggleSplitAction,
+    ],
   );
 
   return (
@@ -282,20 +429,20 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-type Actions = Pick<
-  TabsValue,
-  "open" | "focus" | "close" | "closeOthers" | "move" | "setLabel" | "setPinned"
->;
-
 const noop = () => {};
-const ActionsContext = createContext<Actions>({
+const ActionsContext = createContext<TabActions>({
   open: noop,
+  openBeside: noop,
   focus: noop,
   close: noop,
   closeOthers: noop,
   move: noop,
   setLabel: noop,
   setPinned: noop,
+  split: noop,
+  unsplit: noop,
+  swapSplit: noop,
+  toggleSplit: noop,
 });
 
 const useStore = (): Store => {
@@ -305,6 +452,21 @@ const useStore = (): Store => {
   }
   return store;
 };
+
+/**
+ * The one way to read the tab store.
+ *
+ * Select the NARROWEST thing the caller needs. The store republishes on every
+ * navigation in every tab (see the note on `createStore`), so a selector that
+ * returns the whole state — or a fresh object literal — re-renders its caller
+ * at navigation rate, which for `useTabTitle` means every page in the app.
+ * `tabs`, `activeId` and `warmIds` all keep their identity across a navigation,
+ * so naming one of them is enough to sleep through it.
+ */
+const useTabsSelector = <T,>(
+  select: (state: TabsSnapshot) => T,
+  isEqual?: (a: T, b: T) => boolean,
+): T => useStoreWithEqualityFn(useStore(), select, isEqual);
 
 const noSubscribe = () => () => {};
 const noTab = () => null;
@@ -320,38 +482,78 @@ export const useActiveTabIdOrNull = (): string | null => {
   const store = useContext(StoreContext);
   return useSyncExternalStore(
     store ? store.subscribe : noSubscribe,
-    store ? () => store.get().activeId : noTab,
-    store ? () => store.get().activeId : noTab,
+    store ? () => store.getState().activeId : noTab,
+    store ? () => store.getState().activeId : noTab,
   );
 };
 
 /**
  * The tab actions alone: stable, so reading them never re-renders, and inert
- * (not throwing) with no tab store above. For callers that only ever DO
- * something to the tabs — a local action row opening one — and are mounted by
- * the hundred, where `useTabs` would re-render every one on every navigation.
+ * (not throwing) with no tab store above. This is what a caller that only ever
+ * DOES something to the tabs should use — opening one from a local action row,
+ * reporting a page's title — and it is the common case. Anything that also
+ * reads state should take the narrowest selector hook below, never both.
  */
-export const useTabActions = (): Actions => useContext(ActionsContext);
+export const useTabActions = (): TabActions => useContext(ActionsContext);
 
-/** The current tabs snapshot; re-renders on any tab or navigation change. */
-export const useTabsState = (): TabsState => {
-  const store = useStore();
-  return useSyncExternalStore(store.subscribe, store.get, store.get);
+/** Every open tab. New identity only on a real transition, never on navigation. */
+export const useTabList = (): TabRecord[] => useTabsSelector((s) => s.tabs);
+
+/** The active tab's id. */
+export const useActiveTabId = (): string => useTabsSelector((s) => s.activeId);
+
+/** The active tab itself — for callers that need its label or pinned flag. */
+export const useActiveTab = (): TabRecord => useTabsSelector(activeTabOf);
+
+/**
+ * The two panes when the view is split, else `undefined`. The object keeps its
+ * identity across navigation, so this sleeps through it like `activeId`.
+ */
+export const useSplit = (): SplitPanes | undefined => useTabsSelector((s) => s.split);
+
+/**
+ * Where the active tab is, and whether it can go back or forward.
+ *
+ * The history OBJECT is stable per tab, so selecting it alone would never wake
+ * a subscriber on a navigation — which is the whole thing `ActiveTabRouter` and
+ * the rail's Back/Forward buttons exist to react to. So the live getters are
+ * read off it here, into a fresh object that is then shallow-compared: the
+ * active tab moving changes `location`, and a BACKGROUND tab moving changes
+ * none of these five fields, so it does not re-render anyone.
+ *
+ * This is the one selector allowed to build an object, and the equality
+ * function is what makes that safe.
+ */
+export type ActiveTabView = {
+  history: TabHistory;
+  location: Location;
+  action: Action;
+  canGoBack: boolean;
+  canGoForward: boolean;
 };
 
-export const useTabs = (): TabsValue => {
-  const state = useTabsState();
-  const actions = useContext(ActionsContext);
-  return useMemo(
-    () => ({
-      tabs: state.tabs,
-      activeId: state.activeId,
-      activeTab: activeTabOf(state),
-      warmIds: warmIdsOf(state),
-      ...actions,
-    }),
-    [state, actions],
+export const useActiveTabView = (): ActiveTabView =>
+  useTabsSelector((s) => {
+    const { history } = activeTabOf(s);
+    return {
+      history,
+      location: history.location,
+      action: history.action,
+      canGoBack: history.canGoBack,
+      canGoForward: history.canGoForward,
+    };
+  }, shallow);
+
+/**
+ * The tabs that are mounted: the active one plus the most recent, capped by
+ * `MAX_WARM`. Cold tabs keep their history in the store but have no DOM.
+ */
+export const useWarmTabs = (): TabRecord[] =>
+  useTabsSelector(
+    (s) => s.tabs.filter((tab) => s.warmIds.has(tab.id)),
+    // The filter allocates a new array on every tick; this is what stops that
+    // array from re-rendering `TabOutlet` when its contents did not change.
+    shallow,
   );
-};
 
 export default TabsProvider;

@@ -1,7 +1,15 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 import { Assign } from "../main/message";
-import type { ChromeTheme, WindowChromeState } from "../main/modules/WindowManager";
+import type { ChromeTheme, ChromeThemeSource, WindowChromeState } from "../main/modules/WindowManager";
+import type {
+  VoiceCatalogEntry,
+  VoiceEvent,
+  VoiceModelState,
+  VoicePortsPayload,
+  VoiceStartConfig,
+  VoiceStatusPayload,
+} from "../main/voice/protocol";
 
 // Subscribe `cb` to an ipcRenderer channel and return the disposer. Every
 // event listener exposed to the renderer must be removable, otherwise each
@@ -50,7 +58,14 @@ const api = {
      * shows during a resize, the Windows overlay glyphs — so it is told the
      * resolved theme and colours them itself.
      */
-    setTheme: (theme: ChromeTheme) => ipcRenderer.send("window:set-theme", theme),
+    setTheme: (theme: ChromeTheme, source?: ChromeThemeSource) =>
+      ipcRenderer.send("window:set-theme", theme, source),
+    /**
+     * The translucent sidebar is the OS blurring the desktop behind the
+     * window, which only main can switch on (`vibrancy` / `backgroundMaterial`).
+     * Global: one preference, every window follows it.
+     */
+    setRailGlass: (enabled: boolean) => ipcRenderer.send("window:set-rail-glass", enabled),
   },
   /**
    * Deep links land here: main asks the renderer to open a path as a tab
@@ -103,6 +118,31 @@ const api = {
     const listener = (_e: any, data: any) => cb(data);
     ipcRenderer.on(channel, listener);
     return () => ipcRenderer.removeListener(channel, listener);
+  },
+  /**
+   * Voice input. The engine lives in the main process (a utilityProcess with
+   * the speech model); the renderer starts and stops it, asks for a session's
+   * MessagePorts, and hears every state change through `onEvent`. The ports
+   * themselves arrive through `window.postMessage` (see the bottom of this
+   * file), not through this bridge.
+   */
+  voice: {
+    start: (config: VoiceStartConfig): Promise<VoiceStatusPayload> =>
+      ipcRenderer.invoke("voice:start", config),
+    stop: (): Promise<VoiceStatusPayload> => ipcRenderer.invoke("voice:stop"),
+    status: (): Promise<VoiceStatusPayload> => ipcRenderer.invoke("voice:status"),
+    catalog: (): Promise<VoiceCatalogEntry[]> => ipcRenderer.invoke("voice:catalog"),
+    requestPorts: (): Promise<VoicePortsPayload> => ipcRenderer.invoke("voice:request-ports"),
+    onEvent: (cb: (event: VoiceEvent) => void) => subscribe<VoiceEvent>("voice:event", cb),
+    models: {
+      list: (): Promise<VoiceModelState[]> => ipcRenderer.invoke("voice:models:list"),
+      ensure: (args: { modelId: string; modelHost?: string }): Promise<VoiceModelState[]> =>
+        ipcRenderer.invoke("voice:models:ensure", args),
+      remove: (args: { modelId: string }): Promise<VoiceModelState[]> =>
+        ipcRenderer.invoke("voice:models:remove", args),
+      cancel: (args: { modelId: string }): Promise<void> =>
+        ipcRenderer.invoke("voice:models:cancel", args),
+    },
   },
   initAgent: (context: any) => ipcRenderer.invoke("agent:init", context),
   executeElectron: (task: Assign) => ipcRenderer.invoke("agent:execute", task),
@@ -159,3 +199,11 @@ if (process.contextIsolated) {
   // @ts-expect-error (define in dts)
   window.electronAPI = api;
 }
+
+// A voice session's MessagePorts cannot cross the contextBridge, but
+// `window.postMessage` can carry them into the main world — Electron's
+// documented pattern for context-isolated pages. The page matches on
+// `data.type` and takes `event.ports`.
+ipcRenderer.on("voice:ports", (event, payload: VoicePortsPayload) => {
+  window.postMessage({ type: "voice:ports", ...payload }, "*", event.ports);
+});

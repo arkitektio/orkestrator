@@ -10,30 +10,36 @@ import { useEffect, useRef } from "react";
  * It deliberately does NOT show the current path — `PageLayout` already renders
  * breadcrumbs — only the cycling "Search… / Ask… / Do…" prompt.
  */
+/**
+ * Publish the pill's exact rect. The palette opens ON this spot and its top row
+ * is a copy of this one, so the panel reads as this control grown rather than
+ * as a second search field appearing next to it. Measured rather than assumed:
+ * the rail's width is a token and the chrome above it changes height per
+ * platform and in fullscreen.
+ *
+ * A plain function of the element rather than a closure stashed in a ref. It is
+ * wanted from two different effects, and a ref holding a callback — written by
+ * one effect so another can call it — is just a slower way of writing this.
+ */
+const publishOrigin = (element: HTMLElement | null) => {
+  if (!element) return;
+  const rect = element.getBoundingClientRect();
+  const root = document.documentElement.style;
+  root.setProperty("--palette-origin-width", `${rect.width}px`);
+  root.setProperty("--palette-origin-height", `${rect.height}px`);
+  root.setProperty("--palette-origin-top", `${rect.top}px`);
+  root.setProperty("--palette-origin-left", `${rect.left}px`);
+};
+
 export const TitleSearchBar = () => {
   const { open, togglePalette } = useCommandPalette();
   const ref = useRef<HTMLButtonElement | null>(null);
-  const publishRef = useRef<(() => void) | null>(null);
 
-  // Publish the pill's exact rect. The palette opens ON this spot and its top
-  // row is a copy of this one, so the panel reads as this control grown rather
-  // than as a second search field appearing next to it. Measured rather than
-  // assumed: the rail's width is a token and the chrome above it changes height
-  // per platform and in fullscreen.
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
 
-    const publish = () => {
-      const rect = element.getBoundingClientRect();
-      const root = document.documentElement.style;
-      root.setProperty("--palette-origin-width", `${rect.width}px`);
-      root.setProperty("--palette-origin-height", `${rect.height}px`);
-      root.setProperty("--palette-origin-top", `${rect.top}px`);
-      root.setProperty("--palette-origin-left", `${rect.left}px`);
-    };
-
-    publishRef.current = publish;
+    const publish = () => publishOrigin(element);
     publish();
 
     const observer = new ResizeObserver(publish);
@@ -52,7 +58,7 @@ export const TitleSearchBar = () => {
   // pill has moved without resizing and the stored rect is stale, which would
   // open the panel a few pixels off the control it is supposed to be.
   useEffect(() => {
-    if (open) publishRef.current?.();
+    if (open) publishOrigin(ref.current);
   }, [open]);
 
   return (

@@ -1,3 +1,4 @@
+import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
 import { Guard } from "@/app/Arkitekt";
 import { NotFound } from "@/app/components/fallbacks/NotFound";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
@@ -25,7 +26,7 @@ import StandardPane from "./panes/StandardPane";
 
 export const MikroNextModule = () => {
   return (
-    <Guard.Mikro unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>}>
+    <Guard.Mikro fallback={<ServiceUnavailable serviceKey="mikro" />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route index element={<HomePage />} />

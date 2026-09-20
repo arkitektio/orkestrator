@@ -25,6 +25,10 @@ export type AppCommandContext = {
   clearCaches: () => void;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  /** Current page zoom and its setter, through the settings store so the
+   *  value persists and the chrome's counter-zoom follows. */
+  zoomLevel: number;
+  setZoomLevel: (level: number) => void;
 };
 
 export type AppCommand = {
@@ -154,19 +158,13 @@ export const APP_COMMANDS: AppCommand[] = [
     title: "Zoom In",
     icon: ZoomIn,
     electronOnly: true,
-    run: () => void window.api?.getZoomLevel().then((r) => {
-      const level = r?.zoomLevel ?? 1;
-      void window.api?.setZoomLevel(Math.min(level + 0.1, 3));
-    }),
+    run: ({ zoomLevel, setZoomLevel }) => setZoomLevel(Math.min(zoomLevel + 0.1, 3)),
   },
   {
     id: "zoom-out",
     title: "Zoom Out",
     icon: ZoomOut,
     electronOnly: true,
-    run: () => void window.api?.getZoomLevel().then((r) => {
-      const level = r?.zoomLevel ?? 1;
-      void window.api?.setZoomLevel(Math.max(level - 0.1, 0.3));
-    }),
+    run: ({ zoomLevel, setZoomLevel }) => setZoomLevel(Math.max(zoomLevel - 0.1, 0.3)),
   },
 ];

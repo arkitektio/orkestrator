@@ -96,6 +96,8 @@ export type Action = {
   runs?: Maybe<Array<Task>>;
   /** Scope of the action, e.g., user or system. */
   scope: ActionScope;
+  /** Actions whose name and description mean roughly what this one's do, nearest first (cosine distance between embeddings, this action excluded). `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while this action has no vector yet or embeddings are off. */
+  similarActions: Array<Action>;
   /** Indicates whether the action maintains state. */
   stateful: Scalars['Boolean']['output'];
   /** Tasks created for this action. */
@@ -130,6 +132,14 @@ export type ActionProtocolsArgs = {
   filters?: InputMaybe<ProtocolFilter>;
   ordering?: Array<ProtocolOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** Represents an executable action in the system. */
+export type ActionSimilarActionsArgs = {
+  filters?: InputMaybe<ActionFilter>;
+  limit?: Scalars['Int']['input'];
+  maxDistance?: InputMaybe<Scalars['Float']['input']>;
 };
 
 
@@ -299,6 +309,7 @@ export type ActionFilter = {
   name?: InputMaybe<StrFilterLookup>;
   objectDemands?: InputMaybe<Array<PortDemandInput>>;
   protocols?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Search by name: a case-insensitive substring, or semantic similarity of the query to the action's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   stateful?: InputMaybe<Scalars['Boolean']['input']>;
   usedAfter?: InputMaybe<Scalars['DateTime']['input']>;
@@ -432,7 +443,7 @@ export type Agent = {
   states: Array<State>;
   /** Tasks executed by this agent. */
   tasks: Array<Task>;
-  /** User associated with the agent. */
+  /** The user this agent belongs to. */
   user: User;
 };
 
@@ -3206,6 +3217,8 @@ export type Query = {
   shortcut: Shortcut;
   /** List of shortcuts. */
   shortcuts: Array<Shortcut>;
+  /** Actions whose name and description mean roughly what this action's do, nearest first: the org's other actions ranked by cosine distance between their embeddings. `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while the action has no vector yet or embeddings are off. */
+  similarActions: Array<Action>;
   /** Get snapshots around revision. */
   snapshotsAroundRev: Array<Snapshot>;
   /** Fetch a specific space by ID. */
@@ -3526,6 +3539,14 @@ export type QueryShortcutsArgs = {
   filters?: InputMaybe<ShortcutFilter>;
   ordering?: Array<ShortcutOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QuerySimilarActionsArgs = {
+  action: Scalars['ID']['input'];
+  filters?: InputMaybe<ActionFilter>;
+  limit?: Scalars['Int']['input'];
+  maxDistance?: InputMaybe<Scalars['Float']['input']>;
 };
 
 
@@ -4504,6 +4525,8 @@ export type Task = {
   resolution?: Maybe<Resolution>;
   /** The resolved dependencies for this task. */
   resolvedDependencies: Array<ResolvedAgentDependency>;
+  /** Monotonic per-task version, bumped by every write. Pairs with the change feeds: discard a TaskChange whose revision is not greater than the one you hold. */
+  revision: Scalars['Int']['output'];
   /** Root task in the creation chain. */
   root?: Maybe<Task>;
   /** Last update timestamp. */
@@ -4555,6 +4578,8 @@ export type TaskChange = {
   latestInstructKind: TaskInstructKind;
   parent?: Maybe<Scalars['ID']['output']>;
   reference?: Maybe<Scalars['String']['output']>;
+  /** Monotonic per-task version. Changes are produced by several backends and may arrive out of order: apply one only if its revision is greater than the last you applied. */
+  revision: Scalars['Int']['output'];
   root?: Maybe<Scalars['ID']['output']>;
   statusMessage?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
@@ -6661,6 +6686,17 @@ export type HoverActionQuery = { __typename?: 'Query', action: (
     { __typename?: 'Action' }
     & HoverActionFragment
   ) };
+
+export type SimilarActionsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  limit: Scalars['Int']['input'];
+}>;
+
+
+export type SimilarActionsQuery = { __typename?: 'Query', similarActions: Array<(
+    { __typename?: 'Action' }
+    & ListActionFragment
+  )> };
 
 export type AgentsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -11707,6 +11743,42 @@ export function useHoverActionLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type HoverActionQueryHookResult = ReturnType<typeof useHoverActionQuery>;
 export type HoverActionLazyQueryHookResult = ReturnType<typeof useHoverActionLazyQuery>;
 export type HoverActionQueryResult = Apollo.QueryResult<HoverActionQuery, HoverActionQueryVariables>;
+export const SimilarActionsDocument = gql`
+    query SimilarActions($id: ID!, $limit: Int!) {
+  similarActions(action: $id, limit: $limit) {
+    ...ListAction
+  }
+}
+    ${ListActionFragmentDoc}`;
+
+/**
+ * __useSimilarActionsQuery__
+ *
+ * To run a query within a React component, call `useSimilarActionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSimilarActionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSimilarActionsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useSimilarActionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SimilarActionsQuery, SimilarActionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SimilarActionsQuery, SimilarActionsQueryVariables>(SimilarActionsDocument, options);
+      }
+export function useSimilarActionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SimilarActionsQuery, SimilarActionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SimilarActionsQuery, SimilarActionsQueryVariables>(SimilarActionsDocument, options);
+        }
+export type SimilarActionsQueryHookResult = ReturnType<typeof useSimilarActionsQuery>;
+export type SimilarActionsLazyQueryHookResult = ReturnType<typeof useSimilarActionsLazyQuery>;
+export type SimilarActionsQueryResult = Apollo.QueryResult<SimilarActionsQuery, SimilarActionsQueryVariables>;
 export const AgentsDocument = gql`
     query Agents($pagination: OffsetPaginationInput, $filters: AgentFilter, $ordering: [AgentOrder!]) {
   agents(ordering: $ordering, pagination: $pagination, filters: $filters) {

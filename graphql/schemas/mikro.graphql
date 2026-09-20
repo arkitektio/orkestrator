@@ -770,7 +770,9 @@ input ArrayDatasetFilter {
   """
   scene: ID
 
-  """Search by name (case-insensitive substring)"""
+  """
+  Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
+  """
   search: String
 
   """
@@ -3151,6 +3153,11 @@ type File {
   The containers this file was written from: the dataset exported to OME-TIFF, the mesh collection written to STL. The mirror of `derivedContainers`
   """
   exportedFrom(filters: FileLinkFilter): [FileLink!]!
+
+  """
+  The folder this file is filed in, or null once its folder was deleted (deleting a folder unfiles what is in it and destroys nothing). Organisational only: it says where a user keeps the file, nothing about its contents
+  """
+  folder: Folder
   id: ID!
   name: String!
 
@@ -3681,7 +3688,9 @@ input FolderFilter {
   """Filter by whether the current user has pinned the item"""
   pinned: Boolean
 
-  """Search by name (full-text search)"""
+  """
+  Search by name (full-text) or by the meaning of the query against name and description. Textual matches rank first, then by similarity; an explicit `ordering` replaces that ranking
+  """
   search: String
 
   """Filter by tag names"""
@@ -9087,7 +9096,9 @@ input TableDatasetFilter {
   """
   placeableIn: ID
 
-  """Search by name (case-insensitive substring)"""
+  """
+  Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
+  """
   search: String
 }
 

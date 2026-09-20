@@ -1,3 +1,4 @@
+import { useTabPane } from "@/command/tabs/TabPaneContext";
 import { useTabTitle } from "@/command/tabs/useTabTitle";
 import { useCopyUniversalLink } from "@/hooks/use-copy-universal-link";
 import { useReport } from "@/hooks/use-report";
@@ -58,6 +59,9 @@ export const PageLayout = ({
 }: PageLayoutProps) => {
   // The tab shows the page's own name ("HeLa s3"), not the path's leaf ("5").
   useTabTitle(title);
+  // A split shows two pages at once; the right pane saves its panel sizes
+  // under its own key so the two do not overwrite each other's.
+  const pane = useTabPane();
   const [params, setParams] = useSearchParams({
     pageSidebar: "true",
     sidebar: "true",
@@ -69,9 +73,13 @@ export const PageLayout = ({
 
   const { copy: copyPathToClipboard } = useCopyUniversalLink(location);
 
-  const popOut = useCallback(() => {
+  // Not a `useCallback`: it closed over `location` with an empty dependency
+  // array, so it popped out the first pathname the page ever had rather than
+  // the one it is showing — a page navigated within its tab opened the wrong
+  // window.
+  const popOut = () => {
     window.api.openSecondWindow(location.pathname);
-  }, []);
+  };
 
   // Both toggles edit a COPY of the current params rather than passing an object
   // literal: `setParams({...})` replaces the whole query string, so toggling a
@@ -101,7 +109,11 @@ export const PageLayout = ({
   }, [params, setSidebarParam]);
 
   return (
-    <ResizablePanelGroup autoSaveId="page" direction="horizontal" className="text-sm">
+    <ResizablePanelGroup
+      autoSaveId={pane === "right" ? "page:right" : "page"}
+      direction="horizontal"
+      className="text-sm"
+    >
       <ResizablePanel className="h-full w-full" defaultSize={80} id="page" order={1}>
         <div
           className={cn(

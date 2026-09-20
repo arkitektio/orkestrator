@@ -15,20 +15,32 @@ import { isAbortLikeError, refreshAccessToken, RefreshTokenError } from "./auth"
 export const refreshProfileToken = async (
   profile: StoredProfile,
   controller?: AbortController,
+): Promise<StoredArkitektSession> => refreshSession(profile.session, controller);
+
+/**
+ * One refresh round-trip for a stored session, returning the rotated session.
+ *
+ * Callers must not invoke this directly with a token they merely hold in
+ * memory — go through `rotateProfileSession` (runtime/sharedRefresh.ts), which
+ * checks that no other window has already spent it.
+ */
+export const refreshSession = async (
+  session: StoredArkitektSession,
+  controller?: AbortController,
 ): Promise<StoredArkitektSession> => {
   const { token, fakts } = await refreshAccessToken(
-    profile.session.endpoint.token_endpoint,
-    profile.session.token,
+    session.endpoint.token_endpoint,
+    session.token,
     controller,
   );
 
   return {
-    ...profile.session,
+    ...session,
     token,
     // A refresh may legitimately arrive without an envelope (the server renders
     // it best-effort); that means "could not re-render", not "your config went
     // away", so the profile keeps the instances it already had.
-    fakts: fakts ?? profile.session.fakts,
+    fakts: fakts ?? session.fakts,
   };
 };
 

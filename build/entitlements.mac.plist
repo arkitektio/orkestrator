@@ -7,6 +7,9 @@
     <true/>
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
     <true/>
+    <!-- Microphone, for voice input (Settings → Voice input) -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
     <!-- Network Access -->
     <key>com.apple.security.network.client</key>
     <true/>

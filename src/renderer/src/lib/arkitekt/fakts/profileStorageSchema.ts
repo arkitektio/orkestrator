@@ -273,6 +273,28 @@ export const markProfileStale = (
     statusMessage,
   }));
 
+/**
+ * Take the PERSISTED book as truth, keeping only this window's choice of
+ * active profile.
+ *
+ * Several windows share one book; each has its own in-memory copy and its own
+ * live profile. Every field but `activeProfileId` is owned by whoever wrote
+ * last (a token rotated elsewhere is the live one). Which profile a window is
+ * looking at is that window's business — a popout switching organization must
+ * not yank the main window along — so `mine.activeProfileId` wins while that
+ * profile still exists.
+ */
+export const adoptPersistedBook = (
+  persisted: StoredProfileBook,
+  mine: StoredProfileBook,
+): StoredProfileBook => {
+  const keepMine = mine.activeProfileId !== null && mine.activeProfileId in persisted.profiles;
+  return {
+    ...persisted,
+    activeProfileId: keepMine ? mine.activeProfileId : persisted.activeProfileId,
+  };
+};
+
 export const markProfileOk = (
   book: StoredProfileBook,
   profileId: string,

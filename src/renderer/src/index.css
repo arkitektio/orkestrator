@@ -5,6 +5,11 @@
 @import 'dockview-core/dist/styles/dockview.css';
 
 @custom-variant dark (&:is(.dark *));
+/* The translucent sidebar (see `applyRailGlass` in settingsStore.ts): the OS
+   blurs the desktop behind the window, and the page must stop painting where
+   the rail is for that to show. Components opt out of their fill with `glass:`
+   the way they opt into dark colours with `dark:`. */
+@custom-variant glass (&:is(.rail-glass *));
 @custom-variant selected (&[data-selected="true"]);
 @custom-variant b-selected (&[data-bselected="true"]);
 @custom-variant over (&[data-over="true"]);
@@ -40,76 +45,26 @@
    * tabs, so it is a real sidebar rather than an icon strip. One token so the
    * width is changed in one place. */
   --rail-width: 15rem;
+  /* The window's Chromium zoom factor, as the settings store last applied it
+   * (`applyZoomLevel`). The chrome counters it so the rail keeps one size
+   * while the page zooms; see `.chrome-zoom` below. */
+  --page-zoom: 1;
+  --chrome-zoom: calc(1 / var(--page-zoom));
 }
 
-/* The command palette opening out of the rail's search pill.
- *
- * Two phases, in the order the user asked for and in the order that reads as
- * one motion: the panel first grows to the RIGHT at the pill's own height, then
- * drops DOWN to reveal the results. Doing both at once looks like a box being
- * scaled; doing them in sequence looks like a field being used.
- *
- * `clip-path` rather than a transform, because scaling would squash the text on
- * the way in — this reveals the real, already-laid-out panel. The `from` inset
- * is exactly the pill's footprint, published by `TitleSearchBar`, and the panel
- * is positioned on the pill's own coordinates, so there is nothing to line up.
- *
- * Both properties are compositor-friendly, so it stays smooth while the
- * palette's own queries are still settling. */
-@keyframes palette-unfold {
-  0% {
-    opacity: 0;
-    clip-path: inset(
-      0
-      calc(100% - var(--palette-origin-width, 14rem))
-      calc(100% - var(--palette-origin-height, 2rem))
-      0
-      round 0.5rem
-    );
-  }
-  40% {
-    opacity: 1;
-    /* Full width, still only as tall as the pill. */
-    clip-path: inset(0 0 calc(100% - var(--palette-origin-height, 2rem)) 0 round 0.5rem);
-  }
-  100% {
-    opacity: 1;
-    clip-path: inset(0 0 0 0 round 0.5rem);
-  }
+/* Window chrome renders at native size whatever the page zoom is: the rail
+   carries this, and so does any overlay opened from it (they portal to `body`,
+   so they cannot inherit it — `ChromeSurface.tsx`). Unlayered so it is never
+   outranked by a utility. CSS `zoom` reflows, unlike `transform`, and since
+   Chromium 128 the client rects it reports match the pointer's coordinates. */
+.chrome-zoom {
+  zoom: var(--chrome-zoom);
 }
 
-@keyframes palette-fold {
-  0% {
-    opacity: 1;
-    clip-path: inset(0 0 0 0 round 0.5rem);
-  }
-  55% {
-    opacity: 1;
-    /* Back to the pill's height, still full width. */
-    clip-path: inset(0 0 calc(100% - var(--palette-origin-height, 2rem)) 0 round 0.5rem);
-  }
-  100% {
-    opacity: 0;
-    /* And back into the pill's footprint it came from. */
-    clip-path: inset(
-      0
-      calc(100% - var(--palette-origin-width, 14rem))
-      calc(100% - var(--palette-origin-height, 2rem))
-      0
-      round 0.5rem
-    );
-  }
-}
-
-@utility animate-palette-in {
-  animation: palette-unfold 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@utility animate-palette-out {
-  /* Quicker than the way in — a close should feel decisive — but not so quick
-   * that the two phases blur into a flicker. */
-  animation: palette-fold 200ms cubic-bezier(0.32, 0, 0.67, 0) both;
-}
+/* The command palette's open and close are box animations driven from
+ * `command/usePaletteGrow.ts` (Web Animations API): the panel grows out of
+ * the search pill's published `--palette-origin-*` rect and shrinks back into
+ * it. No keyframes here on purpose — CSS cannot animate to an `auto` height. */
 
 /* The task island at the foot of the rail. Both run for as long as a task does,
  * so they are CSS rather than a JS animation loop: transform and opacity only,
@@ -145,14 +100,6 @@
   }
   @keyframes task-pulse {
     from, to { opacity: 0; }
-  }
-  @keyframes palette-unfold {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes palette-fold {
-    from { opacity: 1; }
-    to { opacity: 0; }
   }
 }
 
@@ -332,12 +279,31 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* The window surface under glass: the sidebar colour, at the share the
+   "Sidebar transparency" setting leaves (`--rail-glass-tint`), over the OS
+   blur. Only this one element carries it; everything else in the rail is
+   transparent and inherits the look. Unlayered on purpose: it must outrank
+   the element's own `bg-sidebar` utility, and anything inside `@layer base`
+   loses to a utility whatever its specificity. */
+.rail-glass .rail-glass-surface {
+  background-color: color-mix(
+    in oklab,
+    var(--sidebar) calc(var(--rail-glass-tint, 0.3) * 100%),
+    transparent
+  );
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply font-sans bg-background text-foreground;
+  }
+  /* Glass: nothing may paint under the rail, or the OS blur is hidden. The
+     content card is opaque on its own, so only the window surface goes. */
+  .rail-glass body {
+    background: transparent;
   }
   html {
     @apply font-sans;

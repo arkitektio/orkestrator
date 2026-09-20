@@ -1,3 +1,4 @@
+import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
 import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import { Route, Routes } from "react-router-dom";
@@ -14,7 +15,7 @@ import { NotFound } from "@/app/components/fallbacks/NotFound";
 
 export const OmeroArkModule = () => {
   return (
-    <Guard.OmeroArk unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>}>
+    <Guard.OmeroArk fallback={<ServiceUnavailable serviceKey="omero_ark" />}>
       <ModuleLayout pane={<StandardPane />}>
         <ConnectedGuard>
           <Routes>

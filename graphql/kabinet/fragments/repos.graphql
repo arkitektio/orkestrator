@@ -16,28 +16,22 @@ fragment Repo on GithubRepo {
   issueUrl
   addedAt
   updatedAt
+  organization {
+    slug
+  }
+  # The same selection the flavour cards take, plus what the repo's Info rail
+  # says about each flavour: which image it is and what it needs to run.
   flavours {
-    id
-    name
-    release {
-      id
-      version
-      app {
-        identifier
-      }
+    ...ListFlavour
+    image {
+      imageString
+      buildAt
     }
-    selectors {
-      ... on CPUSelector {
-        __typename
-      }
-      ... on CudaSelector {
-        cudaVersion
-        cudaCores
-      }
-      ... on RocmSelector {
-        apiVersion
-        apiThing
-      }
+    requirements {
+      key
+      service
+      optional
+      description
     }
   }
 }

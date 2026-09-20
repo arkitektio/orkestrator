@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Ordering, useGetFoldersQuery } from "@/mikro-next/api/graphql";
-import { Check, FolderInput, Search } from "lucide-react";
+import { Check, FolderInput, FolderPlus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { describeSubject, useFolderMove, type FolderMoveSubject } from "./useFolderMove";
 
@@ -118,6 +118,19 @@ export const MoveToFolderButton = ({
         >
           <Search className="h-4 w-4" />
           Browse all folders…
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() =>
+            openDialog(
+              "movetofolder",
+              { subject, currentFolder: currentFolder?.id ?? null, startCreating: true },
+              { className: "max-w-lg" },
+            )
+          }
+          className="flex items-center gap-2"
+        >
+          <FolderPlus className="h-4 w-4" />
+          New folder…
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

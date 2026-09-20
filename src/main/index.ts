@@ -1,5 +1,5 @@
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
-import { app, shell, IpcMainEvent } from "electron";
+import { app, shell, IpcMainEvent, MessageChannelMain, systemPreferences, utilityProcess } from "electron";
 import { resolve, join } from "path";
 import icon from "../../resources/icon.png?asset";
 import { machineId } from "node-machine-id";
@@ -21,6 +21,8 @@ import { stat, writeFile } from "node:fs/promises";
 import { normalize, sep } from "node:path";
 import { Readable } from "node:stream";
 import { ShellService } from "./modules/ShellService";
+import { VoiceService } from "./voice/VoiceService";
+import { ModelStore } from "./voice/ModelStore";
 import { APP_ORIGIN, APP_SCHEME } from "./scheme";
 
 // Minimal extension -> MIME map for the app:// static file handler. Kept inline
@@ -129,6 +131,20 @@ const uploadService = new UploadService(transport);
 const bigFileUploadService = new BigFileUploadService(transport);
 const bigFileDownloadService = new BigFileDownloadService(transport);
 const shellService = new ShellService(transport);
+// Voice input: the speech model runs in a utilityProcess (`voice/worker.ts`,
+// built to `out/main/voice-worker.js`), started only once a user switches
+// voice input on. Models download into userData on first use.
+const voiceService = new VoiceService(transport, windowManager, {
+  fork: (modulePath) =>
+    utilityProcess.fork(modulePath, [], { serviceName: "Orkestrator voice engine" }),
+  createChannel: () => new MessageChannelMain(),
+  workerPath: join(__dirname, "voice-worker.js"),
+  modelStore: new ModelStore(join(app.getPath("userData"), "voice-models")),
+  askForMicrophone:
+    process.platform === "darwin"
+      ? () => systemPreferences.askForMediaAccess("microphone")
+      : undefined,
+});
 
 appManager.register(windowManager);
 appManager.register(appUpdater);
@@ -137,6 +153,7 @@ appManager.register(uploadService);
 appManager.register(bigFileUploadService);
 appManager.register(bigFileDownloadService);
 appManager.register(shellService);
+appManager.register(voiceService);
 
 let electronAgent: AgentGateway | null = null;
 

@@ -86,6 +86,11 @@ type Action {
   """Scope of the action, e.g., user or system."""
   scope: ActionScope!
 
+  """
+  Actions whose name and description mean roughly what this one's do, nearest first (cosine distance between embeddings, this action excluded). `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while this action has no vector yet or embeddings are off.
+  """
+  similarActions(filters: ActionFilter = null, limit: Int! = 10, maxDistance: Float = null): [Action!]!
+
   """Indicates whether the action maintains state."""
   stateful: Boolean!
 
@@ -309,6 +314,10 @@ input ActionFilter {
   name: StrFilterLookup
   objectDemands: [PortDemandInput!]
   protocols: [String!]
+
+  """
+  Search by name: a case-insensitive substring, or semantic similarity of the query to the action's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
   search: String
   stateful: Boolean
   usedAfter: DateTime
@@ -448,7 +457,7 @@ type Agent {
   """Tasks executed by this agent."""
   tasks(filters: TaskFilter, ordering: [TaskOrder!]! = [], pagination: OffsetPaginationInput): [Task!]!
 
-  """User associated with the agent."""
+  """The user this agent belongs to."""
   user: User!
 }
 
@@ -3614,6 +3623,11 @@ type Query {
   """List of shortcuts."""
   shortcuts(filters: ShortcutFilter, ordering: [ShortcutOrder!]! = [], pagination: OffsetPaginationInput): [Shortcut!]!
 
+  """
+  Actions whose name and description mean roughly what this action's do, nearest first: the org's other actions ranked by cosine distance between their embeddings. `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while the action has no vector yet or embeddings are off.
+  """
+  similarActions(action: ID!, filters: ActionFilter = null, limit: Int! = 10, maxDistance: Float = null): [Action!]!
+
   """Get snapshots around revision."""
   snapshotsAroundRev(after: Int! = 1, before: Int! = 1, revision: Int!, sessionId: String = null, stateId: ID = null): [Snapshot!]!
 
@@ -4718,6 +4732,11 @@ type Task {
   """The resolved dependencies for this task."""
   resolvedDependencies: [ResolvedAgentDependency!]!
 
+  """
+  Monotonic per-task version, bumped by every write. Pairs with the change feeds: discard a TaskChange whose revision is not greater than the one you hold.
+  """
+  revision: Int!
+
   """Root task in the creation chain."""
   root: Task
 
@@ -4746,6 +4765,11 @@ type TaskChange {
   latestInstructKind: TaskInstructKind!
   parent: ID
   reference: String
+
+  """
+  Monotonic per-task version. Changes are produced by several backends and may arrive out of order: apply one only if its revision is greater than the last you applied.
+  """
+  revision: Int!
   root: ID
   statusMessage: String
   updatedAt: DateTime!

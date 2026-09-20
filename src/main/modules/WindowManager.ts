@@ -43,6 +43,28 @@ const WINDOW_STATE_KEY = "windowState";
 /** The renderer's resolved theme, as `ThemeProvider` reports it. */
 export type ChromeTheme = "light" | "dark";
 
+/**
+ * What the user CHOSE, which may be "follow the OS". It is what
+ * `nativeTheme.themeSource` takes: setting it to a resolved value would pin
+ * `prefers-color-scheme` in the renderer and break the `system` mode that
+ * resolved it in the first place.
+ */
+export type ChromeThemeSource = ChromeTheme | "system";
+
+/** The electron-store key for the translucent-sidebar preference. */
+const RAIL_GLASS_KEY = "railGlass";
+
+/**
+ * A fully transparent background, in the `#AARRGGBB` form Electron reads.
+ * With vibrancy on, any opaque background paints OVER the effect view and the
+ * blur is invisible — the renderer's own transparency is not enough. Measured
+ * 2026-09-20 with a scratch window over a striped backdrop: `setVibrancy` plus
+ * this colour at runtime blurs even on a window created opaque, so no
+ * `transparent: true` and no relaunch. What DID hide it was DevTools docked
+ * into the window — see `devToolsMode`.
+ */
+const TRANSPARENT = "#00000000";
+
 /** What the renderer's title bar lays itself out from, per window. */
 export type WindowChromeState = {
     maximized: boolean;
@@ -113,6 +135,30 @@ const chromeOptions = (): Partial<Electron.BrowserWindowConstructorOptions> =>
             ? { titleBarStyle: "hidden" }
             : { frame: false };
 
+/**
+ * The translucent sidebar. It is the OS that blurs the desktop behind the
+ * window, not CSS: nothing in the page sits behind the rail, so a
+ * `backdrop-filter` there would blur nothing. macOS' `sidebar` material is the
+ * one Finder uses; Windows 11 has acrylic. Linux has no equivalent, and the
+ * renderer hides the switch there. The page paints transparent where the rail
+ * is (`.rail-glass` in `index.css`) while the content card stays opaque, so
+ * the effect reads as "glass rail, solid page".
+ */
+const glassOptions = (enabled: boolean): Partial<Electron.BrowserWindowConstructorOptions> =>
+    !enabled
+        ? {}
+        : process.platform === "darwin"
+            // `active`, not `followWindow`: the sidebar material renders flat
+            // grey the moment another window (DevTools, a popout) has focus,
+            // which reads as the blur having stopped working.
+            ? { vibrancy: "sidebar", visualEffectState: "active" }
+            : process.platform === "win32"
+                ? { backgroundMaterial: "acrylic" }
+                : {};
+
+/** Whether this platform can draw the translucent sidebar at all. */
+const canGlass = process.platform === "darwin" || process.platform === "win32";
+
 /** What the renderer needs to lay the bar out. */
 export class WindowManager implements AppModule {
     private mainWindow: BrowserWindow | null = null;
@@ -126,11 +172,24 @@ export class WindowManager implements AppModule {
     // JSON file from disk on every call, which is far too expensive for the
     // per-frame `resize` event below.
     private zoomFactor: number;
+    /**
+     * The translucent sidebar (macOS vibrancy, Windows acrylic). Read once,
+     * like the zoom: it decides constructor options, and a window is built
+     * before any renderer can report the setting.
+     */
+    private railGlass: boolean;
+    /**
+     * The last theme each window reported. Toggling glass has to repaint the
+     * frame background, and that colour depends on the theme.
+     */
+    private windowThemes = new WeakMap<BrowserWindow, ChromeTheme>();
 
     constructor(ipcTransport: IpcTransport) {
         this.store = new Store();
         this.ipcTransport = ipcTransport;
-        this.zoomFactor = this.store.get("zoomFactor", 0.7) as number;
+        // Same default as the renderer's `defaultZoomLevel` (settings validator).
+        this.zoomFactor = this.store.get("zoomFactor", 1) as number;
+        this.railGlass = this.store.get(RAIL_GLASS_KEY, false) === true;
         this.debouncedSetZoomFactor = debounce((zoomLevel: number, window: BrowserWindow) => {
             window.webContents.setZoomFactor(zoomLevel);
         }, 150);
@@ -247,14 +306,13 @@ export class WindowManager implements AppModule {
 
         this.mainWindow.on('ready-to-show', () => {
             this.mainWindow?.show();
-            this.mainWindow?.webContents.setZoomFactor(1.0);
             if (is.dev) {
-                this.mainWindow?.webContents.openDevTools({ mode: 'right' });
+                this.mainWindow?.webContents.openDevTools({ mode: this.devToolsMode() });
             }
         });
 
         this.mainWindow.webContents.on('devtools-opened', () => {
-            this.mainWindow?.webContents.openDevTools({ mode: 'right' });
+            this.mainWindow?.webContents.openDevTools({ mode: this.devToolsMode() });
         });
 
         // HMR for renderer
@@ -447,8 +505,10 @@ export class WindowManager implements AppModule {
             show: false,
             icon: this.iconPath,
             autoHideMenuBar: true,
-            backgroundColor: CHROME_COLORS[theme].background,
+            // No colour at all under glass: the effect view IS the first paint.
+            ...(this.railGlass && canGlass ? {} : { backgroundColor: CHROME_COLORS[theme].background }),
             ...chromeOptions(),
+            ...glassOptions(this.railGlass),
             ...extra,
             webPreferences: {
                 preload: join(__dirname, "../preload/index.mjs"),
@@ -504,7 +564,48 @@ export class WindowManager implements AppModule {
      */
     private applyChromeTheme(win: BrowserWindow, theme: ChromeTheme) {
         if (win.isDestroyed()) return;
-        win.setBackgroundColor(CHROME_COLORS[theme].background);
+        this.windowThemes.set(win, theme);
+        win.setBackgroundColor(this.chromeBackground(theme));
+    }
+
+    /**
+     * The frame colour for a theme — unless the sidebar is glass, where any
+     * opaque colour would paint over the vibrancy view and hide the effect.
+     */
+    private chromeBackground(theme: ChromeTheme): string {
+        return this.railGlass && canGlass ? TRANSPARENT : CHROME_COLORS[theme].background;
+    }
+
+    /**
+     * Turn the translucent sidebar on or off for every open window, and
+     * remember it for the ones created later. The vibrancy view is switched at
+     * runtime; the background is then repainted in the window's last-known
+     * theme, because a transparent background is the other half of the effect
+     * and an opaque one is the other half of turning it off.
+     */
+    private applyRailGlass(enabled: boolean) {
+        this.railGlass = enabled;
+        this.store.set(RAIL_GLASS_KEY, enabled);
+        if (!canGlass) return;
+        for (const win of this.windows) {
+            if (win.isDestroyed()) continue;
+            if (process.platform === "darwin") {
+                win.setVibrancy(enabled ? "sidebar" : null);
+            } else {
+                win.setBackgroundMaterial(enabled ? "acrylic" : "none");
+            }
+            this.applyChromeTheme(win, this.windowThemes.get(win) ?? systemChromeTheme());
+        }
+    }
+
+    /**
+     * Where dev-mode DevTools go. Docked INTO the window they paint the whole
+     * page opaque black behind the transparent parts (measured), which hides
+     * the glass rail completely and looks like vibrancy is broken. Detached
+     * they leave the window alone; the price is a second window.
+     */
+    private devToolsMode(): "right" | "detach" {
+        return this.railGlass && process.platform === "darwin" ? "detach" : "right";
     }
 
     private saveWindowState() {
@@ -561,10 +662,26 @@ export class WindowManager implements AppModule {
             this.getChromeState(senderWindow(event)),
         );
 
-        this.ipcTransport.onChannel("window:set-theme", (event, theme: ChromeTheme) => {
-            const win = senderWindow(event);
-            if (!win || (theme !== "light" && theme !== "dark")) return;
-            this.applyChromeTheme(win, theme);
+        this.ipcTransport.onChannel(
+            "window:set-theme",
+            (event, theme: ChromeTheme, source?: ChromeThemeSource) => {
+                const win = senderWindow(event);
+                if (!win || (theme !== "light" && theme !== "dark")) return;
+                this.applyChromeTheme(win, theme);
+                // The vibrancy material takes its tone from the app appearance,
+                // not from the page's CSS, so an app forced dark over a light
+                // desktop would get a light blur. `system` keeps following the OS.
+                if (source === "light" || source === "dark" || source === "system") {
+                    nativeTheme.themeSource = source;
+                }
+            },
+        );
+
+        // Global, not per window: one preference, every window follows it.
+        this.ipcTransport.onChannel("window:set-rail-glass", (_, enabled: unknown) => {
+            if (typeof enabled !== "boolean") return;
+            if (enabled === this.railGlass) return;
+            this.applyRailGlass(enabled);
         });
 
         this.ipcTransport.handleChannel("reload-window", () => {

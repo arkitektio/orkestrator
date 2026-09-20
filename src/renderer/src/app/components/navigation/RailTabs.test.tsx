@@ -3,7 +3,16 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const tabsValue = vi.fn();
-vi.mock("@/command/tabs/TabsProvider", () => ({ useTabs: () => tabsValue() }));
+// One fixture, fanned out across the narrow hooks the strip now reads. The
+// split is the point of the refactor: a row takes only the (stable) actions, so
+// it does not re-render when another tab navigates.
+vi.mock("@/command/tabs/TabsProvider", () => ({
+  useTabList: () => tabsValue().tabs,
+  useActiveTabId: () => tabsValue().activeId,
+  // `split` is an ACTION on the fixture; the panes live under `panes`.
+  useSplit: () => tabsValue().panes,
+  useTabActions: () => tabsValue(),
+}));
 
 import RailTabs, { TAB_SPRING_DELAY_MS } from "./RailTabs";
 import { NEW_TAB_PATH } from "@/command/tabs/tabs";
@@ -50,6 +59,9 @@ const value = (over: Record<string, unknown> = {}) => ({
   open: vi.fn(),
   setPinned: vi.fn(),
   move: vi.fn(),
+  split: vi.fn(),
+  unsplit: vi.fn(),
+  swapSplit: vi.fn(),
   ...over,
 });
 
@@ -62,6 +74,57 @@ beforeEach(() => {
 
 afterEach(() => {
   uninstallDnd();
+});
+
+describe("split view", () => {
+  const splitMark = (label: string) =>
+    screen.getByText(label).closest("[role='button']")?.querySelector("[data-split-mark]");
+
+  it("marks both panes, lighting the other pane short of the focused one", () => {
+    tabsValue.mockReturnValue(
+      value({
+        tabs: [tab("t1", "One"), tab("t2", "Two"), tab("t3", "Three")],
+        activeId: "t2",
+        panes: { left: "t2", right: "t1" },
+      }),
+    );
+    renderStrip();
+    expect(splitMark("One")).not.toBeNull();
+    expect(splitMark("Two")).not.toBeNull();
+    expect(splitMark("Three")).toBeNull();
+    const other = screen.getByText("One").closest("[role='button']");
+    expect(other?.className).toContain("bg-background/40");
+    expect(other?.className).not.toContain("bg-background/70");
+  });
+
+  it("shows no mark and no split items when the view is not split", () => {
+    renderStrip();
+    expect(splitMark("One")).toBeNull();
+    expect(splitMark("Two")).toBeNull();
+  });
+
+  it("offers to split with a tab that is not on screen, and to dissolve from one that is", () => {
+    const v = value({
+      panes: { left: "t2", right: "t1" },
+      tabs: [tab("t1", "One"), tab("t2", "Two"), tab("t3", "Three")],
+    });
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+
+    fireEvent.contextMenu(screen.getByText("Three"));
+    act(() => screen.getByText("Split with current").click());
+    expect(v.split).toHaveBeenCalledWith("t3");
+    expect(screen.queryByText("Unsplit")).toBeNull();
+
+    fireEvent.contextMenu(screen.getByText("One"));
+    expect(screen.queryByText("Split with current")).toBeNull();
+    act(() => screen.getByText("Unsplit").click());
+    expect(v.unsplit).toHaveBeenCalled();
+
+    fireEvent.contextMenu(screen.getByText("Two"));
+    act(() => screen.getByText("Swap sides").click());
+    expect(v.swapSplit).toHaveBeenCalled();
+  });
 });
 
 describe("the Open strip", () => {

@@ -1,3 +1,4 @@
+import { LinkContextMenu } from "@/command/tabs/LinkContextMenu";
 import { TabOutlet } from "@/command/tabs/TabOutlet";
 import { PageCorner } from "./components/debug/PageCorner";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -36,6 +37,8 @@ export const AppShell = () => (
       <TabOutlet routes={<AppRoutes />} />
       {/* Over the page's bottom-right corner: report a bug, and the debug badge. */}
       <PageCorner />
+      {/* Right-click on any plain in-app link: open in a new tab, or to the side. */}
+      <LinkContextMenu />
     </AppLayout>
   </Arkitekt.Guard>
 );

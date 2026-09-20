@@ -7,6 +7,7 @@ import {
   MAX_RAIL_WIDTH,
   MIN_RAIL_WIDTH,
   RAIL_WIDTH_STORAGE_KEY,
+  railWidthFromPointer,
   saveRailWidth,
 } from "./railWidth";
 
@@ -34,6 +35,21 @@ describe("clampRailWidth", () => {
 
   it("rounds to whole pixels", () => {
     expect(clampRailWidth(260.6)).toBe(261);
+  });
+});
+
+describe("railWidthFromPointer", () => {
+  it("turns page pixels into the counter-zoomed rail's own", () => {
+    // Page zoomed to 0.8: the rail carries CSS zoom 1.25, so a pointer at
+    // x=300 page px sits 240 rail px from the edge.
+    expect(railWidthFromPointer(300, 1.25)).toBe(240);
+    expect(railWidthFromPointer(300, 1)).toBe(300);
+  });
+
+  it("treats an unknown zoom as none, and still clamps", () => {
+    expect(railWidthFromPointer(300, Number.NaN)).toBe(300);
+    expect(railWidthFromPointer(300, 0)).toBe(300);
+    expect(railWidthFromPointer(5000, 1.25)).toBe(MAX_RAIL_WIDTH);
   });
 });
 

@@ -23,8 +23,10 @@ import { DialogPortal } from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { useDebounce } from "@uidotdev/usehooks";
 import { Search, Sparkles } from "lucide-react";
-import { createElement, Suspense, useMemo } from "react";
+import { createElement, Suspense, useMemo, useRef } from "react";
+import { VoicePaletteBadge } from "@/voice";
 import { useCommandPalette } from "./CommandPaletteProvider";
+import { usePaletteGrow } from "./usePaletteGrow";
 import { resolveContextObjects } from "./contextObjects";
 import { CyclingPlaceholder } from "./CyclingPlaceholder";
 import { ApplicableAsk } from "./sources/ApplicableAsk";
@@ -237,11 +239,16 @@ export const CommandMenu = (props: {
   // so the chip shows whenever that is the intent.
   const newTab = intent === "new-tab";
 
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  // The panel grows out of the pill and shrinks back into it; a dismiss goes
+  // through `requestClose` so the shrink can finish before the unmount.
+  const { ref: panelRef, requestClose } = usePaletteGrow(context.open, closePalette);
+
   return (
     <Dialog
       open={context.open}
       onOpenChange={(next) => {
-        if (!next) closePalette();
+        if (!next) requestClose();
       }}
       // Non-modal, because there is no overlay any more. A modal Radix dialog
       // marks everything outside `aria-hidden` and blocks its pointer events —
@@ -257,12 +264,20 @@ export const CommandMenu = (props: {
             this layout is trying to shed. Radix's dismissable layer still
             handles click-outside and Escape without one. */}
         <DialogPrimitive.Content
+          ref={panelRef}
+          // ⌘K must land the caret in THIS input. Radix's default would focus
+          // the first tabbable in the content, which is the input, but the
+          // open animation can be mid-flight at that moment, so the focus is
+          // placed now AND again on the next frame. By ref, never by a
+          // document-wide query: the New Tab page and every combobox on the
+          // page carry `command-input` too, and a query returned whichever of
+          // them came first in the DOM — never this one, which lives in a
+          // portal at the end of the body.
           onOpenAutoFocus={(e) => {
             e.preventDefault();
-            requestAnimationFrame(() => {
-              const input = document.querySelector<HTMLInputElement>('[data-slot="command-input"]');
-              input?.focus();
-            });
+            const focus = () => inputRef.current?.focus({ preventScroll: true });
+            focus();
+            requestAnimationFrame(focus);
           }}
           style={{
             // Sits exactly on top of the rail's search pill, which hides itself
@@ -276,12 +291,14 @@ export const CommandMenu = (props: {
             // a narrow window: at 1000px, 30vw is 300px, narrower than the rows
             // it has to hold.
             "fixed z-50 w-[min(92vw,max(26rem,30vw))] overflow-hidden rounded-lg",
-            // The same surface as the search pill — same border, same fill, same
-            // translucency — so the panel reads as that control grown rather
-            // than as a different object appearing over it. The heavy backdrop
-            // blur is what lets a 40%-opaque panel stay legible over a page.
-            "border border-border/40 bg-background/40 text-foreground backdrop-blur-xl shadow-2xl",
-            "data-[state=open]:animate-palette-in data-[state=closed]:animate-palette-out",
+            // Same border and radius as the search pill, so the panel reads as
+            // that control grown — but near-opaque, not the pill's 40%. A
+            // translucent panel needed a heavy backdrop blur to stay legible,
+            // and re-blurring the page under a clip-path that changes every
+            // frame is what made the unfold stutter. At 95% nothing behind it
+            // competes with the results, and there is nothing to blur.
+            "border border-border/50 bg-background/95 text-foreground shadow-2xl",
+            // No CSS open/close animation: `usePaletteGrow` animates the box.
           )}
         >
           <Command
@@ -294,7 +311,10 @@ export const CommandMenu = (props: {
               <Search className="h-3.5 w-3.5 shrink-0 opacity-70" />
               <div className="relative flex h-8 min-w-0 flex-1 items-center">
                 <CommandPrimitive.Input
-                  data-slot="command-input"
+                  ref={inputRef}
+                  // Its own slot, so the voice runtime and anything else that
+                  // wants THE palette's input can find it unambiguously.
+                  data-slot="palette-input"
                   // The visible placeholder is the fading overlay below; this
                   // one stays for assistive tech.
                   placeholder={newTab ? "Open in a new tab…" : "Search, ask or do…"}
@@ -309,6 +329,8 @@ export const CommandMenu = (props: {
                   />
                 )}
               </div>
+              {/* The microphone, while the query is being dictated. */}
+              <VoicePaletteBadge />
               {newTab && (
                 <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
                   New tab

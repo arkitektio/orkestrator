@@ -8,8 +8,10 @@ import { useArkitektActions, useArkitektStore } from "./hooks";
 import {
   createProfileFromSession,
   emptyProfileBook,
+  loadStoredProfileBook,
   PROFILE_BOOK_STORAGE_KEY,
   setActiveProfile,
+  updateProfileSession,
   upsertProfile,
   writeStoredProfileBook,
 } from "./fakts/profileStorageSchema";
@@ -300,5 +302,119 @@ describe("disconnect / forgetAllProfiles", () => {
 
     expect(harness.state().connection).toBeDefined();
     expect(Object.keys(harness.state().profileBook.profiles)).toEqual(["id-alpha"]);
+  });
+});
+
+describe("several windows sharing one book", () => {
+  // Popouts run the same shell at the same origin: same storage, separate
+  // providers. lok rotates the refresh token on every use and revokes the whole
+  // chain on a replay, so a window must never send a token another window has
+  // already spent.
+
+  /** What storage looks like after another window rotated `profileId`. */
+  const rotatedElsewhere = (profileId: string, accessToken: string) => {
+    const book = loadStoredProfileBook(storage);
+    const profile = book.profiles[profileId];
+    writeStoredProfileBook(
+      updateProfileSession(book, profileId, {
+        ...profile.session,
+        token: { ...profile.session.token, access_token: accessToken, refresh_token: `rt-${accessToken}`, received_at: Date.now() },
+      }),
+      storage,
+    );
+  };
+
+  const bootUp = async () => {
+    seedTwoProfiles();
+    fetchMock.mockResolvedValue(okRefresh("alpha-2"));
+    renderProvider();
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+    fetchMock.mockClear();
+  };
+
+  it("bootstrap adopts a rotation that landed between reading the book and refreshing", async () => {
+    seedTwoProfiles();
+    // The book is read once to pick the active profile, then re-read under the
+    // lock. Between the two, "another window" rotates alpha.
+    const realGetItem = storage.getItem.bind(storage);
+    let reads = 0;
+    vi.spyOn(storage, "getItem").mockImplementation((key: string) => {
+      if (key === PROFILE_BOOK_STORAGE_KEY && ++reads === 2) {
+        rotatedElsewhere("id-alpha", "alpha-9");
+      }
+      return realGetItem(key);
+    });
+    fetchMock.mockResolvedValue(okRefresh("alpha-2"));
+
+    renderProvider();
+
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(harness.state().storedSession?.token.refresh_token).toBe("rt-alpha-9");
+    expect(harness.state().connection?.token.refresh_token).toBe("rt-alpha-9");
+  });
+
+  it("a storage event from another window replaces the live token", async () => {
+    await bootUp();
+
+    rotatedElsewhere("id-alpha", "alpha-7");
+    window.dispatchEvent(new StorageEvent("storage", { key: PROFILE_BOOK_STORAGE_KEY }));
+
+    await waitFor(() =>
+      expect(harness.state().storedSession?.token.refresh_token).toBe("rt-alpha-7"),
+    );
+    expect(harness.state().connection?.token.refresh_token).toBe("rt-alpha-7");
+    expect(harness.state().profileBook.profiles["id-alpha"].session.token.refresh_token)
+      .toBe("rt-alpha-7");
+    // Still our window's choice of profile.
+    expect(harness.state().profileBook.activeProfileId).toBe("id-alpha");
+  });
+
+  it("writing the book does not clobber another window's rotation of a parked profile", async () => {
+    await bootUp();
+
+    // Another window is live on beta and rotated it; this window still holds
+    // beta's old token in memory.
+    rotatedElsewhere("id-beta", "beta-9");
+
+    await harness.actions.disconnect();
+
+    const persisted = loadStoredProfileBook(storage);
+    expect(persisted.profiles["id-beta"].session.token.refresh_token).toBe("rt-beta-9");
+    expect(persisted.activeProfileId).toBeNull();
+  });
+});
+
+describe("React StrictMode", () => {
+  it("double-running the bootstrap effect spends the refresh token once", async () => {
+    // StrictMode mounts, unmounts and mounts again in development, so the
+    // bootstrap effect runs twice with the same stored token. The second run
+    // must adopt the first's rotation; replaying the token would make lok
+    // revoke the whole chain.
+    seedTwoProfiles();
+    fetchMock.mockResolvedValue(okRefresh("alpha-2"));
+
+    render(
+      <React.StrictMode>
+        <ArkitektProvider
+          manifest={{ identifier: "test", version: "1", scopes: [] } as never}
+          serviceBuilderMap={serviceBuilderMap}
+          selfServiceBuilder={selfServiceBuilder}
+          storageProvider={async () => storage}
+        >
+          <Probe />
+        </ArkitektProvider>
+      </React.StrictMode>,
+    );
+
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+    // Let the second run settle too.
+    await new Promise((r) => setTimeout(r, 20));
+
+    const tokenCalls = fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/o/token/"));
+    expect(tokenCalls).toHaveLength(1);
+    expect(loadStoredProfileBook(storage).profiles["id-alpha"].session.token.refresh_token)
+      .toBe("rt-alpha-2");
+    expect(harness.state().storedSession?.token.refresh_token).toBe("rt-alpha-2");
   });
 });

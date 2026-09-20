@@ -30,6 +30,9 @@ import { useWebGPUGate, type WebGPUGate } from "./useWebGPUGate";
  *  - `Viewport` is the content area: the 3D canvas or the tree, the HUD.
  *  - `LayersSidebar` is the Layers tab.
  *  - `Embedded` is Provider + Viewport without the tree switch, for previews.
+ *  - `Mini` is a small frame INSIDE another view (a timeline channel card):
+ *    the focus framed with the rest dimmed, and nothing that reaches outside
+ *    its box — no window keys, no section panels, no settings, no `?` sheet.
  *
  * Key the Provider on the model id: the store and the geometry belong to one
  * model, so navigating remounts rather than feeding a new model into a viewer
@@ -86,7 +89,7 @@ const CloseAllPanels = () => {
 };
 
 /** The 3D view: canvas, section panels and readouts. */
-const MorphologyView = () => {
+const MorphologyView = ({ mini = false }: { mini?: boolean }) => {
   const {
     model,
     morphology,
@@ -121,12 +124,12 @@ const MorphologyView = () => {
 
   return (
     <>
-      <MorphologyCanvas morphology={morphology} frame={frame}>
+      <MorphologyCanvas morphology={morphology} frame={frame} keyboard={!mini}>
         <SectionTubes
           morphology={morphology}
           baseColors={baseColors}
           hidden={hidden}
-          onSectionClick={(hit, e) => {
+          onSectionClick={mini ? undefined : (hit, e) => {
             // Anchor the panel at the exact point on the branch that was clicked.
             const panel = {
               sectionId: hit.section.id,
@@ -138,18 +141,20 @@ const MorphologyView = () => {
           }}
         />
         <NetworkMarks network={network} />
-        <PanelProjector nodes={nodes} />
+        {!mini && <PanelProjector nodes={nodes} />}
       </MorphologyCanvas>
 
-      <PanelOverlay
-        modelId={model.id}
-        cellOf={cellOf}
-        sectionMap={sectionMap}
-        compartmentMap={compartmentMap}
-        nodes={nodes}
-      />
+      {!mini && (
+        <PanelOverlay
+          modelId={model.id}
+          cellOf={cellOf}
+          sectionMap={sectionMap}
+          compartmentMap={compartmentMap}
+          nodes={nodes}
+        />
+      )}
       <MorphologyScaleBar />
-      <CloseAllPanels />
+      {!mini && <CloseAllPanels />}
     </>
   );
 };
@@ -180,6 +185,22 @@ const Viewport = ({ showDisplaySwitch = true }: { showDisplaySwitch?: boolean })
   );
 };
 
+/** The 3D view alone, for `Mini`: no mode strip, no shortcuts sheet. */
+const MiniViewport = () => {
+  const { phase, message } = useContext(PhaseContext);
+  return (
+    <div className="relative h-full w-full overflow-hidden bg-black">
+      {phase === "ready" ? (
+        <MorphologyView mini />
+      ) : phase === "unsupported" ? (
+        <div className="absolute inset-0 grid place-items-center p-4 text-center text-xs text-white/60">
+          {message}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
 const LayersSidebar = () => <MorphologyLayerCards />;
 
 const Embedded = ({ model }: { model: DetailNeuronModelFragment }) => (
@@ -188,4 +209,10 @@ const Embedded = ({ model }: { model: DetailNeuronModelFragment }) => (
   </Provider>
 );
 
-export const MorphologyScene = { Provider, Viewport, LayersSidebar, Embedded };
+const Mini = ({ model, focus }: { model: DetailNeuronModelFragment; focus?: readonly string[] | null }) => (
+  <Provider key={model.id} model={model} focus={focus} embedded>
+    <MiniViewport />
+  </Provider>
+);
+
+export const MorphologyScene = { Provider, Viewport, LayersSidebar, Embedded, Mini };

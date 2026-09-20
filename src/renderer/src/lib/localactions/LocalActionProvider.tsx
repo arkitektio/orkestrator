@@ -4,7 +4,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 
 import { useDialog } from "@/app/dialog";
 import { matchesFilter, scoreFilter } from "@/command/filter";
-import type { TabsValue } from "@/command/tabs/TabsProvider";
+import type { TabActions } from "@/command/tabs/TabsProvider";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
 import { smartRegistry } from "@/providers/smart/registry";
 import type { Structure as AppStructure } from "@/types";
@@ -137,7 +137,7 @@ export type ActionParams<TAppOrServices = ServiceMap> = {
   dialog: ReturnType<typeof useDialog>;
   navigate: ReturnType<typeof useNavigate>;
   /** The rail's tabs, for an action that opens one rather than navigating. */
-  tabs: Pick<TabsValue, "open">;
+  tabs: Pick<TabActions, "open" | "openBeside">;
 };
 
 export type SetAction = ActionState;

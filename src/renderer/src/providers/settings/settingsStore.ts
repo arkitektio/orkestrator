@@ -1,3 +1,4 @@
+import { getPlatform } from "@/lib/platform";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import { setBrandBase } from "./brandTheme";
 import { defaultSettings, type Settings, settingsValidator } from "./validator";
@@ -67,9 +68,45 @@ function applyBrandSettings(settings: Settings) {
   setBrandBase({ hue: settings.brandHue, chroma: settings.brandChroma });
 }
 
+/**
+ * The page zoom has two halves. Main zooms the whole webContents (a Chromium
+ * zoom factor, so the page's viewers and drag maths keep one coordinate
+ * space); the chrome counters it with CSS `zoom: calc(1 / var(--page-zoom))`
+ * so the rail stays at a fixed native size (`.chrome-zoom` in `index.css`,
+ * `ChromeSurface.tsx`). The token is only ever the factor main was actually
+ * asked for: in the web build nothing zooms the window, so the rail must not
+ * counter a zoom that never happened.
+ */
 function applyZoomLevel(zoomLevel: number) {
-  if (typeof window !== "undefined" && window.api) {
+  const bridged = typeof window !== "undefined" && !!window.api;
+  if (bridged) {
     window.api.setZoomLevel(zoomLevel).catch(console.error);
+  }
+  if (typeof document !== "undefined") {
+    document.documentElement.style.setProperty("--page-zoom", String(bridged ? zoomLevel : 1));
+  }
+}
+
+/**
+ * The translucent sidebar has two halves. Main switches the OS effect on the
+ * window; the page has to stop painting under the rail, which the `rail-glass`
+ * class on the root does (`.rail-glass body` and the `glass:` variant in
+ * `index.css`). Neither half applies where the platform cannot draw it, so
+ * the web build and Linux keep the flat rail whatever the stored value says.
+ */
+function applyRailGlass(enabled: boolean, transparency: number, notifyMain: boolean) {
+  if (typeof document === "undefined") return;
+  const platform = getPlatform();
+  const supported = platform === "darwin" || platform === "win32";
+  const on = enabled && supported;
+  const root = document.documentElement;
+  root.classList.toggle("rail-glass", on);
+  // The share of the sidebar colour painted back over the blur. The page
+  // reads it in `index.css`; 0 is the bare OS blur, 1 the flat rail. Pure
+  // CSS, so a change of amount never has to cross to main.
+  root.style.setProperty("--rail-glass-tint", String(1 - transparency));
+  if (supported && notifyMain) {
+    window.api?.windowControls?.setRailGlass?.(on);
   }
 }
 
@@ -96,6 +133,19 @@ export function createSettingsStore(
           normalizedSettings.defaultZoomLevel !== previousSettings?.defaultZoomLevel
         ) {
           applyZoomLevel(normalizedSettings.defaultZoomLevel);
+        }
+
+        const glassToggled =
+          isHydrating || normalizedSettings.railGlass !== previousSettings?.railGlass;
+        if (
+          glassToggled ||
+          normalizedSettings.railGlassTransparency !== previousSettings?.railGlassTransparency
+        ) {
+          applyRailGlass(
+            normalizedSettings.railGlass,
+            normalizedSettings.railGlassTransparency,
+            glassToggled,
+          );
         }
       }
       set({ settings: normalizedSettings });

@@ -148,3 +148,11 @@ query HoverAction($id: ID!) {
     ...HoverAction
   }
 }
+
+# Nearest neighbours by embedding, for the "Similar actions" section of the
+# action page. Its own query so DetailAction / ActionOverview stay as they are.
+query SimilarActions($id: ID!, $limit: Int!) {
+  similarActions(action: $id, limit: $limit) {
+    ...ListAction
+  }
+}

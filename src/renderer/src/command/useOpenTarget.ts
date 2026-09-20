@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useCommandPalette } from "./CommandPaletteProvider";
-import { useTabs } from "./tabs/TabsProvider";
+import { useTabActions } from "./tabs/TabsProvider";
 import { useRecordRecent } from "./useRecordRecent";
 
 /**
@@ -35,7 +35,7 @@ const routeOfTarget = (target: OpenTarget): string | undefined => {
  */
 export const useOpenTarget = () => {
   const { intent } = useCommandPalette();
-  const { open } = useTabs();
+  const { open } = useTabActions();
   const navigate = useNavigate();
   const record = useRecordRecent();
 

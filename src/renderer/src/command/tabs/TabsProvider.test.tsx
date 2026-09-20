@@ -10,7 +10,7 @@ vi.mock("@/app/Arkitekt", () => ({
 vi.mock("@/constants", () => ({ baseName: "" }));
 
 import { ActiveTabRouter } from "./ActiveTabRouter";
-import { TabsProvider, useTabs } from "./TabsProvider";
+import { TabsProvider, useActiveTabId, useTabActions, useTabList } from "./TabsProvider";
 import { useActiveTabNavigation } from "./useActiveTabNavigation";
 import { saveTabs, tabsStorageKey, createTab } from "./tabs";
 import { NEW_TAB_PATH } from "./tabs";
@@ -19,7 +19,9 @@ import { NEW_TAB_PATH } from "./tabs";
 const Probe = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { tabs, activeId, open, focus, close } = useTabs();
+  const tabs = useTabList();
+  const activeId = useActiveTabId();
+  const { open, focus, close } = useTabActions();
   const { canGoBack, canGoForward, back, forward } = useActiveTabNavigation();
 
   return (

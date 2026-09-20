@@ -1088,7 +1088,9 @@ input DefinitionFilter {
   """Keep only definitions whose ID is in this list."""
   ids: [ID!]
 
-  """Case-insensitive search on the action name."""
+  """
+  Search by name: a case-insensitive substring, or semantic similarity of the query to the definition's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
   search: String
 }
 

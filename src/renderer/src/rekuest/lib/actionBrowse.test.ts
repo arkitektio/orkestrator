@@ -124,6 +124,8 @@ describe("buildActionFilter", () => {
 
 describe("buildActionOrdering", () => {
   it("leaves the backend's order alone by default", () => {
+    // With a search term the server ranks by relevance (substring first, then
+    // semantic similarity); sending any ordering would replace that ranking.
     expect(buildActionOrdering(null)).toBeUndefined();
   });
   it("orders by last use or definition, newest first", () => {

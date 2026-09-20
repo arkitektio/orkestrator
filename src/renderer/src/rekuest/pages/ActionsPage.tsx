@@ -168,8 +168,12 @@ const Page = () => {
               <Button variant="outline" className="gap-2">
                 <ArrowUpDown className="h-4 w-4" />
                 Sort
-                {sort !== "default" && (
+                {sort !== "default" ? (
                   <Badge variant="secondary">{SORT_LABELS[sort]}</Badge>
+                ) : (
+                  // A search term is ranked by the server (substring matches
+                  // first, then by meaning); an explicit sort replaces that.
+                  search && <Badge variant="secondary">Relevance</Badge>
                 )}
               </Button>
             </DropdownMenuTrigger>
@@ -181,7 +185,7 @@ const Page = () => {
               >
                 {SORT_KEYS.map((key) => (
                   <DropdownMenuRadioItem key={key} value={key}>
-                    {SORT_LABELS[key]}
+                    {key === "default" && search ? "Relevance" : SORT_LABELS[key]}
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>

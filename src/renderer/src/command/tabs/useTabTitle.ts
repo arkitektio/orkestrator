@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useTabId } from "./TabContext";
-import { useTabs } from "./TabsProvider";
+import { useTabActions } from "./TabsProvider";
 
 /**
  * Give the tab this page is in the page's own name.
@@ -15,7 +15,7 @@ import { useTabs } from "./TabsProvider";
 export const useTabTitle = (title: unknown): void => {
   const tabId = useTabId();
   const { pathname } = useLocation();
-  const { setLabel } = useTabs();
+  const { setLabel } = useTabActions();
 
   const label = typeof title === "string" ? title.trim() : "";
 

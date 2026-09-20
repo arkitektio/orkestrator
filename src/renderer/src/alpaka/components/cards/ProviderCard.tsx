@@ -1,6 +1,5 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { AlpakaProvider } from "@/linkers";
 import Anthropic from "@lobehub/icons-static-svg/icons/anthropic.svg";
@@ -12,7 +11,7 @@ import Mistral from "@lobehub/icons-static-svg/icons/mistral.svg";
 import Ollama from "@lobehub/icons-static-svg/icons/ollama.svg";
 import OpenAI from "@lobehub/icons-static-svg/icons/openai.svg";
 import Perplexity from "@lobehub/icons-static-svg/icons/perplexity.svg";
-import { ArrowUpRight, Bot, Cloud, Cpu, Server } from "lucide-react";
+import { Bot, Cloud, Cpu, Server } from "lucide-react";
 import { ListProviderFragment, ProviderKind } from "../../api/graphql";
 
 interface Props {
@@ -185,66 +184,37 @@ export const getProviderKindDisplayName = (kind: ProviderKind): string => {
 };
 
 const TheCard = ({ item }: Props) => {
-  const modelPreview = item.models.slice(0, 3);
+  const count = item.models.length;
+  const preview = item.models
+    .slice(0, 2)
+    .map((model) => model.modelId)
+    .join(", ");
 
   return (
     <AlpakaProvider.Smart object={item}>
-      <Card className="h-full min-h-60 border-border/60 bg-card shadow-sm">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border/60 bg-muted/60">
-              <ProviderKindIcon kind={item.kind} className="h-8 w-8" />
-            </div>
-            <Badge
-              variant="outline"
-              className="rounded-full"
-            >
-              {getProviderKindDisplayName(item.kind)}
-            </Badge>
-          </div>
+      <Card className="flex h-full flex-col gap-1.5 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <AlpakaProvider.DetailLink
+            object={item}
+            className="min-w-0 truncate text-sm font-medium leading-tight hover:text-primary transition-colors"
+          >
+            {item.name}
+          </AlpakaProvider.DetailLink>
+          <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+            <ProviderKindIcon kind={item.kind} className="h-3 w-3 opacity-70" />
+            {getProviderKindDisplayName(item.kind)}
+          </span>
+        </div>
 
-          <CardTitle className="mt-2 text-lg font-semibold text-foreground">
-            <AlpakaProvider.DetailLink
-              object={item}
-              className="block truncate transition-colors hover:text-foreground/80"
-            >
-              {item.name}
-            </AlpakaProvider.DetailLink>
-          </CardTitle>
-
-          <p className="text-sm text-muted-foreground">
-            {item.models.length} {item.models.length === 1 ? "model" : "models"} available
+        {preview && (
+          <p className="truncate text-xs text-muted-foreground" title={preview}>
+            {preview}
           </p>
-        </CardHeader>
+        )}
 
-        <CardContent className="flex-1 pt-0">
-          {modelPreview.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {modelPreview.map((model) => (
-                <span
-                  key={model.id}
-                  className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground"
-                >
-                  {model.modelId}
-                </span>
-              ))}
-              {item.models.length > modelPreview.length ? (
-                <span className="rounded-full border border-dashed border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground">
-                  +{item.models.length - modelPreview.length} more
-                </span>
-              ) : null}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 px-3 py-4 text-sm text-muted-foreground">
-              No models linked yet.
-            </div>
-          )}
-        </CardContent>
-
-        <CardFooter className="mt-auto justify-between border-t border-border/60 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          <span>Open provider</span>
-          <ArrowUpRight className="h-4 w-4" />
-        </CardFooter>
+        <div className="mt-auto pt-1 text-xs text-muted-foreground/60">
+          {count} {count === 1 ? "model" : "models"}
+        </div>
       </Card>
     </AlpakaProvider.Smart>
   );

@@ -12,6 +12,12 @@ fragment File on File {
   }
   size
   contentType
+  # Where the file is filed. Null is meaningful: a file nobody filed, or whose
+  # folder was deleted (which unfiles, never destroys).
+  folder {
+    id
+    name
+  }
 }
 
 fragment ListFile on File {

@@ -95,6 +95,8 @@ export type Action = {
   runs?: Maybe<Array<Task>>;
   /** Scope of the action, e.g., user or system. */
   scope: ActionScope;
+  /** Actions whose name and description mean roughly what this one's do, nearest first (cosine distance between embeddings, this action excluded). `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while this action has no vector yet or embeddings are off. */
+  similarActions: Array<Action>;
   /** Indicates whether the action maintains state. */
   stateful: Scalars['Boolean']['output'];
   /** Tasks created for this action. */
@@ -129,6 +131,14 @@ export type ActionProtocolsArgs = {
   filters?: InputMaybe<ProtocolFilter>;
   ordering?: Array<ProtocolOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** Represents an executable action in the system. */
+export type ActionSimilarActionsArgs = {
+  filters?: InputMaybe<ActionFilter>;
+  limit?: Scalars['Int']['input'];
+  maxDistance?: InputMaybe<Scalars['Float']['input']>;
 };
 
 
@@ -298,6 +308,7 @@ export type ActionFilter = {
   name?: InputMaybe<StrFilterLookup>;
   objectDemands?: InputMaybe<Array<PortDemandInput>>;
   protocols?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Search by name: a case-insensitive substring, or semantic similarity of the query to the action's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   stateful?: InputMaybe<Scalars['Boolean']['input']>;
   usedAfter?: InputMaybe<Scalars['DateTime']['input']>;
@@ -431,7 +442,7 @@ export type Agent = {
   states: Array<State>;
   /** Tasks executed by this agent. */
   tasks: Array<Task>;
-  /** User associated with the agent. */
+  /** The user this agent belongs to. */
   user: User;
 };
 
@@ -3205,6 +3216,8 @@ export type Query = {
   shortcut: Shortcut;
   /** List of shortcuts. */
   shortcuts: Array<Shortcut>;
+  /** Actions whose name and description mean roughly what this action's do, nearest first: the org's other actions ranked by cosine distance between their embeddings. `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while the action has no vector yet or embeddings are off. */
+  similarActions: Array<Action>;
   /** Get snapshots around revision. */
   snapshotsAroundRev: Array<Snapshot>;
   /** Fetch a specific space by ID. */
@@ -3525,6 +3538,14 @@ export type QueryShortcutsArgs = {
   filters?: InputMaybe<ShortcutFilter>;
   ordering?: Array<ShortcutOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QuerySimilarActionsArgs = {
+  action: Scalars['ID']['input'];
+  filters?: InputMaybe<ActionFilter>;
+  limit?: Scalars['Int']['input'];
+  maxDistance?: InputMaybe<Scalars['Float']['input']>;
 };
 
 
@@ -4503,6 +4524,8 @@ export type Task = {
   resolution?: Maybe<Resolution>;
   /** The resolved dependencies for this task. */
   resolvedDependencies: Array<ResolvedAgentDependency>;
+  /** Monotonic per-task version, bumped by every write. Pairs with the change feeds: discard a TaskChange whose revision is not greater than the one you hold. */
+  revision: Scalars['Int']['output'];
   /** Root task in the creation chain. */
   root?: Maybe<Task>;
   /** Last update timestamp. */
@@ -4554,6 +4577,8 @@ export type TaskChange = {
   latestInstructKind: TaskInstructKind;
   parent?: Maybe<Scalars['ID']['output']>;
   reference?: Maybe<Scalars['String']['output']>;
+  /** Monotonic per-task version. Changes are produced by several backends and may arrive out of order: apply one only if its revision is greater than the last you applied. */
+  revision: Scalars['Int']['output'];
   root?: Maybe<Scalars['ID']['output']>;
   statusMessage?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
@@ -5898,6 +5923,14 @@ export type HoverActionQueryVariables = Exact<{
 
 
 export type HoverActionQuery = { __typename?: 'Query', action: { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> } };
+
+export type SimilarActionsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  limit: Scalars['Int']['input'];
+}>;
+
+
+export type SimilarActionsQuery = { __typename?: 'Query', similarActions: Array<{ __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null }> };
 
 export type AgentsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -9190,6 +9223,13 @@ export const HoverActionDocument = gql`
   }
 }
     ${HoverActionFragmentDoc}`;
+export const SimilarActionsDocument = gql`
+    query SimilarActions($id: ID!, $limit: Int!) {
+  similarActions(action: $id, limit: $limit) {
+    ...ListAction
+  }
+}
+    ${ListActionFragmentDoc}`;
 export const AgentsDocument = gql`
     query Agents($pagination: OffsetPaginationInput, $filters: AgentFilter, $ordering: [AgentOrder!]) {
   agents(ordering: $ordering, pagination: $pagination, filters: $filters) {
@@ -10051,6 +10091,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     HoverAction(variables: HoverActionQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<HoverActionQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<HoverActionQuery>({ document: HoverActionDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'HoverAction', 'query', variables);
+    },
+    SimilarActions(variables: SimilarActionsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<SimilarActionsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<SimilarActionsQuery>({ document: SimilarActionsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'SimilarActions', 'query', variables);
     },
     Agents(variables?: AgentsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AgentsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<AgentsQuery>({ document: AgentsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'Agents', 'query', variables);

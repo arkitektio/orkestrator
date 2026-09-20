@@ -1,3 +1,4 @@
+import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import { Guard } from "@/app/Arkitekt";
 import React from "react";
@@ -23,7 +24,7 @@ interface Props { }
 
 const Module: React.FC<Props> = () => {
   return (
-    <Guard.Fluss unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>}>
+    <Guard.Fluss fallback={<ServiceUnavailable serviceKey="fluss" />}>
       <ModuleLayout
         pane={
           <>

@@ -1,3 +1,4 @@
+import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
 import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import React from "react";
@@ -17,7 +18,7 @@ interface Props { }
 
 export const AlpakaModule: React.FC<Props> = () => {
   return (
-    <Guard.Alpaka unavailable={<>Loading</>} unconfigured={<>Loading</>} configuring={<>Loading</>} challenging={<>Loading</>}>
+    <Guard.Alpaka fallback={<ServiceUnavailable serviceKey="alpaka" />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route path="rooms/:id" element={<RoomPage />} />

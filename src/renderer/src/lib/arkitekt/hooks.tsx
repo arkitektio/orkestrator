@@ -106,6 +106,43 @@ export const useAvailableModules = (): ModuleRuntimeState[] =>
 export const useServiceState = (key: string): ServiceRuntimeState | undefined =>
   useArkitektStore((state) => state.serviceStates[key]);
 
+/**
+ * One module's state. Prefer this over picking an entry out of
+ * `useAvailableModules()`: that list's `useShallow` compares the ENTRIES, and a
+ * health tick replaces the entry it touched (`lastCheckedAt`), so the whole
+ * list — and every component rendering from it — changes identity because one
+ * service was polled. Selecting a single key means a tick in one module wakes
+ * only that module's UI.
+ */
+export const useModuleState = (key: string): ModuleRuntimeState | undefined =>
+  useArkitektStore((state) => state.moduleStates[key]);
+
+/**
+ * The keys of every module worth showing, and nothing else about them.
+ *
+ * Strings, so the shallow compare actually holds across a health tick — which
+ * is the point: the rail's tile grid should redraw when a module APPEARS, not
+ * when one is polled.
+ */
+export const useAvailableModuleKeys = (): string[] =>
+  useArkitektStore(
+    useShallow((state) =>
+      Object.values(state.moduleStates)
+        .filter((entry) => entry.status !== "hidden")
+        .map((entry) => entry.key),
+    ),
+  );
+
+/** The keys of the modules that are ready, for callers that preload on ready. */
+export const useReadyModuleKeys = (): string[] =>
+  useArkitektStore(
+    useShallow((state) =>
+      Object.values(state.moduleStates)
+        .filter((entry) => entry.status === "ready")
+        .map((entry) => entry.key),
+    ),
+  );
+
 export const usePotentialService = (key: string): Service | undefined =>
   useArkitektStore((state) => state.connection?.serviceMap?.[key] as Service | undefined );
 

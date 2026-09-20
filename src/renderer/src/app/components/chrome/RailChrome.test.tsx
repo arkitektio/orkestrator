@@ -171,6 +171,58 @@ describe("navigation controls", () => {
   });
 });
 
+describe("overflow", () => {
+  const original = window.ResizeObserver;
+  afterEach(() => {
+    window.ResizeObserver = original;
+  });
+
+  /** A ResizeObserver that reports the given width for whatever it observes. */
+  const observeAs = (width: number) => {
+    window.ResizeObserver = class {
+      private cb: ResizeObserverCallback;
+      constructor(cb: ResizeObserverCallback) {
+        this.cb = cb;
+      }
+      observe(target: Element) {
+        this.cb([{ target, contentRect: { width } } as ResizeObserverEntry], this as never);
+      }
+      unobserve() {}
+      disconnect() {}
+    };
+  };
+
+  it("folds the rightmost buttons into a “…” menu when the row is too narrow", async () => {
+    // Three slots: Back and Forward inline, Reload and Share behind the menu.
+    observeAs(3 * 24 + 2 * 2);
+    setElectron("darwin");
+    render(<Shell><RailChrome /></Shell>);
+
+    expect(screen.getByLabelText("Back")).toBeInTheDocument();
+    expect(screen.getByLabelText("Forward")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Reload")).toBeNull();
+    expect(screen.queryByLabelText("Share")).toBeNull();
+
+    const more = screen.getByLabelText("More");
+    expect(more).toHaveClass("app-no-drag");
+    // Open with the keyboard: Radix opens its menu on Enter, which jsdom can
+    // deliver where a real pointer sequence cannot.
+    await act(async () => {
+      fireEvent.keyDown(more, { key: "Enter" });
+    });
+    expect(await screen.findByRole("menuitem", { name: /reload/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /copy a link/i })).toBeInTheDocument();
+  });
+
+  it("shows everything again once there is room", () => {
+    observeAs(400);
+    setElectron("darwin");
+    render(<Shell><RailChrome /></Shell>);
+    expect(screen.getByLabelText("Share")).toBeInTheDocument();
+    expect(screen.queryByLabelText("More")).toBeNull();
+  });
+});
+
 describe("window controls", () => {
   it.each(["darwin", "win32"])("draws none of its own on %s", (platform) => {
     // macOS has real traffic lights; on Windows they live in the bar that

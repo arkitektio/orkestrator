@@ -9,3 +9,11 @@ mutation RescanRepos {
     id
   }
 }
+
+# One repo, not all of them: selects the full Repo so the open page updates in
+# place from the cache instead of refetching.
+mutation ScanRepo($id: String!) {
+  scanRepo(input: { id: $id }) {
+    ...Repo
+  }
+}

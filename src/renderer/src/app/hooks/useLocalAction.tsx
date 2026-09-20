@@ -60,7 +60,7 @@ export const usePerformAction = (props: {
   const connection = useConnection();
   const dialog = useDialog();
   const navigate = useNavigate();
-  const { open: openTab } = useTabActions();
+  const { open: openTab, openBeside: openTabBeside } = useTabActions();
   const setSelection = useSelectionSelector((state) => state.setSelection);
   const setBSelection = useSelectionSelector((state) => state.setBSelection);
 
@@ -130,7 +130,7 @@ export const usePerformAction = (props: {
         services: (connection?.serviceMap || {}) as ServiceMap,
         dialog,
         navigate,
-        tabs: { open: openTab },
+        tabs: { open: openTab, openBeside: openTabBeside },
         // Read from the shared window-level tracker instead of per-row listeners.
         modifiers: getModifierState(),
         confirm,

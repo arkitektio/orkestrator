@@ -224,12 +224,18 @@ const Furniture = ({ morphology }: { morphology: Morphology }) => {
 export const MorphologyCanvas = ({
   morphology,
   frame,
+  keyboard = true,
   onPointerMissed,
   children,
 }: {
   morphology: Morphology;
   /** What to frame; the whole morphology when omitted. */
   frame?: Frame;
+  /**
+   * Window-level keys (arrows, F, Esc). Off for a mini viewer embedded in
+   * another view, whose host owns those keys (the timeline's F and arrows).
+   */
+  keyboard?: boolean;
   onPointerMissed?: (event: MouseEvent) => void;
   children: React.ReactNode;
 }) => {
@@ -258,7 +264,7 @@ export const MorphologyCanvas = ({
         frame={frame ?? wholeFrame(morphology)}
         empty={morphology.sections.length === 0}
       />
-      <KeyboardNavigation />
+      {keyboard && <KeyboardNavigation />}
       <ScaleSync />
       <ScreenshotBinding />
       <Furniture morphology={morphology} />
