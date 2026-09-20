@@ -1,3 +1,6 @@
+# Ranking is server-side: substring matches first, then semantic similarity
+# of the term to name + description. Do not add an `ordering` here — an
+# explicit ordering replaces that ranking.
 query GlobalSearch(
   $search: String
   $noActions: Boolean!

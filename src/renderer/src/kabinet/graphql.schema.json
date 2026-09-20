@@ -5494,7 +5494,7 @@
           },
           {
             "name": "search",
-            "description": "Case-insensitive search on the action name.",
+            "description": "Search by name: a case-insensitive substring, or semantic similarity of the query to the definition's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.",
             "type": {
               "kind": "SCALAR",
               "name": "String",

@@ -644,7 +644,7 @@ export type ArrayDatasetFilter = {
   placeableIn?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to datasets rendered in this scene, through their lenses' layers. What is actually staged there -- for what merely could be, use `placeableIn` */
   scene?: InputMaybe<Scalars['ID']['input']>;
-  /** Search by name (case-insensitive substring) */
+  /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter to the datasets converted from this file -- every series of it, unless `sourceSeriesIdentifier` narrows that. A file link, not a derivation: this asks which bytes the arrays were read out of, where `derivedFrom` asks which data they were computed from. A dataset can honestly answer both */
   sourceFile?: InputMaybe<Scalars['ID']['input']>;
@@ -2445,6 +2445,8 @@ export type File = {
   derivedContainers: Array<FileLink>;
   /** The containers this file was written from: the dataset exported to OME-TIFF, the mesh collection written to STL. The mirror of `derivedContainers` */
   exportedFrom: Array<FileLink>;
+  /** The folder this file is filed in, or null once its folder was deleted (deleting a folder unfiles what is in it and destroys nothing). Organisational only: it says where a user keeps the file, nothing about its contents */
+  folder?: Maybe<Folder>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   /** The organization this file belongs to */
@@ -2876,7 +2878,7 @@ export type FolderFilter = {
   parentless?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Search by name (full-text search) */
+  /** Search by name (full-text) or by the meaning of the query against name and description. Textual matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter by tag names */
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -7911,7 +7913,7 @@ export type TableDatasetFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to table datasets placeable into this coordinate system: those whose own coordinate system reaches it across steps that compose into one affine map, walking the transformation edges. Takes a *space*, not a scene -- pass `scene.worldCoordinateSystem.id` to ask it of a scene */
   placeableIn?: InputMaybe<Scalars['ID']['input']>;
-  /** Search by name (case-insensitive substring) */
+  /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -9600,7 +9602,7 @@ export type FileFragment = { __typename?: 'File', id: string, name: string, size
   ), provenanceEntries: Array<(
     { __typename?: 'ProvenanceEntry' }
     & ProvenanceEntryFragment
-  )>, organization: { __typename?: 'Organization', slug: string } };
+  )>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
 export type ListFileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
@@ -13814,6 +13816,10 @@ export const FileFragmentDoc = gql`
   }
   size
   contentType
+  folder {
+    id
+    name
+  }
 }
     ${BigFileStoreFragmentDoc}
 ${ProvenanceEntryFragmentDoc}`;

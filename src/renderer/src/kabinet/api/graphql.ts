@@ -834,7 +834,7 @@ export type DefinitionFilter = {
   demands?: InputMaybe<Array<PortDemandInput>>;
   /** Keep only definitions whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Case-insensitive search on the action name. */
+  /** Search by name: a case-insensitive substring, or semantic similarity of the query to the definition's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -3053,7 +3053,10 @@ export type ListReleaseFragment = { __typename?: 'Release', id: string, version:
 
 export type ListRepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string };
 
-export type RepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string, url: string, issueUrl: string, addedAt: any, updatedAt: any, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, release: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', identifier: string } }, selectors: Array<{ __typename: 'CPUSelector' } | { __typename?: 'CudaSelector', cudaVersion?: string | null, cudaCores?: number | null } | { __typename?: 'LabelSelector' } | { __typename?: 'OneApiSelector' } | { __typename?: 'RAMSelector' } | { __typename?: 'RocmSelector', apiVersion?: string | null, apiThing?: string | null }> }> };
+export type RepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string, url: string, issueUrl: string, addedAt: any, updatedAt: any, organization: { __typename?: 'Organization', slug: string }, flavours: Array<(
+    { __typename?: 'Flavour', image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }> }
+    & ListFlavourFragment
+  )> };
 
 export type ResourceFragment = { __typename?: 'Resource', id: string, name: string, qualifiers?: any | null, backend: { __typename?: 'Backend', id: string, name: string }, pods: Array<(
     { __typename?: 'Pod' }
@@ -3130,6 +3133,16 @@ export type RescanReposMutationVariables = Exact<{ [key: string]: never; }>;
 
 
 export type RescanReposMutation = { __typename?: 'Mutation', rescanRepos: Array<{ __typename?: 'GithubRepo', id: string }> };
+
+export type ScanRepoMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+
+export type ScanRepoMutation = { __typename?: 'Mutation', scanRepo: (
+    { __typename?: 'GithubRepo' }
+    & RepoFragment
+  ) };
 
 export type ListBackendsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4168,32 +4181,24 @@ export const RepoFragmentDoc = gql`
   issueUrl
   addedAt
   updatedAt
+  organization {
+    slug
+  }
   flavours {
-    id
-    name
-    release {
-      id
-      version
-      app {
-        identifier
-      }
+    ...ListFlavour
+    image {
+      imageString
+      buildAt
     }
-    selectors {
-      ... on CPUSelector {
-        __typename
-      }
-      ... on CudaSelector {
-        cudaVersion
-        cudaCores
-      }
-      ... on RocmSelector {
-        apiVersion
-        apiThing
-      }
+    requirements {
+      key
+      service
+      optional
+      description
     }
   }
 }
-    `;
+    ${ListFlavourFragmentDoc}`;
 export const ResourceFragmentDoc = gql`
     fragment Resource on Resource {
   id
@@ -4411,6 +4416,39 @@ export function useRescanReposMutation(baseOptions?: ApolloReactHooks.MutationHo
 export type RescanReposMutationHookResult = ReturnType<typeof useRescanReposMutation>;
 export type RescanReposMutationResult = Apollo.MutationResult<RescanReposMutation>;
 export type RescanReposMutationOptions = Apollo.BaseMutationOptions<RescanReposMutation, RescanReposMutationVariables>;
+export const ScanRepoDocument = gql`
+    mutation ScanRepo($id: String!) {
+  scanRepo(input: {id: $id}) {
+    ...Repo
+  }
+}
+    ${RepoFragmentDoc}`;
+export type ScanRepoMutationFn = Apollo.MutationFunction<ScanRepoMutation, ScanRepoMutationVariables>;
+
+/**
+ * __useScanRepoMutation__
+ *
+ * To run a mutation, you first call `useScanRepoMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useScanRepoMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [scanRepoMutation, { data, loading, error }] = useScanRepoMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useScanRepoMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ScanRepoMutation, ScanRepoMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ScanRepoMutation, ScanRepoMutationVariables>(ScanRepoDocument, options);
+      }
+export type ScanRepoMutationHookResult = ReturnType<typeof useScanRepoMutation>;
+export type ScanRepoMutationResult = Apollo.MutationResult<ScanRepoMutation>;
+export type ScanRepoMutationOptions = Apollo.BaseMutationOptions<ScanRepoMutation, ScanRepoMutationVariables>;
 export const ListBackendsDocument = gql`
     query ListBackends {
   backends {

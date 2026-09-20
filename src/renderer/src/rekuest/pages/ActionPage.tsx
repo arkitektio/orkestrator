@@ -9,6 +9,7 @@ import { ActionHeader } from "../components/action/ActionHeader";
 import { ActionSignature } from "../components/action/ActionSignature";
 import { ActionTaskHistory } from "../components/action/ActionTaskHistory";
 import { ProvidedByPanel } from "../components/action/ProvidedByPanel";
+import { SimilarActions } from "../components/action/SimilarActions";
 import { LegacyActionTests, TestMatrix } from "../components/action/TestMatrix";
 import { ActionUsageSidebar } from "../sidebars/ActionUsageSidebar";
 
@@ -58,6 +59,8 @@ export const ActionPage = asDetailQueryRoute(useDetailActionQuery, ({ data }) =>
             <LegacyActionTests tests={data.action.tests} />
           )
         )}
+
+        <SimilarActions id={data.action.id} />
 
         <ActionTaskHistory id={data.action.id} />
       </div>

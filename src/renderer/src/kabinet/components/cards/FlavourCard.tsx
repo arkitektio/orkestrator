@@ -125,18 +125,20 @@ export const FlavourInstallButton = (props: { item: { id: string } }) => {
   );
 };
 
-const DelegatingSelector = (props: {
-  selector: ListFlavourFragment["selectors"][0];
-}) => {
-  if (props.selector.__typename == "CudaSelector") {
-    return <div> Cuda </div>;
+/** What a selector asks of the host, as a badge word. Shared with the repo's Info rail. */
+export const selectorLabel = (
+  selector: Pick<ListFlavourFragment["selectors"][number], "__typename">,
+): string => {
+  switch (selector.__typename) {
+    case "CudaSelector":
+      return "CUDA";
+    case "RocmSelector":
+      return "ROCm";
+    case "CPUSelector":
+      return "CPU";
+    default:
+      return selector.__typename?.replace(/Selector$/, "") ?? "Unknown";
   }
-
-  if (props.selector.__typename == "RocmSelector") {
-    return <div> Cpu </div>;
-  }
-
-  return <> Unknown </>;
 };
 
 const TheCard = ({ item }: Props) => {
@@ -164,9 +166,9 @@ const TheCard = ({ item }: Props) => {
                 {item.release.app.identifier}:{item.release.version}-{item.name}
               </KabinetFlavour.DetailLink>
             </CardTitle>
-            {item.selectors.map((selector) => (
-              <Badge className=" text-white bg-gray-700">
-                <DelegatingSelector selector={selector} />
+            {item.selectors.map((selector, index) => (
+              <Badge key={index} className=" text-white bg-gray-700">
+                {selectorLabel(selector)}
               </Badge>
             ))}
           </div>
