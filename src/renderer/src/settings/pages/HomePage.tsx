@@ -60,6 +60,7 @@ import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { ServiceRuntimeState } from "@/lib/arkitekt/types";
 import { Settings as UserSettings } from "@/providers/settings/validator";
+import { VoiceSettingsCard } from "@/voice";
 
 export type IRepresentationScreenProps = Record<string, never>;
 
@@ -571,6 +572,8 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <VoiceSettingsCard />
 
             <Card>
               <CardHeader>

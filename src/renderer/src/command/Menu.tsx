@@ -24,6 +24,7 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 import { useDebounce } from "@uidotdev/usehooks";
 import { Search, Sparkles } from "lucide-react";
 import { createElement, Suspense, useMemo } from "react";
+import { VoicePaletteBadge } from "@/voice";
 import { useCommandPalette } from "./CommandPaletteProvider";
 import { resolveContextObjects } from "./contextObjects";
 import { CyclingPlaceholder } from "./CyclingPlaceholder";
@@ -309,6 +310,8 @@ export const CommandMenu = (props: {
                   />
                 )}
               </div>
+              {/* The microphone, while the query is being dictated. */}
+              <VoicePaletteBadge />
               {newTab && (
                 <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
                   New tab

@@ -110,6 +110,7 @@ import { CommandPaletteProvider } from "@/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/command/Host";
 import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
 import { TabsProvider } from "@/command/tabs/TabsProvider";
+import { VoiceInput } from "@/voice";
 
 
 /**
@@ -164,6 +165,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                         from and nothing for it to open. Same guard as `AppShell`. */}
                                     <Arkitekt.Guard notConnectedFallback={null} connectingFallback={null}>
                                       <CommandMenuHost />
+                                      {/* Dictation into the palette and text fields.
+                                          Renders nothing until Settings → Voice input is on. */}
+                                      <VoiceInput />
                                     </Arkitekt.Guard>
                                     <SmartSurface />
                                     <RefetchOnReactivate />

@@ -39,6 +39,7 @@ import { AgentIsland } from "@/app/agent/AgentIsland";
 import { LocalActionIsland } from "@/app/components/rail/LocalActionIsland";
 import { RailIslandStack } from "@/app/components/rail/RailIsland";
 import { UpdateIsland } from "@/app/updates/UpdateIsland";
+import { VoiceIsland } from "@/voice";
 
 
 export type INavigationBarProps = {
@@ -415,6 +416,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           task island to share the one rekuest guard. */}
       <RailIslandStack>
         <UpdateIsland />
+        <VoiceIsland />
         <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
           <AgentIsland />
           <TaskNotificationStack />

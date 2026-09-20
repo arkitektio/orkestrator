@@ -58,6 +58,7 @@
     "hyparquet-writer": "0.16.9",
     "meshoptimizer": "1.2.0",
     "reselect": "^5.1.1",
+    "sherpa-onnx-node": "1.13.8",
     "uplot": "^1.6.32",
     "uplot-react": "^1.2.4",
     "zundo": "^2.3.0",

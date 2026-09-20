@@ -22,6 +22,11 @@ files:
   - "package.json"
   - "resources/**/*"
 asar: true
+# The voice engine's native addon and its shared libraries cannot be loaded
+# from inside the asar archive; they stay unpacked next to it.
+asarUnpack:
+  - "node_modules/sherpa-onnx-node/**"
+  - "node_modules/sherpa-onnx-*/**"
 win:
   executableName: orkestrator
 nsis:

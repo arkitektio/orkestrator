@@ -3,6 +3,30 @@ import { AppContext, AvailableService } from "@/lib/arkitekt/provider";
 import { ImplementationInput } from "@/rekuest/api/graphql";
 import { ElectronAPI } from "@electron-toolkit/preload";
 import type { ChromeTheme, WindowChromeState } from "../main/modules/WindowManager";
+import type {
+  VoiceCatalogEntry,
+  VoiceEvent,
+  VoiceModelState,
+  VoicePortsPayload,
+  VoiceStartConfig,
+  VoiceStatusPayload,
+} from "../main/voice/protocol";
+
+export type VoiceApi = {
+  start: (config: VoiceStartConfig) => Promise<VoiceStatusPayload>;
+  stop: () => Promise<VoiceStatusPayload>;
+  status: () => Promise<VoiceStatusPayload>;
+  catalog: () => Promise<VoiceCatalogEntry[]>;
+  /** Resolves once the ports have been posted to the page (`voice:ports` message). */
+  requestPorts: () => Promise<VoicePortsPayload>;
+  onEvent: (cb: (event: VoiceEvent) => void) => () => void;
+  models: {
+    list: () => Promise<VoiceModelState[]>;
+    ensure: (args: { modelId: string; modelHost?: string }) => Promise<VoiceModelState[]>;
+    remove: (args: { modelId: string }) => Promise<VoiceModelState[]>;
+    cancel: (args: { modelId: string }) => Promise<void>;
+  };
+};
 
 declare global {
   interface Window {
@@ -53,6 +77,7 @@ declare global {
       onDownloadError: (downloadId: string, cb: (data: any) => void) => () => void;
       onUploadProgress: (uploadId: string, cb: (data: any) => void) => () => void;
       onUploadError: (uploadId: string, cb: (data: any) => void) => () => void;
+      voice: VoiceApi;
       executeElectron: (task: Assign) => Promise<void>;
       onAgentYield: (cb: (data: any) => void) => () => void;
       onAgentDone: (cb: (data: any) => void) => () => void;
