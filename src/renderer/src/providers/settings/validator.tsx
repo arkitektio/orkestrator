@@ -60,7 +60,7 @@ export const defaultSettings: Settings = {
   pollInterval: 3000,
   experimentalViv: false,
   experimentalCache: false,
-  defaultZoomLevel: 0.8,
+  defaultZoomLevel: 1,
   startAgent: false,
   showHoverCards: true,
   agentExpanded: false,
