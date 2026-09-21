@@ -4,6 +4,7 @@ fragment TableDatasetColumn on Column {
   id
   name
   longName
+  description
   dtype
   role
   axisType
@@ -17,6 +18,7 @@ fragment TableDatasetColumn on Column {
   # off exactly this.
   references {
     id
+    name
   }
   nodeReferences {
     id

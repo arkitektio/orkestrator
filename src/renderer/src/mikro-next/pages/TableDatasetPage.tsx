@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { MikroTableDataset } from "@/linkers";
 import { useGetTableDatasetQuery } from "../api/graphql";
 import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
+import { AttributeServiceProvider } from "../lib/attributes/AttributeServiceProvider";
 import { TableDatasetInfoSidebar } from "../components/sidebars/TableDatasetInfoSidebar";
 import { TableDatasetTable } from "../components/tables/TableDatasetTable";
 
@@ -27,67 +28,74 @@ export const TableDatasetPage = asDetailQueryRoute(
   ({ data }) => {
     const dataset = data.tableDataset;
 
+    // The column popover reads a column's values through the shared parquet
+    // engine, from the table header AND from the Info rail. The provider sits
+    // outside `ModelPage` because the layout renders the rail as a sibling of
+    // the page body, not inside it — a provider around the body alone would
+    // never reach the rail. The module route already guards on Mikro.
     return (
-      <MikroTableDataset.ModelPage
-        object={dataset}
-        title={dataset.name}
-        variant={"black"}
-        overlay
-        actions={<MikroTableDataset.Actions object={dataset} />}
-        additionalSidebars={
-          <>
-            <Sidebars.Tab label="Info">
-              <TableDatasetInfoSidebar dataset={dataset} />
-            </Sidebars.Tab>
-            {/* The table owns its coordinate system, so the graph around that
-                system is this table's neighbourhood: what it is registered
-                into, and what was computed from it. */}
-            <Sidebars.Tab label="Space">
-              <div className="h-full w-full">
-                <CoordinateGraphView
-                  coordinateSystem={dataset.coordinateSystem.id}
-                />
+      <AttributeServiceProvider>
+        <MikroTableDataset.ModelPage
+          object={dataset}
+          title={dataset.name}
+          variant={"black"}
+          overlay
+          actions={<MikroTableDataset.Actions object={dataset} />}
+          additionalSidebars={
+            <>
+              <Sidebars.Tab label="Info">
+                <TableDatasetInfoSidebar dataset={dataset} />
+              </Sidebars.Tab>
+              {/* The table owns its coordinate system, so the graph around that
+                  system is this table's neighbourhood: what it is registered
+                  into, and what was computed from it. */}
+              <Sidebars.Tab label="Space">
+                <div className="h-full w-full">
+                  <CoordinateGraphView
+                    coordinateSystem={dataset.coordinateSystem.id}
+                  />
+                </div>
+              </Sidebars.Tab>
+            </>
+          }
+          defaultSidebar="Info"
+          // Own key, like the scene pages: with the app-wide one a remembered
+          // "Knowledge" would beat `defaultSidebar` and the rail would open on a
+          // tab this page did not choose.
+          sidebarKey="TableDatasetDetail"
+        >
+          <div className="flex h-full w-full flex-col gap-2">
+            {/* The same title treatment the array page floats over its canvas,
+                in flow rather than absolute — there is no picture to float over
+                and covering rows would only hide data. */}
+            <div className="flex flex-col gap-0.5">
+              <MikroTableDataset.DetailLink
+                object={dataset}
+                className="ellipsis truncate break-all text-3xl font-semibold leading-tight text-ellipsis"
+              >
+                {dataset.name}
+              </MikroTableDataset.DetailLink>
+              <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+                <span className="truncate">
+                  {dataset.axisNames.length
+                    ? dataset.axisNames.join(" × ")
+                    : "measurement table"}
+                </span>
+                <Badge variant="outline" className="font-sans text-[0.625rem]">
+                  {dataset.columns.length} columns
+                </Badge>
               </div>
-            </Sidebars.Tab>
-          </>
-        }
-        defaultSidebar="Info"
-        // Own key, like the scene pages: with the app-wide one a remembered
-        // "Knowledge" would beat `defaultSidebar` and the rail would open on a
-        // tab this page did not choose.
-        sidebarKey="TableDatasetDetail"
-      >
-        <div className="flex h-full w-full flex-col gap-2">
-          {/* The same title treatment the array page floats over its canvas,
-              in flow rather than absolute — there is no picture to float over
-              and covering rows would only hide data. */}
-          <div className="flex flex-col gap-0.5">
-            <MikroTableDataset.DetailLink
-              object={dataset}
-              className="ellipsis truncate break-all text-3xl font-semibold leading-tight text-ellipsis"
-            >
-              {dataset.name}
-            </MikroTableDataset.DetailLink>
-            <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-              <span className="truncate">
-                {dataset.axisNames.length
-                  ? dataset.axisNames.join(" × ")
-                  : "measurement table"}
-              </span>
-              <Badge variant="outline" className="font-sans text-[0.625rem]">
-                {dataset.columns.length} columns
-              </Badge>
+            </div>
+
+            {/* `min-h-0` so the table's own scroll container is what scrolls:
+                without it the flex item grows to its content and the page scrolls
+                instead, taking the column headers off screen. */}
+            <div className="min-h-0 flex-1">
+              <TableDatasetTable table={dataset} />
             </div>
           </div>
-
-          {/* `min-h-0` so the table's own scroll container is what scrolls:
-              without it the flex item grows to its content and the page scrolls
-              instead, taking the column headers off screen. */}
-          <div className="min-h-0 flex-1">
-            <TableDatasetTable table={dataset} />
-          </div>
-        </div>
-      </MikroTableDataset.ModelPage>
+        </MikroTableDataset.ModelPage>
+      </AttributeServiceProvider>
     );
   },
 );

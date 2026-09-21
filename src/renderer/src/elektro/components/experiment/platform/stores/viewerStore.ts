@@ -1,6 +1,7 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
 import { useStore } from "zustand";
+import { createChromeSlice, type ChromeSlice } from "./viewer/chromeSlice";
 import { createLayoutSlice, type LayoutSlice } from "./viewer/layoutSlice";
 import { createModeSlice, type ModeSlice } from "./viewer/modeSlice";
 import { createProbeSlice, type ProbeSlice } from "./viewer/probeSlice";
@@ -21,6 +22,7 @@ import { createViewportSlice, type ViewportSlice } from "./viewer/viewportSlice"
  *  - **probe**    the hovered time and what each layer draws there
  *  - **viewport** the canvas' pixel size
  *  - **mode**     what a drag does
+ *  - **chrome**   the optional reading aids (value axis, grid) and their spacing
  *
  * FEATURE slices (a trace layer's packed lines, an events layer's marks, …)
  * name feature types, and `platform/` may not import a feature — so they are
@@ -33,9 +35,15 @@ export type * from "./viewer/statsSlice";
 export type * from "./viewer/probeSlice";
 export type * from "./viewer/viewportSlice";
 export type * from "./viewer/modeSlice";
+export type * from "./viewer/chromeSlice";
 export { bandKey, drawableClim, effectiveClim } from "./viewer/layoutSlice";
 export { EMPTY_READOUT } from "./viewer/statsSlice";
 export { interactionModeOptions } from "./viewer/modeSlice";
+export {
+  MAX_GRID_SPACING_PX,
+  MIN_GRID_SPACING_PX,
+  valueSpacingFor,
+} from "./viewer/chromeSlice";
 
 /** Store-level lifecycle, spanning slices. */
 export type LifecycleSlice = {
@@ -56,6 +64,7 @@ export type ViewerState = LayoutSlice &
   ProbeSlice &
   ViewportSlice &
   ModeSlice &
+  ChromeSlice &
   LifecycleSlice;
 
 /** A feature slice: built with the whole store's `set`/`get`. */
@@ -74,6 +83,7 @@ export const createViewerStore = (extraSlices: readonly AnyViewerSlice[] = []) =
     ...createProbeSlice(set, get),
     ...createViewportSlice(set, get),
     ...createModeSlice(set, get),
+    ...createChromeSlice(set),
     clearLayer: (layerId, options = {}) => {
       const state = get();
       const probed = state.probeSources.delete(layerId);
@@ -81,6 +91,7 @@ export const createViewerStore = (extraSlices: readonly AnyViewerSlice[] = []) =
       const readouts = { ...state.readouts };
       const markLabels = { ...state.markLabels };
       const clims = { ...state.clims };
+      const droppedClim = !options.keepClim && clims[layerId] !== undefined;
       delete stats[layerId];
       delete readouts[layerId];
       delete markLabels[layerId];
@@ -90,6 +101,7 @@ export const createViewerStore = (extraSlices: readonly AnyViewerSlice[] = []) =
         readouts,
         markLabels,
         clims,
+        climVersion: state.climVersion + (droppedClim ? 1 : 0),
         statsVersion: state.statsVersion + 1,
         labelsVersion: state.labelsVersion + 1,
         probeVersion: state.probeVersion + (probed ? 1 : 0),

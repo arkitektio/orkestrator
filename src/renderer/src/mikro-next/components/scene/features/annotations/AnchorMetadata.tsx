@@ -1,24 +1,11 @@
-import { formatDisplay } from "@/lib/quantities";
-import type {
-  FullCoordinateAnchorFragment,
-  LightpathGraphFragment,
-} from "@/mikro-next/api/graphql";
 import { useGetLensAnchorsQuery } from "@/mikro-next/api/graphql";
-import { LightPathListView } from "@/mikro-next/components/lightpath/LightPathListView";
-import {
-  DeviceRows,
-  MetadataAnchorBox,
-  MetadataChip,
-  MetadataHeader,
-  MetadataRow,
-  ValueHistogramSpoke,
-} from "@/lib/scene/metadata/MetadataChrome";
 import { useMemo, useState } from "react";
 import {
   type AnchorMatch,
   layerCoverage,
   matchAnchor,
 } from "./anchorVisibility";
+import { ActiveAnchor, type PanelAnchor } from "./AnchorSpokes";
 import { LayerState } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 
@@ -48,134 +35,9 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
  * it describes — so a scene of twenty layers fetches exactly one.
  */
 
-/**
- * What the panel renders. Structural, so both the thin `SceneLens.activeAnchors`
- * projection and the full `FullCoordinateAnchorFragment` satisfy it — the panel
- * degrades field by field rather than switching modes.
- */
-type PanelAnchor = {
-  id: string;
-  coordinates: unknown;
-  channelLabel?: { label: string } | null;
-  valueHistogram?: {
-    bins: number[];
-    histogram: number[];
-    min?: number | null;
-    max?: number | null;
-    p1?: number | null;
-    p99?: number | null;
-  } | null;
-  lightGraph?: { graph: LightpathGraphFragment } | null;
-  microscope?: FullCoordinateAnchorFragment["microscope"];
-  phasorCalibrations?: FullCoordinateAnchorFragment["phasorCalibrations"];
-  phasorHistograms?: FullCoordinateAnchorFragment["phasorHistograms"];
-};
-
-const MicroscopeSpoke = ({
-  microscope,
-}: {
-  microscope: NonNullable<FullCoordinateAnchorFragment["microscope"]>;
-}) => {
-  const { stage, temperature, devices } = microscope.state;
-  const stagePose = stage
-    ? [stage.x, stage.y, stage.z]
-        .map((axis) => formatDisplay(axis, "length"))
-        .join(" / ")
-    : null;
-
-  return (
-    <div className="flex flex-col gap-1">
-      <MetadataHeader>Microscope</MetadataHeader>
-      {stagePose && <MetadataRow label="stage" value={stagePose} />}
-      {temperature != null && (
-        <MetadataRow label="temp" value={formatDisplay(temperature)} />
-      )}
-      <DeviceRows devices={devices} />
-    </div>
-  );
-};
-
-const PhasorSpoke = ({ anchor }: { anchor: PanelAnchor }) => {
-  const calibrations = anchor.phasorCalibrations ?? [];
-  const histograms = anchor.phasorHistograms ?? [];
-  if (calibrations.length === 0 && histograms.length === 0) return null;
-
-  return (
-    <div className="flex flex-col gap-1">
-      <MetadataHeader>Phasor</MetadataHeader>
-      {calibrations.map((calibration) => (
-        <MetadataRow
-          key={calibration.id}
-          label={`h${calibration.harmonic} cal`}
-          value={[
-            calibration.phaseOffset != null &&
-              `φ ${calibration.phaseOffset.toFixed(3)}`,
-            calibration.modulationFactor != null &&
-              `m ${calibration.modulationFactor.toFixed(3)}`,
-            calibration.reference,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        />
-      ))}
-      {histograms.map((histogram) => (
-        <MetadataRow
-          key={histogram.id}
-          label={`h${histogram.harmonic} dist`}
-          value={`${histogram.axis} · ${histogram.bins}² bins · ${
-            histogram.calibrated ? "calibrated" : "uncalibrated"
-          }${histogram.total != null ? ` · n=${histogram.total}` : ""}`}
-        />
-      ))}
-    </div>
-  );
-};
-
-/** One in-view anchor: its pins, then whichever metadata spokes it carries. */
-const ActiveAnchor = ({ anchor }: { anchor: PanelAnchor }) => {
-  const hasSpokes =
-    Boolean(anchor.channelLabel) ||
-    Boolean(anchor.valueHistogram) ||
-    Boolean(anchor.lightGraph) ||
-    Boolean(anchor.microscope) ||
-    (anchor.phasorCalibrations?.length ?? 0) > 0 ||
-    (anchor.phasorHistograms?.length ?? 0) > 0;
-
-  return (
-    <MetadataAnchorBox>
-      {/* Which slice the anchor pins is not shown — `match` decided it is in
-          view, and that is all the reader needs; the coordinates are noise. */}
-      {anchor.channelLabel?.label && (
-        <MetadataChip>{anchor.channelLabel.label}</MetadataChip>
-      )}
-
-      {anchor.valueHistogram && (
-        <ValueHistogramSpoke histogram={anchor.valueHistogram} />
-      )}
-
-      {anchor.lightGraph && (
-        <div className="flex flex-col gap-1">
-          <MetadataHeader>Light path</MetadataHeader>
-          {/* LightPathListView styles itself with themed tokens rather than the
-              scene's white-on-black chrome. They read correctly on this
-              near-black surface in the dark theme, and the wrapper sets the
-              inherited color so they do in the light theme too. */}
-          <div className="text-white/85">
-            <LightPathListView graph={anchor.lightGraph.graph} />
-          </div>
-        </div>
-      )}
-
-      {anchor.microscope && <MicroscopeSpoke microscope={anchor.microscope} />}
-
-      <PhasorSpoke anchor={anchor} />
-
-      {!hasSpokes && (
-        <span className="text-[9px] text-white/40">no metadata recorded</span>
-      )}
-    </MetadataAnchorBox>
-  );
-};
+// The spokes themselves (`ActiveAnchor` and the per-spoke renderers) live in
+// `AnchorSpokes.tsx`, store-free, so the table dataset page can draw an
+// anchor without a scene; they are re-exported here for the existing imports.
 
 /**
  * The anchors that exist but describe something else. Worth listing: a missing
@@ -295,4 +157,5 @@ export const useLayerAnchors = (
   };
 };
 
+export { ActiveAnchor };
 export type { PanelAnchor };

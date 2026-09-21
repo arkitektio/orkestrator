@@ -52,12 +52,26 @@ describe("stackLayout SHARED", () => {
     expect(layout.bands[bandKey("a", 0)].climIds).toEqual(["a", "b"]);
   });
 
-  it("does not guess a dimensionless view into someone else's row", () => {
+  it("does not guess a view of no stated kind into someone else's row", () => {
+    const layout = stackLayout(
+      [
+        view("a", { valueDimension: null, valueUnit: null }),
+        view("b", { valueDimension: null, valueUnit: null }),
+      ],
+      "SHARED",
+    );
+    expect(layout.rowCount).toBe(2);
+  });
+
+  it("falls back to the UNIT when the dimension is unknown", () => {
+    // Same unit is a stronger test than same dimension, so this is not a guess —
+    // and a trace that took its unit from an anchor has no dimension at all.
     const layout = stackLayout(
       [view("a", { valueDimension: null }), view("b", { valueDimension: null })],
       "SHARED",
     );
-    expect(layout.rowCount).toBe(2);
+    expect(layout.rowCount).toBe(1);
+    expect(layout.bands[bandKey("a", 0)].climIds).toEqual(["a", "b"]);
   });
 
   it("makes shared amplitudes comparable via the union clim", () => {
@@ -91,34 +105,109 @@ describe("effectiveClim", () => {
 describe("stackLayout OVERLAY", () => {
   const trace = (id: string, extra: Partial<StackableLayer> = {}) => view(id, { overlayable: true, ...extra });
 
-  it("puts every trace in one row, whatever its dimension", () => {
+  it("overlays traces that measure the same thing, and only those", () => {
     const layout = stackLayout(
-      [trace("a"), trace("b", { valueDimension: "current", valueUnit: "pA" }), trace("c", { channelCount: 3 })],
+      [
+        trace("a"),
+        trace("b", { valueDimension: "current", valueUnit: "pA" }),
+        trace("c"),
+      ],
       "OVERLAY",
     );
-    expect(layout.rowCount).toBe(1);
-    expect(layout.rows[0]).toMatchObject({ layerIds: ["a", "b", "c"], overlay: true, unit: null });
-    // Every channel fills the whole row.
-    expect(layout.bands[bandKey("c", 2)].top).toBeCloseTo(layout.bands[bandKey("a", 0)].top, 9);
-    expect(layout.bands[bandKey("c", 2)].bottom).toBeCloseTo(layout.bands[bandKey("a", 0)].bottom, 9);
+    expect(layout.rowCount).toBe(2);
+    expect(layout.rows.map((row) => row.layerIds)).toEqual([["a", "c"], ["b"]]);
   });
 
-  it("keeps each layer on its OWN scale", () => {
+  it("keeps each layer on its OWN scale — the difference from SHARED", () => {
     const layout = stackLayout([trace("a"), trace("b")], "OVERLAY");
     expect(layout.bands[bandKey("a", 0)].climIds).toEqual(["a"]);
     expect(layout.bands[bandKey("b", 0)].climIds).toEqual(["b"]);
   });
 
-  it("names the unit only when every line shares it", () => {
-    expect(stackLayout([trace("a"), trace("b")], "OVERLAY").rows[0].unit).toBe("mV");
+  it("gives every channel of every member the whole row", () => {
+    const layout = stackLayout([trace("a"), trace("c", { channelCount: 3 })], "OVERLAY");
+    expect(layout.rowCount).toBe(1);
+    expect(layout.bands[bandKey("c", 2)].top).toBeCloseTo(layout.bands[bandKey("a", 0)].top, 9);
+    expect(layout.bands[bandKey("c", 2)].bottom).toBeCloseTo(
+      layout.bands[bandKey("a", 0)].bottom,
+      9,
+    );
   });
 
-  it("gives rasters and event tables rows of their own, below the plot", () => {
+  it("joins a dimensionless trace to its unit's group", () => {
+    // "b" has no dimension, but "a" shows that mV means voltage.
+    const layout = stackLayout([trace("a"), trace("b", { valueDimension: null })], "OVERLAY");
+    expect(layout.rowCount).toBe(1);
+    expect(layout.rows[0].layerIds).toEqual(["a", "b"]);
+  });
+
+  it("joins two dimensionless traces that at least share a unit", () => {
     const layout = stackLayout(
-      [view("spikes", { overlayable: false, valueUnit: null, valueDimension: null }), trace("a")],
+      [trace("a", { valueDimension: null }), trace("b", { valueDimension: null })],
+      "OVERLAY",
+    );
+    expect(layout.rowCount).toBe(1);
+  });
+
+  it("does not join traces that only share a unit with nothing to say what it is", () => {
+    // Different units, no dimension anywhere: nothing licenses putting them together.
+    const layout = stackLayout(
+      [
+        trace("a", { valueDimension: null }),
+        trace("b", { valueDimension: null, valueUnit: "pA" }),
+      ],
       "OVERLAY",
     );
     expect(layout.rowCount).toBe(2);
-    expect(layout.rows.map((row) => row.layerIds)).toEqual([["a"], ["spikes"]]);
+  });
+
+  it("gives a trace of no stated kind a row of its own", () => {
+    const layout = stackLayout(
+      [trace("a"), trace("b", { valueDimension: null, valueUnit: null })],
+      "OVERLAY",
+    );
+    expect(layout.rowCount).toBe(2);
+    expect(layout.rows.map((row) => row.layerIds)).toEqual([["a"], ["b"]]);
+  });
+
+  it("names the unit only when every line in the group shares it", () => {
+    expect(stackLayout([trace("a"), trace("b")], "OVERLAY").rows[0].unit).toBe("mV");
+    // Same dimension, different unit: the legend has to say each.
+    const mixed = stackLayout([trace("a"), trace("b", { valueUnit: "V" })], "OVERLAY");
+    expect(mixed.rowCount).toBe(1);
+    expect(mixed.rows[0].unit).toBeNull();
+  });
+
+  it("flags a group as an overlay only when it holds more than one layer", () => {
+    const layout = stackLayout(
+      [trace("a"), trace("b"), trace("c", { valueDimension: "current", valueUnit: "pA" })],
+      "OVERLAY",
+    );
+    // A lone layer is an ordinary row, not a one-entry legend.
+    expect(layout.rows[0].overlay).toBe(true);
+    expect(layout.rows[1].overlay).toBeUndefined();
+  });
+
+  it("gives rasters and event tables rows of their own, below every plot", () => {
+    const layout = stackLayout(
+      [
+        view("spikes", { overlayable: false, valueUnit: null, valueDimension: null }),
+        trace("a"),
+        trace("b", { valueDimension: "current", valueUnit: "pA" }),
+      ],
+      "OVERLAY",
+    );
+    expect(layout.rowCount).toBe(3);
+    expect(layout.rows.map((row) => row.layerIds)).toEqual([["a"], ["b"], ["spikes"]]);
+  });
+
+  it("lays out the rest cleanly when there is no trace at all", () => {
+    const layout = stackLayout(
+      [view("spikes", { overlayable: false, valueUnit: null, valueDimension: null })],
+      "OVERLAY",
+    );
+    expect(layout.rowCount).toBe(1);
+    expect(layout.rows[0].layerIds).toEqual(["spikes"]);
+    expect(layout.bands[bandKey("spikes", 0)]).toBeDefined();
   });
 });

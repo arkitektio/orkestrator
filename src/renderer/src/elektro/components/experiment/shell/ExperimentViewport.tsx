@@ -25,6 +25,8 @@ import { ExperimentModeControls } from "./chrome/ExperimentModeControls";
 import { OverviewStrip } from "./chrome/OverviewStrip";
 import { RowLabels } from "./chrome/RowLabels";
 import { TimeAxis } from "./chrome/TimeAxis";
+import { TimeGrid } from "./chrome/TimeGrid";
+import { ValueAxis } from "./chrome/ValueAxis";
 import { ZoomBoxOverlay } from "./chrome/ZoomBoxOverlay";
 import { TimeRangeUrlSync } from "./TimeRangeUrlSync";
 import { LayerRenderer } from "./LayerRenderer";
@@ -91,6 +93,12 @@ const ReadyViewport = ({ variant }: { variant: ExperimentViewportVariant }) => {
       </div>
 
       {rowCount === 0 && <EmptyNotice />}
+      {/* Under everything else: the grid is something to read the labels
+          against, never something that sits over them. Both draw nothing while
+          their switches are off, so `mini` — which has no HUD to turn them on —
+          pays only a null render. */}
+      <TimeGrid />
+      <ValueAxis />
       <RowLabels />
       <MarkLabelsOverlay />
       <ProbeReadout />

@@ -1,6 +1,10 @@
 import { Guard } from "@/app/Arkitekt";
 import { titleFromPrompt } from "@/alpaka/recentRooms";
-import { useTalkAbout } from "@/providers/smart/extensions/alpaka/useTalkAbout";
+import { useModifierState } from "@/app/hooks/modifierTracker";
+import {
+  talkTargetFromModifiers,
+  useTalkAbout,
+} from "@/providers/smart/extensions/alpaka/useTalkAbout";
 import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
 import type { PassDownProps } from "@/providers/smart/extensions/types";
 import { CommandGroup } from "cmdk";
@@ -22,6 +26,13 @@ const AskRow = ({
     onDone: () => onDone?.({ kind: "local" }),
     onError,
   });
+  // Same choice the context menu spells out as rows, and the same gesture the
+  // Talk chip takes: ⇧ opens the chat beside this page, ⌘/ctrl in a window of
+  // its own. Read globally — cmdk's `onSelect` hands us no event.
+  const modifiers = useModifierState();
+  const target = talkTargetFromModifiers(modifiers);
+  const where =
+    target === "side" ? " to the side" : target === "window" ? " in a new window" : "";
 
   return (
     <CommandGroup
@@ -33,14 +44,14 @@ const AskRow = ({
     >
       <CommandActionRow
         value={ASK_VALUE}
-        onSelect={() => void openRoom(objects, question)}
-        title="Ask an agent"
+        onSelect={() => void openRoom(objects, question, target)}
+        title={`Ask an agent${where}`}
         description={
           objects.length === 0
-            ? `Open a chat with “${question}”`
+            ? `Open a chat${where} with “${question}”`
             : objects.length === 1
-              ? `Open a chat about this with “${question}”`
-              : `Open a chat about these ${objects.length} with “${question}”`
+              ? `Open a chat${where} about this with “${question}”`
+              : `Open a chat${where} about these ${objects.length} with “${question}”`
         }
         icon={MessageSquareMore}
         disabled={isOpening}

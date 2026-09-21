@@ -11,7 +11,7 @@ vi.mock("@/app/Arkitekt", () => ({
   },
 }));
 
-const modifiers = { shiftKey: false, altKey: false, metaKey: false };
+const modifiers = { shiftKey: false, altKey: false, metaKey: false, ctrlKey: false };
 vi.mock("@/app/hooks/modifierTracker", () => ({ useModifierState: () => modifiers }));
 
 const openTarget = vi.fn();
@@ -30,6 +30,8 @@ vi.mock("@/providers/smart/registry", () => ({
 const createRoom = vi.fn(async () => ({ data: { createRoom: { id: "room-9" } } }));
 vi.mock("@/alpaka/api/graphql", () => ({ useCreateRoomMutation: () => [createRoom] }));
 vi.mock("@/linkers", () => ({ AlpakaRoom: { linkBuilder: (id: string) => `/alpaka/rooms/${id}` } }));
+const openBeside = vi.fn();
+vi.mock("@/command/tabs/TabsProvider", () => ({ useTabActions: () => ({ openBeside }) }));
 const navigate = vi.fn();
 vi.mock("react-router-dom", async (orig) => ({
   ...(await orig<typeof import("react-router-dom")>()),
@@ -51,6 +53,16 @@ const renderRow = () =>
     </TooltipProvider>,
   );
 
+const openSecondWindow = vi.fn();
+
+const selectRow = () =>
+  act(() =>
+    screen
+      .getByText("HeLa s3")
+      .closest("[cmdk-item]")!
+      .dispatchEvent(new MouseEvent("click", { bubbles: true })),
+  );
+
 const flush = () => act(async () => { await Promise.resolve(); await Promise.resolve(); });
 
 beforeEach(() => {
@@ -59,6 +71,9 @@ beforeEach(() => {
   alpakaReady = true;
   modifiers.shiftKey = false;
   modifiers.altKey = false;
+  modifiers.metaKey = false;
+  modifiers.ctrlKey = false;
+  (window as any).api = { openSecondWindow: openSecondWindow };
   query = "";
   localStorage.clear();
   vi.clearAllMocks();
@@ -95,6 +110,30 @@ describe("talking about a search hit", () => {
     await flush();
     expect(createRoom).toHaveBeenCalledTimes(1);
     expect(openTarget).not.toHaveBeenCalled();
+  });
+
+  it("puts the room beside this page on ⌥⇧⏎, and in its own window on ⌥⌘⏎", async () => {
+    modifiers.altKey = true;
+    modifiers.shiftKey = true;
+    const { unmount } = renderRow();
+    selectRow();
+    await flush();
+    expect(openBeside).toHaveBeenCalledWith(
+      expect.stringContaining("/alpaka/rooms/room-9?"),
+      expect.objectContaining({ label: "Talk about HeLa s3" }),
+    );
+    expect(navigate).not.toHaveBeenCalled();
+    unmount();
+
+    modifiers.shiftKey = false;
+    modifiers.metaKey = true;
+    renderRow();
+    selectRow();
+    await flush();
+    expect(openSecondWindow).toHaveBeenCalledWith(
+      expect.stringContaining("/alpaka/rooms/room-9?"),
+    );
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it("has no chip without Alpaka — the mutation must never mount", () => {

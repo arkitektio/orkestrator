@@ -18,6 +18,8 @@ import HomePage from "./pages/HomePage";
 import PeerHomePage from "./pages/PeerHomePage";
 import TableDatasetPage from "./pages/TableDatasetPage";
 import TableDatasetsPage from "./pages/TableDatasetsPage";
+import SparseDatasetPage from "./pages/SparseDatasetPage";
+import SparseDatasetsPage from "./pages/SparseDatasetsPage";
 import ScenesPage from "./pages/ScenesPage";
 import ScenePage from "./pages/ScenePage";
 import SceneRegistrationPage from "./pages/SceneRegistrationPage";
@@ -54,6 +56,8 @@ export const MikroNextModule = () => {
           <Route path="files/:id" element={<FilePage />} />
           <Route path="tabledatasets" element={<TableDatasetsPage />} />
           <Route path="tabledatasets/:id" element={<TableDatasetPage />} />
+          <Route path="sparsedatasets" element={<SparseDatasetsPage />} />
+          <Route path="sparsedatasets/:id" element={<SparseDatasetPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>

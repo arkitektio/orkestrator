@@ -41,9 +41,11 @@ everything else):
 
 The viewer store is ONE store of slices (one `set`), as mikro's is:
 
-- core slices in `platform/stores/viewer/` — layout (bands, clims), stats
+- core slices in `platform/stores/viewer/` — layout (bands, clims, and the
+  `layoutVersion` / `climVersion` scalars that stand for them), stats
   (stats, readouts, labels + scalar versions and `anyLoading`), probe, viewport,
-  mode;
+  mode, chrome (the optional reading aids: `showValueAxis`, `showGrid` and the
+  one `gridSpacingPx` knob both axes share);
 - FEATURE slices, passed in at composition by `shell/featureSlices.ts` and read
   through their own hooks (`makeViewerSliceHooks`): `traceSlice` (packed
   lines), `eventsSlice`, `spikesSlice`, `annotationSlice`, `pickerSlice`.
@@ -103,6 +105,29 @@ band imperatively.
   `TraceLines` uses — so a shape stays on its trace through any relayout.
 - `annotationHit.ts` — SELECT's pixel-space hit test (shapes, then instants,
   then the narrowest epoch).
+
+## Reading the plot — axes and grid
+
+The time axis (`shell/chrome/TimeAxis.tsx`) is always drawn; the VALUE axis
+(`shell/chrome/ValueAxis.tsx`) and the grid (`ValueAxis` horizontally,
+`shell/chrome/TimeGrid.tsx` vertically) are off until asked for, from the one
+popover `shell/chrome/DisplaySettings.tsx` puts in the HUD.
+
+- The value axis is **per row**, in that row's own units: rows have independent
+  scales, so one axis down the side would be wrong for every row but one. On an
+  OVERLAY row — several layers, several scales, one plot — the gutter shows the
+  LEADING layer's scale, tinted that layer's colour; the legend keeps the
+  others' ranges in full. Since `groupByDimension` only ever puts layers of ONE
+  dimension in a row (see `features/stacking/stackLayout.ts`), that scale is at
+  least the right kind of quantity for every line under it.
+- `gridSpacingPx` drives the time axis AND the vertical grid, so a line always
+  rises out of a label and the plot carries no second set of numbers. The value
+  axis derives a denser target from it (`valueSpacingFor`).
+- Anti-crowding lives in `platform/coords/valueTicks.ts`: a band shorter than
+  `MIN_BAND_PX` is not labelled at all.
+- Cadence: anything following the LIVE window (`TimeAxis`, `TimeGrid`) binds
+  imperatively over a reused element pool; the value axis moves only on a
+  relayout, a clim or a resize, so it renders (P17).
 
 ## Registries — adding a layer kind
 

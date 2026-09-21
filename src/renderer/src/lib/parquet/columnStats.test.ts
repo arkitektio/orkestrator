@@ -8,6 +8,7 @@ import {
   readColumnDistinct,
   readColumnDomain,
   readColumnHistogram,
+  readColumnSummary,
   readDefaultFilterRule,
 } from "./columnStats";
 
@@ -43,6 +44,30 @@ describe("readColumnDomain", () => {
   it("is null for an empty or non-numeric column", async () => {
     expect(await readColumnDomain(fakeEngine([{ lo: null, hi: null }]).engine, target)).toBeNull();
     expect(await readColumnDomain(fakeEngine([]).engine, target)).toBeNull();
+  });
+});
+
+describe("readColumnSummary", () => {
+  it("reads row, non-null and distinct counts in one scan and narrows the bigints", async () => {
+    const { engine, sqls } = fakeEngine([
+      { n_rows: 10n, n_non_null: 8n, n_distinct: 3n },
+    ]);
+    expect(await readColumnSummary(engine, target)).toEqual({
+      rows: 10,
+      nonNull: 8,
+      distinct: 3,
+    });
+    expect(sqls).toHaveLength(1);
+    expect(sqls[0]).toContain('count("area")');
+    expect(sqls[0]).toContain('count(DISTINCT "area")');
+  });
+
+  it("reads an empty result as an empty table", async () => {
+    expect(await readColumnSummary(fakeEngine([]).engine, target)).toEqual({
+      rows: 0,
+      nonNull: 0,
+      distinct: 0,
+    });
   });
 });
 

@@ -40,7 +40,10 @@ export const StackLayoutManager = () => {
         viewer.layoutMode +
         "|" +
         drawn
-          .map((v) => `${v.id}:${v.kind}:${v.channelCount}:${v.valueDimension ?? ""}:${v.label}:${v.color}:${v.channelLabels.join("/")}`)
+          // The unit is in the key because it can DECIDE the grouping: a layer
+          // whose dimension is unknown falls through to its unit
+          // (`groupByDimension`), so a unit-only change must relayout.
+          .map((v) => `${v.id}:${v.kind}:${v.channelCount}:${v.valueDimension ?? ""}:${v.valueUnit ?? ""}:${v.label}:${v.color}:${v.channelLabels.join("/")}`)
           .join(",");
       if (key === lastKey) return;
       lastKey = key;

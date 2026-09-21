@@ -7,7 +7,7 @@ import { PaneLink, SidePaneGroup, SidePaneNav } from '@/components/ui/sidepane'
 import { Toggle } from '@/components/ui/toggle'
 import { JustUsername } from '@/lok-next/components/UserAvatar'
 import { useDebounce } from '@uidotdev/usehooks'
-import { ArrowDown, Axis3d, File, Folder, Grid3x3, Home, PenTool, Table2 } from 'lucide-react'
+import { ArrowDown, Axis3d, File, Folder, Grid2x2, Grid3x3, Home, PenTool, Table2 } from 'lucide-react'
 import * as React from 'react'
 import { NavLink } from 'react-router-dom'
 import { GlobalSearchQueryVariables, useGlobalSearchQuery, useMembersQuery } from '../api/graphql'
@@ -37,6 +37,10 @@ export const NavigationPane = () => {
         <PaneLink to="/mikro/tabledatasets">
           <Table2 />
           Table Datasets
+        </PaneLink>
+        <PaneLink to="/mikro/sparsedatasets">
+          <Grid2x2 />
+          Sparse Datasets
         </PaneLink>
         <PaneLink to="/mikro/coordinatesystems">
           <Axis3d />

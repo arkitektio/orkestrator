@@ -1,4 +1,5 @@
 import { useCreateRoomMutation } from "@/alpaka/api/graphql";
+import { useTabActions } from "@/command/tabs/TabsProvider";
 import { AlpakaRoom } from "@/linkers";
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +13,43 @@ import {
 export type TalkableStructure = {
   identifier: string;
   object: { id: string | number };
+};
+
+/**
+ * Where the new room lands.
+ *
+ * `here` navigates the current tab, `side` opens it beside this page in a
+ * split (the room on the right, what you were looking at still on the left),
+ * `window` pops it out into a window of its own — the same three targets the
+ * generic Open / Open to the side / Open in new window actions offer, so a
+ * conversation about a structure can sit next to the structure.
+ */
+export type TalkTarget = "here" | "side" | "window";
+
+/**
+ * Whether this build can pop a room out. Electron only: the web build has no
+ * preload bridge, and the rows that offer it hide rather than fail.
+ */
+export const canTalkInNewWindow = () =>
+  typeof window.api?.openSecondWindow === "function";
+
+/**
+ * Which target the held modifiers ask for: ⇧ beside this page, ⌘/ctrl in a
+ * window of its own, nothing plain.
+ *
+ * The palette's surfaces (the "Ask an agent" row, the Talk chip on a hit)
+ * offer the three targets this way rather than as three rows — a list you
+ * press Enter on stays one row per thing, and the modifiers are already how
+ * that list teaches its secondary moves (⇧ for context, ⌥ for talk).
+ */
+export const talkTargetFromModifiers = (modifiers: {
+  shiftKey?: boolean;
+  metaKey?: boolean;
+  ctrlKey?: boolean;
+}): TalkTarget => {
+  if (modifiers.metaKey || modifiers.ctrlKey) return canTalkInNewWindow() ? "window" : "side";
+  if (modifiers.shiftKey) return "side";
+  return "here";
 };
 
 /**
@@ -41,8 +79,14 @@ export const useTalkAbout = (options: {
   const [error, setError] = React.useState<string | null>(null);
   const { title, onDone, onError } = options;
 
+  const { openBeside } = useTabActions();
+
   const openRoom = React.useCallback(
-    async (structures: readonly TalkableStructure[], prompt?: string) => {
+    async (
+      structures: readonly TalkableStructure[],
+      prompt?: string,
+      target: TalkTarget = "here",
+    ) => {
       const talkingAbout = toStructureInputs(structures);
       const question = prompt?.trim();
       if (talkingAbout.length === 0 && !question) {
@@ -88,7 +132,16 @@ export const useTalkAbout = (options: {
           about && `prefillStructures=${encodeURIComponent(JSON.stringify(talkingAbout))}`,
           `text=${encodeURIComponent(promptText)}`,
         ].filter(Boolean);
-        navigate(`${AlpakaRoom.linkBuilder(roomId)}?${params.join("&")}`);
+        const to = `${AlpakaRoom.linkBuilder(roomId)}?${params.join("&")}`;
+        // `window` falls back to this tab when there is no preload bridge —
+        // the room is created either way, so it must land somewhere.
+        if (target === "window" && canTalkInNewWindow()) {
+          window.api.openSecondWindow(to);
+        } else if (target === "side") {
+          openBeside(to, { label: roomTitle, evict: true });
+        } else {
+          navigate(to);
+        }
       } catch (nextError) {
         const message = nextError instanceof Error ? nextError.message : "Failed to create room";
         setError(message);
@@ -97,7 +150,7 @@ export const useTalkAbout = (options: {
         setIsOpening(false);
       }
     },
-    [createRoom, navigate, title, onDone, onError],
+    [createRoom, navigate, openBeside, title, onDone, onError],
   );
 
   return { openRoom, isOpening, error };

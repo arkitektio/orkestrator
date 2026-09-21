@@ -2,6 +2,7 @@
 
 import {
   type ColumnDef,
+  type ColumnSizingState,
   type OnChangeFn,
   type RowSelectionState,
   type SortingState,
@@ -16,11 +17,11 @@ import {
   ArrowUp,
   ArrowUpDown,
   ChevronDown,
+  Tags,
   X,
 } from "lucide-react";
 import * as React from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -38,9 +39,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { type TableDatasetFragment } from "@/mikro-next/api/graphql";
+import {
+  type TableDatasetFragment,
+  useGetTableDatasetAnchorsQuery,
+} from "@/mikro-next/api/graphql";
 import { cn } from "@/lib/utils";
 
+import {
+  ColumnAxisGlyph,
+  ColumnInfoPopover,
+  type SortDirection,
+} from "./ColumnInfoPopover";
+import {
+  MIN_COLUMN_WIDTH,
+  mergeMeasuredWidths,
+  unsizedColumns,
+} from "./columnSizing";
+import { TableAnchorsOverlay, type ThinTableAnchor } from "./TableAnchorsOverlay";
+import { anchorCaption, partitionTableAnchors } from "./tableAnchors";
 import {
   type DuckDbColumnFilters,
   rowsToCsv,
@@ -144,79 +160,131 @@ const createSelectColumn = (): ColumnDef<Item> => ({
   ),
   enableSorting: false,
   enableHiding: false,
+  enableResizing: false,
 });
 
-const createIndexColumn = (rowIndexOffset: number): ColumnDef<Item> => ({
+// The row number, plus a marker when a coordinate anchor pins this row —
+// the table's twin of the viewport overlay's in-view rule, at row grain, so
+// the anchored slices are findable while paging. The glyph's slot is always
+// reserved: a page with no marked rows must lay out exactly like one with
+// them, or the numbers shift between pages.
+const createIndexColumn = (
+  rowIndexOffset: number,
+  anchorLabelsForRow: (rowKey: string) => readonly string[],
+): ColumnDef<Item> => ({
   id: "index",
   header: () => <div className="text-center font-medium">#</div>,
-  cell: ({ row }) => (
-    <div className="text-center text-sm text-muted-foreground">
-      {rowIndexOffset + row.index + 1}
-    </div>
-  ),
+  cell: ({ row }) => {
+    // `row.id` is already the value key (`getRowId`), so no second hash here.
+    const labels = anchorLabelsForRow(row.id);
+
+    return (
+      <div className="flex items-center justify-center gap-0.5 text-sm text-muted-foreground">
+        <span>{rowIndexOffset + row.index + 1}</span>
+        <span
+          className="inline-flex h-2.5 w-2.5 shrink-0 items-center"
+          title={labels.length ? labels.join(", ") : undefined}
+          aria-hidden={labels.length === 0}
+        >
+          {labels.length > 0 && (
+            <Tags className="h-2.5 w-2.5 text-muted-foreground/70" />
+          )}
+        </span>
+      </div>
+    );
+  },
   enableSorting: false,
   enableHiding: false,
 });
 
-// A COORDINATE column is an axis of the table's coordinate system — surface that
-// so the reader can tell measurement columns apart from the space they live in.
+// One quiet line per column: the name, which opens the column's popover, and
+// a sort control that only shows itself when the row is hovered or the column
+// is sorted. Everything the header used to spell out under the name — role
+// badge, dtype, unit — is in the popover now, so a wide table reads as its
+// numbers rather than as a row of badges. Two sibling buttons, not one: the
+// popover trigger is itself a button, and a button inside a button is
+// invalid HTML that Radix also warns about.
 const ColumnHeader = (props: {
   column: TableColumn;
-  sortDirection: false | "asc" | "desc";
-  onToggleSort: () => void;
+  store: TableDatasetFragment["store"];
+  sortDirection: SortDirection;
+  onSort: (direction: SortDirection) => void;
+  onHide: () => void;
 }) => {
-  const { column, sortDirection, onToggleSort } = props;
+  const { column, store, sortDirection, onSort, onHide } = props;
+
+  // Cycle asc → desc → none so the one arrow drives all three states.
+  const toggleSort = () =>
+    onSort(
+      sortDirection === "asc" ? "desc" : sortDirection === "desc" ? false : "asc",
+    );
 
   return (
-    <Button
-      variant="ghost"
-      onClick={onToggleSort}
-      className={cn(
-        "h-auto flex-col items-start gap-1 border px-2 py-1 font-medium transition-colors",
-        sortDirection
-          ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15"
-          : "border-transparent",
-      )}
-    >
-      <div className="flex items-center gap-2">
-        <span className="max-w-40 truncate">
-          {column.longName ?? column.name}
-        </span>
+    // Centred over the column, because the values under it are: a header
+    // hugging the left edge of a wide column stops reading as the label of
+    // the numbers below it. The sort control trails the name rather than
+    // being pinned to the cell's edge, so the fitting pass measures it and
+    // it can never land on top of a long name.
+    <div className="flex items-center justify-center gap-0.5">
+      <ColumnInfoPopover
+        column={column}
+        store={store}
+        actions={{ sortDirection, onSort, onHide }}
+      >
+        <button
+          type="button"
+          title={`${column.dtype}${column.unit != null ? ` · ${String(column.unit)}` : ""}`}
+          className="flex min-w-0 items-center gap-1 rounded px-1 py-0.5 text-center font-medium transition-colors hover:bg-accent"
+        >
+          <ColumnAxisGlyph column={column} />
+          <span className="max-w-40 truncate">
+            {column.longName ?? column.name}
+          </span>
+        </button>
+      </ColumnInfoPopover>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={`Sort by ${column.name}`}
+        onClick={toggleSort}
+        // `opacity-0`, not `hidden`: the width stays reserved so revealing
+        // the arrow on hover does not shift the column sideways.
+        className={cn(
+          "h-6 w-6 shrink-0 transition-opacity",
+          sortDirection
+            ? "text-primary opacity-100"
+            : "opacity-0 group-hover/row:opacity-60 focus-visible:opacity-100",
+        )}
+      >
         {sortDirection === "asc" ? (
           <ArrowUp className="h-3.5 w-3.5" />
         ) : sortDirection === "desc" ? (
           <ArrowDown className="h-3.5 w-3.5" />
         ) : (
-          <ArrowUpDown className="h-3.5 w-3.5 opacity-60" />
+          <ArrowUpDown className="h-3.5 w-3.5" />
         )}
-      </div>
-      <div className="flex items-center gap-1">
-        <Badge variant="outline" className="px-1 py-0 text-[10px] font-normal">
-          {column.role}
-        </Badge>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {column.dtype}
-          {column.unit ? ` · ${column.unit}` : ""}
-        </span>
-      </div>
-    </Button>
+      </Button>
+    </div>
   );
 };
 
 const calculateColumns = (
   columns: TableColumn[],
   options: {
+    store: TableDatasetFragment["store"];
     rowIndexOffset: number;
     sorting: SortingState;
     onColumnSortingChange: (
       columnName: string,
-      direction: false | "asc" | "desc",
+      direction: SortDirection,
     ) => void;
+    onHideColumn: (columnName: string) => void;
+    anchorLabelsForRow: (rowKey: string) => readonly string[];
   },
 ): ColumnDef<Item>[] => {
   const calculatedColumns: ColumnDef<Item>[] = [
     createSelectColumn(),
-    createIndexColumn(options.rowIndexOffset),
+    createIndexColumn(options.rowIndexOffset, options.anchorLabelsForRow),
   ];
 
   [...columns]
@@ -237,30 +305,33 @@ const calculateColumns = (
         header: () => (
           <ColumnHeader
             column={column}
+            store={options.store}
             sortDirection={sortDirection}
-            // Cycle asc → desc → none so a single control drives all three states.
-            onToggleSort={() =>
-              options.onColumnSortingChange(
-                column.name,
-                sortDirection === "asc"
-                  ? "desc"
-                  : sortDirection === "desc"
-                    ? false
-                    : "asc",
-              )
+            onSort={(direction) =>
+              options.onColumnSortingChange(column.name, direction)
             }
+            onHide={() => options.onHideColumn(column.name)}
           />
         ),
-        cell: ({ row }) => (
-          <div className="text-center font-mono text-sm">
-            {formatCellValue(row.getValue(column.name))}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const text = formatCellValue(row.getValue(column.name));
+          // Widths are fixed after the first fit, so a longer value on a
+          // later page clips rather than widening the column under the
+          // reader; the whole value stays one hover away.
+          return (
+            <div className="truncate text-center font-mono text-sm" title={text}>
+              {text}
+            </div>
+          );
+        },
       });
     });
 
   return calculatedColumns;
 };
+
+const EMPTY_ANCHORS: readonly ThinTableAnchor[] = [];
+const EMPTY_LABELS: readonly string[] = [];
 
 export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
   "use no memo";
@@ -274,6 +345,9 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
+  // Fitted once from the first page, then kept — see `columnSizing.ts`.
+  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>({});
+  const gridRef = React.useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = React.useState(false);
   // The selection stores the row *data*, not just its key: a row selected on
   // page 1 is gone from `rows` by the time the user hits export on page 4, and
@@ -292,7 +366,7 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
   });
 
   const handleColumnSortingChange = React.useCallback(
-    (columnName: string, direction: false | "asc" | "desc") => {
+    (columnName: string, direction: SortDirection) => {
       setSorting((current) => {
         const existingIndex = current.findIndex(
           (entry) => entry.id === columnName,
@@ -318,25 +392,78 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
     [],
   );
 
-  const columns = React.useMemo(
-    () =>
-      calculateColumns(props.table.columns, {
-        rowIndexOffset: pagination.pageIndex * pagination.pageSize,
-        sorting,
-        onColumnSortingChange: handleColumnSortingChange,
-      }),
-    [
-      handleColumnSortingChange,
-      pagination.pageIndex,
-      pagination.pageSize,
-      props.table.columns,
-      sorting,
-    ],
-  );
+  const handleHideColumn = React.useCallback((columnName: string) => {
+    setColumnVisibility((current) => ({ ...current, [columnName]: false }));
+  }, []);
 
   const columnNames = React.useMemo(
     () => props.table.columns.map((column) => column.name),
     [props.table.columns],
+  );
+
+  // The thin projection of the table's coordinate anchors: enough for the
+  // row markers and the overlay's collapsed pill. The full payload is the
+  // overlay's business, fetched when it unfolds. Cache-first: anchors do not
+  // change while the table is on screen.
+  const { data: anchorsData } = useGetTableDatasetAnchorsQuery({
+    variables: { id: props.table.id },
+    fetchPolicy: "cache-first",
+  });
+  const anchors: readonly ThinTableAnchor[] =
+    anchorsData?.tableDataset.anchors ?? EMPTY_ANCHORS;
+
+  // One partition per page, shared by the markers and the overlay so they
+  // agree about what is in view. Keyed on exactly the inputs that move it —
+  // a search keystroke reaches it only once DuckDB answers with new rows.
+  const anchorPartition = React.useMemo(
+    () =>
+      partitionTableAnchors(anchors, rows, (row) =>
+        resolveRowKey(row, columnNames),
+      ),
+    [anchors, columnNames, rows],
+  );
+
+  const anchorLabelsByRowKey = React.useMemo(() => {
+    const map = new Map<string, string[]>();
+    anchorPartition.inView.forEach(({ anchor, pins, rowKeys }) => {
+      const caption = anchorCaption(anchor, pins);
+      rowKeys.forEach((rowKey) => {
+        const labels = map.get(rowKey);
+        if (labels) labels.push(caption);
+        else map.set(rowKey, [caption]);
+      });
+    });
+    return map;
+  }, [anchorPartition]);
+
+  // Stable across renders that do not move the partition — it is a column
+  // definition input, and a fresh function would rebuild every column def.
+  const anchorLabelsForRow = React.useCallback(
+    (rowKey: string): readonly string[] =>
+      anchorLabelsByRowKey.get(rowKey) ?? EMPTY_LABELS,
+    [anchorLabelsByRowKey],
+  );
+
+  const columns = React.useMemo(
+    () =>
+      calculateColumns(props.table.columns, {
+        store: props.table.store,
+        rowIndexOffset: pagination.pageIndex * pagination.pageSize,
+        sorting,
+        onColumnSortingChange: handleColumnSortingChange,
+        onHideColumn: handleHideColumn,
+        anchorLabelsForRow,
+      }),
+    [
+      anchorLabelsForRow,
+      handleColumnSortingChange,
+      handleHideColumn,
+      pagination.pageIndex,
+      pagination.pageSize,
+      props.table.columns,
+      props.table.store,
+      sorting,
+    ],
   );
 
   const pageRowsByKey = React.useMemo(() => {
@@ -393,6 +520,8 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
     setSearch("");
     setSorting([]);
     setSelectedRows({});
+    // Another table is another sheet: its columns fit themselves afresh.
+    setColumnSizing({});
   }, [props.table.id]);
 
   const pageCount = Math.max(1, Math.ceil(totalRowCount / pagination.pageSize));
@@ -413,17 +542,53 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
     onPaginationChange: setPagination,
     getRowId: (row) => resolveRowKey(row, columnNames),
     enableRowSelection: true,
+    enableColumnResizing: true,
+    // Live: the column follows the pointer while it is dragged, as a
+    // spreadsheet's does, rather than snapping on release.
+    columnResizeMode: "onChange",
+    defaultColumn: { minSize: MIN_COLUMN_WIDTH },
     state: {
       sorting,
       columnVisibility,
+      columnSizing,
       pagination,
       rowSelection,
     },
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnSizingChange: setColumnSizing,
     onRowSelectionChange: handleRowSelectionChange,
   });
+
+  // The grid is in `auto` layout while any visible column has no width yet,
+  // and in `fixed` layout at the recorded widths once every column has one.
+  const fitting =
+    unsizedColumns(
+      table.getVisibleLeafColumns().map((column) => column.id),
+      columnSizing,
+    ).length > 0;
+  // A fit needs content to fit against: the first page of rows, or the
+  // headers alone for a table that has no rows at all. Fitting against a
+  // "Loading…" placeholder would size every column to its header.
+  const canFit = !loading && (rows.length > 0 || totalRowCount === 0);
+
+  // Layout effect, not effect: the measurement and the switch to fixed
+  // widths happen before the auto-layout frame is painted, so the reader
+  // never sees the columns fitted and then re-fitted.
+  React.useLayoutEffect(() => {
+    if (!fitting || !canFit) return;
+    const root = gridRef.current;
+    if (!root) return;
+    const measured = Array.from(
+      root.querySelectorAll<HTMLTableCellElement>("th[data-column-id]"),
+    ).map((cell) => ({
+      id: cell.dataset.columnId ?? "",
+      width: cell.getBoundingClientRect().width,
+    }));
+    const next = mergeMeasuredWidths(columnSizing, measured);
+    if (next) setColumnSizing(next);
+  }, [canFit, columnSizing, fitting, rows]);
 
   const visibleExportColumns = React.useMemo(
     () =>
@@ -546,63 +711,134 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
         </DropdownMenu>
       </div>
 
-      {/* The rows are what scrolls — `min-h-0` lets this shrink below its
-          content height so the search bar above and the pager below stay put
-          instead of being pushed off the page by a full page of rows. */}
-      <div className="flex min-h-0 flex-grow flex-col overflow-y-auto">
-        <Table className="flex-grow">
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="group/row">
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="text-center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="group/row"
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
+      {/* `relative` so the anchors overlay docks to the visible rows area, not
+          the page. It must sit OUTSIDE the scroll container — inside it would
+          scroll away with the rows and be clipped by the overflow — and
+          outside `Table`'s own `relative overflow-x-auto` box, which is as
+          tall as the whole table rather than the part on screen. */}
+      <div className="relative flex min-h-0 flex-grow flex-col">
+        {/* The rows are what scrolls — `min-h-0` lets this shrink below its
+            content height so the search bar above and the pager below stay put
+            instead of being pushed off the page by a full page of rows. */}
+        <div
+          ref={gridRef}
+          className="flex min-h-0 flex-grow flex-col overflow-y-auto"
+        >
+          {/* The table's width is the SUM of its columns, not the container's:
+              in a fixed layout a 100% table hands its spare width out to the
+              columns and quietly undoes what the reader just dragged. */}
+          <Table
+            className="flex-grow"
+            style={
+              fitting
+                ? undefined
+                : { width: table.getTotalSize(), tableLayout: "fixed" }
+            }
+          >
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="group/row">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      data-column-id={header.column.id}
+                      className="relative"
+                      style={
+                        columnSizing[header.column.id] !== undefined
+                          ? { width: header.getSize() }
+                          : undefined
+                      }
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                      {header.column.getCanResize() && (
+                        // The divider a spreadsheet has: drag to resize,
+                        // double-click to fit the column to its content again.
+                        //
+                        // `inset-y-0`, never `h-full`: a percentage height
+                        // inside a table cell resolves against a height the
+                        // cell computes from its content, so `h-full` came
+                        // out as zero and the handle could not be grabbed.
+                        //
+                        // The line is always drawn — faintly — because a
+                        // control that appears only once the pointer is
+                        // already on it cannot be found. The hit area is
+                        // wider than the line it paints.
+                        <div
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={`Resize ${header.column.id}`}
+                          title="Drag to resize · double-click to fit"
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          onDoubleClick={() => header.column.resetSize()}
+                          className={cn(
+                            "absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none select-none",
+                            "after:absolute after:inset-y-1 after:right-0 after:w-px after:bg-border after:transition-colors",
+                            "group-hover/row:after:bg-muted-foreground/50",
+                            "hover:after:w-0.5 hover:after:bg-primary",
+                            header.column.getIsResizing() &&
+                              "after:w-0.5 after:bg-primary",
+                          )}
+                        />
                       )}
-                    </TableCell>
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            {/* The previous page stays on screen, dimmed, while the next one
+                loads: swapping twenty-five rows for one "Loading…" line and
+                back is a flash on every sort, and there is nothing in it for
+                the reader. The placeholder is for the very first load only. */}
+            <TableBody
+              className={cn(loading && rows.length > 0 && "opacity-50")}
+            >
+              {loading && rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="text-center">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="group/row"
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <TableAnchorsOverlay
+          tableId={props.table.id}
+          anchors={anchors}
+          partition={anchorPartition}
+        />
       </div>
 
       <div className="flex flex-initial items-center justify-end space-x-2 py-4">
