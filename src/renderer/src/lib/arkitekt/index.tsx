@@ -15,6 +15,7 @@ import {
   useArkitekt,
   useArkitektActions,
   useArkitektStore,
+  useArkitektStoreApi,
   useAvailableServices,
   useConfigurationIssues,
   useConnection,
@@ -166,5 +167,7 @@ export const buildArkitekt = <T extends ServiceBuilderMap, S extends ServiceBuil
           null,
       ),
     useArkitekt: useArkitekt,
+    /** The vanilla store, for reading services from outside a render (prefetch). */
+    useStoreApi: useArkitektStoreApi,
   };
 };

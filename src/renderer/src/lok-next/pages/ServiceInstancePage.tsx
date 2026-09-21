@@ -23,6 +23,7 @@ const Page = asDetailQueryRoute(useGetServiceInstanceQuery, ({ data }) => {
       pageActions={
         <>
           <SheetButton
+            alwaysShow
             name="updateserviceinstance"
             variant={"outline"}
             size={"sm"}

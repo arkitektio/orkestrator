@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { FormSheet } from "@/components/dialog/FormDialog";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
 import { KraphTerm } from "@/linkers";
@@ -25,15 +25,15 @@ const Page = asDetailQueryRoute(useGetTermQuery, ({ data, refetch }) => {
         </Sidebars>
       }
       pageActions={
-        <div className="flex flex-row gap-2">
-          <KraphTerm.ObjectButton object={{ id: term.id }} />
+        <>
+          <KraphTerm.ObjectButton alwaysShow object={{ id: term.id }} />
           <FormSheet
-            trigger={<Button variant="outline">Edit</Button>}
+            trigger={<PageAction>Edit</PageAction>}
             onSubmit={() => refetch()}
           >
             <UpdateTermForm term={term} />
           </FormSheet>
-        </div>
+        </>
       }
     >
       <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">

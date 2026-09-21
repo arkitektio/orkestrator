@@ -29,7 +29,9 @@ import {
   saveTabs,
   setTabLabel,
   setTabPinned,
+  shownSplit,
   splitTab,
+  splitTabWith,
   swapSplit,
   toggleSplit,
   unsplit,
@@ -90,10 +92,14 @@ export type TabActions = {
   setLabel: (id: string, label: string, origin?: LabelSource) => void;
   /** Pin or unpin a tab — see `setTabPinned`. */
   setPinned: (id: string, pinned: boolean) => void;
-  /** Show a tab beside the active one — see `splitTab`. */
+  /** Show a tab beside the view tab — see `splitTab`. */
   split: (id: string, side?: "left" | "right") => void;
-  unsplit: () => void;
-  swapSplit: () => void;
+  /** Make a tab the view and give it a partner, or a new tab — see `splitTabWith`. */
+  splitWith: (id: string, partnerId?: string) => void;
+  /** Take a tab's partner away (the view's by default) — see `unsplit`. */
+  unsplit: (id?: string) => void;
+  /** Exchange a pair's panes (the view's by default) — see `swapSplit`. */
+  swapSplit: (id?: string) => void;
   /** ⌘\: end the split, or start one with the most recent other tab. */
   toggleSplit: () => void;
 };
@@ -290,8 +296,20 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     (id, side) => store.set((s) => splitTab(s, id, side)),
     [store],
   );
-  const unsplitAction = useCallback(() => store.set(unsplit), [store]);
-  const swapSplitAction = useCallback(() => store.set(swapSplit), [store]);
+  // The id is optional, and these are handed to `onClick`s as they are — so
+  // an event in its place must read as "no id", not as an unknown tab.
+  const splitWith = useCallback<TabActions["splitWith"]>(
+    (id, partnerId) => store.set((s) => splitTabWith(s, id, partnerId)),
+    [store],
+  );
+  const unsplitAction = useCallback<TabActions["unsplit"]>(
+    (id) => store.set((s) => unsplit(s, typeof id === "string" ? id : undefined)),
+    [store],
+  );
+  const swapSplitAction = useCallback<TabActions["swapSplit"]>(
+    (id) => store.set((s) => swapSplit(s, typeof id === "string" ? id : undefined)),
+    [store],
+  );
   const toggleSplitAction = useCallback(() => store.set((s) => toggleSplit(s)), [store]);
 
   // Deep links. Main sends `tabs:open` instead of spawning a window; the web
@@ -402,6 +420,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
       setLabel,
       setPinned,
       split,
+      splitWith,
       unsplit: unsplitAction,
       swapSplit: swapSplitAction,
       toggleSplit: toggleSplitAction,
@@ -416,6 +435,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
       setLabel,
       setPinned,
       split,
+      splitWith,
       unsplitAction,
       swapSplitAction,
       toggleSplitAction,
@@ -440,6 +460,7 @@ const ActionsContext = createContext<TabActions>({
   setLabel: noop,
   setPinned: noop,
   split: noop,
+  splitWith: noop,
   unsplit: noop,
   swapSplit: noop,
   toggleSplit: noop,
@@ -506,10 +527,11 @@ export const useActiveTabId = (): string => useTabsSelector((s) => s.activeId);
 export const useActiveTab = (): TabRecord => useTabsSelector(activeTabOf);
 
 /**
- * The two panes when the view is split, else `undefined`. The object keeps its
- * identity across navigation, so this sleeps through it like `activeId`.
+ * The two panes on screen when the view tab has a partner, else `undefined`.
+ * Derived, so it is a fresh object; shallow-compared, so a navigation (which
+ * changes neither id) wakes nobody.
  */
-export const useSplit = (): SplitPanes | undefined => useTabsSelector((s) => s.split);
+export const useSplit = (): SplitPanes | undefined => useTabsSelector(shownSplit, shallow);
 
 /**
  * Where the active tab is, and whether it can go back or forward.

@@ -13,10 +13,13 @@ import { Command as CommandPrimitive } from "cmdk";
 import { Dialog } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { SmartLink } from "@/providers/smart/builder";
-import { ApplicableDefinitions } from "@/providers/smart/extensions/kabinet/definitions";
-import { ApplicableLocalActions } from "@/providers/smart/extensions/local/localactions";
-import { ApplicableActions } from "@/providers/smart/extensions/rekuest/actions";
-import { ApplicableShortcuts } from "@/providers/smart/extensions/rekuest/shortcuts";
+import { ApplicableDefinitions } from "@/providers/smart/extensions/kabinet/sections";
+import { ApplicableLocalActions } from "@/providers/smart/extensions/local/sections";
+import { RunOnSubmenu } from "@/providers/smart/extensions/rekuest/RunOnSubmenu";
+import {
+  ApplicableActions,
+  ApplicableShortcuts,
+} from "@/providers/smart/extensions/rekuest/sections";
 import { Structure } from "@/types";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { DialogPortal } from "@radix-ui/react-dialog";
@@ -301,6 +304,7 @@ export const CommandMenu = (props: {
             // No CSS open/close animation: `usePaletteGrow` animates the box.
           )}
         >
+          <RunOnSubmenu context={{ objects, partners: props.partners, onDone: closePalette }}>
           <Command
             shouldFilter={false}
             className="bg-transparent [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground/90 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-1 [&_[cmdk-group]]:px-2 [&_[cmdk-item]]:min-h-10 [&_[cmdk-item]]:rounded-lg [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2 [&_[cmdk-item]]:transition-colors [&_[cmdk-item][data-selected=true]]:bg-primary/10 [&_[cmdk-item][data-selected=true]]:text-foreground [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4"
@@ -415,6 +419,7 @@ export const CommandMenu = (props: {
               </div>
             </div>
           </Command>
+          </RunOnSubmenu>
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>

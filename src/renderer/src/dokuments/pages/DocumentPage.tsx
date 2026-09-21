@@ -33,9 +33,9 @@ export const DocumentPage = asDetailQueryRoute(
         title={document.title || `Document ${document.id}`}
         object={document}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <DokumentsDocument.ObjectButton object={document} />
-          </div>
+          <>
+            <DokumentsDocument.ObjectButton alwaysShow object={document} />
+          </>
         }
         sidebars={
           <Sidebars>

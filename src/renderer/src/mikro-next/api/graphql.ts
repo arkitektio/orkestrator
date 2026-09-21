@@ -526,6 +526,8 @@ export type ApertureElementInput = {
 /** A multi-dimensional array dataset. Its dimensions and their types live on the axes of its INTRINSIC (pixel grid) coordinate system; physical units live on the physical spaces it has edges into; its pyramid levels are DataArrays, each mapping into its grid */
 export type ArrayDataset = {
   __typename?: 'ArrayDataset';
+  /** The coordinate anchors of this dataset, each pinning metadata spokes -- a microscope state, OME metadata, a value histogram, a channel label -- to some of its level-0 coordinates */
+  anchors: Array<CoordinateAnchor>;
   /** The dataset's axis names, in array order. Derived from the axes of its intrinsic coordinate system */
   axisNames: Array<Scalars['String']['output']>;
   /** The task this dataset was created through, if any */
@@ -567,6 +569,13 @@ export type ArrayDataset = {
   sourceFiles: Array<FileLink>;
   /** What this dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation: the one spatial spec its SPACE axis count denotes, then a modifier per acquisition axis present. A 3D timelapse is [VOLUME, TIMESERIES, MULTICHANNEL]. Presence, not size: a stack with a single plane is still a VOLUME. Empty while the intrinsic system does not exist yet */
   spec: Array<ArrayDatasetSpec>;
+};
+
+
+/** A multi-dimensional array dataset. Its dimensions and their types live on the axes of its INTRINSIC (pixel grid) coordinate system; physical units live on the physical spaces it has edges into; its pyramid levels are DataArrays, each mapping into its grid */
+export type ArrayDatasetAnchorsArgs = {
+  filters?: InputMaybe<CoordinateAnchorFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -1418,31 +1427,52 @@ export type Coordinate = {
   value: Scalars['Int']['output'];
 };
 
-/** The axis-agnostic hub that pins metadata spokes (microscope state, OME metadata, value histograms, channel labels, light paths, phasor distributions and calibrations) to specific coordinates of a dataset */
+/** The axis-agnostic hub that pins metadata spokes (microscope state, OME metadata, value histograms, channel labels, light paths, phasor distributions and calibrations) to specific coordinates of an array, table or sparse dataset. Exactly one of `dataset`, `table` and `sparse` is set */
 export type CoordinateAnchor = {
   __typename?: 'CoordinateAnchor';
   channelLabel?: Maybe<ChannelLabel>;
-  /** The coordinates this anchor is pinned to, e.g. {'c': 0, 't': 5}. Level-0 pixel indices, i.e. coordinates of the dataset's INTRINSIC system. An anchor that omits an axis is global along it */
+  /** The coordinates this anchor is pinned to, e.g. {'c': 0, 't': 5}. For an array dataset these are level-0 pixel indices, i.e. coordinates of its INTRINSIC system; for a table dataset they are values of its coordinate columns, keyed by column name; for a sparse dataset they are positions along its enumerated axes. An anchor that omits an axis is global along it */
   coordinates: Scalars['Any']['output'];
+  /** The array dataset this anchor pins into, or null otherwise */
+  dataset?: Maybe<ArrayDataset>;
   id: Scalars['ID']['output'];
   lightGraph?: Maybe<LightPath>;
   /** The microscope state recorded at this coordinate */
   microscope?: Maybe<OptikitState>;
+  /** The OME image metadata recorded at this coordinate */
+  omeMetadata?: Maybe<OmeMetadata>;
   phasorCalibrations: Array<PhasorCalibration>;
   phasorHistograms: Array<PhasorHistogram>;
+  /** The sparse dataset this anchor pins into, or null otherwise */
+  sparse?: Maybe<SparseDataset>;
+  /** The table dataset this anchor pins into, or null otherwise */
+  table?: Maybe<TableDataset>;
   valueHistogram?: Maybe<ValueHistogram>;
 };
 
 
-/** The axis-agnostic hub that pins metadata spokes (microscope state, OME metadata, value histograms, channel labels, light paths, phasor distributions and calibrations) to specific coordinates of a dataset */
+/** The axis-agnostic hub that pins metadata spokes (microscope state, OME metadata, value histograms, channel labels, light paths, phasor distributions and calibrations) to specific coordinates of an array, table or sparse dataset. Exactly one of `dataset`, `table` and `sparse` is set */
 export type CoordinateAnchorPhasorCalibrationsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
-/** The axis-agnostic hub that pins metadata spokes (microscope state, OME metadata, value histograms, channel labels, light paths, phasor distributions and calibrations) to specific coordinates of a dataset */
+/** The axis-agnostic hub that pins metadata spokes (microscope state, OME metadata, value histograms, channel labels, light paths, phasor distributions and calibrations) to specific coordinates of an array, table or sparse dataset. Exactly one of `dataset`, `table` and `sparse` is set */
 export type CoordinateAnchorPhasorHistogramsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+export type CoordinateAnchorFilter = {
+  AND?: InputMaybe<CoordinateAnchorFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<CoordinateAnchorFilter>;
+  OR?: InputMaybe<CoordinateAnchorFilter>;
+  dataset?: InputMaybe<IdFilterLookup>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  sparse?: InputMaybe<IdFilterLookup>;
+  table?: InputMaybe<IdFilterLookup>;
 };
 
 /** Input type for a coordinate anchor, which specifies a list of dimension anchors to anchor to */
@@ -1655,6 +1685,14 @@ export type CreateArrayDatasetInput = {
   name: Scalars['String']['input'];
   scales: Array<ScaleInput>;
   sourceFiles?: InputMaybe<Array<SourceFileInput>>;
+};
+
+/** Attach metadata spokes to an array, table or sparse dataset after ingest. Exactly one of `dataset`, `table` and `sparse` names the container; `anchor` carries the coordinates and the spokes. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced */
+export type CreateCoordinateAnchorInput = {
+  anchor: CoordinateAnchorInput;
+  dataset?: InputMaybe<Scalars['ID']['input']>;
+  sparse?: InputMaybe<Scalars['ID']['input']>;
+  table?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** Create a SHARED coordinate system -- a reference space with no owner, e.g. a world or an atlas -- and, in the same call, author the edges registering any number of sources (datasets, table datasets, mesh collections, coordinate systems) into it. Every other system is owned by a container and created with it, so a shared space is the only system created directly. createSceneFromCoordinateSystem later builds a scene over it and materializes those sources as layers */
@@ -1889,6 +1927,7 @@ export type CreateSceneInput = {
 
 /** Create a sparse dataset from one uploaded sparse store, which holds the matrix in one or more layouts. A sparse matrix is a grid of numbers with no row labels and no column labels, so **every axis says what its positions are** through its own `identifiedBy` -- a source whose contents are the ids, or the table whose rows they are. Carried on the axis, identified-exactly-once is a property of this input rather than a rule the server enforces. Nothing about the matrix itself is declared: the spec, shape, each layout's encoding and its chunking were read from the store when its upload was finished, and are checked against these axes rather than taken from them */
 export type CreateSparseDatasetInput = {
+  anchors?: InputMaybe<Array<CoordinateAnchorInput>>;
   axes?: Array<SparseAxisInput>;
   derivedFrom?: InputMaybe<Array<DerivedFromInput>>;
   description?: InputMaybe<Scalars['String']['input']>;
@@ -1900,6 +1939,7 @@ export type CreateSparseDatasetInput = {
 
 /** Input for creating a table dataset from a Parquet store. A column is declared ONCE, in `columns`: a non-null `axisType` makes it an axis of the coordinate system the table owns, and the axis-typed columns, in list (= file) order, are the space -- there is no separate axes list, because a table's axes are named columns and every consumer addresses them by name. Declare no axis-typed columns for a pure measurement table (its rows enumerate objects, its space is a synthetic `object` axis, and its lineage edge is UNMAPPABLE) */
 export type CreateTableDatasetInput = {
+  anchors?: InputMaybe<Array<CoordinateAnchorInput>>;
   columns?: Array<ColumnInput>;
   data: Scalars['ParquetLike']['input'];
   derivedFrom?: InputMaybe<Array<DerivedFromInput>>;
@@ -3050,6 +3090,26 @@ export type HopVia = {
   axis?: Maybe<Scalars['String']['output']>;
   /** The column whose values are bound: the parent row's reference column, or its INDEX column when the hop enters a matrix */
   column?: Maybe<Column>;
+};
+
+export type IdFilterLookup = {
+  contains?: InputMaybe<Scalars['ID']['input']>;
+  endsWith?: InputMaybe<Scalars['ID']['input']>;
+  exact?: InputMaybe<Scalars['ID']['input']>;
+  gt?: InputMaybe<Scalars['ID']['input']>;
+  gte?: InputMaybe<Scalars['ID']['input']>;
+  iContains?: InputMaybe<Scalars['ID']['input']>;
+  iEndsWith?: InputMaybe<Scalars['ID']['input']>;
+  iExact?: InputMaybe<Scalars['ID']['input']>;
+  iRegex?: InputMaybe<Scalars['String']['input']>;
+  iStartsWith?: InputMaybe<Scalars['ID']['input']>;
+  inList?: InputMaybe<Array<Scalars['ID']['input']>>;
+  isNull?: InputMaybe<Scalars['Boolean']['input']>;
+  lt?: InputMaybe<Scalars['ID']['input']>;
+  lte?: InputMaybe<Scalars['ID']['input']>;
+  range?: InputMaybe<Array<Scalars['ID']['input']>>;
+  regex?: InputMaybe<Scalars['String']['input']>;
+  startsWith?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** What a column's values or an axis' positions **are**, as a discriminated union: `kind` selects which sort of thing is being named, and only that member's id field is read -- any other is rejected. Carried by a sparse dataset's axes and by a table's columns alike -- the one spelling of every 'values here identify things there' claim. `DATASET`, `MESH_COLLECTION` and `NETWORK_COLLECTION` author a FIELD edge from the source into this data, which is also what makes it reachable from a layer over that source (INDEX axes only -- the edge produces an axis); `TABLE` authors no edge and states a foreign key instead, on an INDEX axis or a plain data column; `NETWORK_COLLECTION_NODES` likewise authors none, on an INDEX axis scoped by a sibling object axis */
@@ -4470,6 +4530,8 @@ export type Mutation = {
   createAnnotations: Array<Annotation>;
   /** Create a new dataset from array-like data with optional coordinate anchors and OME metadata */
   createArrayDataset: ArrayDataset;
+  /** Attach metadata spokes to an array, table or sparse dataset after ingest: a microscope state, OME metadata, a value histogram, a channel label or a light path, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced */
+  createCoordinateAnchor: CoordinateAnchor;
   /** Create a SHARED coordinate system (an ownerless space) and, in one call, author the edges registering any number of sources (datasets, table datasets, mesh collections, coordinate systems) into it */
   createCoordinateSystem: CoordinateSystem;
   /** Create a new folder to organize data */
@@ -4742,6 +4804,11 @@ export type MutationCreateAnnotationsArgs = {
 
 export type MutationCreateArrayDatasetArgs = {
   input: CreateArrayDatasetInput;
+};
+
+
+export type MutationCreateCoordinateAnchorArgs = {
+  input: CreateCoordinateAnchorInput;
 };
 
 
@@ -5611,6 +5678,14 @@ export type OffsetPaginationInput = {
   offset?: Scalars['Int']['input'];
 };
 
+/** The image truth: OME image metadata pinned to a coordinate anchor */
+export type OmeMetadata = {
+  __typename?: 'OmeMetadata';
+  id: Scalars['ID']['output'];
+  /** The OME image metadata */
+  metadata: Scalars['Any']['output'];
+};
+
 /** Input type for OME metadata */
 export type OmeMetadataInput = {
   /** The OME metadata as a JSON string */
@@ -6444,6 +6519,8 @@ export type Query = {
   children: Array<FolderChild>;
   /** Every column a mesh collection's objects can be coloured or filtered by: one entry per (joinPath, table, column), with the control its declared role admits. **The set this returns is exactly the set `createMeshLayer(colorBys:)` and `filterBys` accept** -- same reachability walk, same measure-vs-categorical rule -- which is what makes it an options query rather than a suggestion. Distinct from `attributePlans`, which answers a different question (how to execute a lookup per hover) over a different set: it walks the whole fact component and returns plans rooted at a source mask that mesh ids cannot execute, drops tables the write path accepts, and fails outright on a storeless array. Both pickers read these same options, because both branch on the same split. `joinPath` follows `references` from table to table -- pass an option's path back verbatim to select it. The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for */
   colorByOptions: Array<ColorByOption>;
+  /** List coordinate anchors (the hubs pinning metadata spokes to coordinates of an array, table or sparse dataset) */
+  coordinateAnchors: Array<CoordinateAnchor>;
   /** Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected (an edge pointing into the system relates to it as much as one pointing out), the edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not */
   coordinateGraph: CoordinateGraph;
   /** Get a single coordinate system by ID */
@@ -6613,6 +6690,12 @@ export type QueryColorByOptionsArgs = {
   filters?: InputMaybe<ColumnOptionFilter>;
   maxJoinDepth?: Scalars['Int']['input'];
   meshCollection: Scalars['ID']['input'];
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryCoordinateAnchorsArgs = {
+  filters?: InputMaybe<CoordinateAnchorFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -7523,7 +7606,7 @@ export type SourceFileInput = {
 /** One source in view of a region: where it sits in the queried coordinate system, how it got there, and which of its coordinate anchors are in view */
 export type SourcePlacement = {
   __typename?: 'SourcePlacement';
-  /** The source's coordinate anchors whose slab overlaps the region. An anchor pins some axes and is global along every axis it omits, so its slab is one voxel wide where it pins and the container's full extent where it does not. Only an array dataset has anchors; every other source kind reports none, which is not a gap */
+  /** The source's coordinate anchors whose slab overlaps the region. An anchor pins some axes and is global along every axis it omits, so its slab is one voxel wide where it pins and the container's full extent where it does not. Only an array dataset's anchors are placed here: a table's anchors pin column values rather than a slab, and are read through `TableDataset.anchors`; every other source kind reports none, which is not a gap */
   anchors: Array<CoordinateAnchor>;
   /** The source's axis-aligned extent in the queried system's coordinates, one entry per axis it constrains -- and only those. Usually a proper subset: a (c,y,x) dataset registered onto the (y,x) of a (t,z,y,x) world is a slab, extended along t and z, and an entry there would be a number nothing measured. Empty when `extentState` is not KNOWN */
   extent: Array<AxisExtent>;
@@ -7602,6 +7685,8 @@ export type SparseColorByInput = {
 /** A sparse matrix over two enumerated axes -- objects on one, features on the other -- stored as anndata-spelled zarr groups. It exists because a colouring names one *column*, so a colourable measurement is a column of a table: right for a few hundred features and impossible for a transcriptome, where a feature stops being a schema fact and becomes a data one. **Each axis is identified exactly once**, by its own `identifiedBy` -- a source whose contents are the ids, or the table whose rows the positions are. Its stores, axes and coordinate system are fixed at creation; a recomputation is a new dataset */
 export type SparseDataset = {
   __typename?: 'SparseDataset';
+  /** The coordinate anchors of this matrix, each pinning metadata spokes to positions along its enumerated axes, keyed by axis name, or to the whole matrix when its coordinates are empty. The same hub an array dataset uses, so a per-object matrix carries the acquisition facts of the recording it was computed from */
+  anchors: Array<CoordinateAnchor>;
   /** The stored layouts, one per axis a store's `indptr` indexes. One is legal and offers one capability */
   arrays: Array<SparseArray>;
   /** The matrix's axis names, in the order its stores' `shape` is written */
@@ -7631,6 +7716,13 @@ export type SparseDataset = {
   shape: Array<Scalars['Int']['output']>;
   /** The files this dataset was converted from */
   sourceFiles: Array<FileLink>;
+};
+
+
+/** A sparse matrix over two enumerated axes -- objects on one, features on the other -- stored as anndata-spelled zarr groups. It exists because a colouring names one *column*, so a colourable measurement is a column of a table: right for a few hundred features and impossible for a transcriptome, where a feature stops being a schema fact and becomes a data one. **Each axis is identified exactly once**, by its own `identifiedBy` -- a source whose contents are the ids, or the table whose rows the positions are. Its stores, axes and coordinate system are fixed at creation; a recomputation is a new dataset */
+export type SparseDatasetAnchorsArgs = {
+  filters?: InputMaybe<CoordinateAnchorFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -7814,6 +7906,8 @@ export type SubscriptionFilesArgs = {
 /** A parquet-backed table whose rows are scientific records (segmented objects, localizations, cells). It owns a coordinate system whose axes are its coordinate columns, which is what makes a localization table placeable; a table with no coordinate columns enumerates its rows and its lineage edge is UNMAPPABLE. Its store, its columns and that coordinate system are fixed at creation -- only `name` and `description` can be updated, and a recomputation is a new table rather than an edit of this one. Read the rows directly from the Parquet store with a datalayer access grant rather than paginating through GraphQL */
 export type TableDataset = {
   __typename?: 'TableDataset';
+  /** The coordinate anchors of this table, each pinning metadata spokes -- a microscope state, OME metadata, a channel label -- to values of its coordinate columns keyed by column name, or to the whole table when its coordinates are empty. The same hub an array dataset uses, so a measurement table carries the acquisition facts of the image it was segmented out of */
+  anchors: Array<CoordinateAnchor>;
   /** The table's axis names, in order. Derived from the coordinate columns */
   axisNames: Array<Scalars['String']['output']>;
   /** The declared column schema, in order. The COORDINATE columns are the axes of this table's coordinate system */
@@ -7843,6 +7937,13 @@ export type TableDataset = {
   sourceFiles: Array<FileLink>;
   /** The Parquet store holding the rows. Request an access grant from it and read the Parquet directly */
   store: ParquetStore;
+};
+
+
+/** A parquet-backed table whose rows are scientific records (segmented objects, localizations, cells). It owns a coordinate system whose axes are its coordinate columns, which is what makes a localization table placeable; a table with no coordinate columns enumerates its rows and its lineage edge is UNMAPPABLE. Its store, its columns and that coordinate system are fixed at creation -- only `name` and `description` can be updated, and a recomputation is a new table rather than an edit of this one. Read the rows directly from the Parquet store with a datalayer access grant rather than paginating through GraphQL */
+export type TableDatasetAnchorsArgs = {
+  filters?: InputMaybe<CoordinateAnchorFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -8837,7 +8938,7 @@ export type ZarrUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
-export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationCollection | AnnotationLayer | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | Lens | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | NetworkCollection | NetworkLayer | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SparseArray | SparseAxisReference | SparseDataset | SparseStore | TableDataset | Task | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationCollection | AnnotationLayer | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | Lens | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | NetworkCollection | NetworkLayer | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SparseArray | SparseAxisReference | SparseDataset | SparseStore | TableDataset | Task | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -9163,7 +9264,7 @@ export type AddLayerSpaceFragment = { __typename?: 'CoordinateSystem', id: strin
 export type FullCoordinateAnchorFragment = { __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', id: string, label: string } | null, valueHistogram?: { __typename?: 'ValueHistogram', id: string, bins: Array<number>, histogram: Array<number>, min?: number | null, max?: number | null, p1?: number | null, p99?: number | null } | null, lightGraph?: { __typename?: 'LightPath', id: string, graph: (
       { __typename?: 'LightpathGraph' }
       & LightpathGraphFragment
-    ) } | null, microscope?: { __typename?: 'OptikitState', id: string, state: { __typename?: 'OptikitStateGraph', temperature?: any | null, stage?: { __typename?: 'StageState', x?: Length | null, y?: Length | null, z?: Length | null } | null, devices: Array<{ __typename?: 'DeviceState', kind?: string | null, label: string, settings: Array<{ __typename?: 'Setting', name: string, text?: string | null, number?: number | null, flag?: boolean | null, quantity?: GenericQuantity | null }> }> } } | null, phasorCalibrations: Array<{ __typename?: 'PhasorCalibration', id: string, axis: string, harmonic: number, phaseOffset?: number | null, modulationFactor?: number | null, reference?: string | null }>, phasorHistograms: Array<{ __typename?: 'PhasorHistogram', id: string, axis: string, harmonic: number, bins: number, calibrated: boolean, total?: number | null, gMin: number, gMax: number, sMin: number, sMax: number }> };
+    ) } | null, microscope?: { __typename?: 'OptikitState', id: string, state: { __typename?: 'OptikitStateGraph', temperature?: any | null, stage?: { __typename?: 'StageState', x?: Length | null, y?: Length | null, z?: Length | null } | null, devices: Array<{ __typename?: 'DeviceState', kind?: string | null, label: string, settings: Array<{ __typename?: 'Setting', name: string, text?: string | null, number?: number | null, flag?: boolean | null, quantity?: GenericQuantity | null }> }> } } | null, omeMetadata?: { __typename?: 'OmeMetadata', id: string, metadata: any } | null, phasorCalibrations: Array<{ __typename?: 'PhasorCalibration', id: string, axis: string, harmonic: number, phaseOffset?: number | null, modulationFactor?: number | null, reference?: string | null }>, phasorHistograms: Array<{ __typename?: 'PhasorHistogram', id: string, axis: string, harmonic: number, bins: number, calibrated: boolean, total?: number | null, gMin: number, gMax: number, sMin: number, sMax: number }> };
 
 export type CameraStateFragment = { __typename?: 'CameraState', position: any, crossSectionOrientation?: Array<number> | null, crossSectionScale?: number | null, projectionOrientation?: Array<number> | null, projectionScale?: number | null };
 
@@ -10279,6 +10380,16 @@ export type SparseColouringSourceQuery = { __typename?: 'Query', sparseDataset: 
     & SparseColouringSourceFragment
   ) };
 
+export type ListSparseDatasetFragment = { __typename?: 'SparseDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, indexableAxes: Array<string> };
+
+export type SparseDatasetFragment = { __typename?: 'SparseDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, indexableAxes: Array<string>, folder?: { __typename?: 'Folder', id: string, name: string } | null, coordinateSystem: (
+    { __typename?: 'CoordinateSystem' }
+    & CoordinateSystemFragment
+  ), arrays: Array<{ __typename?: 'SparseArray', id: string, indexedAxis: number, indexedAxisName?: string | null, path: string, store: (
+      { __typename?: 'SparseStore' }
+      & SparseStoreReadFragment
+    ) }>, axisReferences: Array<{ __typename?: 'SparseAxisReference', id: string, axis: string, references: { __typename?: 'TableDataset', id: string, name: string, axisNames: Array<string> } }> };
+
 export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null };
 
 export type ParquetStoreFragment = { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: number | null };
@@ -10294,7 +10405,7 @@ export type FabriksStoreFragment = { __typename?: 'FabriksStore', id: string, ke
 
 export type KonnektionStoreFragment = { __typename?: 'KonnektionStore', id: string, key: string, bucket: string, path: string, specVersion?: string | null, grid?: any | null, encoding?: any | null, axes?: Array<string> | null, counts?: any | null, files?: any | null, attributes?: any | null };
 
-export type TableDatasetColumnFragment = { __typename?: 'Column', id: string, name: string, longName?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null };
+export type TableDatasetColumnFragment = { __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null };
 
 export type ListTableDatasetFragment = { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string> };
 
@@ -12452,6 +12563,58 @@ export type GetScenesQuery = { __typename?: 'Query', scenes: Array<(
     & ListSceneFragment
   )> };
 
+export type GetSparseDatasetQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetSparseDatasetQuery = { __typename?: 'Query', sparseDataset: (
+    { __typename?: 'SparseDataset' }
+    & SparseDatasetFragment
+  ) };
+
+export type GetSparseDatasetsQueryVariables = Exact<{
+  filters?: InputMaybe<SparseDatasetFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<SparseDatasetOrder> | SparseDatasetOrder>;
+}>;
+
+
+export type GetSparseDatasetsQuery = { __typename?: 'Query', sparseDatasets: Array<(
+    { __typename?: 'SparseDataset' }
+    & ListSparseDatasetFragment
+  )> };
+
+export type GetSparseDatasetDerivedQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetSparseDatasetDerivedQuery = { __typename?: 'Query', sparseDataset: { __typename?: 'SparseDataset', id: string, provenanceMetadata: any, provenanceEntries: Array<(
+      { __typename?: 'ProvenanceEntry' }
+      & ProvenanceEntryFragment
+    )>, sourceFiles: Array<(
+      { __typename?: 'FileLink' }
+      & FileLinkFragment
+    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null }> } };
+
+export type GetSparseDatasetAnchorsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetSparseDatasetAnchorsQuery = { __typename?: 'Query', sparseDataset: { __typename?: 'SparseDataset', id: string, anchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', id: string, label: string } | null }> } };
+
+export type GetSparseDatasetAnchorsFullQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetSparseDatasetAnchorsFullQuery = { __typename?: 'Query', sparseDataset: { __typename?: 'SparseDataset', id: string, anchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & FullCoordinateAnchorFragment
+    )> } };
+
 export type GetTableDatasetQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -12489,6 +12652,23 @@ export type GetTableDatasetsQuery = { __typename?: 'Query', tableDatasets: Array
     { __typename?: 'TableDataset' }
     & ListTableDatasetFragment
   )> };
+
+export type GetTableDatasetAnchorsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetTableDatasetAnchorsQuery = { __typename?: 'Query', tableDataset: { __typename?: 'TableDataset', id: string, anchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', id: string, label: string } | null }> } };
+
+export type GetTableDatasetAnchorsFullQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetTableDatasetAnchorsFullQuery = { __typename?: 'Query', tableDataset: { __typename?: 'TableDataset', id: string, anchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & FullCoordinateAnchorFragment
+    )> } };
 
 export const AddLayerStagedLensFragmentDoc = gql`
     fragment AddLayerStagedLens on Lens {
@@ -12741,6 +12921,7 @@ export const TableDatasetColumnFragmentDoc = gql`
   id
   name
   longName
+  description
   dtype
   role
   axisType
@@ -12748,6 +12929,7 @@ export const TableDatasetColumnFragmentDoc = gql`
   order
   references {
     id
+    name
   }
   nodeReferences {
     id
@@ -13057,6 +13239,10 @@ export const FullCoordinateAnchorFragmentDoc = gql`
         }
       }
     }
+  }
+  omeMetadata {
+    id
+    metadata
   }
   phasorCalibrations {
     id
@@ -14623,6 +14809,52 @@ export const SceneFragmentDoc = gql`
 ${SceneSnapshotFragmentDoc}
 ${CoordinateSystemFragmentDoc}
 ${SceneLayerFragmentDoc}`;
+export const ListSparseDatasetFragmentDoc = gql`
+    fragment ListSparseDataset on SparseDataset {
+  id
+  name
+  description
+  axisNames
+  shape
+  indexableAxes
+}
+    `;
+export const SparseDatasetFragmentDoc = gql`
+    fragment SparseDataset on SparseDataset {
+  id
+  name
+  description
+  axisNames
+  shape
+  indexableAxes
+  folder {
+    id
+    name
+  }
+  coordinateSystem {
+    ...CoordinateSystem
+  }
+  arrays {
+    id
+    indexedAxis
+    indexedAxisName
+    path
+    store {
+      ...SparseStoreRead
+    }
+  }
+  axisReferences {
+    id
+    axis
+    references {
+      id
+      name
+      axisNames
+    }
+  }
+}
+    ${CoordinateSystemFragmentDoc}
+${SparseStoreReadFragmentDoc}`;
 export const SparseColouringSourceFragmentDoc = gql`
     fragment SparseColouringSource on SparseDataset {
   id
@@ -19454,6 +19686,228 @@ export function useGetScenesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type GetScenesQueryHookResult = ReturnType<typeof useGetScenesQuery>;
 export type GetScenesLazyQueryHookResult = ReturnType<typeof useGetScenesLazyQuery>;
 export type GetScenesQueryResult = Apollo.QueryResult<GetScenesQuery, GetScenesQueryVariables>;
+export const GetSparseDatasetDocument = gql`
+    query GetSparseDataset($id: ID!) {
+  sparseDataset(id: $id) {
+    ...SparseDataset
+  }
+}
+    ${SparseDatasetFragmentDoc}`;
+
+/**
+ * __useGetSparseDatasetQuery__
+ *
+ * To run a query within a React component, call `useGetSparseDatasetQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSparseDatasetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSparseDatasetQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetSparseDatasetQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetSparseDatasetQuery, GetSparseDatasetQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetSparseDatasetQuery, GetSparseDatasetQueryVariables>(GetSparseDatasetDocument, options);
+      }
+export function useGetSparseDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSparseDatasetQuery, GetSparseDatasetQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetSparseDatasetQuery, GetSparseDatasetQueryVariables>(GetSparseDatasetDocument, options);
+        }
+export type GetSparseDatasetQueryHookResult = ReturnType<typeof useGetSparseDatasetQuery>;
+export type GetSparseDatasetLazyQueryHookResult = ReturnType<typeof useGetSparseDatasetLazyQuery>;
+export type GetSparseDatasetQueryResult = Apollo.QueryResult<GetSparseDatasetQuery, GetSparseDatasetQueryVariables>;
+export const GetSparseDatasetsDocument = gql`
+    query GetSparseDatasets($filters: SparseDatasetFilter, $pagination: OffsetPaginationInput, $ordering: [SparseDatasetOrder!]) {
+  sparseDatasets(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...ListSparseDataset
+  }
+}
+    ${ListSparseDatasetFragmentDoc}`;
+
+/**
+ * __useGetSparseDatasetsQuery__
+ *
+ * To run a query within a React component, call `useGetSparseDatasetsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSparseDatasetsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSparseDatasetsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *      ordering: // value for 'ordering'
+ *   },
+ * });
+ */
+export function useGetSparseDatasetsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetSparseDatasetsQuery, GetSparseDatasetsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetSparseDatasetsQuery, GetSparseDatasetsQueryVariables>(GetSparseDatasetsDocument, options);
+      }
+export function useGetSparseDatasetsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSparseDatasetsQuery, GetSparseDatasetsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetSparseDatasetsQuery, GetSparseDatasetsQueryVariables>(GetSparseDatasetsDocument, options);
+        }
+export type GetSparseDatasetsQueryHookResult = ReturnType<typeof useGetSparseDatasetsQuery>;
+export type GetSparseDatasetsLazyQueryHookResult = ReturnType<typeof useGetSparseDatasetsLazyQuery>;
+export type GetSparseDatasetsQueryResult = Apollo.QueryResult<GetSparseDatasetsQuery, GetSparseDatasetsQueryVariables>;
+export const GetSparseDatasetDerivedDocument = gql`
+    query GetSparseDatasetDerived($id: ID!) {
+  sparseDataset(id: $id) {
+    id
+    provenanceMetadata
+    provenanceEntries {
+      ...ProvenanceEntry
+    }
+    sourceFiles {
+      ...FileLink
+    }
+    derivedFrom {
+      id
+      kind
+      valueRelation
+      output {
+        id
+        name
+        residents {
+          __typename
+          ... on ArrayDataset {
+            id
+            name
+          }
+          ... on Lens {
+            id
+            dataset {
+              id
+              name
+            }
+          }
+        }
+      }
+      ... on UnmappableTransformation {
+        reason
+      }
+    }
+  }
+}
+    ${ProvenanceEntryFragmentDoc}
+${FileLinkFragmentDoc}`;
+
+/**
+ * __useGetSparseDatasetDerivedQuery__
+ *
+ * To run a query within a React component, call `useGetSparseDatasetDerivedQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSparseDatasetDerivedQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSparseDatasetDerivedQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetSparseDatasetDerivedQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetSparseDatasetDerivedQuery, GetSparseDatasetDerivedQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetSparseDatasetDerivedQuery, GetSparseDatasetDerivedQueryVariables>(GetSparseDatasetDerivedDocument, options);
+      }
+export function useGetSparseDatasetDerivedLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSparseDatasetDerivedQuery, GetSparseDatasetDerivedQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetSparseDatasetDerivedQuery, GetSparseDatasetDerivedQueryVariables>(GetSparseDatasetDerivedDocument, options);
+        }
+export type GetSparseDatasetDerivedQueryHookResult = ReturnType<typeof useGetSparseDatasetDerivedQuery>;
+export type GetSparseDatasetDerivedLazyQueryHookResult = ReturnType<typeof useGetSparseDatasetDerivedLazyQuery>;
+export type GetSparseDatasetDerivedQueryResult = Apollo.QueryResult<GetSparseDatasetDerivedQuery, GetSparseDatasetDerivedQueryVariables>;
+export const GetSparseDatasetAnchorsDocument = gql`
+    query GetSparseDatasetAnchors($id: ID!) {
+  sparseDataset(id: $id) {
+    id
+    anchors {
+      id
+      coordinates
+      channelLabel {
+        id
+        label
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetSparseDatasetAnchorsQuery__
+ *
+ * To run a query within a React component, call `useGetSparseDatasetAnchorsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSparseDatasetAnchorsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSparseDatasetAnchorsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetSparseDatasetAnchorsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetSparseDatasetAnchorsQuery, GetSparseDatasetAnchorsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetSparseDatasetAnchorsQuery, GetSparseDatasetAnchorsQueryVariables>(GetSparseDatasetAnchorsDocument, options);
+      }
+export function useGetSparseDatasetAnchorsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSparseDatasetAnchorsQuery, GetSparseDatasetAnchorsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetSparseDatasetAnchorsQuery, GetSparseDatasetAnchorsQueryVariables>(GetSparseDatasetAnchorsDocument, options);
+        }
+export type GetSparseDatasetAnchorsQueryHookResult = ReturnType<typeof useGetSparseDatasetAnchorsQuery>;
+export type GetSparseDatasetAnchorsLazyQueryHookResult = ReturnType<typeof useGetSparseDatasetAnchorsLazyQuery>;
+export type GetSparseDatasetAnchorsQueryResult = Apollo.QueryResult<GetSparseDatasetAnchorsQuery, GetSparseDatasetAnchorsQueryVariables>;
+export const GetSparseDatasetAnchorsFullDocument = gql`
+    query GetSparseDatasetAnchorsFull($id: ID!) {
+  sparseDataset(id: $id) {
+    id
+    anchors {
+      ...FullCoordinateAnchor
+    }
+  }
+}
+    ${FullCoordinateAnchorFragmentDoc}`;
+
+/**
+ * __useGetSparseDatasetAnchorsFullQuery__
+ *
+ * To run a query within a React component, call `useGetSparseDatasetAnchorsFullQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSparseDatasetAnchorsFullQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSparseDatasetAnchorsFullQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetSparseDatasetAnchorsFullQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetSparseDatasetAnchorsFullQuery, GetSparseDatasetAnchorsFullQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetSparseDatasetAnchorsFullQuery, GetSparseDatasetAnchorsFullQueryVariables>(GetSparseDatasetAnchorsFullDocument, options);
+      }
+export function useGetSparseDatasetAnchorsFullLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSparseDatasetAnchorsFullQuery, GetSparseDatasetAnchorsFullQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetSparseDatasetAnchorsFullQuery, GetSparseDatasetAnchorsFullQueryVariables>(GetSparseDatasetAnchorsFullDocument, options);
+        }
+export type GetSparseDatasetAnchorsFullQueryHookResult = ReturnType<typeof useGetSparseDatasetAnchorsFullQuery>;
+export type GetSparseDatasetAnchorsFullLazyQueryHookResult = ReturnType<typeof useGetSparseDatasetAnchorsFullLazyQuery>;
+export type GetSparseDatasetAnchorsFullQueryResult = Apollo.QueryResult<GetSparseDatasetAnchorsFullQuery, GetSparseDatasetAnchorsFullQueryVariables>;
 export const GetTableDatasetDocument = gql`
     query GetTableDataset($id: ID!) {
   tableDataset(id: $id) {
@@ -19597,3 +20051,84 @@ export function useGetTableDatasetsLazyQuery(baseOptions?: ApolloReactHooks.Lazy
 export type GetTableDatasetsQueryHookResult = ReturnType<typeof useGetTableDatasetsQuery>;
 export type GetTableDatasetsLazyQueryHookResult = ReturnType<typeof useGetTableDatasetsLazyQuery>;
 export type GetTableDatasetsQueryResult = Apollo.QueryResult<GetTableDatasetsQuery, GetTableDatasetsQueryVariables>;
+export const GetTableDatasetAnchorsDocument = gql`
+    query GetTableDatasetAnchors($id: ID!) {
+  tableDataset(id: $id) {
+    id
+    anchors {
+      id
+      coordinates
+      channelLabel {
+        id
+        label
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetTableDatasetAnchorsQuery__
+ *
+ * To run a query within a React component, call `useGetTableDatasetAnchorsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetTableDatasetAnchorsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetTableDatasetAnchorsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetTableDatasetAnchorsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetTableDatasetAnchorsQuery, GetTableDatasetAnchorsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetTableDatasetAnchorsQuery, GetTableDatasetAnchorsQueryVariables>(GetTableDatasetAnchorsDocument, options);
+      }
+export function useGetTableDatasetAnchorsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetTableDatasetAnchorsQuery, GetTableDatasetAnchorsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetTableDatasetAnchorsQuery, GetTableDatasetAnchorsQueryVariables>(GetTableDatasetAnchorsDocument, options);
+        }
+export type GetTableDatasetAnchorsQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsQuery>;
+export type GetTableDatasetAnchorsLazyQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsLazyQuery>;
+export type GetTableDatasetAnchorsQueryResult = Apollo.QueryResult<GetTableDatasetAnchorsQuery, GetTableDatasetAnchorsQueryVariables>;
+export const GetTableDatasetAnchorsFullDocument = gql`
+    query GetTableDatasetAnchorsFull($id: ID!) {
+  tableDataset(id: $id) {
+    id
+    anchors {
+      ...FullCoordinateAnchor
+    }
+  }
+}
+    ${FullCoordinateAnchorFragmentDoc}`;
+
+/**
+ * __useGetTableDatasetAnchorsFullQuery__
+ *
+ * To run a query within a React component, call `useGetTableDatasetAnchorsFullQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetTableDatasetAnchorsFullQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetTableDatasetAnchorsFullQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetTableDatasetAnchorsFullQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetTableDatasetAnchorsFullQuery, GetTableDatasetAnchorsFullQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetTableDatasetAnchorsFullQuery, GetTableDatasetAnchorsFullQueryVariables>(GetTableDatasetAnchorsFullDocument, options);
+      }
+export function useGetTableDatasetAnchorsFullLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetTableDatasetAnchorsFullQuery, GetTableDatasetAnchorsFullQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetTableDatasetAnchorsFullQuery, GetTableDatasetAnchorsFullQueryVariables>(GetTableDatasetAnchorsFullDocument, options);
+        }
+export type GetTableDatasetAnchorsFullQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsFullQuery>;
+export type GetTableDatasetAnchorsFullLazyQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsFullLazyQuery>;
+export type GetTableDatasetAnchorsFullQueryResult = Apollo.QueryResult<GetTableDatasetAnchorsFullQuery, GetTableDatasetAnchorsFullQueryVariables>;

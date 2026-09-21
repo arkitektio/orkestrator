@@ -1,7 +1,7 @@
 import { useDialog } from "@/app/dialog";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlpakaCollection, AlpakaLLMModel, AlpakaProvider } from "@/linkers";
@@ -26,24 +26,25 @@ export const TPage =  asDetailQueryRoute(
         title={model.llmString}
         object={model}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <Button
+          <>
+            {/* Talking to the model is what the page is for. */}
+            <PageAction
+              alwaysShow
+              collapse="icon"
+              icon={<MessageSquare className="h-4 w-4" />}
               onClick={() => openDialog("chat", { model: model.id })}
-              variant="outline"
               size="sm"
             >
-              <MessageSquare className="mr-2 h-4 w-4" />
               Chat
-            </Button>
-            <Button
+            </PageAction>
+            <PageAction
               onClick={() => openDialog("usemodelfor", { model: model.id })}
-              variant="outline"
               size="sm"
             >
               Use For...
-            </Button>
-            <AlpakaLLMModel.ObjectButton object={model} />
-          </div>
+            </PageAction>
+            <AlpakaLLMModel.ObjectButton alwaysShow object={model} />
+          </>
         }
         sidebars={
           <Sidebars>

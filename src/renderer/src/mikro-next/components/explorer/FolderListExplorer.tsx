@@ -1,12 +1,27 @@
 import { FormDialog } from "@/components/dialog/FormDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+  PageActionGroup,
+} from "@/components/ui/page-action";
 import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { MikroArrayDataset, MikroFile, MikroFolder, MikroTableDataset } from "@/linkers";
 
+import { useTabActions } from "@/command/tabs/TabsProvider";
+import { SmartObjectButtonProps } from "@/providers/smart/buildSmartAdapters";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
   ChildrenQuery,
@@ -18,7 +33,9 @@ import {
   usePutTableDatasetsInFolderMutation,
 } from "@/mikro-next/api/graphql";
 import { ViewType } from "@/mikro-next/pages/FolderPage";
+import { DragSession } from "@/lib/dnd/engine";
 import { useSelection } from "@/providers/selection/SelectionContext";
+import { smartDragStructures } from "@/providers/smart/dragPayload";
 import { useSmartDrop } from "@/providers/smart/hooks";
 import { Structure } from "@/types";
 import {
@@ -26,8 +43,9 @@ import {
   ArrowRight,
   Boxes,
   ChevronDown,
-  File as FileIcon,
+  Columns2,
   Filter,
+  File as FileIcon,
   Folder,
   LayoutGrid,
   List,
@@ -39,7 +57,8 @@ import {
   SortAsc,
   SortDesc,
   Table,
-  Table2
+  Table2,
+  X
 } from "lucide-react";
 import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -50,7 +69,7 @@ type ViewMode = "grid" | "list" | "table";
 // No "created" option: nothing in the `children` union carries a date —
 // `File`, `ArrayDataset` and `TableDataset` have no `createdAt` at all — so
 // offering it would silently sort by name instead.
-type SortField = "name" | "size";
+type SortField = "name" | "kind" | "size";
 type SortDirection = "asc" | "desc";
 type FilterType = "all" | "folders" | "datasets" | "tables" | "files";
 
@@ -60,31 +79,14 @@ interface ExplorerFilters {
   sortDirection: SortDirection;
 }
 
-interface FolderExplorerState {
-  searchInput: string;
-  filters: ExplorerFilters;
-  viewMode: ViewMode;
-  pagination: { limit: number; offset: number };
-  debouncedSearch: string;
-  data?: ChildrenQuery;
-  loading: boolean;
-  error?: { message: string } | null;
-}
-
-interface FolderExplorerActions {
-  setSearchInput: (value: string) => void;
-  setFilters: React.Dispatch<React.SetStateAction<ExplorerFilters>>;
-  setViewMode: (mode: ViewMode) => void;
-  setPagination: React.Dispatch<React.SetStateAction<{ limit: number; offset: number }>>;
-  updateFilters: (updates: Partial<ExplorerFilters>) => void;
-  getTypeCount: (type: FilterType) => number;
-}
-
-interface FolderToolbarProps extends FolderExplorerState, FolderExplorerActions {
+/**
+ * Everything the folder's header row shows: search, type, sort, new folder,
+ * view mode, refresh and paging. None of it lives in the explorer — the list
+ * is only the list.
+ */
+interface FolderActionsProps {
   folder: FolderFragment;
-  selection: Structure[];
-  bselection: Structure[];
-  refetch?: () => unknown;
+  explorerState: ReturnType<typeof useFolderExplorer>;
 }
 
 
@@ -118,6 +120,20 @@ type ExplorerItem = Extract<RawChild, { __typename?: ExplorerKind }> & {
 
 const isRenderable = (item: RawChild): item is ExplorerItem =>
   RENDERABLE_KINDS.includes(item.__typename as ExplorerKind);
+
+/**
+ * The order "sort by kind" uses. Not the type labels alphabetically — a file
+ * manager puts containers first and loose files last, and `RENDERABLE_KINDS`
+ * already reads in an arbitrary order — so the ranking is spelled out.
+ */
+const KIND_ORDER: Record<ExplorerKind, number> = {
+  Folder: 0,
+  ArrayDataset: 1,
+  TableDataset: 2,
+  MeshCollection: 3,
+  AnnotationCollection: 4,
+  File: 5,
+};
 
 /** A mesh collection has no name of its own, only a version. */
 const itemName = (item: ExplorerItem) =>
@@ -179,6 +195,88 @@ const ITEM_ICONS: Record<ExplorerKind, typeof Folder> = {
   MeshCollection: Shapes,
   AnnotationCollection: PenLine,
   File: FileIcon,
+};
+
+/**
+ * The structure identifier each kind drags as. Only the four the folder can
+ * file are listed — a mesh or annotation collection has no smart model, so
+ * neither drags nor is ever recognised in a drop.
+ */
+const KIND_IDENTIFIERS: Partial<Record<ExplorerKind, string>> = {
+  Folder: "@mikro/folder",
+  File: "@mikro/file",
+  ArrayDataset: "@mikro/arraydataset",
+  TableDataset: "@mikro/tabledataset",
+};
+
+const structureKey = (identifier: string, id: string) => `${identifier}:${id}`;
+
+/** Where each kind's detail page lives, for the kinds that have one. */
+const KIND_LINKS: Partial<Record<ExplorerKind, (id: string) => string>> = {
+  Folder: MikroFolder.linkBuilder,
+  File: MikroFile.linkBuilder,
+  ArrayDataset: MikroArrayDataset.linkBuilder,
+  TableDataset: MikroTableDataset.linkBuilder,
+};
+
+const KIND_OBJECT_BUTTONS: Partial<
+  Record<ExplorerKind, React.FC<SmartObjectButtonProps>>
+> = {
+  Folder: MikroFolder.ObjectButton,
+  File: MikroFile.ObjectButton,
+  ArrayDataset: MikroArrayDataset.ObjectButton,
+  TableDataset: MikroTableDataset.ObjectButton,
+};
+
+/**
+ * The row's own actions, revealed on hover: "open to the side" as a button of
+ * its own — the one thing a file manager is asked for constantly — and the
+ * ObjectButton for everything else, which is the same smart menu the row's
+ * right-click gives. Nothing model-specific is hand-placed here; new actions
+ * arrive as local actions and show up in both (see CLAUDE.md §3).
+ *
+ * `opacity-0` rather than unmounted: the ObjectButton's popover must survive
+ * the pointer leaving the row, and a popover whose trigger unmounts closes.
+ */
+const ExplorerItemActions = (props: { item: ExplorerItem; className?: string }) => {
+  const { openBeside } = useTabActions();
+  const to = KIND_LINKS[props.item.__typename]?.(props.item.id);
+  const ObjectButton = KIND_OBJECT_BUTTONS[props.item.__typename];
+
+  if (!to && !ObjectButton) return null;
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-1 rounded-lg border border-border/60 bg-background/95 p-0.5 opacity-0 shadow-sm backdrop-blur transition-opacity",
+        "group-hover:opacity-100 focus-within:opacity-100 [&:has([data-state=open])]:opacity-100",
+        props.className,
+      )}
+      // The row is a drag source and a link; the actions are neither.
+      draggable={false}
+      onDragStart={(event) => event.preventDefault()}
+    >
+      {to ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          title="Open to the side"
+          aria-label="Open to the side"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openBeside(to, { label: itemName(props.item), evict: true });
+          }}
+        >
+          <Columns2 className="h-3.5 w-3.5" />
+        </Button>
+      ) : null}
+      {ObjectButton ? (
+        <ObjectButton object={props.item} variant="ghost" className="h-7 w-7" />
+      ) : null}
+    </div>
+  );
 };
 
 const ExplorerItemIcon = (props: { item: ExplorerItem; className?: string }) => {
@@ -252,7 +350,8 @@ const ExplorerItemLink = (props: {
 const ExplorerGridItem = (props: { item: ExplorerItem }) => {
   return (
     <ExplorerItemSmart item={props.item}>
-      <div className="group rounded-xl border border-border/60 bg-background/70 p-3 transition-colors hover:bg-muted/30">
+      <div className="group relative rounded-xl border border-border/60 bg-background/70 p-3 transition-colors hover:bg-muted/30">
+        <ExplorerItemActions item={props.item} className="absolute right-2 top-2 z-10" />
         <div className="flex flex-col items-start gap-3">
           <ExplorerItemIcon item={props.item} className="h-12 w-12 rounded-xl" />
           <div className="min-w-0">
@@ -277,12 +376,16 @@ const ExplorerListItem = (props: { item: ExplorerItem; detailed?: boolean }) => 
     <ExplorerItemSmart item={props.item}>
       <div
         className={cn(
-          "grid items-center gap-3 border-b border-border/50 px-3 py-2 transition-colors hover:bg-muted/30",
+          "group relative grid items-center gap-3 border-b border-border/50 px-3 py-2 transition-colors hover:bg-muted/30",
           props.detailed
             ? "grid-cols-[minmax(0,1.6fr)_120px_minmax(0,0.9fr)]"
             : "grid-cols-[minmax(0,1fr)_120px]",
         )}
       >
+        <ExplorerItemActions
+          item={props.item}
+          className="absolute right-3 top-1/2 z-10 -translate-y-1/2"
+        />
         <div className="flex min-w-0 items-center gap-3">
           <ExplorerItemIcon item={props.item} />
           <div className="min-w-0">
@@ -310,6 +413,232 @@ const ExplorerListItem = (props: { item: ExplorerItem; detailed?: boolean }) => 
   );
 };
 
+/**
+ * A clickable column heading: the column IS the control. Clicking it opens the
+ * sort directions for that column, and the Type column carries the type filter
+ * as well — so narrowing the list happens over the list, not in the page's
+ * action row where you cannot see what you are narrowing.
+ */
+const ExplorerColumnHeader = (props: {
+  label: string;
+  field: SortField;
+  directions: { value: SortDirection; label: string }[];
+  filters: ExplorerFilters;
+  updateFilters: (updates: Partial<ExplorerFilters>) => void;
+  className?: string;
+  /**
+   * The narrowing this column is applying, when it is applying one. The
+   * heading then reads as the filter rather than as the column ("Folders",
+   * not "Type") and grows a clear button, so a list that is hiding rows never
+   * looks like a list that simply has none.
+   */
+  filter?: { label: string; onClear: () => void } | null;
+  /** Extra menu rows under the sort block — the Type column's filter. */
+  children?: React.ReactNode;
+}) => {
+  const sorted = props.filters.sortField === props.field;
+  const filter = props.filter;
+
+  return (
+    <div className={cn("flex min-w-0 items-center gap-1", props.className)}>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "flex min-w-0 items-center gap-1 rounded px-1 py-0.5 text-xs font-medium uppercase tracking-[0.12em] transition-colors",
+            "hover:text-foreground data-[state=open]:text-foreground",
+            filter
+              ? "bg-primary/10 text-primary hover:text-primary"
+              : sorted
+                ? "text-foreground"
+                : "text-muted-foreground",
+          )}
+        >
+          {filter ? <Filter className="h-3 w-3 shrink-0" /> : null}
+          <span className="truncate">{filter ? filter.label : props.label}</span>
+          {sorted ? (
+            props.filters.sortDirection === "asc" ? (
+              <SortAsc className="h-3 w-3 shrink-0" />
+            ) : (
+              <SortDesc className="h-3 w-3 shrink-0" />
+            )
+          ) : (
+            <ChevronDown className="h-3 w-3 shrink-0 opacity-40" />
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-52">
+        <DropdownMenuLabel className="text-xs text-muted-foreground">
+          Sort by {props.label.toLowerCase()}
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          // Empty while another column holds the sort, so neither direction
+          // reads as checked on a column that is not sorting anything.
+          value={sorted ? props.filters.sortDirection : ""}
+          onValueChange={(value) =>
+            props.updateFilters({
+              sortField: props.field,
+              sortDirection: value as SortDirection,
+            })
+          }
+        >
+          {props.directions.map((direction) => (
+            <DropdownMenuRadioItem key={direction.value} value={direction.value}>
+              {direction.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        {props.children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+    {/* A sibling of the trigger, not a child: a button inside a button is
+        invalid, and Radix would hand it the trigger's click anyway. */}
+    {filter ? (
+      <button
+        type="button"
+        onClick={filter.onClear}
+        title={`Clear ${props.label.toLowerCase()} filter`}
+        aria-label={`Clear ${props.label.toLowerCase()} filter`}
+        className="shrink-0 rounded p-0.5 text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    ) : null}
+    </div>
+  );
+};
+
+/** One narrowing in force, with the button that lifts it. */
+const ExplorerFilterChip = (props: { label: string; onClear: () => void }) => (
+  <span className="flex min-w-0 items-center gap-1 rounded-full bg-primary/10 py-0.5 pl-2 pr-1 text-primary">
+    <Filter className="h-3 w-3 shrink-0" />
+    <span className="truncate">{props.label}</span>
+    <button
+      type="button"
+      onClick={props.onClear}
+      title={`Clear ${props.label}`}
+      aria-label={`Clear ${props.label}`}
+      className="shrink-0 rounded-full p-0.5 transition-colors hover:bg-primary/20"
+    >
+      <X className="h-3 w-3" />
+    </button>
+  </span>
+);
+
+const TYPE_FILTERS: { value: FilterType; label: string; icon?: typeof Folder }[] = [
+  { value: "all", label: "Everything" },
+  { value: "folders", label: "Folders", icon: Folder },
+  { value: "datasets", label: "Datasets", icon: Boxes },
+  { value: "tables", label: "Tables", icon: Table2 },
+  { value: "files", label: "Files", icon: FileIcon },
+];
+
+/**
+ * The header row over the contents. It replaces the old "Large icons / List /
+ * Details" label — which only said what you could already see — and, in the
+ * list and table views, lines its cells up with the columns beneath: `px-5` is
+ * the scroll container's `p-2` plus each row's `px-3`.
+ */
+const ExplorerColumns = (props: {
+  viewMode: ViewMode;
+  filters: ExplorerFilters;
+  updateFilters: (updates: Partial<ExplorerFilters>) => void;
+  getTypeCount: (type: FilterType) => number;
+}) => {
+  const shared = { filters: props.filters, updateFilters: props.updateFilters };
+
+  const name = (
+    <ExplorerColumnHeader
+      {...shared}
+      label="Name"
+      field="name"
+      directions={[
+        { value: "asc", label: "A → Z" },
+        { value: "desc", label: "Z → A" },
+      ]}
+    />
+  );
+
+  const type = (
+    <ExplorerColumnHeader
+      {...shared}
+      label="Type"
+      field="kind"
+      directions={[
+        { value: "asc", label: "Folders first" },
+        { value: "desc", label: "Files first" },
+      ]}
+      filter={
+        props.filters.type === "all"
+          ? null
+          : {
+              label:
+                TYPE_FILTERS.find(({ value }) => value === props.filters.type)?.label ??
+                props.filters.type,
+              onClear: () => props.updateFilters({ type: "all" }),
+            }
+      }
+    >
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel className="text-xs text-muted-foreground">Show</DropdownMenuLabel>
+      <DropdownMenuRadioGroup
+        value={props.filters.type}
+        onValueChange={(value) => props.updateFilters({ type: value as FilterType })}
+      >
+        {TYPE_FILTERS.map(({ value, label, icon: Icon }) => (
+          <DropdownMenuRadioItem key={value} value={value}>
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" /> : null}
+              <span className="truncate">{label}</span>
+            </span>
+            <span className="ml-2 text-xs text-muted-foreground">
+              {props.getTypeCount(value)}
+            </span>
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </ExplorerColumnHeader>
+  );
+
+  const details = (
+    <ExplorerColumnHeader
+      {...shared}
+      label="Details"
+      field="size"
+      directions={[
+        { value: "desc", label: "Largest first" },
+        { value: "asc", label: "Smallest first" },
+      ]}
+    />
+  );
+
+  // No columns to line up with in the grid: the two controls sit together.
+  if (props.viewMode === "grid") {
+    return (
+      <div className="flex items-center gap-2 border-b border-border/70 px-4 py-2">
+        {name}
+        {type}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "grid items-center gap-3 border-b border-border/70 px-5 py-2",
+        props.viewMode === "table"
+          ? "grid-cols-[minmax(0,1.6fr)_120px_minmax(0,0.9fr)]"
+          : "grid-cols-[minmax(0,1fr)_120px]",
+      )}
+    >
+      {name}
+      {type}
+      {props.viewMode === "table" ? details : null}
+    </div>
+  );
+};
+
 export const FolderListExplorer = (props: FolderListExplorerProps) => {
   const refetchChildren = {
     refetchQueries: ['Children'],
@@ -319,28 +648,71 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
   const [putFiles] = usePutFilesInFolderMutation(refetchChildren);
   const [putArrayDatasets] = usePutArrayDatasetsInFolderMutation(refetchChildren);
   const [putTableDatasets] = usePutTableDatasetsInFolderMutation(refetchChildren);
-  const { selection, bselection } = useSelection();
 
   // Use the explorer state passed from parent
   const {
     filters,
+    updateFilters,
+    getTypeCount,
+    setSearchInput,
     viewMode,
     loading,
     error,
     filteredAndSortedData,
+    renderableChildren,
     refetch,
     debouncedSearch,
   } = props.explorerState;
 
   const totalItems = filteredAndSortedData.length;
+  // Only the type filter is applied here: the search runs on the backend, so
+  // `renderableChildren` is already the matches and "5 of 5" would be a lie.
+  const hiddenByType = renderableChildren.length - totalItems;
+
+  /**
+   * What this folder already holds, by structure key — plus the folder
+   * itself, which can never be filed into itself.
+   */
+  const members = useMemo(() => {
+    const keys = new Set<string>([structureKey("@mikro/folder", props.folder.id)]);
+    for (const child of renderableChildren) {
+      const identifier = KIND_IDENTIFIERS[child.__typename];
+      if (identifier) keys.add(structureKey(identifier, child.id));
+    }
+    return keys;
+  }, [renderableChildren, props.folder.id]);
+
+  const isMember = useCallback(
+    (structure: Structure) =>
+      members.has(structureKey(structure.identifier, structure.object.id)),
+    [members],
+  );
+
+  /**
+   * A drag that only moves things already in this folder is a drag *within*
+   * the list — dropping a row on a nested folder, say. Filing them here again
+   * would be a no-op, so the explorer turns the drag down entirely: no drop,
+   * and (since `canDrop` is gated too) no overlay flashing over the rows while
+   * the pointer travels between them. The row underneath keeps the drop, as
+   * the innermost target always does.
+   *
+   * An external drag is accepted on sight: what it carries is unreadable until
+   * it lands.
+   */
+  const acceptsDrop = useCallback(
+    (session: DragSession) => {
+      const structures = smartDragStructures(session);
+      return structures === null || structures.some((item) => !isMember(item));
+    },
+    [isMember],
+  );
 
   const [{ isOver, canDrop }, dropRef] = useSmartDrop(
     async (structures: Structure[]) => {
       const idsFor = (identifier: string) =>
         structures
-          .filter((item) => item.identifier === identifier)
-          .map((item) => item.object.id)
-          .filter((id) => id !== props.folder.id);
+          .filter((item) => item.identifier === identifier && !isMember(item))
+          .map((item) => item.object.id);
 
       // One mutation per kind — the backend files each kind separately.
       const filings = [
@@ -363,6 +735,7 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
         console.error("Failed to add dropped items to folder:", dropError);
       }
     },
+    { accepts: acceptsDrop },
   );
 
   const explorerDropRef = useCallback(
@@ -374,15 +747,6 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
 
   return (
     <div className="flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-background/80 shadow-sm">
-      <div className="border-b border-border/70 bg-background/50 px-4 py-1">
-          <FolderExplorerToolbar
-            {...props.explorerState}
-            folder={props.folder}
-            selection={selection}
-            bselection={bselection}
-          />
-      </div>
-
       <div
         className="relative flex min-h-0 w-full flex-1 flex-col"
         ref={explorerDropRef}
@@ -413,9 +777,12 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
         ) : null}
 
         <div className="flex min-h-0 w-full flex-1 flex-col">
-          <div className="border-b border-border/70 px-4 py-2 text-xs text-muted-foreground">
-            {viewMode === "grid" ? "Large icons" : viewMode === "list" ? "List" : "Details"}
-          </div>
+          <ExplorerColumns
+            viewMode={viewMode}
+            filters={filters}
+            updateFilters={updateFilters}
+            getTypeCount={getTypeCount}
+          />
 
           <div className="flex-1 overflow-auto p-2">
             {viewMode === "grid" ? (
@@ -436,11 +803,6 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
 
             {viewMode === "table" ? (
               <div>
-                <div className="grid grid-cols-[minmax(0,1.6fr)_120px_minmax(0,0.9fr)] gap-3 px-3 py-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                  <div>Name</div>
-                  <div>Type</div>
-                  <div>Details</div>
-                </div>
                 {filteredAndSortedData.map((child) => (
                   <ExplorerListItem key={child.id} item={child} detailed />
                 ))}
@@ -467,15 +829,39 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
                 <div className="mt-1 text-sm">
                   {debouncedSearch || filters.type !== "all"
                     ? "Try adjusting the search or active filter"
-                    : "Drag datasets, files or folders here to fill it"}
+                    : "Drag datasets, tables or folders here, or drop files from your computer to upload them"}
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-between border-t border-border/70 px-4 py-2 text-xs text-muted-foreground">
-            <span>{totalItems} item(s)</span>
-            <span>{filters.type === "all" ? "All content" : `Filtered to ${filters.type}`}</span>
+          <div className="flex items-center justify-between gap-3 border-t border-border/70 px-4 py-2 text-xs text-muted-foreground">
+            <span>
+              {totalItems} item{totalItems === 1 ? "" : "s"}
+              {hiddenByType > 0 ? ` of ${renderableChildren.length}` : ""}
+            </span>
+            {/* Every narrowing in force, each one clearable. The type filter
+                also shows on its own column; the search has no column to show
+                on, and a search typed into the page's action row can be
+                collapsed into the burger — without this, a list hiding most of
+                its rows would look like a list that just has few. */}
+            <div className="flex min-w-0 items-center gap-1">
+              {debouncedSearch ? (
+                <ExplorerFilterChip
+                  label={`“${debouncedSearch}”`}
+                  onClear={() => setSearchInput("")}
+                />
+              ) : null}
+              {filters.type !== "all" ? (
+                <ExplorerFilterChip
+                  label={
+                    TYPE_FILTERS.find(({ value }) => value === filters.type)?.label ??
+                    filters.type
+                  }
+                  onClear={() => updateFilters({ type: "all" })}
+                />
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -483,107 +869,58 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
   );
 };
 
-// Toolbar component that can be used in page headers
-export const FolderExplorerToolbar = ({
-  searchInput,
-  setSearchInput,
-  filters,
-  updateFilters,
-  viewMode,
-  setViewMode,
-  debouncedSearch,
-  folder,
-  selection,
-  bselection,
-  pagination,
-  setPagination,
-  data,
-  getTypeCount,
-  refetch
-}: FolderToolbarProps) => {
+/**
+ * The folder's page actions, for `PageLayout`'s action row. Each is a separate
+ * child of that row so `PageActionBar` can plan them one by one — hence the
+ * flat fragment rather than one wrapping div — and each says, through its
+ * policy props, what it gives up when the row runs short.
+ */
+export const FolderExplorerActions = ({ folder, explorerState }: FolderActionsProps) => {
+  const {
+    searchInput,
+    setSearchInput,
+    debouncedSearch,
+    viewMode,
+    setViewMode,
+    pagination,
+    setPagination,
+    data,
+    refetch,
+  } = explorerState;
+  const { selection, bselection } = useSelection();
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl py-2 ">
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Search */}
-        <div className="relative min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+    <>
+      {/* Search. Behind a glyph once the row is tight rather than gone: a
+          filtered list with no visible filter is a puzzle. */}
+      <PageAction.Slot
+        priority={10}
+        collapse="icon"
+        icon={<Search className="h-4 w-4" />}
+        label="Search"
+      >
+        <div className="relative w-44">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search files and folders..."
+            placeholder="Search…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full border-border/70 bg-background/80 pl-10"
+            className="h-8 w-full border-border/70 bg-background/80 pl-8"
           />
           {searchInput !== debouncedSearch && (
-            <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 animate-spin" />
+            <RefreshCw className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
           )}
         </div>
+      </PageAction.Slot>
 
-        {/* Type Filter */}
-        <Select value={filters.type} onValueChange={(value: FilterType) => updateFilters({ type: value })}>
-          <SelectTrigger className="w-40 border-border/70 bg-background/80">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">
-              All ({getTypeCount("all")})
-            </SelectItem>
-            <SelectItem value="folders">
-              <div className="flex items-center">
-                <Folder className="w-4 h-4 mr-2" />
-                Folders ({getTypeCount("folders")})
-              </div>
-            </SelectItem>
-            <SelectItem value="datasets">
-              <div className="flex items-center">
-                <Boxes className="w-4 h-4 mr-2" />
-                Datasets ({getTypeCount("datasets")})
-              </div>
-            </SelectItem>
-            <SelectItem value="tables">
-              <div className="flex items-center">
-                <Table2 className="w-4 h-4 mr-2" />
-                Tables ({getTypeCount("tables")})
-              </div>
-            </SelectItem>
-            <SelectItem value="files">
-              <div className="flex items-center">
-                <FileIcon className="w-4 h-4 mr-2" />
-                Files ({getTypeCount("files")})
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Sort Options */}
-        <Select
-          value={`${filters.sortField}_${filters.sortDirection}`}
-          onValueChange={(value) => {
-            const [field, direction] = value.split('_') as [SortField, SortDirection];
-            updateFilters({ sortField: field, sortDirection: direction });
-          }}
-        >
-          <SelectTrigger className="w-48 border-border/70 bg-background/80">
-            {filters.sortDirection === "asc" ? <SortAsc className="w-4 h-4 mr-2" /> : <SortDesc className="w-4 h-4 mr-2" />}
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name_asc">Name (A-Z)</SelectItem>
-            <SelectItem value="name_desc">Name (Z-A)</SelectItem>
-            <SelectItem value="size_desc">Largest First</SelectItem>
-            <SelectItem value="size_asc">Smallest First</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {/* New Folder Button */}
+      {/* New Folder */}
+      <PageAction.Slot alwaysShow collapse="icon">
         <FormDialog
           trigger={
-            <Button variant="outline" size="sm" className="border-border/70 bg-background/80">
-              <Plus className="w-4 h-4 mr-2" />
-              New Folder
-            </Button>
+            <ActionTrigger size="sm" aria-label="New Folder" className="border-border/70 bg-background/80">
+              <Plus className="w-4 h-4" />
+              <ActionLabel>New Folder</ActionLabel>
+            </ActionTrigger>
           }
           onSubmit={() => {
             // Refetch will be handled by the mutation
@@ -591,121 +928,117 @@ export const FolderExplorerToolbar = ({
         >
           <CreateFolderForm parentFolderId={folder.id} />
         </FormDialog>
+      </PageAction.Slot>
 
-        <Separator orientation="vertical" className="h-6" />
+      {/* Selection Info: a readout, not an action — it goes rather than
+          taking a row in the burger. */}
+      {(selection.length > 0 || bselection.length > 0) && (
+        <PageAction.Slot collapse="hide" priority={-10}>
+          <Badge variant="secondary">{selection.length} selected</Badge>
+          {bselection.length > 0 && <Badge variant="destructive">+{bselection.length}</Badge>}
+        </PageAction.Slot>
+      )}
 
-        {/* Selection Info */}
-        {(selection.length > 0 || bselection.length > 0) && (
-          <div className="flex items-center space-x-2">
-            <Badge variant="secondary">
-              {selection.length} selected
-            </Badge>
-            {bselection.length > 0 && (
-              <Badge variant="destructive">
-                +{bselection.length}
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* Bulk Actions */}
-        {selection.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              console.log("Bulk actions for:", selection);
-            }}
-          >
-            Actions <ChevronDown className="w-4 h-4 ml-1" />
-          </Button>
-        )}
-
-        <Separator orientation="vertical" className="h-6" />
-
-        {/* View Mode Toggles */}
-        <div className="flex items-center rounded-lg border border-border/70 bg-background/80 p-1">
-          <Button
-            variant={viewMode === "grid" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("grid")}
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === "list" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("list")}
-          >
-            <List className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === "table" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("table")}
-          >
-            <Table className="w-4 h-4" />
-          </Button>
-        </div>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        {/* Refresh Button */}
-        <Button
+      {/* Bulk Actions */}
+      {selection.length > 0 && (
+        <PageAction
+          priority={15}
           variant="ghost"
           size="sm"
-          className="border border-transparent bg-background/80 hover:border-border/70"
           onClick={() => {
-            // Use refetch from the hook instead of page reload
-            if (refetch) {
-              refetch();
-            } else {
-              window.location.reload();
-            }
+            console.log("Bulk actions for:", selection);
           }}
         >
-          <RefreshCw className="w-4 h-4" />
-        </Button>
+          Actions <ChevronDown className="w-4 h-4 ml-1" />
+        </PageAction>
+      )}
 
-        {/* Pagination */}
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-border/70 bg-background/80"
-            onClick={() => {
-              const newOffset = Math.max(0, pagination.offset - pagination.limit);
-              setPagination({
-                limit: pagination.limit,
-                offset: newOffset,
-              });
-            }}
-            disabled={pagination.offset <= 0}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-border/70 bg-background/80"
-            onClick={() => {
-              const newOffset = pagination.offset + pagination.limit;
-              setPagination({
-                limit: pagination.limit,
-                offset: newOffset,
-              });
-            }}
-            disabled={
-              data?.children && data.children.length < pagination.limit
-            }
-          >
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
+      {/* View Mode Toggles: one control — a picker missing half its options
+          is a trap — and already the width of three glyphs. */}
+      <PageActionGroup
+        priority={5}
+        className="gap-0 rounded-lg border border-border/70 bg-background/80 p-1"
+      >
+        <PageAction
+          variant={viewMode === "grid" ? "default" : "ghost"}
+          size="sm"
+          icon={<LayoutGrid className="w-4 h-4" />}
+          menuLabel="Grid view"
+          aria-label="Grid view"
+          onClick={() => setViewMode("grid")}
+        />
+        <PageAction
+          variant={viewMode === "list" ? "default" : "ghost"}
+          size="sm"
+          icon={<List className="w-4 h-4" />}
+          menuLabel="List view"
+          aria-label="List view"
+          onClick={() => setViewMode("list")}
+        />
+        <PageAction
+          variant={viewMode === "table" ? "default" : "ghost"}
+          size="sm"
+          icon={<Table className="w-4 h-4" />}
+          menuLabel="Table view"
+          aria-label="Table view"
+          onClick={() => setViewMode("table")}
+        />
+      </PageActionGroup>
+
+      {/* Refresh */}
+      <PageAction
+        priority={-5}
+        variant="ghost"
+        size="sm"
+        icon={<RefreshCw className="w-4 h-4" />}
+        menuLabel="Refresh"
+        aria-label="Refresh"
+        className="border border-transparent bg-background/80 hover:border-border/70"
+        onClick={() => refetch?.()}
+      />
+
+      {/* Pagination: paging away from the first page and losing the way back
+          is worse than a crowded row, so the pair stays together. */}
+      <PageActionGroup priority={15}>
+        <PageAction
+          size="sm"
+          icon={<ArrowLeft className="w-4 h-4" />}
+          menuLabel="Previous page"
+          aria-label="Previous page"
+          className="border-border/70 bg-background/80"
+          onClick={() =>
+            setPagination({
+              limit: pagination.limit,
+              offset: Math.max(0, pagination.offset - pagination.limit),
+            })
+          }
+          disabled={pagination.offset <= 0}
+        />
+        <PageAction
+          size="sm"
+          icon={<ArrowRight className="w-4 h-4" />}
+          menuLabel="Next page"
+          aria-label="Next page"
+          className="border-border/70 bg-background/80"
+          onClick={() =>
+            setPagination({
+              limit: pagination.limit,
+              offset: pagination.offset + pagination.limit,
+            })
+          }
+          disabled={data?.children && data.children.length < pagination.limit}
+        />
+      </PageActionGroup>
+
+      {/* The folder's own smart menu. `ModelPageLayout` renders this by default
+          when a page passes no `pageActions`; this page does, so it has to
+          carry it, or the folder itself would be the one thing on the page
+          with no actions. */}
+      <MikroFolder.ObjectButton alwaysShow object={folder} />
+    </>
   );
 };
+
 
 const MATCHES_FILTER: Record<Exclude<FilterType, "all">, ExplorerKind[]> = {
   folders: ["Folder"],
@@ -797,9 +1130,17 @@ export const useFolderExplorer = (folder: FolderFragment) => {
         bValue = b.__typename === "File" ? b.size ?? 0 : 0;
       }
 
+      if (sortField === "kind") {
+        aValue = KIND_ORDER[a.__typename];
+        bValue = KIND_ORDER[b.__typename];
+      }
+
       if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-      return 0;
+      // Within one kind (and for equally sized files) the name decides, always
+      // ascending: a secondary key that flipped with the primary would shuffle
+      // each group for no reason anyone asked for.
+      return aName < bName ? -1 : aName > bName ? 1 : 0;
     });
 
     return items;
@@ -835,6 +1176,9 @@ export const useFolderExplorer = (folder: FolderFragment) => {
     loading,
     error,
     filteredAndSortedData,
+    // Everything the folder holds, before the client-side type filter — what
+    // the drop target checks a drag against.
+    renderableChildren,
 
     // Actions
     setSearchInput: setSearchInputValue,

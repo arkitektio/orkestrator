@@ -61,10 +61,10 @@ export default asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
       title={data?.backend?.name}
       object={data?.backend}
       pageActions={
-        <div className="flex space-x-2">
+        <>
           <AgentForButton backendId={data?.backend.clientId} />
-          <KabinetBackend.ObjectButton object={data.backend} />
-        </div>
+          <KabinetBackend.ObjectButton alwaysShow object={data.backend} />
+        </>
       }
     >
       <div className="p-3">

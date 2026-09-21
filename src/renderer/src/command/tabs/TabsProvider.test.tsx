@@ -172,8 +172,8 @@ describe("tabs are per membership", () => {
     const a = createTab("/from-a", { id: "a1" });
     const b1 = createTab("/from-b", { id: "b1" });
     const b2 = createTab("/from-b-2", { id: "b2" });
-    saveTabs("org-a", { tabs: [a], activeId: "a1" });
-    saveTabs("org-b", { tabs: [b1, b2], activeId: "b2" });
+    saveTabs("org-a", { tabs: [a], activeId: "a1", viewId: "a1" });
+    saveTabs("org-b", { tabs: [b1, b2], activeId: "b2", viewId: "b2" });
 
     const { rerender } = renderApp();
     expect(text("path")).toBe("/from-a");

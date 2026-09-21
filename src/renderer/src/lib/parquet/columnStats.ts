@@ -104,6 +104,49 @@ export const readColumnDistinct = async (
   return { values: values.slice(0, limit), truncated: values.length > limit };
 };
 
+export type ColumnSummary = {
+  /** Every row of the table, null or not. */
+  rows: number;
+  /** Rows where this column holds a value. */
+  nonNull: number;
+  /** Distinct non-null values in the column, uncapped. */
+  distinct: number;
+};
+
+/**
+ * How FULL a column is and how many different things it says, in one scan:
+ * the row count, the non-null count and the distinct count together.
+ *
+ * Exists for the column popover, which shows a column's values next to its
+ * declaration. `readColumnDistinct` caps its list, so on its own it can only
+ * say "more than the cap"; the distinct count here says how many more, and
+ * the null count is the one fact about a column no declared field carries.
+ *
+ * One aggregation, not three, because each is a full pass over the parquet
+ * and a click should pay for one. `count(DISTINCT)` is the only real cost and
+ * the caller decides whether a column is worth it.
+ */
+export const readColumnSummary = async (
+  engine: ParquetQueryEngine,
+  target: ColumnStatsTarget,
+): Promise<ColumnSummary> => {
+  const column = escapeSqlIdentifier(target.column.name);
+  const rows = await engine.readAcross([target.table.store], (urlOf) =>
+    `SELECT count(*) AS n_rows, count(${column}) AS n_non_null, count(DISTINCT ${column}) AS n_distinct FROM ${readParquet(
+      urlOf(target.table.store.id),
+    )}`,
+  );
+  const row = rows[0];
+  // Counts come back as BigInt from DuckDB; `Number()` narrows them, and a
+  // missing row (an empty result set) reads as an empty table rather than
+  // throwing on `undefined`.
+  return {
+    rows: Number(row?.n_rows ?? 0),
+    nonNull: Number(row?.n_non_null ?? 0),
+    distinct: Number(row?.n_distinct ?? 0),
+  };
+};
+
 /** Bars a clim / bound slider draws behind itself; enough to see the shape,
  * few enough that each bar is still a visible strip in a card. */
 export const HISTOGRAM_BINS = 32;

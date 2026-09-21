@@ -206,6 +206,7 @@ export type ChromaCollectionFilter = {
   NOT?: InputMaybe<ChromaCollectionFilter>;
   OR?: InputMaybe<ChromaCollectionFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Search by name: a case-insensitive substring, or semantic similarity of the query to the collection's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -233,7 +234,6 @@ export type Client = {
   __typename?: 'Client';
   clientId: Scalars['String']['output'];
   id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
   release?: Maybe<Release>;
 };
 
@@ -1024,13 +1024,14 @@ export enum RoomField {
   CreatedAt = 'CREATED_AT'
 }
 
-/** Room(id, title, description, creator, organization, created_at) */
+/** A conversation; embeds its title + description so the room list's ``search`` finds it by topic. */
 export type RoomFilter = {
   AND?: InputMaybe<RoomFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<RoomFilter>;
   OR?: InputMaybe<RoomFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Search by title: a case-insensitive substring, or semantic similarity of the query to the room's title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   talkingAbout?: InputMaybe<StructureInput>;
 };
@@ -1380,9 +1381,17 @@ export type LlmModelFragment = { __typename?: 'LLMModel', id: string, modelId: s
 
 export type ListLlmModelFragment = { __typename?: 'LLMModel', id: string, modelId: string, llmString: string, features: Array<FeatureType>, inputModalities: Array<Modality>, outputModalities: Array<Modality>, provider: { __typename?: 'Provider', id: string, name: string, kind: ProviderKind }, embedderFor: Array<{ __typename?: 'ChromaCollection', id: string, name: string }> };
 
-export type MessageFragment = { __typename?: 'Message', id: string, text: string, createdAt: any, agent: { __typename?: 'Agent', id: string }, attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> };
+export type MessageAgentFragment = { __typename?: 'Agent', id: string, name?: string | null, user: { __typename?: 'User', id: string, preferredUsername: string } };
 
-export type ListMessageFragment = { __typename?: 'Message', id: string, text: string, createdAt: any, agent: { __typename?: 'Agent', id: string }, attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> };
+export type MessageFragment = { __typename?: 'Message', id: string, text: string, isStreaming: boolean, createdAt: any, agent: (
+    { __typename?: 'Agent' }
+    & MessageAgentFragment
+  ), attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> };
+
+export type ListMessageFragment = { __typename?: 'Message', id: string, text: string, isStreaming: boolean, createdAt: any, agent: (
+    { __typename?: 'Agent' }
+    & MessageAgentFragment
+  ), attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> };
 
 export type ProviderFragment = { __typename?: 'Provider', id: string, name: string, kind: ProviderKind, models: Array<{ __typename?: 'LLMModel', id: string, modelId: string }> };
 
@@ -1587,12 +1596,15 @@ export type ListLlModelsQuery = { __typename?: 'Query', llmModels: Array<(
     & ListLlmModelFragment
   )> };
 
-export type GetMessageRoomQueryVariables = Exact<{
-  messageId: Scalars['ID']['input'];
+export type GetMessageQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
 }>;
 
 
-export type GetMessageRoomQuery = { __typename?: 'Query', rooms: Array<{ __typename?: 'Room', id: string, title: string, messages: Array<{ __typename?: 'Message', id: string, text: string, createdAt: any, agent: { __typename?: 'Agent', id: string }, attachedStructures: Array<{ __typename?: 'Structure', identifier: string, object: number }> }> }> };
+export type GetMessageQuery = { __typename?: 'Query', message: (
+    { __typename?: 'Message', room: { __typename?: 'Room', id: string, title: string } }
+    & MessageFragment
+  ) };
 
 export type GetProviderQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -1775,12 +1787,23 @@ export const ListLlmModelFragmentDoc = gql`
   }
 }
     `;
+export const MessageAgentFragmentDoc = gql`
+    fragment MessageAgent on Agent {
+  id
+  name
+  user {
+    id
+    preferredUsername
+  }
+}
+    `;
 export const MessageFragmentDoc = gql`
     fragment Message on Message {
   id
   text
+  isStreaming
   agent {
-    id
+    ...MessageAgent
   }
   attachedStructures {
     identifier
@@ -1788,7 +1811,7 @@ export const MessageFragmentDoc = gql`
   }
   createdAt
 }
-    `;
+    ${MessageAgentFragmentDoc}`;
 export const ListProviderFragmentDoc = gql`
     fragment ListProvider on Provider {
   id
@@ -1839,8 +1862,9 @@ export const ListMessageFragmentDoc = gql`
     fragment ListMessage on Message {
   id
   text
+  isStreaming
   agent {
-    id
+    ...MessageAgent
   }
   attachedStructures {
     identifier
@@ -1848,7 +1872,7 @@ export const ListMessageFragmentDoc = gql`
   }
   createdAt
 }
-    `;
+    ${MessageAgentFragmentDoc}`;
 export const RoomFragmentDoc = gql`
     fragment Room on Room {
   id
@@ -2619,54 +2643,45 @@ export function useListLlModelsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type ListLlModelsQueryHookResult = ReturnType<typeof useListLlModelsQuery>;
 export type ListLlModelsLazyQueryHookResult = ReturnType<typeof useListLlModelsLazyQuery>;
 export type ListLlModelsQueryResult = Apollo.QueryResult<ListLlModelsQuery, ListLlModelsQueryVariables>;
-export const GetMessageRoomDocument = gql`
-    query GetMessageRoom($messageId: ID!) {
-  rooms(pagination: {limit: 100}) {
-    id
-    title
-    messages(filters: {ids: [$messageId]}) {
+export const GetMessageDocument = gql`
+    query GetMessage($id: ID!) {
+  message(id: $id) {
+    ...Message
+    room {
       id
-      text
-      createdAt
-      agent {
-        id
-      }
-      attachedStructures {
-        identifier
-        object
-      }
+      title
     }
   }
 }
-    `;
+    ${MessageFragmentDoc}`;
 
 /**
- * __useGetMessageRoomQuery__
+ * __useGetMessageQuery__
  *
- * To run a query within a React component, call `useGetMessageRoomQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetMessageRoomQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetMessageQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMessageQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useGetMessageRoomQuery({
+ * const { data, loading, error } = useGetMessageQuery({
  *   variables: {
- *      messageId: // value for 'messageId'
+ *      id: // value for 'id'
  *   },
  * });
  */
-export function useGetMessageRoomQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMessageRoomQuery, GetMessageRoomQueryVariables>) {
+export function useGetMessageQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMessageQuery, GetMessageQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetMessageRoomQuery, GetMessageRoomQueryVariables>(GetMessageRoomDocument, options);
+        return ApolloReactHooks.useQuery<GetMessageQuery, GetMessageQueryVariables>(GetMessageDocument, options);
       }
-export function useGetMessageRoomLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMessageRoomQuery, GetMessageRoomQueryVariables>) {
+export function useGetMessageLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMessageQuery, GetMessageQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetMessageRoomQuery, GetMessageRoomQueryVariables>(GetMessageRoomDocument, options);
+          return ApolloReactHooks.useLazyQuery<GetMessageQuery, GetMessageQueryVariables>(GetMessageDocument, options);
         }
-export type GetMessageRoomQueryHookResult = ReturnType<typeof useGetMessageRoomQuery>;
-export type GetMessageRoomLazyQueryHookResult = ReturnType<typeof useGetMessageRoomLazyQuery>;
-export type GetMessageRoomQueryResult = Apollo.QueryResult<GetMessageRoomQuery, GetMessageRoomQueryVariables>;
+export type GetMessageQueryHookResult = ReturnType<typeof useGetMessageQuery>;
+export type GetMessageLazyQueryHookResult = ReturnType<typeof useGetMessageLazyQuery>;
+export type GetMessageQueryResult = Apollo.QueryResult<GetMessageQuery, GetMessageQueryVariables>;
 export const GetProviderDocument = gql`
     query GetProvider($id: ID!) {
   provider(id: $id) {

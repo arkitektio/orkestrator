@@ -60,15 +60,15 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
       overlay
       actions={<MikroArrayDataset.Actions object={dataset} />}
       pageActions={
-        <div className="flex items-center gap-2">
+        <>
           {/* `folder` is nullable and the null is meaningful — a dataset nobody
               filed reads "Unfiled", which is not the same as not knowing. */}
           <MoveToFolderButton
             subject={{ kind: "arrayDataset", ids: [dataset.id] }}
             currentFolder={dataset.folder ?? null}
           />
-          <MikroArrayDataset.ObjectButton object={dataset} />
-        </div>
+          <MikroArrayDataset.ObjectButton alwaysShow object={dataset} />
+        </>
       }
       additionalSidebars={
         <>

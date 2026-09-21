@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { useMikroBigFileDownload } from "@/datalayer/hooks/useMikroBigFileDownload";
 import { MikroFile } from "@/linkers";
 import { useDownload } from "@/providers/download/DownloadProvider";
@@ -73,14 +73,16 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
       object={file}
       title={file.name}
       pageActions={
-        <div className="flex items-center gap-2">
+        <>
           {/* `folder` is nullable and the null is meaningful: unfiled, or its
               folder was deleted. Either way the badge says "Unfiled". */}
           <MoveToFolderButton
             subject={{ kind: "file", ids: [file.id] }}
             currentFolder={file.folder ?? null}
           />
-          <Button
+          <PageAction
+            collapse="icon"
+            icon={<DownloadIcon className="h-4 w-4" />}
             onClick={() => {
               startDownload(file.name, async ({ id, signal }) => {
                 return await download(file.store.id, file.name, { id, signal });
@@ -88,15 +90,13 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
                 console.error("Download error:", e);
               });
             }}
-            variant="outline"
-            className="flex items-center gap-2 shadow-sm"
+            className="shadow-sm"
           >
-            <DownloadIcon className="h-4 w-4" />
             Download
-          </Button>
+          </PageAction>
 
-          <MikroFile.ObjectButton object={file} />
-        </div>
+          <MikroFile.ObjectButton alwaysShow object={file} />
+        </>
       }
       // `additionalSidebars` rather than an explicit `sidebars`: passing the
       // latter takes over the whole rail, so Knowledge and Chat would have to be

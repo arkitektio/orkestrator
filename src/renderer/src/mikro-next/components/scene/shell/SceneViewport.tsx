@@ -49,6 +49,7 @@ import { DebugPanel } from "../features/debug/DebugPanel";
 import { DimSliderPanel } from "./chrome/DimSliderPanel";
 import { SelectedPointPanel } from "../features/probe/SelectedPointPanel";
 import { RoiDeleteKeybinding } from "../features/annotations/RoiDeleteKeybinding";
+import { HoveredAnnotationButton } from "../features/annotations/hover/HoveredAnnotationButton";
 import { ZSliderPanel } from "./chrome/ZSliderPanel";
 import { WebGPUUnavailableError } from "@/lib/scene/gpu/webgpuSupport";
 import { useModeStore } from "../platform/stores/modeStore";
@@ -381,6 +382,9 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
               viewport keeps the Backspace-delete keybinding — sidebar tabs
               unmount when inactive, and a keybinding may not go with them. */}
           <RoiDeleteKeybinding />
+          {/* The action button pinned to the hovered annotation — the one
+              overlay that follows a shape rather than a corner. */}
+          <HoveredAnnotationButton />
           <VisibilityManager />
           <AttributeProbeTracker />
           <ProbeReadoutSettler />

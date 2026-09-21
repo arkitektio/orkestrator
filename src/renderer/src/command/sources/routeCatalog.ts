@@ -42,6 +42,7 @@ export const ROUTE_CATALOG: CatalogRoute[] = [
   })),
   { module: "mikro", label: "Coordinate Systems", route: "/mikro/coordinatesystems" },
   { module: "mikro", label: "Table Datasets", route: "/mikro/tabledatasets", keywords: ["tables"] },
+  { module: "mikro", label: "Sparse Datasets", route: "/mikro/sparsedatasets", keywords: ["matrices", "sparse", "csr", "anndata"] },
   { module: "mikro", label: "Annotations", route: "/mikro/annotations", keywords: ["rois", "labels"] },
   { module: "mikro", label: "Folders", route: "/mikro/folders" },
   { module: "mikro", label: "Files", route: "/mikro/files" },

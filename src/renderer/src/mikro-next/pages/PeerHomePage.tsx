@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { HelpSidebar } from "@/components/sidebars/help";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
 import { JustUsername } from "@/lok-next/components/UserAvatar";
@@ -46,27 +46,27 @@ const Page = asDetailQueryRoute(usePeerHomePageQuery, ({ id }) => {
 
   return (
     <PageLayout
-      pageActions={<>
+      pageActions={
         <>
-          {/* 3. Picker updates the URL params */}
-          <DateTimeRangePicker
-            // Optional: bind value to keep picker UI in sync on page refresh
-            initialDateFrom={createdAfter ?? undefined}
-            initialDateTo={createdBefore ?? undefined}
-            onUpdate={({ range }) => {
-              setCreatedAfter(range.from || null);
-              setCreatedBefore(range.to || null);
+          <PageAction.Slot collapse="hide" priority={-20}>
+            <DateTimeRangePicker
+              initialDateFrom={createdAfter ?? undefined}
+              initialDateTo={createdBefore ?? undefined}
+              onUpdate={({ range }) => {
+                setCreatedAfter(range.from || null);
+                setCreatedBefore(range.to || null);
+              }}
+            />
+          </PageAction.Slot>
+          <PageAction
+            onClick={() => {
+              setParentless(parentless ? null : true);
             }}
-          /></>
-        <Button variant={"outline"} onClick={() => {
-          setParentless(parentless ? null : true);
-        }}>
-          {parentless ? "No Parent" : "All Data"}
-        </Button>
-
-
-
-      </>}
+          >
+            {parentless ? "No Parent" : "All Data"}
+          </PageAction>
+        </>
+      }
       sidebars={<Sidebars>
         <Sidebars.Tab label="Statistics"><PeerStatisticsSidebar sub={id} /></Sidebars.Tab>
         <Sidebars.Tab label="Help"><HelpSidebar /></Sidebars.Tab>

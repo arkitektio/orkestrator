@@ -55,6 +55,13 @@ fragment FullCoordinateAnchor on CoordinateAnchor {
       }
     }
   }
+  # The OME image metadata recorded at this coordinate, as its JSON. Only the
+  # structured form: `metadataString` is the same payload as XML and would
+  # double the bytes for a panel that shows a handful of top-level entries.
+  omeMetadata {
+    id
+    metadata
+  }
   phasorCalibrations {
     id
     axis

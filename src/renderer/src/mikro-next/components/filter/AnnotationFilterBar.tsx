@@ -2,6 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+} from "@/components/ui/page-action";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
@@ -155,114 +160,123 @@ export const useAnnotationFilterBar = () => {
   const actions = (
     <>
       <CollapsibleSearch
+        alwaysShow
         value={search}
         onChange={(value) => setSearch(value || null)}
         placeholder="Search annotations…"
       />
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <Shapes className="h-4 w-4" />
-            Kind
-            {kind !== "any" && (
-              <Badge variant="secondary">{KIND_LABELS[kind] ?? kind}</Badge>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="max-h-96 w-56 overflow-y-auto"
-        >
-          {/* One radio group across every section: the server field takes a
-              single kind, so ticking two would be a query that cannot exist. */}
-          <DropdownMenuRadioGroup
-            value={kind}
-            // Back to the default is signalled as `null`, which drops the key
-            // from the URL entirely — a shared link carries only what changed.
-            onValueChange={(next) => setKind(next === "any" ? null : next)}
-          >
-            <DropdownMenuRadioItem value="any">Any kind</DropdownMenuRadioItem>
-            {KIND_GROUPS.map((group) => (
-              <div key={group.label}>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
-                {group.kinds.map((entry) => (
-                  <DropdownMenuRadioItem key={entry.kind} value={entry.kind}>
-                    {entry.label}
-                  </DropdownMenuRadioItem>
-                ))}
-              </div>
-            ))}
-          </DropdownMenuRadioGroup>
-          {kind !== "any" && (
-            <>
-              <DropdownMenuSeparator />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => setKind(null)}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset
-              </Button>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <ArrowUpDown className="h-4 w-4" />
-            Sort
-            {sortField !== "default" && (
-              <Badge variant="secondary" className="gap-1">
-                {SORT_FIELD_LABELS[sortField]}
-                {sortDirection === "ASC" ? (
-                  <ArrowUpWideNarrow />
-                ) : (
-                  <ArrowDownWideNarrow />
+      <PageAction.Slot collapse="icon" priority={-10}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <ActionTrigger aria-label="Kind">
+              <Shapes className="h-4 w-4" />
+              <ActionLabel>
+                Kind
+                {kind !== "any" && (
+                  <Badge variant="secondary">{KIND_LABELS[kind] ?? kind}</Badge>
                 )}
-              </Badge>
+              </ActionLabel>
+            </ActionTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="max-h-96 w-56 overflow-y-auto"
+          >
+            {/* One radio group across every section: the server field takes a
+                single kind, so ticking two would be a query that cannot exist. */}
+            <DropdownMenuRadioGroup
+              value={kind}
+              // Back to the default is signalled as `null`, which drops the key
+              // from the URL entirely — a shared link carries only what changed.
+              onValueChange={(next) => setKind(next === "any" ? null : next)}
+            >
+              <DropdownMenuRadioItem value="any">Any kind</DropdownMenuRadioItem>
+              {KIND_GROUPS.map((group) => (
+                <div key={group.label}>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                  {group.kinds.map((entry) => (
+                    <DropdownMenuRadioItem key={entry.kind} value={entry.kind}>
+                      {entry.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </div>
+              ))}
+            </DropdownMenuRadioGroup>
+            {kind !== "any" && (
+              <>
+                <DropdownMenuSeparator />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setKind(null)}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset
+                </Button>
+              </>
             )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={sortField}
-            onValueChange={(value) =>
-              setSortField(
-                value === "default"
-                  ? null
-                  : (value as (typeof SORT_FIELDS)[number]),
-              )
-            }
-          >
-            {SORT_FIELDS.map((field) => (
-              <DropdownMenuRadioItem key={field} value={field}>
-                {SORT_FIELD_LABELS[field]}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </PageAction.Slot>
+
+      <PageAction.Slot collapse="icon" priority={-10}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <ActionTrigger aria-label="Sort">
+              <ArrowUpDown className="h-4 w-4" />
+              <ActionLabel>
+                Sort
+                {sortField !== "default" && (
+                  <Badge variant="secondary" className="gap-1">
+                    {SORT_FIELD_LABELS[sortField]}
+                    {sortDirection === "ASC" ? (
+                      <ArrowUpWideNarrow />
+                    ) : (
+                      <ArrowDownWideNarrow />
+                    )}
+                  </Badge>
+                )}
+              </ActionLabel>
+            </ActionTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={sortField}
+              onValueChange={(value) =>
+                setSortField(
+                  value === "default"
+                    ? null
+                    : (value as (typeof SORT_FIELDS)[number]),
+                )
+              }
+            >
+              {SORT_FIELDS.map((field) => (
+                <DropdownMenuRadioItem key={field} value={field}>
+                  {SORT_FIELD_LABELS[field]}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Direction</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={sortDirection}
+              onValueChange={(value) =>
+                setSortDirection(value === "ASC" ? null : (value as "DESC"))
+              }
+            >
+              <DropdownMenuRadioItem value="ASC">Ascending</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="DESC">
+                Descending
               </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>Direction</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={sortDirection}
-            onValueChange={(value) =>
-              setSortDirection(value === "ASC" ? null : (value as "DESC"))
-            }
-          >
-            <DropdownMenuRadioItem value="ASC">Ascending</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="DESC">
-              Descending
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </PageAction.Slot>
     </>
   );
 

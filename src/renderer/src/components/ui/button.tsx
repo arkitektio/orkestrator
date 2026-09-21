@@ -2,6 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 import * as React from "react"
 
+import type { PageActionPolicy } from "@/components/layout/actionPlan"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -34,8 +35,20 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Collapse policy, read off the element by `PageActionBar` when a button sits
+ * in a page's action row: `alwaysShow` pins it, `priority` orders eviction
+ * (lowest first), `collapse` picks what it gives up. Every button carries them
+ * so a control built on Button -- a `DialogButton`, a model's `NewButton` --
+ * can declare a policy without being rewritten. They are inert, and never
+ * reach the DOM, everywhere else.
+ *
+ * `collapse: "icon"` needs a component that can draw an icon-only form, i.e.
+ * `PageAction`; a plain Button only degrades to the burger or out of sight.
+ */
 export type ButtonProps = React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
+  VariantProps<typeof buttonVariants> &
+  PageActionPolicy & {
     asChild?: boolean
   }
 
@@ -44,6 +57,9 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  alwaysShow: _alwaysShow,
+  priority: _priority,
+  collapse: _collapse,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot.Root : "button"

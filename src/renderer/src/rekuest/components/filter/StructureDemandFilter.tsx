@@ -1,5 +1,10 @@
 import { AsyncCombobox } from "@/components/fields/AsyncCombobox";
 import { SearchFunction } from "@/components/fields/SearchField";
+import {
+  ActionLabel,
+  PageActionPolicy,
+  useActionSlotSize,
+} from "@/components/ui/page-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +27,7 @@ export const StructureDemandFilter = ({
   structure,
   direction,
   onChange,
-}: {
+}: PageActionPolicy & {
   structure: string | null;
   direction: DemandDirection;
   onChange: (next: {
@@ -30,6 +35,9 @@ export const StructureDemandFilter = ({
     direction?: DemandDirection;
   }) => void;
 }) => {
+  // Page chrome: in a narrow action row this keeps the glyph and drops the
+  // words. The policy props are read off the element by the row itself.
+  const size = useActionSlotSize();
   const [searchStructures] = useListStructuresLazyQuery();
 
   const search = useCallback<SearchFunction>(
@@ -48,15 +56,17 @@ export const StructureDemandFilter = ({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" size={size} className="gap-2" aria-label="Works on">
           <Shapes className="h-4 w-4" />
-          Works on
-          {structure && (
-            <Badge variant="secondary" className="max-w-40 truncate">
-              {direction === "produces" ? "→ " : ""}
-              {structure}
-            </Badge>
-          )}
+          <ActionLabel>
+            Works on
+            {structure && (
+              <Badge variant="secondary" className="max-w-40 truncate">
+                {direction === "produces" ? "→ " : ""}
+                {structure}
+              </Badge>
+            )}
+          </ActionLabel>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="flex w-72 flex-col gap-3">

@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { KraphGraph, KraphGraphQuery, KraphGraphView } from "@/linkers";
 import {
   useGetGraphTableQueryQuery,
@@ -21,36 +21,31 @@ const Page = asDetailQueryRoute(
         object={{ id: data.graphTableQuery.id }}
         title={data.graphTableQuery.label}
         pageActions={
-          <div className="flex flex-row gap-2">
+          <>
             <KraphGraph.DetailLink
               object={{ id: data.graphTableQuery.graph.id }}
             >
-              <Button variant="outline" size="sm">
-                Graph
-              </Button>
+              <PageAction size="sm">Graph</PageAction>
             </KraphGraph.DetailLink>
 
             <KraphGraphQuery.DetailLink
               object={{ id: data.graphTableQuery.id }}
               subroute="builder"
             >
-              <Button variant="outline" size="sm">
-                Builder
-              </Button>
+              <PageAction size="sm">Builder</PageAction>
             </KraphGraphQuery.DetailLink>
             <FormDialog
               trigger={
-                <Button variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
+                <PageAction size="sm" icon={<Plus className="h-4 w-4" />}>
                   Add Plot
-                </Button>
+                </PageAction>
               }
             >
               <CreateScatterPlotForm graphQuery={data.graphTableQuery} />
             </FormDialog>
 
-            <KraphGraphQuery.ObjectButton object={{ id: data.graphTableQuery.id }} />
-          </div>
+            <KraphGraphQuery.ObjectButton alwaysShow object={{ id: data.graphTableQuery.id }} />
+          </>
         }
         sidebars={
           <Sidebars>

@@ -10,12 +10,12 @@ export const SpacePage = asDetailQueryRoute(useSpaceQuery, ({ data }) => {
       title={data.space.name}
       object={data.space}
       pageActions={
-        <div className="flex flex-row gap-2">
+        <>
           <RekuestSpace.DetailLink object={data.space} subroute="edit">
             Edit
           </RekuestSpace.DetailLink>
-          <RekuestSpace.ObjectButton object={data.space} />
-        </div>
+          <RekuestSpace.ObjectButton alwaysShow object={data.space} />
+        </>
       }
       sidebars={
         <Sidebars>

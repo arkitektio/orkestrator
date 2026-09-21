@@ -15,6 +15,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       pageActions={
         <>
           <DialogButton
+            alwaysShow
             name="createserviceinstance"
             variant={"outline"}
             size={"sm"}

@@ -1,4 +1,4 @@
-import { Guard } from "@/app/Arkitekt";
+import { SMART_SECTIONS } from "@/app/smartcontext";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -15,26 +15,32 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { ArrowRight, PlayIcon } from "lucide-react";
 import React from "react";
-import {
-  ApplicableTalk as ApplicableAlpakaTalk,
-} from "./alpaka/talk";
 import { describeStructures } from "./describe";
-import { ApplicableDefinitions } from "./kabinet/definitions";
-import { ApplicableRelations } from "./kraph/relations";
-import { ApplicableLocalActions } from "./local/localactions";
-import {
-  ApplicableActions,
-  ApplicableBatchActions,
-  ApplicableBatchImplementations,
-  ApplicableImplementations,
-} from "./rekuest/actions";
-import { ApplicableShortcuts } from "./rekuest/shortcuts";
+import { useSmartPrefetcher } from "./prefetchContext";
+import { RunOnSubmenu } from "./rekuest/RunOnSubmenu";
+import type { SmartSectionContext } from "./section";
+import { SectionHost } from "./SectionHost";
+import { resolveSections, SmartSectionRegistry } from "./sectionRegistry";
+import { SectionsProgress } from "./SectionsProgress";
+import { createSectionStatusStore, isEmptyResult } from "./sectionStatus";
+import { SectionStatusProvider, useSectionSummary } from "./sectionStatusContext";
 import type { ObjectButtonProps, SmartContextProps } from "./types";
+import { useAfterFirstPaint } from "./useAfterFirstPaint";
+import { useFirstItemSelection } from "./useFirstItemSelection";
 
 export const ObjectButton = (props: ObjectButtonProps) => {
+  const prefetcher = useSmartPrefetcher();
   return (
     <Popover>
-      <PopoverTrigger>
+      <PopoverTrigger
+        onPointerEnter={() =>
+          prefetcher?.prefetch({
+            objects: props.objects,
+            partners: props.partners,
+            collection: props.collection,
+          })
+        }
+      >
         {props.children || (
           <Button
             variant={props.variant || "outline"}
@@ -80,125 +86,92 @@ const SmartContextHeader = ({ objects, partners }: SmartContextProps) => {
 };
 
 /**
- * Keeps the first item highlighted while the results settle, so Enter runs the
- * top match. cmdk only picks the first item on the keystroke itself, but the
- * sections here fetch their items asynchronously (debounced), so its pick lands
- * on the stale list and sticks. Until the user moves the highlight themselves
- * (arrow keys / pointer), any change to the rendered items re-selects the first.
+ * The smart context menu: every registered section that applies to the
+ * selection, in priority order.
+ *
+ * It unrolls in two tiers. The instant sections (local actions) are on screen
+ * in the frame the menu opens; the remote ones mount one frame later and
+ * appear, each in its fixed slot, as their data lands — nothing above them
+ * moves. A slim bar under the search runs until every section has answered,
+ * and only then may the menu say there is nothing to do.
  */
-const useFirstItemSelection = () => {
-  const rootRef = React.useRef<HTMLDivElement>(null);
-  const [value, setValue] = React.useState("");
-  const pinned = React.useRef(true);
-
-  const selectFirst = React.useCallback(() => {
-    const first = rootRef.current?.querySelector(
-      '[cmdk-item=""]:not([aria-disabled="true"])',
-    );
-    const next = first?.getAttribute("data-value") ?? "";
-    setValue((current) => (current === next ? current : next));
-  }, []);
-
-  React.useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const observer = new MutationObserver(() => {
-      if (pinned.current) selectFirst();
-    });
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["data-value", "aria-disabled", "hidden"],
-    });
-    return () => observer.disconnect();
-  }, [selectFirst]);
-
-  const repin = React.useCallback(() => {
-    pinned.current = true;
-    selectFirst();
-  }, [selectFirst]);
-
-  const onKeyDown = React.useCallback((e: React.KeyboardEvent) => {
-    if (["ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(e.key)) {
-      pinned.current = false;
-    }
-  }, []);
-
-  const onPointerMove = React.useCallback(() => {
-    pinned.current = false;
-  }, []);
-
-  return { rootRef, value, setValue, repin, onKeyDown, onPointerMove };
-};
-
-export const SmartContext = (props: SmartContextProps) => {
+export const SmartContext = ({
+  registry = SMART_SECTIONS,
+  ...props
+}: SmartContextProps & { registry?: SmartSectionRegistry }) => {
+  const { objects, partners, returns, collection, sections, onDone, onError } = props;
   const [filter, setFilterValue] = React.useState<string | undefined>(undefined);
-  // The raw value drives the input; the children put the filter straight into
-  // query variables, so hand them a debounced copy to avoid a request per key.
+  // The raw value narrows the rows on screen at once; the queries run on the
+  // debounced copy, so typing does not cost a request per key.
   const debouncedFilter = useDebounce(filter, 200);
-  const selection = useFirstItemSelection();
+  const [store] = React.useState(createSectionStatusStore);
+
+  const plan = React.useMemo(
+    () => resolveSections(registry, { objects, partners, returns, collection, sections }),
+    [registry, objects, partners, returns, collection, sections],
+  );
+  const expectedIds = React.useMemo(() => plan.map((section) => section.id), [plan]);
+  const painted = useAfterFirstPaint();
+  const summary = useSectionSummary(store, expectedIds);
+  const selection = useFirstItemSelection([
+    summary.revision,
+    summary.total,
+    debouncedFilter,
+    painted,
+  ]);
+
+  const context = React.useMemo<SmartSectionContext>(
+    () => ({
+      objects,
+      partners,
+      returns,
+      collection,
+      sections,
+      onDone,
+      onError,
+      filter: debouncedFilter,
+      liveFilter: filter,
+    }),
+    [objects, partners, returns, collection, sections, onDone, onError, debouncedFilter, filter],
+  );
 
   return (
-    <div ref={selection.rootRef} className="contents">
-      <SmartContextHeader {...props} />
+    <SectionStatusProvider store={store}>
+      <RunOnSubmenu context={props} returnFocusTo={selection.inputRef}>
+        <div ref={selection.rootRef} className="contents">
+          <SmartContextHeader {...props} />
 
-      <Command
-        shouldFilter={false}
-        value={selection.value}
-        onValueChange={selection.setValue}
-        onKeyDown={selection.onKeyDown}
-      >
-        <CommandInput
-          placeholder="Search"
-          className="h-10 text-sm"
-          onValueChange={(value) => {
-            setFilterValue(value);
-            selection.repin();
-          }}
-          autoFocus
-        />
+          <Command
+            shouldFilter={false}
+            value={selection.value}
+            onValueChange={selection.setValue}
+            onKeyDown={selection.onKeyDown}
+          >
+            <CommandInput
+              ref={selection.inputRef}
+              placeholder="Search"
+              className="h-10 text-sm"
+              onValueChange={(value) => {
+                setFilterValue(value);
+                selection.repin();
+              }}
+              autoFocus
+            />
+            <SectionsProgress active={summary.pending} />
 
-        <CommandList className="mt-2" onPointerMove={selection.onPointerMove}>
-          <ApplicableLocalActions {...props} filter={debouncedFilter} />
-          <CommandEmpty>No Action available</CommandEmpty>
-          <Guard.Alpaka unavailable={<></>}>
-            <ApplicableAlpakaTalk {...props} filter={debouncedFilter} />
-          </Guard.Alpaka>
-          <Guard.Rekuest unavailable={<></>}>
-            {!props.disableShortcuts && (
-              <ApplicableShortcuts {...props} filter={debouncedFilter} />
-            )}
-          </Guard.Rekuest>
-
-          <Guard.Kraph unavailable={<></>}>
-            {!props.disableKraph && (
-              <ApplicableRelations {...props} filter={debouncedFilter} />
-            )}
-          </Guard.Kraph>
-
-          <Guard.Rekuest unavailable={<></>}>
-            {!props.disableActions && (
-              <ApplicableActions {...props} filter={debouncedFilter} />
-            )}
-            {!props.disableActions && (
-              <ApplicableImplementations {...props} filter={debouncedFilter} />
-            )}
-            {!props.disableBatchActions && (
-              <ApplicableBatchActions {...props} filter={debouncedFilter} />
-            )}
-            {!props.disableBatchActions && (
-              <ApplicableBatchImplementations {...props} filter={debouncedFilter} />
-            )}
-          </Guard.Rekuest>
-
-          <Guard.Kabinet unavailable={<></>}>
-            {!props.disableKabinet && (
-              <ApplicableDefinitions {...props} filter={debouncedFilter} />
-            )}
-          </Guard.Kabinet>
-        </CommandList>
-      </Command>
-    </div>
+            <CommandList className="mt-2" onPointerMove={selection.onPointerMove}>
+              {plan.map((section) =>
+                section.tier === "instant" || painted ? (
+                  <SectionHost key={section.id} section={section} context={context} />
+                ) : null,
+              )}
+              {isEmptyResult(summary) ? (
+                <CommandEmpty>No Action available</CommandEmpty>
+              ) : null}
+            </CommandList>
+          </Command>
+        </div>
+      </RunOnSubmenu>
+    </SectionStatusProvider>
   );
 };

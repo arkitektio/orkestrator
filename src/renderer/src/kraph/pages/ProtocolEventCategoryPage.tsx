@@ -3,7 +3,7 @@ import { ImageCreator } from "@/alpaka/components/ImageCreator";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { FormSheet } from "@/components/dialog/FormDialog";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { DragZone } from "@/components/upload/drag";
 import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
 import {
@@ -45,13 +45,12 @@ const Page =  asDetailQueryRoute(
           />
         }
         pageActions={
-          <div className="flex flex-row gap-2">
+          <>
             <FormSheet
               trigger={
-                <Button variant="outline" size="sm">
-                  {" "}
+                <PageAction alwaysShow size="sm">
                   Perform {data.protocolEventCategory.label}
-                </Button>
+                </PageAction>
               }
               onSubmit={() => refetch()}
             >
@@ -61,7 +60,7 @@ const Page =  asDetailQueryRoute(
               />
             </FormSheet>
             <EnhanceButton identifier="@kraph/protocoleventcategory" object={{ id: data.protocolEventCategory.id }} />
-          </div>
+          </>
         }
         sidebars={
           <Sidebars>

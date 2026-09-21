@@ -125,9 +125,9 @@ const TPage = asDetailQueryRoute(
         title={data?.chromaCollection?.name}
         object={data.chromaCollection}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <AlpakaCollection.ObjectButton object={data.chromaCollection} />
-          </div>
+          <>
+            <AlpakaCollection.ObjectButton alwaysShow object={data.chromaCollection} />
+          </>
         }
         sidebars={
           <Sidebars>

@@ -19,6 +19,7 @@ const Page = asDetailQueryRoute(useGetServiceQuery, ({ data }) => {
       pageActions={
         <>
           <DialogButton
+            alwaysShow
             name="createserviceinstance"
             variant={"outline"}
             size={"sm"}

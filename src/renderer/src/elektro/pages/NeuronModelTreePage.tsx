@@ -12,7 +12,7 @@ export const NeuronModelTreePage = asDetailQueryRoute(
         title={data?.neuronModel?.name}
         object={data.neuronModel}
         pageActions={
-          <div className="flex flex-row gap-2">
+          <>
             <ElektroNeuronModel.DetailLink
               object={data.neuronModel}
               className={buttonVariants({ variant: "outline" })}
@@ -26,8 +26,8 @@ export const NeuronModelTreePage = asDetailQueryRoute(
             >
               Edit
             </ElektroNeuronModel.DetailLink>
-            <ElektroNeuronModel.ObjectButton object={data.neuronModel} />
-          </div>
+            <ElektroNeuronModel.ObjectButton alwaysShow object={data.neuronModel} />
+          </>
         }
       >
         <div className="h-full w-full p-4">

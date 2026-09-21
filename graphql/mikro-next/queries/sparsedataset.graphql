@@ -1,0 +1,103 @@
+query GetSparseDataset($id: ID!) {
+  sparseDataset(id: $id) {
+    ...SparseDataset
+  }
+}
+
+query GetSparseDatasets(
+  $filters: SparseDatasetFilter
+  $pagination: OffsetPaginationInput
+  $ordering: [SparseDatasetOrder!]
+) {
+  sparseDatasets(
+    filters: $filters
+    pagination: $pagination
+    ordering: $ordering
+  ) {
+    ...ListSparseDataset
+  }
+}
+
+# Where this matrix came from and how it has been edited since — the lineage
+# half of the Info rail, in one round trip, mirroring GetTableDatasetDerived.
+#
+# Upwards only, like the table: `derivedFrom` records the edges from this
+# matrix's own space back into the data it was computed over, and nothing on
+# SparseDataset points the other way. No `exports` either — a sparse matrix is
+# never written back out to a file held here, so the panel has one file
+# section fewer than the table's.
+#
+# `provenanceMetadata` is the run that produced it (its parameters and inputs)
+# as one JSON document — the schema declares it `Any!`, so it is shown as the
+# document it is rather than pretended into fields.
+query GetSparseDatasetDerived($id: ID!) {
+  sparseDataset(id: $id) {
+    id
+    provenanceMetadata
+    provenanceEntries {
+      ...ProvenanceEntry
+    }
+    sourceFiles {
+      ...FileLink
+    }
+    derivedFrom {
+      id
+      kind
+      valueRelation
+      output {
+        id
+        name
+        residents {
+          __typename
+          ... on ArrayDataset {
+            id
+            name
+          }
+          ... on Lens {
+            id
+            dataset {
+              id
+              name
+            }
+          }
+        }
+      }
+      ... on UnmappableTransformation {
+        reason
+      }
+    }
+  }
+}
+
+# The coordinate anchors of a sparse matrix, in the same thin/full split the
+# array and table sides use. The thin one is fetched with the page: it is what
+# the collapsed overlay pill needs, and it is small. The full one is fetched
+# only when the overlay unfolds — microscope state and light paths on every
+# page load would be a lot of bytes nobody asked for.
+#
+# Both select `anchors` with no arguments, so they write one cache field, and
+# `CoordinateAnchor.id` normalises the thin and the full entry into one entity.
+# Deliberately NOT on the `SparseDataset` fragment: a colouring, a card and a
+# picker must not carry anchors for every matrix they name.
+query GetSparseDatasetAnchors($id: ID!) {
+  sparseDataset(id: $id) {
+    id
+    anchors {
+      id
+      coordinates
+      channelLabel {
+        id
+        label
+      }
+    }
+  }
+}
+
+query GetSparseDatasetAnchorsFull($id: ID!) {
+  sparseDataset(id: $id) {
+    id
+    anchors {
+      ...FullCoordinateAnchor
+    }
+  }
+}

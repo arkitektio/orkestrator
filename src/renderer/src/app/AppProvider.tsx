@@ -15,6 +15,7 @@ import { DebugProvider } from "@/providers/debug/DebugProvider";
 import { SelectionProvider } from "@/providers/selection/SelectionProvider";
 import { SettingsProvider } from "@/providers/settings/SettingsProvider";
 import { SmartProvider } from "@/providers/smart/provider";
+import { SmartPrefetchProvider } from "@/providers/smart/SmartPrefetchProvider";
 import { SmartSurface } from "@/providers/smart/SmartSurface";
 import { TaskUpdater } from "@/rekuest/components/functional/TaskUpdater";
 import { TaskHookRunner } from "@/lib/taskhooks/TaskHookRunner";
@@ -154,6 +155,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                             <SmartProvider>
                               <DialogProvider>
                                 <SelectionProvider>
+                                  <SmartPrefetchProvider>
                                   <AgentProvider disabled={false}>
                                     <CommandPaletteProvider>
                                     <WardRegistrar />
@@ -198,6 +200,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     </BackNavigationErrorCatcher>
                                     </CommandPaletteProvider>
                                   </AgentProvider>
+                                  </SmartPrefetchProvider>
                                 </SelectionProvider>
                               </DialogProvider>
                             </SmartProvider>

@@ -18,6 +18,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       pageActions={
         <>
           <DialogButton
+            alwaysShow
             name="createredeemtoken"
             variant={"outline"}
             size={"sm"}

@@ -88,3 +88,65 @@ query SparseColouringSource($id: ID!) {
     ...SparseColouringSource
   }
 }
+
+# ---------------------------------------------------------------------------
+# The dataset as a thing with a page, as opposed to a thing a colouring reads.
+# The two selections above are what a colour-by needs and nothing more; these
+# are what the list and detail pages show. Kept apart so a colouring does not
+# pay for a folder and a coordinate system it never looks at.
+# ---------------------------------------------------------------------------
+
+fragment ListSparseDataset on SparseDataset {
+  id
+  name
+  description
+  axisNames
+  # Read off the stores rather than declared, so it is always the truth about
+  # the bytes — the card shows it next to the axis names as `obs 2638 × var 1838`.
+  shape
+  # Which axes one contiguous read can select along: the card's one badge.
+  indexableAxes
+}
+
+fragment SparseDataset on SparseDataset {
+  id
+  name
+  description
+  axisNames
+  shape
+  indexableAxes
+  # Nullable and the null is meaningful: an unfiled matrix reads "Unfiled".
+  folder {
+    id
+    name
+  }
+  # The system this matrix OWNS — its two enumerations are the axes, and a
+  # FIELD edge from it lands here. What the Space tab draws the graph around.
+  coordinateSystem {
+    ...CoordinateSystem
+  }
+  # One per stored layout. The store carries the per-layout facts (nnz, dtype,
+  # chunking, whether a range read is even possible); the array says which of
+  # the store's layouts it is, by `path`.
+  arrays {
+    id
+    indexedAxis
+    indexedAxisName
+    path
+    store {
+      ...SparseStoreRead
+    }
+  }
+  # Where a position along an identified axis gets its name — the table whose
+  # rows ARE that axis. Linked, not read: the page shows which table names an
+  # axis, and leaves resolving a position to the colouring code above.
+  axisReferences {
+    id
+    axis
+    references {
+      id
+      name
+      axisNames
+    }
+  }
+}

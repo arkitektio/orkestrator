@@ -1,4 +1,4 @@
-import { MikroArrayDataset, MikroTableDataset } from "@/linkers";
+import { MikroArrayDataset, MikroSparseDataset, MikroTableDataset } from "@/linkers";
 import {
   Aperture,
   Grid2x2,
@@ -75,6 +75,12 @@ export const ResidentLink = (props: {
         <MikroTableDataset.DetailLink object={resident} className={className}>
           {resident.name}
         </MikroTableDataset.DetailLink>
+      );
+    case "SparseDataset":
+      return (
+        <MikroSparseDataset.DetailLink object={resident} className={className}>
+          {resident.name}
+        </MikroSparseDataset.DetailLink>
       );
     case "Lens":
       return (

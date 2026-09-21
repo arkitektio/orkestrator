@@ -75,3 +75,37 @@ query GetTableDatasets(
     ...ListTableDataset
   }
 }
+
+# The coordinate anchors of a table, in the same thin/full split the array side
+# uses (`SceneLens.activeAnchors` rides along thin; `GetLensAnchors` fills in
+# on demand). The thin one is fetched with the table: it is what the row
+# markers and the collapsed overlay pill need, and it is small. The full one is
+# fetched only when the overlay unfolds — microscope state and light paths on
+# every table load would be a lot of bytes nobody asked for.
+#
+# Both select `anchors` with no arguments, so they write one cache field, and
+# `CoordinateAnchor.id` normalises the thin and the full entry into one entity.
+# Deliberately NOT on the `TableDataset` fragment: that is spread into the
+# scene layer payload, which must not carry anchors for every layer.
+query GetTableDatasetAnchors($id: ID!) {
+  tableDataset(id: $id) {
+    id
+    anchors {
+      id
+      coordinates
+      channelLabel {
+        id
+        label
+      }
+    }
+  }
+}
+
+query GetTableDatasetAnchorsFull($id: ID!) {
+  tableDataset(id: $id) {
+    id
+    anchors {
+      ...FullCoordinateAnchor
+    }
+  }
+}

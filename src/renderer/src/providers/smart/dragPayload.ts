@@ -134,6 +134,18 @@ const structuresFromUriList = (uriList: string | undefined): Structure[] =>
     // A link names the object, it does not carry it: the id is all there is.
     .map(([, identifier, id]) => ({ identifier, object: { id } }));
 
+/**
+ * The structures an internal drag carries, while it is still in the air.
+ * `null` for a drag from outside: the browser withholds its data until the
+ * drop, so what it holds cannot be known yet.
+ */
+export const smartDragStructures = (session: DragSession): Structure[] | null =>
+  session.origin === "internal" &&
+  session.kind === SMART_MODEL_DROP_TYPE &&
+  isSmartDragItem(session.data)
+    ? session.data.structures
+    : null;
+
 /** The structures in a drop, or `null` if it holds none we can read. */
 export const resolveSmartDrop = (payload: DropPayload): ResolvedSmartDrop | null => {
   if (payload.origin === "internal") {

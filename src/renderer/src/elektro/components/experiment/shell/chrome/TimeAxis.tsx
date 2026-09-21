@@ -18,6 +18,9 @@ import { useViewerStoreApi } from "../../platform/stores/viewerStore";
  * update per frame, and writes a pool of tick elements directly (P17). The pool is
  * reused, so a steady zoom creates no DOM nodes.
  *
+ * Tick DENSITY is the viewer's `gridSpacingPx` — one knob shared with the grid, so
+ * the two can never drift apart.
+ *
  * The unit comes from the WORLD's time axis — the timeline's own unit, which is what
  * every position here is measured in.
  */
@@ -51,8 +54,11 @@ export const TimeAxis = () => {
 
     const render = createRafCoalescer<null>(() => {
       const window = rangeApi.getState().liveRange;
-      const width = viewerApi.getState().viewportPx.width;
-      const { ticks } = timeTicks(window, width);
+      const { viewportPx, gridSpacingPx } = viewerApi.getState();
+      const width = viewportPx.width;
+      // The SAME spacing `TimeGrid` uses, so a grid line always rises out of a
+      // label rather than falling between two.
+      const { ticks } = timeTicks(window, width, gridSpacingPx);
       ticks.forEach((tick, i) => {
         const el = tickElement(i);
         el.style.display = "";
@@ -69,8 +75,10 @@ export const TimeAxis = () => {
       [(s) => s.liveRange.start, (s) => s.liveRange.end],
       () => render.schedule(null),
     );
-    const unbindSize = bindFields(viewerApi, [(s) => s.viewportPx.width], () =>
-      render.schedule(null),
+    const unbindSize = bindFields(
+      viewerApi,
+      [(s) => s.viewportPx.width, (s) => s.gridSpacingPx],
+      () => render.schedule(null),
     );
     return () => {
       unbindRange();

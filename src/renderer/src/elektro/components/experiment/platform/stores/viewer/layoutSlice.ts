@@ -76,6 +76,13 @@ export type LayoutSlice = {
   clims: Record<string, Clim>;
   /** Bumped by every `setLayout` — the scalar a band-reading overlay subscribes to. */
   layoutVersion: number;
+  /**
+   * Bumped by every clim that actually changed — the scalar a SCALE-reading
+   * overlay subscribes to (P17: `clims` is a per-layer record, so nothing
+   * renders from the whole of it). `layoutVersion` does not cover this: a clim
+   * moves on a seed, an autoscale or an edit without any relayout.
+   */
+  climVersion: number;
   setLayoutMode: (mode: LayoutMode) => void;
   setLayout: (layout: { rowCount: number; rows: RowInfo[]; bands: Record<string, Band> }) => void;
   /** Seed a layer's clim from its first data. A no-op once one is set. */
@@ -134,6 +141,7 @@ export const createLayoutSlice = (set: ViewerSet, get: ViewerGet): LayoutSlice =
   bands: {},
   clims: {},
   layoutVersion: 0,
+  climVersion: 0,
   setLayoutMode: (layoutMode) => set({ layoutMode }),
   setLayout: ({ rowCount, rows, bands }) => {
     // Keep the identity of every band that did not move. Layers bind to their
@@ -148,10 +156,16 @@ export const createLayoutSlice = (set: ViewerSet, get: ViewerGet): LayoutSlice =
   },
   seedClim: (layerId, clim) => {
     if (get().clims[layerId]) return;
-    set((state) => ({ clims: { ...state.clims, [layerId]: drawableClim(clim) } }));
+    set((state) => ({
+      clims: { ...state.clims, [layerId]: drawableClim(clim) },
+      climVersion: state.climVersion + 1,
+    }));
   },
   setClim: (layerId, clim) =>
-    set((state) => ({ clims: { ...state.clims, [layerId]: drawableClim(clim) } })),
+    set((state) => ({
+      clims: { ...state.clims, [layerId]: drawableClim(clim) },
+      climVersion: state.climVersion + 1,
+    })),
   autoscale: (layerId) => {
     const { stats, clims } = get();
     const next = { ...clims };
@@ -162,7 +176,10 @@ export const createLayoutSlice = (set: ViewerSet, get: ViewerGet): LayoutSlice =
       if (!s || s.valueMin == null || s.valueMax == null) continue;
       next[id] = changed[id] = drawableClim({ lo: s.valueMin, hi: s.valueMax });
     }
-    set({ clims: next });
+    // Nothing resident yet: no write, so no overlay redraw for nothing.
+    if (Object.keys(changed).length > 0) {
+      set((state) => ({ clims: next, climVersion: state.climVersion + 1 }));
+    }
     return changed;
   },
 });

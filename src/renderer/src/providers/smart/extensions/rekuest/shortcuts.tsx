@@ -2,79 +2,21 @@ import { useDialog } from "@/app/dialog";
 import { buildAssignInput } from "@/rekuest/assign";
 import { Badge } from "@/components/ui/badge";
 import { LightningBoltIcon } from "@radix-ui/react-icons";
-import { CommandGroup } from "cmdk";
 import React from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import {
-  TaskEventFragment,
-  DemandKind,
-  ListShortcutFragment,
-  PortDemandInput,
-  PortKind,
-  useShortcutsQuery,
-} from "@/rekuest/api/graphql";
+import { TaskEventFragment, ListShortcutFragment, PortKind } from "@/rekuest/api/graphql";
 import { trackTask } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Zap } from "lucide-react";
 import { CommandActionRow } from "../CommandActionRow";
-import type { PassDownProps, SmartContextProps } from "../types";
+import type { SmartContextProps } from "../types";
+import { bindShortcutKey } from "./shortcutKeybinds";
+
+/** The Shortcuts row; the section is a descriptor in `./sections.tsx`. */
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown error";
-
-const buildShortcutDemands = (props: PassDownProps): PortDemandInput[] => {
-  const demands: PortDemandInput[] = [];
-
-  if (props.objects.length > 0) {
-    if (props.objects.length === 1) {
-      demands.push({
-        kind: DemandKind.Args,
-        matches: [{ at: 0, kind: PortKind.Structure, identifier: props.objects[0].identifier }],
-      });
-    } else {
-      demands.push({
-        kind: DemandKind.Args,
-        matches: [{
-          at: 0,
-          kind: PortKind.List,
-          children: [{ at: 0, kind: PortKind.Structure, identifier: props.objects[0].identifier }],
-        }],
-      });
-    }
-  }
-
-  if (props.partners && props.partners.length > 0) {
-    if (props.partners.length === 1) {
-      demands.push({
-        kind: DemandKind.Args,
-        matches: [{ at: 1, kind: PortKind.Structure, identifier: props.partners[0].identifier }],
-      });
-    } else {
-      demands.push({
-        kind: DemandKind.Args,
-        matches: [{
-          at: 1,
-          kind: PortKind.List,
-          children: [{ at: 0, kind: PortKind.Structure, identifier: props.partners[0].identifier }],
-        }],
-      });
-    }
-  }
-
-  if (props.returns) {
-    demands.push({
-      kind: DemandKind.Returns,
-      matches: props.returns.map((identifier, index) => ({
-        at: index,
-        kind: PortKind.Structure,
-        identifier,
-      })),
-    });
-  }
-
-  return demands;
-};
 
 const buildShortcutArgs = (
   shortcut: ListShortcutFragment,
@@ -190,7 +132,9 @@ export const ShortcutButton = (
       }
 
       const reference = uuidv4();
-      const untrack = trackTask(reference, doStuff);
+      // Also globally: the popover holding this row closes on select, so the
+      // rail's task island is the only surface left for the running task.
+      const untrack = trackTask(reference, doStuff, { notifyGlobally: true });
 
       try {
         await assign(buildAssignInput({
@@ -217,18 +161,9 @@ export const ShortcutButton = (
     if (!props.shortcut.bindNumber) {
       return undefined;
     }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === props.shortcut.bindNumber?.toString()) {
-        event.preventDefault();
-        void conditionalAssign(props.shortcut);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    return bindShortcutKey(String(props.shortcut.bindNumber), () => {
+      void conditionalAssign(props.shortcut);
+    });
   }, [props.shortcut, conditionalAssign]);
 
   return (
@@ -252,40 +187,5 @@ export const ShortcutButton = (
         </span>
       }
     />
-  );
-};
-
-export const ApplicableShortcuts = (props: PassDownProps) => {
-  const { data, error } = useShortcutsQuery({
-    variables: {
-      filters: {
-        demands: buildShortcutDemands(props),
-        search: props.filter && props.filter !== "" ? props.filter : undefined,
-      },
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  if (error) {
-    return <span className="font-light text-xs w-full items-center ml-2 w-full">Error</span>;
-  }
-
-  if (!data || data.shortcuts.length === 0) {
-    return null;
-  }
-
-  return (
-    <CommandGroup
-      heading={
-        <span className="font-light text-xs w-full items-center ml-2 w-full inline-flex gap-2">
-          <Zap className="h-3.5 w-3.5" />
-          <span>Shortcuts</span>
-        </span>
-      }
-    >
-      {data.shortcuts.map((shortcut) => (
-        <ShortcutButton shortcut={shortcut} {...props} key={shortcut.id} />
-      ))}
-    </CommandGroup>
   );
 };

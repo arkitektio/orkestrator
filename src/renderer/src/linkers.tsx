@@ -585,6 +585,12 @@ export const MikroTableDataset = buildSmart({
   name: "Table Dataset",
   datum: true,
 });
+export const MikroSparseDataset = buildSmart({
+  identifier: "@mikro/sparsedataset",
+  path: "mikro/sparsedatasets",
+  name: "Sparse Dataset",
+  datum: true,
+});
 
 
 

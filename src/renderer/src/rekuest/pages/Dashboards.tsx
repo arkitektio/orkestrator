@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { RekuestDashboard } from "@/linkers";
 import { useCreateDashboardMutation } from "../api/graphql";
 import DashboardList from "../components/lists/DashboardList";
@@ -13,7 +13,8 @@ const Page = () => {
     <RekuestDashboard.ListPage
       title={"Dashboards"}
       pageActions={
-        <Button
+        <PageAction
+          alwaysShow
           onClick={() => {
             createDashboard({
               variables: {
@@ -23,10 +24,9 @@ const Page = () => {
               },
             });
           }}
-          variant={"outline"}
         >
           Create Dashboard
-        </Button>
+        </PageAction>
       }
     >
       <div className="p-6">

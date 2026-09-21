@@ -24,7 +24,7 @@ export const MeasurementsBlock = ({
       <div className="text-sm font-semibold">Measurements</div>
       <ObjectButton
         objects={[{ identifier, object }]}
-        disableKraph={true}
+        sections={{ exclude: ["kraph"] }}
         expect={["@mikro/metric"]}
         onDone={onChanged}
       >

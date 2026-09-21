@@ -6,6 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+  PageActionPolicy,
+} from "@/components/ui/page-action";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -53,7 +59,7 @@ type Filters = {
 const FilterMenu = ({
   filters,
   onChange,
-}: {
+}: PageActionPolicy & {
   filters: Filters;
   onChange: (next: Partial<Filters>) => void;
 }) => {
@@ -68,11 +74,13 @@ const FilterMenu = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <ActionTrigger aria-label="Filter">
           <Filter className="h-4 w-4" />
-          Filter
-          {active > 0 && <Badge variant="secondary">{active}</Badge>}
-        </Button>
+          <ActionLabel>
+            Filter
+            {active > 0 && <Badge variant="secondary">{active}</Badge>}
+          </ActionLabel>
+        </ActionTrigger>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Show apps</DropdownMenuLabel>
@@ -216,23 +224,27 @@ const Page = () => {
       pageActions={
         <>
           <CollapsibleSearch
+            alwaysShow
             value={search}
             onChange={(value) => setSearch(value || null)}
             placeholder="Search apps…"
           />
-          <Button
+          <PageAction
+            priority={10}
+            collapse="icon"
+            icon={<Wifi className="h-4 w-4" />}
+            menuLabel="Online"
             variant={onlineOnly ? "default" : "outline"}
             className="gap-2"
             onClick={() => setOnlineOnly(onlineOnly ? null : true)}
             aria-pressed={onlineOnly}
           >
-            <Wifi className="h-4 w-4" />
             Online
             {onlineCount > 0 && (
               <Badge variant={onlineOnly ? "outline" : "secondary"}>{onlineCount}</Badge>
             )}
-          </Button>
-          <FilterMenu filters={filters} onChange={setFilters} />
+          </PageAction>
+          <FilterMenu collapse="icon" filters={filters} onChange={setFilters} />
         </>
       }
       sidebars={

@@ -14,6 +14,7 @@ import {
 import {
   ArrowUpDown,
   ChevronDown,
+  Columns3,
   LayoutList,
   ListIcon,
   MoreHorizontal,
@@ -31,7 +32,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+import { CollapsibleSearch } from "@/components/ui/collapsible-search";
+import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+  PageActionGroup,
+} from "@/components/ui/page-action";
 import {
   Table,
   TableBody,
@@ -324,18 +331,24 @@ export const FolderTableExplorer = (props: {
       }
       pageActions={
         <>
-          <div className="flex items-center py-4 gap-2">
-            <Input
-              placeholder="Search..."
-              value={search}
-              onChange={(event) => handleSearchChange(event.target.value)}
-              className="max-w-sm w-full bg-background"
-            />
+          {/* The table's own chrome lives on the page's action row; the list
+              below is only the list. */}
+          <CollapsibleSearch
+            alwaysShow
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search…"
+          />
+          <PageAction.Slot collapse="icon" priority={-10}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-auto">
-                  Columns <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
+                <ActionTrigger aria-label="Columns">
+                  <Columns3 className="h-4 w-4" />
+                  <ActionLabel>
+                    Columns
+                    <ChevronDown className="h-4 w-4" />
+                  </ActionLabel>
+                </ActionTrigger>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {table
@@ -357,23 +370,28 @@ export const FolderTableExplorer = (props: {
                   })}
               </DropdownMenuContent>
             </DropdownMenu>
+          </PageAction.Slot>
 
-            <Button
-              variant={"outline"}
-              size={"sm"}
+          {/* One control: a view picker missing half its options is a trap. */}
+          <PageActionGroup priority={10} className="gap-0">
+            <PageAction
+              size="sm"
+              icon={<ListIcon />}
+              menuLabel="List view"
+              aria-label="List view"
+              className="rounded-r-none"
               onClick={() => props.setView("list")}
               disabled={true}
-            >
-              <ListIcon />
-            </Button>
-            <Button
-              variant={"outline"}
-              size={"sm"}
+            />
+            <PageAction
+              size="sm"
+              icon={<LayoutList />}
+              menuLabel="Icon view"
+              aria-label="Icon view"
+              className="rounded-l-none border-l-0"
               onClick={() => props.setView("icons")}
-            >
-              <LayoutList />
-            </Button>
-          </div>
+            />
+          </PageActionGroup>
         </>
       }
     >

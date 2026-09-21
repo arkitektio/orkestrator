@@ -7,7 +7,6 @@ import { asParamlessRoute } from "@/app/routes/ParamlessRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { HelpSidebar } from "@/components/sidebars/help";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
@@ -20,7 +19,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PageActionButton } from "@/components/ui/page-action-button";
+import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+} from "@/components/ui/page-action";
 import { useUpload } from "@/providers/upload/UploadProvider";
 import {
   ArrowDownWideNarrow,
@@ -139,15 +142,19 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
     <PageLayout
       pageActions={
         <>
-          <UploadDialog onFilesSelected={handleFilesSelected}>
-            <PageActionButton className="gap-2">
-              <Upload className="h-4 w-4" />
-              Upload Files
-            </PageActionButton>
-          </UploadDialog>
+          {/* Putting data in is what this page is for: pinned, and down to
+              its glyph before it would ever be pushed into the burger. */}
+          <PageAction.Slot alwaysShow collapse="icon">
+            <UploadDialog onFilesSelected={handleFilesSelected}>
+              <PageAction icon={<Upload className="h-4 w-4" />} menuLabel="Upload Files">
+                Upload Files
+              </PageAction>
+            </UploadDialog>
+          </PageAction.Slot>
 
           {/* Collapsible search drives the `search` filter on every list */}
           <CollapsibleSearch
+            alwaysShow
             value={search}
             onChange={(value) => setSearch(value || null)}
             placeholder="Search datasets, folders and files…"
@@ -155,64 +162,70 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
 
           {/* Ordering: field + direction in a dropdown, shared across lists.
               A tag surfaces the active sort whenever it differs from default. */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <ArrowUpDown className="h-4 w-4" />
-                Sort
-                {isCustomOrder && (
-                  <Badge variant="secondary" className="gap-1">
-                    {sortFieldLabels[sortField]}
-                    {sortDirection === "ASC" ? (
-                      <ArrowUpWideNarrow />
-                    ) : (
-                      <ArrowDownWideNarrow />
+          <PageAction.Slot collapse="icon" priority={-10}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <ActionTrigger aria-label="Sort">
+                  <ArrowUpDown className="h-4 w-4" />
+                  <ActionLabel>
+                    Sort
+                    {isCustomOrder && (
+                      <Badge variant="secondary" className="gap-1">
+                        {sortFieldLabels[sortField]}
+                        {sortDirection === "ASC" ? (
+                          <ArrowUpWideNarrow />
+                        ) : (
+                          <ArrowDownWideNarrow />
+                        )}
+                      </Badge>
                     )}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sortField}
-                onValueChange={(value) =>
-                  setSortField(value as "createdAt" | "name")
-                }
-              >
-                <DropdownMenuRadioItem value="createdAt">
-                  Date created
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="name">Name</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Direction</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sortDirection}
-                onValueChange={(value) =>
-                  setSortDirection(value as "ASC" | "DESC")
-                }
-              >
-                <DropdownMenuRadioItem value="DESC">
-                  Descending
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="ASC">
-                  Ascending
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  </ActionLabel>
+                </ActionTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={sortField}
+                  onValueChange={(value) =>
+                    setSortField(value as "createdAt" | "name")
+                  }
+                >
+                  <DropdownMenuRadioItem value="createdAt">
+                    Date created
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="name">Name</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Direction</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={sortDirection}
+                  onValueChange={(value) =>
+                    setSortDirection(value as "ASC" | "DESC")
+                  }
+                >
+                  <DropdownMenuRadioItem value="DESC">
+                    Descending
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="ASC">
+                    Ascending
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </PageAction.Slot>
 
-          {/* 3. Picker updates the URL params */}
-          <DateTimeRangePicker
-            // Optional: bind value to keep picker UI in sync on page refresh
-            initialDateFrom={createdAfter ?? undefined}
-            initialDateTo={createdBefore ?? undefined}
-            onUpdate={({ range }) => {
-              setCreatedAfter(range.from || null);
-              setCreatedBefore(range.to || null);
-            }}
-          />
+          {/* The widest control here, and the one least often wanted: it goes
+              first, and altogether — a range picker has no useful burger row. */}
+          <PageAction.Slot collapse="hide" priority={-20}>
+            <DateTimeRangePicker
+              initialDateFrom={createdAfter ?? undefined}
+              initialDateTo={createdBefore ?? undefined}
+              onUpdate={({ range }) => {
+                setCreatedAfter(range.from || null);
+                setCreatedBefore(range.to || null);
+              }}
+            />
+          </PageAction.Slot>
         </>
       }
       sidebars={

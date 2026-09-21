@@ -89,8 +89,15 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
           is its own card: this one gives up its fill, border and shadow so the
           window surface shows through the gap between the two — the same
           material as around them. A `has-` variant rather than a prop, so the
-          layout need not know about tabs. */}
-      <div className="relative flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background rounded-xl border border-border/60 shadow-sm m-2 has-[[data-split-divider]]:bg-transparent has-[[data-split-divider]]:border-transparent has-[[data-split-divider]]:shadow-none">
+          layout need not know about tabs.
+
+          `isolate` and the `clip-path`: `overflow-hidden` alone does not hold
+          a composited descendant — a scene's canvas, anything transformed or
+          backdrop-blurred — inside rounded corners in Chromium; it paints
+          square over them. A clip-path clips every layer, and the isolation
+          keeps the page's stacking inside the card. Split, the panes clip
+          themselves the same way (`TabOutlet`), so this one steps back. */}
+      <div className="relative isolate flex-grow min-w-0 min-h-0 flex overflow-hidden z-2 bg-background rounded-xl border border-border/60 shadow-sm m-2 [clip-path:inset(0_round_var(--radius-xl))] has-[[data-split-divider]]:bg-transparent has-[[data-split-divider]]:border-transparent has-[[data-split-divider]]:shadow-none has-[[data-split-divider]]:[clip-path:none]">
         {/* Dialogs opened from the page cover the card, not the rail beside it. */}
         <PageDialogHost>{children}</PageDialogHost>
       </div>

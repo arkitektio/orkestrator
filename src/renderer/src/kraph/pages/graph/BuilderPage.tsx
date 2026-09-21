@@ -27,9 +27,9 @@ const Page = asDetailQueryRoute(useGetGraphTableQueryQuery, ({ data }) => {
       object={{ id: data.graphTableQuery.id }}
       title={data.graphTableQuery.label}
       pageActions={
-        <div className="flex flex-row gap-2">
-          <KraphGraphQuery.ObjectButton object={{ id: data.graphTableQuery.id }} />
-        </div>
+        <>
+          <KraphGraphQuery.ObjectButton alwaysShow object={{ id: data.graphTableQuery.id }} />
+        </>
       }
       sidebars={
         <Sidebars>

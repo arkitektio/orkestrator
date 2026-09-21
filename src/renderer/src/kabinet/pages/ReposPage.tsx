@@ -1,5 +1,5 @@
 import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { DialogButton } from "@/components/ui/dialog-button";
 import { Separator } from "@/components/ui/separator";
 import { ListDefinitionsDocument, ListReleasesDocument, useRescanReposMutation } from "../api/graphql";
@@ -14,20 +14,20 @@ const ReposPage = () => {
     <PageLayout
       title="Repos"
       pageActions={
-        <div className="flex flex-row gap-1">
-          <DialogButton name="createrepo" variant="outline" size="sm" dialogProps={{}}>
+        <>
+          <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>
             Add Repo
           </DialogButton>
-          <Button
+          <PageAction
+            priority={-10}
             onClick={async () => {
               await rescan();
             }}
-            variant="outline"
             size="sm"
           >
             {loading ? "Rescanning..." : "Rescan Repos"}
-          </Button>
-        </div>
+          </PageAction>
+        </>
       }
     >
       <div className="p-3">

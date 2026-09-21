@@ -1,5 +1,6 @@
 import { Guard } from "@/app/Arkitekt";
 import { useModifierState } from "@/app/hooks/modifierTracker";
+import { talkTargetFromModifiers } from "@/providers/smart/extensions/alpaka/useTalkAbout";
 import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
 import { smartRegistry } from "@/providers/smart/registry";
 import { Box } from "lucide-react";
@@ -22,7 +23,9 @@ import { TalkAboutHit } from "./TalkAboutHit";
  * The third — the "Talk" chip, or ⌥+Enter — opens an Alpaka room about the
  * hit with what was typed as the opening message. Typing a question and
  * pressing ⌥⏎ on the thing it is about is the whole gesture. Alpaka-guarded
- * from the outside, so a deployment without it simply has no chip.
+ * from the outside, so a deployment without it simply has no chip. Where the
+ * room lands is the same choice the context menu spells out as rows: ⌥⇧⏎ puts
+ * it beside this page, ⌥⌘⏎ in a window of its own.
  */
 export const EntityRow = ({
   identifier,
@@ -42,7 +45,8 @@ export const EntityRow = ({
   // The app already tracks modifier state globally (one listener set, shared);
   // reading it here beats trying to recover the originating event, which cmdk's
   // `onSelect` does not hand us.
-  const { shiftKey, altKey } = useModifierState();
+  const modifiers = useModifierState();
+  const { shiftKey, altKey } = modifiers;
   const [talkRequested, setTalkRequested] = useState(0);
 
   return (
@@ -75,6 +79,7 @@ export const EntityRow = ({
             label={label}
             prompt={query}
             requested={talkRequested}
+            target={talkTargetFromModifiers(modifiers)}
             onDone={onDone}
           />
         </Guard.Alpaka>

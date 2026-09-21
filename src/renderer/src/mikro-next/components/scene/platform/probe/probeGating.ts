@@ -97,3 +97,23 @@ export const clickProbeEnabled = ({
     interactionMode === "ANNOTATE" &&
     (drawingToolActive || brushToolActive)) ||
   (annotateProbes && interactionMode === "DESIGN" && brushToolActive && designArmed);
+
+/**
+ * Annotation HOVER affordances (the attached action button): NAVIGATE, or
+ * ANNOTATE with no shape tool armed — while drawing, the `RoiDrawer`'s plane
+ * owns the pointer. Never PROBE, where a shape must not sit between the
+ * pointer and the probe target.
+ *
+ * Arming a pointer-move-family handler puts every annotation object — the
+ * per-shape meshes, the instanced points AND the merged `LineSegments2`
+ * outline batches — into R3F's per-move raycast set (`filterPointerEvents`).
+ * That is the price of a hover feature, paid only in the modes above;
+ * `PointerMoveGate` (shell/SceneViewport.tsx) still suppresses the moves of a
+ * camera drag.
+ */
+export const annotationHoverEnabled = ({
+  interactionMode,
+  drawingToolActive,
+}: Pick<ProbeGateInput, "interactionMode" | "drawingToolActive">): boolean =>
+  interactionMode === "NAVIGATE" ||
+  (interactionMode === "ANNOTATE" && !drawingToolActive);

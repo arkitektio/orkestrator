@@ -5,6 +5,7 @@ import { RekuestBlok, RekuestMaterializedBlok } from "@/linkers";
 import DemoBlokRenderer from "@/rekuest/components/DemoBlokRenderer";
 import { useGetBlokQuery } from "../api/graphql";
 import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
 import { useState } from "react";
@@ -20,6 +21,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
       pageActions={(
         <>
             <LocalActionButton
+                priority={-20}
                 name={"rekuest-delete-blok" as keyof typeof registry}
                 state={{
                   left: [
@@ -32,6 +34,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                 }}
             />
 
+            <PageAction.Slot alwaysShow>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                     <Button variant="default">Materialize Blok</Button>
@@ -55,7 +58,9 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                         />
                     )}
                 </DialogContent>
-            </Dialog></>
+            </Dialog>
+            </PageAction.Slot>
+        </>
       )}
     >
       <div className="relative flex h-full w-full flex-col gap-4 p-4">

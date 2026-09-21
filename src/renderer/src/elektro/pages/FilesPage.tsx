@@ -1,5 +1,5 @@
 import { Explainer } from "@/components/explainer/Explainer";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { ElektroFile } from "@/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
@@ -13,11 +13,10 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       title="Files"
       pageActions={
         <>
-          <ElektroFile.NewButton>
-            <Button variant="outline" size="sm">
-              <UploadIcon className="h-4 w-4 mr-2" />
+          <ElektroFile.NewButton alwaysShow collapse="icon">
+            <PageAction size="sm" icon={<UploadIcon className="h-4 w-4" />}>
               Upload
-            </Button>
+            </PageAction>
           </ElektroFile.NewButton>
         </>
       }

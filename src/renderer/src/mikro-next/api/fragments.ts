@@ -127,6 +127,7 @@
       "MeshLayer",
       "NetworkCollection",
       "NetworkLayer",
+      "OmeMetadata",
       "OptikitState",
       "Organization",
       "ParquetStore",

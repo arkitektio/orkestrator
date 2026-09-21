@@ -49,9 +49,9 @@ export const RoomPage =  asDetailQueryRoute(
         title={data?.room?.title}
         object={data.room}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <AlpakaRoom.ObjectButton object={data.room} />
-          </div>
+          <>
+            <AlpakaRoom.ObjectButton alwaysShow object={data.room} />
+          </>
         }
         // A room is the conversation, so it gets no Knowledge or Chat tab —
         // just its own facts.

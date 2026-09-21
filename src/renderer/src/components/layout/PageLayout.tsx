@@ -1,4 +1,6 @@
+import { useTabLayout } from "@/command/tabs/TabLayoutContext";
 import { useTabPane } from "@/command/tabs/TabPaneContext";
+import { PageActionBar } from "./PageActionBar";
 import { useTabTitle } from "@/command/tabs/useTabTitle";
 import { useCopyUniversalLink } from "@/hooks/use-copy-universal-link";
 import { useReport } from "@/hooks/use-report";
@@ -62,9 +64,13 @@ export const PageLayout = ({
   // A split shows two pages at once; the right pane saves its panel sizes
   // under its own key so the two do not overwrite each other's.
   const pane = useTabPane();
+  // What the tab was opened with (a tab opened to the side starts without
+  // its page sidebar) is the DEFAULT; the URL, once a toggle has written to
+  // it, wins — as it always did.
+  const layout = useTabLayout();
   const [params, setParams] = useSearchParams({
-    pageSidebar: "true",
-    sidebar: "true",
+    pageSidebar: layout?.pageSidebar === false ? "false" : "true",
+    sidebar: layout?.sidebar === false ? "false" : "true",
   });
 
   const location = useLocation();
@@ -117,7 +123,7 @@ export const PageLayout = ({
       <ResizablePanel className="h-full w-full" defaultSize={80} id="page" order={1}>
         <div
           className={cn(
-            "h-full w-full flex flex-col relative",
+            "h-full w-full flex flex-col relative overflow-hidden",
             variant == "default" ? "bg-radial-[at_100%_100%] from-background to-backgroundpaired" : "bg-black text-gray-300",
           )}
         >
@@ -136,18 +142,21 @@ export const PageLayout = ({
           >
             {/* `min-w-0` lets this actually shrink below its content width so
                 the trail truncates instead of wrapping. */}
-            <div className="p-3 flex-grow min-w-0 flex flex-col truncate">
+            <div className="p-3 flex-grow min-w-[10rem] flex flex-col truncate">
               <div className="flex-shrink min-w-0">
                 <BreadCrumbs />
               </div>
             </div>
-            <div className="flex-initial shrink-0 text-foreground flex flex-row gap-1 items-center max-w-3xl">
+            {/* `min-w-0 shrink`: the trail keeps a floor and this side gives
+                way first, collapsing its actions into the burger from the
+                right; only the sidebar toggles are never hidden. */}
+            <div className="min-w-0 shrink text-foreground flex flex-row gap-1 items-center max-w-3xl">
+              <PageActionBar className="justify-end">
+                {actions}
+                {pageActions}
+              </PageActionBar>
 
-              {actions}
-              {pageActions}
-
-
-              <ButtonGroup className="flex-initial">
+              <ButtonGroup className="flex-initial shrink-0">
                 <Button variant="ghost" onClick={togglePageSidebar} className="!pl-2 !pr-2 my-auto"><PanelRight /></Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

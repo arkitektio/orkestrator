@@ -14,6 +14,7 @@ import React from "react";
 import { useSelectionStoreApi } from "../selection/SelectionContext";
 import { getSmartBuilderAdapters } from "./buildSmartAdapters";
 import { SmartContext } from "./extensions/context";
+import { useSmartPrefetcher } from "./extensions/prefetchContext";
 import { hoverOpenDelay, smartNodeAt, SmartHit } from "./nodeRegistry";
 
 /**
@@ -34,8 +35,85 @@ export const SmartSurface = () => {
     <>
       <SmartContextMenuSurface menuOpenRef={menuOpenRef} />
       <SmartHoverSurface menuOpenRef={menuOpenRef} />
+      <SmartPrefetchSurface menuOpenRef={menuOpenRef} />
     </>
   );
+};
+
+/* ------------------------------------------------------------------------ */
+/* Prefetch                                                                 */
+/* ------------------------------------------------------------------------ */
+
+const HOVER_PREFETCH_DELAY_MS = 150;
+const SELECTION_PREFETCH_DELAY_MS = 150;
+
+/**
+ * Warms the menu's two main queries before it opens: for the hovered card
+ * (its own listener — the hover card's is gated on a setting and on
+ * `data-hover`), and for the selection whenever it changes. With a selection
+ * the menu is about the selection, so a hovered card is not prefetched then.
+ */
+const SmartPrefetchSurface = ({
+  menuOpenRef,
+}: {
+  menuOpenRef: React.MutableRefObject<boolean>;
+}) => {
+  const prefetcher = useSmartPrefetcher();
+  const selection = useSelectionStoreApi();
+
+  React.useEffect(() => {
+    if (!prefetcher) return;
+
+    // Trailing-debounced: a marquee drag emits a selection per mousemove.
+    let selectionTimer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = selection.subscribe((state, previous) => {
+      if (state.selection === previous.selection && state.bselection === previous.bselection) {
+        return;
+      }
+      if (selectionTimer) clearTimeout(selectionTimer);
+      selectionTimer = setTimeout(() => {
+        selectionTimer = null;
+        const { selection: objects, bselection: partners } = selection.getState();
+        if (objects.length > 0) prefetcher.prefetch({ objects, partners });
+      }, SELECTION_PREFETCH_DELAY_MS);
+    });
+
+    let hovered: HTMLElement | null = null;
+    let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+    const onPointerOver = (event: PointerEvent) => {
+      if (menuOpenRef.current) return;
+      const hit = smartNodeAt(event.target);
+      if (!hit || hit.node === hovered) return;
+      hovered = hit.node;
+      if (hoverTimer) clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(() => {
+        hoverTimer = null;
+        if (hovered !== hit.node || !hit.node.isConnected) return;
+        if (selection.getState().selection.length > 0) return;
+        prefetcher.prefetch({ objects: [hit.structure] });
+      }, HOVER_PREFETCH_DELAY_MS);
+    };
+    const onPointerOut = (event: PointerEvent) => {
+      if (!hovered) return;
+      const next = event.relatedTarget;
+      if (next instanceof Node && hovered.contains(next)) return;
+      hovered = null;
+      if (hoverTimer) clearTimeout(hoverTimer);
+      hoverTimer = null;
+    };
+    document.addEventListener("pointerover", onPointerOver);
+    document.addEventListener("pointerout", onPointerOut);
+
+    return () => {
+      unsubscribe();
+      document.removeEventListener("pointerover", onPointerOver);
+      document.removeEventListener("pointerout", onPointerOut);
+      if (selectionTimer) clearTimeout(selectionTimer);
+      if (hoverTimer) clearTimeout(hoverTimer);
+    };
+  }, [prefetcher, selection, menuOpenRef]);
+
+  return null;
 };
 
 /* ------------------------------------------------------------------------ */

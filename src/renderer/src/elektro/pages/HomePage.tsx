@@ -4,7 +4,11 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { HelpSidebar } from "@/components/sidebars/help";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+} from "@/components/ui/page-action";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -107,6 +111,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
         <>
           {/* Collapsible search drives the `search` filter on every list */}
           <CollapsibleSearch
+            alwaysShow
             value={search}
             onChange={(value) => setSearch(value || null)}
             placeholder="Search datasets, experiments and models…"
@@ -114,63 +119,69 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
 
           {/* Ordering: field + direction in a dropdown, shared across lists.
               A tag surfaces the active sort whenever it differs from default. */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <ArrowUpDown className="h-4 w-4" />
-                Sort
-                {isCustomOrder && (
-                  <Badge variant="secondary" className="gap-1">
-                    {sortFieldLabels[sortField]}
-                    {sortDirection === "ASC" ? (
-                      <ArrowUpWideNarrow />
-                    ) : (
-                      <ArrowDownWideNarrow />
+          <PageAction.Slot collapse="icon" priority={-10}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <ActionTrigger aria-label="Sort">
+                  <ArrowUpDown className="h-4 w-4" />
+                  <ActionLabel>
+                    Sort
+                    {isCustomOrder && (
+                      <Badge variant="secondary" className="gap-1">
+                        {sortFieldLabels[sortField]}
+                        {sortDirection === "ASC" ? (
+                          <ArrowUpWideNarrow />
+                        ) : (
+                          <ArrowDownWideNarrow />
+                        )}
+                      </Badge>
                     )}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sortField}
-                onValueChange={(value) =>
-                  setSortField(value as "createdAt" | "id")
-                }
-              >
-                <DropdownMenuRadioItem value="createdAt">
-                  Date created
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="id">ID</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Direction</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sortDirection}
-                onValueChange={(value) =>
-                  setSortDirection(value as "ASC" | "DESC")
-                }
-              >
-                <DropdownMenuRadioItem value="DESC">
-                  Descending
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="ASC">
-                  Ascending
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  </ActionLabel>
+                </ActionTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={sortField}
+                  onValueChange={(value) =>
+                    setSortField(value as "createdAt" | "id")
+                  }
+                >
+                  <DropdownMenuRadioItem value="createdAt">
+                    Date created
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="id">ID</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Direction</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={sortDirection}
+                  onValueChange={(value) =>
+                    setSortDirection(value as "ASC" | "DESC")
+                  }
+                >
+                  <DropdownMenuRadioItem value="DESC">
+                    Descending
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="ASC">
+                    Ascending
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </PageAction.Slot>
 
           {/* Temporal range writes the `after`/`before` URL params */}
-          <DateTimeRangePicker
-            initialDateFrom={createdAfter ?? undefined}
-            initialDateTo={createdBefore ?? undefined}
-            onUpdate={({ range }) => {
-              setCreatedAfter(range.from || null);
-              setCreatedBefore(range.to || null);
-            }}
-          />
+          <PageAction.Slot collapse="hide" priority={-20}>
+            <DateTimeRangePicker
+              initialDateFrom={createdAfter ?? undefined}
+              initialDateTo={createdBefore ?? undefined}
+              onUpdate={({ range }) => {
+                setCreatedAfter(range.from || null);
+                setCreatedBefore(range.to || null);
+              }}
+            />
+          </PageAction.Slot>
         </>
       }
       sidebars={

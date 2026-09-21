@@ -93,13 +93,14 @@ const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
         </Sidebars>
       }
       pageActions={
-        <div className="flex flex-row gap-2">
+        <>
 
           <KraphEntity.ObjectButton
+            alwaysShow
             object={{ id: data.entity.id }}
             className="w-full"
           />
-        </div>
+        </>
       }
     >
       <div className="flex flex-col lg:flex-row h-full min-h-[80vh]">

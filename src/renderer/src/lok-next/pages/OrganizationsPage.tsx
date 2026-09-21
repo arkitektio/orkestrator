@@ -14,6 +14,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       pageActions={
         <>
           <DialogButton
+            alwaysShow
             name="createorganization"
             variant="outline"
             size="sm"

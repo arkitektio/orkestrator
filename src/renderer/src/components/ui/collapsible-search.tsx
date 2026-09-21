@@ -1,5 +1,6 @@
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PageActionPolicy, useActionSlotMode } from "@/components/ui/page-action";
 import { cn } from "@/lib/utils";
 import { useRef, useState } from "react";
 
@@ -15,7 +16,7 @@ const SIZES: Record<
   lg: { height: "h-8", collapsed: "w-8", padding: "pl-9 pr-8", icon: "size-4" },
 };
 
-interface CollapsibleSearchProps {
+interface CollapsibleSearchProps extends PageActionPolicy {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -43,7 +44,10 @@ export const CollapsibleSearch = ({
 }: CollapsibleSearchProps) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const expanded = open || value.length > 0;
+  // In an action row that is down to icons the field gives up the term it is
+  // showing and reads as the glyph it already has; clicking it still opens.
+  const mode = useActionSlotMode();
+  const expanded = open || (value.length > 0 && mode !== "icon");
   const dims = SIZES[size];
 
   const focusInput = () => containerRef.current?.querySelector("input")?.focus();

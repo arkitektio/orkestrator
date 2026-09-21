@@ -23,6 +23,7 @@ import {
   type InteractionMode,
   type LayoutMode,
 } from "../../platform/stores/viewerStore";
+import { DisplaySettings } from "./DisplaySettings";
 
 /**
  * The renderer-owned HUD, bottom-right, above the time axis.
@@ -32,7 +33,9 @@ import {
  *
  * Left to right: what a drag does (explore / annotate — the scene's own icons, Hand
  * and SquarePen, so the two viewers read alike), how rows share a scale (stacked /
- * shared), autoscale, fit, undo / redo. Every control subscribes to one scalar.
+ * shared), autoscale, fit, undo / redo, and the reading aids (axis labels, grid),
+ * which are folded into one popover rather than spending two more slots on
+ * switches most viewers leave alone. Every control subscribes to one scalar.
  */
 
 const LAYOUT_OPTIONS: { value: LayoutMode; icon: LucideIcon; title: string }[] = [
@@ -44,12 +47,14 @@ const LAYOUT_OPTIONS: { value: LayoutMode; icon: LucideIcon; title: string }[] =
   {
     value: "SHARED",
     icon: Layers,
-    title: "Shared — layers with the same unit overlaid on ONE scale, so amplitudes compare",
+    title:
+      "Shared — layers measuring the same thing overlaid on ONE scale, so amplitudes compare",
   },
   {
     value: "OVERLAY",
     icon: Blend,
-    title: "Overlay — every trace in one plot, each on its own scale, so timing lines up",
+    title:
+      "Overlay — layers measuring the same thing in one plot, each on its own scale, so a small and a large signal are both visible",
   },
 ];
 
@@ -161,6 +166,8 @@ export const ExperimentModeControls = () => {
           <Redo2 />
         </Button>
       </ButtonGroup>
+
+      <DisplaySettings />
     </div>
   );
 };

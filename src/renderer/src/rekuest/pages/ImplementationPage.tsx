@@ -3,6 +3,7 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { buildAssignInput } from "@/rekuest/assign";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
@@ -622,16 +623,12 @@ const TPage = asDetailQueryRoute(
         }
         pageActions={
           <>
-            <>
-              <RekuestAction.DetailLink object={data.implementation.action}>
-                <Button variant="outline">Go to Action</Button>
-              </RekuestAction.DetailLink>
-            </>
-            <>
-              <RekuestAgent.DetailLink object={data.implementation.agent}>
-                <Button variant="outline">Go to Agent</Button>
-              </RekuestAgent.DetailLink>
-            </>
+            <RekuestAction.DetailLink object={data.implementation.action}>
+              <PageAction>Go to Action</PageAction>
+            </RekuestAction.DetailLink>
+            <RekuestAgent.DetailLink object={data.implementation.agent}>
+              <PageAction>Go to Agent</PageAction>
+            </RekuestAgent.DetailLink>
           </>
         }
       >

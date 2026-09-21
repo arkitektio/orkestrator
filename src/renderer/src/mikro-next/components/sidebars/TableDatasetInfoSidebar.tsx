@@ -6,6 +6,7 @@ import {
   useGetTableDatasetDerivedQuery,
 } from "../../api/graphql";
 import { residentLabel } from "../coordinates/residents";
+import { ColumnAxisGlyph, ColumnInfoPopover } from "../tables/ColumnInfoPopover";
 import { DerivedFromSection } from "./DerivedFromSection";
 import { FileLinksSection } from "./FileLinksSection";
 import { ProvenanceSection } from "./ProvenanceSection";
@@ -97,10 +98,11 @@ export const TableDatasetInfoSidebar = ({ dataset }: { dataset: PageTable }) => 
         </div>
       </div>
 
-      {/* The declared schema, as rows rather than the five-column AxesTable the
-          page used to show in the middle: the rail is too narrow for a table, and
-          a column carries its own axis type and unit anyway, so the axes and the
-          schema are one list here instead of two. */}
+      {/* The declared schema, one line per column: the name, which opens the
+          same popover the table header does, and the dtype. The role, the
+          unit, the axis type and the description used to be spelled out here
+          in a card per column, and the rail read as a stack of cards saying
+          the same three things — the popover says all of it, on demand. */}
       <div className="flex flex-col gap-2">
         <div className="flex flex-row items-baseline justify-between gap-2">
           <div className="text-xs font-semibold">Schema</div>
@@ -114,38 +116,31 @@ export const TableDatasetInfoSidebar = ({ dataset }: { dataset: PageTable }) => 
             No columns declared.
           </span>
         ) : (
-          columns.map((column) => (
-            <div
-              key={column.id}
-              className="flex flex-col gap-1 rounded-md border border-border/60 p-2"
-            >
-              <div className="flex flex-row items-baseline justify-between gap-2">
-                <span className="min-w-0 break-all font-mono text-sm">
-                  {column.name}
-                </span>
-                <Badge
-                  variant={
-                    column.role === ColumnRole.Coordinate
-                      ? "secondary"
-                      : "outline"
-                  }
-                  className="shrink-0 px-1 py-0 text-[0.625rem] font-normal"
+          <div className="flex flex-col gap-0.5">
+            {columns.map((column) => (
+              <div
+                key={column.id}
+                className="flex flex-row items-baseline justify-between gap-2"
+              >
+                <ColumnInfoPopover
+                  column={column}
+                  store={dataset.store}
+                  side="left"
                 >
-                  {column.role}
-                </Badge>
+                  <button
+                    type="button"
+                    className="flex min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left font-mono text-xs transition-colors hover:bg-accent"
+                  >
+                    <ColumnAxisGlyph column={column} />
+                    <span className="min-w-0 break-all">{column.name}</span>
+                  </button>
+                </ColumnInfoPopover>
+                <span className="shrink-0 font-mono text-[0.625rem] text-muted-foreground">
+                  {column.dtype}
+                </span>
               </div>
-              <div className="flex flex-row flex-wrap items-baseline gap-x-2 font-mono text-[0.625rem] text-muted-foreground">
-                <span>{column.dtype}</span>
-                {column.unit && <span>· {column.unit}</span>}
-                {column.axisType && <span>· {column.axisType}</span>}
-              </div>
-              {column.longName && (
-                <div className="text-[0.625rem] text-muted-foreground">
-                  {column.longName}
-                </div>
-              )}
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 

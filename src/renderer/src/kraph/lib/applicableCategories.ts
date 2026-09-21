@@ -50,6 +50,11 @@ type ProbeState<T> = {
   error?: Error;
 };
 
+type ProbeRun<T> = ProbeState<T> & {
+  /** Which candidate set / ends the state answers for. */
+  key: string;
+};
+
 const descriptorInput = <D extends object>(descriptor: D) =>
   // The generated fragment types carry `__typename`; the input types do not.
   Object.fromEntries(
@@ -82,23 +87,29 @@ const useDescriptorProbe = <T extends DescriptorCandidate<any>>(
   ) => Promise<boolean>,
 ): ProbeState<T> => {
   const client = useKraph();
-  const [state, setState] = React.useState<ProbeState<T>>({
+  const [state, setState] = React.useState<ProbeRun<T>>({
     applicable: [],
     loading: false,
+    key: "",
   });
 
   // The candidate ids, so a re-render with an equal-but-new array does not
   // re-probe. Descriptors are fixed per category, so the ids pin the work.
-  const key = (candidates ?? []).map((candidate) => candidate.id).join(",");
+  const key = [
+    (candidates ?? []).map((candidate) => candidate.id).join(","),
+    sourceEnd ?? "",
+    targetEnd ?? "",
+  ].join("\u0000");
+  const idle = !candidates?.length || !sourceEnd || !targetEnd;
 
   React.useEffect(() => {
-    if (!candidates?.length || !sourceEnd || !targetEnd) {
-      setState({ applicable: [], loading: false });
+    if (idle) {
+      setState({ applicable: [], loading: false, key });
       return;
     }
 
     let cancelled = false;
-    setState((previous) => ({ ...previous, loading: true, error: undefined }));
+    setState((previous) => ({ ...previous, loading: true, error: undefined, key }));
 
     // One in-flight probe per distinct (end, descriptor) pair for this run;
     // candidates sharing a descriptor share the request (and its result).
@@ -129,20 +140,29 @@ const useDescriptorProbe = <T extends DescriptorCandidate<any>>(
         setState({
           applicable: candidates.filter((_, index) => admitted[index]),
           loading: false,
+          key,
         });
       })
       .catch((error: Error) => {
         if (cancelled) return;
-        setState({ applicable: [], loading: false, error });
+        setState({ applicable: [], loading: false, error, key });
       });
 
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, sourceEnd, targetEnd, client]);
+  }, [key, idle, client]);
 
-  return state;
+  // A run for other candidates is still what the state holds until the effect
+  // above has started this one; that is loading, not "none apply".
+  return idle
+    ? { applicable: state.key === key ? state.applicable : [], loading: false }
+    : {
+        applicable: state.applicable,
+        loading: state.loading || state.key !== key,
+        error: state.key === key ? state.error : undefined,
+      };
 };
 
 const probeEntityCategory = async (
@@ -159,6 +179,9 @@ const probeEntityCategory = async (
       ids: [categoryId],
       descriptor: descriptorInput(descriptor ?? {}),
     },
+    // Explicit, though it is the client default: a reopened menu re-resolves
+    // every probe from the cache, and that must survive a `defaultOptions`.
+    fetchPolicy: "cache-first",
   });
   return (data?.entityCategories.length ?? 0) > 0;
 };
@@ -177,6 +200,7 @@ const probeStructureKind = async (
       identifiers: [identifier],
       descriptor: descriptorInput(descriptor ?? {}),
     },
+    fetchPolicy: "cache-first",
   });
   return (data?.structureKinds.length ?? 0) > 0;
 };

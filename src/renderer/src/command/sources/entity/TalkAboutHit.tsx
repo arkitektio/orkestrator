@@ -1,4 +1,7 @@
-import { useTalkAbout } from "@/providers/smart/extensions/alpaka/useTalkAbout";
+import {
+  useTalkAbout,
+  type TalkTarget,
+} from "@/providers/smart/extensions/alpaka/useTalkAbout";
 import { cn } from "@/lib/utils";
 import { MessageSquareMore } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -13,6 +16,10 @@ import { useEffect, useRef } from "react";
  *
  * `requested` is a counter the row bumps on ⌥+Enter — the keyboard's way to
  * this chip, since the row itself is what has focus in the palette.
+ *
+ * `target` says where the room lands (⇧ beside this page, ⌘/ctrl in its own
+ * window); the row reads it off the held modifiers, so the same ⌥⇧⏎ / ⌥⌘⏎
+ * works for the keyboard and a ⇧- or ⌘-click works for the chip.
  */
 export const TalkAboutHit = ({
   identifier,
@@ -20,6 +27,7 @@ export const TalkAboutHit = ({
   label,
   prompt,
   requested,
+  target = "here",
   onDone,
 }: {
   identifier: string;
@@ -27,13 +35,14 @@ export const TalkAboutHit = ({
   label: string;
   prompt?: string;
   requested: number;
+  target?: TalkTarget;
   onDone?: () => void;
 }) => {
   const { openRoom, isOpening } = useTalkAbout({
     title: () => `Talk about ${label}`,
     onDone,
   });
-  const talk = () => void openRoom([{ identifier, object: { id } }], prompt);
+  const talk = () => void openRoom([{ identifier, object: { id } }], prompt, target);
 
   // Fire once per bump, never on mount.
   const seen = useRef(requested);
@@ -49,7 +58,13 @@ export const TalkAboutHit = ({
     <button
       type="button"
       aria-label={`Talk about ${label}`}
-      title={prompt ? `Talk about ${label}: "${prompt}"` : `Talk about ${label} (⌥⏎)`}
+      title={`${prompt ? `Talk about ${label}: "${prompt}"` : `Talk about ${label} (⌥⏎)`}${
+        target === "side"
+          ? " — to the side"
+          : target === "window"
+            ? " — in a new window"
+            : " — hold ⇧ for the side, ⌘ for a new window"
+      }`}
       disabled={isOpening}
       // A click here must not also select the row (which navigates).
       onClick={(e) => {

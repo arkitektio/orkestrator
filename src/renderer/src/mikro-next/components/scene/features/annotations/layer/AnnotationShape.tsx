@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 
@@ -34,8 +34,12 @@ export type AnnotationShapeProps = {
   isActive: boolean;
   /** False in PROBE mode, so a shape can't swallow the click meant for a probe. */
   selectable: boolean;
-  /** True when the collection's merged outline batch draws the fat lines. */
   onSelectRoi: (roi: SelectedRoi, appendSelection: boolean) => void;
+  /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
+  hoverable: boolean;
+  /** Per move over the shape; the store dedupes by id (state changes on enter/leave). */
+  onHoverRoi: (roi: SelectedRoi) => void;
+  onUnhoverRoi: (roiId: string) => void;
 };
 
 /**
@@ -56,6 +60,9 @@ export const shapePropsEqual = (
   prev.isActive === next.isActive &&
   prev.selectable === next.selectable &&
   prev.onSelectRoi === next.onSelectRoi &&
+  prev.hoverable === next.hoverable &&
+  prev.onHoverRoi === next.onHoverRoi &&
+  prev.onUnhoverRoi === next.onUnhoverRoi &&
   (prev.planeZ === next.planeZ || !shapeReadsPlaneZ(next.annotation));
 
 /** The interior material: fill, or an invisible-but-pickable surface. */
@@ -114,8 +121,23 @@ export const AnnotationShape = memo(function AnnotationShape({
   isActive,
   selectable,
   onSelectRoi,
+  hoverable,
+  onHoverRoi,
+  onUnhoverRoi,
 }: AnnotationShapeProps) {
   perfMonitor.countRender("AnnotationShape"); // no-op unless a recording is armed
+  // Whether THIS shape reported a hover it has not yet reported leaving.
+  const hoveringRef = useRef(false);
+  // A shape that unmounts (z-scrub) or disarms (mode switch) mid-hover never
+  // gets a pointer-out: report the leave itself, so the button can't linger.
+  useEffect(() => {
+    if (!hoverable) hoveringRef.current = false;
+    return () => {
+      if (!hoveringRef.current) return;
+      hoveringRef.current = false;
+      onUnhoverRoi(roi.id);
+    };
+  }, [hoverable, onUnhoverRoi, roi.id]);
   const vectors = annotation.vectors; // Array of [x, y, z]
   if (!vectors || vectors.length === 0) return null;
 
@@ -130,6 +152,31 @@ export const AnnotationShape = memo(function AnnotationShape({
         onSelectRoi(roi, event.nativeEvent.shiftKey);
       }
     : undefined;
+
+  // Hover: `onPointerMove` + `onPointerOut`, NOT `onPointerOver` — R3F keys
+  // its over/out per (object, index, instanceId), which the merged batches
+  // can't use; the same idiom on every pick surface keeps them alike. The
+  // store dedupes by id, so re-asserting per move is cheap and is what heals
+  // a grace clear that landed while the pointer never left the shape.
+  // No stopPropagation: a hover must not starve the layers underneath.
+  const handleHoverMove = hoverable
+    ? () => {
+        hoveringRef.current = true;
+        onHoverRoi(roi);
+      }
+    : undefined;
+  const handleHoverOut = hoverable
+    ? () => {
+        if (!hoveringRef.current) return;
+        hoveringRef.current = false;
+        onUnhoverRoi(roi.id);
+      }
+    : undefined;
+  const pick = {
+    onClick: handleSelect,
+    onPointerMove: handleHoverMove,
+    onPointerOut: handleHoverOut,
+  };
 
   if (annotation.kind === AnnotationKind.Line && vectors.length >= 2) {
     // The merged outline batch draws the stroke AND owns the pick (segment →
@@ -155,7 +202,7 @@ export const AnnotationShape = memo(function AnnotationShape({
       const centerZ = (z0 + z1) / 2;
 
       return (
-        <group onClick={handleSelect}>
+        <group {...pick}>
           {style.fill && (
             <mesh
               position={[centerX, centerY, centerZ]}
@@ -187,7 +234,7 @@ export const AnnotationShape = memo(function AnnotationShape({
     }
 
     return (
-      <group onClick={handleSelect}>
+      <group {...pick}>
         {/* Always present, invisible when unfilled: the interior is what makes
             a rectangle clickable anywhere rather than only on its edge. */}
         <mesh
@@ -218,7 +265,7 @@ export const AnnotationShape = memo(function AnnotationShape({
 
     if (!flattenToPlane && rz >= MIN_DEPTH) {
       return (
-        <group onClick={handleSelect}>
+        <group {...pick}>
           {style.fill && (
             <mesh position={[cx, cy, cz]} scale={[rx, ry, rz]} geometry={UNIT_SPHERE}>
               <meshBasicMaterial
@@ -262,7 +309,7 @@ export const AnnotationShape = memo(function AnnotationShape({
     points.push(points[0]);
 
     return (
-      <group onClick={handleSelect}>
+      <group {...pick}>
         {/* Scaled to the SECTIONED radii, so what can be clicked is what is
             drawn. */}
         <mesh
@@ -293,7 +340,7 @@ export const AnnotationShape = memo(function AnnotationShape({
     if (isPolygon) pts.push(pts[0]); // close polygon
 
     return (
-      <group onClick={handleSelect}>
+      <group {...pick}>
         {isPolygon && (
           <PolygonInterior vectors={vectors} flattenToPlane={flattenToPlane} style={style} />
         )}

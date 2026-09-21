@@ -71,6 +71,13 @@ import {
   settleFromTasks,
   startTask,
 } from "./activeTasks";
+import {
+  confirmPending,
+  dropPending,
+  settlePending,
+  startPending,
+  type PendingMessage,
+} from "./pendingMessages";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
@@ -405,9 +412,13 @@ interface ChatProps {
 }
 
 export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
-  const [send, { loading }] = useSendMessageMutation({
+  const [send] = useSendMessageMutation({
     refetchQueries: ["DetailRoom"],
   });
+
+  // Sent, not delivered back yet. These render as real rows that pulse, so
+  // nothing covers the conversation while a message is on its way.
+  const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
 
   const [selectedActionId, setSelectedActionId] = useState<string>("none");
   const [hasAutoselected, setHasAutoselected] = useState(false);
@@ -706,6 +717,16 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
       }
     }
 
+    // Staged structures are cleared with the same tick that puts the row in
+    // the list: they have moved into the message, and leaving them on the
+    // composer would read as "not sent".
+    const attached = stagedStructures;
+    const localId = uuidv4();
+    setPendingMessages((prev) =>
+      startPending(prev, localId, text, attached, new Date().toISOString()),
+    );
+    setStagedStructures([]);
+
     try {
       const res = await send({
         variables: {
@@ -713,21 +734,30 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
             text: text,
             room: room.id,
             agentId: "default",
-            attachStructures: stagedStructures.length > 0 ? stagedStructures : undefined,
+            attachStructures: attached.length > 0 ? attached : undefined,
           },
         },
       });
 
       const createdMessage = res.data?.send;
 
-      setStagedStructures([]);
-
       if (createdMessage) {
+        // Accepted — it stops pulsing here and is dropped once the room
+        // subscription delivers it.
+        setPendingMessages((prev) =>
+          confirmPending(prev, localId, createdMessage.id),
+        );
         await runReplyer(createdMessage.id);
+      } else {
+        setPendingMessages((prev) => dropPending(prev, localId));
       }
     } catch (error: any) {
       console.error(error);
       toast.error(`Failed to send message: ${error.message || error}`);
+      // The row goes with the failure: the toast is the record, and a ghost
+      // that never resolves would read as sent.
+      setPendingMessages((prev) => dropPending(prev, localId));
+      setStagedStructures(attached);
     }
   };
 
@@ -758,6 +788,13 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
     [room.messages],
   );
 
+  // The room caught up: a pending row whose message the list now carries is
+  // dropped. `ChatList` already stops rendering it that same frame — this is
+  // what keeps the state from growing.
+  useEffect(() => {
+    setPendingMessages((prev) => settlePending(prev, room.messages));
+  }, [room.messages]);
+
   return (
     <div
       className="relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[inherit]"
@@ -765,12 +802,10 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
         drop(node);
       }}
     >
-      {(isOver || loading) && (
+      {isOver && (
         <div className="absolute top-0 left-0 z-50 h-full w-full backdrop-blur-sm">
           <div className="flex items-center justify-center h-full">
-            <Card className="p-4">
-              {loading ? "Adding..." : "Drop to Add to Chat"}
-            </Card>
+            <Card className="p-4">Drop to Add to Chat</Card>
           </div>
         </div>
       )}
@@ -779,7 +814,8 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
       )}
       <ChatList
         messages={sortedMessages}
-        currentAgentId="default"
+        pendingMessages={pendingMessages}
+        currentAgentName="default"
         sendMessage={sendMessage}
         isMobile={isMobile}
         stagedStructures={stagedStructures}

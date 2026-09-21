@@ -20,6 +20,7 @@ const Page = asDetailQueryRoute(useGetProjectQuery, ({ data, refetch }) => {
       title={data?.project?.name}
       pageActions={<>
         <DialogButton
+          alwaysShow
           name="createomeroarkcataset"
           variant={"outline"}
           size={"sm"}

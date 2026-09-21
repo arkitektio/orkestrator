@@ -1,28 +1,26 @@
 import {
 	ApplicableTalk as AlpakaApplicableTalk,
-} from "@/providers/smart/extensions/alpaka/talk";
+} from "@/providers/smart/extensions/alpaka/sections";
 import {
 	ObjectButton as SmartObjectButton,
 	SmartContext as SmartContextComponent,
 } from "@/providers/smart/extensions/context";
 import {
 	Actions as LocalActions,
-	ApplicableLocalActions as LocalApplicableActions,
 	LocalActionCommand as LocalActionCommandComponent,
 } from "@/providers/smart/extensions/local/localactions";
+import { ApplicableLocalActions as LocalApplicableActions } from "@/providers/smart/extensions/local/sections";
 import {
-	ApplicableMeasurements as KraphApplicableMeasurements,
-	ApplicableRelations as KraphApplicableRelations,
 	CreateMeasurementButton as KraphCreateMeasurementButton,
 	MeasurementActions as KraphMeasurementActions,
 	StructureRelateButton as KraphStructureRelateButton,
-	StructureRelationActions as KraphStructureRelationActions,
 } from "@/providers/smart/extensions/kraph/relations";
 import {
-	ApplicableActions as RekuestApplicableActions,
-	ApplicableBatchActions as RekuestApplicableBatchActions,
-	ApplicableBatchImplementations as RekuestApplicableBatchImplementations,
-	ApplicableImplementations as RekuestApplicableImplementations,
+	ApplicableMeasurements as KraphApplicableMeasurements,
+	ApplicableRelations as KraphApplicableRelations,
+	StructureRelationActions as KraphStructureRelationActions,
+} from "@/providers/smart/extensions/kraph/sections";
+import {
 	AssignButton as RekuestAssignButton,
 	BatchImplementationAssignButton as RekuestBatchImplementationAssignButton,
 	BatchAssignButton as RekuestBatchAssignButton,
@@ -30,13 +28,15 @@ import {
 	ImplementationAssignButton as RekuestImplementationAssignButton,
 } from "@/providers/smart/extensions/rekuest/actions";
 import {
+	ApplicableActions as RekuestApplicableActions,
+	ApplicableBatchActions as RekuestApplicableBatchActions,
+	ApplicableBatchImplementations as RekuestApplicableBatchImplementations,
+	ApplicableImplementations as RekuestApplicableImplementations,
 	ApplicableShortcuts as RekuestApplicableShortcuts,
-	ShortcutButton as RekuestShortcutButton,
-} from "@/providers/smart/extensions/rekuest/shortcuts";
-import {
-	ApplicableDefinitions as KabinetApplicableDefinitions,
-	InstallButton as KabinetInstallButton,
-} from "@/providers/smart/extensions/kabinet/definitions";
+} from "@/providers/smart/extensions/rekuest/sections";
+import { ShortcutButton as RekuestShortcutButton } from "@/providers/smart/extensions/rekuest/shortcuts";
+import { InstallButton as KabinetInstallButton } from "@/providers/smart/extensions/kabinet/definitions";
+import { ApplicableDefinitions as KabinetApplicableDefinitions } from "@/providers/smart/extensions/kabinet/sections";
 import type {
 	ObjectButtonProps as SmartObjectButtonProps,
 	OnDone as SmartOnDone,

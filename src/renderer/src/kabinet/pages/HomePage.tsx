@@ -6,6 +6,7 @@ import { OperationVariables } from "@apollo/client";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { HelpSidebar } from "@/components/sidebars/help";
 import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DialogButton } from "@/components/ui/dialog-button";
 import {
@@ -56,34 +57,32 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
         </Sidebars>
       }
       pageActions={
-        <div className="flex flex-row gap-1">
-          <Button asChild variant="outline" size="sm">
+        <>
+          <PageAction asChild alwaysShow size="sm">
             <Link to="/kabinet/app-store">
-              <Store className="mr-2 h-4 w-4" />
+              <Store className="h-4 w-4" />
               App Store
             </Link>
-          </Button>
-          <>
-            <DialogButton
-              name="createrepo"
-              variant="outline"
-              size="sm"
-              dialogProps={{}}
-            >
-              Add Repo
-            </DialogButton>
-          </>
-
-          <Button
+          </PageAction>
+          <DialogButton
+            alwaysShow
+            name="createrepo"
+            variant="outline"
+            size="sm"
+            dialogProps={{}}
+          >
+            Add Repo
+          </DialogButton>
+          <PageAction
+            priority={-10}
             onClick={async () => {
               await rescan();
             }}
-            variant="outline"
             size="sm"
           >
             {loading ? "Rescanning..." : "Rescan Repos"}
-          </Button>
-        </div>
+          </PageAction>
+        </>
       }
       title="Home"
     >

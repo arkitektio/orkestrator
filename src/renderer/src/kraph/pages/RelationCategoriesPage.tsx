@@ -13,21 +13,20 @@ const Page = () => {
     <KraphRelationCategory.ListPage
       title="Relation Categories"
       pageActions={
-        <div className="flex flex-row gap-2">
-          <>
-            <DialogButton
-              name="createrelationcategory"
-              variant={"outline"}
-              size={"sm"}
-              dialogProps={{
-                onSuccess: (data) => navigate(KraphRelationCategory.linkBuilder(data.createRelationCategory.id)),
-              }}
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Create
-            </DialogButton>
-          </>
-        </div>
+        <>
+          <DialogButton
+            alwaysShow
+            name="createrelationcategory"
+            variant={"outline"}
+            size={"sm"}
+            dialogProps={{
+              onSuccess: (data) => navigate(KraphRelationCategory.linkBuilder(data.createRelationCategory.id)),
+            }}
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Create
+          </DialogButton>
+        </>
       }
     >
       <div className="p-6">

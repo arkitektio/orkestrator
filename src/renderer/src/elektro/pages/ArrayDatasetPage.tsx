@@ -75,9 +75,9 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
         overlay
         actions={<ElektroArrayDataset.Actions object={dataset} />}
         pageActions={
-          <div className="flex items-center gap-2">
-            <ElektroArrayDataset.ObjectButton object={dataset} />
-          </div>
+          <>
+            <ElektroArrayDataset.ObjectButton alwaysShow object={dataset} />
+          </>
         }
         additionalSidebars={
           <>

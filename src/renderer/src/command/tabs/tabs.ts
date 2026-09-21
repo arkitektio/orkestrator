@@ -17,10 +17,24 @@ import { createTabHistory, type SerializedHistory, type TabHistory } from "./tab
  * `saveTabs` and `bootTabs` touch storage.
  */
 
+/**
+ * How a tab's pages lay themselves out, as DEFAULTS: what `PageLayout` shows
+ * before the URL says otherwise (`?pageSidebar=`, `?sidebar=`). Set when the
+ * tab is opened — a tab opened to the side starts without its page sidebar,
+ * having half the width — and kept with the tab; the toggles on the page
+ * still work, per location, as they always did.
+ */
+export type TabLayout = {
+  /** The page's own right-hand panel (its sidebars, or Help). */
+  pageSidebar?: boolean;
+  sidebar?: boolean;
+};
+
 export type TabRecord = {
   id: string;
   history: TabHistory;
   label: string;
+  layout?: TabLayout;
   /**
    * The pathname a PAGE-reported label belongs to. While the tab is still on
    * that pathname, the path-derived fallback must not overwrite it — the page
@@ -34,10 +48,18 @@ export type TabRecord = {
    */
   pinned?: boolean;
   lastActiveAt: number;
+  /**
+   * The tab shown to this one's RIGHT, when this one is on screen: its
+   * partner in a split view. The partner belongs to this tab — switching to a
+   * tab shows it with its own partner, or alone if it has none, and a partner
+   * is never handed from one tab to the next. Always the id of a tab in
+   * `tabs` (`closeTab` scrubs it), never this tab's own.
+   */
+  beside?: string;
 };
 
 /**
- * Two tabs shown side by side. Both ids are tabs in `tabs`, and `activeId` is
+ * Two tabs shown side by side: the view tab and its partner. `activeId` is
  * always one of them: the active tab is the FOCUSED pane, so everything that
  * already means "the active tab" — the chrome's Back/Forward, the hash mirror,
  * the palette's navigate — keeps meaning "the pane you last touched".
@@ -46,10 +68,13 @@ export type SplitPanes = { left: string; right: string };
 
 export type TabsState = {
   tabs: TabRecord[];
-  /** Always the id of a tab in `tabs` — there is never zero tabs. */
+  /**
+   * The FOCUSED tab: always the id of a tab in `tabs` — there is never zero
+   * tabs — and always `viewId` or the view tab's `beside`.
+   */
   activeId: string;
-  /** Absent when one tab fills the content area, which is the usual case. */
-  split?: SplitPanes;
+  /** The tab on the LEFT of the content area — the one whose partner, if any, is shown. */
+  viewId: string;
 };
 
 /** Past this the strip stops being scannable and starts being a list. */
@@ -85,7 +110,7 @@ export const labelForPath = (to: string): string => {
 
 export const createTab = (
   to: string,
-  options: { label?: string; now?: number; id?: string } = {},
+  options: { label?: string; now?: number; id?: string; layout?: TabLayout } = {},
 ): TabRecord => {
   const parsed = parsePath(to);
   const entry = {
@@ -97,6 +122,7 @@ export const createTab = (
     id: options.id ?? newId(),
     history: createTabHistory({ entries: [entry], index: 0 }),
     label: options.label ?? labelForPath(to),
+    ...(options.layout ? { layout: options.layout } : {}),
     lastActiveAt: options.now ?? Date.now(),
   };
 };
@@ -104,38 +130,37 @@ export const createTab = (
 export const activeTab = (state: TabsState): TabRecord =>
   state.tabs.find((t) => t.id === state.activeId) ?? state.tabs[0];
 
+const tabOf = (state: TabsState, id: string): TabRecord | undefined =>
+  state.tabs.find((t) => t.id === id);
+
+/** The pair on screen — the view tab and its partner — or `undefined` when the view tab has none. */
+export const shownSplit = (state: TabsState): SplitPanes | undefined => {
+  const right = tabOf(state, state.viewId)?.beside;
+  return right && right !== state.viewId && tabOf(state, right)
+    ? { left: state.viewId, right }
+    : undefined;
+};
+
 export const inSplit = (split: SplitPanes | undefined, id: string): boolean =>
   split !== undefined && (split.left === id || split.right === id);
 
 /** The tab sharing the screen with the active one, or `null` when not split. */
 export const splitPartnerId = (state: TabsState): string | null => {
-  if (!state.split) return null;
-  return state.split.left === state.activeId ? state.split.right : state.split.left;
+  const split = shownSplit(state);
+  if (!split) return null;
+  return split.left === state.activeId ? split.right : split.left;
 };
 
-/**
- * Where focus moving from `from` to `to` leaves the split. Focusing a tab that
- * is already a pane changes nothing; focusing one outside the split puts it in
- * the pane that had focus, so the strip drives the focused pane and the split
- * itself persists — as a browser's split view does.
- */
-const focusInto = (
-  split: SplitPanes | undefined,
-  from: string,
-  to: string,
-): SplitPanes | undefined => {
-  if (!split || inSplit(split, to)) return split;
-  return split.left === from ? { ...split, left: to } : { ...split, right: to };
-};
+/** `tabs` with tab `id`'s partner set, or removed for `undefined` — no dangling key. */
+const withBeside = (tabs: TabRecord[], id: string, beside: string | undefined): TabRecord[] =>
+  tabs.map((t) => {
+    if (t.id !== id) return t;
+    const { beside: _was, ...bare } = t;
+    return beside ? { ...bare, beside } : bare;
+  });
 
-/** `state` with `split` dropped, not set to `undefined` — no dangling key. */
-const withoutSplit = (state: TabsState): TabsState => {
-  const { split: _split, ...rest } = state;
-  return rest;
-};
-
-const withSplit = (state: TabsState, split: SplitPanes | undefined): TabsState =>
-  split ? { ...state, split } : withoutSplit(state);
+const touched = (tabs: TabRecord[], id: string, now: number): TabRecord[] =>
+  tabs.map((t) => (t.id === id ? { ...t, lastActiveAt: now } : t));
 
 export const locationPathOf = (tab: TabRecord): string => createPath(tab.history.location);
 
@@ -153,6 +178,8 @@ export type OpenOptions = {
    */
   evict?: boolean;
   now?: number;
+  /** The new tab's page-layout defaults — see `TabLayout`. */
+  layout?: TabLayout;
 };
 
 export const openTab = (state: TabsState, to: string, options: OpenOptions = {}): TabsState => {
@@ -161,33 +188,35 @@ export const openTab = (state: TabsState, to: string, options: OpenOptions = {})
 
   if (tabs.length >= MAX_TABS) {
     if (!options.evict) return state;
+    const shown = shownSplit(state);
     const victim = [...tabs]
-      // Never a pinned one: pinning is how the user said "not this". Nor a
-      // pane of the split: it is on screen.
-      .filter((t) => t.id !== state.activeId && !t.pinned && !inSplit(state.split, t.id))
+      // Never a pinned one: pinning is how the user said "not this". Nor
+      // anything on screen.
+      .filter((t) => t.id !== state.viewId && !t.pinned && !inSplit(shown, t.id))
       .sort((a, b) => a.lastActiveAt - b.lastActiveAt)[0];
     if (!victim) return state;
-    tabs = tabs.filter((t) => t.id !== victim.id);
+    tabs = tabs.filter((t) => t.id !== victim.id).map((t) =>
+      t.beside === victim.id ? withBeside([t], t.id, undefined)[0] : t,
+    );
   }
 
-  const tab = createTab(to, { label: options.label, now });
+  const tab = createTab(to, { label: options.label, now, layout: options.layout });
   if (options.background) return { ...state, tabs: [...tabs, tab] };
-  return withSplit(
-    { ...state, tabs: [...tabs, tab], activeId: tab.id },
-    focusInto(state.split, state.activeId, tab.id),
-  );
+  // A new tab starts alone: it has no partner, and takes none from the tab
+  // it was opened from.
+  return { ...state, tabs: [...tabs, tab], activeId: tab.id, viewId: tab.id };
 };
 
+/**
+ * Focus a tab. The tab on screen as the view's partner is focused where it
+ * is — the right pane; any other tab becomes the view, shown with its own
+ * partner or alone.
+ */
 export const focusTab = (state: TabsState, id: string, now: number = Date.now()): TabsState => {
-  if (!state.tabs.some((t) => t.id === id) || state.activeId === id) return state;
-  return withSplit(
-    {
-      ...state,
-      tabs: state.tabs.map((t) => (t.id === id ? { ...t, lastActiveAt: now } : t)),
-      activeId: id,
-    },
-    focusInto(state.split, state.activeId, id),
-  );
+  if (!tabOf(state, id) || state.activeId === id) return state;
+  const tabs = touched(state.tabs, id, now);
+  if (shownSplit(state)?.right === id) return { ...state, tabs, activeId: id };
+  return { ...state, tabs, activeId: id, viewId: id };
 };
 
 /**
@@ -199,82 +228,132 @@ export const closeTab = (state: TabsState, id: string, now: number = Date.now())
   const index = state.tabs.findIndex((t) => t.id === id);
   if (index === -1) return state;
 
-  const remaining = state.tabs.filter((t) => t.id !== id);
+  // Gone from the strip, and from beside every tab that showed it.
+  const remaining = state.tabs
+    .filter((t) => t.id !== id)
+    .map((t) => (t.beside === id ? withBeside([t], t.id, undefined)[0] : t));
 
   if (remaining.length === 0) {
     const fresh = createTab("/", { now });
-    return { tabs: [fresh], activeId: fresh.id };
+    return { tabs: [fresh], activeId: fresh.id, viewId: fresh.id };
   }
 
-  // Closing a pane ends the split; the other pane fills the card.
-  if (inSplit(state.split, id)) {
-    const other = state.split!.left === id ? state.split!.right : state.split!.left;
-    const base = withoutSplit({ ...state, tabs: remaining });
-    return state.activeId === id ? focusTab(base, other, now) : base;
+  if (id === state.viewId) {
+    // Its partner, if it had one, fills the card; else the neighbour rule.
+    const partner = shownSplit(state)?.right;
+    const next = partner ?? remaining[Math.min(index, remaining.length - 1)].id;
+    return { tabs: touched(remaining, next, now), activeId: next, viewId: next };
   }
 
-  if (state.activeId !== id) {
-    return { ...state, tabs: remaining };
-  }
+  // The focused partner: focus falls back to the view tab, now alone.
+  if (id === state.activeId) return { ...state, tabs: remaining, activeId: state.viewId };
 
-  const next = remaining[Math.min(index, remaining.length - 1)];
-  return focusTab({ ...state, tabs: remaining, activeId: next.id }, next.id, now);
+  return { ...state, tabs: remaining };
 };
 
 /**
  * Close every other tab — except the pinned ones, which is what pinning is
- * for, and the other pane of a split, which is on screen.
+ * for, and the tab's own partner, which is on screen beside it.
  */
-export const closeOtherTabs = (state: TabsState, id: string): TabsState => {
-  if (!state.tabs.some((t) => t.id === id)) return state;
-  const keep = (t: TabRecord) => t.id === id || Boolean(t.pinned) || inSplit(state.split, t.id);
-  return focusTab({ ...state, tabs: state.tabs.filter(keep) }, id);
+export const closeOtherTabs = (state: TabsState, id: string, now: number = Date.now()): TabsState => {
+  const tab = tabOf(state, id);
+  if (!tab) return state;
+  const keep = (t: TabRecord) => t.id === id || Boolean(t.pinned) || t.id === tab.beside;
+  const tabs = state.tabs.filter(keep);
+  // The view stays the view if it survived and `id` is its partner; otherwise
+  // `id` is the view now. Either way it has focus.
+  const viewKept = tabs.some((t) => t.id === state.viewId);
+  const viewId = viewKept && shownSplit(state)?.right === id ? state.viewId : id;
+  return { tabs: touched(tabs, id, now), activeId: id, viewId };
 };
 
 // ── split view ──
 
 /**
- * Show `id` beside the active tab. `side` is where `id` goes; the active tab
- * takes the other pane and keeps focus. Splitting with a tab that is already
- * the other pane moves it to the named side (a swap); splitting with the active
- * tab itself is a no-op — one tab cannot be both panes.
+ * Show `id` beside the view tab: `side: "right"` makes it the view's partner;
+ * `side: "left"` makes it the view, with the current view as ITS partner.
+ * Either way the tab that had focus keeps it if it is still on screen.
+ * Splitting the view with itself is a no-op — one tab cannot be both panes.
  */
 export const splitTab = (
   state: TabsState,
   id: string,
   side: "left" | "right" = "right",
 ): TabsState => {
-  if (id === state.activeId || !state.tabs.some((t) => t.id === id)) return state;
-  const split: SplitPanes =
-    side === "right" ? { left: state.activeId, right: id } : { left: id, right: state.activeId };
-  if (state.split?.left === split.left && state.split.right === split.right) return state;
-  return { ...state, split };
+  if (id === state.viewId || !tabOf(state, id)) return state;
+  if (side === "right") {
+    if (tabOf(state, state.viewId)?.beside === id) return state;
+    const activeId = state.activeId === state.viewId ? state.viewId : id;
+    return { ...state, tabs: withBeside(state.tabs, state.viewId, id), activeId };
+  }
+  // The old view is on screen either way (as the right pane now); a focused
+  // old partner is not, so focus lands on the old view too.
+  return { ...state, tabs: withBeside(state.tabs, id, state.viewId), viewId: id, activeId: state.viewId };
 };
 
 /**
- * Open `to` in a new tab shown BESIDE the active one — "open to the side".
+ * Split tab `id` — from its row in the strip, whichever tab is on screen: it
+ * becomes the view, with `partnerId` beside it, or a fresh new-tab page
+ * when no partner is named. Splitting a tab with itself is a no-op.
+ */
+export const splitTabWith = (
+  state: TabsState,
+  id: string,
+  partnerId?: string,
+  now: number = Date.now(),
+): TabsState => {
+  if (!tabOf(state, id) || partnerId === id) return state;
+  const viewed = focusTab(state, id, now);
+  return partnerId
+    ? splitTab(viewed, partnerId)
+    : openTabBeside(viewed, NEW_TAB_PATH, { evict: true, now });
+};
+
+/** What a tab opened to the side starts with: no page sidebar, in half the width. */
+export const BESIDE_LAYOUT: TabLayout = { pageSidebar: false };
+
+/**
+ * Open `to` in a new tab shown BESIDE the view tab — "open to the side".
  * Focus stays where it is, as with a background tab: you asked to see the
- * page next to this one, not to leave this one. Not split yet: the new tab
- * takes the right pane. Already split: it takes the other pane, whichever
- * side that is, so the page you are on never moves.
+ * page next to this one, not to leave this one. It takes the right pane,
+ * replacing the view's previous partner if it had one, and starts without
+ * its page sidebar (`BESIDE_LAYOUT`) unless `layout` says otherwise.
  */
 export const openTabBeside = (
   state: TabsState,
   to: string,
   options: Omit<OpenOptions, "background"> = {},
 ): TabsState => {
-  const opened = openTab(state, to, { ...options, background: true });
+  const opened = openTab(state, to, {
+    ...options,
+    layout: options.layout ?? BESIDE_LAYOUT,
+    background: true,
+  });
   if (opened === state) return state;
   const fresh = opened.tabs[opened.tabs.length - 1];
-  const side = opened.split && opened.split.right === opened.activeId ? "left" : "right";
-  return splitTab(opened, fresh.id, side);
+  const activeId = opened.activeId === opened.viewId ? opened.viewId : fresh.id;
+  return { ...opened, tabs: withBeside(opened.tabs, opened.viewId, fresh.id), activeId };
 };
 
-export const unsplit = (state: TabsState): TabsState =>
-  state.split ? withoutSplit(state) : state;
+/** Take tab `id`'s partner away (the view's by default). The partner stays open, just not beside it. */
+export const unsplit = (state: TabsState, id: string = state.viewId): TabsState => {
+  const tab = tabOf(state, id);
+  if (!tab?.beside) return state;
+  const activeId = id === state.viewId && state.activeId === tab.beside ? id : state.activeId;
+  return { ...state, tabs: withBeside(state.tabs, id, undefined), activeId };
+};
 
-export const swapSplit = (state: TabsState): TabsState =>
-  state.split ? { ...state, split: { left: state.split.right, right: state.split.left } } : state;
+/**
+ * Exchange the panes of tab `id`'s pair (the view's by default): its partner
+ * becomes the owner, with `id` beside it. Focus stays on the same tab.
+ */
+export const swapSplit = (state: TabsState, id: string = state.viewId): TabsState => {
+  const tab = tabOf(state, id);
+  const partner = tab?.beside;
+  if (!tab || !partner || !tabOf(state, partner)) return state;
+  const tabs = withBeside(withBeside(state.tabs, id, undefined), partner, id);
+  return { ...state, tabs, viewId: state.viewId === id ? partner : state.viewId };
+};
 
 /**
  * What ⌘\ does. Split: end it. Not split: show the most recently used other
@@ -282,14 +361,12 @@ export const swapSplit = (state: TabsState): TabsState =>
  * want beside this — or, with nothing else open, a fresh new-tab page there.
  */
 export const toggleSplit = (state: TabsState, now: number = Date.now()): TabsState => {
-  if (state.split) return unsplit(state);
+  if (shownSplit(state)) return unsplit(state);
   const recent = [...state.tabs]
-    .filter((t) => t.id !== state.activeId)
+    .filter((t) => t.id !== state.viewId)
     .sort((a, b) => b.lastActiveAt - a.lastActiveAt)[0];
   if (recent) return splitTab(state, recent.id);
-  const opened = openTab(state, NEW_TAB_PATH, { background: true, evict: true, now });
-  if (opened === state) return state;
-  return splitTab(opened, opened.tabs[opened.tabs.length - 1].id);
+  return openTabBeside(state, NEW_TAB_PATH, { evict: true, now });
 };
 
 const pinnedCount = (tabs: TabRecord[]): number => tabs.filter((t) => t.pinned).length;
@@ -368,12 +445,12 @@ export const setTabLabel = (
 };
 
 /**
- * The ids that stay mounted: whatever is on screen — the active tab, and the
- * other pane of a split — then the most recent up to the cap.
+ * The ids that stay mounted: whatever is on screen — the view tab, and its
+ * partner if it has one — then the most recent up to the cap.
  */
 export const warmIds = (state: TabsState): Set<string> => {
-  const partner = splitPartnerId(state);
-  const shown = partner ? [state.activeId, partner] : [state.activeId];
+  const split = shownSplit(state);
+  const shown = split ? [split.left, split.right] : [state.viewId];
   const byRecency = [...state.tabs]
     .filter((t) => !shown.includes(t.id))
     .sort((a, b) => b.lastActiveAt - a.lastActiveAt)
@@ -396,19 +473,21 @@ const PersistedTabSchema = z.object({
   label: z.string(),
   pinned: z.boolean().optional(),
   lastActiveAt: z.number(),
+  beside: z.string().optional(),
+  layout: z
+    .object({ pageSidebar: z.boolean().optional(), sidebar: z.boolean().optional() })
+    .optional(),
   history: z.object({
     entries: z.array(SerializedEntrySchema).min(1),
     index: z.number().int(),
   }),
 });
 
-const SplitSchema = z.object({ left: z.string(), right: z.string() });
-
 export const TabsPersistedSchema = z.object({
   version: z.literal(1),
   activeId: z.string(),
-  // Added later; a payload without it is simply not split.
-  split: SplitSchema.optional(),
+  // Added later; a payload without it has the active tab as the view.
+  viewId: z.string().optional(),
   tabs: z.array(PersistedTabSchema),
 });
 
@@ -419,11 +498,13 @@ export const tabsStorageKey = (profileId: string): string => `orkestrator:tabs:v
 export const serializeTabs = (state: TabsState): TabsPersisted => ({
   version: 1,
   activeId: state.activeId,
-  ...(state.split ? { split: state.split } : {}),
+  viewId: state.viewId,
   tabs: state.tabs.map((t) => ({
     id: t.id,
     label: t.label,
     ...(t.pinned ? { pinned: true } : {}),
+    ...(t.beside ? { beside: t.beside } : {}),
+    ...(t.layout ? { layout: t.layout } : {}),
     lastActiveAt: t.lastActiveAt,
     history: t.history.serialize() as SerializedHistory,
   })),
@@ -434,6 +515,8 @@ const reviveTab = (row: z.infer<typeof PersistedTabSchema>): TabRecord => ({
   history: createTabHistory(row.history),
   label: row.label,
   ...(row.pinned ? { pinned: true } : {}),
+  ...(row.beside ? { beside: row.beside } : {}),
+  ...(row.layout ? { layout: row.layout } : {}),
   lastActiveAt: row.lastActiveAt,
 });
 
@@ -467,35 +550,36 @@ export const loadTabs = (
     .object({
       version: z.literal(1),
       activeId: z.string(),
-      split: SplitSchema.optional(),
+      viewId: z.string().optional(),
       tabs: z.array(z.unknown()),
     })
     .safeParse(parsed);
   if (!outer.success) return null;
 
-  const tabs = outer.data.tabs.flatMap((candidate) => {
+  const revived = outer.data.tabs.flatMap((candidate) => {
     const row = PersistedTabSchema.safeParse(candidate);
     return row.success ? [reviveTab(row.data)] : [];
   });
-  if (tabs.length === 0) return null;
+  if (revived.length === 0) return null;
 
-  const activeId = tabs.some((t) => t.id === outer.data.activeId)
-    ? outer.data.activeId
-    : tabs[tabs.length - 1].id;
+  // A partner that is gone, or is the tab itself, is simply not a partner.
+  const has = (id: string) => revived.some((t) => t.id === id);
+  const tabs = revived.map((t) =>
+    t.beside && t.beside !== t.id && has(t.beside) ? t : withBeside([t], t.id, undefined)[0],
+  );
 
-  // A split survives only whole: both panes present, and the focus in one of
-  // them. Anything less is dropped rather than repaired — the tabs themselves
-  // are what matter.
-  const split = outer.data.split;
-  const has = (id: string) => tabs.some((t) => t.id === id);
-  const splitIntact =
-    split !== undefined &&
-    split.left !== split.right &&
-    has(split.left) &&
-    has(split.right) &&
-    inSplit(split, activeId);
+  const activeId = has(outer.data.activeId) ? outer.data.activeId : tabs[tabs.length - 1].id;
+  // The view is what was saved if it still holds — the focus in it or beside
+  // it — else the focused tab itself, alone or with its own partner.
+  const saved = outer.data.viewId;
+  const viewId =
+    saved !== undefined &&
+    has(saved) &&
+    (saved === activeId || tabs.find((t) => t.id === saved)?.beside === activeId)
+      ? saved
+      : activeId;
 
-  return splitIntact ? { tabs, activeId, split } : { tabs, activeId };
+  return { tabs, activeId, viewId };
 };
 
 /** Refuses for a signed-out user: tabs hold tenant-scoped ids, so there is no
@@ -537,7 +621,7 @@ export const bootTabs = (
 
   if (!restored) {
     const tab = createTab(bootPath ?? "/", { now });
-    return { tabs: [tab], activeId: tab.id };
+    return { tabs: [tab], activeId: tab.id, viewId: tab.id };
   }
 
   if (bootPath && bootPath !== locationPathOf(activeTab(restored))) {

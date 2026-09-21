@@ -1,4 +1,5 @@
 import { ChannelTag } from "../../features/metadata/ChannelMetadata";
+import { cn } from "@/lib/utils";
 import { ROW_PADDING } from "../../features/stacking/stackLayout";
 import { formatValue } from "../../platform/probe/formatValue";
 import { useChannelColors } from "../../platform/stores/channelColors";
@@ -17,6 +18,12 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
  * Rows are laid out in equal fractions of the viewport height (see `stackLayout`),
  * so this is plain percentage positioning — no camera math, and it re-renders only
  * when the layout or a clim changes, which is UI cadence.
+ *
+ * With the value axis on (`ValueAxis`), the left column steps aside to clear the
+ * gutter and a row's scale shrinks to just its UNIT — the gutter states the range
+ * tick by tick, and stating it twice is the clutter the gutter was for. On an
+ * OVERLAY row the gutter only covers the LEADING layer, so every other legend
+ * entry keeps its full range.
  */
 export const RowLabels = () => {
   // `rows` is replaced only by a relayout (UI cadence); each row's scale is its
@@ -24,6 +31,7 @@ export const RowLabels = () => {
   const rows = useViewerStore((s) => s.rows);
   const rowCount = useViewerStore((s) => s.rowCount);
   const layoutMode = useViewerStore((s) => s.layoutMode);
+  const showValueAxis = useViewerStore((s) => s.showValueAxis);
 
   if (rowCount === 0) return null;
   return (
@@ -50,17 +58,25 @@ export const RowLabels = () => {
           // One plot, several scales: a legend, one entry per layer.
           <div
             key={row.index}
-            className="absolute left-2 flex max-w-[40%] flex-col gap-0.5"
+            className={cn(
+              "absolute flex max-w-[40%] flex-col gap-0.5",
+              showValueAxis ? "left-16" : "left-2",
+            )}
             style={{ top: `calc(${(row.index / rowCount) * 100}% + 4px)` }}
           >
-            {row.layerIds.map((id) => (
-              <LegendEntry key={id} layerId={id} />
+            {row.layerIds.map((id, i) => (
+              // Only the LEADING layer's scale is the one in the gutter; the
+              // rest still have to state their own ranges here.
+              <LegendEntry key={id} layerId={id} unitOnly={showValueAxis && i === 0} />
             ))}
           </div>
         ) : (
         <div
           key={row.index}
-          className="absolute left-2 flex max-w-[40%] items-center gap-1.5"
+          className={cn(
+            "absolute flex max-w-[40%] items-center gap-1.5",
+            showValueAxis ? "left-16" : "left-2",
+          )}
           style={{ top: `calc(${(row.index / rowCount) * 100}% + 4px)` }}
         >
           <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: row.color }} />
@@ -68,7 +84,11 @@ export const RowLabels = () => {
             {row.label}
           </span>
           {row.unit && (
-            <RowScale layerId={row.layerIds.length === 1 ? row.layerIds[0] : null} unit={row.unit} />
+            <RowScale
+              layerId={row.layerIds.length === 1 ? row.layerIds[0] : null}
+              unit={row.unit}
+              unitOnly={showValueAxis}
+            />
           )}
         </div>
         ),
@@ -78,7 +98,7 @@ export const RowLabels = () => {
 };
 
 /** One line of the overlay legend: a layer's colour, name, and its own scale. */
-const LegendEntry = ({ layerId }: { layerId: string }) => {
+const LegendEntry = ({ layerId, unitOnly }: { layerId: string; unitOnly: boolean }) => {
   const layer = useLayerState(layerId);
   if (!layer) return null;
   return (
@@ -87,7 +107,9 @@ const LegendEntry = ({ layerId }: { layerId: string }) => {
       <span className="truncate text-[11px] font-medium text-foreground/90 drop-shadow">
         {layer.label}
       </span>
-      {layer.valueUnit && <RowScale layerId={layerId} unit={layer.valueUnit} />}
+      {layer.valueUnit && (
+        <RowScale layerId={layerId} unit={layer.valueUnit} unitOnly={unitOnly} />
+      )}
     </div>
   );
 };
@@ -147,13 +169,26 @@ const ListedTags = ({ layerId }: { layerId: string }) => {
   );
 };
 
-/** A row's unit and current scale — subscribed per layer, so only its label re-renders. */
-const RowScale = ({ layerId, unit }: { layerId: string | null; unit: string }) => {
+/**
+ * A row's unit and current scale — subscribed per layer, so only its label
+ * re-renders. `unitOnly` while the value-axis gutter is on: it already says the
+ * range, at every tick rather than only at the ends.
+ */
+const RowScale = ({
+  layerId,
+  unit,
+  unitOnly,
+}: {
+  layerId: string | null;
+  unit: string;
+  unitOnly: boolean;
+}) => {
   const lo = useViewerStore((s) => (layerId ? s.clims[layerId]?.lo : undefined));
   const hi = useViewerStore((s) => (layerId ? s.clims[layerId]?.hi : undefined));
+  const range = !unitOnly && lo != null && hi != null;
   return (
     <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-      {lo != null && hi != null ? `${formatValue(lo)}…${formatValue(hi)} ${unit}` : unit}
+      {range ? `${formatValue(lo)}…${formatValue(hi)} ${unit}` : unit}
     </span>
   );
 };
