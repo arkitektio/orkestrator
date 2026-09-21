@@ -15,21 +15,20 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
     <KraphNaturalEventCategory.ListPage
       title="Natural Event Categories"
       pageActions={
-        <div className="flex flex-row gap-2">
-          <>
-            <DialogButton
-              name="createnaturaleventcategory"
-              variant={"outline"}
-              size={"sm"}
-              dialogProps={{
-                onSuccess: (data) => navigate(KraphNaturalEventCategory.linkBuilder(data.createNaturalEventCategory.id)),
-              }}
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Create
-            </DialogButton>
-          </>
-        </div>
+        <>
+          <DialogButton
+            alwaysShow
+            name="createnaturaleventcategory"
+            variant={"outline"}
+            size={"sm"}
+            dialogProps={{
+              onSuccess: (data) => navigate(KraphNaturalEventCategory.linkBuilder(data.createNaturalEventCategory.id)),
+            }}
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Create
+          </DialogButton>
+        </>
       }
     >
       <div className="p-6">

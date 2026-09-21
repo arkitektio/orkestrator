@@ -1,6 +1,6 @@
 import { useTabLayout } from "@/command/tabs/TabLayoutContext";
 import { useTabPane } from "@/command/tabs/TabPaneContext";
-import { OverflowActions } from "./OverflowActions";
+import { PageActionBar } from "./PageActionBar";
 import { useTabTitle } from "@/command/tabs/useTabTitle";
 import { useCopyUniversalLink } from "@/hooks/use-copy-universal-link";
 import { useReport } from "@/hooks/use-report";
@@ -151,10 +151,10 @@ export const PageLayout = ({
                 way first, collapsing its actions into the burger from the
                 right; only the sidebar toggles are never hidden. */}
             <div className="min-w-0 shrink text-foreground flex flex-row gap-1 items-center max-w-3xl">
-              <OverflowActions className="justify-end">
+              <PageActionBar className="justify-end">
                 {actions}
                 {pageActions}
-              </OverflowActions>
+              </PageActionBar>
 
               <ButtonGroup className="flex-initial shrink-0">
                 <Button variant="ghost" onClick={togglePageSidebar} className="!pl-2 !pr-2 my-auto"><PanelRight /></Button>

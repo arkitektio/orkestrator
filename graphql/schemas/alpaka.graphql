@@ -192,6 +192,10 @@ input ChromaCollectionFilter {
   NOT: ChromaCollectionFilter
   OR: ChromaCollectionFilter
   ids: [ID!]
+
+  """
+  Search by name: a case-insensitive substring, or semantic similarity of the query to the collection's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
   search: String
 }
 
@@ -219,7 +223,6 @@ of users by app.
 type Client {
   clientId: String!
   id: ID!
-  name: String!
   release: Release
 }
 
@@ -791,13 +794,19 @@ enum RoomField {
   CREATED_AT
 }
 
-"""Room(id, title, description, creator, organization, created_at)"""
+"""
+A conversation; embeds its title + description so the room list's ``search`` finds it by topic.
+"""
 input RoomFilter {
   AND: RoomFilter
   DISTINCT: Boolean
   NOT: RoomFilter
   OR: RoomFilter
   ids: [ID!]
+
+  """
+  Search by title: a case-insensitive substring, or semantic similarity of the query to the room's title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
   search: String
   talkingAbout: StructureInput
 }

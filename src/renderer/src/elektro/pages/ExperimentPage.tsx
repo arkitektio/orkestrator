@@ -60,9 +60,9 @@ export const ExperimentPage = asDetailQueryRoute(
           variant="black"
           overlay
           pageActions={
-            <div className="flex items-center gap-2">
-              <ElektroExperiment.ObjectButton object={experiment} />
-            </div>
+            <>
+              <ElektroExperiment.ObjectButton alwaysShow object={experiment} />
+            </>
           }
           additionalSidebars={
             <>

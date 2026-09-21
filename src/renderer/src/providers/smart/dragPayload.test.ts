@@ -8,6 +8,7 @@ import {
   getSmartDragStructures,
   getSmartDropObjects,
   resolveSmartDrop,
+  smartDragStructures,
   smartExternalData,
   STRUCTURES_MIME,
 } from "./dragPayload";
@@ -135,5 +136,27 @@ describe("the left side of a drop", () => {
   it("is nothing at all, let go over a card that is being dragged", () => {
     expect(getSmartDropObjects([image, roi], roi, [image, roi])).toBeNull();
     expect(getSmartDropObjects([], image, [image])).toBeNull();
+  });
+});
+
+describe("a drag still in the air", () => {
+  it("shows its structures while it is one of ours", () => {
+    expect(smartDragStructures(internal({ structures: [image, roi] }) as InternalDragSession)).toEqual([
+      image,
+      roi,
+    ]);
+  });
+
+  it("shows nothing for a drag of another kind, or one carrying junk", () => {
+    expect(
+      smartDragStructures(internal({ structures: [image] }, { kind: "file" }) as InternalDragSession),
+    ).toBeNull();
+    expect(smartDragStructures(internal({ nope: true }) as InternalDragSession)).toBeNull();
+  });
+
+  it("shows nothing for a drag from outside: its data is sealed until the drop", () => {
+    expect(
+      smartDragStructures(external(smartExternalData([image]))),
+    ).toBeNull();
   });
 });

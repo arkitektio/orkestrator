@@ -1,6 +1,6 @@
 import {RawInspector} from './bloks/inspector/Inspector';
 import {lovekitBlokComponents} from './bloks/lovekit';
-import {shadcnComposableComponents} from './bloks/primitives/Primitives';
+import {shadcnComposableComponents} from './bloks';
 import {standardBlokFunctions} from './functions';
 import {createBlokCatalog} from './runtime';
 

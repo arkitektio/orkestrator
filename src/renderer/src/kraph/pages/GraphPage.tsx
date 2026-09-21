@@ -8,7 +8,7 @@ import {
   useUpdateGraphMutation,
 } from "../api/graphql";
 
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import OntologyGraph from "../components/designer/OntologyGraph";
 import { ProjectionBadge } from "../components/ProjectionBadge";
 import ScatterPlotList from "../components/lists/ScatterPlotList";
@@ -41,31 +41,33 @@ export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch })
       title={data.graph.name}
       pageActions={
         <>
-          <ProjectionBadge projection={data.graph.projection} />
+          {/* A readout, not an action: it goes rather than taking a row in
+              the burger. */}
+          <PageAction.Slot collapse="hide" priority={-20}>
+            <ProjectionBadge projection={data.graph.projection} />
+          </PageAction.Slot>
 
           <FormSheet
             trigger={
-              <Button variant="outline">
+              <PageAction aria-label="Edit graph">
                 <HobbyKnifeIcon />
-              </Button>
+              </PageAction>
             }
           >
             {data?.graph && <UpdateGraphForm graph={data?.graph} />}
           </FormSheet>
-          <KraphGraph.ObjectButton object={data.graph} />
+          <KraphGraph.ObjectButton alwaysShow object={data.graph} />
           <KraphGraph.DetailLink object={data.graph} subroute="queries">
-            <Button variant="outline" size="sm">
-              Queries
-            </Button>
+            <PageAction size="sm">Queries</PageAction>
           </KraphGraph.DetailLink>
-          <Button
+          <PageAction
+            priority={-10}
             onClick={() => {
               pin();
             }}
-            variant="outline"
           >
             {data.graph.pinned ? "Unpin" : "Pin"}
-          </Button>
+          </PageAction>
 
         </>
       }

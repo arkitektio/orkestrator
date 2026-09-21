@@ -14,8 +14,8 @@ import {
   preflightBlokDocument,
   type BlokComponentNode,
   type BlokRuntimeStore,
-} from "../../runtime";
-import {shadcnComposableComponents} from "./Primitives";
+} from "../runtime";
+import {shadcnComposableComponents} from "./index";
 
 afterEach(cleanup);
 

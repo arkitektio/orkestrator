@@ -1,8 +1,21 @@
+# Who a message shows up as. `name` is what the sending client called itself
+# ("default" for the desktop app), so the user behind the agent is needed too
+# to label a row with something human.
+fragment MessageAgent on Agent {
+  id
+  name
+  user {
+    id
+    preferredUsername
+  }
+}
+
 fragment Message on Message {
   id
   text
+  isStreaming
   agent {
-    id
+    ...MessageAgent
   }
   attachedStructures {
     identifier
@@ -14,8 +27,9 @@ fragment Message on Message {
 fragment ListMessage on Message {
   id
   text
+  isStreaming
   agent {
-    id
+    ...MessageAgent
   }
   attachedStructures {
     identifier

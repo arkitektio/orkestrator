@@ -3,6 +3,7 @@ import { Icons } from "@/components/icons";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Card } from "@/components/ui/card";
 import { DokumentsDocument, DokumentsFile, LovekitStream } from "@/linkers";
 import {
@@ -62,13 +63,18 @@ export const FilePage = asDetailQueryRoute(
         title={file?.name || 'Untitled File'}
         object={file}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <Button onClick={handleDownload} variant="outline" size="sm" className="shadow-sm">
-              <DownloadIcon className="w-4 h-4 mr-2" />
+          <>
+            <PageAction
+              collapse="icon"
+              icon={<DownloadIcon className="w-4 h-4" />}
+              onClick={handleDownload}
+              size="sm"
+              className="shadow-sm"
+            >
               Download
-            </Button>
-            <DokumentsFile.ObjectButton object={file} />
-          </div>
+            </PageAction>
+            <DokumentsFile.ObjectButton alwaysShow object={file} />
+          </>
         }
         sidebars={
           <Sidebars>

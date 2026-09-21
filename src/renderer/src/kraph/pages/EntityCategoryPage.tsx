@@ -2,7 +2,7 @@ import { EnhanceButton } from "@/alpaka/components/EnhanceButton";
 import { useDialog } from "@/app/dialog";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { DialogButton } from "@/components/ui/dialogbutton";
 import { DragZone } from "@/components/upload/drag";
 import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
@@ -81,51 +81,57 @@ export const Page = asDetailQueryRoute(
         }
         pageActions={
           <>
-            <Button
+            <PageAction
+              priority={10}
               onClick={() => {
                 quickCreate().then(refetch);
               }}
-              variant="outline"
             >
               Quick+
-            </Button>
-            <Button
+            </PageAction>
+            <PageAction
+              priority={-10}
               onClick={() => {
                 pin().then(() => refetch());
               }}
-              variant="outline"
             >
               {data.entityCategory.pinned ? "Unpin" : "Pin"}
-            </Button>
+            </PageAction>
 
             <DialogButton
+              alwaysShow
               variant="outline"
               name="editentitycategory"
               dialogProps={{ entityCategory: data.entityCategory }}
             >
               Edit
             </DialogButton>
-            <Button
-              variant="outline"
+            <PageAction
+              priority={-10}
+              collapse="icon"
+              icon={<Settings2 className="h-3 w-3" />}
               onClick={() => navigateRouter(`/kraph/entitycategories/${data.entityCategory.id}/schema`)}
             >
-              <Settings2 className="h-3 w-3 mr-2" />
               Schema Builder
-            </Button>
+            </PageAction>
             <EnhanceButton identifier="@kraph/entitycategory" object={data.entityCategory} refetch={refetch} />
 
-            <Button
-              variant="outline"
+            {/* Filling the category is what the page is for. */}
+            <PageAction
+              alwaysShow
+              collapse="icon"
+              icon={<Plus className="h-3 w-3" />}
+              menuLabel={`Create ${data.entityCategory.label || "Entity"}`}
               onClick={() =>
                 openSheet("createentitywithproperties", {
                   category: data.entityCategory,
                 }, { size: "large" })
               }
             >
-              <Plus className="h-3 w-3 mr-2" />
               Create {data.entityCategory.label || "Entity"}
-            </Button>
+            </PageAction>
             <KraphEntityCategory.ObjectButton
+              alwaysShow
               object={data.entityCategory}
             />
           </>

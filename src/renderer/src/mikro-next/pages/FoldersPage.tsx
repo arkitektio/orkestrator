@@ -1,5 +1,5 @@
 import { Explainer } from "@/components/explainer/Explainer";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { MikroFolder } from "@/linkers";
 import { PlusIcon } from "lucide-react";
 import React from "react";
@@ -21,10 +21,14 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       title="Folders"
       pageActions={
         <>
-          <Button variant="outline" size="sm" onClick={() => createFolder()}>
-            <PlusIcon className="h-4 w-4 mr-2" />
+          <PageAction
+            alwaysShow
+            size="sm"
+            icon={<PlusIcon className="h-4 w-4" />}
+            onClick={() => createFolder()}
+          >
             New
-          </Button>
+          </PageAction>
         </>
       }
     >

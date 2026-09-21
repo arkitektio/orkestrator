@@ -163,7 +163,9 @@ export const ModelPageLayout = ({
       variant={variant}
       overlay={overlay}
       actions={actions}
-      pageActions={pageActions || <ObjectButton objects={objects} />}
+      // The menu is the page's way into everything a model can do, so
+      // it is pinned: it stays in the row however tight the row gets.
+      pageActions={pageActions || <ObjectButton alwaysShow objects={objects} />}
     >
       <CommandContext objects={objects} />
       {children}

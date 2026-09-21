@@ -1,6 +1,7 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Button } from "@/components/ui/button";
+import { PageAction, PageActionGroup } from "@/components/ui/page-action";
 import { DialogButton } from "@/components/ui/dialogbutton";
 import {
   DropdownMenu,
@@ -102,70 +103,56 @@ export const TPage = asDetailQueryRoute(
         additionalSidebars={<Sidebars.Tab label="Stats"><TaskStatsSidebar task={data.task} /></Sidebars.Tab>}
         object={data.task}
         pageActions={
-          <div className="flex gap-2">
-            <RekuestTask.DetailLink
-              object={data?.task}
-              subroute="log"
-              className="font-semibold"
-            >
-              <Button
-                variant={"outline"}
-                size={"sm"}
-              >
-                Logs
-              </Button>
-            </RekuestTask.DetailLink>
-            {hasDelegations && (
+          <>
+            {/* The task's other views. One control, so they give way
+                together rather than leaving a stray link behind. */}
+            <PageActionGroup priority={-10}>
               <RekuestTask.DetailLink
                 object={data?.task}
-                subroute="timeline"
+                subroute="log"
                 className="font-semibold"
               >
-                <Button
-                  variant={"outline"}
-                  size={"sm"}
-                >
-                  Timeline
-                </Button>
+                <PageAction size="sm">Logs</PageAction>
               </RekuestTask.DetailLink>
-            )}
-            {hasDelegations && (
-              <RekuestTask.DetailLink
-                object={data?.task}
-                subroute="space"
-                className="font-semibold"
-              >
-                <Button
-                  variant={"outline"}
-                  size={"sm"}
+              {hasDelegations && (
+                <RekuestTask.DetailLink
+                  object={data?.task}
+                  subroute="timeline"
+                  className="font-semibold"
                 >
-                  Space
-                </Button>
-              </RekuestTask.DetailLink>
-            )}
-            {data.task.parent && <RekuestTask.DetailLink
-              object={data?.task?.parent}
-              subroute="log"
-              className="font-semibold"
-            >
-              <Button
-                variant={"outline"}
-                size={"sm"}
-              >
-                Parent Logs
-              </Button>
-            </RekuestTask.DetailLink>}
-            <div className="flex">
-              <Button
-                variant={"outline"}
-                size={"sm"}
+                  <PageAction size="sm">Timeline</PageAction>
+                </RekuestTask.DetailLink>
+              )}
+              {hasDelegations && (
+                <RekuestTask.DetailLink
+                  object={data?.task}
+                  subroute="space"
+                  className="font-semibold"
+                >
+                  <PageAction size="sm">Space</PageAction>
+                </RekuestTask.DetailLink>
+              )}
+              {data.task.parent && (
+                <RekuestTask.DetailLink
+                  object={data?.task?.parent}
+                  subroute="log"
+                  className="font-semibold"
+                >
+                  <PageAction size="sm">Parent Logs</PageAction>
+                </RekuestTask.DetailLink>
+              )}
+            </PageActionGroup>
+            {/* `gap-0`: the split button is one shape, not two buttons. */}
+            <PageActionGroup priority={10} className="gap-0">
+              <PageAction
+                size="sm"
                 onClick={() => {
                   reassign();
                 }}
                 className="rounded-r-none"
               >
                 Rerun
-              </Button>
+              </PageAction>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -186,18 +173,22 @@ export const TPage = asDetailQueryRoute(
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
+            </PageActionGroup>
+            {/* Only offered while the task can still be stopped, so while it
+                is offered it is the most urgent thing on the row. */}
             {isCancelable(data.task) && (
-              <Button
+              <PageAction
+                priority={20}
                 onClick={() => cancel(data.task.id)}
                 variant={"destructive"}
                 size={"sm"}
               >
                 Cancel
-              </Button>
+              </PageAction>
             )}
             {isInterruptable(data.task) && (
-              <Button
+              <PageAction
+                priority={20}
                 onClick={() =>
                   interrupt({
                     variables: { input: { task: data.task.id } },
@@ -207,15 +198,19 @@ export const TPage = asDetailQueryRoute(
                 size={"sm"}
               >
                 Interrupt
-              </Button>
+              </PageAction>
             )}
 
-            <DialogButton name="reportbug" variant="outline" size="sm"
+            <DialogButton
+              priority={-20}
+              name="reportbug"
+              variant="outline"
+              size="sm"
               dialogProps={{ taskId: data?.task.id }}
             >
               Report Bug
             </DialogButton>
-          </div>
+          </>
         }
       >
         <div className="flex h-full w-full relative">

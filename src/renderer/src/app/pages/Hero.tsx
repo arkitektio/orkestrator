@@ -35,6 +35,7 @@ import ProfileSwitcher from "@/app/components/profile/ProfileSwitcher";
 // The dashboard layout scope and the profile id are deliberately the same
 // string, so a profile switch re-scopes the dockview layout for free.
 import { buildScopeKey } from "@/lib/arkitekt/fakts/profileStorageSchema";
+import { hasRestorablePanels, widgetKeysToAdd } from "./dashboardLayout";
 
 
 
@@ -48,7 +49,16 @@ const WidgetPanel = (
 
   return (
     <div className="h-full overflow-auto px-5 pb-5 pt-2 @container">
-      {widget?.component()}
+      {/* A restored panel can outlive its widget: the layout is saved per
+          scope, but a module only registers its widgets once its service is
+          ready. Say so instead of rendering an empty box. */}
+      {widget ? (
+        widget.component()
+      ) : (
+        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+          Waiting for this widget's service…
+        </div>
+      )}
     </div>
   );
 };
@@ -88,15 +98,18 @@ const components = {
 // ── Helpers ──
 
 /** Add a widget as a new split panel — never as a tab, alternating right/below */
-let _nextDirection: "right" | "below" = "right";
 const addWidgetPanel = (
   api: DockviewApi,
   w: DashboardWidgetRegistration,
 ) => {
   const panels = api.panels;
+  // `addPanel` throws on an id the grid already holds, and a throw inside an
+  // effect unmounts the whole dashboard.
+  if (panels.some((p) => p.id === w.key)) return;
   const lastPanel = panels.length > 0 ? panels[panels.length - 1] : null;
-  const direction = _nextDirection;
-  _nextDirection = direction === "right" ? "below" : "right";
+  // Alternate off the panel count rather than a module-level cursor, which
+  // survived remounts and made the same widget set lay out differently.
+  const direction = panels.length % 2 === 1 ? "right" : "below";
   api.addPanel({
     id: w.key,
     component: "widget",
@@ -205,7 +218,6 @@ export const Home = () => {
 
   const widgets = useDashboardRegistry((s) => s.widgets);
   const saveLayout = useDashboardRegistry((s) => s.saveLayout);
-  const serializedLayout = useDashboardRegistry((s) => s.serializedLayout);
   const setScope = useDashboardRegistry((s) => s.setScope);
   const clearLayout = useDashboardRegistry((s) => s.clearLayout);
   const editing = useDashboardRegistry((s) => s.editing);
@@ -234,12 +246,13 @@ export const Home = () => {
 
   const addAllDefaultPanels = useCallback(
     (dockApi: DockviewApi, widgetMap: Record<string, DashboardWidgetRegistration>) => {
-      _nextDirection = "right";
-      Object.values(widgetMap).forEach((w) => {
-        if (!addedKeysRef.current.has(w.key)) {
-          addWidgetPanel(dockApi, w);
-          addedKeysRef.current.add(w.key);
-        }
+      widgetKeysToAdd(
+        Object.keys(widgetMap),
+        addedKeysRef.current,
+        dockApi.panels.map((p) => p.id),
+      ).forEach((key) => {
+        addWidgetPanel(dockApi, widgetMap[key]);
+        addedKeysRef.current.add(key);
       });
     },
     [],
@@ -276,47 +289,60 @@ export const Home = () => {
     [addAllDefaultPanels],
   );
 
-  // Set scope when it changes — this reloads the layout from the right storage key
-  useEffect(() => {
-    if (currentScope && currentScope !== activeScopeRef.current) {
-      activeScopeRef.current = currentScope;
-      setScope(currentScope);
+  /**
+   * Fill an empty grid from the active scope's saved layout, or from the
+   * default panel set.
+   *
+   * `addedKeysRef` is reset first: it describes one dockview instance, and
+   * every caller here starts from a grid with no panels in it. Carrying the
+   * previous instance's keys over is what left the dashboard blank — every
+   * default panel looked as though it had already been added.
+   */
+  const rebuild = useCallback(
+    (dockApi: DockviewApi) => {
+      dockApi.clear();
+      addedKeysRef.current.clear();
 
-      // If DockView is already mounted, reload it
-      if (api) {
-        api.clear();
-        addedKeysRef.current.clear();
-        const saved = useDashboardRegistry.getState().serializedLayout;
-        if (saved) {
-          try {
-            restoreLayout(api, saved, widgetsRef.current);
-          } catch {
-            addAllDefaultPanels(api, widgetsRef.current);
-          }
-        } else {
-          addAllDefaultPanels(api, widgetsRef.current);
+      const saved = useDashboardRegistry.getState().serializedLayout;
+      if (hasRestorablePanels(saved)) {
+        try {
+          restoreLayout(dockApi, saved!, widgetsRef.current);
+          return;
+        } catch {
+          // A layout dockview refused to load leaves the grid cleared; the
+          // default set below is the recovery.
+          dockApi.clear();
+          addedKeysRef.current.clear();
         }
       }
-    }
-  }, [currentScope, api, setScope, addAllDefaultPanels, restoreLayout]);
+
+      addAllDefaultPanels(dockApi, widgetsRef.current);
+    },
+    [addAllDefaultPanels, restoreLayout],
+  );
+
+  // Set scope when it changes — this reloads the layout from the right storage key
+  useEffect(() => {
+    if (!currentScope || currentScope === activeScopeRef.current) return;
+
+    setScope(currentScope);
+
+    // `api` is whatever this render saw. On the first pass `onReady` has
+    // already run and rebuilt from this scope, but its `setApi` has not
+    // landed yet — so the scope is only marked handled once a live grid has
+    // actually been rebuilt, and the effect runs again when `api` arrives.
+    if (!api) return;
+
+    activeScopeRef.current = currentScope;
+    rebuild(api);
+  }, [currentScope, api, setScope, rebuild]);
 
   const onReady = useCallback(
     (event: DockviewReadyEvent) => {
-      const saved = serializedLayout;
-
-      if (saved) {
-        try {
-          restoreLayout(event.api, saved, widgetsRef.current);
-        } catch {
-          addAllDefaultPanels(event.api, widgetsRef.current);
-        }
-      } else {
-        addAllDefaultPanels(event.api, widgetsRef.current);
-      }
-
+      rebuild(event.api);
       setApi(event.api);
     },
-    [serializedLayout, addAllDefaultPanels, restoreLayout],
+    [rebuild],
   );
 
   // Persist layout on changes
@@ -338,8 +364,10 @@ export const Home = () => {
   // When new widgets register after DockView is ready, add them as new panels
   useEffect(() => {
     if (!api) return;
-    const newKeys = Object.keys(widgets).filter(
-      (k) => !addedKeysRef.current.has(k),
+    const newKeys = widgetKeysToAdd(
+      Object.keys(widgets),
+      addedKeysRef.current,
+      api.panels.map((p) => p.id),
     );
     newKeys.forEach((k) => {
       const w = widgets[k];
@@ -355,6 +383,25 @@ export const Home = () => {
     clearLayout();
     addAllDefaultPanels(api, widgetsRef.current);
   }, [api, addAllDefaultPanels, clearLayout]);
+
+  // A grid that ended up with nothing in it is a dead dashboard: the user sees
+  // an empty page and there is no control on it to bring the widgets back.
+  // This catches whatever got it there — a layout that would not load, or
+  // widgets that only registered once their service came up, after the
+  // rebuild had already run against an empty registry.
+  //
+  // Once per grid: a later emptying is the user's own doing (edit mode closes
+  // panels) and must stand.
+  const healedApiRef = useRef<DockviewApi | null>(null);
+  useEffect(() => {
+    if (!api || api.panels.length > 0) return;
+    if (healedApiRef.current === api) return;
+    if (Object.keys(widgets).length === 0) return;
+
+    healedApiRef.current = api;
+    addedKeysRef.current.clear();
+    addAllDefaultPanels(api, widgets);
+  }, [api, widgets, addAllDefaultPanels]);
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">

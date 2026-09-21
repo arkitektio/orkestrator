@@ -15,21 +15,20 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
     <KraphEntityCategory.ListPage
       title="Entity Categories"
       pageActions={
-        <div className="flex flex-row gap-2">
-          <>
-            <DialogButton
-              name="createentitycategory"
-              variant={"outline"}
-              size={"sm"}
-              dialogProps={{
-                onSuccess: (data) => navigate(KraphEntityCategory.linkBuilder(data.createEntityCategory.id)),
-              }}
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Create
-            </DialogButton>
-          </>
-        </div>
+        <>
+          <DialogButton
+            alwaysShow
+            name="createentitycategory"
+            variant={"outline"}
+            size={"sm"}
+            dialogProps={{
+              onSuccess: (data) => navigate(KraphEntityCategory.linkBuilder(data.createEntityCategory.id)),
+            }}
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Create
+          </DialogButton>
+        </>
       }
     >
       <div className="p-6">

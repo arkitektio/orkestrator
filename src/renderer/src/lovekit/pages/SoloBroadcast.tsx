@@ -17,9 +17,9 @@ export default asDetailQueryRoute(
         title={data?.soloBroadcast.title || "Broadcast"}
         object={data.soloBroadcast}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <LovekitSoloBroadcast.ObjectButton object={data.soloBroadcast} />
-          </div>
+          <>
+            <LovekitSoloBroadcast.ObjectButton alwaysShow object={data.soloBroadcast} />
+          </>
         }
         sidebars={
           <Sidebars>

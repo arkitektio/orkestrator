@@ -234,7 +234,7 @@ export const AppStorePage = () => {
     <PageLayout
       title="App Store"
       pageActions={
-        <DialogButton name="createrepo" variant="outline" size="sm" dialogProps={{}}>
+        <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>
           Add Repo
         </DialogButton>
       }

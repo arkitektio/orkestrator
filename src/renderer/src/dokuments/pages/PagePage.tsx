@@ -17,9 +17,9 @@ export const PagePage = asDetailQueryRoute(
         title={data?.page && `Page ${data.page.index + 1}`}
         object={data?.page}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <DokumentsPage.ObjectButton object={data.page} />
-          </div>
+          <>
+            <DokumentsPage.ObjectButton alwaysShow object={data.page} />
+          </>
         }
         sidebars={
           <Sidebars>

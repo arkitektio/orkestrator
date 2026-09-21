@@ -2,7 +2,7 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { ListRender } from "@/components/layout/ListRender";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PageAction, PageActionGroup } from "@/components/ui/page-action";
 import { KabinetFlavour, KabinetRepo } from "@/linkers";
 import { GitBranch, Github, RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -38,30 +38,33 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
       }
       defaultSidebar="Info"
       pageActions={
-        <div className="flex flex-row gap-2">
-          <Button
-            variant="outline"
+        <>
+          <PageAction
+            collapse="icon"
+            icon={<RefreshCw className={"h-4 w-4" + (scanning ? " animate-spin" : "")} />}
             size="sm"
             onClick={rescan}
             disabled={scanning}
             title="Read the manifest again and pick up new flavours"
           >
-            <RefreshCw className={"mr-2 h-4 w-4" + (scanning ? " animate-spin" : "")} />
             Rescan
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <a href={repo.url} target="_blank" rel="noreferrer">
-              <Github className="mr-2 h-4 w-4" />
-              Open Repo
-            </a>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <a href={repo.issueUrl} target="_blank" rel="noreferrer">
-              <ShieldAlert className="mr-2 h-4 w-4" />
-              Issues
-            </a>
-          </Button>
-        </div>
+          </PageAction>
+          {/* Both lead off to the same repository, so they go together. */}
+          <PageActionGroup priority={-10}>
+            <PageAction asChild size="sm">
+              <a href={repo.url} target="_blank" rel="noreferrer">
+                <Github className="h-4 w-4" />
+                Open Repo
+              </a>
+            </PageAction>
+            <PageAction asChild size="sm">
+              <a href={repo.issueUrl} target="_blank" rel="noreferrer">
+                <ShieldAlert className="h-4 w-4" />
+                Issues
+              </a>
+            </PageAction>
+          </PageActionGroup>
+        </>
       }
     >
       <div className="p-6 space-y-6">

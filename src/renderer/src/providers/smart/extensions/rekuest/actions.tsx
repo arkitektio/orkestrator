@@ -145,9 +145,16 @@ export const DirectImplementationAssignment = (
     }
 
     const reference = uuidv4();
-    const untrack = trackTask(reference, (event) => {
-      props.onDone?.({ event, kind: "action" });
-    });
+    // `notifyGlobally`: the tracker below lives in the "Run on" picker, which
+    // closes the instant the run starts. Without this the rail's task island
+    // is suppressed too and the task runs with no indicator anywhere.
+    const untrack = trackTask(
+      reference,
+      (event) => {
+        props.onDone?.({ event, kind: "action" });
+      },
+      { notifyGlobally: true },
+    );
 
     try {
       await assign(buildAssignInput({
@@ -309,7 +316,10 @@ export const ImplementationAssignButton = (
     }
 
     const reference = uuidv4();
-    const untrack = trackTask(reference, onEvent);
+    // Tracked locally for the row's own progress bar AND globally: the menu
+    // this row sits in closes on select, so the rail island is the only place
+    // the task can still be watched or cancelled.
+    const untrack = trackTask(reference, onEvent, { notifyGlobally: true });
 
     try {
       await assign(buildAssignInput({
@@ -397,7 +407,7 @@ export const BatchImplementationAssignButton = (
       }
 
       const reference = uuidv4();
-      const untrack = trackTask(reference, onEvent);
+      const untrack = trackTask(reference, onEvent, { notifyGlobally: true });
 
       try {
         await assign(buildAssignInput({
@@ -494,7 +504,7 @@ export const AssignButton = (
     }
 
     const reference = uuidv4();
-    const untrack = trackTask(reference, onEvent);
+    const untrack = trackTask(reference, onEvent, { notifyGlobally: true });
 
     try {
       await assign(buildAssignInput({
@@ -609,7 +619,7 @@ export const BatchAssignButton = (
       }
 
       const reference = uuidv4();
-      const untrack = trackTask(reference, onEvent);
+      const untrack = trackTask(reference, onEvent, { notifyGlobally: true });
 
       try {
         await assign(buildAssignInput({

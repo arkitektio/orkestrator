@@ -1,5 +1,10 @@
 import { AsyncCombobox } from "@/components/fields/AsyncCombobox";
 import { SearchFunction } from "@/components/fields/SearchField";
+import {
+  ActionLabel,
+  PageActionPolicy,
+  useActionSlotSize,
+} from "@/components/ui/page-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,10 +44,13 @@ const FacetRow = (props: { label: string; children: React.ReactNode }) => (
 export const ActionFacetFilter = ({
   facets,
   onChange,
-}: {
+}: PageActionPolicy & {
   facets: ActionFacets;
   onChange: (next: Partial<ActionFacets>) => void;
 }) => {
+  // Page chrome: in a narrow action row this keeps the glyph and the count
+  // and drops the word. The policy props are read off the element by the row.
+  const size = useActionSlotSize();
   const { data: apps } = useAppsQuery();
   // Two instances: one lazy query cannot serve two concurrent calls.
   const [searchProtocols] = useProtocolOptionsLazyQuery();
@@ -90,10 +98,12 @@ export const ActionFacetFilter = ({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" size={size} className="gap-2" aria-label="Filter">
           <Filter className="h-4 w-4" />
-          Filter
-          {active > 0 && <Badge variant="secondary">{active}</Badge>}
+          <ActionLabel>
+            Filter
+            {active > 0 && <Badge variant="secondary">{active}</Badge>}
+          </ActionLabel>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="flex w-72 flex-col gap-4">

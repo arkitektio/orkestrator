@@ -2,6 +2,11 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { HelpSidebar } from "@/components/sidebars/help";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+} from "@/components/ui/page-action";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
 import {
@@ -139,21 +144,26 @@ const Page = () => {
       title={"Actions"}
       pageActions={
         <>
+          {/* The search is what this page is for: it is pinned, and until it
+              is used it is already no wider than a glyph. */}
           <CollapsibleSearch
+            alwaysShow
             value={search}
             onChange={(value) => setSearch(value || null)}
             placeholder="Search actions…"
           />
-          <Button
+          <PageAction
+            priority={10}
+            collapse="icon"
+            icon={<Wifi className="h-4 w-4" />}
             variant={runnable ? "default" : "outline"}
-            className="gap-2"
             onClick={() => setRunnable(runnable ? null : true)}
             aria-pressed={runnable}
           >
-            <Wifi className="h-4 w-4" />
             Runnable now
-          </Button>
+          </PageAction>
           <StructureDemandFilter
+            collapse="icon"
             structure={structure}
             direction={dir}
             onChange={(next) => {
@@ -161,69 +171,85 @@ const Page = () => {
               if (next.direction) setDir(next.direction);
             }}
           />
-          <ActionFacetFilter facets={facets} onChange={setFacets} />
+          <ActionFacetFilter collapse="icon" facets={facets} onChange={setFacets} />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <ArrowUpDown className="h-4 w-4" />
-                Sort
-                {sort !== "default" ? (
-                  <Badge variant="secondary">{SORT_LABELS[sort]}</Badge>
-                ) : (
-                  // A search term is ranked by the server (substring matches
-                  // first, then by meaning); an explicit sort replaces that.
-                  search && <Badge variant="secondary">Relevance</Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sort}
-                onValueChange={(value) => setSort(value as SortKey)}
-              >
-                {SORT_KEYS.map((key) => (
-                  <DropdownMenuRadioItem key={key} value={key}>
-                    {key === "default" && search ? "Relevance" : SORT_LABELS[key]}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Sort and grouping are how the page is read rather than what it
+              shows: they go before the filters do. */}
+          <PageAction.Slot collapse="icon" priority={-10}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <ActionTrigger aria-label="Sort">
+                  <ArrowUpDown className="h-4 w-4" />
+                  <ActionLabel>
+                    Sort
+                    {sort !== "default" ? (
+                      <Badge variant="secondary">{SORT_LABELS[sort]}</Badge>
+                    ) : (
+                      // A search term is ranked by the server (substring
+                      // matches first, then by meaning); an explicit sort
+                      // replaces that.
+                      search && <Badge variant="secondary">Relevance</Badge>
+                    )}
+                  </ActionLabel>
+                </ActionTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={sort}
+                  onValueChange={(value) => setSort(value as SortKey)}
+                >
+                  {SORT_KEYS.map((key) => (
+                    <DropdownMenuRadioItem key={key} value={key}>
+                      {key === "default" && search ? "Relevance" : SORT_LABELS[key]}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </PageAction.Slot>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Layers className="h-4 w-4" />
-                Group
-                {grouping && <Badge variant="secondary">{grouping.label}</Badge>}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel>Group by</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={groupKey}
-                onValueChange={(value) => setGroupKey(value as ActionGroupKey)}
-              >
-                <DropdownMenuRadioItem value="none">No grouping</DropdownMenuRadioItem>
-                {ACTION_GROUPINGS.map((group) => (
-                  <DropdownMenuRadioItem key={group.key} value={group.key}>
-                    {group.label}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <PageAction.Slot collapse="icon" priority={-10}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <ActionTrigger aria-label="Group">
+                  <Layers className="h-4 w-4" />
+                  <ActionLabel>
+                    Group
+                    {grouping && <Badge variant="secondary">{grouping.label}</Badge>}
+                  </ActionLabel>
+                </ActionTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>Group by</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={groupKey}
+                  onValueChange={(value) => setGroupKey(value as ActionGroupKey)}
+                >
+                  <DropdownMenuRadioItem value="none">No grouping</DropdownMenuRadioItem>
+                  {ACTION_GROUPINGS.map((group) => (
+                    <DropdownMenuRadioItem key={group.key} value={group.key}>
+                      {group.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </PageAction.Slot>
 
-          <DateTimeRangePicker
-            initialDateFrom={usedAfter ?? undefined}
-            initialDateTo={usedBefore ?? undefined}
-            onUpdate={({ range }) => {
-              setUsedAfter(range.from || null);
-              setUsedBefore(range.to || null);
-            }}
-          />
+          {/* The widest control on the row, and the one a visitor is least
+              likely to want: it goes first, and it goes altogether rather
+              than into the burger, where a range picker does not belong. */}
+          <PageAction.Slot collapse="hide" priority={-20}>
+            <DateTimeRangePicker
+              initialDateFrom={usedAfter ?? undefined}
+              initialDateTo={usedBefore ?? undefined}
+              onUpdate={({ range }) => {
+                setUsedAfter(range.from || null);
+                setUsedBefore(range.to || null);
+              }}
+            />
+          </PageAction.Slot>
         </>
       }
       sidebars={

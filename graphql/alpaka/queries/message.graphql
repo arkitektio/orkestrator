@@ -1,18 +1,9 @@
-query GetMessageRoom($messageId: ID!) {
-  rooms(pagination: { limit: 100 }) {
-    id
-    title
-    messages(filters: { ids: [$messageId] }) {
+query GetMessage($id: ID!) {
+  message(id: $id) {
+    ...Message
+    room {
       id
-      text
-      createdAt
-      agent {
-        id
-      }
-      attachedStructures {
-        identifier
-        object
-      }
+      title
     }
   }
 }

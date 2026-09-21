@@ -47,7 +47,7 @@ const Page = asDetailQueryRoute(useUserQuery, ({ data }) => {
   return (
     <LokUser.ModelPage
       object={data.user}
-      pageActions={<LokUser.ObjectButton object={data.user} />}
+      pageActions={<LokUser.ObjectButton alwaysShow object={data.user} />}
       title={data?.user?.username}
     >
       {/* Profile Hero Section */}

@@ -11,10 +11,10 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
     <KraphProtocolEventCategory.ListPage
       title="Protocol Event Categories"
       pageActions={
-        <div className="flex flex-row gap-2">
+        <>
           <>
           </>
-        </div>
+        </>
       }
     >
       <div className="p-6">

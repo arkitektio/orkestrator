@@ -2,6 +2,7 @@ import { useDialog } from "@/app/dialog";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Image } from "@/components/ui/image";
 import { Separator } from "@/components/ui/separator";
 import { useResolve } from "@/datalayer/hooks/useResolve";
@@ -100,26 +101,26 @@ export default asDetailQueryRoute(useDetailClientQuery, ({ data }) => {
       object={data.client}
       pageActions={
         <>
-          <Button
-            variant="outline"
+          <PageAction
+            priority={-10}
+            collapse="icon"
+            icon={<Bug className="h-4 w-4" />}
             size="sm"
             onClick={handleReportClientBug}
-            className="gap-2"
           >
-            <Bug className="h-4 w-4" />
             Report Bug
-          </Button>
+          </PageAction>
           {data.client.publicSources?.map((source, index) => (
-            <Button
+            <PageAction
               key={index}
+              collapse="icon"
+              icon={<ExternalLink className="h-4 w-4" />}
+              menuLabel={source.kind}
               onClick={() => pressLink(source.url)}
-              variant="outline"
               size="sm"
-              className="gap-2"
             >
-              <ExternalLink className="h-4 w-4" />
               {source.kind}
-            </Button>
+            </PageAction>
           ))}
         </>
       }

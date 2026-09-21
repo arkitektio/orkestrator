@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from '@/app/routes/DetailQueryRoute'
 import { Sidebars } from '@/components/layout/Sidebars'
-import { Button } from '@/components/ui/button'
+import { PageAction } from '@/components/ui/page-action'
 import { RekuestTask } from '@/linkers'
 import {
   DetailTaskFragment,
@@ -53,43 +53,46 @@ export const TaskSpacePage = asDetailQueryRoute(useDetailTaskQuery, ({ data, id 
         title={`${data?.task?.action.name} — Space`}
         object={data.task}
         pageActions={
-          <div className="flex gap-2">
-            <Button
-              variant={'outline'}
+          <>
+            <PageAction
               size={'sm'}
               onClick={() => {
                 reassign()
               }}
             >
               Rerun
-            </Button>
+            </PageAction>
             {isCancelable(data.task) && (
-              <Button
+              <PageAction
                 onClick={() =>
                   cancel({
                     variables: { input: { task: data.task.id } }
                   })
                 }
+                // Stopping a running task outranks starting another one.
+                priority={20}
                 variant={'destructive'}
                 size={'sm'}
               >
                 Cancel
-              </Button>
+              </PageAction>
             )}
             {isInterruptable(data.task) && (
-              <Button
+              <PageAction
                 onClick={() =>
                   interrupt({
                     variables: { input: { task: data.task.id } }
                   })
                 }
+                // Stopping a running task outranks starting another one.
+                priority={20}
                 variant={'destructive'}
                 size={'sm'}
               >
                 Interrupt
-              </Button>
+              </PageAction>
             )}
-          </div>
+          </>
         }
         sidebars={
           <Sidebars>

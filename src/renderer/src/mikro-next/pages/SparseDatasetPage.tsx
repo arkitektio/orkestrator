@@ -31,7 +31,7 @@ export const SparseDatasetPage = asDetailQueryRoute(
         variant="black"
         overlay
         actions={<MikroSparseDataset.Actions object={dataset} />}
-        pageActions={<MikroSparseDataset.ObjectButton object={dataset} />}
+        pageActions={<MikroSparseDataset.ObjectButton alwaysShow object={dataset} />}
         additionalSidebars={
           <>
             <Sidebars.Tab label="Info">

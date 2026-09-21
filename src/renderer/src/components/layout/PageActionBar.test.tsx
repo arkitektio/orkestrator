@@ -2,18 +2,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { OverflowActions, fitCount } from "./OverflowActions";
-
-describe("fitCount", () => {
-  it("shows everything when everything fits, burger or no burger", () => {
-    expect(fitCount([100, 100, 100], 308, 4, 40)).toBe(3);
-  });
-  it("charges the burger first and fills from the left", () => {
-    // 40 + 4+100 + 4+100 = 248 fits; the third would make 352.
-    expect(fitCount([100, 100, 100], 250, 4, 40)).toBe(2);
-    expect(fitCount([100, 100, 100], 100, 4, 40)).toBe(0);
-  });
-});
+import { PageAction } from "@/components/ui/page-action";
+import { PageActionBar } from "./PageActionBar";
 
 /**
  * jsdom lays nothing out, so widths come from `data-w` on the element or its
@@ -47,13 +37,13 @@ afterAll(() => {
   if (clientWidth) Object.defineProperty(Element.prototype, "clientWidth", clientWidth);
 });
 
-describe("OverflowActions", () => {
+describe("PageActionBar", () => {
   it("keeps every action in the row while they fit", () => {
     render(
-      <OverflowActions data-w="400">
+      <PageActionBar data-w="400">
         <button data-w="100">One</button>
         <button data-w="100">Two</button>
-      </OverflowActions>,
+      </PageActionBar>,
     );
     expect(screen.getByText("One")).toBeInTheDocument();
     expect(screen.getByText("Two")).toBeInTheDocument();
@@ -62,13 +52,13 @@ describe("OverflowActions", () => {
 
   it("moves the actions that spill into the burger, rightmost first", async () => {
     render(
-      <OverflowActions data-w="250">
+      <PageActionBar data-w="250">
         <button data-w="100">One</button>
         <button data-w="100">Two</button>
         <>
           <button data-w="100">Three</button>
         </>
-      </OverflowActions>,
+      </PageActionBar>,
     );
     expect(screen.getByText("One")).toBeInTheDocument();
     expect(screen.getByText("Two")).toBeInTheDocument();
@@ -76,5 +66,32 @@ describe("OverflowActions", () => {
 
     await userEvent.click(screen.getByLabelText("More actions"));
     expect(await screen.findByText("Three")).toBeInTheDocument();
+  });
+
+  it("keeps a pinned action in the row and evicts the rest", async () => {
+    render(
+      <PageActionBar data-w="150">
+        <button data-w="100">Filter</button>
+        <PageAction alwaysShow data-w="100">
+          New
+        </PageAction>
+      </PageActionBar>,
+    );
+    expect(screen.getByText("New")).toBeInTheDocument();
+    expect(screen.queryByText("Filter")).toBeNull();
+  });
+
+  it("drops an action's label before the action itself", () => {
+    render(
+      <PageActionBar data-w="150">
+        <button data-w="100">One</button>
+        <PageAction collapse="icon" icon={<span data-testid="glyph" />} data-w="100">
+          Sort
+        </PageAction>
+      </PageActionBar>,
+    );
+    expect(screen.getByTestId("glyph")).toBeInTheDocument();
+    expect(screen.queryByText("Sort")).toBeNull();
+    expect(screen.queryByLabelText("More actions")).toBeNull();
   });
 });

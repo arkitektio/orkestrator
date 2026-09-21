@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { useElektroBigFileDownload } from "@/datalayer/hooks/useElektroBigFileDownload";
 import { ElektroFile } from "@/linkers";
 import { useDownload } from "@/providers/download/DownloadProvider";
@@ -30,8 +30,10 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
       object={file}
       title={file.name}
       pageActions={
-        <div className="flex items-center gap-2">
-          <Button
+        <>
+          <PageAction
+            collapse="icon"
+            icon={<DownloadIcon className="h-4 w-4" />}
             onClick={() => {
               startDownload(file.name, async ({ id, signal }) => {
                 return await download(file.store.id, file.name, { id, signal });
@@ -39,15 +41,13 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
                 console.error("Download error:", e);
               });
             }}
-            variant="outline"
-            className="flex items-center gap-2 shadow-sm"
+            className="shadow-sm"
           >
-            <DownloadIcon className="h-4 w-4" />
             Download
-          </Button>
+          </PageAction>
 
-          <ElektroFile.ObjectButton object={file} />
-        </div>
+          <ElektroFile.ObjectButton alwaysShow object={file} />
+        </>
       }
       sidebars={
         <Sidebars>

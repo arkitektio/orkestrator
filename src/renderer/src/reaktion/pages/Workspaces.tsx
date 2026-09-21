@@ -9,7 +9,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
     <PageLayout
       title="Workspaces"
-      pageActions={<div className="flex flex-row gap-2"></div>}
+      pageActions={<></>}
     >
       <WorkspaceCarousel />
       <div className="p-6">

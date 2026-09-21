@@ -21,12 +21,9 @@ const Page = asDetailQueryRoute(useGetStructureQuery, ({ data }) => {
         </Sidebars>
       }
       pageActions={
-        <div className="flex flex-row gap-2">
-          <>
-            <FormSheet trigger={<HobbyKnifeIcon />}>Not implemented</FormSheet>
-          </>
-
-        </div>
+        <>
+          <FormSheet trigger={<HobbyKnifeIcon />}>Not implemented</FormSheet>
+        </>
       }
     >
       <KraphStructure.Drop

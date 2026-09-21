@@ -1,4 +1,5 @@
 import { TaskEventFragment } from "@/rekuest/api/graphql";
+import type { PageActionPolicy } from "@/components/layout/actionPlan";
 import { Structure } from "@/types";
 import React from "react";
 import type { SmartSectionContext, SmartSectionSelection } from "./section";
@@ -30,12 +31,15 @@ export type SmartContextProps = {
   sections?: SmartSectionSelection;
 };
 
-export type ObjectButtonProps = SmartContextProps & {
-  children?: React.ReactNode;
-  className?: string;
-  variant?: "outline" | "default";
-  size?: "sm" | "lg" | "icon";
-};
+export type ObjectButtonProps = SmartContextProps &
+  // The menu button is page chrome as often as not; carrying the policy lets
+  // an action row read it off the element like any other action.
+  PageActionPolicy & {
+    children?: React.ReactNode;
+    className?: string;
+    variant?: "outline" | "default";
+    size?: "sm" | "lg" | "icon";
+  };
 
 /** What a section receives: the menu's props plus the search text. */
 export type PassDownProps = SmartSectionContext;

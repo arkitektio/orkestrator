@@ -1,5 +1,6 @@
-import { Button, ButtonProps } from "./button";
+import { PageAction, PageActionProps } from "./page-action";
 
-export const PageActionButton = (props: Omit<ButtonProps, "variant">) => (
-  <Button variant="outline" {...props} />
+/** @deprecated Use `PageAction`, which also carries a collapse policy. */
+export const PageActionButton = (props: Omit<PageActionProps, "variant">) => (
+  <PageAction variant="outline" {...props} />
 );

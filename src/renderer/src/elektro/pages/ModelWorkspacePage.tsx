@@ -49,9 +49,9 @@ export const ModelWorkspacePage = asDetailQueryRoute(
         title={workspace.name}
         object={workspace}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <ElektroModelWorkspace.ObjectButton object={workspace} />
-          </div>
+          <>
+            <ElektroModelWorkspace.ObjectButton alwaysShow object={workspace} />
+          </>
         }
       >
         <div className="h-full w-full grid grid-cols-12 grid-reverse gap-4 pointers-events-none p-4">

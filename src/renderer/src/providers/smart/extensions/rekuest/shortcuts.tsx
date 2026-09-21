@@ -132,7 +132,9 @@ export const ShortcutButton = (
       }
 
       const reference = uuidv4();
-      const untrack = trackTask(reference, doStuff);
+      // Also globally: the popover holding this row closes on select, so the
+      // rail's task island is the only surface left for the running task.
+      const untrack = trackTask(reference, doStuff, { notifyGlobally: true });
 
       try {
         await assign(buildAssignInput({

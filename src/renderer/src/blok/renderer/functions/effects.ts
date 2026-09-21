@@ -59,9 +59,52 @@ const copyFunction = createBlokFunction(
   },
 );
 
+/**
+ * A toast is the one piece of UI a blok raises without a component: it is
+ * transient, app-owned chrome (the `<Toaster/>` is mounted once by the shell),
+ * so it belongs in action position like any other effect.
+ */
+const toastFunction = createBlokFunction(
+  {
+    name: 'ui.toast',
+    description: 'Shows a toast notification.',
+    returnType: 'void',
+    purity: 'effect',
+    schema: z.object({
+      message: textSchema.describe('The message to show.'),
+      description: textSchema.optional().describe('Secondary line under the message.'),
+      level: z
+        .enum(['default', 'success', 'info', 'warning', 'error'])
+        .optional()
+        .describe('Toast severity. Defaults to "default".'),
+    }),
+  },
+  args => {
+    const options = args.description ? {description: args.description} : undefined;
+
+    switch (args.level) {
+      case 'success':
+        toast.success(args.message, options);
+        break;
+      case 'info':
+        toast.info(args.message, options);
+        break;
+      case 'warning':
+        toast.warning(args.message, options);
+        break;
+      case 'error':
+        toast.error(args.message, options);
+        break;
+      default:
+        toast(args.message, options);
+    }
+  },
+);
+
 export const effectFunctions = [
   createLoggerFunction('info'),
   createLoggerFunction('warn'),
   createLoggerFunction('error'),
   copyFunction,
+  toastFunction,
 ];

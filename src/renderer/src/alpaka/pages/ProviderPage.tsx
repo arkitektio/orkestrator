@@ -39,9 +39,9 @@ export const TPage = asDetailQueryRoute(
         title={provider.name}
         object={provider}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <AlpakaProvider.ObjectButton object={provider} />
-          </div>
+          <>
+            <AlpakaProvider.ObjectButton alwaysShow object={provider} />
+          </>
         }
         sidebars={
           <Sidebars>

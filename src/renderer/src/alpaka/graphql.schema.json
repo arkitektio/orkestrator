@@ -1622,7 +1622,7 @@
           },
           {
             "name": "search",
-            "description": null,
+            "description": "Search by name: a case-insensitive substring, or semantic similarity of the query to the collection's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -1760,22 +1760,6 @@
               "name": null,
               "ofType": {
                 "name": "ID",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "name",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -6834,7 +6818,7 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "RoomFilter",
-        "description": "Room(id, title, description, creator, organization, created_at)",
+        "description": "A conversation; embeds its title + description so the room list's ``search`` finds it by topic.",
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -6908,7 +6892,7 @@
           },
           {
             "name": "search",
-            "description": null,
+            "description": "Search by title: a case-insensitive substring, or semantic similarity of the query to the room's title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.",
             "type": {
               "kind": "SCALAR",
               "name": "String",

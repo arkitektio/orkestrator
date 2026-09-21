@@ -9,10 +9,10 @@ export const SpaceEditPage = asDetailQueryRoute(useSpaceQuery, ({ data }) => {
       title={`Edit ${data.space.name}`}
       object={data.space}
       pageActions={
-        <div className="flex flex-row gap-2">
+        <>
           <RekuestSpace.DetailLink object={data.space}>View</RekuestSpace.DetailLink>
-          <RekuestSpace.ObjectButton object={data.space} />
-        </div>
+          <RekuestSpace.ObjectButton alwaysShow object={data.space} />
+        </>
       }
     >
       <div className="flex h-full flex-col p-6 gap-4">

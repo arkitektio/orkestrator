@@ -298,6 +298,58 @@ export function useAction(
   }, [actionCall, component, scope, store]);
 }
 
+/** The scope name a change handler's arguments address the new value by. */
+export const BLOK_EVENT_SCOPE_KEY = '$event';
+
+/**
+ * An action handler that carries the value that triggered it.
+ *
+ * A bare `useAction` handler takes no arguments, so a change handler could only
+ * see a new value by first writing it to the data model and reading it back.
+ * Here the value is published as a scope value under `$event` for the duration
+ * of the call, which makes `{value_path: "$event"}` — or `"$event/id"` for a
+ * structured value — resolvable in the action's arguments.
+ *
+ * Scope values are read-only by design (`isWritableScopedPath`), which is
+ * exactly right: `$event` exists only while the handler runs.
+ */
+export function useEventAction<TSchema extends z.ZodTypeAny>(
+  handle: BlokPropHandle<TSchema> | undefined,
+): ((value?: unknown) => void) | undefined;
+export function useEventAction<TBlok extends AnyBlok, TKey extends keyof TBlok & string>(
+  blok: TBlok,
+  key: TKey,
+): ((value?: unknown) => void) | undefined;
+export function useEventAction(
+  handleOrBlok: BlokPropHandle<z.ZodTypeAny> | AnyBlok | undefined,
+  key?: string,
+): ((value?: unknown) => void) | undefined {
+  const handle = resolveHandle(handleOrBlok, key);
+  const store = useBlokRuntimeStoreApi();
+  const scope = useBlokScope();
+  const actionCall = handle ? getPropActionCall(handle.prop) : undefined;
+  const component = handle?.component;
+
+  return React.useMemo(() => {
+    if (!actionCall || !component) {
+      return undefined;
+    }
+
+    return (value?: unknown) => {
+      const eventScope: BlokScope = {
+        ...scope,
+        values: {...scope.values, [BLOK_EVENT_SCOPE_KEY]: value},
+      };
+      const context = createLiveResolutionContext(store, eventScope);
+      const result = runActionCall(actionCall, context, component);
+
+      if (!result.ok) {
+        console.error(`[blok] action on "${component.id}" failed: ${result.error}`);
+      }
+    };
+  }, [actionCall, component, scope, store]);
+}
+
 /**
  * Schema validity of a node's *value* props. Action props are skipped: they
  * carry a call descriptor rather than a value, and the preflight already

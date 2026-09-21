@@ -1,6 +1,6 @@
 import { Explainer } from "@/components/explainer/Explainer";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { AlpakaLLMModel } from "@/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
@@ -14,11 +14,10 @@ const LLMModelsPage: React.FC<IRepresentationScreenProps> = () => {
       title="LLM Models"
       pageActions={
         <>
-          <AlpakaLLMModel.NewButton>
-            <Button variant="outline" size="sm">
-              <UploadIcon className="h-4 w-4 mr-2" />
+          <AlpakaLLMModel.NewButton alwaysShow collapse="icon">
+            <PageAction size="sm" icon={<UploadIcon className="h-4 w-4" />}>
               New
-            </Button>
+            </PageAction>
           </AlpakaLLMModel.NewButton>
         </>
       }

@@ -1,5 +1,5 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
 import { DragZone } from "@/components/upload/drag";
@@ -49,7 +49,23 @@ const Page = asDetailQueryRoute(useOrganizationQuery, ({ data }) => {
   return (
     <LokOrganization.ModelPage
       object={data.organization}
-      pageActions={<><LokOrganization.ObjectButton object={data.organization} /><Button variant="outline" onClick={() => setCreateInviteOpen(true)}>Create Invite</Button><CreateInviteDialog open={createInviteOpen} onOpenChange={setCreateInviteOpen} organizationId={data.organization.id} availableRoles={data.organization.roles} /></>}
+      pageActions={
+        <>
+          <LokOrganization.ObjectButton alwaysShow object={data.organization} />
+          <PageAction alwaysShow onClick={() => setCreateInviteOpen(true)}>
+            Create Invite
+          </PageAction>
+          {/* Not an action: the dialog the action opens. */}
+          <PageAction.Slot collapse="hide">
+            <CreateInviteDialog
+              open={createInviteOpen}
+              onOpenChange={setCreateInviteOpen}
+              organizationId={data.organization.id}
+              availableRoles={data.organization.roles}
+            />
+          </PageAction.Slot>
+        </>
+      }
       title={data?.organization?.name}
     >
       {/* Profile Hero Section */}

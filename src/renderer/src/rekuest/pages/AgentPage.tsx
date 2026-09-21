@@ -4,6 +4,7 @@ import { VerticalListRender } from "@/components/layout/VerticalListRender";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageAction, PageActionGroup } from "@/components/ui/page-action";
 import { cn } from "@/lib/utils";
 import { RekuestAgent, RekuestState } from "@/linkers";
 import {
@@ -209,42 +210,31 @@ export const AgentPage = asDetailQueryRoute(
             <PinAgent agent={data.agent} />
             <BounceAgentButton agent={data.agent} />
             <CopyAgentPythonButton agent={data.agent} />
-                        <RekuestAgent.DetailLink
-                          object={data?.agent}
-                          subroute="states"
-                          className="font-semibold"
-                        >
-                          <Button
-                            variant={"outline"}
-                            size={"sm"}
-                          >
-                            States
-                          </Button>
-                        </RekuestAgent.DetailLink>
-                        <RekuestAgent.DetailLink
-                          object={data?.agent}
-                          subroute="tasks"
-                          className="font-semibold"
-                        >
-                          <Button
-                            variant={"outline"}
-                            size={"sm"}
-                          >
-                            Tasks
-                          </Button>
-                        </RekuestAgent.DetailLink>
-                        <RekuestAgent.DetailLink
-                          object={data?.agent}
-                          subroute="bloks"
-                          className="font-semibold"
-                        >
-                          <Button
-                            variant={"outline"}
-                            size={"sm"}
-                          >
-                            Bloks
-                          </Button>
-                        </RekuestAgent.DetailLink>
+            {/* The agent's other views: one control, so they give way
+                together rather than leaving a stray link behind. */}
+            <PageActionGroup priority={-10}>
+              <RekuestAgent.DetailLink
+                object={data?.agent}
+                subroute="states"
+                className="font-semibold"
+              >
+                <PageAction size="sm">States</PageAction>
+              </RekuestAgent.DetailLink>
+              <RekuestAgent.DetailLink
+                object={data?.agent}
+                subroute="tasks"
+                className="font-semibold"
+              >
+                <PageAction size="sm">Tasks</PageAction>
+              </RekuestAgent.DetailLink>
+              <RekuestAgent.DetailLink
+                object={data?.agent}
+                subroute="bloks"
+                className="font-semibold"
+              >
+                <PageAction size="sm">Bloks</PageAction>
+              </RekuestAgent.DetailLink>
+            </PageActionGroup>
           </>
         }
       >

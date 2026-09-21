@@ -11,9 +11,9 @@ export default asDetailQueryRoute(
         title="Stream"
         object={data.stream}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <LovekitStream.ObjectButton object={data.stream} />
-          </div>
+          <>
+            <LovekitStream.ObjectButton alwaysShow object={data.stream} />
+          </>
         }
         sidebars={
           <Sidebars>

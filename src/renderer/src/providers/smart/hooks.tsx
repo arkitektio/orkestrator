@@ -1,7 +1,17 @@
+import { DragSession } from "@/lib/dnd/engine";
 import { useDragSession, useDropTarget } from "@/lib/dnd/react";
 import { Structure } from "@/types";
 
 import { acceptsSmartDrag, resolveSmartDrop } from "./dragPayload";
+
+export type SmartDropOptions = {
+  /**
+   * An extra condition on top of "this is a smart drag": a surface that only
+   * wants *some* structures. It also gates `canDrop`, so a drag it turns down
+   * never paints the drop affordance.
+   */
+  accepts?: (session: DragSession) => boolean;
+};
 
 /**
  * Take dropped structures. For a surface that does something of its own with
@@ -12,9 +22,16 @@ import { acceptsSmartDrag, resolveSmartDrop } from "./dragPayload";
  * drag starts and ends. Fine for the handful of surfaces that use this; a
  * card-sized thing should style itself with the `can-drop:` variant instead.
  */
-export const useSmartDrop = (callback: (structures: Structure[]) => void) => {
+export const useSmartDrop = (
+  callback: (structures: Structure[]) => void,
+  options?: SmartDropOptions,
+) => {
+  const extraAccepts = options?.accepts;
+  const accepts = (session: DragSession) =>
+    acceptsSmartDrag(session) && (extraAccepts?.(session) ?? true);
+
   const { ref, isOver } = useDropTarget({
-    accepts: acceptsSmartDrag,
+    accepts,
     onDrop: (payload) => {
       const resolvedDrop = resolveSmartDrop(payload);
 
@@ -24,7 +41,7 @@ export const useSmartDrop = (callback: (structures: Structure[]) => void) => {
     },
   });
   const session = useDragSession();
-  const canDrop = session !== null && acceptsSmartDrag(session);
+  const canDrop = session !== null && accepts(session);
 
   return [{ isOver, canDrop }, ref] as const;
 };

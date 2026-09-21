@@ -55,7 +55,7 @@ const Page = () => {
     <LokUser.ModelPage
       object={data.me}
       actions={<LokUser.Actions object={data.me} />}
-      pageActions={<LokUser.ObjectButton object={data.me} />}
+      pageActions={<LokUser.ObjectButton alwaysShow object={data.me} />}
       title={data?.me?.username}
       sidebars={
         <Sidebars>

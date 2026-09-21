@@ -2,12 +2,9 @@ import { Badge } from "@/components/ui/badge";
 import Timestamp from "@/components/ui/timestamp";
 import { Bot, MessageSquare, Users } from "lucide-react";
 import { RoomFragment } from "../api/graphql";
+import { agentDisplayName } from "../agentName";
 
 type RoomAgent = RoomFragment["agents"][number];
-
-/** Who this agent shows up as in the room: its own name, else the user behind it. */
-const agentLabel = (agent: RoomAgent) =>
-  agent.name || agent.user.preferredUsername;
 
 /**
  * Everything about a room that is not its conversation — the counterpart of
@@ -100,7 +97,7 @@ export const RoomInfoSidebar = ({ room }: { room: RoomFragment }) => {
                       className="flex items-center gap-1.5 text-[0.6875rem] text-muted-foreground"
                     >
                       <Bot className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{agentLabel(agent)}</span>
+                      <span className="truncate">{agentDisplayName(agent)}</span>
                     </li>
                   ))}
                 </ul>

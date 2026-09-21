@@ -1,5 +1,5 @@
 import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import React from "react";
 
@@ -15,13 +15,9 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       title="Lovekit"
       pageActions={
         <>
-          <Button
-            onClick={handleCreateRoom}
-            title="Create Room"
-            variant={"outline"}
-          >
+          <PageAction alwaysShow onClick={handleCreateRoom} title="Create Room">
             Create Stream
-          </Button>
+          </PageAction>
         </>
       }
     >

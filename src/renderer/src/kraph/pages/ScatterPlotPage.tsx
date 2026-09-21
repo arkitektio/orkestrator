@@ -1,5 +1,6 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { KraphGraphQuery, KraphScatterPlot } from "@/linkers";
 import {
   useCreateScatterPlotMutation,
@@ -147,13 +148,11 @@ const Page = asDetailQueryRoute(useGetScatterPlotQuery, ({ data }) => {
       object={data.scatterPlot}
       title={data.scatterPlot.label}
       pageActions={
-        <div className="flex flex-row gap-2">
+        <>
           <KraphGraphQuery.DetailLink object={data.scatterPlot.query}>
-            <Button variant="outline" size="sm">
-              Query
-            </Button>
+            <PageAction size="sm">Query</PageAction>
           </KraphGraphQuery.DetailLink>
-        </div>
+        </>
       }
     >
       <div className="flex-initial grid md:grid-cols-12 gap-4 md:gap-8 xl:gap-20 md:items-center px-6 py-2">

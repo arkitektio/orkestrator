@@ -1,6 +1,10 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
+import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+} from "@/components/ui/page-action";
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
 import {
   DropdownMenu,
@@ -100,64 +104,71 @@ export const useSparseDatasetFilterBar = () => {
   const actions = (
     <>
       <CollapsibleSearch
+        alwaysShow
         value={search}
         onChange={(value) => setSearch(value || null)}
         placeholder="Search sparse datasets…"
       />
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <ArrowUpDown className="h-4 w-4" />
-            Sort
-            {isCustomOrder && (
-              <Badge variant="secondary" className="gap-1">
-                {SORT_FIELD_LABELS[sortField]}
-                {sortDirection === "ASC" ? (
-                  <ArrowUpWideNarrow />
-                ) : (
-                  <ArrowDownWideNarrow />
+      <PageAction.Slot collapse="icon" priority={-10}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <ActionTrigger aria-label="Sort">
+              <ArrowUpDown className="h-4 w-4" />
+              <ActionLabel>
+                Sort
+                {isCustomOrder && (
+                  <Badge variant="secondary" className="gap-1">
+                    {SORT_FIELD_LABELS[sortField]}
+                    {sortDirection === "ASC" ? (
+                      <ArrowUpWideNarrow />
+                    ) : (
+                      <ArrowDownWideNarrow />
+                    )}
+                  </Badge>
                 )}
-              </Badge>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={sortField}
-            onValueChange={(value) =>
-              setSortField(value as (typeof SORT_FIELDS)[number])
-            }
-          >
-            {SORT_FIELDS.map((field) => (
-              <DropdownMenuRadioItem key={field} value={field}>
-                {SORT_FIELD_LABELS[field]}
+              </ActionLabel>
+            </ActionTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={sortField}
+              onValueChange={(value) =>
+                setSortField(value as (typeof SORT_FIELDS)[number])
+              }
+            >
+              {SORT_FIELDS.map((field) => (
+                <DropdownMenuRadioItem key={field} value={field}>
+                  {SORT_FIELD_LABELS[field]}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Direction</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={sortDirection}
+              onValueChange={(value) => setSortDirection(value as "ASC" | "DESC")}
+            >
+              <DropdownMenuRadioItem value="DESC">
+                Descending
               </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>Direction</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={sortDirection}
-            onValueChange={(value) => setSortDirection(value as "ASC" | "DESC")}
-          >
-            <DropdownMenuRadioItem value="DESC">
-              Descending
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="ASC">Ascending</DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+              <DropdownMenuRadioItem value="ASC">Ascending</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </PageAction.Slot>
 
-      <DateTimeRangePicker
-        initialDateFrom={createdAfter || undefined}
-        initialDateTo={createdBefore || undefined}
-        onUpdate={({ range }) => {
-          setCreatedAfter(range.from || null);
-          setCreatedBefore(range.to || null);
-        }}
-      />
+      <PageAction.Slot collapse="hide" priority={-20}>
+        <DateTimeRangePicker
+          initialDateFrom={createdAfter || undefined}
+          initialDateTo={createdBefore || undefined}
+          onUpdate={({ range }) => {
+            setCreatedAfter(range.from || null);
+            setCreatedBefore(range.to || null);
+          }}
+        />
+      </PageAction.Slot>
     </>
   );
 

@@ -1,5 +1,5 @@
 import { Explainer } from "@/components/explainer/Explainer";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { OmeroArkDataset } from "@/linkers";
 import { PlusIcon } from "lucide-react";
 import DatasetList from "../components/lists/DatasetList";
@@ -13,10 +13,9 @@ const Page = () => {
       title="Datasets"
       pageActions={
         <>
-          <Button variant="outline" size="sm" >
-            <PlusIcon className="h-4 w-4 mr-2" />
+          <PageAction alwaysShow size="sm" icon={<PlusIcon className="h-4 w-4" />}>
             New
-          </Button>
+          </PageAction>
         </>
       }
     >

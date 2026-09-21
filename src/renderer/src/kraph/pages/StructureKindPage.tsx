@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { FormSheet } from "@/components/dialog/FormDialog";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Image } from "@/components/ui/image";
 import { DragZone } from "@/components/upload/drag";
 import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
@@ -51,20 +51,21 @@ const Page =  asDetailQueryRoute(
           </Sidebars>
         }
         pageActions={
-          <div className="flex flex-row gap-2">
+          <>
             <KraphStructureKind.ObjectButton
+              alwaysShow
               object={{ id: data.structureKind.id }}
             />
 
             <FormSheet
-              trigger={<Button variant="outline">Edit</Button>}
+              trigger={<PageAction>Edit</PageAction>}
               onSubmit={() => refetch()}
             >
               <UpdateStructureKindForm
                 structureKind={data.structureKind}
               />
             </FormSheet>
-          </div>
+          </>
         }
       >
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">

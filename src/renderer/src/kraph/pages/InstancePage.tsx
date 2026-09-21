@@ -36,7 +36,7 @@ const Page = asDetailQueryRoute(useGetDetailInstanceQuery, ({ data }) => {
           </Sidebars.Tab>
         </Sidebars>
       }
-      pageActions={<KraphInstance.ObjectButton object={{ id: instance.id }} />}
+      pageActions={<KraphInstance.ObjectButton alwaysShow object={{ id: instance.id }} />}
     >
       <div className="p-6 flex flex-col gap-6">
         <div className="flex flex-col gap-2">

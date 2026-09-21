@@ -1,7 +1,7 @@
 import { FormSheet } from "@/components/dialog/FormDialog";
 import { Explainer } from "@/components/explainer/Explainer";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { AlpakaProvider } from "@/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
@@ -16,14 +16,13 @@ const ImagesPage: React.FC<IRepresentationScreenProps> = () => {
       title="Providers"
       pageActions={
         <>
-          <AlpakaProvider.NewButton>
-            <Button variant="outline" size="sm">
-              <UploadIcon className="h-4 w-4 mr-2" />
+          <AlpakaProvider.NewButton alwaysShow collapse="icon">
+            <PageAction size="sm" icon={<UploadIcon className="h-4 w-4" />}>
               New
-            </Button>
+            </PageAction>
           </AlpakaProvider.NewButton>
 
-          <FormSheet trigger={<Button variant="outline">New Provider</Button>}>
+          <FormSheet trigger={<PageAction>New Provider</PageAction>}>
             <CreateProviderForm />
           </FormSheet>
         </>

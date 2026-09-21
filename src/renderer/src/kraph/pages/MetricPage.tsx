@@ -22,11 +22,9 @@ export default asDetailQueryRoute(useGetMetricQuery, ({ data }) => {
         </Sidebars>
       }
       pageActions={
-        <div className="flex flex-row gap-2">
-          <>
-            <FormSheet trigger={<HobbyKnifeIcon />}>Not implemented</FormSheet>
-          </>
-        </div>
+        <>
+          <FormSheet trigger={<HobbyKnifeIcon />}>Not implemented</FormSheet>
+        </>
       }
     >
       <KraphEntity.Drop

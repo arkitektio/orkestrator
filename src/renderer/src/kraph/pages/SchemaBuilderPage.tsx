@@ -8,7 +8,7 @@ import {
   PropertyDefinition,
   validateSchema,
 } from "../components/schema-builder/utils";
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { Save } from "lucide-react";
 import { ValueKind } from "../api/graphql";
 import { useNavigate } from "react-router-dom";
@@ -155,19 +155,25 @@ export function SchemaBuilderPage({
     <PageLayout
       title={title}
       pageActions={
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleCancel}>
+        <>
+          {/* An editor: leaving without saving, and saving, both have to
+              stay reachable however narrow the row gets. */}
+          <PageAction alwaysShow size="sm" onClick={handleCancel}>
             Cancel
-          </Button>
-          <Button
+          </PageAction>
+          <PageAction
+            alwaysShow
+            collapse="icon"
+            variant="default"
+            icon={<Save className="h-4 w-4" />}
+            menuLabel="Save Schema"
             onClick={handleSubmit(onSubmit)}
             disabled={isSubmitting || getProperties().length === 0}
             size="sm"
           >
-            <Save className="h-4 w-4 mr-2" />
             {isSubmitting ? "Saving..." : "Save Schema"}
-          </Button>
-        </div>
+          </PageAction>
+        </>
       }
     >
       <div className="flex h-full min-h-0 overflow-hidden">

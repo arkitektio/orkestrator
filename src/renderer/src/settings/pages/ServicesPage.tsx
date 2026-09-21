@@ -1,5 +1,9 @@
 import { Arkitekt } from "@/app/Arkitekt";
-import { Button } from "@/components/ui/button";
+import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+} from "@/components/ui/page-action";
 import {
   Card,
   CardContent,
@@ -56,21 +60,22 @@ export const ServicesPage = () => {
       slug="services"
       pageActions={
         <>
-          <Button
-            variant="outline"
-            className="gap-2"
+          <PageAction
+            collapse="icon"
+            icon={<Send className="w-4 h-4" />}
+            menuLabel="Report Status"
             onClick={handleReportStatus}
             disabled={reporting || !fakts}
           >
-            <Send className="w-4 h-4" />
             {reporting ? "Reporting…" : "Report Status"}
-          </Button>
-          <Dialog>
+          </PageAction>
+          <PageAction.Slot collapse="icon">
+            <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <ActionTrigger aria-label="Inspect Configuration">
                 <Settings className="w-4 h-4" />
-                Inspect Configuration
-              </Button>
+                <ActionLabel>Inspect Configuration</ActionLabel>
+              </ActionTrigger>
             </DialogTrigger>
             <DialogContent className="min-w-[80vw] max-w-[90vw] h-[80vh]">
               <DialogHeader>
@@ -81,7 +86,8 @@ export const ServicesPage = () => {
               </DialogHeader>
               <FaktsViewer fakts={fakts} />
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </PageAction.Slot>
         </>
       }
     >

@@ -32,9 +32,9 @@ export const ModelCollectionPage = asDetailQueryRoute(
         title={data?.modelCollection?.name}
         object={data?.modelCollection}
         pageActions={
-          <div className="flex flex-row gap-2">
-            <ElektroModelCollection.ObjectButton object={data.modelCollection} />
-          </div>
+          <>
+            <ElektroModelCollection.ObjectButton alwaysShow object={data.modelCollection} />
+          </>
         }
         sidebars={
           <Sidebars>

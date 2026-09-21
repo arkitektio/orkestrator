@@ -34,7 +34,7 @@ export const NeuronModelPage = asDetailQueryRoute(
           overlay
           actions={<ElektroNeuronModel.Actions object={model} />}
           pageActions={
-            <div className="flex items-center gap-2">
+            <>
               <ElektroNeuronModel.DetailLink
                 object={model}
                 subroute="edit"
@@ -43,8 +43,8 @@ export const NeuronModelPage = asDetailQueryRoute(
                 Edit
               </ElektroNeuronModel.DetailLink>
               <ExportModelButton object={model} />
-              <ElektroNeuronModel.ObjectButton object={model} />
-            </div>
+              <ElektroNeuronModel.ObjectButton alwaysShow object={model} />
+            </>
           }
           additionalSidebars={
             // No separate Provenance tab: the history sits in Info, next to

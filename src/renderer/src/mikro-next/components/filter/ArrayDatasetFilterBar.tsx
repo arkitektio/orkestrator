@@ -1,6 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
+import {
+  ActionLabel,
+  ActionTrigger,
+  PageAction,
+} from "@/components/ui/page-action";
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
 import {
   DropdownMenu,
@@ -306,164 +311,179 @@ export const useArrayDatasetFilterBar = ({
   const actions = (
     <>
       <CollapsibleSearch
+        alwaysShow
         value={search}
         onChange={(value) => setSearch(value || null)}
         placeholder="Search array datasets…"
       />
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <SlidersHorizontal className="h-4 w-4" />
-            Data
-            {narrowedCount > 0 && (
-              <Badge variant="secondary">
-                {/* Name the origin rather than count it: "Acquired only" is on
-                    by default, and a bare number would leave a user wondering
-                    why their derived datasets are missing. */}
-                {labelOf(ORIGIN_OPTIONS, origin)}
-                {narrowedCount > 1 ? ` +${narrowedCount - 1}` : ""}
-              </Badge>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          {radioGroup(
-            "Origin",
-            ORIGIN_OPTIONS,
-            origin,
-            (next) => setOrigin(next as typeof origin | null),
-            DEFAULT_ORIGIN,
-          )}
-          <DropdownMenuSeparator />
-          {radioGroup(
-            "Resolution",
-            PYRAMID_OPTIONS,
-            pyramid,
-            (next) => setPyramid(next as typeof pyramid | null),
-            "any",
-          )}
-          <DropdownMenuSeparator />
-          {radioGroup(
-            "Units",
-            UNITS_OPTIONS,
-            units,
-            (next) => setUnits(next as typeof units | null),
-            "any",
-          )}
-          {(origin !== DEFAULT_ORIGIN || pyramid !== "any" || units !== "any") && (
-            <>
-              <DropdownMenuSeparator />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => {
-                  setOrigin(null);
-                  setPyramid(null);
-                  setUnits(null);
-                }}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset
-              </Button>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <Shapes className="h-4 w-4" />
-            Spec
-            {picked.length > 0 && (
-              <Badge variant="secondary">{picked.length}</Badge>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
-          {/* Spatial specs are mutually exclusive server-side — ticking two
-              matches nothing — so they are offered as their own group. */}
-          <DropdownMenuLabel>Spatial (pick one)</DropdownMenuLabel>
-          {spatial.map((entry) => specItem(entry.slug, entry.label, entry.spec))}
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>Acquisition</DropdownMenuLabel>
-          {modifiers.map((entry) =>
-            specItem(entry.slug, entry.label, entry.spec),
-          )}
-          {picked.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => setSpecSlugs(null)}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset
-              </Button>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <ArrowUpDown className="h-4 w-4" />
-            Sort
-            {isCustomOrder && (
-              <Badge variant="secondary" className="gap-1">
-                {SORT_FIELD_LABELS[sortField]}
-                {sortDirection === "ASC" ? (
-                  <ArrowUpWideNarrow />
-                ) : (
-                  <ArrowDownWideNarrow />
+      <PageAction.Slot collapse="icon" priority={-10}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <ActionTrigger aria-label="Data">
+              <SlidersHorizontal className="h-4 w-4" />
+              <ActionLabel>
+                Data
+                {narrowedCount > 0 && (
+                  <Badge variant="secondary">
+                    {/* Name the origin rather than count it: "Acquired only" is on
+                        by default, and a bare number would leave a user wondering
+                        why their derived datasets are missing. */}
+                    {labelOf(ORIGIN_OPTIONS, origin)}
+                    {narrowedCount > 1 ? ` +${narrowedCount - 1}` : ""}
+                  </Badge>
                 )}
-              </Badge>
+              </ActionLabel>
+            </ActionTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {radioGroup(
+              "Origin",
+              ORIGIN_OPTIONS,
+              origin,
+              (next) => setOrigin(next as typeof origin | null),
+              DEFAULT_ORIGIN,
             )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={sortField}
-            onValueChange={(value) =>
-              setSortField(value as (typeof SORT_FIELDS)[number])
-            }
-          >
-            {SORT_FIELDS.map((field) => (
-              <DropdownMenuRadioItem key={field} value={field}>
-                {SORT_FIELD_LABELS[field]}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>Direction</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={sortDirection}
-            onValueChange={(value) => setSortDirection(value as "ASC" | "DESC")}
-          >
-            <DropdownMenuRadioItem value="DESC">
-              Descending
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="ASC">Ascending</DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuSeparator />
+            {radioGroup(
+              "Resolution",
+              PYRAMID_OPTIONS,
+              pyramid,
+              (next) => setPyramid(next as typeof pyramid | null),
+              "any",
+            )}
+            <DropdownMenuSeparator />
+            {radioGroup(
+              "Units",
+              UNITS_OPTIONS,
+              units,
+              (next) => setUnits(next as typeof units | null),
+              "any",
+            )}
+            {(origin !== DEFAULT_ORIGIN || pyramid !== "any" || units !== "any") && (
+              <>
+                <DropdownMenuSeparator />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setOrigin(null);
+                    setPyramid(null);
+                    setUnits(null);
+                  }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset
+                </Button>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </PageAction.Slot>
 
-      <DateTimeRangePicker
-        initialDateFrom={createdAfter || undefined}
-        initialDateTo={createdBefore || undefined}
-        onUpdate={({ range }) => {
-          setCreatedAfter(range.from || null);
-          setCreatedBefore(range.to || null);
-        }}
-      />
+      <PageAction.Slot collapse="icon" priority={-10}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <ActionTrigger aria-label="Spec">
+              <Shapes className="h-4 w-4" />
+              <ActionLabel>
+                Spec
+                {picked.length > 0 && (
+                  <Badge variant="secondary">{picked.length}</Badge>
+                )}
+              </ActionLabel>
+            </ActionTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            {/* Spatial specs are mutually exclusive server-side — ticking two
+                matches nothing — so they are offered as their own group. */}
+            <DropdownMenuLabel>Spatial (pick one)</DropdownMenuLabel>
+            {spatial.map((entry) => specItem(entry.slug, entry.label, entry.spec))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Acquisition</DropdownMenuLabel>
+            {modifiers.map((entry) =>
+              specItem(entry.slug, entry.label, entry.spec),
+            )}
+            {picked.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setSpecSlugs(null)}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset
+                </Button>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </PageAction.Slot>
+
+      <PageAction.Slot collapse="icon" priority={-10}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <ActionTrigger aria-label="Sort">
+              <ArrowUpDown className="h-4 w-4" />
+              <ActionLabel>
+                Sort
+                {isCustomOrder && (
+                  <Badge variant="secondary" className="gap-1">
+                    {SORT_FIELD_LABELS[sortField]}
+                    {sortDirection === "ASC" ? (
+                      <ArrowUpWideNarrow />
+                    ) : (
+                      <ArrowDownWideNarrow />
+                    )}
+                  </Badge>
+                )}
+              </ActionLabel>
+            </ActionTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={sortField}
+              onValueChange={(value) =>
+                setSortField(value as (typeof SORT_FIELDS)[number])
+              }
+            >
+              {SORT_FIELDS.map((field) => (
+                <DropdownMenuRadioItem key={field} value={field}>
+                  {SORT_FIELD_LABELS[field]}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Direction</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={sortDirection}
+              onValueChange={(value) => setSortDirection(value as "ASC" | "DESC")}
+            >
+              <DropdownMenuRadioItem value="DESC">
+                Descending
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="ASC">Ascending</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </PageAction.Slot>
+
+      <PageAction.Slot collapse="hide" priority={-20}>
+        <DateTimeRangePicker
+          initialDateFrom={createdAfter || undefined}
+          initialDateTo={createdBefore || undefined}
+          onUpdate={({ range }) => {
+            setCreatedAfter(range.from || null);
+            setCreatedBefore(range.to || null);
+          }}
+        />
+      </PageAction.Slot>
     </>
   );
 

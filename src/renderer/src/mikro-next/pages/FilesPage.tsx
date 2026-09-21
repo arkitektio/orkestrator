@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { PageAction } from "@/components/ui/page-action";
 import { MikroFile } from "@/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
@@ -12,10 +12,9 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       title="Datasets"
       pageActions={
         <>
-          <Button variant="outline" size="sm">
-            <UploadIcon className="h-4 w-4 mr-2" />
+          <PageAction alwaysShow size="sm" icon={<UploadIcon className="h-4 w-4" />}>
             Upload
-          </Button>
+          </PageAction>
         </>
       }
     >

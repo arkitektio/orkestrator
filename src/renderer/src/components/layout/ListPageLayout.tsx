@@ -22,6 +22,7 @@ export const ListPageLayout = ({
   children,
   identifier,
   variant,
+  actions,
   pageActions,
 }: ListPageLayoutProps) => {
   // Memoised because the palette registers on the array's identity: a fresh
@@ -35,6 +36,7 @@ export const ListPageLayout = ({
         sidebars={sidebars}
         help={help}
         variant={variant}
+        actions={actions}
         pageActions={pageActions}
       >
         <CommandContext returns={returnsForCommand} />
