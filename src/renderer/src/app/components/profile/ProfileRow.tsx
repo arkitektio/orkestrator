@@ -98,7 +98,8 @@ export const ProfileRow = ({
         >
           <MoreHorizontal className="h-3.5 w-3.5" />
         </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent side="right" align="start" className="w-64">
+        {/* A submenu places itself against its trigger; Radix takes no `side`/`align` here. */}
+        <DropdownMenuSubContent className="w-64">
           <div className="px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
             Removing forgets this login on this computer only. It stays valid on
             the server until it expires.

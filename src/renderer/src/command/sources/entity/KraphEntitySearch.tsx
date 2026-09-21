@@ -40,7 +40,9 @@ export const KraphEntitySearch = ({ term, onDone }: { term: string; onDone?: () 
     ...(data?.structureKinds ?? []).map((k) => ({
       identifier: "@kraph/structurekind",
       id: k.id,
-      label: k.label,
+      // A structure kind need not be labelled; its own identifier
+      // (`@mikro/image`, …) is what it is called when it is not.
+      label: k.label ?? k.identifier,
       description: k.description ?? undefined,
     })),
   ].slice(0, 12);

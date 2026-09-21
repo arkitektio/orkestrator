@@ -46,11 +46,18 @@ OverlayBody.displayName = "MetadataOverlayBody";
 export const MetadataOverlay = () => {
   const selectedLayerId = useSelectionStore((state) => state.selectedLayerId);
   const probeLayerId = useViewerStore((state) => state.probeLayerId);
-  const layers = useSceneStore((state) => state.layers);
+  // Both selectors read `layers` but return a SCALAR / the one layer: the
+  // array's identity is republished by every `updateLayer`, so subscribing to
+  // it would re-render this overlay on any other layer's contrast drag.
+  const layerId = useSceneStore((state) =>
+    activeMetadataLayerId(selectedLayerId, probeLayerId, state.layers),
+  );
+  const layer = useSceneStore((state) =>
+    layerId === null
+      ? null
+      : (state.layers.find((candidate) => candidate.id === layerId) ?? null),
+  );
   const [expanded, setExpanded] = useState(false);
-
-  const layerId = activeMetadataLayerId(selectedLayerId, probeLayerId, layers);
-  const layer = layerId === null ? null : layers.find((candidate) => candidate.id === layerId);
 
   if (!layer || layer.lens.activeAnchors.length === 0) return null;
 

@@ -69,7 +69,7 @@ export const ROUTE_CATALOG: CatalogRoute[] = [
   { module: "kraph", label: "Relations", route: "/kraph/relationcategories" },
   { module: "kraph", label: "Structure Relations", route: "/kraph/structurerelationcategories" },
   { module: "kraph", label: "Metrics", route: "/kraph/metrickinds" },
-  { module: "kraph", label: "Measurement", route: "/kraph/measurementcategories", keywords: ["measurements"] },
+  { module: "kraph", label: "Measurements", route: "/kraph/measurementcategories", keywords: ["measurements"] },
   // elektro
   { module: "elektro", label: "Home", route: "/elektro" },
   { module: "elektro", label: "Experiments", route: "/elektro/experiments" },

@@ -1,12 +1,18 @@
 import {
   createMemoryHistory,
   type Action,
-  type Listener,
   type Location,
   type MemoryHistory,
   type To,
-  type Update,
 } from "@remix-run/router";
+
+/**
+ * `Listener` and `Update` live in the package's `dist/history.d.ts` but are
+ * not re-exported from its entry point, so they are read off `listen` itself
+ * rather than deep-imported from a path the package does not promise.
+ */
+type Listener = Parameters<MemoryHistory["listen"]>[0];
+type Update = Parameters<Listener>[0];
 
 /**
  * A tab's history: a memory history, wrapped so the app can actually use it.

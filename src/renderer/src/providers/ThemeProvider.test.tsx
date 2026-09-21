@@ -91,6 +91,9 @@ describe("the window frame follows the theme", () => {
   // The frame has parts CSS cannot reach: the background Chromium paints
   // during a resize, and on Windows the overlay's glyphs. Main recolours them,
   // but only if it is told — so every resolution of the theme must report.
+  // The report carries BOTH what is on screen and the chosen mode: main
+  // mirrors the choice into the native theme, and `system` has to stay
+  // `system` there or the OS query stops changing under us.
   const withBridge = () => {
     const setTheme = vi.fn();
     // @ts-expect-error - stand in for the preload injection
@@ -101,18 +104,18 @@ describe("the window frame follows the theme", () => {
   it("reports the resolved theme on mount and on every change", () => {
     const setTheme = withBridge();
     renderWith("dark");
-    expect(setTheme).toHaveBeenLastCalledWith("dark");
+    expect(setTheme).toHaveBeenLastCalledWith("dark", "dark");
     click("toggle");
-    expect(setTheme).toHaveBeenLastCalledWith("light");
+    expect(setTheme).toHaveBeenLastCalledWith("light", "light");
   });
 
   it("reports what is on screen, never the raw `system` choice", () => {
     const setTheme = withBridge();
     prefersDark = true;
     renderWith("system");
-    expect(setTheme).toHaveBeenLastCalledWith("dark");
+    expect(setTheme).toHaveBeenLastCalledWith("dark", "system");
     osChanges(false);
-    expect(setTheme).toHaveBeenLastCalledWith("light");
+    expect(setTheme).toHaveBeenLastCalledWith("light", "system");
   });
 
   it("works in a browser tab, where there is no frame to tell", () => {

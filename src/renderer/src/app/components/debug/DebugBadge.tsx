@@ -11,7 +11,10 @@ import { ReportBugButton } from "./ReportBugButton";
 const serialize = (value: unknown): string => {
   if (value === undefined) return "—";
   if (value instanceof Error) {
-    return JSON.stringify({ name: value.name, message: value.message, ...value }, null, 2);
+    // Spread first: `name`/`message` are non-enumerable on an Error, so they
+    // have to be written out, and they must win over anything the subclass
+    // carries under the same keys.
+    return JSON.stringify({ ...value, name: value.name, message: value.message }, null, 2);
   }
   try {
     return JSON.stringify(value, null, 2) ?? "undefined";
