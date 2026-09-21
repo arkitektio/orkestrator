@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  annotationHoverEnabled,
   clickProbeEnabled,
   hoverProbeEnabled,
   type ProbeGateInput,
@@ -95,5 +96,25 @@ describe("clickProbeEnabled", () => {
         }),
       ),
     ).toBe(false);
+  });
+});
+
+describe("annotationHoverEnabled", () => {
+  it("arms in NAVIGATE", () => {
+    expect(annotationHoverEnabled(gate({ interactionMode: "NAVIGATE" }))).toBe(true);
+  });
+
+  it("arms in ANNOTATE only while no shape tool is armed", () => {
+    expect(
+      annotationHoverEnabled(gate({ interactionMode: "ANNOTATE", drawingToolActive: false })),
+    ).toBe(true);
+    expect(
+      annotationHoverEnabled(gate({ interactionMode: "ANNOTATE", drawingToolActive: true })),
+    ).toBe(false);
+  });
+
+  it("never arms in PROBE or DESIGN", () => {
+    expect(annotationHoverEnabled(gate({ interactionMode: "PROBE" }))).toBe(false);
+    expect(annotationHoverEnabled(gate({ interactionMode: "DESIGN" }))).toBe(false);
   });
 });

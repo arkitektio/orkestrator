@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
 import { LineSegments2 } from "three/examples/jsm/lines/webgpu/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
@@ -24,13 +24,34 @@ export const AnnotationOutlineBatch = ({
   selectedIds,
   selectable,
   onSelectRoi,
+  hoverable,
+  onHoverRoi,
+  onUnhoverRoi,
 }: {
   batch: OutlineBatch<SelectedRoi>;
   selectedIds: ReadonlySet<string>;
   selectable: boolean;
   onSelectRoi: (roi: SelectedRoi, appendSelection: boolean) => void;
+  /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
+  hoverable: boolean;
+  /** Per move over a shape; the store dedupes by id (state changes on enter/leave). */
+  onHoverRoi: (roi: SelectedRoi) => void;
+  onUnhoverRoi: (roiId: string) => void;
 }) => {
   perfMonitor.countRender("AnnotationOutlineBatch"); // no-op unless a recording is armed
+  /** The roi id this batch last reported hovering; null once it reported leaving. */
+  const hoveredIdRef = useRef<string | null>(null);
+  // Unmount or disarm (mode switch) mid-hover never gets a pointer-out:
+  // report the leave here, so the attached button can't linger.
+  useEffect(() => {
+    if (!hoverable) hoveredIdRef.current = null;
+    return () => {
+      const id = hoveredIdRef.current;
+      if (id === null) return;
+      hoveredIdRef.current = null;
+      onUnhoverRoi(id);
+    };
+  }, [hoverable, onUnhoverRoi]);
   const geometry = useMemo(() => new LineSegmentsGeometry(), []);
   const material = useMemo(() => {
     const created = new Line2NodeMaterial();
@@ -73,5 +94,34 @@ export const AnnotationOutlineBatch = ({
       }
     : undefined;
 
-  return <primitive object={line} onClick={handleClick} />;
+  // One object, many rois: R3F's own over/out are keyed per (object, index,
+  // instanceId) and a Line2 hit carries only `faceIndex`, so crossing from one
+  // roi's segments to another's never re-fires `onPointerOver`. Resolve the
+  // roi on every move instead; the store dedupes by id, and re-asserting per
+  // move heals a grace clear the pointer outstayed.
+  const handleHoverMove = hoverable
+    ? (event: ThreeEvent<PointerEvent>) => {
+        const roi = roiForSegment(batch.ranges, event.faceIndex);
+        if (!roi) return;
+        hoveredIdRef.current = roi.id;
+        onHoverRoi(roi);
+      }
+    : undefined;
+  const handleHoverOut = hoverable
+    ? () => {
+        const id = hoveredIdRef.current;
+        if (id === null) return;
+        hoveredIdRef.current = null;
+        onUnhoverRoi(id);
+      }
+    : undefined;
+
+  return (
+    <primitive
+      object={line}
+      onClick={handleClick}
+      onPointerMove={handleHoverMove}
+      onPointerOut={handleHoverOut}
+    />
+  );
 };

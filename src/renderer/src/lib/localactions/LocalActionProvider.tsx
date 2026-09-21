@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
@@ -467,9 +467,18 @@ export const  createLocalActionProvider = <TAppOrServices = ServiceMap, TRegistr
     search?: string;
   }): ActionEntry<TRegistry>[] => {
     const actionRegistry = useLocalActions((state) => state.registry);
+    // Keyed on the state's fields, not the object: callers build `state`
+    // inline, and the scan (conditions + fuzzy score over the whole registry)
+    // is what the menu must not repeat on every render.
+    const { left, right, isCommand } = options.state;
+    const { search } = options;
 
-    return getActionEntriesForState(actionRegistry, options.state).filter((entry) =>
-      matchesActionSearch(entry.action, options.search),
+    return useMemo(
+      () =>
+        getActionEntriesForState(actionRegistry, { left, right, isCommand }).filter(
+          (entry) => matchesActionSearch(entry.action, search),
+        ),
+      [actionRegistry, left, right, isCommand, search],
     );
   };
 

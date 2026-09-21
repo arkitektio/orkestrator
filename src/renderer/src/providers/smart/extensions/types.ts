@@ -1,6 +1,7 @@
 import { TaskEventFragment } from "@/rekuest/api/graphql";
 import { Structure } from "@/types";
 import React from "react";
+import type { SmartSectionContext, SmartSectionSelection } from "./section";
 
 export type OnDone = (args: {
   event?: TaskEventFragment;
@@ -22,11 +23,11 @@ export type SmartContextProps = {
   collection?: string;
   onDone?: OnDone;
   onError?: (error: string) => void;
-  disableShortcuts?: boolean;
-  disableKraph?: boolean;
-  disableKabinet?: boolean;
-  disableActions?: boolean;
-  disableBatchActions?: boolean;
+  /**
+   * Which sections to show. By module (`"kraph"`) or by id
+   * (`"rekuest.shortcuts"`); see `section.ts`. Default: every registered one.
+   */
+  sections?: SmartSectionSelection;
 };
 
 export type ObjectButtonProps = SmartContextProps & {
@@ -36,6 +37,5 @@ export type ObjectButtonProps = SmartContextProps & {
   size?: "sm" | "lg" | "icon";
 };
 
-export type PassDownProps = SmartContextProps & {
-  filter?: string;
-};
+/** What a section receives: the menu's props plus the search text. */
+export type PassDownProps = SmartSectionContext;

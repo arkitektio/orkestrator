@@ -9,6 +9,7 @@ import { RouterBoundary } from "./RouterBoundary";
 import { SplitDivider } from "./SplitDivider";
 import { loadSplitRatio } from "./splitRatio";
 import { TabIdContext } from "./TabContext";
+import { TabLayoutContext } from "./TabLayoutContext";
 import { TabPaneContext, type TabPane } from "./TabPaneContext";
 import { TabVisibilityContext } from "./TabVisibilityContext";
 import { useActiveTabId, useSplit, useTabActions, useWarmTabs } from "./TabsProvider";
@@ -100,9 +101,11 @@ export const TabOutlet = ({ routes }: { routes: React.ReactNode }) => {
               pane === "right" && "flex-1",
               // Each pane of a split is a card of its own — the same card the
               // content area is when whole (`AppLayout`), which steps back to
-              // let the window surface show through the gap between them.
+              // let the window surface show through the gap between them. The
+              // clip-path and isolation are what keep a composited page layer
+              // (a scene canvas, a blur) inside the corners; see there.
               pane !== null &&
-                "overflow-hidden rounded-xl border bg-background shadow-sm",
+                "isolate overflow-hidden rounded-xl border bg-background shadow-sm [clip-path:inset(0_round_var(--radius-xl))]",
               // The focused pane is told by its edge, and only while split:
               // with one pane there is nothing to tell apart.
               pane !== null && (active ? "border-primary/40" : "border-border/60"),
@@ -119,10 +122,12 @@ export const TabOutlet = ({ routes }: { routes: React.ReactNode }) => {
               <HistoryRouter history={tab.history}>
                 <TabIdContext.Provider value={tab.id}>
                   <TabPaneContext.Provider value={pane}>
-                    <TabVisibilityContext.Provider value={visible}>
-                      <TabTitleReporter tabId={tab.id} />
-                      {routes}
-                    </TabVisibilityContext.Provider>
+                    <TabLayoutContext.Provider value={tab.layout}>
+                      <TabVisibilityContext.Provider value={visible}>
+                        <TabTitleReporter tabId={tab.id} />
+                        {routes}
+                      </TabVisibilityContext.Provider>
+                    </TabLayoutContext.Provider>
                   </TabPaneContext.Provider>
                 </TabIdContext.Provider>
               </HistoryRouter>

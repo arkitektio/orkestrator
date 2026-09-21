@@ -3,14 +3,18 @@ import {
   useMatchingActionEntries,
   usePinnedActionIds,
 } from "@/app/localactions";
-import {
-} from "@/components/ui/command";
 import { Action, ActionState, orderActionEntries } from "@/lib/localactions/LocalActionProvider";
 import { CommandGroup } from "cmdk";
 import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { CommandActionRow } from "../CommandActionRow";
-import type { OnDone, PassDownProps } from "../types";
+import type { OnDone } from "../types";
+
+/**
+ * The local-action row, and `Actions`: the palette-style list for callers
+ * that bring their own `ActionState`. The menu's section is a descriptor in
+ * `./sections.tsx`.
+ */
 
 export const LocalActionCommand = (props: {
   action: Action;
@@ -74,19 +78,5 @@ export const Actions = (props: {
         />
       ))}
     </CommandGroup>
-  );
-};
-
-export const ApplicableLocalActions = (props: PassDownProps) => {
-  return (
-    <Actions
-      state={{
-        left: props.objects,
-        right: props.partners,
-        isCommand: false,
-      }}
-      filter={props.filter}
-      onDone={props.onDone}
-    />
   );
 };

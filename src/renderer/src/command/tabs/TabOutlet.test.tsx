@@ -14,6 +14,7 @@ vi.mock("use-react-router-breadcrumbs", () => ({
 }));
 
 import { ActiveTabRouter } from "./ActiveTabRouter";
+import { useTabLayout } from "./TabLayoutContext";
 import { TabOutlet } from "./TabOutlet";
 import { useTabPane } from "./TabPaneContext";
 import { TabsProvider, useActiveTabId, useTabActions, useTabList } from "./TabsProvider";
@@ -27,8 +28,14 @@ const PageProbe = () => {
   const navigate = useNavigate();
   const visible = useTabVisible();
   const pane = useTabPane();
+  const layout = useTabLayout();
   return (
-    <div data-testid="page" data-visible={visible} data-pane={pane ?? ""}>
+    <div
+      data-testid="page"
+      data-visible={visible}
+      data-pane={pane ?? ""}
+      data-page-sidebar={layout?.pageSidebar === false ? "hidden" : "default"}
+    >
       <span data-testid="page-path">{pathname}</span>
       <button onClick={() => navigate(`${pathname}/deeper`)}>deeper</button>
     </div>
@@ -46,10 +53,11 @@ const TitledPage = ({ title }: { title: React.ReactNode }) => {
 const Chrome = () => {
   const tabs = useTabList();
   const activeId = useActiveTabId();
-  const { open, focus, toggleSplit, swapSplit } = useTabActions();
+  const { open, openBeside, focus, toggleSplit, swapSplit } = useTabActions();
   return (
     <div>
       <span data-testid="labels">{tabs.map((t) => t.label).join(",")}</span>
+      <button onClick={() => openBeside("/side")}>open-beside</button>
       <button onClick={toggleSplit}>toggle-split</button>
       <button onClick={swapSplit}>swap-split</button>
       <button onClick={() => open("/b")}>open-b</button>
@@ -179,16 +187,25 @@ describe("TabOutlet", () => {
       renderApp();
       click("open-b");
       const [a0, b0] = pages();
-      click("toggle-split");
-      click("swap-split");
-      click("toggle-split");
+      click("toggle-split"); // B > A
+      click("swap-split"); // A > B, B still focused
+      click("toggle-split"); // A alone; focus falls back to the view, A
       const [a1, b1] = pages();
       expect(a1).toBe(a0);
       expect(b1).toBe(b0);
       expect(divider()).toBeNull();
-      expect(wrapperOf(a1).className).toBe("hidden");
+      expect(wrapperOf(b1).className).toBe("hidden");
       expect(a1.dataset.pane).toBe("");
       expect(b1.dataset.pane).toBe("");
+    });
+
+    it("hands a tab opened to the side its layout defaults: no page sidebar", () => {
+      renderApp();
+      click("open-beside");
+      const [a, side] = pages();
+      expect(a.dataset.pageSidebar).toBe("default");
+      expect(side.dataset.pageSidebar).toBe("hidden");
+      expect(side.dataset.pane).toBe("right");
     });
 
     it("chrome navigation and the hash follow the focused pane", () => {

@@ -1,4 +1,4 @@
-import { useMemo, useLayoutEffect, useRef } from "react";
+import { useEffect, useMemo, useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 
@@ -26,14 +26,35 @@ export const AnnotationPoints = ({
   opacity,
   selectable,
   onSelectRoi,
+  hoverable,
+  onHoverRoi,
+  onUnhoverRoi,
 }: {
   entries: PointEntry[];
   opacity: number;
   selectable: boolean;
   onSelectRoi: (roi: SelectedRoi, appendSelection: boolean) => void;
+  /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
+  hoverable: boolean;
+  /** Per move over a shape; the store dedupes by id (state changes on enter/leave). */
+  onHoverRoi: (roi: SelectedRoi) => void;
+  onUnhoverRoi: (roiId: string) => void;
 }) => {
   perfMonitor.countRender("AnnotationPoints"); // no-op unless a recording is armed
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  /** The roi id this mesh last reported hovering; null once it reported leaving. */
+  const hoveredIdRef = useRef<string | null>(null);
+  // Unmount or disarm (mode switch) mid-hover never gets a pointer-out:
+  // report the leave here, so the attached button can't linger.
+  useEffect(() => {
+    if (!hoverable) hoveredIdRef.current = null;
+    return () => {
+      const id = hoveredIdRef.current;
+      if (id === null) return;
+      hoveredIdRef.current = null;
+      onUnhoverRoi(id);
+    };
+  }, [hoverable, onUnhoverRoi]);
   /** Last written screen-size scale; 0 until the first frame. */
   const scaleRef = useRef(0);
   const writtenRef = useRef<PointEntry[] | null>(null);
@@ -74,12 +95,34 @@ export const AnnotationPoints = ({
       }
     : undefined;
 
+  // Per-instance hover from `onPointerMove` (the instance under the pointer
+  // changes without any over/out of the MESH firing). The store dedupes by
+  // id; re-asserting per move heals a grace clear the pointer outstayed.
+  const handleHoverMove = hoverable
+    ? (event: ThreeEvent<PointerEvent>) => {
+        const entry = event.instanceId !== undefined ? entries[event.instanceId] : undefined;
+        if (!entry) return;
+        hoveredIdRef.current = entry.roi.id;
+        onHoverRoi(entry.roi);
+      }
+    : undefined;
+  const handleHoverOut = hoverable
+    ? () => {
+        const id = hoveredIdRef.current;
+        if (id === null) return;
+        hoveredIdRef.current = null;
+        onUnhoverRoi(id);
+      }
+    : undefined;
+
   return (
     <instancedMesh
       key={capacity}
       ref={meshRef}
       args={[UNIT_CIRCLE_16, undefined, capacity]}
       onClick={handleClick}
+      onPointerMove={handleHoverMove}
+      onPointerOut={handleHoverOut}
     >
       <meshBasicMaterial transparent opacity={opacity} side={THREE.DoubleSide} />
     </instancedMesh>

@@ -1,5 +1,4 @@
 import { useDialog } from "@/app/dialog";
-import { CommandItem } from "@/components/ui/command";
 import {
   ListMeasurementCategoryWithGraphFragment,
   ListRelationCategoryFragment,
@@ -7,27 +6,21 @@ import {
   useAssertRelationExistsMutation,
   useAssertStructureExistsMutation,
   useAssertStructureRelationExistsMutation,
-  useGetDetailInstanceQuery,
-  useListApplicableMeasurementCategoriesQuery,
-  useListCandidateRelationCategoriesQuery,
-  useListCandidateStructureRelationCategoriesQuery,
   useListGraphsQuery,
 } from "@/kraph/api/graphql";
-import {
-  useApplicableRelationCategories,
-  useApplicableStructureRelationCategories,
-} from "@/kraph/lib/applicableCategories";
 import { Structure } from "@/types";
 import { CommandGroup } from "cmdk";
-import { GitBranchPlus, Network, Ruler } from "lucide-react";
+import { Network, Ruler } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
 import { CommandActionRow } from "../CommandActionRow";
 import type { PassDownProps } from "../types";
 
 /**
- * The kraph slice of the smart context menu: what you can record about the thing
- * you picked, or about the pair you dragged together.
+ * The rows of the kraph slice of the smart context menu: what you can record
+ * about the thing you picked, or about the pair you dragged together. The
+ * sections (which rows apply, and the queries and probes behind them) are
+ * descriptors in `./sections.tsx`.
  *
  * This used to read `materializedRelationEdges` and its two siblings —
  * precomputed (source × edge × target) rows. They were removed as a cache with
@@ -41,12 +34,6 @@ import type { PassDownProps } from "../types";
  * decided by the server through `matchesDescriptor` — the same predicate the
  * writer applies, so the menu cannot offer a pairing the write would refuse.
  */
-
-const relateHeading = (
-  <span className="font-light text-xs w-full items-center ml-2 w-full inline-flex gap-2">
-    <span>Relate</span>
-  </span>
-);
 
 const termOf = (category: { key: string; term?: { key: string } | null }) =>
   category.term?.key ?? category.key;
@@ -184,148 +171,6 @@ export const EntityRelateButton = (props: {
   );
 };
 
-/**
- * Both ends arrive as bare uuids, and which relation categories apply depends on
- * the two entities' *categories* — which are view-grain and so exist only inside
- * a graph. `instance(id:) { drawnIn }` bridges that: it says which views draw
- * each claim and under which category. A relation is offered only for a graph
- * that draws both ends, which is also the only graph that could record it.
- */
-export const EntityRelationActions = (props: PassDownProps) => {
-  const partner = props.partners?.at(0);
-  const object = props.objects.at(0);
-
-  const { data: sourceInstance } = useGetDetailInstanceQuery({
-    variables: { id: object?.object.id ?? "" },
-    skip: !object,
-  });
-  const { data: targetInstance } = useGetDetailInstanceQuery({
-    variables: { id: partner?.object.id ?? "" },
-    skip: !partner,
-  });
-
-  // The first graph that draws both. Two claims with no view in common cannot be
-  // related there, and saying so by offering nothing is the honest answer.
-  const shared = React.useMemo(() => {
-    const targets = new Map(
-      (targetInstance?.instance.drawnIn ?? []).map((drawing) => [
-        drawing.graph.id,
-        drawing,
-      ]),
-    );
-    for (const drawing of sourceInstance?.instance.drawnIn ?? []) {
-      const counterpart = targets.get(drawing.graph.id);
-      if (counterpart) {
-        return {
-          graphId: drawing.graph.id,
-          sourceCategoryId: drawing.category.id,
-          targetCategoryId: counterpart.category.id,
-        };
-      }
-    }
-    return undefined;
-  }, [sourceInstance, targetInstance]);
-
-  const { data, error } = useListCandidateRelationCategoriesQuery({
-    variables: {
-      search: props.filter && props.filter !== "" ? props.filter : undefined,
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  const candidates = React.useMemo(
-    () =>
-      (data?.relationCategories ?? []).filter(
-        (category) => category.graph.id === shared?.graphId,
-      ),
-    [data, shared],
-  );
-
-  const { applicable } = useApplicableRelationCategories(
-    candidates,
-    shared?.sourceCategoryId,
-    shared?.targetCategoryId,
-  );
-
-  if (!object || !partner) {
-    return null;
-  }
-
-  return (
-    <CommandGroup heading={relateHeading}>
-      {applicable.map((category) => (
-        <EntityRelateButton
-          key={category.id}
-          category={category}
-          source={object}
-          target={partner}
-        />
-      ))}
-      {error && (
-        <CommandItem value="error" className="flex-1">
-          <span className="text-red-500">Error: {error.message}</span>
-        </CommandItem>
-      )}
-    </CommandGroup>
-  );
-};
-
-export const StructureRelationActions = (props: PassDownProps) => {
-  const firstPartner = props.partners?.at(0);
-  const firstObject = props.objects.at(0);
-  const dialog = useDialog();
-
-  const { data, error } = useListCandidateStructureRelationCategoriesQuery({
-    variables: {
-      search: props.filter && props.filter !== "" ? props.filter : undefined,
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  // `StructureRelationCategoryFilter` has no `sourceIdentifier` / `targetIdentifier`
-  // (only `MeasurementCategoryFilter` kept one), so admission is probed against
-  // the two structure kinds instead.
-  const { applicable } = useApplicableStructureRelationCategories(
-    data?.structureRelationCategories,
-    firstObject?.identifier,
-    firstPartner?.identifier,
-  );
-
-  return (
-    <CommandGroup heading={relateHeading}>
-      {firstPartner &&
-        applicable.map((category) => (
-          <StructureRelateButton
-            category={category}
-            right={firstPartner}
-            left={props}
-            key={category.id}
-          >
-            {category.label}
-          </StructureRelateButton>
-        ))}
-      {error && (
-        <CommandItem value="error" className="flex-1">
-          <span className="text-red-500">Error: {error.message}</span>
-        </CommandItem>
-      )}
-      <CommandItem
-        value="no-relation"
-        onSelect={() =>
-          dialog.openDialog("createnewrelation", {
-            left: props.objects,
-            right: props.partners || [],
-          })
-        }
-        className="flex-1"
-      >
-        <GitBranchPlus className="mr-2 h-4 w-4" />
-        Create new Relation
-      </CommandItem>
-    </CommandGroup>
-  );
-};
-
 export const MeasurementActions = (props: PassDownProps) => {
   const firstObject = props.objects.at(0);
   const dialog = useDialog();
@@ -372,73 +217,4 @@ export const MeasurementActions = (props: PassDownProps) => {
       ))}
     </CommandGroup>
   );
-};
-
-/**
- * Measurements need no probe: `MeasurementCategoryFilter.sourceIdentifier`
- * survived the materialized-edge removal and answers "which measurements accept
- * this structure kind" directly, in one query.
- */
-export const ApplicableMeasurements = (props: PassDownProps) => {
-  const firstPartner = props.partners?.at(0);
-  const firstObject = props.objects.at(0);
-
-  const { data, error } = useListApplicableMeasurementCategoriesQuery({
-    variables: {
-      search: props.filter && props.filter !== "" ? props.filter : undefined,
-      sourceIdentifier: firstObject?.identifier || "",
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  if (firstPartner || !firstObject) {
-    return null;
-  }
-
-  return (
-    <CommandGroup
-      heading={
-        <span className="font-light text-xs w-full items-center ml-2 w-full inline-flex gap-2">
-          <span>Measures</span>
-        </span>
-      }
-    >
-      {data?.measurementCategories.map((category) => (
-        <CreateMeasurementButton
-          category={category}
-          left={props}
-          key={category.id}
-        >
-          {category.graph.name}
-        </CreateMeasurementButton>
-      ))}
-      {error && (
-        <CommandItem value="error" className="flex-1">
-          <span className="text-red-500">Error: {error.message}</span>
-        </CommandItem>
-      )}
-    </CommandGroup>
-  );
-};
-
-export const ApplicableRelations = (props: PassDownProps) => {
-  const firstPartner = props.partners?.at(0);
-  const firstObject = props.objects.at(0);
-
-  if (!firstPartner && !firstObject) {
-    return null;
-  }
-
-  if (!firstPartner && firstObject) {
-    return <ApplicableMeasurements {...props} />;
-  }
-
-  if (
-    firstPartner?.identifier === "@kraph/entity" &&
-    firstObject?.identifier === "@kraph/entity"
-  ) {
-    return <EntityRelationActions {...props} />;
-  }
-
-  return <StructureRelationActions {...props} />;
 };

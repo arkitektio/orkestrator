@@ -1,12 +1,6 @@
+import { flattenChildren } from "./flattenChildren";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Children,
-  Fragment,
-  isValidElement,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { isValidElement, useEffect, useState, type ReactNode } from "react";
 
 const ACTIVE_SIDEBAR_KEY = "active-sidebar";
 
@@ -24,13 +18,8 @@ export type SidebarsTabProps = {
 const SidebarsTab = (_props: SidebarsTabProps): null => null;
 SidebarsTab.displayName = "Sidebars.Tab";
 
-/** Depth-first flatten of arrays and fragments down to plain elements. */
-export const flattenChildren = (children: ReactNode): ReactNode[] =>
-  Children.toArray(children).flatMap((child) =>
-    isValidElement(child) && child.type === Fragment
-      ? flattenChildren((child.props as { children?: ReactNode }).children)
-      : [child],
-  );
+// Re-exported for the callers that always imported it from here.
+export { flattenChildren };
 
 /**
  * Collect the `<Sidebars.Tab>` slots, in child order. A later duplicate of a

@@ -6,6 +6,7 @@ import { useGetSceneAnnotationsQuery } from "@/mikro-next/api/graphql";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { finestLayerZStep } from "../../../platform/coords/worldTransform";
 import { layersPlanKey } from "../../../platform/model/layerPlanKey";
+import { annotationHoverEnabled } from "../../../platform/probe/probeGating";
 import { useModeStore } from "../../../platform/stores/modeStore";
 import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
 import { useViewerStore } from "../../../platform/stores/viewerStore";
@@ -22,7 +23,7 @@ import {
 } from "../annotationBounds";
 import { buildOutlineBatches } from "../annotationBatch";
 import { prunedSelections, repairedSelections } from "../selectionRepair";
-import { useRoiDrawingStore } from "../roiDrawingStore";
+import { isDrawingTool, useRoiDrawingStore } from "../roiDrawingStore";
 import {
   useRoiSelectionStore,
   useRoiSelectionStoreApi,
@@ -107,6 +108,10 @@ const AnnotationCollectionGroup = ({
   const removeSelectedRoi = useRoiSelectionStore((s) => s.removeSelectedRoi);
   const setVisibleLayerRois = useRoiSelectionStore((s) => s.setVisibleLayerRois);
   const clearVisibleLayerRois = useRoiSelectionStore((s) => s.clearVisibleLayerRois);
+  const hoverRoi = useRoiSelectionStore((s) => s.hoverRoi);
+  const unhoverRoi = useRoiSelectionStore((s) => s.unhoverRoi);
+  // A scalar (P17): only the drawing/not-drawing answer gates the hover.
+  const drawingToolActive = useRoiDrawingStore((s) => isDrawingTool(s.activeTool));
 
   const viewApi = useViewStoreApi();
   const { data } = useGetSceneAnnotationsQuery({
@@ -234,7 +239,7 @@ const AnnotationCollectionGroup = ({
     lastShownRef.current = shown;
     setVisibleLayerRois(
       layerId,
-      shown.map((entry) => ({ ...entry.roi, bounds: entry.bounds })),
+      shown.map((entry) => ({ ...entry.roi, bounds: entry.bounds, zSpan: entry.zSpan })),
     );
   }, [layerId, setVisibleLayerRois, shown]);
   useEffect(
@@ -256,7 +261,16 @@ const AnnotationCollectionGroup = ({
     [selectOnlyRoi, toggleSelectedRoi],
   );
 
+  // Called per pointer move over a shape; the store dedupes by id, so the
+  // state (and anything subscribed) changes on enter/leave only.
+  const onHoverRoi = useCallback((roi: SelectedRoi) => hoverRoi(roi), [hoverRoi]);
+  const onUnhoverRoi = useCallback((roiId: string) => unhoverRoi(roiId), [unhoverRoi]);
+
   const selectable = interactionMode !== "PROBE";
+  // Handler ATTACHMENT is the raycast gate (P20, `annotationHoverEnabled`):
+  // hovering arms the shapes for R3F's per-move raycast, so only where the
+  // attached action button can actually be used.
+  const hoverable = selectable && annotationHoverEnabled({ interactionMode, drawingToolActive });
   const selectedRoiIds = useMemo(
     () => new Set(selectedRois.map((roi) => roi.id)),
     [selectedRois],
@@ -291,6 +305,9 @@ const AnnotationCollectionGroup = ({
           opacity={opacity}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
+          hoverable={hoverable}
+          onHoverRoi={onHoverRoi}
+          onUnhoverRoi={onUnhoverRoi}
         />
       ))}
       {outlineBatches.map((batch) => (
@@ -300,6 +317,9 @@ const AnnotationCollectionGroup = ({
           selectedIds={selectedRoiIds}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
+          hoverable={hoverable}
+          onHoverRoi={onHoverRoi}
+          onUnhoverRoi={onUnhoverRoi}
         />
       ))}
       {otherShapes.map(({ annotation, roi }) => (
@@ -312,6 +332,9 @@ const AnnotationCollectionGroup = ({
           isActive={selectedRoiIds.has(annotation.id)}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
+          hoverable={hoverable}
+          onHoverRoi={onHoverRoi}
+          onUnhoverRoi={onUnhoverRoi}
         />
       ))}
     </group>

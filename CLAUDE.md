@@ -30,8 +30,8 @@ Examples in-tree:
 - `app/configureSmartBuilder.tsx` `renderHover` pairs each hover card with its
   module guard (`{ Component, Guard }`) and renders
   `<ModuleGuard><Suspense>…</Suspense></ModuleGuard>`.
-- `providers/smart/extensions/context.tsx` (`SmartContext`) wraps each module's
-  applicable-actions block in its guard.
+- `providers/smart/extensions/SectionHost.tsx` wraps each menu section's query
+  in the section's `Guard` (declared on its descriptor, see §4).
 - The dialog provider wraps every dialog in `<Guard.Rekuest>`.
 
 ## 2. The dialog system
@@ -87,8 +87,8 @@ Model-specific actions (open a dialog, navigate, run a mutation) should be
 **Why it must be a local action:** both surfaces consume the same
 `useMatchingActionEntries`, so one registered action with the right `conditions`
 automatically appears in **both**:
-1. the **menu** — `SmartContext` → `ApplicableLocalActions`
-   (`providers/smart/extensions/local/localactions.tsx`), shown on right-click /
+1. the **menu** — `SmartContext` → the `local.actions` section
+   (`providers/smart/extensions/local/sections.tsx`), shown on right-click /
    in the floating partner panel.
 2. the **button** — `ObjectButton` renders `SmartContext` in a popover.
 
@@ -97,3 +97,24 @@ correct `conditions` and confirm it shows up from **both** the context menu and
 the `ObjectButton`. A bespoke button (like the "Create shortcut" button on the
 action hover card) is fine as an extra convenience, but the canonical path is the
 local action. Module-specific `execute` bodies still follow convention #1.
+
+## 4. The smart context menu is a section registry
+
+The right-click menu / `ObjectButton` popover (`SmartContext` in
+`providers/smart/extensions/context.tsx`) renders **section descriptors**, not
+a hardcoded list. A `SmartContextSection` (`extensions/section.ts`) has `id`
+(`"<module>.<name>"`), `priority`, `tier` (`instant` = synchronous, painted in
+the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
+`useItems(ctx)` → `{ items, status }`, `itemKey`, `searchParts?`, `Row`.
+
+- Each module exports its descriptors from `extensions/<module>/sections.tsx`;
+  `app/smartcontext.tsx` merges them (like `app/localactions.tsx`).
+- `SectionHost` owns the guard, heading, empty rule, error line, stale-row
+  narrowing and the status report; a section is just a query + a row.
+- Remote `useItems` go through `useSmartDemands` + the `queries.ts` variable
+  builders and `useStableData` (keep rows while a search refetch runs). The
+  prefetcher (`extensions/prefetch.ts`) uses the same builders, so keep them in
+  sync or the warmed cache entry is never hit.
+- Callers narrow the menu with `sections={{ only | exclude }}`, never with a
+  new `disableX` prop. Per-row Radix roots are out: the "Run on" picker is one
+  `RunOnSubmenu` per menu, shortcut keys go through `bindShortcutKey`.

@@ -1,25 +1,14 @@
 import { useDialog } from "@/app/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
 import {
-  ActionDemandInput,
   TaskEventFragment,
   DetailImplementationFragment,
-  DemandKind,
-  ImplementationOrder,
-  Ordering,
-  PortDemandInput,
   PortKind,
   PrimaryActionFragment,
-  useAllPrimaryActionsQuery,
   useImplementationsQuery,
 } from "@/rekuest/api/graphql";
 import { buildAssignInput } from "@/rekuest/assign";
@@ -27,7 +16,19 @@ import { trackTask } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Boxes, PlayCircle } from "lucide-react";
 import { CommandActionRow } from "../CommandActionRow";
-import type { PassDownProps, SmartContextProps } from "../types";
+import type { SmartContextProps } from "../types";
+import {
+  ACTIVE_IMPLEMENTATION_ORDERING,
+  SMART_IMPLEMENTATION_PAGE_SIZE,
+} from "./queries";
+import { useRunOnSubmenu } from "./runOnContext";
+
+/**
+ * The rows of the rekuest sections (Run, Implementations, Batch, and the
+ * "Run on" picker). The sections themselves — queries, headings, status — are
+ * descriptors in `./sections.tsx`; the demands they ask with live in
+ * `../demands.ts`.
+ */
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown error";
@@ -36,120 +37,6 @@ const formatAssignErrorToast = (message: string) => ({
   title: "Assignment failed",
   detail: message,
 });
-
-const SMART_IMPLEMENTATION_PAGE_SIZE = 12;
-const ACTIVE_IMPLEMENTATION_ORDERING = [{ active: Ordering.Desc }] as unknown as ImplementationOrder[];
-
-const buildActionDemands = (
-  props: PassDownProps,
-  options?: { batch?: boolean },
-): PortDemandInput[] => {
-  const demands: PortDemandInput[] = [];
-
-  if (props.objects.length > 0) {
-    if (props.objects.length === 1 || options?.batch) {
-      demands.push({
-        kind: DemandKind.Args,
-        matches: [
-          {
-            at: 0,
-            kind: PortKind.Structure,
-            identifier: props.objects[0].identifier,
-          },
-        ],
-      });
-    } else {
-      demands.push({
-        kind: DemandKind.Args,
-        matches: [
-          {
-            at: 0,
-            kind: PortKind.List,
-            children: [
-              {
-                at: 0,
-                kind: PortKind.Structure,
-                identifier: props.objects[0].identifier,
-              },
-            ],
-          },
-        ],
-      });
-    }
-  }
-
-  if (props.partners && props.partners.length > 0) {
-    if (props.partners.length === 1) {
-      demands.push({
-        kind: DemandKind.Args,
-        matches: [
-          {
-            at: 1,
-            kind: PortKind.Structure,
-            identifier: props.partners[0].identifier,
-          },
-        ],
-      });
-    } else {
-      demands.push({
-        kind: DemandKind.Args,
-        matches: [
-          {
-            at: 1,
-            kind: PortKind.List,
-            children: [
-              {
-                at: 0,
-                kind: PortKind.Structure,
-                identifier: props.partners[0].identifier,
-              },
-            ],
-          },
-        ],
-      });
-    }
-  }
-
-  if (props.returns) {
-    demands.push({
-      kind: DemandKind.Returns,
-      matches: props.returns.map((identifier, index) => ({
-        at: index,
-        kind: PortKind.Structure,
-        identifier,
-      })),
-    });
-  }
-
-  return demands;
-};
-
-const buildImplementationDemand = (
-  props: PassDownProps,
-  options?: { batch?: boolean },
-): ActionDemandInput => {
-  const demands = buildActionDemands(props, options);
-  const argMatches = demands
-    .filter((demand) => demand.kind === DemandKind.Args)
-    .flatMap((demand) => demand.matches ?? []);
-  const returnMatches = demands
-    .filter((demand) => demand.kind === DemandKind.Returns)
-    .flatMap((demand) => demand.matches ?? []);
-
-  const forceArgLength = argMatches.length
-    ? Math.max(...argMatches.map((match) => match.at ?? 0)) + 1
-    : undefined;
-  const forceReturnLength = returnMatches.length
-    ? Math.max(...returnMatches.map((match) => match.at ?? 0)) + 1
-    : undefined;
-
-  return {
-    ...(argMatches.length ? { argMatches } : {}),
-    ...(typeof forceArgLength === "number" ? { forceArgLength } : {}),
-    ...(returnMatches.length ? { returnMatches } : {}),
-    ...(typeof forceReturnLength === "number" ? { forceReturnLength } : {}),
-  };
-};
 
 type AssignableAction = PrimaryActionFragment | DetailImplementationFragment["action"];
 
@@ -556,11 +443,28 @@ export const BatchImplementationAssignButton = (
   );
 };
 
+/** Right-click on a Run row opens the menu's shared "Run on" picker. */
+const useRunOnRow = (action: PrimaryActionFragment) => {
+  const submenu = useRunOnSubmenu();
+  return React.useMemo(
+    () =>
+      submenu
+        ? (event: React.MouseEvent) => {
+            event.preventDefault();
+            event.stopPropagation();
+            submenu.openFor({ action }, event);
+          }
+        : undefined,
+    [submenu, action],
+  );
+};
+
 export const AssignButton = (
   props: SmartContextProps & { action: PrimaryActionFragment },
 ) => {
   const { assign } = useAssign();
   const { openDialog } = useDialog();
+  const runOn = useRunOnRow(props.action);
   const {
     doing,
     error,
@@ -611,36 +515,30 @@ export const AssignButton = (
   const inlineErrorToast = error ? formatAssignErrorToast(error) : null;
 
   return (
-    <ContextMenu modal={false}>
-      <ContextMenuTrigger asChild>
-        <CommandActionRow
-          onSelect={() => conditionalAssign(props.action)}
-          value={props.action.id}
-          title={props.action.name}
-          description={props.action.description}
-          progress={progress}
-          className={cn(
-            doing && "animate-pulse",
-            errorFlashActive &&
-              "bg-red/20 data-selected:bg-red-500/20 text-destructive ring-1 ring-inset ring-destructive/35 transition-colors duration-150",
-          )}
-          trailing={
-            <span className="ml-auto flex items-center gap-2">
-              {inlineErrorToast ? (
-                <span className="max-w-48 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-right text-[10px] leading-tight text-destructive">
-                  <span className="block font-medium">{inlineErrorToast.title}</span>
-                  <span className="block truncate">{inlineErrorToast.detail}</span>
-                </span>
-              ) : null}
+    <CommandActionRow
+      onSelect={() => conditionalAssign(props.action)}
+      onContextMenu={runOn}
+      value={props.action.id}
+      title={props.action.name}
+      description={props.action.description}
+      progress={progress}
+      className={cn(
+        doing && "animate-pulse",
+        errorFlashActive &&
+          "bg-red/20 data-selected:bg-red-500/20 text-destructive ring-1 ring-inset ring-destructive/35 transition-colors duration-150",
+      )}
+      trailing={
+        <span className="ml-auto flex items-center gap-2">
+          {inlineErrorToast ? (
+            <span className="max-w-48 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-right text-[10px] leading-tight text-destructive">
+              <span className="block font-medium">{inlineErrorToast.title}</span>
+              <span className="block truncate">{inlineErrorToast.detail}</span>
             </span>
-          }
-          icon={PlayCircle}
-        />
-      </ContextMenuTrigger>
-      <ContextMenuContent className="text-foreground border-border px-2 py-2 items-center">
-        <DirectImplementationAssignment {...props} action={props.action} />
-      </ContextMenuContent>
-    </ContextMenu>
+          ) : null}
+        </span>
+      }
+      icon={PlayCircle}
+    />
   );
 };
 
@@ -649,6 +547,7 @@ export const BatchAssignButton = (
 ) => {
   const { assign } = useAssign();
   const { openDialog } = useDialog();
+  const runOn = useRunOnRow(props.action);
   const {
     doing,
     error,
@@ -731,183 +630,29 @@ export const BatchAssignButton = (
   const inlineErrorToast = error ? formatAssignErrorToast(error) : null;
 
   return (
-    <ContextMenu modal={false}>
-      <ContextMenuTrigger asChild>
-        <CommandActionRow
-          onSelect={() => conditionalAssign(props.action)}
-          value={props.action.id}
-          title={props.action.name}
-          description={props.action.description}
-          progress={progress}
-          className={cn(
-            doing && "animate-pulse",
-            errorFlashActive &&
-              "bg-destructive/10 text-destructive ring-1 ring-inset ring-destructive/35 transition-colors duration-150",
-          )}
-          trailing={
-            <span className="ml-auto flex items-center gap-2">
-              {inlineErrorToast ? (
-                <span className="max-w-48 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-right text-[10px] leading-tight text-destructive">
-                  <span className="block font-medium">{inlineErrorToast.title}</span>
-                  <span className="block truncate">{inlineErrorToast.detail}</span>
-                </span>
-              ) : null}
+    <CommandActionRow
+      onSelect={() => conditionalAssign(props.action)}
+      onContextMenu={runOn}
+      value={props.action.id}
+      title={props.action.name}
+      description={props.action.description}
+      progress={progress}
+      className={cn(
+        doing && "animate-pulse",
+        errorFlashActive &&
+          "bg-destructive/10 text-destructive ring-1 ring-inset ring-destructive/35 transition-colors duration-150",
+      )}
+      trailing={
+        <span className="ml-auto flex items-center gap-2">
+          {inlineErrorToast ? (
+            <span className="max-w-48 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-right text-[10px] leading-tight text-destructive">
+              <span className="block font-medium">{inlineErrorToast.title}</span>
+              <span className="block truncate">{inlineErrorToast.detail}</span>
             </span>
-          }
-          icon={Boxes}
-        />
-      </ContextMenuTrigger>
-      <ContextMenuContent className="text-foreground border-border px-2 py-2 items-center">
-        <DirectImplementationAssignment {...props} action={props.action} />
-      </ContextMenuContent>
-    </ContextMenu>
-  );
-};
-
-export const ApplicableBatchActions = (props: PassDownProps) => {
-  const { data, error } = useAllPrimaryActionsQuery({
-    variables: {
-      filters: {
-        demands: buildActionDemands(props, { batch: true }),
-        search: props.filter && props.filter !== "" ? props.filter : undefined,
-        inCollection: props.collection,
-      },
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  if (error) {
-    return <span className="font-light text-xs w-full items-center ml-2 w-full">Error</span>;
-  }
-
-  if (props.objects.length < 2) {
-    return null;
-  }
-
-  if (!data || data.actions.length === 0) {
-    return null;
-  }
-
-  return (
-    <div>
-      <div className="font-light text-xs w-full items-center ml-2 w-full inline-flex gap-2">
-
-        <span>Batch</span>
-      </div>
-      {data.actions.map((action) => (
-        <BatchAssignButton action={action} {...props} key={action.id} />
-      ))}
-    </div>
-  );
-};
-
-export const ApplicableActions = (props: PassDownProps) => {
-  const { data, error } = useAllPrimaryActionsQuery({
-    variables: {
-      filters: {
-        demands: buildActionDemands(props),
-        search: props.filter && props.filter !== "" ? props.filter : undefined,
-        inCollection: props.collection,
-      },
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  if (error) {
-    return <span className="font-light text-xs w-full items-center ml-2 w-full">Error</span>;
-  }
-
-  if (!data || data.actions.length === 0) {
-    return null;
-  }
-
-  return (
-    <div>
-      <div className="font-light text-xs w-full items-center ml-2 w-full inline-flex gap-2">
-
-        <span>Run</span>
-      </div>
-      {data.actions.map((action) => (
-        <AssignButton action={action} {...props} key={action.id} />
-      ))}
-    </div>
-  );
-};
-
-export const ApplicableImplementations = (props: PassDownProps) => {
-  const { data, error } = useImplementationsQuery({
-    variables: {
-      filters: {
-        actionDemand: buildImplementationDemand(props),
-        search: props.filter && props.filter !== "" ? props.filter : undefined,
-      },
-      ordering: ACTIVE_IMPLEMENTATION_ORDERING,
-      pagination: { limit: SMART_IMPLEMENTATION_PAGE_SIZE },
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  if (error) {
-    return <span className="font-light text-xs w-full items-center ml-2 w-full">Error</span>;
-  }
-
-  if (!data || data.implementations.length === 0) {
-    return null;
-  }
-
-  return (
-    <div>
-      <div className="font-light text-xs w-full items-center ml-2 w-full inline-flex gap-2">
-        <span>Implementations</span>
-      </div>
-      {data.implementations.map((implementation) => (
-        <ImplementationAssignButton
-          implementation={implementation}
-          {...props}
-          key={implementation.id}
-        />
-      ))}
-    </div>
-  );
-};
-
-export const ApplicableBatchImplementations = (props: PassDownProps) => {
-  const { data, error } = useImplementationsQuery({
-    variables: {
-      filters: {
-        actionDemand: buildImplementationDemand(props, { batch: true }),
-        search: props.filter && props.filter !== "" ? props.filter : undefined,
-      },
-      ordering: ACTIVE_IMPLEMENTATION_ORDERING,
-      pagination: { limit: SMART_IMPLEMENTATION_PAGE_SIZE },
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  if (error) {
-    return <span className="font-light text-xs w-full items-center ml-2 w-full">Error</span>;
-  }
-
-  if (props.objects.length < 2) {
-    return null;
-  }
-
-  if (!data || data.implementations.length === 0) {
-    return null;
-  }
-
-  return (
-    <div>
-      <div className="font-light text-xs w-full items-center ml-2 w-full inline-flex gap-2">
-        <span>Batch Implementations</span>
-      </div>
-      {data.implementations.map((implementation) => (
-        <BatchImplementationAssignButton
-          implementation={implementation}
-          {...props}
-          key={implementation.id}
-        />
-      ))}
-    </div>
+          ) : null}
+        </span>
+      }
+      icon={Boxes}
+    />
   );
 };

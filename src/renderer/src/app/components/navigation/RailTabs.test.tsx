@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const tabsValue = vi.fn();
@@ -42,12 +42,13 @@ const dragOnto = (node: Element) => {
 const LONG_LABEL =
   "an_open_tab_whose_title_is_far_longer_than_two_hundred_and_forty_pixels_allows";
 
-const tab = (id: string, label: string, pinned = false) => ({
+const tab = (id: string, label: string, pinned = false, beside?: string) => ({
   id,
   label,
   lastActiveAt: 0,
   history: {},
   ...(pinned ? { pinned } : {}),
+  ...(beside ? { beside } : {}),
 });
 
 const value = (over: Record<string, unknown> = {}) => ({
@@ -60,6 +61,7 @@ const value = (over: Record<string, unknown> = {}) => ({
   setPinned: vi.fn(),
   move: vi.fn(),
   split: vi.fn(),
+  splitWith: vi.fn(),
   unsplit: vi.fn(),
   swapSplit: vi.fn(),
   ...over,
@@ -77,36 +79,110 @@ afterEach(() => {
 });
 
 describe("split view", () => {
-  const splitMark = (label: string) =>
-    screen.getByText(label).closest("[role='button']")?.querySelector("[data-split-mark]");
+  const cellOf = (label: string) => screen.getByText(label).closest("[role='button']")!;
+  const splitRow = () => document.querySelector("[data-split-row]");
 
-  it("marks both panes, lighting the other pane short of the focused one", () => {
+  it("puts the pair in one row, left pane first, where the first of them stood", () => {
     tabsValue.mockReturnValue(
       value({
-        tabs: [tab("t1", "One"), tab("t2", "Two"), tab("t3", "Three")],
+        tabs: [tab("t1", "One"), tab("t2", "Two", false, "t1"), tab("t3", "Three")],
         activeId: "t2",
         panes: { left: "t2", right: "t1" },
       }),
     );
     renderStrip();
-    expect(splitMark("One")).not.toBeNull();
-    expect(splitMark("Two")).not.toBeNull();
-    expect(splitMark("Three")).toBeNull();
-    const other = screen.getByText("One").closest("[role='button']");
-    expect(other?.className).toContain("bg-background/40");
-    expect(other?.className).not.toContain("bg-background/70");
+    const row = splitRow();
+    expect(row).not.toBeNull();
+    expect([...row!.querySelectorAll("[data-tab-row]")].map((c) => c.getAttribute("title"))).toEqual(
+      ["Two", "One"],
+    );
+    expect(row!.contains(cellOf("Three"))).toBe(false);
+    // The other pane is lit, short of the focused one.
+    expect(cellOf("One").className).toContain("bg-background/40");
+    expect(cellOf("One").className).not.toContain("bg-background/70");
+    expect(cellOf("Two").className).toContain("bg-background/70");
+    // Rows in strip order: the pair stands where "One" stood.
+    const titles = [...document.querySelectorAll("[data-tab-row]")].map((c) =>
+      c.getAttribute("title"),
+    );
+    expect(titles).toEqual(["Two", "One", "Three"]);
   });
 
-  it("shows no mark and no split items when the view is not split", () => {
+  it("is one row per tab when the view is not split", () => {
     renderStrip();
-    expect(splitMark("One")).toBeNull();
-    expect(splitMark("Two")).toBeNull();
+    expect(splitRow()).toBeNull();
+  });
+
+  it("focuses a half on click, and reorders the pair by its owner", () => {
+    const v = value({
+      tabs: [tab("t1", "One"), tab("t2", "Two", false, "t1"), tab("t3", "Three")],
+      activeId: "t2",
+      panes: { left: "t2", right: "t1" },
+    });
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+    act(() => cellOf("One").click());
+    expect(v.focus).toHaveBeenCalledWith("t1");
+
+    // Alt+↓ on either half moves the pair below "Three": the owner moves, the
+    // partner keeps its own place (`railRows.test.ts` checks the arithmetic).
+    fireEvent.keyDown(cellOf("Two"), { key: "ArrowDown", altKey: true });
+    expect(v.move.mock.calls).toEqual([["t2", 2]]);
+  });
+
+  it("lists another owner's pair too, unlit, with its own swap and unsplit", () => {
+    const v = value({
+      tabs: [tab("t1", "One"), tab("t2", "Two", false, "t1"), tab("t3", "Three", false, "t1")],
+      activeId: "t2",
+      panes: { left: "t2", right: "t1" },
+    });
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+    const rows = [...document.querySelectorAll("[data-split-row]")];
+    expect(rows).toHaveLength(2);
+    const titles = [...document.querySelectorAll("[data-tab-row]")].map((c) =>
+      c.getAttribute("title"),
+    );
+    expect(titles).toEqual(["Two", "One", "Three", "One"]);
+    // "One" in Three's row is neither focused nor lit; in Two's row it is lit.
+    const [oneShown, oneListed] = screen.getAllByText("One").map((l) => l.closest("[role='button']")!);
+    expect(oneShown.className).toContain("bg-background/40");
+    expect(oneListed.className).not.toContain("bg-background/40");
+    expect(oneListed.className).not.toContain("bg-background/70");
+
+    fireEvent.contextMenu(screen.getByText("Three"));
+    act(() => screen.getByText("Unsplit").click());
+    expect(v.unsplit).toHaveBeenCalledWith("t3");
+  });
+
+  it("splits the right-clicked tab with a chosen other tab, or a new one", () => {
+    const v = value({ tabs: [tab("t1", "One"), tab("t2", "Two"), tab("t3", "Three")] });
+    tabsValue.mockReturnValue(v);
+    renderStrip();
+
+    fireEvent.contextMenu(screen.getByText("Three"));
+    const trigger = screen.getByText("Split with");
+    // Open the submenu from the keyboard, as Radix does with →.
+    fireEvent.keyDown(trigger, { key: "ArrowRight" });
+    expect(screen.queryByText("Three", { selector: "[role='menuitem'] *" })).toBeNull();
+    act(() => screen.getByText("One", { selector: "[role='menuitem'] *" }).click());
+    expect(v.splitWith).toHaveBeenCalledWith("t3", "t1");
+
+    fireEvent.contextMenu(screen.getByText("Two"));
+    fireEvent.keyDown(screen.getByText("Split with"), { key: "ArrowRight" });
+    // The main menu has a "New tab" of its own, and the submenu is nested
+    // inside it (no portal of its own), so take the submenu by its slot.
+    const subs = document.querySelectorAll<HTMLElement>("[data-slot='context-menu-sub-content']");
+    const sub = subs[subs.length - 1];
+    act(() => within(sub).getByText("New tab").click());
+    expect(v.splitWith).toHaveBeenCalledWith("t2");
+    expect(v.open).not.toHaveBeenCalled();
   });
 
   it("offers to split with a tab that is not on screen, and to dissolve from one that is", () => {
     const v = value({
       panes: { left: "t2", right: "t1" },
-      tabs: [tab("t1", "One"), tab("t2", "Two"), tab("t3", "Three")],
+      tabs: [tab("t1", "One"), tab("t2", "Two", false, "t1"), tab("t3", "Three")],
     });
     tabsValue.mockReturnValue(v);
     renderStrip();
@@ -123,7 +199,7 @@ describe("split view", () => {
 
     fireEvent.contextMenu(screen.getByText("Two"));
     act(() => screen.getByText("Swap sides").click());
-    expect(v.swapSplit).toHaveBeenCalled();
+    expect(v.swapSplit).toHaveBeenCalledWith("t2");
   });
 });
 

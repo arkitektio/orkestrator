@@ -1,4 +1,3 @@
-import { CommandGroup } from "cmdk";
 import { MessageSquareMore } from "lucide-react";
 
 import { CommandActionRow } from "../CommandActionRow";
@@ -46,24 +45,5 @@ export const TalkAboutButton = (props: PassDownProps) => {
         </span>
       }
     />
-  );
-};
-
-export const ApplicableTalk = (props: PassDownProps) => {
-  if (props.objects.length === 0) {
-    return null;
-  }
-
-  return (
-    <CommandGroup
-      heading={
-        <span className="font-light text-xs w-full items-center ml-2 w-full inline-flex gap-2">
-          <MessageSquareMore className="h-3.5 w-3.5" />
-          <span>Alpaka</span>
-        </span>
-      }
-    >
-      <TalkAboutButton {...props} />
-    </CommandGroup>
   );
 };

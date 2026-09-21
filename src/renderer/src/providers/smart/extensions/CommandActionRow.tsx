@@ -80,11 +80,14 @@ export const CommandActionRow = (props: {
   progress?: number | null;
   className?: string;
   disabled?: boolean;
+  /** A right-click on the row (the shared "Run on" picker hooks in here). */
+  onContextMenu?: React.MouseEventHandler<HTMLDivElement>;
 }) => {
   return (
     <CommandItem
       value={props.value}
       onSelect={props.onSelect}
+      onContextMenu={props.onContextMenu}
       className={cn("flex items-center gap-3", props.className)}
       style={{
         backgroundSize: `${props.progress || 0}% 100%`,
