@@ -1,3 +1,13 @@
+# [2.10.0](https://github.com/arkitektio/orkestrator/compare/v2.9.0...v2.10.0) (2026-09-21)
+
+
+### Features
+
+* better asks and anchors ([612e86f](https://github.com/arkitektio/orkestrator/commit/612e86f66db4636856376fd73383c0342c4da8bc))
+* better pages and actions ([bf6965e](https://github.com/arkitektio/orkestrator/commit/bf6965e0a3fe99cfe7bdf4514045532889937350))
+* better tabs ([5b665d7](https://github.com/arkitektio/orkestrator/commit/5b665d7c75d582812a177ef54da30edf269d417f))
+* with better orkestrator catalog ([24507a7](https://github.com/arkitektio/orkestrator/commit/24507a732517cfcc65811d3c93771927e8a64534))
+
 # [2.9.0](https://github.com/arkitektio/orkestrator/compare/v2.8.0...v2.9.0) (2026-09-20)
 
 
