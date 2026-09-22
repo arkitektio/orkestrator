@@ -1,6 +1,8 @@
 import { AutoHideTitleBar } from "@/app/components/chrome/AutoHideTitleBar";
 import { RailChrome } from "@/app/components/chrome/RailChrome";
 import { RailResizer } from "@/app/components/chrome/RailResizer";
+import { RailDropOverlay, useRailDrop } from "@/app/components/navigation/RailDrop";
+import { RightEdge } from "@/app/components/navigation/RightEdge";
 import { dragZoneDoubleClick, getChromeMode } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { ChromeSurfaceProvider } from "./ChromeSurface";
@@ -26,6 +28,9 @@ export type AppLayoutProps = {
  */
 export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
   const mode = getChromeMode();
+  // The whole rail takes a dropped card, and gives up its drag region to do it
+  // — see `RailDrop.tsx`.
+  const railDrop = useRailDrop();
 
   return (
     // `rail-glass-surface`: with the translucent sidebar on, this is the
@@ -46,6 +51,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
           lets the menus and tooltips it opens follow it out of their portals. */}
       <ChromeSurfaceProvider>
       <div
+        ref={railDrop.ref}
         // No fill and no hairline of its own: the rail IS the window surface,
         // and a tint a few percent off `bg-sidebar` read as a seam beside the
         // chrome around the page. What sets the rail apart is the content
@@ -60,7 +66,10 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
         // load-bearing, and `RailChrome.test.tsx` asserts it.
         className={cn(
           "chrome-zoom relative flex-initial flex flex-col w-(--rail-width) shrink-0",
-          mode !== "none" && "app-drag",
+          // ...except while a card is in the air, when the rail is a drop
+          // target instead and the OS must stop swallowing the pointer.
+          mode !== "none" && !railDrop.dragging && "app-drag",
+          railDrop.dragging && "app-no-drag",
         )}
         onDoubleClick={dragZoneDoubleClick(mode)}
       >
@@ -79,6 +88,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
           {navigationBar}
         </nav>
         <RailResizer />
+        {railDrop.dragging && <RailDropOverlay isOver={railDrop.isOver} />}
       </div>
       </ChromeSurfaceProvider>
 
@@ -101,6 +111,11 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
         {/* Dialogs opened from the page cover the card, not the rail beside it. */}
         <PageDialogHost>{children}</PageDialogHost>
       </div>
+
+      {/* The right edge: nothing at rest, the open tabs when the pointer is
+          thrown at it (the card above gives up the width), a drop band while a
+          card is in the air. */}
+      <RightEdge />
       </div>
 
     </div>

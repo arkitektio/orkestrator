@@ -12,6 +12,7 @@ import { MIKRO_ACTIONS } from "@/lib/mikro/actions";
 import { REKUEST_ACTIONS } from "@/lib/rekuest/actions";
 import { linkBuilder } from "@/providers/smart/builder";
 import { smartRegistry } from "@/providers/smart/registry";
+import { structureTabTarget } from "@/providers/smart/tabTargets";
 import { Columns2, ExternalLink, FolderOpen, Link2, Link2Off, PanelLeftOpen } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -48,20 +49,12 @@ const NavigateAction: Action = {
 };
 /** Where each selected structure's page is, and what to call its tab. */
 const tabTargets = (state: ActionParams["state"]) =>
-  state.left.map(({ identifier, object }) => {
-    const path = smartRegistry.buildModelPath(identifier, object.id);
-    if (!path) {
-      throw new Error(`No path found for identifier ${identifier}`);
+  state.left.map((structure) => {
+    const target = structureTabTarget(structure);
+    if (!target) {
+      throw new Error(`No path found for identifier ${structure.identifier}`);
     }
-
-    const named = object.label ?? object.name;
-    return {
-      to: path.startsWith("/") ? path : `/${path}`,
-      label:
-        typeof named === "string" && named
-          ? named
-          : `${smartRegistry.getDisplayName(identifier)} ${object.id}`,
-    };
+    return target;
   });
 
 const OpenInNewTabAction: Action = {

@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const open = vi.hoisted(() => vi.fn());
+vi.mock("@/command/tabs/TabsProvider", () => ({
+  useTabActions: () => ({ open, openBeside: vi.fn() }),
+}));
 
 vi.mock("@/app/components/chrome/RailChrome", () => ({
   RailChrome: () => <div>chrome</div>,
@@ -8,6 +13,11 @@ vi.mock("@/app/components/chrome/RailChrome", () => ({
 vi.mock("@/app/components/chrome/AutoHideTitleBar", () => ({
   AutoHideTitleBar: () => null,
 }));
+
+import { SMART_MODEL_DROP_TYPE } from "@/constants";
+import { createDragSource, installDndEngine } from "@/lib/dnd/engine";
+import { dragOnto, fireDrag } from "@/lib/dnd/testing";
+import { smartRegistry } from "@/providers/smart/registry";
 
 import { AppLayout } from "./AppLayout";
 
@@ -74,5 +84,84 @@ describe("the rail surface", () => {
     const rail = screen.getByLabelText("Modules and pinned pages").parentElement!;
     expect(rail.className).not.toMatch(/\bbg-/);
     expect(rail.className).not.toMatch(/\bborder/);
+  });
+});
+
+/**
+ * The rail takes a dropped card anywhere on itself — the point being the parts
+ * of it that are NOT the tab strip: the gaps, and the empty run below the tabs,
+ * which is most of the rail most of the time.
+ */
+describe("dropping a card on the rail", () => {
+  let uninstall: () => void;
+
+  /** A card held over the rail. The session is published a frame late. */
+  const liftCard = async () => {
+    const card = document.createElement("div");
+    document.body.appendChild(card);
+    createDragSource(() => ({
+      kind: SMART_MODEL_DROP_TYPE,
+      getData: () => ({ structures: [{ identifier: "@x/thing", object: { id: "9" } }] }),
+    })).attach(card);
+    await act(async () => {
+      fireDrag(card, "dragstart");
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    });
+    return card;
+  };
+
+  const rail = () => screen.getByLabelText("Modules and pinned pages").parentElement!;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    smartRegistry.register({
+      identifier: "@x/thing",
+      name: "Thing",
+      path: "/x/things",
+      datum: true,
+    });
+    uninstall = installDndEngine(document);
+  });
+
+  afterEach(() => uninstall());
+
+  it("opens it as a tab, let go on the rail itself", async () => {
+    renderLayout();
+    const card = await liftCard();
+    act(() => {
+      dragOnto(card, rail()).drop();
+    });
+    expect(open).toHaveBeenCalledWith(
+      "/x/things/9",
+      expect.objectContaining({ label: "Thing 9", evict: true }),
+    );
+  });
+
+  it("gives up the window-drag region while a card is in the air, and takes it back after", async () => {
+    renderLayout();
+    // At rest the rail moves the window; `getChromeMode` decides whether it
+    // says so at all, so this only asserts the two do not contradict.
+    const dragRegionAtRest = rail().className.includes("app-drag");
+
+    const card = await liftCard();
+    expect(rail().className).toContain("app-no-drag");
+
+    await act(async () => {
+      fireDrag(card, "dragend");
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    });
+    expect(rail().className).not.toContain("app-no-drag");
+    expect(rail().className.includes("app-drag")).toBe(dragRegionAtRest);
+  });
+
+  it("draws the invitation over the rail rather than colouring the rail itself", async () => {
+    renderLayout();
+    expect(screen.queryByTestId("rail-drop-overlay")).toBeNull();
+
+    await liftCard();
+    const overlay = screen.getByTestId("rail-drop-overlay");
+    expect(overlay.className).toContain("pointer-events-none");
+    // The rail surface stays clean — the assertion the rail's own test makes.
+    expect(rail().className).not.toMatch(/\bbg-/);
   });
 });
