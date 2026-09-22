@@ -3,6 +3,7 @@ import { electronRegistry } from "./agent-registry";
 import { Assign } from "./message";
 import { registerWatcher } from "./watcher";
 import { GraphQLClient } from 'graphql-request';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 import { ImplementationInput as SchemaImplementationInput } from './schemas/rekuest'; // Generated file
 
 type Alias = {
@@ -30,15 +31,38 @@ const aliasToUrl = (alias: Alias) => {
     return url;
 }
 
+/**
+ * Main's own requests do not go through the renderer session's proxy, so a
+ * service behind an organisation mesh is only reachable here through the
+ * sidecar's HTTP CONNECT port. `proxyPortForHost` is the MeshService's
+ * routing table; `undefined` means a direct connection, exactly as before.
+ */
+const meshAwareFetch = (proxyPortForHost?: (host: string) => number | undefined) => {
+  const agents = new Map<number, ProxyAgent>();
+  return (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const port = proxyPortForHost?.(new URL(url).hostname);
+    if (!port) return fetch(input, init);
+    let agent = agents.get(port);
+    if (!agent) {
+      agent = new ProxyAgent(`http://127.0.0.1:${port}`);
+      agents.set(port, agent);
+    }
+    return undiciFetch(url, { ...(init as any), dispatcher: agent }) as unknown as Promise<Response>;
+  };
+};
+
 export class AgentGateway {
   private ipc: IpcMain;
   private token: string | null = null;
   private implementations: SchemaImplementationInput[] = [];
   private cancelControllers: Map<string, AbortController> = new Map();
   private services: Map<string, GraphQLClient> = new Map();
+  private readonly fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-  constructor(ipc: IpcMain) {
+  constructor(ipc: IpcMain, proxyPortForHost?: (host: string) => number | undefined) {
     this.ipc = ipc;
+    this.fetch = meshAwareFetch(proxyPortForHost);
 
     registerWatcher();
     this.setup();
@@ -75,6 +99,7 @@ export class AgentGateway {
       this.implementations = [];
 
       const client = new GraphQLClient(context.url, {
+          fetch: this.fetch,
           headers: {
               Authorization: `Bearer ${this.token}`,
           }
@@ -85,6 +110,7 @@ export class AgentGateway {
         context.services.forEach(service => {
             const url = aliasToUrl(service.resolved);
             const serviceClient = new GraphQLClient(url + "/graphql", {
+                fetch: this.fetch,
                 headers: {
                     Authorization: `Bearer ${this.token}`,
                 }

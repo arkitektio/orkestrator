@@ -18,6 +18,30 @@ import type {
   RemedyId,
   RemedyResult,
 } from "../main/doctor/protocol";
+import type {
+  MeshClaimRequest,
+  MeshEvent,
+  MeshPingRequest,
+  MeshPingResult,
+  MeshStatusPayload,
+} from "../main/mesh/protocol";
+
+/**
+ * Organisation meshes (the built-in userspace Tailscale node per mesh).
+ * Everything here is an id or a configuration main validates; see
+ * `src/main/mesh/protocol.ts`.
+ */
+export type MeshApi = {
+  status: () => Promise<MeshStatusPayload>;
+  /**
+   * Which mesh this window's active profile needs (`null`: none, or switched
+   * off). `authKey` is a one-shot credential from a grant; it is never stored.
+   */
+  claim: (request: MeshClaimRequest) => Promise<MeshStatusPayload>;
+  /** Disco-ping a peer (one of the addresses the status lists); every attempt, last marked final. */
+  ping: (request: MeshPingRequest) => Promise<MeshPingResult[]>;
+  onEvent: (cb: (event: MeshEvent) => void) => () => void;
+};
 
 /**
  * Connection diagnostics. Probing happens in main because the renderer's
@@ -98,6 +122,7 @@ declare global {
       onUploadError: (uploadId: string, cb: (data: any) => void) => () => void;
       voice: VoiceApi;
       doctor: DoctorApi;
+      mesh: MeshApi;
       executeElectron: (task: Assign) => Promise<void>;
       onAgentYield: (cb: (data: any) => void) => () => void;
       onAgentDone: (cb: (data: any) => void) => () => void;

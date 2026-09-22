@@ -4,6 +4,7 @@ import { checkAliasHealth, resolveWorkingAlias } from "./alias/resolve";
 import { buildAliases } from "./builder";
 import { ArkitektContext } from "./context";
 import { useConnectionStatus } from "./hooks";
+import { claimProfileMesh, hintedProfileMesh, meshFromGrant } from "@/lib/mesh/profileMesh";
 import { flow } from "./fakts/flow";
 import { grantHintForProfile } from "./fakts/grantHint";
 import { Manifest } from "./fakts/manifestSchema";
@@ -24,6 +25,7 @@ import {
   setActiveProfile,
   setLastEndpoint,
   updateProfileLabel,
+  updateProfileMesh,
   updateProfileSession,
   upsertProfile,
   writeStoredProfileBook,
@@ -725,12 +727,17 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         // `reconnect()` somewhere to point.
         await persistBook((book) => setLastEndpoint(book, endpoint));
 
+        // The profile this grant re-approves, if the hint names one: its mesh
+        // keeps its node, and a mesh switched off there is not asked for.
+        const previousMesh = hintedProfileMesh(store.getState().profileBook, endpoint, hint);
+
         // One grant, one response: tokens and the rendered instances together.
-        const { fakts, token: grantToken } = await flow({
+        const { fakts, token: grantToken, mesh: grantedMesh } = await flow({
           endpoint,
           controller,
           manifest: enhancedManifest,
           hint,
+          requestMeshKey: previousMesh?.enabled !== false,
         });
         dlog("[ArkitektProvider] connect: fakts resolved, services:", Object.keys(fakts.instances || {}));
 
@@ -754,7 +761,13 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         // that comes from lok's `mycontext` — so the profile starts on a
         // provisional id and `setProfileIdentity` re-keys it (collapsing any
         // duplicate) once lok answers.
-        const profile = createProfileFromSession(nextSession);
+        const mesh = meshFromGrant(endpoint, grantedMesh, previousMesh);
+        const profile = { ...createProfileFromSession(nextSession), ...(mesh ? { mesh } : {}) };
+        // The keyed claim is SENT before the profile lands in the book, so
+        // this window's `MeshSync` can only ever re-claim a node that is
+        // already joining with it (main handles invokes in order). The login
+        // does not wait on the sidecar or the tailnet.
+        if (mesh?.enabled && grantedMesh) void claimProfileMesh(mesh, grantedMesh.authKey);
         await persistBook((book) =>
           setActiveProfile(upsertProfile(book, profile), profile.id),
         );
@@ -1067,6 +1080,13 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     [persistBook],
   );
 
+  const setProfileMesh = useCallback<AppFunctions["setProfileMesh"]>(
+    async (profileId, update) => {
+      await persistBook((book) => updateProfileMesh(book, profileId, update));
+    },
+    [persistBook],
+  );
+
   const cancelConnection = useCallback<AppFunctions["cancelConnection"]>(() => {
     dlog("[ArkitektProvider] cancelConnection called");
     if (controllerRef.current) {
@@ -1150,8 +1170,9 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       removeProfile,
       forgetAllProfiles,
       setProfileIdentity,
+      setProfileMesh,
     }),
-    [connect, disconnect, reconnect, cancelConnection, retryService, retryModule, clearServiceCache, clearAllServiceCaches, reportStatus, switchProfile, signOutProfile, removeProfile, forgetAllProfiles, setProfileIdentity],
+    [connect, disconnect, reconnect, cancelConnection, retryService, retryModule, clearServiceCache, clearAllServiceCaches, reportStatus, switchProfile, signOutProfile, removeProfile, forgetAllProfiles, setProfileIdentity, setProfileMesh],
   );
 
   // ── ONE useEffect: load the profile book, activate the live one, health-check ──

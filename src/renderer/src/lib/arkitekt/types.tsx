@@ -8,6 +8,7 @@ import { StoredArkitektSession } from "./fakts/sessionStorageSchema";
 import {
   ProfileIdentity,
   ProfileLabel,
+  ProfileMesh,
   StoredProfileBook,
 } from "./fakts/profileStorageSchema";
 import { TokenResponse } from "./fakts/tokenSchema";
@@ -272,6 +273,15 @@ export type AppFunctions = {
     profileId: string,
     patch: { identity?: ProfileIdentity; label?: ProfileLabel },
   ) => void;
+  /**
+   * Change or (returning `undefined`) forget a profile's organisation mesh —
+   * its switch, its pinned hosts. The mesh lives on the profile, and every
+   * window in that profile re-claims it from the book.
+   */
+  setProfileMesh: (
+    profileId: string,
+    update: (mesh: ProfileMesh | undefined) => ProfileMesh | undefined,
+  ) => Promise<void>;
 };
 
 export type ReportResult = {

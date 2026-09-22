@@ -161,6 +161,8 @@ export const ServicesPage = () => {
               kind: "service",
               serviceKey: "all",
               endpointUrl: activeProfile?.session.endpoint.base_url,
+              meshCoordUrl: activeProfile ? (activeProfile.session.endpoint.mesh_coord_url ?? null) : undefined,
+              profileMesh: activeProfile?.mesh,
             }}
             buildTargets={buildTargets}
             subject={activeProfile?.session.endpoint.base_url ?? "this deployment"}

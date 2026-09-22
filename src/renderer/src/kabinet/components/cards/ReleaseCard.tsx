@@ -115,7 +115,7 @@ const InstallTargets = (props: { release: string }) => {
 const InstallDialog = (props: { item: ListReleaseFragment }) => {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm">
           Install
         </Button>

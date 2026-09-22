@@ -91,6 +91,26 @@ export type ProfileLabel = z.infer<typeof ProfileLabelSchema>;
 export const ProfileStatusSchema = z.enum(["ok", "stale"]);
 export type ProfileStatus = z.infer<typeof ProfileStatusSchema>;
 
+/**
+ * The organisation mesh this login was let into. It belongs to the PROFILE —
+ * organisation and hub — not to the computer: two hubs are two approvals and
+ * may be two tailnets. `id` is minted once and names the node's identity on
+ * disk (`<userData>/mesh/<id>`), so it must travel with the profile through a
+ * re-key. `enabled` is the user's switch (Settings › Mesh); off, the window
+ * claims nothing and a re-approval does not ask lok for a key.
+ *
+ * The one-shot key a grant brings is never stored here — see `GrantedMesh`.
+ */
+export const ProfileMeshSchema = z.object({
+  id: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+  label: z.string(),
+  controlUrl: z.string(),
+  hosts: z.array(z.string()).default([]),
+  enabled: z.boolean().default(true),
+});
+
+export type ProfileMesh = z.infer<typeof ProfileMeshSchema>;
+
 export const StoredProfileSchema = z.object({
   id: z.string(),
   session: StoredArkitektSessionSchema,
@@ -99,6 +119,8 @@ export const StoredProfileSchema = z.object({
   /** `stale` = the refresh chain is known-broken; reviving it costs a re-grant. */
   status: ProfileStatusSchema.default("ok"),
   statusMessage: z.string().optional(),
+  /** An unreadable mesh is dropped, never the profile with it. */
+  mesh: ProfileMeshSchema.optional().catch(undefined),
   createdAt: z.number(),
   lastUsedAt: z.number(),
 });
@@ -412,6 +434,7 @@ export const reidentifyProfile = (
     id: nextId,
     identity: nextIdentity,
     label: { ...profile.label, ...label },
+    mesh: mergeProfileMesh(existing?.mesh, profile.mesh),
     // Keep the older creation date when collapsing onto an existing row, so
     // "added on" does not jump forward every time the user re-approves.
     createdAt: existing ? Math.min(existing.createdAt, profile.createdAt) : profile.createdAt,
@@ -429,6 +452,33 @@ export const reidentifyProfile = (
       book.activeProfileId === currentId ? nextId : book.activeProfileId,
   };
 };
+
+/**
+ * A re-approval collapsing onto the row it already had. A grant only carries
+ * a mesh when lok minted a key and the node just joined with it, so the
+ * grant's id is the node that is logged in now; the row keeps the user's
+ * switch and pins.
+ */
+const mergeProfileMesh = (
+  kept: ProfileMesh | undefined,
+  granted: ProfileMesh | undefined,
+): ProfileMesh | undefined => {
+  if (!kept || !granted) return granted ?? kept;
+  return { ...kept, id: granted.id, label: granted.label, controlUrl: granted.controlUrl };
+};
+
+/** Set, change or (`undefined`) forget a profile's mesh. */
+export const updateProfileMesh = (
+  book: StoredProfileBook,
+  profileId: string,
+  update: (mesh: ProfileMesh | undefined) => ProfileMesh | undefined,
+): StoredProfileBook =>
+  patchProfile(book, profileId, (profile) => {
+    const mesh = update(profile.mesh);
+    if (mesh) return { ...profile, mesh };
+    const { mesh: _dropped, ...rest } = profile;
+    return rest;
+  });
 
 export const updateProfileLabel = (
   book: StoredProfileBook,

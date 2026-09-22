@@ -24,7 +24,7 @@ export const Args = ({
         {instream.length > 0 ? (
           instream?.map((s, index) => (
             <Tooltip delayDuration={100}>
-              <TooltipTrigger>
+              <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   className="inline my-auto px-2 h-full flex flex-row py-1 disabled:opacity-50 disabled:cursor-not-allowed"

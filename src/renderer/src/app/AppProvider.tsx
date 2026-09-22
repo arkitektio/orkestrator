@@ -107,6 +107,7 @@ import { LatestTasksDashboardWidget } from "@/providers/dashboard/widgets/Latest
 import { LatestArrayDatasetsDashboardWidget } from "@/providers/dashboard/widgets/LatestArrayDatasetsDashboardWidget";
 import { OrganizationBrandSync } from "@/lok-next/components/OrganizationBrandSync";
 import { ProfileIdentitySync } from "@/lok-next/components/ProfileIdentitySync";
+import { MeshSync } from "./components/mesh/MeshSync";
 import { CommandPaletteProvider } from "@/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/command/Host";
 import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
@@ -159,6 +160,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                   <AgentProvider disabled={false}>
                                     <CommandPaletteProvider>
                                     <WardRegistrar />
+                                    <MeshSync />
                                     {/* One palette for the whole app. It used to
                                         be mounted per page, so it was missing on
                                         the dashboard and double-bound wherever

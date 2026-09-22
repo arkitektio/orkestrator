@@ -327,7 +327,7 @@ export const StructureList = (props: {
               </Select>
 
               <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger asChild>
                   <Button variant="outline">
                     Columns <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>

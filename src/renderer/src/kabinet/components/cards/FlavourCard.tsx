@@ -114,7 +114,7 @@ export const FlavourInstallButton = (props: { item: { id: string } }) => {
   return (
     <div className="flex flex-row gap-2">
       <DropdownMenu>
-        <DropdownMenuTrigger>
+        <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm">
             Install
           </Button>

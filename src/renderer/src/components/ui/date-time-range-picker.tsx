@@ -356,7 +356,7 @@ export const DateTimeRangePicker = ({
         setIsOpen(open)
       }}
     >
-      <PopoverTrigger>
+      <PopoverTrigger asChild>
         <Button variant="outline" className="px-3">
           <div className="text-right">
             <div className="">

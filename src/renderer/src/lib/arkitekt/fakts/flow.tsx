@@ -4,6 +4,7 @@ import { withGrantHint, type GrantHint } from "./grantHint";
 import { GrantResult, pollToken } from "./pollToken";
 import { popOutWindowOpen } from "./popout";
 import { deviceAuthorization } from "./start";
+import { meshAvailable } from "@/lib/mesh/bridge";
 
 /**
  * The canonical fakts grant: register + stage a device code, let a human
@@ -17,6 +18,7 @@ export const flow = async ({
   manifest,
   expirationTime,
   hint,
+  requestMeshKey = true,
 }: {
   endpoint: FaktsEndpoint;
   controller: AbortController;
@@ -27,13 +29,21 @@ export const flow = async ({
    * session this grant is reviving. See `grantHint.ts`.
    */
   hint?: GrantHint;
+  /** `false` when the profile being re-approved has its mesh switched off. */
+  requestMeshKey?: boolean;
 }): Promise<GrantResult> => {
-  // 1. Device authorization (also dynamically registers our public client)
+  // 1. Device authorization (also dynamically registers our public client).
+  //    A deployment with a mesh is asked for a one-shot key — unless this is
+  //    a build without the mesh client, or the profile being re-approved has
+  //    its mesh switched off (Settings › Mesh). Whether one comes back is the
+  //    approver's call. lok dedups by device_id, so asking every time does
+  //    not pile up machines.
   const authorization = await deviceAuthorization({
     endpoint,
     controller,
     manifest,
     expirationTime,
+    requestAuthKey: !!endpoint.mesh_coord_url && requestMeshKey && meshAvailable(),
   });
 
   // 2. Open the configure page for the human, telling it which account and hub
@@ -45,7 +55,7 @@ export const flow = async ({
 
   // 3. Poll the token endpoint until approved → tokens + instances
   try {
-    return await pollToken({
+    const result = await pollToken({
       tokenEndpoint: authorization.token_endpoint,
       deviceCode: authorization.device_code,
       clientId: authorization.client_id,
@@ -53,6 +63,9 @@ export const flow = async ({
       interval: authorization.interval,
       expiresIn: authorization.expires_in,
     });
+    // The key, if lok minted one, rides back in `result.mesh`; the caller
+    // puts the mesh on the profile and uses the key once (`profileMesh.ts`).
+    return result;
   } finally {
     await handle?.close();
   }

@@ -7,6 +7,8 @@ import type {
   RemedyResult,
 } from "../../../../../main/doctor/protocol";
 import { DOCTOR_MAX_TARGETS } from "../../../../../main/doctor/protocol";
+import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
+import { meshBridge } from "@/lib/mesh/bridge";
 import { anyMeshHost } from "./classify";
 import { diagnose } from "./diagnose";
 import type { DoctorContext, DoctorReport } from "./findings";
@@ -66,6 +68,7 @@ export const useConnectionDoctor = () => {
       network: NetworkProbeResult[],
       mesh: MeshProbeResult | undefined,
       probesAvailable: boolean,
+      sidecar?: MeshStatusPayload,
     ) => {
       if (runIdRef.current !== runId) return;
       setReport({
@@ -78,12 +81,14 @@ export const useConnectionDoctor = () => {
           targets,
           network,
           mesh,
+          sidecar,
           originalError: input.originalError,
           rendererReachable: input.rendererReachable,
           probesAvailable,
         }),
         network,
         mesh,
+        sidecar,
       });
       setStatus("done");
     };
@@ -97,11 +102,15 @@ export const useConnectionDoctor = () => {
 
     try {
       const wantsMesh = anyMeshHost(targets.map((target) => target.host));
-      const [network, mesh] = await Promise.all([
+      // The built-in mesh's state is cheap and local; a failure there must
+      // not sink the whole run, so it degrades to "unknown".
+      const sidecarStatus = meshBridge()?.status().catch(() => undefined) ?? Promise.resolve(undefined);
+      const [network, mesh, sidecar] = await Promise.all([
         bridge.probeNetwork({ targets }),
         wantsMesh ? bridge.probeMesh() : Promise.resolve(undefined),
+        sidecarStatus,
       ]);
-      finish(network ?? [], mesh, true);
+      finish(network ?? [], mesh, true, sidecar);
     } catch (cause) {
       if (runIdRef.current !== runId) return;
       setError(cause instanceof Error ? cause.message : String(cause));

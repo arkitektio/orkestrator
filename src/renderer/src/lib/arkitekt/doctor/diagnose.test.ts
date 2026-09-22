@@ -400,3 +400,164 @@ describe("assembly", () => {
     expect(ids(findings).filter((id) => id === "net.tcp.refused")).toHaveLength(2);
   });
 });
+
+/* ───────────────────────── built-in mesh (sidecar) ────────────────────── */
+
+describe("built-in mesh findings", () => {
+  type Sidecar = import("../../../../../main/mesh/protocol").MeshStatusPayload;
+  type NodeStatus = import("../../../../../main/mesh/protocol").MeshNodeStatus;
+
+  const CONTROL = "https://mesh.example.org";
+  const meshWith = (state: NodeStatus["state"], extra: Partial<NodeStatus> = {}): Sidecar["meshes"][number] => ({
+    config: { id: "lab", label: "Lab", controlUrl: CONTROL, hosts: [], hasNodeState: true },
+    status: {
+      id: "lab",
+      state,
+      magicDnsSuffix: "tailnet-cafe.ts.net",
+      peers: [{ dnsName: "mikro.tailnet-cafe.ts.net", hostName: "mikro", ips: ["100.64.0.2"], online: true }],
+      ...extra,
+    },
+  });
+  const sidecarWith = (state: NodeStatus["state"], extra: Partial<NodeStatus> = {}): Sidecar => ({
+    sidecar: { state: "ready", version: "test" },
+    meshes: [meshWith(state, extra)],
+  });
+  const none: Sidecar = { sidecar: { state: "idle" }, meshes: [] };
+  const ctx = (meshCoordUrl?: string | null) => ({
+    kind: "service" as const,
+    serviceKey: "mikro",
+    endpointUrl: "https://go.test/lok/f/",
+    meshCoordUrl,
+  });
+
+  const failingProbe = (overrides: Partial<NetworkProbeResult> = {}) =>
+    probe({
+      dns: { ok: false, lookupAddresses: [], resolveAddresses: [], code: "ENOTFOUND" },
+      tcp: { attempted: false, ok: false, ms: 0 },
+      tls: { attempted: false, ok: false },
+      http: { attempted: false, ok: false },
+      ...overrides,
+    });
+  /** A probe main ran through the mesh proxy. */
+  const viaMesh = (http: NetworkProbeResult["http"], tcp: NetworkProbeResult["tcp"] = { attempted: true, ok: true, ms: 9 }) =>
+    probe({
+      viaMeshProxy: 5000,
+      dns: { ok: true, skipped: true, lookupAddresses: [], resolveAddresses: [] },
+      tcp,
+      tls: { attempted: false, ok: false },
+      http,
+    });
+
+  it("says so when this build has no mesh client at all", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      sidecar: { sidecar: { state: "unavailable", reason: "binary-missing" }, meshes: [] },
+      network: [failingProbe()],
+    });
+    expect(findings[0].id).toBe("mesh.sidecar.unavailable");
+  });
+
+  it("the profile's mesh switched off: says so, and blames nothing else", () => {
+    const findings = run({
+      context: { ...ctx(CONTROL), profileMesh: { id: "lab", enabled: false } },
+      sidecar: none,
+      network: [failingProbe()],
+    });
+    expect(findings[0].id).toBe("mesh.sidecar.disabled");
+    expect(ids(findings)).not.toContain("mesh.sidecar.stopped");
+  });
+
+  it("routed + peer online + service answered: the HTTP verdict speaks, checked through the mesh", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      sidecar: sidecarWith("running", { proxyPort: 5000 }),
+      network: [viaMesh({ attempted: true, ok: false, status: 502, statusText: "Bad Gateway" })],
+    });
+    expect(ids(findings)).toContain("mesh.sidecar.routed");
+    expect(findings[0].id).toMatch(/^net\.http\./);
+    expect(ids(findings)).not.toContain("mesh.sidecar.not-granted");
+    expect(ids(findings)).not.toContain("net.dns.nxdomain");
+  });
+
+  it("routed but a direct probe (routing tables disagree) says nothing about the host", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      sidecar: sidecarWith("running", { proxyPort: 5000 }),
+      network: [failingProbe()],
+    });
+    expect(ids(findings)).toContain("mesh.sidecar.routed");
+    expect(ids(findings)).not.toContain("net.dns.nxdomain");
+  });
+
+  it("routed but the peer is offline: that is the verdict, the dial timeout is a symptom", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      sidecar: sidecarWith("running", {
+        proxyPort: 5000,
+        peers: [{ dnsName: "mikro.tailnet-cafe.ts.net", hostName: "mikro", ips: ["100.64.0.2"], online: false }],
+      }),
+      network: [viaMesh({ attempted: false, ok: false }, { attempted: true, ok: false, ms: 4000, code: "ETIMEDOUT" })],
+    });
+    expect(findings[0].id).toBe("mesh.sidecar.peer-offline");
+    expect(byId(findings, "net.tcp.timeout")?.severity).toBe("info");
+  });
+
+  it("membership lapsed: sign in again", () => {
+    const findings = run({ context: ctx(CONTROL), sidecar: sidecarWith("needs-login"), network: [failingProbe()] });
+    expect(findings[0].id).toBe("mesh.sidecar.needs-login");
+    expect(findings[0].remedy).toEqual({ kind: "manual", instructions: "Sign out of this deployment and sign in again." });
+    expect(byId(findings, "net.dns.nxdomain")?.severity).toBe("info");
+  });
+
+  it("names the other node states: awaiting approval, error, connecting, stopped", () => {
+    expect(run({ context: ctx(CONTROL), sidecar: sidecarWith("needs-machine-auth"), network: [failingProbe()] })[0].id)
+      .toBe("mesh.sidecar.needs-machine-auth");
+    expect(run({ context: ctx(CONTROL), sidecar: sidecarWith("error", { error: "boom" }), network: [failingProbe()] })[0])
+      .toMatchObject({ id: "mesh.sidecar.error", evidence: expect.arrayContaining(["boom"]) });
+    expect(ids(run({ context: ctx(CONTROL), sidecar: sidecarWith("starting"), network: [failingProbe()] })))
+      .toContain("mesh.sidecar.starting");
+    const stopped = run({
+      context: ctx(CONTROL),
+      sidecar: { sidecar: { state: "crashed", detail: "exit code 1" }, meshes: [meshWith("stopped")] },
+      network: [failingProbe()],
+    });
+    expect(stopped[0].id).toBe("mesh.sidecar.stopped");
+    expect(stopped[0].detail).toContain("exit code 1");
+  });
+
+  it("mesh up but the address is not on it: says what the mesh does know, offers pinning", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      targets: [target({ host: "other.tailnet-zebra.ts.net" })],
+      sidecar: sidecarWith("running", { proxyPort: 5000 }),
+      network: [failingProbe({ target: target({ host: "other.tailnet-zebra.ts.net" }) })],
+    });
+    expect(findings[0].id).toBe("mesh.sidecar.host-not-routed");
+    expect(findings[0].evidence).toEqual(expect.arrayContaining(["not routed: other.tailnet-zebra.ts.net", "mesh machines: mikro.tailnet-cafe.ts.net"]));
+    expect(findings[0].remedy).toEqual({ kind: "navigate", label: "Open mesh settings", path: "/settings/mesh" });
+  });
+
+  it("no mesh of ours: tells not-let-in, not-advertised and unknown apart", () => {
+    expect(run({ context: ctx(CONTROL), sidecar: none, network: [failingProbe()] })[0]).toMatchObject({
+      id: "mesh.sidecar.not-granted",
+      evidence: expect.arrayContaining([`mesh: ${CONTROL}`]),
+    });
+    expect(run({ context: ctx(null), sidecar: none, network: [failingProbe()] })[0].id).toBe("mesh.sidecar.not-advertised");
+    expect(run({ context: ctx(undefined), sidecar: none, network: [failingProbe()] })[0].id).toBe("mesh.sidecar.not-joined");
+  });
+
+  it("stays quiet when the system Tailscale app is the one on the mesh", () => {
+    const findings = run({ context: ctx(CONTROL), sidecar: none, mesh: runningMesh() });
+    expect(ids(findings).filter((id) => id.startsWith("mesh.sidecar."))).toEqual([]);
+  });
+
+  it("says nothing about the mesh for a public address", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      targets: [target({ host: "go.arkitekt.live" })],
+      network: [probe({ target: target({ host: "go.arkitekt.live" }) })],
+      sidecar: sidecarWith("needs-login"),
+    });
+    expect(ids(findings).filter((id) => id.startsWith("mesh.sidecar."))).toEqual([]);
+  });
+});

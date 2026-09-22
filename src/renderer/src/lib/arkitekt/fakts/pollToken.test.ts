@@ -216,3 +216,33 @@ describe("splitGrantResponse", () => {
     ).toThrow();
   });
 });
+
+describe("mesh key on the grant", () => {
+  const envelope = {
+    access_token: "at",
+    token_type: "Bearer",
+    client_id: "cid",
+    self: { deployment_name: "Lab", alias: { id: "a", host: "go.arkitekt.live", ssl: true, challenge: "ok" } },
+    instances: {},
+  };
+  const auth = { jwks_url: "x", ionscale_auth_key: "tskey-auth-minted", ionscale_coord_url: "https://mesh.example.org" };
+
+  it("comes out of the auth block, and out of the stored token", () => {
+    const result = splitGrantResponse({ ...envelope, auth });
+    expect(result.mesh).toEqual({ authKey: "tskey-auth-minted", controlUrl: "https://mesh.example.org" });
+    expect(result.token).not.toHaveProperty("auth");
+    expect(result.fakts).not.toHaveProperty("auth");
+  });
+
+  it("is absent when the block is missing or has no key", () => {
+    expect(splitGrantResponse(envelope).mesh).toBeUndefined();
+    expect(splitGrantResponse({ ...envelope, auth: { jwks_url: "x" } }).mesh).toBeUndefined();
+    expect(splitGrantResponse({ ...envelope, auth: null }).mesh).toBeUndefined();
+  });
+
+  it("is dropped from a refresh response", () => {
+    const result = splitRefreshResponse({ ...envelope, auth });
+    expect(result).not.toHaveProperty("mesh");
+    expect(result.token).not.toHaveProperty("auth");
+  });
+});

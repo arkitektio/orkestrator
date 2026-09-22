@@ -4,6 +4,7 @@ import type {
   ProbeTarget,
   RemedyId,
 } from "../../../../../main/doctor/protocol";
+import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
 
 /**
  * What the doctor actually hands the user: a ranked list of sentences, each
@@ -25,6 +26,7 @@ export type Remedy =
   | { kind: "manual"; instructions: string }
   | { kind: "copy"; label: string; value: string }
   | { kind: "open-url"; label: string; url: string }
+  | { kind: "navigate"; label: string; path: string }
   | { kind: "run"; label: string; id: RemedyId; confirm: string };
 
 export type Finding = {
@@ -43,15 +45,34 @@ export type Finding = {
   targetLabel?: string;
 };
 
-export type DoctorContext =
-  | { kind: "discovery"; endpointUrl: string }
-  | { kind: "service"; serviceKey: string; endpointUrl?: string };
+/**
+ * `meshCoordUrl` is the deployment's mesh control server from its discovery
+ * document: a string when it has one, `null` when the document is known and
+ * names none, `undefined` when the caller cannot tell. The three are
+ * different verdicts (not let in / not advertised / unknown).
+ */
+export type DoctorContext = (
+  | { kind: "discovery"; endpointUrl: string; meshCoordUrl?: string | null }
+  | { kind: "service"; serviceKey: string; endpointUrl?: string; meshCoordUrl?: string | null }
+) & {
+  /**
+   * The active profile's own mesh (meshes belong to a profile): its id, to
+   * pick it out of the sidecar's list, and whether the user switched it off.
+   */
+  profileMesh?: { id: string; enabled: boolean };
+};
 
 export type DiagnoseInput = {
   context: DoctorContext;
   targets: ProbeTarget[];
   network: NetworkProbeResult[];
   mesh?: MeshProbeResult;
+  /**
+   * The built-in mesh sidecar's meshes, if the bridge offered them. A running
+   * mesh that covers a target makes the system client and the direct probes
+   * for that target irrelevant.
+   */
+  sidecar?: MeshStatusPayload;
   /** The message the app already showed the user, if any. */
   originalError?: string;
   /**
@@ -71,6 +92,7 @@ export type DoctorReport = {
   findings: Finding[];
   network: NetworkProbeResult[];
   mesh?: MeshProbeResult;
+  sidecar?: MeshStatusPayload;
 };
 
 const SEVERITY_ORDER: Record<FindingSeverity, number> = {

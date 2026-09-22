@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ActiveFakts, ActiveFaktsSchema } from "./faktsSchema";
 import { TokenResponse, TokenResponseSchema } from "./tokenSchema";
+import { MeshGrantSchema, grantedMesh, type GrantedMesh } from "./meshGrant";
 
 export const DEVICE_CODE_GRANT_TYPE =
   "urn:ietf:params:oauth:grant-type:device_code";
@@ -9,15 +10,19 @@ export const DEVICE_CODE_GRANT_TYPE =
  * A successful token response for a fakts client: the standard OAuth2 members
  * plus the fakts envelope (`self`, `instances`, `statuses`) appended to them.
  */
-export const TokenGrantResponseSchema = TokenResponseSchema.extend(
-  ActiveFaktsSchema.shape,
-);
+export const TokenGrantResponseSchema = TokenResponseSchema.extend({
+  ...ActiveFaktsSchema.shape,
+  /** A mesh key minted with the approval — grant responses only. */
+  auth: MeshGrantSchema.optional().nullable(),
+});
 
 export type TokenGrantResponse = z.infer<typeof TokenGrantResponseSchema>;
 
 export type GrantResult = {
   token: TokenResponse;
   fakts: ActiveFakts;
+  /** Never persisted by the renderer; used once to join (`claimProfileMesh`). */
+  mesh?: GrantedMesh;
 };
 
 /** A refresh may legitimately arrive without an envelope — see below. */
@@ -34,10 +39,11 @@ export const splitGrantResponse = (json: unknown): GrantResult => {
     throw new Error("Malformed token response");
   }
 
-  const { self, instances, statuses, ...token } = parsed.data;
+  const { self, instances, statuses, auth, ...token } = parsed.data;
   return {
     token: { ...token, received_at: Date.now() },
     fakts: { self, instances, statuses },
+    mesh: grantedMesh(auth),
   };
 };
 
@@ -53,7 +59,9 @@ export const splitGrantResponse = (json: unknown): GrantResult => {
 export const splitRefreshResponse = (json: unknown): RefreshResult => {
   const withEnvelope = TokenGrantResponseSchema.safeParse(json);
   if (withEnvelope.success) {
-    const { self, instances, statuses, ...token } = withEnvelope.data;
+    // A refresh never carries a key (deliberately: it would be minted on
+    // every hourly refresh); if one ever did, it is dropped here.
+    const { self, instances, statuses, auth: _auth, ...token } = withEnvelope.data;
     return {
       token: { ...token, received_at: Date.now() },
       fakts: { self, instances, statuses },

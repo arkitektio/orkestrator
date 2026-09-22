@@ -36,9 +36,15 @@ import { defaultTailscaleDeps, probeTailscale, runTailscaleRemedy } from "./tail
  */
 
 export type DoctorServiceDeps = {
-  probeNetwork: (target: ProbeTarget, timeoutMs: number) => Promise<NetworkProbeResult>;
+  probeNetwork: (target: ProbeTarget, timeoutMs: number, viaMeshProxy?: number) => Promise<NetworkProbeResult>;
   probeMesh: () => Promise<MeshProbeResult>;
   runRemedy: (id: RemedyId) => Promise<RemedyResult>;
+  /**
+   * The built-in mesh's routing table (`MeshService.proxyPortForHost`): a
+   * host it routes is probed through that proxy, as the app itself would
+   * reach it. Absent = every probe is direct.
+   */
+  proxyPortForHost?: (host: string) => number | undefined;
 };
 
 /** Probes run in parallel, but not unboundedly — a deployment can list many aliases. */
@@ -122,9 +128,12 @@ export class DoctorService implements AppModule {
         if (targets.length === 0) return [];
 
         const timeoutMs = clampTimeout(request?.timeoutMs);
-        return mapWithConcurrency(targets, CONCURRENCY, (target) =>
-          this.deps.probeNetwork(target, timeoutMs),
-        );
+        return mapWithConcurrency(targets, CONCURRENCY, (target) => {
+          const via = this.deps.proxyPortForHost?.(target.host);
+          return via
+            ? this.deps.probeNetwork(target, timeoutMs, via)
+            : this.deps.probeNetwork(target, timeoutMs);
+        });
       },
     );
 

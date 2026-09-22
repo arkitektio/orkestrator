@@ -119,7 +119,11 @@ export const buildModuleStates = (
         unmetRequirements.push(requirement.serviceKey);
       }
     } else {
-      if (dependency.status === "invalid") {
+      // Configured but with no live client — no alias resolved, so nothing in
+      // the service map — is as broken as `invalid`: calling `ready` here let
+      // the rail mount the module's pane, whose queries then threw "Service
+      // <key> not found".
+      if (dependency.status === "invalid" || dependency.status === "configured" || dependency.status === "unconfigured") {
         invalid = true;
         dependency.errors.forEach((error) => {
           errors.push(`${requirement.serviceKey}: ${error}`);

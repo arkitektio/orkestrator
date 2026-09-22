@@ -24,6 +24,16 @@ export const FaktsEndpointSchema = z.object({
   /** The OAuth2 token endpoint: device-code poll, then refresh. */
   token_endpoint: z.string().url(),
 
+  /**
+   * The organisation mesh: the ionscale control server this deployment's
+   * tailnets live on. Orkestrator's built-in mesh client joins it with the
+   * key the approver grants at login (`lib/mesh/profileMesh.ts`).
+   * Absent on a deployment without a mesh. (The document also lists a
+   * separate mesh device-code flow — `mesh_device_code_start` and friends —
+   * which is obsolete and ignored.)
+   */
+  mesh_coord_url: z.string().url().optional().nullable(),
+
   issuer: z.string().optional().nullable(),
   jwks_uri: z.string().url().optional().nullable(),
   grant_types_supported: z.array(z.string()).optional(),

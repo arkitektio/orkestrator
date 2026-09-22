@@ -7,6 +7,7 @@ import AccountPage from "./pages/AccountPage";
 import AppearancePage from "./pages/AppearancePage";
 import DeveloperPage from "./pages/DeveloperPage";
 import GeneralPage from "./pages/GeneralPage";
+import MeshPage from "./pages/MeshPage";
 import PalettePage from "./pages/PalettePage";
 import ServicesPage from "./pages/ServicesPage";
 import VoicePage from "./pages/VoicePage";
@@ -20,6 +21,7 @@ const PAGES: Record<string, React.FC> = {
   voice: VoicePage,
   palette: PalettePage,
   services: ServicesPage,
+  mesh: MeshPage,
   developer: DeveloperPage,
 };
 

@@ -688,7 +688,7 @@ export const TableDatasetTable = (props: { table: TableDatasetFragment }) => {
         ) : null}
 
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
               Columns <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
