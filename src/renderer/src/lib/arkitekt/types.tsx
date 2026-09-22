@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { FaktsEndpoint } from "./fakts/endpointSchema";
+import type { GrantHint } from "./fakts/grantHint";
 import { ActiveFakts, Alias, Instance } from "./fakts/faktsSchema";
 import { Manifest } from "./fakts/manifestSchema";
 import { StoredArkitektSession } from "./fakts/sessionStorageSchema";
@@ -167,6 +168,12 @@ export type ConnectedContext<
 export type ConnectFunction = (options: {
   endpoint: FaktsEndpoint;
   controller: AbortController;
+  /**
+   * Who the configure page should preselect: the account (`sub`) and hub of the
+   * profile this grant is reviving, when one is known. A hint only — the token
+   * that comes back decides who was actually approved. See `fakts/grantHint.ts`.
+   */
+  hint?: GrantHint;
 }) => Promise<void>;
 
 export type DisconnectFunction = () => Promise<void>;
@@ -198,6 +205,18 @@ export type AppContext<
    * the new one's credential is checked, so only the switcher row spins.
    */
   switchingProfileId: string | null;
+  /**
+   * The profile that is live for THIS RUN ONLY — signed in with "stay signed
+   * in" unticked.
+   *
+   * Which profile is active is a per-window notion that nevertheless gets
+   * persisted, because that is what the next launch auto-logs into. This field
+   * is how the two come apart: the id is active in memory, so the avatar menu
+   * and every consumer behave normally, but `persistBook` keeps it out of what
+   * it writes, so the next launch lands on the welcome screen. The credential
+   * itself is still stored — the profile stays in the book and in the list.
+   */
+  sessionOnlyProfileId: string | null;
 };
 
 export type AppFunctions = {
@@ -215,7 +234,28 @@ export type AppFunctions = {
    * then swap the connection. The current connection stays up until the new
    * token is in hand, so a failure costs nothing.
    */
-  switchProfile: (profileId: string) => Promise<void>;
+  switchProfile: (
+    profileId: string,
+    options?: {
+      /**
+       * `false` signs in for this run only: the token rotation is still
+       * persisted (it must be — refresh tokens rotate on every use), but the
+       * profile is not written back as the active one, so the next launch asks
+       * again instead of auto-logging in. Defaults to `true`.
+       */
+      remember?: boolean;
+    },
+  ) => Promise<void>;
+  /**
+   * Sign one profile out on this computer: its parked credential is dropped and
+   * the entry is left marked signed-out, so the account stays in the list as a
+   * one-click way back in but nothing can auto-log into it. If it is the live
+   * profile, the connection goes down with it.
+   *
+   * Local only, like `removeProfile` — there is no `revocation_endpoint`, so
+   * the token stays valid server-side until it expires.
+   */
+  signOutProfile: (profileId: string) => Promise<void>;
   /**
    * Forget one profile locally. There is no `revocation_endpoint` in the fakts
    * discovery document, so the token stays valid server-side until it expires.

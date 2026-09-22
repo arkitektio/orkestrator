@@ -7,6 +7,7 @@ import { ArkitektProvider } from "./provider";
 import { useArkitektActions, useArkitektStore } from "./hooks";
 import {
   createProfileFromSession,
+  deriveProfileId,
   emptyProfileBook,
   loadStoredProfileBook,
   PROFILE_BOOK_STORAGE_KEY,
@@ -262,6 +263,189 @@ describe("switchProfile", () => {
 
     const persisted = JSON.parse(storage.getItem(PROFILE_BOOK_STORAGE_KEY)!);
     expect(persisted.profiles["id-beta"].session.token.refresh_token).toBe("rt-beta-2");
+  });
+});
+
+describe("two hubs on one device", () => {
+  /**
+   * lok lets one user approve this app on this device into two hubs. Each is
+   * its own OAuth client with its own refresh chain, and neither revokes the
+   * other — so the app must keep both, and refresh each with ITS OWN client id.
+   */
+  const seedTwoHubs = () => {
+    const identity = {
+      baseUrl: "https://alpha.test/lok/f/",
+      userId: "u1",
+      organizationId: "o1",
+    };
+    const withClient = (host: string, accessToken: string, clientId: string) => {
+      const session = sessionFor(host, accessToken);
+      return { ...session, token: { ...session.token, client_id: clientId } };
+    };
+
+    const hubOneId = deriveProfileId({ ...identity, hubId: "h1" });
+    const hubTwoId = deriveProfileId({ ...identity, hubId: "h2" });
+
+    const hubOne = {
+      ...createProfileFromSession(withClient("alpha.test", "h1-1", "client-h1"), 1, hubOneId),
+      identity: { ...identity, hubId: "h1" },
+    };
+    const hubTwo = {
+      ...createProfileFromSession(withClient("alpha.test", "h2-1", "client-h2"), 2, hubTwoId),
+      identity: { ...identity, hubId: "h2" },
+    };
+
+    writeStoredProfileBook(
+      setActiveProfile(
+        upsertProfile(upsertProfile(emptyProfileBook(), hubOne), hubTwo),
+        hubOneId,
+        10,
+      ),
+      storage,
+    );
+
+    return { hubOneId, hubTwoId };
+  };
+
+  /** The `client_id` / `refresh_token` each token request actually carried. */
+  const tokenRequests = () =>
+    fetchMock.mock.calls
+      .filter(([url]) => String(url).endsWith("/o/token/"))
+      .map(([, init]) => {
+        const body = (init as { body: string }).body;
+        const params = new URLSearchParams(body);
+        return {
+          client_id: params.get("client_id"),
+          refresh_token: params.get("refresh_token"),
+        };
+      });
+
+  it("keeps both chains and refreshes each with its own client", async () => {
+    const { hubOneId, hubTwoId } = seedTwoHubs();
+    fetchMock.mockResolvedValue(okRefresh("h1-2"));
+
+    renderProvider();
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+
+    fetchMock.mockResolvedValue(okRefresh("h2-2"));
+    await harness.actions.switchProfile(hubTwoId);
+    await waitFor(() => expect(harness.state().profileBook.activeProfileId).toBe(hubTwoId));
+
+    // Two rows, not one collapsed row.
+    const book = loadStoredProfileBook(storage);
+    expect(Object.keys(book.profiles).sort()).toEqual([hubOneId, hubTwoId].sort());
+
+    // Each refresh went out on its own registration, with its own chain.
+    const requests = tokenRequests();
+    expect(requests).toHaveLength(2);
+    expect(requests[0]).toEqual({ client_id: "client-h1", refresh_token: "rt-h1-1" });
+    expect(requests[1]).toEqual({ client_id: "client-h2", refresh_token: "rt-h2-1" });
+
+    // And neither rotation clobbered the other's stored token.
+    expect(book.profiles[hubOneId].session.token.refresh_token).toBe("rt-h1-2");
+    expect(book.profiles[hubTwoId].session.token.refresh_token).toBe("rt-h2-2");
+  });
+
+  it("survives a relaunch with both hubs intact", async () => {
+    // The failure this replaces: the second approval used to overwrite the
+    // first row, so after a restart one hub simply was not there any more.
+    const { hubOneId, hubTwoId } = seedTwoHubs();
+    fetchMock.mockResolvedValue(okRefresh("h1-2"));
+
+    const first = renderProvider();
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+    first.unmount();
+
+    fetchMock.mockResolvedValue(okRefresh("h1-3"));
+    renderProvider();
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+
+    expect(Object.keys(harness.state().profileBook.profiles).sort()).toEqual(
+      [hubOneId, hubTwoId].sort(),
+    );
+    expect(
+      harness.state().profileBook.profiles[hubTwoId].session.token.client_id,
+    ).toBe("client-h2");
+  });
+});
+
+describe("staying signed in", () => {
+  const bootUp = async () => {
+    seedTwoProfiles();
+    fetchMock.mockResolvedValue(okRefresh("alpha-2"));
+    renderProvider();
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+  };
+
+  const persistedBook = () =>
+    JSON.parse(storage.getItem(PROFILE_BOOK_STORAGE_KEY)!);
+
+  it("writes the profile back as active when it is remembered", async () => {
+    await bootUp();
+    fetchMock.mockResolvedValue(okRefresh("beta-2"));
+
+    await harness.actions.switchProfile("id-beta", { remember: true });
+
+    expect(persistedBook().activeProfileId).toBe("id-beta");
+  });
+
+  it("keeps a run-only profile out of what is persisted as active", async () => {
+    // The next launch must land on the welcome screen — but the rotated refresh
+    // token still has to be written, or the profile loses its only credential.
+    await bootUp();
+    fetchMock.mockResolvedValue(okRefresh("beta-2"));
+
+    await harness.actions.switchProfile("id-beta", { remember: false });
+
+    // Live in this window…
+    expect(harness.state().profileBook.activeProfileId).toBe("id-beta");
+    expect(harness.state().storedSession?.fakts.self.deployment_name).toBe("beta.test");
+    // …but not on disk, where it would become the next auto-login.
+    expect(persistedBook().activeProfileId).toBe("id-alpha");
+    expect(persistedBook().profiles["id-beta"].session.token.refresh_token)
+      .toBe("rt-beta-2");
+  });
+
+  it("remembers again on the next remembered switch", async () => {
+    await bootUp();
+    fetchMock.mockResolvedValue(okRefresh("beta-2"));
+    await harness.actions.switchProfile("id-beta", { remember: false });
+
+    fetchMock.mockResolvedValue(okRefresh("alpha-3"));
+    await harness.actions.switchProfile("id-alpha", { remember: true });
+
+    expect(persistedBook().activeProfileId).toBe("id-alpha");
+  });
+});
+
+describe("signOutProfile", () => {
+  const bootUp = async () => {
+    seedTwoProfiles();
+    fetchMock.mockResolvedValue(okRefresh("alpha-2"));
+    renderProvider();
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+  };
+
+  it("keeps the account listed but takes the connection down", async () => {
+    await bootUp();
+
+    await harness.actions.signOutProfile("id-alpha");
+
+    await waitFor(() => expect(harness.state().connection).toBeUndefined());
+    expect(harness.state().profileBook.profiles["id-alpha"].status).toBe("stale");
+    expect(harness.state().profileBook.activeProfileId).toBeNull();
+    // Listed, so it is still one click (and one grant) away.
+    expect(Object.keys(harness.state().profileBook.profiles)).toHaveLength(2);
+  });
+
+  it("signs a parked account out without touching the live one", async () => {
+    await bootUp();
+
+    await harness.actions.signOutProfile("id-beta");
+
+    expect(harness.state().connection).toBeDefined();
+    expect(harness.state().profileBook.activeProfileId).toBe("id-alpha");
+    expect(harness.state().profileBook.profiles["id-beta"].status).toBe("stale");
   });
 });
 

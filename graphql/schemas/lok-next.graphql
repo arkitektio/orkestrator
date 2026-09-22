@@ -211,6 +211,11 @@ type Context {
   """Are we acting in the active organization of the user?"""
   fitsActiveOrganization: Boolean!
 
+  """
+  The hub this client was approved into (for an app client) or is the identity of (for a hub client). Null for clients bound to no hub, e.g. plain OIDC relying parties. Apps can pass its id back as `?hub=` on a later configure link to preselect it.
+  """
+  hub: Hub
+
   """The organization that is associated with this app"""
   organization: Organization!
 
@@ -279,9 +284,12 @@ type Device {
 
   """The device groups that belong to this device."""
   deviceGroups(filters: DeviceGroupFilter, ordering: [DeviceGroupOrdering!]! = [], pagination: OffsetPaginationInput): [DeviceGroup!]!
+
+  """The (per-organization hashed) id of the device."""
+  deviceId: ID!
   id: ID!
   name: String
-  nodeId: ID!
+  nodeId: ID! @deprecated(reason: "Use deviceId.")
 }
 
 """Device(id, node_id, name, organization)"""
@@ -375,6 +383,28 @@ type GroupProfile {
 
   """The name of the group"""
   name: String
+}
+
+"""
+A Hub is a specific configuration of a Service. It contains the configuration for a particular version of the service.
+"""
+type Hub {
+  """
+  The description of the service. This should be a human readable description of the service.
+  """
+  description: String
+  id: ID!
+
+  """
+  The identifier of the hub. This should be a globally unique string that identifies the hub. We encourage you to use the reverse domain name notation. E.g. `com.example.myhub`
+  """
+  identifier: ServiceIdentifier!
+
+  """The name of the hub. This should be a human readable name of the hub."""
+  name: String!
+
+  """The organization that this hub belongs to."""
+  organization: Organization!
 }
 
 """
@@ -527,12 +557,13 @@ input LinkingRequestInput {
 input ManifestInput {
   authors: [String!]! = []
   description: String = null
+  deviceId: String = null
   homepage: String = null
   identifier: String!
   keywords: [String!]! = []
   license: String = null
   logo: String = null
-  nodeId: String = null
+  nodeId: String = null @deprecated(reason: "Use deviceId.")
   publicSources: [PublicSourceInput!] = null
   repoUrl: String = null
   requirements: [RequirementInput!]! = []
@@ -820,7 +851,7 @@ type RedeemToken {
   maxRedemptions: Int
 
   """
-  The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and node_id exactly and may only request a subset of its scopes and requirements.
+  The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and device_id exactly and may only request a subset of its scopes and requirements.
   """
   pinnedManifest: JSON
 

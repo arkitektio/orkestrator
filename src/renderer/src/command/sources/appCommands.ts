@@ -21,6 +21,12 @@ export type AppCommandContext = {
   navigate: (to: string) => void;
   openDialog: (id: string, props: Record<string, unknown>, options?: unknown) => void;
   toggleDebug: () => void;
+  /**
+   * Put this window back on the sign-in screen without signing anything out:
+   * the active profile is parked, its credential untouched, and every stored
+   * account is one click away again.
+   */
+  parkSession: () => void;
   reconnect: () => void;
   clearCaches: () => void;
   setTheme: (theme: Theme) => void;
@@ -77,9 +83,13 @@ export const APP_COMMANDS: AppCommand[] = [
   {
     id: "add-account",
     title: "Add Account or Organization",
+    description: "Leaves this session and opens the sign-in screen",
     icon: UserPlus,
-    keywords: ["sign in", "login", "connect"],
-    run: ({ openDialog }) => openDialog("addprofile", {}, { size: "small" }),
+    keywords: ["sign in", "login", "connect", "switch", "manage"],
+    // There is one place accounts are added: the sign-in screen. Parking the
+    // session is how you get back to it — nothing is signed out, the account
+    // stays in the list and one click returns to it.
+    run: ({ parkSession }) => parkSession(),
   },
   {
     id: "toggle-theme",

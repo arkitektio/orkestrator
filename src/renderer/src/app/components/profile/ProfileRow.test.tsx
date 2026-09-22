@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { DropdownMenu, DropdownMenuContent } from "@/components/ui/dropdown-menu";
@@ -48,6 +49,7 @@ const renderRow = (profile: ReturnType<typeof makeProfile>, overrides = {}) =>
           active={false}
           switching={false}
           onSelect={vi.fn()}
+          onSignOut={vi.fn()}
           onRemove={vi.fn()}
           {...overrides}
         />
@@ -56,6 +58,41 @@ const renderRow = (profile: ReturnType<typeof makeProfile>, overrides = {}) =>
   );
 
 describe("ProfileRow", () => {
+  it("shows the hub first and the organization under it, muted", () => {
+    // Which hub is the choice being made; the organization is the context it
+    // sits in. Two rows of one organization are otherwise identical.
+    renderRow(
+      makeProfile({
+        hubName: "Imaging",
+        organizationName: "Alpha Lab",
+        username: "jhnnsrs",
+        deploymentName: "lok.test",
+      }),
+    );
+
+    expect(screen.getByText("Imaging")).toBeTruthy();
+    const detail = screen.getByText(/^Alpha Lab · jhnnsrs/);
+    expect(detail.className).toContain("text-muted-foreground");
+  });
+
+  it("separates signing out from removing, and says what each costs", async () => {
+    // Picking the row switches and spends nothing. These two do spend
+    // something, and the difference is invisible in the moment.
+    const onSignOut = vi.fn();
+    const onRemove = vi.fn();
+    const profile = makeProfile({ organizationName: "Alpha Lab" });
+    renderRow(profile, { onSignOut, onRemove });
+
+    await userEvent.click(screen.getByLabelText("More for Alpha Lab"));
+
+    expect(await screen.findByText("Sign out")).toBeTruthy();
+    expect(
+      screen.getByText(/Signing back in needs your browser/),
+    ).toBeTruthy();
+    expect(screen.getByText("Remove from this computer")).toBeTruthy();
+    expect(screen.getByText(/stays valid on the server/)).toBeTruthy();
+  }, 20000);
+
   it("renders a parked profile from its cached label alone", () => {
     // No connection, no lok query — this is the whole reason labels are cached.
     renderRow(makeProfile({ organizationName: "Acme Labs", username: "jhnnsrs" }));

@@ -1,4 +1,5 @@
-import { NotConnected } from "@/app/components/fallbacks/NotConnected";
+import { QuietPage } from "@/app/components/fallbacks/QuietPage";
+import { ShellSignInNotice } from "@/app/components/shell/ShellSignInNotice";
 import { ConnectingFallback } from "@/app/components/fallbacks/Connecting";
 import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
@@ -31,7 +32,15 @@ interface Props { }
 
 export const LokNextModule: React.FC<Props> = () => {
   return (
-    <Guard.Lok notConnectedFallback={<NotConnected />} connectingFallback={<ConnectingFallback />}>
+    // `Guard.Lok` IS `Arkitekt.Guard` (the session), not a service guard: the
+    // shell owns both of these surfaces now, so this route stays quiet while a
+    // launch is still proving its token and defers to the shell's notice when
+    // one has failed.
+    <Guard.Lok
+      notConnectedFallback={<ShellSignInNotice />}
+      bootingFallback={<QuietPage />}
+      connectingFallback={<ConnectingFallback />}
+    >
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route path="me" element={<MePage />} />

@@ -37,6 +37,7 @@ import { ProjectionMode } from "@/mikro-next/api/graphql";
 import { identityOf } from "../../platform/model/objectIdentity";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
+import { useSettings } from "@/providers/settings/SettingsContext";
 
 const SettingRow = ({
   label,
@@ -687,6 +688,7 @@ export const SceneSettings = () => {
   const setShowLodReadout = useViewerStore((state) => state.setShowLodReadout);
 
   const captureScreenshot = useViewerStore((state) => state.captureScreenshot);
+  const { settings, setSettings } = useSettings();
 
   // Capture the current 3D scene (layers + in-scene axis/grid, not HTML overlays
   // or the gizmo) and save it as a PNG via the standard <a download> pattern.
@@ -754,6 +756,16 @@ export const SceneSettings = () => {
             onChange={setShowLodReadout}
           />
           <SettingRow label="Debug" checked={isDebug} onChange={setDebug} />
+          {/* An app preference, not a per-scene one — it persists with the
+              other settings. It sits here because it answers the same question
+              as the button above it: who records what this view looks like. */}
+          <SettingRow
+            label="Auto thumbnail"
+            checked={settings.autoSceneSnapshot}
+            onChange={(autoSceneSnapshot) =>
+              setSettings({ ...settings, autoSceneSnapshot })
+            }
+          />
         </div>
 
         {/* Camera behaviour. The pivot/zoom pair used to be exclusive camera

@@ -152,6 +152,24 @@ describe("deriveProfileId", () => {
     );
   });
 
+  it("distinguishes two hubs of one organization", () => {
+    // lok lets the same user approve the same app on the same device into two
+    // hubs; those are two OAuth clients with two refresh chains. One id would
+    // collapse them and strand a credential the server still honours.
+    expect(deriveProfileId({ ...identity, hubId: "h1" })).not.toBe(
+      deriveProfileId({ ...identity, hubId: "h2" }),
+    );
+  });
+
+  it("leaves an id written before hubs existed unchanged", () => {
+    // Appending only when a hub is known is what keeps every stored profile on
+    // its current id — and its tabs — until lok first names its hub.
+    expect(deriveProfileId({ ...identity, hubId: null })).toBe(deriveProfileId(identity));
+    expect(deriveProfileId({ ...identity, hubId: undefined })).toBe(
+      buildScopeKey("https://lok.test/lok/f", "u1", "o1"),
+    );
+  });
+
   it("falls back to 'personal' for a deployment with no organization", () => {
     expect(deriveProfileId({ ...identity, organizationId: null })).toContain("::personal");
   });
@@ -300,20 +318,123 @@ describe("reidentifyProfile", () => {
       ...createProfileFromSession(sessionFor("lok.test", "old"), 1, existingId),
       identity,
     };
-    const fresh = createProfileFromSession(sessionFor("lok.test", "new"), 50, "pending-2");
+    // A REAL provisional id: collapsing is allowed for a grant that has just
+    // happened, and `isProvisionalProfileId` is how that is recognised.
+    const pending = provisionalProfileId("https://lok.test/lok/f/");
+    const fresh = createProfileFromSession(sessionFor("lok.test", "new"), 50, pending);
     const book = setActiveProfile(
       upsertProfile(upsertProfile(emptyProfileBook(), existing), fresh),
-      "pending-2",
+      pending,
       50,
     );
 
-    const next = reidentifyProfile(book, "pending-2", identity);
+    const next = reidentifyProfile(book, pending, identity);
 
     expect(Object.keys(next.profiles)).toEqual([existingId]);
     expect(next.profiles[existingId].session.token.access_token).toBe("new");
     expect(next.activeProfileId).toBe(existingId);
     // "Added on" must not jump forward every time the user re-approves.
     expect(next.profiles[existingId].createdAt).toBe(1);
+  });
+
+  it("does NOT collapse two hubs of the same organization", () => {
+    // The regression this guards: both approvals are live server-side, each
+    // with its own refresh chain, so dropping one row here would leave a valid
+    // credential held by nobody and that hub needing a fresh grant.
+    const firstId = deriveProfileId({ ...identity, hubId: "h1" });
+    const first = {
+      ...createProfileFromSession(sessionFor("lok.test", "hub-1-token"), 1, firstId),
+      identity: { ...identity, hubId: "h1" },
+    };
+    const fresh = createProfileFromSession(sessionFor("lok.test", "hub-2-token"), 50, "pending-3");
+    const book = setActiveProfile(
+      upsertProfile(upsertProfile(emptyProfileBook(), first), fresh),
+      "pending-3",
+      50,
+    );
+
+    const next = reidentifyProfile(book, "pending-3", { ...identity, hubId: "h2" });
+
+    const secondId = deriveProfileId({ ...identity, hubId: "h2" });
+    expect(Object.keys(next.profiles).sort()).toEqual([firstId, secondId].sort());
+    // Each row still holds its OWN chain.
+    expect(next.profiles[firstId].session.token.access_token).toBe("hub-1-token");
+    expect(next.profiles[secondId].session.token.access_token).toBe("hub-2-token");
+    expect(next.activeProfileId).toBe(secondId);
+  });
+
+  it("still collapses a re-approval of the SAME hub", () => {
+    // Which is what lok does server-side too: re-approving the same user,
+    // device, app and hub rotates that hub's client and ends its old chain.
+    const existingId = deriveProfileId({ ...identity, hubId: "h1" });
+    const existing = {
+      ...createProfileFromSession(sessionFor("lok.test", "old"), 1, existingId),
+      identity: { ...identity, hubId: "h1" },
+    };
+    const pending = provisionalProfileId("https://lok.test/lok/f/");
+    const fresh = createProfileFromSession(sessionFor("lok.test", "new"), 50, pending);
+    const book = setActiveProfile(
+      upsertProfile(upsertProfile(emptyProfileBook(), existing), fresh),
+      pending,
+      50,
+    );
+
+    const next = reidentifyProfile(book, pending, { ...identity, hubId: "h1" });
+
+    expect(Object.keys(next.profiles)).toEqual([existingId]);
+    expect(next.profiles[existingId].session.token.access_token).toBe("new");
+  });
+
+  it("never lets a switch destroy the hub you switched away from", () => {
+    // The reported bug: clicking a hub in the switcher "deletes a hub". lok
+    // answering with no hub (a deployment that does not fill `Context.hub`, or
+    // a client bound to none) re-keyed the clicked profile backwards onto the
+    // hub-less id — straight on top of the other hub's row, taking its refresh
+    // chain with it. An established profile is updated in place instead.
+    const hubOneId = deriveProfileId({ ...identity, hubId: "h1" });
+    const hubTwoId = deriveProfileId({ ...identity, hubId: "h2" });
+    const hubOne = {
+      ...createProfileFromSession(sessionFor("lok.test", "one"), 1, hubOneId),
+      identity: { ...identity, hubId: "h1" },
+    };
+    const hubTwo = {
+      ...createProfileFromSession(sessionFor("lok.test", "two"), 2, hubTwoId),
+      identity: { ...identity, hubId: "h2" },
+    };
+    const book = setActiveProfile(
+      upsertProfile(upsertProfile(emptyProfileBook(), hubOne), hubTwo),
+      hubTwoId,
+      10,
+    );
+
+    // mycontext answers for the profile we just switched to — with no hub.
+    const next = reidentifyProfile(book, hubTwoId, identity, { username: "me" });
+
+    expect(Object.keys(next.profiles).sort()).toEqual([hubOneId, hubTwoId].sort());
+    expect(next.profiles[hubOneId].session.token.access_token).toBe("one");
+    expect(next.profiles[hubTwoId].session.token.access_token).toBe("two");
+    // The label still lands; only the id is left alone.
+    expect(next.profiles[hubTwoId].label.username).toBe("me");
+  });
+
+  it("treats a missing hub as 'not answered', not as 'no hub any more'", () => {
+    const hubOneId = deriveProfileId({ ...identity, hubId: "h1" });
+    const hubOne = {
+      ...createProfileFromSession(sessionFor("lok.test", "one"), 1, hubOneId),
+      identity: { ...identity, hubId: "h1" },
+    };
+    const book = setActiveProfile(
+      upsertProfile(emptyProfileBook(), hubOne),
+      hubOneId,
+      10,
+    );
+
+    const next = reidentifyProfile(book, hubOneId, identity);
+
+    // Same id, hub intact — otherwise the next approval into another hub would
+    // collide with this row.
+    expect(Object.keys(next.profiles)).toEqual([hubOneId]);
+    expect(next.profiles[hubOneId].identity.hubId).toBe("h1");
   });
 
   it("is a no-op for an unknown id", () => {

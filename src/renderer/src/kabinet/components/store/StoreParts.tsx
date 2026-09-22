@@ -10,53 +10,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Cpu, Download, Sparkles, Zap } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 import { StoreFlavourFragment } from "../../api/graphql";
 import { FlavourInstallTargets } from "../cards/FlavourCard";
 import { selectorLabel, StoreApp } from "./storeModel";
-
-/** Soft two-stop gradient derived from the app's hue. */
-export const appGradient = (hue: number, alpha = 1) =>
-  `linear-gradient(135deg, hsl(${hue} 70% 55% / ${alpha}), hsl(${(hue + 40) % 360} 75% 42% / ${alpha}))`;
-
-export const AppIcon = ({
-  app,
-  className,
-}: {
-  app: Pick<StoreApp, "logo" | "hue" | "name">;
-  className?: string;
-}) => {
-  const [failed, setFailed] = useState(false);
-  const initials = app.name
-    .split(" ")
-    .slice(0, 2)
-    .map((word) => word.charAt(0))
-    .join("");
-
-  return (
-    <div
-      className={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl shadow-sm ring-1 ring-black/5 dark:ring-white/10",
-        "size-14 text-lg",
-        className,
-      )}
-      style={app.logo && !failed ? undefined : { background: appGradient(app.hue) }}
-    >
-      {app.logo && !failed ? (
-        <img
-          src={app.logo}
-          alt=""
-          className="size-full bg-background object-cover"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <span className="font-semibold tracking-tight text-white drop-shadow-sm">
-          {initials}
-        </span>
-      )}
-    </div>
-  );
-};
 
 export const HardwareBadges = ({
   app,

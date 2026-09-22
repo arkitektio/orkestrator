@@ -279,7 +279,7 @@ export class WindowManager implements AppModule {
         // Try restoring zoom factor
         this.mainWindow.webContents.setZoomFactor(this.zoomFactor);
 
-        this.mainWindow.webContents.setWindowOpenHandler((details) => {
+        this.mainWindow.webContents.setWindowOpenHandler(() => {
             return { action: "deny" };
         });
 
@@ -406,7 +406,7 @@ export class WindowManager implements AppModule {
                     `${baseUrl.origin}${baseRoot}/failure*`,
                 ],
             },
-            async ({ url }, callback) => {
+            async (_details, callback) => {
                 faktsWindows.close();
                 callback({});
             }

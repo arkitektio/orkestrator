@@ -1754,6 +1754,10 @@ export class BrickResidencyManager {
     // while the pipeline is idle (drainUploads stops it on the drained edge).
     if (this.streamStartedAt === null && this.anyPipelineWork()) {
       this.streamStartedAt = performance.now();
+      // Same edge, same meaning, for React consumers: the image is about to
+      // change, so anything that wants the FINAL picture (the auto-snapshot)
+      // must wait for the drained edge below.
+      this.deps.viewerStore.getState().setSharp(false);
     }
   }
 
@@ -3417,6 +3421,10 @@ export class BrickResidencyManager {
       const drainedAt = performance.now();
       this.stats.timeToSharpMs = drainedAt - this.streamStartedAt;
       this.streamStartedAt = null;
+      // The picture is now final. Published unthrottled (unlike
+      // residencyVersion): this is an EDGE, it fires once per stream, and a
+      // consumer that misses it waits forever.
+      this.deps.viewerStore.getState().setSharp(true);
       this.timeToSharpRing.push(this.stats.timeToSharpMs);
       if (this.timeToSharpRing.length > 5) this.timeToSharpRing.shift();
       if (this.flushedAt !== null) {

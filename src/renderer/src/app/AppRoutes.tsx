@@ -3,9 +3,11 @@ import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { BackNavigationErrorCatcher } from "./AppProvider";
 import { NewTabPage } from "./pages/NewTabPage";
+import { ShareGatePage } from "./pages/ShareGatePage";
 import { ConnectingFallback } from "./components/fallbacks/Connecting";
 import { ModuleLoadingFallback } from "./components/fallbacks/ModuleLoading";
-import { NotConnected } from "./components/fallbacks/NotConnected";
+import { QuietPage } from "./components/fallbacks/QuietPage";
+import { ShellSignInNotice } from "./components/shell/ShellSignInNotice";
 import { NotFound } from "./components/fallbacks/NotFound";
 
 // The dashboard carries dockview; it is the index route, but a deep link into a
@@ -34,7 +36,12 @@ const SettingsModule = React.lazy(() => import("@/settings/SettingsModule"));
 const protectModule = (component: React.ReactNode, fallback?: React.ReactNode) => {
   return (
     <Arkitekt.Guard
-      notConnectedFallback={fallback || <NotConnected />}
+      // Inside the shell these can only fire on a LATER loss of session — the
+      // launch never reaches a route — and `AppShell` already owns both of
+      // those surfaces. A full welcome screen in the content card would be the
+      // boot flicker again, one level down.
+      notConnectedFallback={fallback || <ShellSignInNotice />}
+      bootingFallback={<QuietPage />}
       connectingFallback={<ConnectingFallback />}
     >
       {/* The chunk is loading, not the session: the guard above already passed. */}
@@ -65,6 +72,10 @@ export const AppRoutes = () => (
         />
         {/* What ⌘T opens: the search as a page, plus the modules. */}
         <Route path="new" element={<NewTabPage />} />
+        {/* Where a scoped share link lands before it becomes a page. Not
+            protected: deciding where a link belongs must work while we are on
+            the wrong connection, or none. */}
+        <Route path="open" element={<ShareGatePage />} />
         <Route path="mikro/*" element={protectModule(<MikroNextModule />)} />
         <Route path="elektro/*" element={protectModule(<ElektroModule />)} />
         <Route path="rekuest/*" element={protectModule(<RekuestNextModule />)} />

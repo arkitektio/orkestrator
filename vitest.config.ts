@@ -33,6 +33,7 @@ export default defineConfig({
       // is meaningful instead of ~0% diluted across the whole 1000-file tree.
       // Widen this list as more suites are added.
       include: [
+        "src/renderer/src/lib/marks/*.ts",
         "src/renderer/src/reaktion/validation/utils.tsx",
         "src/renderer/src/lib/utils.ts",
         "src/renderer/src/blok/renderer/runtime/utils.ts",

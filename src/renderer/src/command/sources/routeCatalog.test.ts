@@ -45,11 +45,17 @@ const GENERATED: Record<string, () => [route: string, label: string][]> = {
     ELEKTRO_ARRAY_DATASET_SPECS.map((spec) => [elektroArrayDatasetSpecLink(spec.slug), spec.label]),
 };
 
-/** The static links a pane's source declares, as `route → label`. */
+/**
+ * The static links a pane's source declares, as `route → label`. First
+ * occurrence wins: a pane may point at a page twice — mikro's "By kind" group
+ * heading links to `/mikro/arraydatasets`, the page its own nav entry above
+ * already names — and a group heading does not rename the page.
+ */
 const linksInPane = (file: string): Map<string, string> => {
   const src = readFileSync(resolve(__dirname, "../..", file), "utf8");
   const links = new Map<string, string>();
   for (const m of src.matchAll(LINK)) {
+    if (links.has(m[2])) continue;
     const label = m[3].replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).join(" ");
     links.set(m[2], label);
   }

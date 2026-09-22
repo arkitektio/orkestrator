@@ -1,0 +1,24 @@
+# An app is what a scientist installs; releases are its versions and flavours
+# are their builds. `App.releases` is what makes an app page possible without
+# fetching every release in the deployment and grouping client-side.
+
+fragment App on App {
+  id
+  identifier
+  # Drives the generated mark the app falls back to when it has no logo.
+  embedding
+  # There is no implicit ordering, so ask for it: newest first.
+  releases(ordering: [{ releasedAt: DESC }]) {
+    ...StoreRelease
+  }
+}
+
+# Enough to draw a shelf tile: the icon, the newest version and what it needs.
+fragment ShelfApp on App {
+  id
+  identifier
+  embedding
+  releases(ordering: [{ releasedAt: DESC }], pagination: { limit: 1 }) {
+    ...StoreRelease
+  }
+}

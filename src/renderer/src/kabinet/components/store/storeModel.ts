@@ -3,6 +3,11 @@ import {
   StoreFlavourFragment,
   StoreReleaseFragment,
 } from "../../api/graphql";
+// The identity helpers are shared with the release and flavour surfaces now;
+// re-exported here because the store has always reached for them by this name.
+import { hueFor, logoFor, splitIdentifier } from "../../appIdentity";
+
+export { hueFor, logoFor, splitIdentifier };
 
 export type StoreSelector = StoreFlavourFragment["selectors"][number];
 export type StoreDefinition = StoreFlavourFragment["definitions"][number];
@@ -14,6 +19,8 @@ export type Hardware = "gpu" | "cpu";
  * has no `apps` listing, so the store groups releases by `app.identifier`.
  */
 export type StoreApp = {
+  /** The `App` row's id — what the app's model page is keyed by. */
+  id: string;
   identifier: string;
   name: string;
   publisher: string | null;
@@ -31,6 +38,12 @@ export type StoreApp = {
   deploymentCount: number;
   logo: string | null;
   hue: number;
+  /**
+   * Kabinet's `Embedding` scalar, `<model id>:<floats>`. Drives the generated
+   * mark an app without a logo falls back to; null until the backend has
+   * indexed the app, which just means a plain plate instead of a symbol.
+   */
+  embedding: string | null;
 };
 
 const GPU_SELECTORS: Record<string, string> = {
@@ -62,38 +75,6 @@ export const selectorLabel = (selector: StoreSelector): string => {
     default:
       return (selector as { kind: string }).kind;
   }
-};
-
-const isUrl = (value?: string | null): value is string =>
-  !!value && /^(https?:|data:|blob:)/.test(value);
-
-export const logoFor = (entity: {
-  logo?: string | null;
-  originalLogo?: string | null;
-}): string | null =>
-  isUrl(entity.logo) ? entity.logo : isUrl(entity.originalLogo) ? entity.originalLogo : null;
-
-/** Stable hue per identifier, so every app keeps its colour across renders. */
-export const hueFor = (identifier: string): number => {
-  let hash = 0;
-  for (let i = 0; i < identifier.length; i++) {
-    hash = (hash * 31 + identifier.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash) % 360;
-};
-
-/** `org.example.napari-viewer` → name "Napari Viewer", publisher "org.example". */
-export const splitIdentifier = (
-  identifier: string,
-): { name: string; publisher: string | null } => {
-  const parts = identifier.split(/[./]/).filter(Boolean);
-  const last = parts.pop() ?? identifier;
-  const name = last
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-  return { name: name || identifier, publisher: parts.length ? parts.join(".") : null };
 };
 
 const uniqueBy = <T>(items: T[], key: (item: T) => string): T[] => {
@@ -142,6 +123,7 @@ export const groupApps = (releases: StoreReleaseFragment[]): StoreApp[] => {
     );
 
     return {
+      id: latest.app.id,
       identifier,
       name,
       publisher: publisher ?? repos[0]?.user ?? null,
@@ -167,6 +149,10 @@ export const groupApps = (releases: StoreReleaseFragment[]): StoreApp[] => {
         latestFlavours.map(logoFor).find(Boolean) ??
         null,
       hue: hueFor(identifier),
+      // Codegen types the Embedding scalar as `any`; it is a string on the wire
+      // and `decodeEmbedding` is the only thing that reads it, so narrow here
+      // rather than trusting the shape further in.
+      embedding: typeof latest.app.embedding === "string" ? latest.app.embedding : null,
     };
   });
 };

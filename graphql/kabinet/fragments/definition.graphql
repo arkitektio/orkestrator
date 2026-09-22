@@ -19,14 +19,22 @@ fragment ListDefinition on Definition {
   name
   hash
   description
+  # What kind of action it is — every list that shows a definition badges it.
+  kind
   flavours {
     id
     name
+    logo
+    originalLogo
     release {
       id
       version
+      logo
+      originalLogo
       app {
+        id
         identifier
+        embedding
       }
     }
   }

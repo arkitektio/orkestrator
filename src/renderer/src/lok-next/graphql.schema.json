@@ -1168,6 +1168,18 @@
             "deprecationReason": null
           },
           {
+            "name": "hub",
+            "description": "The hub this client was approved into (for an app client) or is the identity of (for a hub client). Null for clients bound to no hub, e.g. plain OIDC relying parties. Apps can pass its id back as `?hub=` on a later configure link to preselect it.",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Hub",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "organization",
             "description": "The organization that is associated with this app",
             "args": [],
@@ -1869,6 +1881,22 @@
             "deprecationReason": null
           },
           {
+            "name": "deviceId",
+            "description": "The (per-organization hashed) id of the device.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": null,
             "args": [],
@@ -1909,8 +1937,8 @@
                 "ofType": null
               }
             },
-            "isDeprecated": false,
-            "deprecationReason": null
+            "isDeprecated": true,
+            "deprecationReason": "Use deviceId."
           }
         ],
         "inputFields": null,
@@ -2635,6 +2663,94 @@
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "Hub",
+        "description": "A Hub is a specific configuration of a Service. It contains the configuration for a particular version of the service.",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "description",
+            "description": "The description of the service. This should be a human readable description of the service.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "id",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "identifier",
+            "description": "The identifier of the hub. This should be a globally unique string that identifies the hub. We encourage you to use the reverse domain name notation. E.g. `com.example.myhub`",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ServiceIdentifier",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": "The name of the hub. This should be a human readable name of the hub.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "organization",
+            "description": "The organization that this hub belongs to.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Organization",
+                "kind": "OBJECT",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -3672,6 +3788,18 @@
             "deprecationReason": null
           },
           {
+            "name": "deviceId",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "homepage",
             "description": null,
             "type": {
@@ -3756,8 +3884,8 @@
               "ofType": null
             },
             "defaultValue": "null",
-            "isDeprecated": false,
-            "deprecationReason": null
+            "isDeprecated": true,
+            "deprecationReason": "Use deviceId."
           },
           {
             "name": "publicSources",
@@ -8049,7 +8177,7 @@
           },
           {
             "name": "pinnedManifest",
-            "description": "The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and node_id exactly and may only request a subset of its scopes and requirements.",
+            "description": "The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and device_id exactly and may only request a subset of its scopes and requirements.",
             "args": [],
             "type": {
               "kind": "SCALAR",

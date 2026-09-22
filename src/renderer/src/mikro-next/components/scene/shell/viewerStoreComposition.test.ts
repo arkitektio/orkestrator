@@ -43,6 +43,7 @@ const EXPECTED_KEYS = [
   "setNodePlans", "setProbeLayerId", "setProbeMode", "setProbeReadout",
   "setProbeThreshold", "setProbedCoordinate", "setRenderBudget", "setSampledBrandTarget",
   "setShowLodReadout", "setShowScaleBar", "setShowScaleGrid", "setShowSceneAxis",
+  "setSharp", "sharp",
   "setUnplannableLayers", "setVisible", "setWorldUnitsPerPixel", "showLodReadout",
   "showScaleBar", "showScaleGrid", "showSceneAxis", "trackables",
   "unplannableLayers", "unregister", "viewSnapshot", "visibleLayers",

@@ -7,11 +7,19 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { ActionDescription } from "@/lib/rekuest/ActionDescription";
-import { useListDefinitionsQuery } from "../api/graphql";
+import { ListDefinitionFragment, useListDefinitionsQuery } from "../api/graphql";
+import { logoFor, releaseIdentity } from "../appIdentity";
+import { AppIcon } from "./AppIcon";
 
 export const Test = () => {
   return <div>Hallo</div>;
 };
+
+/** A flavour's own logo wins; otherwise the app's release logo or its mark. */
+const appOf = (flavour: ListDefinitionFragment["flavours"][number] | undefined) =>
+  flavour
+    ? { ...releaseIdentity(flavour.release), logo: logoFor(flavour) ?? undefined }
+    : null;
 
 export const PopularCarousel = ({ }) => {
   const { data } = useListDefinitionsQuery({
@@ -47,9 +55,16 @@ export const PopularCarousel = ({ }) => {
                 <div className="p-1">
                   <Card>
                     <CardContent className="flex aspect-[3/2] items-center justify-center p-6">
-                      <span className="text-4xl font-semibold">
-                        {index + 1}
-                      </span>
+                      {/* The app this action comes from, rather than the slide
+                          number the placeholder used to show. A definition with
+                          no flavour has no app to show. */}
+                      {appOf(item.flavours[0]) && (
+                        <AppIcon
+                          app={appOf(item.flavours[0])!}
+                          size={96}
+                          className="size-24"
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 </div>

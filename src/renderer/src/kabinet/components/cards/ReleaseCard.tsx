@@ -23,6 +23,8 @@ import {
 import { useLiveTask } from "@/rekuest/hooks/useTasks";
 import { useImplementationAction } from "@/rekuest/hooks/useImplementationAction";
 import { ListReleaseFragment } from "../../api/graphql";
+import { releaseIdentity } from "../../appIdentity";
+import { AppIcon } from "../AppIcon";
 
 interface Props {
   item: ListReleaseFragment;
@@ -130,6 +132,7 @@ const TheCard = ({ item }: Props) => {
     identifier: "@kabinet/release",
     object: item.id,
   });
+  const app = releaseIdentity(item);
 
   return (
     <KabinetRelease.Smart object={item} >
@@ -144,13 +147,15 @@ const TheCard = ({ item }: Props) => {
       >
         <CardHeader className="flex flex-col justify-between h-full">
           <div className="flex-grow">
+            <AppIcon app={app} size={48} className="mb-3 size-12" />
             <CardTitle>
               <KabinetRelease.DetailLink object={item}>
-                {" "}
-                {item.app?.identifier}:{item.version}
+                {app.name}
               </KabinetRelease.DetailLink>
             </CardTitle>
-            <CardDescription>{progress}</CardDescription>
+            <CardDescription className="font-mono text-xs">
+              {item.app?.identifier}:{item.version}
+            </CardDescription>
           </div>
           <div>
             <InstallDialog item={item} />

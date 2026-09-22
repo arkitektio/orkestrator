@@ -3,6 +3,7 @@ import { EllipsisIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { MikroAnnotation } from "@/linkers";
+import { useSettings } from "@/providers/settings/SettingsContext";
 
 import { useViewStoreApi } from "../../../platform/stores/viewStore";
 import {
@@ -29,8 +30,14 @@ import { buttonOriginFor, projectTopRightCorner } from "./projectRoiBox";
  * The hover is HELD (`holdHover`) while the pointer is on the button or its
  * popover is open, so travelling from the shape to the button — or picking a
  * menu entry — never loses the target.
+ *
+ * An experiment (Settings → General): with `experimentAnnotationHover` off the
+ * button never appears and annotations are reached from the sidebar row and
+ * the right-click menu, as before. Only the button is gated — the hover store
+ * it reads is the picking layer's, which the scene needs either way.
  */
 export const HoveredAnnotationButton = () => {
+  const { settings } = useSettings();
   const hovered = useRoiSelectionStore((s) => s.hoveredRoi);
   // The world box, by identity: rewritten only when the layer's shown set
   // changes. Undefined once the shape scrolls out of the slab — no box, no
@@ -38,6 +45,7 @@ export const HoveredAnnotationButton = () => {
   const visible = useRoiSelectionStore((s) =>
     s.hoveredRoi ? s.visibleRois[s.hoveredRoi.id] : undefined,
   );
+  if (settings.experimentAnnotationHover === false) return null;
   if (!hovered || !visible || visible.id !== hovered.id) return null;
   return <AttachedButton key={hovered.id} roi={visible} />;
 };

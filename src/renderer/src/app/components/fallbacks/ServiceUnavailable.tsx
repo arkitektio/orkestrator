@@ -1,10 +1,17 @@
+import { ConnectionDoctor } from "@/app/components/doctor/ConnectionDoctor";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { aliasToHttpPath } from "@/lib/arkitekt/alias/helpers";
-import { useActiveProfile, useAvailableServices, useServiceState } from "@/lib/arkitekt/hooks";
+import { instanceToProbeTargets } from "@/lib/arkitekt/doctor/targets";
+import {
+  useArkitektStore,
+  useAvailableServices,
+  useServiceState,
+} from "@/lib/arkitekt/hooks";
 import { useArkitektActions } from "@/lib/arkitekt/provider";
 import type { ServiceRuntimeState } from "@/lib/arkitekt/types";
-import { Loader2, RefreshCw, Unplug, WifiOff } from "lucide-react";
-import { useState } from "react";
+import { Loader2, RefreshCw, Stethoscope, Unplug, WifiOff } from "lucide-react";
+import { useMemo, useState } from "react";
 
 /**
  * What a module page shows when its backend service is not ready.
@@ -36,12 +43,42 @@ const timeOf = (ms: number | undefined): string | null =>
 export type ServiceStatusPanelProps = {
   serviceKey: string;
   state: ServiceRuntimeState | undefined;
-  /** The coordination server the profile signed in against, for context. */
-  baseUrl?: string;
+  /**
+   * The DEPLOYMENT these services belong to — not the coordination server.
+   *
+   * They are different machines and different failures: the coordination
+   * server is where the login was granted, while the services run somewhere
+   * else entirely (often a tailnet host), and that is what just failed to
+   * answer. Naming the wrong one sends people off to debug a machine that is
+   * working fine.
+   */
+  deployment?: { name?: string };
+  /**
+   * The host(s) the failing services actually live on, taken from the aliases
+   * that were tried.
+   *
+   * It has to come from the aliases and nothing else. `fakts.self.alias` is
+   * the app's OWN registration — it points at lok on the coordination server
+   * — so using it printed "they run on go.arkitekt.live/lok, which is not the
+   * server you signed in through", which is both wrong and self-contradictory.
+   */
+  hosts?: string[];
   /** Every configured service failed its health check, not just this one. */
   allDown: boolean;
   onRetry: () => Promise<void> | void;
   onRetryAll: () => Promise<void> | void;
+  /**
+   * Rendered beside Retry when the service is unreachable. A slot rather than
+   * a prop of its own so this panel stays pure — retrying is something it can
+   * do, diagnosing is something its caller wires up.
+   */
+  diagnoseAction?: React.ReactNode;
+  /**
+   * The diagnosis itself, once it has been asked for — rendered in place,
+   * under the actions. It belongs on this page rather than in a sheet: the
+   * user is already looking at the thing that failed.
+   */
+  diagnostics?: React.ReactNode;
 };
 
 /**
@@ -51,10 +88,13 @@ export type ServiceStatusPanelProps = {
 export const ServiceStatusPanel = ({
   serviceKey,
   state,
-  baseUrl,
+  deployment,
+  hosts,
   allDown,
   onRetry,
   onRetryAll,
+  diagnoseAction,
+  diagnostics,
 }: ServiceStatusPanelProps) => {
   const [retrying, setRetrying] = useState(false);
   const name = state?.definition.name ?? serviceKey;
@@ -81,7 +121,11 @@ export const ServiceStatusPanel = ({
     title = `${name} is not part of this deployment`;
     body = (
       <p>
-        {baseUrl ? <>The server at <span className="font-mono">{baseUrl}</span> </> : <>This server </>}
+        {deployment?.name ? (
+          <>The deployment <span className="font-medium">{deployment.name}</span> </>
+        ) : (
+          <>This deployment </>
+        )}
         does not offer the <span className="font-mono">{serviceKey}</span> service, so this
         module has nothing to talk to.
       </p>
@@ -100,18 +144,33 @@ export const ServiceStatusPanel = ({
   } else {
     // invalid
     icon = <WifiOff className="size-8 text-destructive" aria-hidden />;
-    title = allDown ? "The server is not reachable" : `${name} is not reachable`;
+    title = allDown
+      ? deployment?.name
+        ? `${deployment.name} is not reachable`
+        : "This deployment is not reachable"
+      : `${name} is not reachable`;
     body = (
       <div className="space-y-2">
         {allDown ? (
           <p>
-            None of the services{baseUrl ? <> at <span className="font-mono">{baseUrl}</span></> : null} answered
-            their health check. The server may be down, or this machine may need a VPN or network
-            connection to reach it.
+            None of the services
+            {deployment?.name ? (
+              <> on <span className="font-medium">{deployment.name}</span></>
+            ) : null}{" "}
+            answered their health check.
+            {hosts?.length === 1 ? (
+              <>
+                {" "}
+                They run on <span className="font-mono">{hosts[0]}</span>.
+              </>
+            ) : null}{" "}
+            That machine may be down, or this computer may need a VPN or mesh network to reach
+            it.
           </p>
         ) : (
           <p>
-            The {name} service failed its health check while the rest of the server answered.
+            The {name} service failed its health check while the rest of this deployment
+            answered, so this is about that one service rather than the network.
           </p>
         )}
         {state.errors.length > 0 && (
@@ -138,11 +197,12 @@ export const ServiceStatusPanel = ({
       </div>
     );
     actions = (
-      <div className="flex gap-2">
+      <div className="flex flex-wrap justify-center gap-2">
         <Button size="sm" disabled={retrying} onClick={() => void retry(allDown)}>
           <RefreshCw className={retrying ? "mr-2 size-3.5 animate-spin" : "mr-2 size-3.5"} />
           {allDown ? "Retry all services" : `Retry ${name}`}
         </Button>
+        {diagnoseAction}
       </div>
     );
   }
@@ -154,11 +214,22 @@ export const ServiceStatusPanel = ({
       aria-busy={busy}
       className="flex h-full w-full flex-col items-center justify-center bg-radial-[at_100%_100%] from-background to-backgroundpaired px-4"
     >
-      <div className="flex max-w-md flex-col items-center gap-4 text-center">
+      <div
+        className={cn(
+          "flex w-full flex-col items-center gap-4 text-center",
+          diagnostics ? "max-w-2xl" : "max-w-md",
+        )}
+      >
         {icon}
         <h1 className="text-lg font-semibold">{title}</h1>
         <div className="text-sm text-muted-foreground">{body}</div>
         {actions}
+        {/* The report keeps its own left-aligned text — findings are prose and
+            read badly centred — but the block itself stays in the middle of
+            the page with the rest of the message, not flush to one edge. */}
+        {diagnostics && (
+          <div className="mx-auto w-full max-w-xl pt-2 text-left">{diagnostics}</div>
+        )}
       </div>
     </div>
   );
@@ -167,10 +238,34 @@ export const ServiceStatusPanel = ({
 /** The connected fallback: give it the guard's service key. */
 export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
   const state = useServiceState(serviceKey);
+  const instance = useArkitektStore((state) => state.storedSession?.fakts.instances[serviceKey]);
+  // Only the deployment's NAME comes from `self`. Its `alias` is the app's own
+  // registration (lok on the coordination server), not where these services
+  // run — see the `hosts` prop.
+  const deploymentName = useArkitektStore(
+    (state) => state.storedSession?.fakts.self?.deployment_name,
+  );
   // Already only the configured ones: what this deployment actually offers.
   const configured = useAvailableServices();
-  const profile = useActiveProfile();
   const { retryService } = useArkitektActions();
+  const [diagnosing, setDiagnosing] = useState(false);
+
+  /**
+   * The distinct hosts behind the services that are down — the addresses the
+   * health checks actually went to. `instance.aliases` rather than
+   * `state.alias`, because a service that never resolved has no chosen alias,
+   * and that is exactly the case this message is for.
+   */
+  const hosts = useMemo(() => {
+    const failing = configured.filter((service) => service.status === "invalid");
+    return [
+      ...new Set(
+        failing.flatMap((service) =>
+          (service.instance?.aliases ?? []).map((alias) => alias.host),
+        ),
+      ),
+    ];
+  }, [configured]);
 
   const allDown =
     state?.status === "invalid" &&
@@ -181,12 +276,39 @@ export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
     <ServiceStatusPanel
       serviceKey={serviceKey}
       state={state}
-      baseUrl={profile?.session.endpoint.base_url}
+      deployment={{ name: deploymentName }}
+      hosts={hosts}
       allDown={allDown}
       onRetry={() => retryService(serviceKey)}
       onRetryAll={async () => {
         await Promise.all(configured.map((service) => retryService(service.key)));
       }}
+      diagnoseAction={
+        // This is where "No working alias found" actually lands, so it is the
+        // most useful place in the app to offer the doctor.
+        state?.status === "invalid" && !diagnosing ? (
+          <Button size="sm" variant="outline" onClick={() => setDiagnosing(true)}>
+            <Stethoscope className="mr-2 size-3.5" />
+            Run diagnostics
+          </Button>
+        ) : null
+      }
+      diagnostics={
+        // Asked for, so it starts immediately and stays on this page: the
+        // thing that failed is already on screen, and a sheet would cover it.
+        diagnosing ? (
+          <ConnectionDoctor
+            autoRun
+            centered
+            context={{ kind: "service", serviceKey }}
+            buildTargets={() =>
+              instance ? instanceToProbeTargets(serviceKey, instance) : []
+            }
+            originalError={state?.errors[0]}
+            subject={state?.definition.name ?? serviceKey}
+          />
+        ) : null
+      }
     />
   );
 };

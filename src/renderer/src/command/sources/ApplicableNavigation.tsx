@@ -203,6 +203,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
                     navigate,
                     openDialog: openDialog as never,
                     toggleDebug: () => setDebug(!debug),
+                    parkSession: () => void actions.disconnect(),
                     reconnect: () => void actions.reconnect(),
                     clearCaches: () => void actions.clearAllServiceCaches(),
                     setTheme,

@@ -18,9 +18,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Send, Server, Settings, XCircle } from "lucide-react";
+import { Send, Server, Settings, Stethoscope, XCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ConnectionDoctor } from "@/app/components/doctor/ConnectionDoctor";
+import { instanceToProbeTargets } from "@/lib/arkitekt/doctor/targets";
+import type { ProbeTarget } from "../../../../main/doctor/protocol";
 import { FaktsViewer } from "../components/FaktsViewer";
 import { ServiceCard } from "../components/ServiceCard";
 import { SettingsPage } from "../components/SettingsPage";
@@ -31,6 +34,7 @@ export const ServicesPage = () => {
   const services = Arkitekt.useAvailableServices();
   const configurationIssues = Arkitekt.useConfigurationIssues();
   const reportStatus = Arkitekt.useReportStatus();
+  const activeProfile = Arkitekt.useActiveProfile();
   const [reporting, setReporting] = useState(false);
 
   const handleReportStatus = async () => {
@@ -54,6 +58,16 @@ export const ServicesPage = () => {
       setReporting(false);
     }
   };
+
+  /**
+   * Every address this deployment advertises, across every service — the
+   * doctor probes the whole set, because "all of them fail" and "one of them
+   * fails" are different problems with different answers.
+   */
+  const buildTargets = (): ProbeTarget[] =>
+    Object.entries(fakts?.instances ?? {}).flatMap(([key, instance]) =>
+      instanceToProbeTargets(key, instance),
+    );
 
   return (
     <SettingsPage
@@ -128,6 +142,31 @@ export const ServicesPage = () => {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Stethoscope className="w-5 h-5" />
+            Connection doctor
+          </CardTitle>
+          <CardDescription>
+            Checks every address above from this computer — DNS, the connection
+            itself, the certificate and the answer — and checks the network
+            software this deployment needs. Nothing is changed unless you ask.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ConnectionDoctor
+            context={{
+              kind: "service",
+              serviceKey: "all",
+              endpointUrl: activeProfile?.session.endpoint.base_url,
+            }}
+            buildTargets={buildTargets}
+            subject={activeProfile?.session.endpoint.base_url ?? "this deployment"}
+          />
+        </CardContent>
+      </Card>
     </SettingsPage>
   );
 };

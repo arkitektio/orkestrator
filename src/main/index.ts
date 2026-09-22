@@ -21,6 +21,7 @@ import { stat, writeFile } from "node:fs/promises";
 import { normalize, sep } from "node:path";
 import { Readable } from "node:stream";
 import { ShellService } from "./modules/ShellService";
+import { DoctorService } from "./doctor/DoctorService";
 import { VoiceService } from "./voice/VoiceService";
 import { ModelStore } from "./voice/ModelStore";
 import { APP_ORIGIN, APP_SCHEME } from "./scheme";
@@ -131,6 +132,9 @@ const uploadService = new UploadService(transport);
 const bigFileUploadService = new BigFileUploadService(transport);
 const bigFileDownloadService = new BigFileDownloadService(transport);
 const shellService = new ShellService(transport);
+// Connection diagnostics: DNS/TCP/TLS probes and the Tailscale CLI live in
+// main because the renderer's fetch cannot tell those failures apart.
+const doctorService = new DoctorService(transport);
 // Voice input: the speech model runs in a utilityProcess (`voice/worker.ts`,
 // built to `out/main/voice-worker.js`), started only once a user switches
 // voice input on. Models download into userData on first use.
@@ -153,6 +157,7 @@ appManager.register(uploadService);
 appManager.register(bigFileUploadService);
 appManager.register(bigFileDownloadService);
 appManager.register(shellService);
+appManager.register(doctorService);
 appManager.register(voiceService);
 
 let electronAgent: AgentGateway | null = null;

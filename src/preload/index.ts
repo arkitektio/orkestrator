@@ -2,6 +2,18 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 import { Assign } from "../main/message";
 import type { ChromeTheme, ChromeThemeSource, WindowChromeState } from "../main/modules/WindowManager";
+import {
+  DOCTOR_MESH_CHANNEL,
+  DOCTOR_NETWORK_CHANNEL,
+  DOCTOR_REMEDY_CHANNEL,
+} from "../main/doctor/protocol";
+import type {
+  MeshProbeResult,
+  NetworkProbeResult,
+  ProbeNetworkRequest,
+  RemedyId,
+  RemedyResult,
+} from "../main/doctor/protocol";
 import type {
   VoiceCatalogEntry,
   VoiceEvent,
@@ -143,6 +155,20 @@ const api = {
       cancel: (args: { modelId: string }): Promise<void> =>
         ipcRenderer.invoke("voice:models:cancel", args),
     },
+  },
+  /**
+   * Connection diagnostics. The renderer cannot tell a DNS failure from a
+   * refused connection from a rejected certificate — `fetch` reports all three
+   * as "Failed to fetch" — so the probing happens in main and the renderer
+   * only interprets the results. `runRemedy` takes an id from a closed
+   * allowlist, never a command.
+   */
+  doctor: {
+    probeNetwork: (request: ProbeNetworkRequest): Promise<NetworkProbeResult[]> =>
+      ipcRenderer.invoke(DOCTOR_NETWORK_CHANNEL, request),
+    probeMesh: (): Promise<MeshProbeResult> => ipcRenderer.invoke(DOCTOR_MESH_CHANNEL),
+    runRemedy: (id: RemedyId): Promise<RemedyResult> =>
+      ipcRenderer.invoke(DOCTOR_REMEDY_CHANNEL, { id }),
   },
   initAgent: (context: any) => ipcRenderer.invoke("agent:init", context),
   executeElectron: (task: Assign) => ipcRenderer.invoke("agent:execute", task),

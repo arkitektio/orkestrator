@@ -1,6 +1,7 @@
 import { Arkitekt } from "@/app/Arkitekt";
 import { ConnectingFallback } from "@/app/components/fallbacks/Connecting";
-import { NotConnected } from "@/app/components/fallbacks/NotConnected";
+import { QuietPage } from "@/app/components/fallbacks/QuietPage";
+import { ShellSignInNotice } from "@/app/components/shell/ShellSignInNotice";
 import { Button } from "@/components/ui/button";
 import { ServiceRuntimeState } from "@/lib/arkitekt/types";
 import { useMyContextQuery } from "@/lok-next/api/graphql";
@@ -238,10 +239,14 @@ export const Home = () => {
   const baseUrl = connection?.endpoint?.base_url;
   const userId = contextData?.mycontext?.user.id;
   const orgId = contextData?.mycontext?.organization?.id;
+  // Same key the profile book derives, hub and all: two hubs of one
+  // organization are two profiles, so they are two dashboards too — a layout
+  // shared across them would show widgets scoped to the hub you are not in.
+  const hubId = contextData?.mycontext?.hub?.id;
   const currentScope = useMemo(() => {
     if (!baseUrl || !userId) return null;
-    return buildScopeKey(baseUrl, userId, orgId ?? "personal");
-  }, [baseUrl, userId, orgId]);
+    return buildScopeKey(baseUrl, userId, orgId ?? "personal", hubId);
+  }, [baseUrl, userId, orgId, hubId]);
 
 
   const addAllDefaultPanels = useCallback(
@@ -495,7 +500,8 @@ function Page() {
   return (
     <div className="h-full w-full">
       <Arkitekt.Guard
-        notConnectedFallback={<NotConnected />}
+        notConnectedFallback={<ShellSignInNotice />}
+        bootingFallback={<QuietPage />}
         connectingFallback={<ConnectingFallback />}
       >
         <Home />

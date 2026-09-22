@@ -5,6 +5,7 @@ import { buildAliases } from "./builder";
 import { ArkitektContext } from "./context";
 import { useConnectionStatus } from "./hooks";
 import { flow } from "./fakts/flow";
+import { grantHintForProfile } from "./fakts/grantHint";
 import { Manifest } from "./fakts/manifestSchema";
 import {
   clearStoredArkitektStorage,
@@ -92,6 +93,41 @@ const dlog = (...args: unknown[]) => {
 type StoredSession = StoredArkitektSession | null;
 type StorageProvider = () => Promise<Storage>;
 
+/**
+ * The profile book, BEFORE the first paint.
+ *
+ * Everything else here is async — the storage seam, the manifest's IPC
+ * round-trip, the token refresh — so without this the first render cannot know
+ * whether this computer holds a login, and `AppShell` has no choice but to
+ * paint the welcome screen (in its first-run variant, no less) for a frame on
+ * every launch, including launches that auto-log straight in.
+ *
+ * `loadStoredProfileBook` is fully synchronous and never throws, so the only
+ * question is WHICH storage. Only the default one can be read here:
+ *
+ * - A caller that supplied `storageProvider` may not be on `localStorage` at
+ *   all, and reading it would bypass the seam its tests depend on.
+ * - The load is not a pure read — it migrates the legacy flat keys and drops
+ *   unreadable profiles, both of which WRITE. Guessing wrong would mutate a
+ *   store this provider was never handed.
+ *
+ * The seed is a snapshot, not the truth: the bootstrap effect composes it with
+ * what is actually persisted a microtask later (`adoptPersistedBook`), which is
+ * what corrects a profile another window removed in the meantime.
+ */
+const seedProfileBook = (storageProvider?: StorageProvider): StoredProfileBook => {
+  if (storageProvider) return emptyProfileBook();
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
+    return emptyProfileBook();
+  }
+  try {
+    return loadStoredProfileBook(localStorage);
+  } catch {
+    // Blocked site data, a locked profile directory: signed out is the safe read.
+    return emptyProfileBook();
+  }
+};
+
 export type ArkitektProviderProps<
   T extends ServiceBuilderMap = ServiceBuilderMap,
   S extends ServiceBuilder = ServiceBuilder,
@@ -110,14 +146,19 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
   serviceBuilderMap,
   selfServiceBuilder,
   moduleRegistry,
-  storageProvider = async () => localStorage,
+  storageProvider,
 }: ArkitektProviderProps<T, S>) => {
   const resolvedModuleRegistry = useMemo(
     () => moduleRegistry || createModuleRegistryFromServices(serviceBuilderMap),
     [moduleRegistry, serviceBuilderMap],
   );
-  const storageProviderRef = useRef<StorageProvider>(storageProvider);
-  storageProviderRef.current = storageProvider;
+  // Kept undefined-able on the prop so `seedProfileBook` can tell "the caller
+  // supplied a seam" from "we are on plain localStorage"; every async read goes
+  // on using the resolved one exactly as before.
+  const storageProviderRef = useRef<StorageProvider>(
+    storageProvider ?? (async () => localStorage),
+  );
+  storageProviderRef.current = storageProvider ?? (async () => localStorage);
 
   const controllerRef = useRef<AbortController | null>(null);
   const validationRunIdsRef = useRef<Record<string, number>>({});
@@ -146,8 +187,11 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         buildServiceStates(serviceBuilderMap, null),
       ),
       storedSession: null,
-      profileBook: emptyProfileBook(),
+      // Synchronous, so the very first render already knows whether this window
+      // is about to auto-log in — see `seedProfileBook`.
+      profileBook: seedProfileBook(storageProvider),
       switchingProfileId: null,
+      sessionOnlyProfileId: null,
     });
   });
 
@@ -171,10 +215,23 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       // profile that is parked here; writing our stale copy over it would
       // hand that profile a spent refresh token on its next launch. Which
       // profile is active stays a per-window notion.
-      const base = adoptPersistedBook(loadStoredProfileBook(storage), store.getState().profileBook);
+      const persisted = loadStoredProfileBook(storage);
+      const base = adoptPersistedBook(persisted, store.getState().profileBook);
       const next = update(base);
       store.setState({ profileBook: next });
-      writeStoredProfileBook(next, storage);
+
+      // "Stay signed in" unticked: the profile is live in memory but must not
+      // be written back as the active one, or the next launch would auto-log
+      // into it anyway. Everything else in the book — above all the rotated
+      // refresh token — is written as usual, and whatever was persisted as
+      // active (another window's choice, or nothing) is left alone.
+      const { sessionOnlyProfileId } = store.getState();
+      const toWrite =
+        sessionOnlyProfileId && next.activeProfileId === sessionOnlyProfileId
+          ? { ...next, activeProfileId: persisted.activeProfileId }
+          : next;
+
+      writeStoredProfileBook(toWrite, storage);
       return next;
     },
     [store],
@@ -251,7 +308,13 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         // very token, in which case its rotation is adopted instead of ours
         // being replayed (which would revoke the whole chain server-side).
         const held = { ...session, token: currentToken };
-        const lockId = activeProfileId ?? session.endpoint.base_url;
+        // The lock names a refresh CHAIN, and a chain belongs to one client
+        // registration. With no active profile there is no profile id to name
+        // it with, so fall back to the client_id rather than the deployment:
+        // one user can hold two approvals on one base_url (one per hub), and a
+        // per-deployment lock would make those two chains wait on each other.
+        const lockId =
+          activeProfileId ?? currentToken.client_id ?? session.endpoint.base_url;
         const { session: nextSession, refreshed } = await rotateProfileSession({
           profileId: lockId,
           held,
@@ -643,11 +706,17 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
   // ── actions ──
 
   const connect = useCallback<AppFunctions["connect"]>(
-    async ({ endpoint, controller }) => {
+    async ({ endpoint, controller, hint }) => {
       dlog("[ArkitektProvider] connect called, endpoint:", endpoint);
       const prev = store.getState();
       controllerRef.current = controller;
-      store.setState({ connecting: true, autoLoginError: undefined });
+      // A fresh grant is always remembered: the user just approved this app in
+      // a browser, so the profile it produces is the one to come back to.
+      store.setState({
+        connecting: true,
+        autoLoginError: undefined,
+        sessionOnlyProfileId: null,
+      });
 
       try {
         const enhancedManifest = await resolveEnhancedManifest();
@@ -661,6 +730,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
           endpoint,
           controller,
           manifest: enhancedManifest,
+          hint,
         });
         dlog("[ArkitektProvider] connect: fakts resolved, services:", Object.keys(fakts.instances || {}));
 
@@ -764,7 +834,14 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       console.error("[ArkitektProvider] reconnect failed: no endpoint found");
       throw new Error("No endpoint found in local storage");
     }
-    await connect({ endpoint, controller: new AbortController() });
+    // Reconnecting is by definition a re-approval of the profile we are on, so
+    // the configure page can be told which account and hub to preselect.
+    const active = getActiveProfile(state.profileBook);
+    await connect({
+      endpoint,
+      controller: new AbortController(),
+      hint: active ? grantHintForProfile(active) : undefined,
+    });
   }, [store, connect]);
 
   /**
@@ -784,8 +861,9 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
    *     just lost its only refresh token and be permanently dead.
    */
   const switchProfile = useCallback<AppFunctions["switchProfile"]>(
-    async (profileId) => {
+    async (profileId, options) => {
       const state = store.getState();
+      const remember = options?.remember ?? true;
 
       if (state.switchingProfileId) {
         dlog("[ArkitektProvider] switchProfile ignored, a switch is already running");
@@ -800,8 +878,14 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         throw new Error(`Unknown profile ${profileId}`);
       }
 
-      dlog("[ArkitektProvider] switchProfile:", profileId);
-      store.setState({ switchingProfileId: profileId, autoLoginError: undefined });
+      dlog("[ArkitektProvider] switchProfile:", profileId, { remember });
+      // Set BEFORE the first persist: `persistBook` reads this to decide what
+      // to leave out of the write, and the rotation below writes.
+      store.setState({
+        switchingProfileId: profileId,
+        autoLoginError: undefined,
+        sessionOnlyProfileId: remember ? null : profileId,
+      });
 
       try {
         const manifest = await resolveEnhancedManifest();
@@ -824,7 +908,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
 
         // The profile may have been removed while its refresh was in flight.
         if (!store.getState().profileBook.profiles[profileId]) {
-          store.setState({ switchingProfileId: null });
+          store.setState({ switchingProfileId: null, sessionOnlyProfileId: null });
           return;
         }
 
@@ -853,7 +937,12 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
           await persistBook((book) => markProfileStale(book, profileId, message));
         }
 
-        store.setState({ switchingProfileId: null, autoLoginError: message });
+        // The switch never happened, so nothing is signed in for this run only.
+        store.setState({
+          switchingProfileId: null,
+          autoLoginError: message,
+          sessionOnlyProfileId: null,
+        });
         throw error;
       }
     },
@@ -865,6 +954,36 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       serviceBuilderMap,
       resolveEnhancedManifest,
     ],
+  );
+
+  const signOutProfile = useCallback<AppFunctions["signOutProfile"]>(
+    async (profileId) => {
+      dlog("[ArkitektProvider] signOutProfile:", profileId);
+      const wasActive = store.getState().profileBook.activeProfileId === profileId;
+
+      // `stale` is exactly this state — "the credential here will not get you
+      // in, ask for a grant" — so signing out reuses it rather than inventing
+      // a second way for a row to mean the same thing.
+      await persistBook((book) => {
+        const marked = markProfileStale(book, profileId, "Signed out on this computer");
+        return wasActive ? setActiveProfile(marked, null) : marked;
+      });
+
+      if (wasActive) {
+        hydrateConnection(
+          null,
+          store.getState().manifest,
+          {
+            connecting: false,
+            hasBootstrapped: true,
+            switchingProfileId: null,
+            autoLoginError: undefined,
+          },
+          { resetServiceStates: true },
+        );
+      }
+    },
+    [store, persistBook, hydrateConnection],
   );
 
   const removeProfile = useCallback<AppFunctions["removeProfile"]>(
@@ -1027,11 +1146,12 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       clearAllServiceCaches,
       reportStatus,
       switchProfile,
+      signOutProfile,
       removeProfile,
       forgetAllProfiles,
       setProfileIdentity,
     }),
-    [connect, disconnect, reconnect, cancelConnection, retryService, retryModule, clearServiceCache, clearAllServiceCaches, reportStatus, switchProfile, removeProfile, forgetAllProfiles, setProfileIdentity],
+    [connect, disconnect, reconnect, cancelConnection, retryService, retryModule, clearServiceCache, clearAllServiceCaches, reportStatus, switchProfile, signOutProfile, removeProfile, forgetAllProfiles, setProfileIdentity],
   );
 
   // ── ONE useEffect: load the profile book, activate the live one, health-check ──
@@ -1042,8 +1162,18 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         // Handles the migration off the four flat keys, and validates profiles
         // one at a time so a single corrupt entry cannot sign the user out of
         // the rest. Never throws.
-        const book = loadStoredProfileBook(storage);
-        store.setState({ profileBook: book });
+        // COMPOSED with the seeded book, not written over it: the seed is this
+        // window's snapshot from a microtask ago, and `adoptPersistedBook` keeps
+        // its choice of active profile only while that profile still exists in
+        // what is actually persisted. That is exactly the case where another
+        // window removed the profile we optimistically opened into — we fall
+        // through to "nothing active" and the welcome screen, rather than
+        // resurrecting a login that is gone.
+        const persisted = loadStoredProfileBook(storage);
+        store.setState((state) => ({
+          profileBook: adoptPersistedBook(persisted, state.profileBook),
+        }));
+        const book = store.getState().profileBook;
 
         const enhancedManifest = await resolveEnhancedManifest();
         const active = getActiveProfile(book);
@@ -1178,26 +1308,41 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
 export type ConnectedGuardProps = {
   notConnectedFallback?: React.ReactNode;
   connectingFallback?: React.ReactNode;
+  /**
+   * Shown while a STORED profile is being auto-logged in — the launch path,
+   * which is neither "signed out" nor "the user is waiting on a browser
+   * grant". Defaults to `connectingFallback`, so every existing caller keeps
+   * the behaviour it had.
+   */
+  bootingFallback?: React.ReactNode;
 };
 
 export const ConnectedGuard = ({
   notConnectedFallback = "Not Connected",
   connectingFallback = "Loading...",
+  bootingFallback,
   children,
 }: ConnectedGuardProps & { children: ReactNode }) => {
   // Narrow, shallow-compared selection: this guard wraps every module route,
   // so subscribing to the whole store rerendered them on every store tick.
-  const { hasSelfService, connecting, hasStoredSession, hasBootstrapped } =
+  const { hasSelfService, connecting, hasStoredSession, hasBootstrapped, hasActiveProfile } =
     useConnectionStatus();
+
+  if (hasSelfService) return <>{children}</>;
+
+  // Booting is tested BEFORE `hasStoredSession`, which is what it turns on:
+  // the session only exists once the parked token has been refreshed, so until
+  // then the old ordering could only call an auto-login "signed out" and paint
+  // the welcome screen over a launch that was about to succeed.
+  if (!hasBootstrapped && hasActiveProfile) {
+    return <>{bootingFallback ?? connectingFallback}</>;
+  }
 
   if (!hasStoredSession) return <>{notConnectedFallback}</>;
 
-  if (!hasSelfService) {
-    if (connecting || (!hasBootstrapped && hasStoredSession)) return <>{connectingFallback}</>;
-    return <>{notConnectedFallback}</>;
-  }
+  if (connecting || !hasBootstrapped) return <>{connectingFallback}</>;
 
-  return <>{children}</>;
+  return <>{notConnectedFallback}</>;
 }
 
 // ── Builder helper ──

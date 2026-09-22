@@ -26,6 +26,8 @@ import {
 import {
   useActiveProfile,
   useActiveProfileId,
+  useHasActiveProfile,
+  useIsAutoLoggingIn,
   useProfiles,
   useSelfService,
   useSwitchingProfileId,
@@ -131,8 +133,13 @@ export const buildArkitekt = <T extends ServiceBuilderMap, S extends ServiceBuil
     useProfiles,
     useActiveProfile,
     useActiveProfileId,
+    /** Whether this window belongs to an account — true before the token is back. */
+    useHasActiveProfile,
+    /** Whether a stored profile is being brought up right now. */
+    useIsAutoLoggingIn,
     useSwitchingProfileId,
     useSwitchProfile: () => useArkitektActions().switchProfile,
+    useSignOutProfile: () => useArkitektActions().signOutProfile,
     useRemoveProfile: () => useArkitektActions().removeProfile,
     useForgetAllProfiles: () => useArkitektActions().forgetAllProfiles,
     useSetProfileIdentity: () => useArkitektActions().setProfileIdentity,

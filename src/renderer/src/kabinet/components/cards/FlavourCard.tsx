@@ -2,7 +2,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { buildAssignInput } from "@/rekuest/assign";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,8 @@ import {
 import { useLiveTask } from "@/rekuest/hooks/useTasks";
 import { useImplementationAction } from "@/rekuest/hooks/useImplementationAction";
 import { ListFlavourFragment } from "../../api/graphql";
+import { logoFor, releaseIdentity } from "../../appIdentity";
+import { AppIcon } from "../AppIcon";
 
 interface Props {
   item: ListFlavourFragment;
@@ -146,6 +148,9 @@ const TheCard = ({ item }: Props) => {
     identifier: "@kabinet/flavour",
     object: item.id,
   });
+  // A flavour is one build of an app, so it wears the app's identity — with its
+  // own logo preferred, since that is the one specific to this build.
+  const app = { ...releaseIdentity(item.release), logo: logoFor(item) ?? undefined };
 
   return (
     <KabinetFlavour.Smart object={item} >
@@ -160,12 +165,15 @@ const TheCard = ({ item }: Props) => {
       >
         <CardHeader className="flex flex-col justify-between h-full">
           <div>
+            <AppIcon app={app} size={48} className="mb-3 size-12" />
             <CardTitle>
               <KabinetFlavour.DetailLink object={item}>
-                {" "}
-                {item.release.app.identifier}:{item.release.version}-{item.name}
+                {item.name}
               </KabinetFlavour.DetailLink>
             </CardTitle>
+            <CardDescription className="mb-2 font-mono text-xs">
+              {item.release.app.identifier}:{item.release.version}
+            </CardDescription>
             {item.selectors.map((selector, index) => (
               <Badge key={index} className=" text-white bg-gray-700">
                 {selectorLabel(selector)}

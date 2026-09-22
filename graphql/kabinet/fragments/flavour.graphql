@@ -1,11 +1,17 @@
 fragment ListFlavour on Flavour {
   id
   name
+  logo
+  originalLogo
   release {
     id
     version
+    logo
+    originalLogo
     app {
+      id
       identifier
+      embedding
     }
   }
   selectors {
@@ -15,6 +21,57 @@ fragment ListFlavour on Flavour {
 }
 
 
+# The detail fragment adds what the flavour PROVIDES: the actions its manifest
+# declares. Without them the flavour page can only show selectors, which says
+# where it runs but never what it does.
+# The detail fragment adds what the flavour PROVIDES (the actions its manifest
+# declares) and what it NEEDS (its image, its requirements, where it was built
+# from). The selectors on `ListFlavour` only say where it can run.
+#
+# These are spelled out rather than spread from `StoreFlavour`: that fragment
+# selects a thinner `definitions` than the action list here needs, and two
+# different selections of the same field in one fragment do not compose.
 fragment Flavour on Flavour {
   ...ListFlavour
+  # The full selector shape (`kind` / `required`), not just the CUDA and ROCm
+  # specifics ListFlavour carries — the badges label and rank by those.
+  selectors {
+    ...StoreSelector
+  }
+  image {
+    imageString
+    buildAt
+  }
+  requirements {
+    key
+    service
+    optional
+    description
+  }
+  repo {
+    id
+    name
+    user
+    repo
+    url
+  }
+  deployments {
+    id
+    status
+  }
+  definitions {
+    ...ListDefinition
+  }
+  # Its siblings: the other builds of the same version.
+  release {
+    scopes
+    flavours {
+      id
+      name
+      selectors {
+        ...CudaSelector
+        ...RocmSelector
+      }
+    }
+  }
 }

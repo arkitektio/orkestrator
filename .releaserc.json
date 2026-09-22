@@ -30,6 +30,20 @@
                 ]
             }
         ],
-        "@semantic-release/github"
+        [
+            "@semantic-release/github",
+            {
+                "assets": [
+                    {
+                        "path": "dist/catalog/blok-catalog.json",
+                        "label": "Blok catalog (registerUiCatalog payload)"
+                    },
+                    {
+                        "path": "dist/catalog/blok-catalog.manifest.json",
+                        "label": "Blok catalog manifest"
+                    }
+                ]
+            }
+        ]
     ]
 }

@@ -49,7 +49,23 @@ export const useConnectionStatus = () =>
       connecting: state.connecting,
       hasStoredSession: !!state.storedSession,
       hasBootstrapped: state.hasBootstrapped,
+      /**
+       * A login this window is expected to come up in — seeded from the profile
+       * book before the first paint, so it is knowable a full network round-trip
+       * before `storedSession` exists.
+       */
+      hasActiveProfile: !!state.profileBook.activeProfileId,
     })),
+  );
+
+/** This window belongs to an account, whether or not its token is back yet. */
+export const useHasActiveProfile = (): boolean =>
+  useArkitektStore((state) => !!state.profileBook.activeProfileId);
+
+/** A stored profile is being brought up right now (launch, not a browser grant). */
+export const useIsAutoLoggingIn = (): boolean =>
+  useArkitektStore(
+    (state) => !state.hasBootstrapped && !!state.profileBook.activeProfileId,
   );
 
 /**

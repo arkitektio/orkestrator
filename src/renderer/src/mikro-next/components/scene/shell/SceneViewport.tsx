@@ -44,6 +44,7 @@ import { MetadataOverlay } from "../features/annotations/MetadataOverlay";
 import { RoiToolbar } from "../features/annotations/RoiToolbar";
 import { MeshDesignToolbar } from "../features/meshDesign/ui/MeshDesignToolbar";
 import { SceneScreenshot } from "./chrome/SceneScreenshot";
+import { SceneAutoSnapshot } from "../features/animation/useAutoSnapshot";
 import { CanvasHueProbe } from "./theme/CanvasHueProbe";
 import { DebugPanel } from "../features/debug/DebugPanel";
 import { DimSliderPanel } from "./chrome/DimSliderPanel";
@@ -310,6 +311,8 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
         <KeyboardModeController />
         <KeyboardLayerVisibility />
         <ModeCompatGuard />
+        {/* Gives the scene its card tile on first open. Renders null. */}
+        <SceneAutoSnapshot />
         {/* OUTSIDE <SceneWrapper> deliberately: the canvas awaits
             renderer.init() before mounting any child, and brick fetch/decode/
             repack need no device — starting here overlaps the network with
