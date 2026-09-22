@@ -1,3 +1,16 @@
+# [2.12.0](https://github.com/arkitektio/orkestrator/compare/v2.11.0...v2.12.0) (2026-09-22)
+
+
+### Bug Fixes
+
+* states ([ace5d56](https://github.com/arkitektio/orkestrator/commit/ace5d561afff2541344328cce0c11d857a89dcf9))
+
+
+### Features
+
+* more little things ([c0039f3](https://github.com/arkitektio/orkestrator/commit/c0039f35411feea9abb2ad7aa5dfab1c22b4efc2))
+* with mesh support built in ([13d046d](https://github.com/arkitektio/orkestrator/commit/13d046d765be767649c746ab4ddcc465d1e79c7e))
+
 # [2.11.0](https://github.com/arkitektio/orkestrator/compare/v2.10.0...v2.11.0) (2026-09-22)
 
 
