@@ -1,12 +1,18 @@
+import { KabinetApp } from "@/linkers";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight, Boxes, Layers } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";
-import { AppIcon, appGradient, HardwareBadges, InstallMenu } from "./StoreParts";
+import { AppIcon, appGradient } from "../AppIcon";
+import { HardwareBadges, InstallMenu } from "./StoreParts";
 import { StoreApp } from "./storeModel";
 
-export const appStorePath = (identifier: string) =>
-  `/kabinet/app-store/${encodeURIComponent(identifier)}`;
+/**
+ * Where a store tile points. The app page is a model page now, so this goes
+ * through the linker and is keyed by the app's id like every other one.
+ */
+export const appStorePath = (app: Pick<StoreApp, "id">) =>
+  KabinetApp.linkBuilder(app.id);
 
 /** Grid tile: icon, name, a taste of what the app does, hardware + install. */
 export const AppStoreCard = React.memo(({ app }: { app: StoreApp }) => {
@@ -21,7 +27,7 @@ export const AppStoreCard = React.memo(({ app }: { app: StoreApp }) => {
 
   return (
     <Link
-      to={appStorePath(app.identifier)}
+      to={appStorePath(app)}
       className={cn(
         "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4",
         "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5",
@@ -84,10 +90,14 @@ export const AppStoreCard = React.memo(({ app }: { app: StoreApp }) => {
 /** Compact tile for horizontal shelves. */
 export const AppShelfTile = ({ app }: { app: StoreApp }) => (
   <Link
-    to={appStorePath(app.identifier)}
+    to={appStorePath(app)}
     className="group flex w-56 shrink-0 snap-start items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/60"
   >
-    <AppIcon app={app} className="size-12 transition-transform group-hover:scale-105" />
+    <AppIcon
+      app={app}
+      size={48}
+      className="size-12 transition-transform group-hover:scale-105"
+    />
     <div className="min-w-0">
       <p className="truncate text-sm font-medium">{app.name}</p>
       <p className="truncate text-[0.65rem] text-muted-foreground">

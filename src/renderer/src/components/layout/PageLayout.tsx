@@ -77,7 +77,11 @@ export const PageLayout = ({
 
   const reportBug = useReport();
 
-  const { copy: copyPathToClipboard } = useCopyUniversalLink(location);
+  const {
+    copy: copyPathToClipboard,
+    copyPrivate: copyPrivateToClipboard,
+    copyBadge: copyBadgeToClipboard,
+  } = useCopyUniversalLink(location);
 
   // Not a `useCallback`: it closed over `location` with an empty dependency
   // array, so it popped out the first pathname the page ever had rather than
@@ -173,10 +177,16 @@ export const PageLayout = ({
                       {params.get("sidebar") == "true" ? "Hide" : "Show"} Sidebar
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={copyPathToClipboard}>
-                      Share
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={copyPathToClipboard}>
                       Share Universal Link
+                    </DropdownMenuItem>
+                    {/* The same page, with the deployment and organization
+                        hashed away — for pasting somewhere public. */}
+                    <DropdownMenuItem onSelect={copyPrivateToClipboard}>
+                      Copy Private Link
+                    </DropdownMenuItem>
+                    {/* The same link as the README badge markdown. */}
+                    <DropdownMenuItem onSelect={copyBadgeToClipboard}>
+                      Copy as Badge
                     </DropdownMenuItem>
 
                     <DropdownMenuItem onSelect={popOut}> Popout</DropdownMenuItem>

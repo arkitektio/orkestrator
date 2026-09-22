@@ -211,6 +211,8 @@ export type Context = {
   __typename?: 'Context';
   /** Are we acting in the active organization of the user? */
   fitsActiveOrganization: Scalars['Boolean']['output'];
+  /** The hub this client was approved into (for an app client) or is the identity of (for a hub client). Null for clients bound to no hub, e.g. plain OIDC relying parties. Apps can pass its id back as `?hub=` on a later configure link to preselect it. */
+  hub?: Maybe<Hub>;
   /** The organization that is associated with this app */
   organization: Organization;
   /** The roles that the user has in the organization */
@@ -273,8 +275,11 @@ export type Device = {
   clients: Array<Client>;
   /** The device groups that belong to this device. */
   deviceGroups: Array<DeviceGroup>;
+  /** The (per-organization hashed) id of the device. */
+  deviceId: Scalars['ID']['output'];
   id: Scalars['ID']['output'];
   name?: Maybe<Scalars['String']['output']>;
+  /** @deprecated Use deviceId. */
   nodeId: Scalars['ID']['output'];
 };
 
@@ -396,6 +401,20 @@ export type GroupProfile = {
   name?: Maybe<Scalars['String']['output']>;
 };
 
+/** A Hub is a specific configuration of a Service. It contains the configuration for a particular version of the service. */
+export type Hub = {
+  __typename?: 'Hub';
+  /** The description of the service. This should be a human readable description of the service. */
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** The identifier of the hub. This should be a globally unique string that identifies the hub. We encourage you to use the reverse domain name notation. E.g. `com.example.myhub` */
+  identifier: Scalars['ServiceIdentifier']['output'];
+  /** The name of the hub. This should be a human readable name of the hub. */
+  name: Scalars['String']['output'];
+  /** The organization that this hub belongs to. */
+  organization: Organization;
+};
+
 /** An alias for a service instance. This is used to provide a more user-friendly name for the instance. */
 export type InstanceAlias = {
   __typename?: 'InstanceAlias';
@@ -514,11 +533,13 @@ export type LinkingRequestInput = {
 export type ManifestInput = {
   authors?: Array<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
+  deviceId?: InputMaybe<Scalars['String']['input']>;
   homepage?: InputMaybe<Scalars['String']['input']>;
   identifier: Scalars['String']['input'];
   keywords?: Array<Scalars['String']['input']>;
   license?: InputMaybe<Scalars['String']['input']>;
   logo?: InputMaybe<Scalars['String']['input']>;
+  /** @deprecated Use deviceId. */
   nodeId?: InputMaybe<Scalars['String']['input']>;
   publicSources?: InputMaybe<Array<PublicSourceInput>>;
   repoUrl?: InputMaybe<Scalars['String']['input']>;
@@ -1154,7 +1175,7 @@ export type RedeemToken = {
   id: Scalars['ID']['output'];
   /** How many times this token may be redeemed. Null means unlimited. */
   maxRedemptions?: Maybe<Scalars['Int']['output']>;
-  /** The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and node_id exactly and may only request a subset of its scopes and requirements. */
+  /** The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and device_id exactly and may only request a subset of its scopes and requirements. */
   pinnedManifest?: Maybe<Scalars['JSON']['output']>;
   /** How many times this token has been redeemed so far. */
   redemptionCount: Scalars['Int']['output'];
@@ -1750,7 +1771,7 @@ export type DetailDeviceFragment = { __typename?: 'Device', id: string, name?: s
 
 export type ListDeviceFragment = { __typename?: 'Device', id: string, name?: string | null, nodeId: string };
 
-export type ContextFragment = { __typename?: 'Context', roles: Array<string>, scope: Array<string>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null }, user: { __typename?: 'User', id: string, username: string, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, organization: { __typename?: 'Organization', id: string } }> } };
+export type ContextFragment = { __typename?: 'Context', roles: Array<string>, scope: Array<string>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null }, user: { __typename?: 'User', id: string, username: string, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, organization: { __typename?: 'Organization', id: string } }> }, hub?: { __typename?: 'Hub', id: string, name: string, identifier: any } | null };
 
 export type PresignedPostCredentialsFragment = { __typename?: 'PresignedPostCredentials', xAmzAlgorithm: string, xAmzCredential: string, xAmzDate: string, xAmzSignature: string, key: string, bucket: string, datalayer: string, policy: string, store: string };
 
@@ -2563,6 +2584,11 @@ export const ContextFragmentDoc = gql`
         id
       }
     }
+  }
+  hub {
+    id
+    name
+    identifier
   }
   roles
   scope

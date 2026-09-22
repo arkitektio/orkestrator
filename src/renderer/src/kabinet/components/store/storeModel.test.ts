@@ -75,6 +75,9 @@ describe("storeModel", () => {
     const apps = groupApps(releases);
     expect(apps.map((a) => a.identifier)).toEqual(["org.lab.napari-viewer", "stardist"]);
     const napari = apps[0];
+    // The App row's id, not the identifier: every store tile links to the app's
+    // model page by it, so an undefined here is a dead link on every card.
+    expect(napari.id).toBe("org.lab.napari-viewer");
     expect(napari.latest.version).toBe("2.0.0");
     expect(napari.releases).toHaveLength(2);
     expect(napari.name).toBe("Napari Viewer");
@@ -84,6 +87,19 @@ describe("storeModel", () => {
     expect(napari.definitions.map((d) => d.id)).toEqual(["d1", "d2"]);
     expect(napari.services).toEqual(["live.arkitekt.mikro"]);
     expect(napari.runningCount).toBe(1);
+  });
+
+  it("summarises a single release, which is how the release page reads one", () => {
+    // ReleasePage hands `groupApps` one release rather than a whole store, so
+    // that it can reuse the app page's panels instead of growing its own. That
+    // only holds while one release in means exactly one summary out.
+    const one = releases.filter((r) => r.version === "2.0.0");
+    const summary = groupApps(one);
+
+    expect(summary).toHaveLength(1);
+    expect(summary[0].latest).toBe(one[0]);
+    expect(summary[0].releases).toEqual(one);
+    expect(summary[0].identifier).toBe("org.lab.napari-viewer");
   });
 
   it("filters by search over actions, hardware and deployment", () => {

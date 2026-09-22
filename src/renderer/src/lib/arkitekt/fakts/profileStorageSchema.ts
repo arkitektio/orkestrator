@@ -41,6 +41,16 @@ export const ProfileIdentitySchema = z.object({
   userId: z.string().nullable(),
   /** lok organization id; null on deployments with no organization concept. */
   organizationId: z.string().nullable(),
+  /**
+   * lok hub id — the third thing a smart model is local to, after the
+   * deployment and the organization, and part of the profile's key.
+   *
+   * Written from `mycontext.hub` (`ProfileIdentitySync`). Still nullish: a
+   * client bound to no hub answers null, and every profile stored before the
+   * field existed reads `undefined` until its next `mycontext`. `matchScope`
+   * therefore goes on treating a missing hub on either side as "cannot tell".
+   */
+  hubId: z.string().nullish(),
 });
 
 export type ProfileIdentity = z.infer<typeof ProfileIdentitySchema>;
@@ -61,6 +71,10 @@ export const ProfileLabelSchema = z.object({
   username: z.string().optional(),
   organizationName: z.string().optional(),
   organizationSlug: z.string().optional(),
+  /** `hub.name` — what the switcher shows to tell two hubs of one org apart. */
+  hubName: z.string().optional(),
+  /** `hub.identifier`, the reverse-domain name; for the switch prompt's detail. */
+  hubSlug: z.string().optional(),
   /**
    * Plain numbers, so a parked row can be painted offline. Avatar URLs are
    * deliberately absent: media keys resolve against the ACTIVE connection's
@@ -126,7 +140,7 @@ export const emptyProfileBook = (): StoredProfileBook => ({
 
 // ── identity ──
 
-const normalizeBaseUrl = (baseUrl: string): string =>
+export const normalizeBaseUrl = (baseUrl: string): string =>
   baseUrl.trim().replace(/\/+$/, "").toLowerCase();
 
 /**
@@ -135,18 +149,30 @@ const normalizeBaseUrl = (baseUrl: string): string =>
  * `Hero.tsx` has keyed its dockview layouts by exactly this string since before
  * profiles existed; making the profile id the same value means a switch re-scopes
  * the dashboard for free.
+ *
+ * The HUB is a fourth component, appended only when one is known. That is not
+ * cosmetic: lok lets the same user approve the same app on the same device into
+ * two different hubs, and those are two separate OAuth clients with two separate
+ * refresh chains. Keyed without the hub they derive the same id, `reidentifyProfile`
+ * collapses them, and the first hub's refresh token is lost — still valid on the
+ * server, but held by nobody. Appending only when present keeps every id written
+ * before `Context.hub` existed byte-identical; a profile re-keys once, the first
+ * time lok names its hub.
  */
 export const buildScopeKey = (
   baseUrl: string,
   userId: string,
   orgId: string,
-): string => `${baseUrl}::${userId}::${orgId}`;
+  hubId?: string | null,
+): string =>
+  `${baseUrl}::${userId}::${orgId}${hubId ? `::${hubId}` : ""}`;
 
 export const deriveProfileId = (identity: ProfileIdentity): string =>
   buildScopeKey(
     normalizeBaseUrl(identity.baseUrl),
     identity.userId ?? "unknown",
     identity.organizationId ?? "personal",
+    identity.hubId,
   );
 
 /**
@@ -329,10 +355,24 @@ export const removeProfile = (
  * Move a profile from one id to another, once its real identity is known.
  *
  * This is how a `::pending::` id becomes `baseUrl::user::org`. If the derived id
- * already exists the two are COLLAPSED — the same organization approved twice is
- * one profile, and the newer session wins because it carries the newer refresh
- * token — which is what keeps re-approving an organization you already have from
- * appending a duplicate row.
+ * already exists the two are COLLAPSED — the same organization IN THE SAME HUB
+ * approved twice is one profile, and the newer session wins because it carries
+ * the newer refresh token, which is what keeps re-approving a login you already
+ * have from appending a duplicate row. That is also what lok does server-side:
+ * re-approving the same user, device, app and hub rotates that hub's client and
+ * ends its old chain.
+ *
+ * Two DIFFERENT hubs derive different ids and must not collapse: they are two
+ * registrations with two live refresh chains, and dropping one here would strand
+ * a credential that the server still honours.
+ *
+ * Which is why collapsing is allowed for a PROVISIONAL id only — a grant that
+ * has just happened, whose row holds nothing the server has not just reissued.
+ * An ESTABLISHED profile being re-keyed (lok answered differently than last
+ * time, e.g. with no hub on a deployment that does not fill `Context.hub`) must
+ * never land on top of another established row: that is a plain switch
+ * destroying the login you switched away from. It is updated in place instead,
+ * keeping its id and both refresh chains.
  */
 export const reidentifyProfile = (
   book: StoredProfileBook,
@@ -345,13 +385,32 @@ export const reidentifyProfile = (
     return book;
   }
 
-  const nextId = deriveProfileId(identity);
+  // A missing hub is "not answered", never "no hub any more". Deployments that
+  // do not fill `Context.hub`, and clients bound to no hub, both answer null —
+  // and re-keying a profile backwards onto the hub-less id is exactly how two
+  // hub rows would collide.
+  const nextIdentity: ProfileIdentity = {
+    ...identity,
+    hubId: identity.hubId ?? profile.identity.hubId,
+  };
+
+  const nextId = deriveProfileId(nextIdentity);
   const existing = book.profiles[nextId];
+
+  if (existing && nextId !== currentId && !isProvisionalProfileId(currentId)) {
+    // Two established rows, two live refresh chains: keep both, take the new
+    // labelling, and leave the id alone.
+    return patchProfile(book, currentId, (current) => ({
+      ...current,
+      identity: nextIdentity,
+      label: { ...current.label, ...label },
+    }));
+  }
 
   const merged: StoredProfile = {
     ...profile,
     id: nextId,
-    identity,
+    identity: nextIdentity,
     label: { ...profile.label, ...label },
     // Keep the older creation date when collapsing onto an existing row, so
     // "added on" does not jump forward every time the user re-approves.

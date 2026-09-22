@@ -1,0 +1,11 @@
+query GetApp($id: ID!) {
+  app(id: $id) {
+    ...App
+  }
+}
+
+query ListApps($filters: AppFilter, $pagination: OffsetPaginationInput) {
+  apps(filters: $filters, pagination: $pagination) {
+    ...ShelfApp
+  }
+}

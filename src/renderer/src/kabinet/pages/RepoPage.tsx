@@ -4,11 +4,13 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
 import { PageAction, PageActionGroup } from "@/components/ui/page-action";
 import { KabinetFlavour, KabinetRepo } from "@/linkers";
-import { GitBranch, Github, RefreshCw, ShieldAlert } from "lucide-react";
+import { Code2, GitBranch, Github, RefreshCw, Share2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useGetRepoQuery, useScanRepoMutation } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
 import { RepoInfoSidebar } from "../components/sidebars/RepoInfoSidebar";
+import { installBadgeMarkdown, installRepoLink } from "../repoLink";
+import { copyText } from "@/lib/universalLink";
 
 /**
  * A repository is its flavours: the body lists them and nothing else. What
@@ -27,6 +29,16 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
       .then(() => toast.success("Rescanned"))
       .catch((e: Error) => toast.error("Could not rescan: " + e.message));
 
+  // What you send a colleague: their Orkestrator opens on the install prompt
+  // for this repository, whichever Kabinet they are on. The badge is the same
+  // link dressed for a README, which is where an app repo advertises itself.
+  const copyShare = (what: "link" | "badge") => async () => {
+    const coordinates = { user: repo.user, repo: repo.repo };
+    const text = what === "link" ? installRepoLink(coordinates) : installBadgeMarkdown(coordinates);
+    if (await copyText(text)) toast.success(what === "link" ? "Install link copied" : "Badge copied", { description: text });
+    else toast.error("Could not copy it");
+  };
+
   return (
     <KabinetRepo.ModelPage
       title={repo.name}
@@ -39,6 +51,27 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
       defaultSidebar="Info"
       pageActions={
         <>
+          {/* Both hand this repo to someone else, so they go together. */}
+          <PageActionGroup>
+            <PageAction
+              collapse="icon"
+              icon={<Share2 className="h-4 w-4" />}
+              size="sm"
+              onClick={copyShare("link")}
+              title="Copy a link that prompts someone else to add this repo"
+            >
+              Copy install link
+            </PageAction>
+            <PageAction
+              collapse="icon"
+              icon={<Code2 className="h-4 w-4" />}
+              size="sm"
+              onClick={copyShare("badge")}
+              title="Copy the markdown for an 'Open in Arkitekt' README badge"
+            >
+              Copy README badge
+            </PageAction>
+          </PageActionGroup>
           <PageAction
             collapse="icon"
             icon={<RefreshCw className={"h-4 w-4" + (scanning ? " animate-spin" : "")} />}

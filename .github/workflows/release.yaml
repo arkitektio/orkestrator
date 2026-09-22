@@ -24,6 +24,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
+      # Must run before semantic-release: @semantic-release/github uploads
+      # dist/catalog/*.json as assets of the release it is about to cut.
+      - name: Export blok catalog
+        run: pnpm catalog:export
       - name: Run semantic-release
         id: semantic-release
         env:

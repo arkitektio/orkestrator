@@ -22,9 +22,8 @@ import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAppStoreQuery } from "../api/graphql";
 import { AppShelfTile, AppStoreCard, appStorePath } from "../components/store/AppStoreCard";
+import { AppIcon, appGradient } from "../components/AppIcon";
 import {
-  AppIcon,
-  appGradient,
   HardwareBadges,
   InstallMenu,
   FeaturedBadge,
@@ -100,7 +99,7 @@ const FeaturedApp = ({ app }: { app: StoreApp }) => (
       <div className="flex flex-col gap-4">
         <FeaturedBadge />
         <div className="flex items-center gap-4">
-          <AppIcon app={app} className="size-20 rounded-3xl text-2xl" />
+          <AppIcon app={app} size={80} className="size-20 rounded-3xl text-2xl" />
           <div className="min-w-0">
             <h2 className="truncate text-3xl font-bold tracking-tight">{app.name}</h2>
             <p className="truncate font-mono text-xs text-muted-foreground">
@@ -116,7 +115,7 @@ const FeaturedApp = ({ app }: { app: StoreApp }) => (
         <div className="flex items-center gap-2">
           <InstallMenu flavours={app.latest.flavours} size="lg" className="px-4" />
           <Button variant="ghost" size="lg" className="rounded-full" asChild>
-            <Link to={appStorePath(app.identifier)}>
+            <Link to={appStorePath(app)}>
               Explore <ArrowRight />
             </Link>
           </Button>

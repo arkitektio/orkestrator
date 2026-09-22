@@ -14,6 +14,7 @@ import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 
 import { hashFor, normalizeDeepLinkPath, readBootPath } from "./hashMirror";
+import { consumePendingShare } from "./pendingShare";
 import type { Action, Location } from "@remix-run/router";
 
 import type { TabHistory } from "./tabHistory";
@@ -206,11 +207,15 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   // the hash at this moment still mirrors the PREVIOUS membership's active
   // tab, and reading it as intent would open the old organization's page
   // inside the new one. A switch lands on that membership's own restored tabs.
+  //
+  // The one exception is a switch the user just confirmed at the share gate,
+  // which destroyed the `/open` tab that asked for it. That path was recorded
+  // before the switch and is consumed here — intent, not a leftover hash.
   const bootedFor = useRef(profileId);
   useEffect(() => {
     if (bootedFor.current === profileId) return;
     bootedFor.current = profileId;
-    store.set(bootTabs(profileId, null));
+    store.set(bootTabs(profileId, consumePendingShare()));
   }, [profileId, store]);
 
   // Persist, debounced: a burst of navigations in one tab should be one write.

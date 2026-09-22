@@ -6,16 +6,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { StoredProfile } from "@/lib/arkitekt/fakts/profileStorageSchema";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Check, Loader2, MoreHorizontal } from "lucide-react";
+import { AlertTriangle, Check, Loader2, LogOut, MoreHorizontal, Trash2 } from "lucide-react";
 import React from "react";
 
 import { ProfileBrandAvatar } from "./ProfileBrandAvatar";
+import { profileDetail, profileTitle } from "./profileLabels";
 
 export type ProfileRowProps = {
   profile: StoredProfile;
   active: boolean;
   switching: boolean;
+  /** Just switch: the parked credential is proven, nothing is spent. */
   onSelect: (profile: StoredProfile) => void;
+  /** Spend the credential: this account needs a new sign-in afterwards. */
+  onSignOut: (profile: StoredProfile) => void;
+  /** Forget the login on this computer entirely. */
   onRemove: (profile: StoredProfile) => void;
 };
 
@@ -31,21 +36,14 @@ export const ProfileRow = ({
   active,
   switching,
   onSelect,
+  onSignOut,
   onRemove,
 }: ProfileRowProps) => {
   const stale = profile.status === "stale";
 
-  const title =
-    profile.label.organizationName ||
-    profile.label.organizationSlug ||
-    profile.label.deploymentName ||
-    profile.identity.baseUrl;
+  const title = profileTitle(profile);
 
-  const subtitle = stale
-    ? "Session expired — sign in again"
-    : [profile.label.username, profile.label.deploymentName]
-        .filter(Boolean)
-        .join(" · ");
+  const subtitle = stale ? "Session expired — sign in again" : profileDetail(profile);
 
   return (
     <div className="flex w-full items-center justify-between gap-1 pr-1">
@@ -98,20 +96,45 @@ export const ProfileRow = ({
         >
           <MoreHorizontal className="h-3.5 w-3.5" />
         </DropdownMenuSubTrigger>
-        {/* A submenu places itself against its trigger; Radix takes no `side`/`align` here. */}
-        <DropdownMenuSubContent className="w-64">
-          <div className="px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
-            Removing forgets this login on this computer only. It stays valid on
-            the server until it expires.
-          </div>
+        {/* A submenu places itself against its trigger; Radix takes no `side`/`align` here.
+
+            The two things that are NOT a switch. Picking the row switches and
+            leaves the credential alone; these two spend it or forget it, so
+            each says what it costs — the difference is invisible in the moment
+            and expensive to get wrong. */}
+        <DropdownMenuSubContent className="w-72">
+          {!stale && (
+            <DropdownMenuItem
+              className="cursor-pointer flex-col items-start gap-0.5"
+              onSelect={(event) => {
+                event.preventDefault();
+                onSignOut(profile);
+              }}
+            >
+              <span className="flex items-center gap-2 text-xs font-medium">
+                <LogOut className="h-3.5 w-3.5" />
+                Sign out
+              </span>
+              <span className="pl-5 text-[10px] leading-relaxed text-muted-foreground">
+                Ends this session. Signing back in needs your browser.
+              </span>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
-            className="cursor-pointer text-destructive focus:text-destructive"
+            className="cursor-pointer flex-col items-start gap-0.5 text-destructive focus:text-destructive"
             onSelect={(event) => {
               event.preventDefault();
               onRemove(profile);
             }}
           >
-            Remove {title}
+            <span className="flex items-center gap-2 text-xs font-medium">
+              <Trash2 className="h-3.5 w-3.5" />
+              Remove from this computer
+            </span>
+            <span className="pl-5 text-[10px] leading-relaxed text-muted-foreground">
+              Forgets this login here. It stays valid on the server until it
+              expires.
+            </span>
           </DropdownMenuItem>
         </DropdownMenuSubContent>
       </DropdownMenuSub>

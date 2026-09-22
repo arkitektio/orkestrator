@@ -39,6 +39,24 @@ export interface ViewSlice {
    */
   captureScreenshot: (() => Promise<Blob | null>) | null;
   registerCapture: (fn: (() => Promise<Blob | null>) | null) => void;
+  /**
+   * Has the brick pipeline finished streaming everything the current view
+   * asked for — i.e. is the picture on screen the FINAL one, not a blurry
+   * half-streamed pyramid?
+   *
+   * Tri-state on purpose:
+   * - `null`  — no volumetric work has been observed at all. A mesh-only or
+   *   sparse-only scene sits here forever, so a consumer that waits for `true`
+   *   would wait forever; `null` says "there is nothing to wait for", not
+   *   "not ready yet".
+   * - `false` — the pipeline is streaming. The image WILL still change.
+   * - `true`  — the pipeline drained. This is the settled picture.
+   *
+   * Written by `BrickResidencyManager` at the two edges where it already
+   * opens and closes its time-to-sharp clock, so this costs no new bookkeeping.
+   */
+  sharp: boolean | null;
+  setSharp: (sharp: boolean | null) => void;
   /** Fit the camera so that the given layer fills the viewport */
   fitToLayer: (layerId: string) => void;
   worldUnitsPerPixel: number;
@@ -70,6 +88,8 @@ export const createViewSlice = (
   registerCanvas: (ctx) => set({ canvas: ctx }),
   captureScreenshot: null,
   registerCapture: (fn) => set({ captureScreenshot: fn }),
+  sharp: null,
+  setSharp: (sharp) => set({ sharp }),
   fitToLayer: (layerId) => {
     const { trackables, canvas } = get();
 

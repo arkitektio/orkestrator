@@ -1,5 +1,6 @@
 import { EnhancedManifest } from "../types";
 import { FaktsEndpoint } from "./endpointSchema";
+import { withGrantHint, type GrantHint } from "./grantHint";
 import { GrantResult, pollToken } from "./pollToken";
 import { popOutWindowOpen } from "./popout";
 import { deviceAuthorization } from "./start";
@@ -15,11 +16,17 @@ export const flow = async ({
   controller,
   manifest,
   expirationTime,
+  hint,
 }: {
   endpoint: FaktsEndpoint;
   controller: AbortController;
   manifest: EnhancedManifest;
   expirationTime?: number;
+  /**
+   * Who to preselect on the configure page — set when we already know whose
+   * session this grant is reviving. See `grantHint.ts`.
+   */
+  hint?: GrantHint;
 }): Promise<GrantResult> => {
   // 1. Device authorization (also dynamically registers our public client)
   const authorization = await deviceAuthorization({
@@ -29,8 +36,12 @@ export const flow = async ({
     expirationTime,
   });
 
-  // 2. Open the configure page for the human
-  const handle = await popOutWindowOpen(authorization.verification_uri_complete);
+  // 2. Open the configure page for the human, telling it which account and hub
+  //    we are coming back as when we know (a re-approval), so they are not
+  //    asked to find themselves in a list they did not expect.
+  const handle = await popOutWindowOpen(
+    withGrantHint(authorization.verification_uri_complete, hint),
+  );
 
   // 3. Poll the token endpoint until approved → tokens + instances
   try {

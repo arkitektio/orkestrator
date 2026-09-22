@@ -90,6 +90,16 @@ export interface SceneState {
    */
   preferredView: PreferredView;
   setPreferredView: (view: PreferredView) => void;
+  /**
+   * Does the scene already have a picture (`Scene.latestSnapshot`)?
+   *
+   * Held here, rather than read back off the fragment, because the auto-snapshot
+   * needs it from deep inside the viewport where the fragment is not threaded —
+   * and because it has to flip the moment a snapshot is taken, so the one-shot
+   * cannot fire twice in a session.
+   */
+  hasSnapshot: boolean;
+  markSnapshotTaken: () => void;
   spatialUnit: string;
   /**
    * The scene's coordinate-system graph (world CS, reachable systems, edges) —
@@ -220,6 +230,11 @@ export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
       setPreferredView: (view) =>
         set((state) => {
           state.preferredView = view;
+        }),
+      hasSnapshot: scene.latestSnapshot != null,
+      markSnapshotTaken: () =>
+        set((state) => {
+          state.hasSnapshot = true;
         }),
       // A pixel-grid world has NO unit on its axes (`Axis.unit` is null there
       // by contract), so everything downstream (scale bar, draw readouts)

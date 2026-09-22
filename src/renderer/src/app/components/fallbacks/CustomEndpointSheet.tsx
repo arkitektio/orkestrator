@@ -11,7 +11,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { ConnectionDoctor } from "@/app/components/doctor/ConnectionDoctor";
 import { discover } from "@/lib/arkitekt/fakts/discover";
+import { endpointToProbeTargets } from "@/lib/arkitekt/doctor/targets";
 import { AlertCircle } from "lucide-react";
 import React from "react";
 import { useForm } from "react-hook-form";
@@ -21,6 +23,9 @@ export const CustomEndpointSheet = () => {
   const [introspectError, setIntrospectError] = React.useState<string | null>(
     null,
   );
+  // Kept so the doctor probes the address that actually failed, not whatever
+  // is in the field by the time somebody clicks it.
+  const [failedUrl, setFailedUrl] = React.useState<string | null>(null);
 
   const form = useForm({
     defaultValues: {
@@ -30,6 +35,7 @@ export const CustomEndpointSheet = () => {
 
   const onSubmit = (data: { url: string }) => {
     setIntrospectError(null);
+    setFailedUrl(null);
     const controller = new AbortController();
 
     discover({ url: data.url, timeout: 2000, controller })
@@ -39,10 +45,12 @@ export const CustomEndpointSheet = () => {
           controller,
         }).catch((e) => {
           setIntrospectError(e.message);
+          setFailedUrl(data.url);
         });
       })
       .catch((e) => {
         setIntrospectError(e.message);
+        setFailedUrl(data.url);
       });
   };
 
@@ -66,6 +74,16 @@ export const CustomEndpointSheet = () => {
                 Could not connect to the server: {introspectError}
               </AlertDescription>
             </Alert>
+          )}
+          {failedUrl && (
+            <div className="rounded-md border border-border/60 p-3">
+              <ConnectionDoctor
+                context={{ kind: "discovery", endpointUrl: failedUrl }}
+                buildTargets={() => endpointToProbeTargets(failedUrl)}
+                originalError={introspectError ?? undefined}
+                subject={failedUrl}
+              />
+            </div>
           )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

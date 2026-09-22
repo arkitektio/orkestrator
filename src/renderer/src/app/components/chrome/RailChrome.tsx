@@ -1,8 +1,16 @@
 import { dragZoneDoubleClick, getChromeMode, trafficLightGutter, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight, Check, MoreHorizontal, RotateCw, Share2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Code2, Link2, Link2Off, MoreHorizontal, RotateCw, Share2 } from "lucide-react";
+
+import { Fragment } from "react";
 
 import { useActiveTabNavigation } from "@/command/tabs/useActiveTabNavigation";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +48,11 @@ type NavItem = {
   icon: React.ReactNode;
   disabled?: boolean;
   onSelect: () => void;
+  /**
+   * The other forms of this button's action, on right-click — the same thing
+   * copied differently, never a second action hidden under the first.
+   */
+  more?: { key: string; label: string; icon: React.ReactNode; onSelect: () => void }[];
 };
 
 /**
@@ -49,7 +62,8 @@ type NavItem = {
  * `HashRouter` — knows its depth. So Back and Forward are greyed at the ends
  * rather than silently doing nothing. Share copies the active tab's universal
  * link (`lib/universalLink.ts`): the one URL that opens this page from a chat
- * or an email, whatever machine it is read on.
+ * or an email — scoped to this deployment, so it cannot quietly open a
+ * different object on someone else's.
  *
  * The rail can be dragged narrow, and on macOS the traffic lights take the
  * first 78px of this row, so the buttons do not always fit. The row measures
@@ -58,7 +72,7 @@ type NavItem = {
  */
 const NavButtons = () => {
   const { back, forward, canGoBack, canGoForward, location } = useActiveTabNavigation();
-  const { copy, copied } = useCopyUniversalLink(location);
+  const { copy, copyPrivate, copyBadge, copied } = useCopyUniversalLink(location);
   const { ref, width } = useMeasuredWidth<HTMLDivElement>();
 
   const reload = () => {
@@ -76,9 +90,29 @@ const NavButtons = () => {
     {
       key: "share",
       label: "Share",
-      title: copied ? "Link copied" : "Copy a link to this page",
+      title: copied ? "Link copied" : "Copy a link to this page — right-click for the README badge",
       icon: copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Share2 className="h-3.5 w-3.5" />,
       onSelect: () => void copy(),
+      more: [
+        {
+          key: "link",
+          label: "Copy link",
+          icon: <Link2 className="h-3.5 w-3.5" />,
+          onSelect: () => void copy(),
+        },
+        {
+          key: "private",
+          label: "Copy private link",
+          icon: <Link2Off className="h-3.5 w-3.5" />,
+          onSelect: () => void copyPrivate(),
+        },
+        {
+          key: "badge",
+          label: "Copy as badge",
+          icon: <Code2 className="h-3.5 w-3.5" />,
+          onSelect: () => void copyBadge(),
+        },
+      ],
     },
   ];
 
@@ -90,19 +124,34 @@ const NavButtons = () => {
     // `min-w-0` so this can shrink below its content and report the width
     // that is actually there, instead of pushing the row wider.
     <div ref={ref} className="flex min-w-0 flex-1 items-center gap-0.5">
-      {inline.map((item) => (
-        <button
-          key={item.key}
-          type="button"
-          aria-label={item.label}
-          title={item.title}
-          className={navButtonClass}
-          disabled={item.disabled}
-          onClick={item.onSelect}
-        >
-          {item.icon}
-        </button>
-      ))}
+      {inline.map((item) => {
+        const button = (
+          <button
+            type="button"
+            aria-label={item.label}
+            title={item.title}
+            className={navButtonClass}
+            disabled={item.disabled}
+            onClick={item.onSelect}
+          >
+            {item.icon}
+          </button>
+        );
+        if (!item.more) return <Fragment key={item.key}>{button}</Fragment>;
+        return (
+          <ContextMenu key={item.key}>
+            <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
+            <ContextMenuContent className="min-w-40">
+              {item.more.map((entry) => (
+                <ContextMenuItem key={entry.key} onSelect={entry.onSelect}>
+                  {entry.icon}
+                  {entry.label}
+                </ContextMenuItem>
+              ))}
+            </ContextMenuContent>
+          </ContextMenu>
+        );
+      })}
       {overflow.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -112,10 +161,22 @@ const NavButtons = () => {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-36">
             {overflow.map((item) => (
-              <DropdownMenuItem key={item.key} disabled={item.disabled} onSelect={item.onSelect}>
-                {item.icon}
-                {item.title ?? item.label}
-              </DropdownMenuItem>
+              <Fragment key={item.key}>
+                <DropdownMenuItem disabled={item.disabled} onSelect={item.onSelect}>
+                  {item.icon}
+                  {item.title ?? item.label}
+                </DropdownMenuItem>
+                {/* A menu row has no right-click, so the other forms get rows
+                    of their own once the button is folded away. */}
+                {item.more
+                  ?.filter((entry) => entry.key !== "link")
+                  .map((entry) => (
+                    <DropdownMenuItem key={entry.key} onSelect={entry.onSelect}>
+                      {entry.icon}
+                      {entry.label}
+                    </DropdownMenuItem>
+                  ))}
+              </Fragment>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>

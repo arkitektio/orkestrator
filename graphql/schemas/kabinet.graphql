@@ -251,10 +251,35 @@ scalar AnyDefault
 An application, identified by a globally unique, reverse-domain identifier (e.g. live.arkitekt.app).
 """
 type App {
+  """
+  This app's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
+  """
+  embedding: Embedding
   id: ID!
 
   """The globally unique, reverse-domain identifier of the app."""
   identifier: String!
+
+  """
+  The versions of this app. Filter, order and paginate them exactly like the root `releases` query -- an app page reads them from here instead of fetching every release and grouping client-side. There is no implicit ordering; ask for `releasedAt` to get them newest first.
+  """
+  releases(filters: ReleaseFilter, ordering: [ReleaseOrder!]! = [], pagination: OffsetPaginationInput): [Release!]!
+}
+
+"""Filter for apps."""
+input AppFilter {
+  AND: AppFilter
+  DISTINCT: Boolean
+  NOT: AppFilter
+  OR: AppFilter
+
+  """Keep only apps whose ID is in this list."""
+  ids: [ID!]
+
+  """
+  Search by identifier: a case-insensitive substring, or semantic similarity of the query to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
+  search: String
 }
 
 """
@@ -267,6 +292,11 @@ input AppImageInput {
   inspection: InspectionInput!
   manifest: ManifestInput!
   selectors: [SelectorInput!]!
+}
+
+input AppOrder @oneOf {
+  id: Ordering
+  identifier: Ordering
 }
 
 """The `Arg` scalar type represents a an Argument in a Action assignment"""
@@ -1046,6 +1076,11 @@ type Definition {
   """A human-readable description of this action."""
   description: String
 
+  """
+  This definition's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
+  """
+  embedding: Embedding
+
   """The flavours that provide this action."""
   flavours(filters: FlavourFilter, ordering: [FlavourOrder!]! = [], pagination: OffsetPaginationInput): [Flavour!]!
 
@@ -1071,6 +1106,11 @@ type Definition {
   """The data scope of this action (e.g. local, global or bridge)."""
   scope: ActionScope!
 
+  """
+  Other action definitions closest to this one in meaning, nearest first (cosine distance between their vectors, this definition excluded) -- the same action shipped under two names, or the neighbourhood a definition belongs to. `filters` narrows the candidates like `definitions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back however far away they are. Empty while this definition has no vector yet or semantic indexing is off. One vector scan per definition resolved, so ask for it on a definition, not on every row of a long list.
+  """
+  similarDefinitions(filters: DefinitionFilter = null, limit: Int! = 10, maxDistance: Float = null): [Definition!]!
+
   """The action definitions that act as tests for this definition."""
   tests(filters: DefinitionFilter, ordering: [DefinitionOrder!]! = [], pagination: OffsetPaginationInput): [Definition!]!
 }
@@ -1082,16 +1122,64 @@ input DefinitionFilter {
   NOT: DefinitionFilter
   OR: DefinitionFilter
 
+  """Keep only definitions provided by these apps."""
+  apps: [ID!]
+
+  """Keep only definitions in these collections."""
+  collections: [ID!]
+
+  """Keep only definitions first defined at or after this moment."""
+  definedAfter: DateTime
+
+  """Keep only definitions first defined at or before this moment."""
+  definedBefore: DateTime
+
   """Keep only definitions whose ports satisfy all of the given demands."""
   demands: [PortDemandInput!]
+
+  """Keep only definitions provided by these flavours."""
+  flavours: [ID!]
+
+  """
+  Keep only definitions that have at least one test, or only those that have none.
+  """
+  hasTests: Boolean
+
+  """Keep only idempotent definitions, or only non-idempotent ones."""
+  idempotent: Boolean
 
   """Keep only definitions whose ID is in this list."""
   ids: [ID!]
 
+  """Keep only definitions that declare all of these interfaces."""
+  interfaces: [String!]
+
+  """Keep only definitions that are tests for these definitions."""
+  isTestFor: [ID!]
+
+  """Keep only definitions of these kinds (function, generator, ...)."""
+  kinds: [ActionKind!]
+
+  """Keep only definitions implementing these protocols."""
+  protocols: [ID!]
+
   """
-  Search by name: a case-insensitive substring, or semantic similarity of the query to the definition's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  Keep only pure definitions (their result can be cached), or only impure ones.
+  """
+  pure: Boolean
+
+  """Keep only definitions with one of these data scopes."""
+  scopes: [ActionScope!]
+
+  """
+  Search by text: a case-insensitive substring of the name or the description, or semantic similarity of the query to both. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
   """
   search: String
+
+  """
+  Order by closeness in meaning to the given definition, nearest first, keeping only definitions that can be compared to it (the same grouping as `Definition.similar`). Nothing is cut off at a fixed neighbourhood size, so this composes with the other filters and with pagination; an explicit `ordering` replaces the ranking. Empty when the given definition cannot be found in this organization, or has not been indexed for similarity yet. Combined with `search` it ranks that search's matches by closeness instead -- the two rankings do not stack.
+  """
+  similarTo: ID
 }
 
 "A definition\n\n    Definitions are the building implementation for Actions and provide the\n    information needed to create a action. They are primarly composed of a name,\n    a description, and a list of ports.\n\n    Definitions provide a protocol of input and output, and do not contain\n    any information about the actual implementation of the action ( this is handled\n    by a implementation that implements a action).\n\n    "
@@ -1175,8 +1263,11 @@ input DefinitionInput {
   version: String!
 }
 
+"""Order for action definitions."""
 input DefinitionOrder @oneOf {
   definedAt: Ordering
+  kind: Ordering
+  name: Ordering
 }
 
 """Input for deleting a pod."""
@@ -1371,6 +1462,11 @@ enum EffectKind {
 }
 
 """
+A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it).
+"""
+scalar Embedding
+
+"""
 A buildable variant of a release: a specific Docker image together with the selectors and requirements needed to run it.
 """
 type Flavour {
@@ -1384,12 +1480,17 @@ type Flavour {
 
   """The deployments that run this flavour."""
   deployments(filters: DeploymentFilter, ordering: [DeploymentOrder!]! = [], pagination: OffsetPaginationInput): [Deployment!]!
+
+  """
+  This flavour's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
+  """
+  embedding: Embedding
   id: ID!
 
   """The Docker image this flavour deploys."""
   image: DockerImage!
 
-  """The stored logo of this flavour."""
+  """The stored logo of this flavour, which is its release's."""
   logo: String
 
   """The raw app manifest this flavour was built from."""
@@ -1398,7 +1499,9 @@ type Flavour {
   """The name of this flavour (e.g. 'vanilla', 'cuda')."""
   name: String!
 
-  """The original (upstream) logo URL of this flavour."""
+  """
+  The original (upstream) logo URL of this flavour, which is its release's.
+  """
   originalLogo: String
 
   """The release this flavour belongs to."""
@@ -1431,7 +1534,9 @@ input FlavourFilter {
   """Keep only flavours whose ID is in this list."""
   ids: [ID!]
 
-  """Case-insensitive search on the flavour name."""
+  """
+  Search by name: a case-insensitive substring, or semantic similarity of the query to the flavour's name and the app it was built from. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
   search: String
 }
 
@@ -1448,6 +1553,11 @@ type GithubRepo {
 
   """The branch that is scanned for app manifests."""
   branch: String!
+
+  """
+  This repository's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
+  """
+  embedding: Embedding
 
   """The flavours discovered by scanning this repository."""
   flavours(filters: FlavourFilter, ordering: [FlavourOrder!]! = [], pagination: OffsetPaginationInput): [Flavour!]!
@@ -1496,7 +1606,9 @@ input GithubRepoFilter {
   """Case-insensitive match on the GitHub repository name."""
   repo: String
 
-  """Case-insensitive search on the repository name."""
+  """
+  Search by name: a case-insensitive substring, or semantic similarity of the query to the repository's name. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
   search: String
 
   """Case-insensitive match on the GitHub owner."""
@@ -2180,6 +2292,12 @@ input QualifierInput {
 }
 
 type Query {
+  """Return a single app by its ID."""
+  app(id: ID!): App!
+
+  """List all apps visible to the current organization."""
+  apps(filters: AppFilter, ordering: [AppOrder!]! = [], pagination: OffsetPaginationInput): [App!]!
+
   """Return a single backend by its ID."""
   backend(id: ID!): Backend!
 
@@ -2297,7 +2415,9 @@ type Release {
   flavours(filters: FlavourFilter, ordering: [FlavourOrder!]! = [], pagination: OffsetPaginationInput): [Flavour!]!
   id: ID!
 
-  """The stored logo of this release."""
+  """
+  The stored logo of this release: the path of the ingested media, or null while none has been ingested.
+  """
   logo: String
 
   """The display name of this release, in the form 'identifier:version'."""
@@ -2319,6 +2439,17 @@ input ReleaseFilter {
   DISTINCT: Boolean
   NOT: ReleaseFilter
   OR: ReleaseFilter
+
+  """Keep only the releases of this app."""
+  app: ID
+
+  """Keep only the releases of these apps."""
+  apps: [ID!]
+
+  """
+  Keep only releases whose app identifier contains this text, case-insensitively.
+  """
+  identifier: String
 
   """Keep only releases whose ID is in this list."""
   ids: [ID!]

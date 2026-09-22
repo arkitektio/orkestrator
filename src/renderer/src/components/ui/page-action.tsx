@@ -62,6 +62,26 @@ export type PageActionProps = ButtonProps &
   };
 
 /**
+ * Merges an action's icon into the element `asChild` hands the Button.
+ *
+ * With `asChild` the Button renders a `Slot`, which takes exactly one element
+ * child -- the icon cannot sit beside it, so it has to move inside it. A
+ * `label` of `null` empties the child, which is how the icon-only form keeps
+ * the link and drops its words.
+ */
+const mergeIntoChild = (
+  children: React.ReactNode,
+  icon: React.ReactNode,
+  label?: React.ReactNode,
+) => {
+  const child = React.Children.only(children) as React.ReactElement<{
+    children?: React.ReactNode;
+  }>;
+  const inner = label === undefined ? child.props.children : label;
+  return React.cloneElement(child, undefined, icon, inner);
+};
+
+/**
  * A page-chrome action: a `Button` that also knows what to give up when the
  * action row is short of space.
  *
@@ -81,6 +101,7 @@ export const PageAction = ({
   menuLabel,
   children,
   className,
+  asChild,
   variant = "outline",
   size = "default",
   ...props
@@ -95,13 +116,16 @@ export const PageAction = ({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            asChild={asChild}
             variant={variant}
             size="icon"
             aria-label={props["aria-label"] ?? (typeof label === "string" ? label : undefined)}
             className={className}
             {...props}
           >
-            {icon ?? children}
+            {asChild
+              ? mergeIntoChild(children, icon, icon ? null : undefined)
+              : (icon ?? children)}
           </Button>
         </TooltipTrigger>
         <TooltipContent>{label}</TooltipContent>
@@ -111,17 +135,35 @@ export const PageAction = ({
 
   if (mode === "menu") {
     return (
-      <Button variant="ghost" size={size} className={cn(MENU_CLASS, className)} {...props}>
-        {icon}
-        {label}
+      <Button
+        asChild={asChild}
+        variant="ghost"
+        size={size}
+        className={cn(MENU_CLASS, className)}
+        {...props}
+      >
+        {asChild ? (
+          mergeIntoChild(children, icon, menuLabel)
+        ) : (
+          <>
+            {icon}
+            {label}
+          </>
+        )}
       </Button>
     );
   }
 
   return (
-    <Button variant={variant} size={size} className={className} {...props}>
-      {icon}
-      {children}
+    <Button asChild={asChild} variant={variant} size={size} className={className} {...props}>
+      {asChild ? (
+        mergeIntoChild(children, icon)
+      ) : (
+        <>
+          {icon}
+          {children}
+        </>
+      )}
     </Button>
   );
 };

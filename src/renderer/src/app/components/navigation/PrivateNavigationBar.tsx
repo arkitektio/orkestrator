@@ -1,14 +1,5 @@
 import { Arkitekt, Guard, moduleRegistry } from "@/app/Arkitekt";
-import { Button } from "@/components/ui/button";
 import { DroppableNavLink } from "@/components/ui/link";
-import {
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ContextMenu,
@@ -40,6 +31,7 @@ import { LocalActionIsland } from "@/app/components/rail/LocalActionIsland";
 import { RailIslandStack } from "@/app/components/rail/RailIsland";
 import { UpdateIsland } from "@/app/updates/UpdateIsland";
 import { VoiceIsland } from "@/voice";
+import { useSettings } from "@/providers/settings/SettingsContext";
 
 
 export type INavigationBarProps = {
@@ -191,9 +183,18 @@ const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
   }
 
   const icon = matchIcon(moduleKey);
-  const isInteractive = moduleState.status === "ready" || moduleState.status === "checking";
   const isChecking = moduleState.status === "checking";
   const isInvalid = moduleState.status === "invalid";
+  /**
+   * Every module the rail shows is navigable, including a broken one.
+   *
+   * A tile that cannot be clicked is a dead end: the page behind it is the
+   * one place that explains WHICH service is down, what address it tried, and
+   * offers the retry and the connection doctor. Refusing to open it hides the
+   * only screen that helps. It still greys out, so the rail reads the same at
+   * a glance — it just no longer withholds the explanation.
+   */
+  const isInteractive = moduleState.status !== "hidden";
 
   const buttonContent = (
     <div className={cn("flex items-center justify-center", isInvalid && "opacity-35 grayscale")}>
@@ -276,77 +277,17 @@ const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
     );
   }
 
-  return (
-    <ContextMenu key={moduleKey}>
-      <Popover>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ContextMenuTrigger asChild>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(tileClass(false), "outline-none focus-visible:ring-2 focus-visible:ring-ring/30")}
-                  disabled={!isInteractive}
-                >
-                  {buttonContent}
-                </button>
-              </PopoverTrigger>
-            </ContextMenuTrigger>
-          </TooltipTrigger>
-        <TooltipContent side="right">
-          {moduleState.definition.label || moduleState.key}
-        </TooltipContent>
-      </Tooltip>
-      <PopoverContent side="right">
-        <PopoverHeader>
-          <PopoverTitle>{moduleState.definition.label || moduleState.key}</PopoverTitle>
-          <PopoverDescription>
-            This module is configured, but one or more required services are currently invalid.
-          </PopoverDescription>
-        </PopoverHeader>
-        <div className="space-y-2">
-          {moduleState.errors.map((error) => (
-            <div key={error} className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
-              {error}
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2 pt-1">
-          <Button
-            size="sm"
-            className="flex-1"
-            onClick={() => {
-              void retryModule(moduleKey);
-            }}
-          >
-            <RefreshCw className="mr-2 h-3 w-3" />
-            Retry
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-    <ContextMenuContent className="w-auto">
-      <ContextMenuLabel>{moduleState.definition.label || moduleState.key}</ContextMenuLabel>
-      <ContextMenuSeparator />
-      <ServiceConnectionInfo moduleKey={moduleKey} />
-      <ContextMenuSeparator />
-      <ContextMenuItem
-        onClick={() => {
-          void retryModule(moduleKey);
-        }}
-      >
-        <RefreshCw className="mr-2 h-3 w-3" />
-        Retry Connection
-      </ContextMenuItem>
-    </ContextMenuContent>
-  </ContextMenu>
-  );
+  // Unreachable in practice: the rail is built from `useAvailableModuleKeys`,
+  // which already drops the hidden ones. Kept as an explicit floor rather
+  // than a disabled tile, because a tile nobody can open has no job here.
+  return null;
 };
 
 const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
   // Keys, not module objects. Both of these are string lists compared
   // shallowly, so they hold their identity across a service health tick and the
   // grid redraws only when a module actually appears or becomes ready.
+  const { settings } = useSettings();
   const availableKeys = Arkitekt.useAvailableModuleKeys();
   const readyModules = Arkitekt.useReadyModuleKeys();
   const moduleOrder = Object.keys(moduleRegistry).filter((key) => availableKeys.includes(key));
@@ -419,7 +360,10 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
         <VoiceIsland />
         <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
           <AgentIsland />
-          <TaskNotificationStack />
+          {/* An experiment (Settings → General): gated from OUT here, not
+              inside the stack — the island runs the task query on mount, so
+              switching it off has to keep it from mounting at all. */}
+          {settings.experimentTaskIsland !== false && <TaskNotificationStack />}
         </Guard.Rekuest>
         <LocalActionIsland />
         <DownloadIsland />

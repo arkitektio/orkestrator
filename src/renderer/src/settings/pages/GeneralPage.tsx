@@ -100,18 +100,26 @@ export const GeneralPage = () => (
             <FlaskConical className="w-5 h-5" />
             Experiments
           </CardTitle>
-          <CardDescription>Features that are not finished. They may misbehave.</CardDescription>
+          <CardDescription>
+            Recent work, on by default. Switch one off if it misbehaves — the app falls back to
+            how it worked before that feature landed.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <SwitchField
-            name="experimentalViv"
-            label="Experimental Viv"
-            description="Enable experimental visualization features"
+            name="experimentMenuPrefetch"
+            label="Menu prefetching"
+            description="Load the right-click menu's actions and shortcuts while you hover, so it opens filled instead of empty"
           />
           <SwitchField
-            name="experimentalCache"
-            label="Experimental cache mode"
-            description="Cache image layers for better performance"
+            name="experimentAnnotationHover"
+            label="Annotation hover button"
+            description="Pin an action button to the annotation under the pointer in a scene"
+          />
+          <SwitchField
+            name="experimentTaskIsland"
+            label="Live tasks in the sidebar"
+            description="Show running tasks as rows at the bottom of the rail, not only on their own page"
           />
         </CardContent>
       </Card>

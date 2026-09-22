@@ -65,6 +65,9 @@ fragment StoreRelease on Release {
   app {
     id
     identifier
+    # Drives the generated mark an app without a logo falls back to: the
+    # nearest symbol word gives its shape, the nearest topic its colour.
+    embedding
   }
   flavours {
     ...StoreFlavour

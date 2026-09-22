@@ -103,6 +103,16 @@ export function isCameraMoving(
  */
 let pointerInteracting = false;
 let wheelHoldUntil = Number.NEGATIVE_INFINITY;
+/**
+ * How many times the user has taken hold of the camera, ever.
+ *
+ * `isInteracting` answers "is a gesture happening RIGHT NOW", which cannot
+ * answer "has this view been touched at all" — the question the auto-snapshot
+ * asks to decide whether it is still looking at the default fit-to-scene rig.
+ * A monotonic count answers it without any per-scene bookkeeping: mark it at
+ * mount, compare later.
+ */
+let interactionCount = 0;
 
 /**
  * How long after the last wheel event the camera still counts as being
@@ -115,6 +125,7 @@ export const WHEEL_INTERACTION_HOLD_MS = 250;
 export const cameraInteraction = {
   begin(): void {
     pointerInteracting = true;
+    interactionCount += 1;
   },
   end(): void {
     pointerInteracting = false;
@@ -122,6 +133,7 @@ export const cameraInteraction = {
   /** A wheel event landed at `nowMs`: (re)arm the hold. */
   wheel(nowMs: number): void {
     wheelHoldUntil = nowMs + WHEEL_INTERACTION_HOLD_MS;
+    interactionCount += 1;
   },
   isInteracting(nowMs: number): boolean {
     return pointerInteracting || nowMs < wheelHoldUntil;
@@ -130,7 +142,21 @@ export const cameraInteraction = {
   holdRemainingMs(nowMs: number): number {
     return Math.max(0, wheelHoldUntil - nowMs);
   },
-  /** Tests and teardown: controls that unmount mid-drag never fire `onEnd`. */
+  /**
+   * A count of gestures so far, only ever increasing. Compare a mark taken
+   * earlier against a later read: different means the camera was driven in
+   * between.
+   */
+  count(): number {
+    return interactionCount;
+  },
+  /**
+   * Tests and teardown: controls that unmount mid-drag never fire `onEnd`.
+   *
+   * Clears the IN-PROGRESS flags only. `interactionCount` is history, not
+   * state, and zeroing it here would let a display-mode switch (which calls
+   * this) read back as "nobody ever touched the camera".
+   */
   reset(): void {
     pointerInteracting = false;
     wheelHoldUntil = Number.NEGATIVE_INFINITY;

@@ -1,9 +1,11 @@
 import { Arkitekt } from "@/app/Arkitekt";
-import ProfileSwitcher, { AddProfileActions } from "@/app/components/profile/ProfileSwitcher";
+import ProfileSwitcher from "@/app/components/profile/ProfileSwitcher";
+import { profileDetail, profileTitle } from "@/app/components/profile/profileLabels";
 import { ProfileBrandAvatar } from "@/app/components/profile/ProfileBrandAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -11,7 +13,10 @@ import {
 import { DroppableNavLink } from "@/components/ui/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { ChevronsUpDown, Settings } from "lucide-react";
+import { ChevronsUpDown, Settings, UsersRound } from "lucide-react";
+import React from "react";
+
+import { useRailSwitcherRequests } from "./railSwitcher";
 
 /**
  * The foot of the rail: which organization you are in, and a way out of it.
@@ -26,18 +31,37 @@ import { ChevronsUpDown, Settings } from "lucide-react";
  */
 export const RailFooter = () => {
   const activeProfile = Arkitekt.useActiveProfile();
+  // The launch path: the window is already open on this account, its token is
+  // still being proven. The only sign the app gives that anything is pending —
+  // there is no splash, no page skeleton and no island for it.
+  const autoLoggingIn = Arkitekt.useIsAutoLoggingIn();
+  const parkSession = Arkitekt.useDisconnect();
 
-  const organization =
-    activeProfile?.label.organizationName ||
-    activeProfile?.label.deploymentName ||
-    "Not signed in";
-  const account = activeProfile?.label.username;
+  // Controlled so other surfaces can point the user here — Settings → Account
+  // has a "Switch account" button rather than a second copy of the list.
+  const [open, setOpen] = React.useState(false);
+  const requests = useRailSwitcherRequests();
+  const seen = React.useRef(requests);
+  React.useEffect(() => {
+    if (seen.current === requests) return;
+    seen.current = requests;
+    setOpen(true);
+  }, [requests]);
+
+  // The same pair the switcher's rows draw: the hub leads, because that is what
+  // is being chosen between, and what places it follows in muted text.
+  const name = activeProfile ? profileTitle(activeProfile) : "Not signed in";
+  const detail = autoLoggingIn
+    ? "Signing in…"
+    : activeProfile
+      ? profileDetail(activeProfile)
+      : undefined;
 
   return (
     // `app-no-drag`: the rail around it is a window-drag region, which would
     // otherwise swallow every click on the switcher and the settings link.
     <div className="app-no-drag flex w-full min-w-0 shrink-0 items-center gap-1 px-2 pb-2">
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger
           className={cn(
             "group flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1.5 py-1.5 text-left",
@@ -45,17 +69,36 @@ export const RailFooter = () => {
           )}
         >
           {activeProfile ? (
-            <ProfileBrandAvatar profile={activeProfile} className="h-6 w-6 text-[9px]" />
+            // The ring spins around the real avatar rather than replacing it:
+            // the account is known from the cached label, only its session is
+            // pending, and swapping in a spinner would hide what we do know.
+            <span className="relative shrink-0">
+              <ProfileBrandAvatar profile={activeProfile} className="h-6 w-6 text-[9px]" />
+              {autoLoggingIn && (
+                <span
+                  data-testid="rail-footer-signing-in"
+                  aria-hidden
+                  className="absolute -inset-0.5 animate-spin rounded-lg border border-transparent border-t-primary"
+                />
+              )}
+            </span>
           ) : (
             <div className="h-6 w-6 shrink-0 rounded-md border border-dashed" />
           )}
 
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
             <span className="truncate text-xs font-medium text-foreground">
-              {organization}
+              {name}
             </span>
-            {account && (
-              <span className="truncate text-[10px] text-muted-foreground">{account}</span>
+            {detail && (
+              <span
+                className={cn(
+                  "truncate text-[10px] text-muted-foreground",
+                  autoLoggingIn && "animate-pulse",
+                )}
+              >
+                {detail}
+              </span>
             )}
           </span>
 
@@ -63,17 +106,29 @@ export const RailFooter = () => {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent side="top" align="start" className="w-64 border-border">
-          {/* The menu's title bar: what the list is, and — at its right — the
-              two ways to add to it. */}
-          <DropdownMenuLabel className="flex items-center justify-between gap-2 py-1 pr-1 text-xs font-normal text-muted-foreground">
-            <span>Switch organization</span>
-            <AddProfileActions />
+          <DropdownMenuLabel className="py-1 text-xs font-normal text-muted-foreground">
+            Switch organization
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
 
-          {/* Only organizations here: signing out, debug mode and configuration
-              issues live in Settings. */}
+          {/* Only organizations here: switching is the menu's whole job. */}
           <ProfileSwitcher />
+
+          <DropdownMenuSeparator />
+
+          {/* Adding an account hands off to an external browser for up to a
+              minute, which a menu that closes on every click cannot host — so
+              there is no "add" in here and no dialog reimplementing the sign-in
+              screen. This parks the session instead: nothing is signed out, the
+              credential is untouched, and the real sign-in screen comes back
+              with every stored account on it. */}
+          <DropdownMenuItem
+            className="cursor-pointer gap-2 text-xs text-muted-foreground focus:text-foreground"
+            onSelect={() => void parkSession()}
+          >
+            <UsersRound className="h-3.5 w-3.5" />
+            Manage accounts…
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

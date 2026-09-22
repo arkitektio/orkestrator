@@ -35,6 +35,12 @@ describe("ChromeSurface", () => {
     expect(page.classList.contains(CHROME_ZOOM_CLASS)).toBe(false);
     // On the content, never on Radix's popper wrapper.
     expect(rail.parentElement?.classList.contains(CHROME_ZOOM_CLASS)).toBe(false);
+
+    // And it opts out of the window-drag region it is painted over: Electron
+    // hit-tests drag regions in the OS, beneath z-index, so a menu opened from
+    // the rail without this loses every click that lands on the rail.
+    expect(rail.classList.contains("app-no-drag")).toBe(true);
+    expect(page.classList.contains("app-no-drag")).toBe(false);
   });
 
   it("reaches a tooltip too", () => {

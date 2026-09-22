@@ -87,6 +87,21 @@ describe("cameraInteraction", () => {
     expect(cameraInteraction.isInteracting(0)).toBe(false);
   });
 
+  it("counts gestures monotonically, and reset does NOT clear the count", () => {
+    // `isInteracting` answers "right now"; the auto-snapshot needs "has this
+    // view been touched at all", which it gets by marking the count at mount
+    // and comparing later. `reset()` fires on a 2D<->3D switch, so zeroing the
+    // count there would make a driven camera read as untouched.
+    const start = cameraInteraction.count();
+    cameraInteraction.begin();
+    cameraInteraction.end();
+    expect(cameraInteraction.count()).toBe(start + 1);
+    cameraInteraction.wheel(0);
+    expect(cameraInteraction.count()).toBe(start + 2);
+    cameraInteraction.reset();
+    expect(cameraInteraction.count()).toBe(start + 2);
+  });
+
   it("reset clears a gesture that never ended", () => {
     // Controls unmounting mid-drag (a 2D↔3D switch) never fire `onEnd`; a
     // stuck true would pin the scene at half resolution forever.

@@ -609,7 +609,9 @@ export const saveTabs = (
  *
  * A membership SWITCH passes `null`: at that moment the hash still mirrors the
  * previous membership's tab, which is not intent, and must not be re-opened
- * inside the new organization.
+ * inside the new organization. The exception is a switch confirmed at the share
+ * gate, which passes the path the user asked for — recorded before the switch
+ * precisely because the hash cannot be trusted across one.
  */
 export const bootTabs = (
   profileId: string | null,

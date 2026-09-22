@@ -18,6 +18,11 @@ fragment Context on Context {
       }
     }
   }
+  hub {
+    id
+    name
+    identifier
+  }
   roles
   scope
 }

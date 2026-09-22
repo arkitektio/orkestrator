@@ -24,6 +24,8 @@ export type Scalars = {
   Arg: { input: any; output: any; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
+  /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it). */
+  Embedding: { input: any; output: any; }
   /** The `Identifier` scalar is a structure identifier of the form `@package/key` (e.g. `@mikro/image`) that types STRUCTURE, MEMORY_STRUCTURE and INTERFACE ports */
   Identifier: { input: any; output: any; }
   /** The `JSONSerializable` scalar type represents a JSON-serializable value. */
@@ -185,9 +187,33 @@ export type AgentProbeInput = {
 /** An application, identified by a globally unique, reverse-domain identifier (e.g. live.arkitekt.app). */
 export type App = {
   __typename?: 'App';
+  /** This app's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
+  embedding?: Maybe<Scalars['Embedding']['output']>;
   id: Scalars['ID']['output'];
   /** The globally unique, reverse-domain identifier of the app. */
   identifier: Scalars['String']['output'];
+  /** The versions of this app. Filter, order and paginate them exactly like the root `releases` query -- an app page reads them from here instead of fetching every release and grouping client-side. There is no implicit ordering; ask for `releasedAt` to get them newest first. */
+  releases: Array<Release>;
+};
+
+
+/** An application, identified by a globally unique, reverse-domain identifier (e.g. live.arkitekt.app). */
+export type AppReleasesArgs = {
+  filters?: InputMaybe<ReleaseFilter>;
+  ordering?: Array<ReleaseOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** Filter for apps. */
+export type AppFilter = {
+  AND?: InputMaybe<AppFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<AppFilter>;
+  OR?: InputMaybe<AppFilter>;
+  /** Keep only apps whose ID is in this list. */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Search by identifier: a case-insensitive substring, or semantic similarity of the query to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input describing a built app image to register (its manifest, image, selectors and inspection). */
@@ -199,6 +225,10 @@ export type AppImageInput = {
   manifest: ManifestInput;
   selectors: Array<SelectorInput>;
 };
+
+export type AppOrder =
+  { id: Ordering; identifier?: never; }
+  |  { id?: never; identifier: Ordering; };
 
 export type ArgPort = {
   __typename?: 'ArgPort';
@@ -763,6 +793,8 @@ export type Definition = {
   definedAt: Scalars['DateTime']['output'];
   /** A human-readable description of this action. */
   description?: Maybe<Scalars['String']['output']>;
+  /** This definition's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
+  embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The flavours that provide this action. */
   flavours: Array<Flavour>;
   /** The unique hash identifying this action definition. */
@@ -780,6 +812,8 @@ export type Definition = {
   returns: Array<ReturnPort>;
   /** The data scope of this action (e.g. local, global or bridge). */
   scope: ActionScope;
+  /** Other action definitions closest to this one in meaning, nearest first (cosine distance between their vectors, this definition excluded) -- the same action shipped under two names, or the neighbourhood a definition belongs to. `filters` narrows the candidates like `definitions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back however far away they are. Empty while this definition has no vector yet or semantic indexing is off. One vector scan per definition resolved, so ask for it on a definition, not on every row of a long list. */
+  similarDefinitions: Array<Definition>;
   /** The action definitions that act as tests for this definition. */
   tests: Array<Definition>;
 };
@@ -818,6 +852,14 @@ export type DefinitionProtocolsArgs = {
 
 
 /** An action definition: the abstract, hashed description of an RPC task that a flavour provides. */
+export type DefinitionSimilarDefinitionsArgs = {
+  filters?: InputMaybe<DefinitionFilter>;
+  limit?: Scalars['Int']['input'];
+  maxDistance?: InputMaybe<Scalars['Float']['input']>;
+};
+
+
+/** An action definition: the abstract, hashed description of an RPC task that a flavour provides. */
 export type DefinitionTestsArgs = {
   filters?: InputMaybe<DefinitionFilter>;
   ordering?: Array<DefinitionOrder>;
@@ -830,12 +872,40 @@ export type DefinitionFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<DefinitionFilter>;
   OR?: InputMaybe<DefinitionFilter>;
+  /** Keep only definitions provided by these apps. */
+  apps?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep only definitions in these collections. */
+  collections?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep only definitions first defined at or after this moment. */
+  definedAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Keep only definitions first defined at or before this moment. */
+  definedBefore?: InputMaybe<Scalars['DateTime']['input']>;
   /** Keep only definitions whose ports satisfy all of the given demands. */
   demands?: InputMaybe<Array<PortDemandInput>>;
+  /** Keep only definitions provided by these flavours. */
+  flavours?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep only definitions that have at least one test, or only those that have none. */
+  hasTests?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Keep only idempotent definitions, or only non-idempotent ones. */
+  idempotent?: InputMaybe<Scalars['Boolean']['input']>;
   /** Keep only definitions whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Search by name: a case-insensitive substring, or semantic similarity of the query to the definition's name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
+  /** Keep only definitions that declare all of these interfaces. */
+  interfaces?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Keep only definitions that are tests for these definitions. */
+  isTestFor?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep only definitions of these kinds (function, generator, ...). */
+  kinds?: InputMaybe<Array<ActionKind>>;
+  /** Keep only definitions implementing these protocols. */
+  protocols?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep only pure definitions (their result can be cached), or only impure ones. */
+  pure?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Keep only definitions with one of these data scopes. */
+  scopes?: InputMaybe<Array<ActionScope>>;
+  /** Search by text: a case-insensitive substring of the name or the description, or semantic similarity of the query to both. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
+  /** Order by closeness in meaning to the given definition, nearest first, keeping only definitions that can be compared to it (the same grouping as `Definition.similar`). Nothing is cut off at a fixed neighbourhood size, so this composes with the other filters and with pagination; an explicit `ordering` replaces the ranking. Empty when the given definition cannot be found in this organization, or has not been indexed for similarity yet. Combined with `search` it ranks that search's matches by closeness instead -- the two rankings do not stack. */
+  similarTo?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /**
@@ -886,8 +956,11 @@ export type DefinitionInput = {
   version: Scalars['String']['input'];
 };
 
+/** Order for action definitions. */
 export type DefinitionOrder =
-  { definedAt: Ordering; };
+  { definedAt: Ordering; kind?: never; name?: never; }
+  |  { definedAt?: never; kind: Ordering; name?: never; }
+  |  { definedAt?: never; kind?: never; name: Ordering; };
 
 /** Input for deleting a pod. */
 export type DeletePodInput = {
@@ -1058,16 +1131,18 @@ export type Flavour = {
   definitions: Array<Definition>;
   /** The deployments that run this flavour. */
   deployments: Array<Deployment>;
+  /** This flavour's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
+  embedding?: Maybe<Scalars['Embedding']['output']>;
   id: Scalars['ID']['output'];
   /** The Docker image this flavour deploys. */
   image: DockerImage;
-  /** The stored logo of this flavour. */
+  /** The stored logo of this flavour, which is its release's. */
   logo?: Maybe<Scalars['String']['output']>;
   /** The raw app manifest this flavour was built from. */
   manifest: Scalars['UntypedParams']['output'];
   /** The name of this flavour (e.g. 'vanilla', 'cuda'). */
   name: Scalars['String']['output'];
-  /** The original (upstream) logo URL of this flavour. */
+  /** The original (upstream) logo URL of this flavour, which is its release's. */
   originalLogo?: Maybe<Scalars['String']['output']>;
   /** The release this flavour belongs to. */
   release: Release;
@@ -1105,7 +1180,7 @@ export type FlavourFilter = {
   hasDefinitions?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only flavours whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Case-insensitive search on the flavour name. */
+  /** Search by name: a case-insensitive substring, or semantic similarity of the query to the flavour's name and the app it was built from. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -1119,6 +1194,8 @@ export type GithubRepo = {
   addedAt: Scalars['DateTime']['output'];
   /** The branch that is scanned for app manifests. */
   branch: Scalars['String']['output'];
+  /** This repository's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
+  embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The flavours discovered by scanning this repository. */
   flavours: Array<Flavour>;
   id: Scalars['ID']['output'];
@@ -1163,7 +1240,7 @@ export type GithubRepoFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Case-insensitive match on the GitHub repository name. */
   repo?: InputMaybe<Scalars['String']['input']>;
-  /** Case-insensitive search on the repository name. */
+  /** Search by name: a case-insensitive substring, or semantic similarity of the query to the repository's name. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Case-insensitive match on the GitHub owner. */
   user?: InputMaybe<Scalars['String']['input']>;
@@ -1740,6 +1817,10 @@ export type QualifierInput = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Return a single app by its ID. */
+  app: App;
+  /** List all apps visible to the current organization. */
+  apps: Array<App>;
   /** Return a single backend by its ID. */
   backend: Backend;
   /** List all backends visible to the current organization. */
@@ -1780,6 +1861,18 @@ export type Query = {
   resource: Resource;
   /** List all backend resources visible to the current organization. */
   resources: Array<Resource>;
+};
+
+
+export type QueryAppArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAppsArgs = {
+  filters?: InputMaybe<AppFilter>;
+  ordering?: Array<AppOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -1928,7 +2021,7 @@ export type Release = {
   /** The flavours (buildable variants) available for this release. */
   flavours: Array<Flavour>;
   id: Scalars['ID']['output'];
-  /** The stored logo of this release. */
+  /** The stored logo of this release: the path of the ingested media, or null while none has been ingested. */
   logo?: Maybe<Scalars['String']['output']>;
   /** The display name of this release, in the form 'identifier:version'. */
   name: Scalars['String']['output'];
@@ -1962,6 +2055,12 @@ export type ReleaseFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ReleaseFilter>;
   OR?: InputMaybe<ReleaseFilter>;
+  /** Keep only the releases of this app. */
+  app?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep only the releases of these apps. */
+  apps?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep only releases whose app identifier contains this text, case-insensitively. */
+  identifier?: InputMaybe<Scalars['String']['input']>;
   /** Keep only releases whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Case-insensitive search on the release version. */
@@ -2524,6 +2623,16 @@ export type WindowInput = {
   windowFunction: WindowFunction;
 };
 
+export type AppFragment = { __typename?: 'App', id: string, identifier: string, embedding?: any | null, releases: Array<(
+    { __typename?: 'Release' }
+    & StoreReleaseFragment
+  )> };
+
+export type ShelfAppFragment = { __typename?: 'App', id: string, identifier: string, embedding?: any | null, releases: Array<(
+    { __typename?: 'Release' }
+    & StoreReleaseFragment
+  )> };
+
 export type ListBackendFragment = { __typename?: 'Backend', id: string, name: string, kind: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } };
 
 export type BackendFragment = { __typename?: 'Backend', id: string, clientId: string, name: string, kind: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string }, pods: Array<(
@@ -2545,9 +2654,9 @@ export type DefinitionFragment = { __typename?: 'Definition', id: string, name: 
     & ListFlavourFragment
   )> };
 
-export type ListDefinitionFragment = { __typename?: 'Definition', id: string, name: string, hash: any, description?: string | null, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, release: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', identifier: string } } }> };
+export type ListDefinitionFragment = { __typename?: 'Definition', id: string, name: string, hash: any, description?: string | null, kind: ActionKind, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } } }> };
 
-export type ListFlavourFragment = { __typename?: 'Flavour', id: string, name: string, release: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', identifier: string } }, selectors: Array<{ __typename?: 'CPUSelector' } | (
+export type ListFlavourFragment = { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } }, selectors: Array<{ __typename?: 'CPUSelector' } | (
     { __typename?: 'CudaSelector' }
     & CudaSelectorFragment
   ) | { __typename?: 'LabelSelector' } | { __typename?: 'OneApiSelector' } | { __typename?: 'RAMSelector' } | (
@@ -2556,7 +2665,34 @@ export type ListFlavourFragment = { __typename?: 'Flavour', id: string, name: st
   )> };
 
 export type FlavourFragment = (
-  { __typename?: 'Flavour' }
+  { __typename?: 'Flavour', selectors: Array<(
+    { __typename?: 'CPUSelector' }
+    & StoreSelector_CpuSelector_Fragment
+  ) | (
+    { __typename?: 'CudaSelector' }
+    & StoreSelector_CudaSelector_Fragment
+  ) | (
+    { __typename?: 'LabelSelector' }
+    & StoreSelector_LabelSelector_Fragment
+  ) | (
+    { __typename?: 'OneApiSelector' }
+    & StoreSelector_OneApiSelector_Fragment
+  ) | (
+    { __typename?: 'RAMSelector' }
+    & StoreSelector_RamSelector_Fragment
+  ) | (
+    { __typename?: 'RocmSelector' }
+    & StoreSelector_RocmSelector_Fragment
+  )>, image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }>, repo?: { __typename?: 'GithubRepo', id: string, name: string, user: string, repo: string, url: string } | null, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }>, definitions: Array<(
+    { __typename?: 'Definition' }
+    & ListDefinitionFragment
+  )>, release: { __typename?: 'Release', scopes: Array<string>, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, selectors: Array<{ __typename?: 'CPUSelector' } | (
+        { __typename?: 'CudaSelector' }
+        & CudaSelectorFragment
+      ) | { __typename?: 'LabelSelector' } | { __typename?: 'OneApiSelector' } | { __typename?: 'RAMSelector' } | (
+        { __typename?: 'RocmSelector' }
+        & RocmSelectorFragment
+      )> }> } }
   & ListFlavourFragment
 );
 
@@ -3041,12 +3177,13 @@ export type BlokComponentPropFragment = { __typename?: 'ComponentProp', key: str
       & BlokArgumentFragment
     )> | null } | null };
 
-export type ReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, scopes: Array<string>, app: { __typename?: 'App', identifier: string }, flavours: Array<(
+export type ReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, entrypoint: string, scopes: Array<string>, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null, releases: Array<{ __typename?: 'Release', id: string, version: string }> }, flavours: Array<(
     { __typename?: 'Flavour' }
     & ListFlavourFragment
+    & StoreFlavourFragment
   )> };
 
-export type ListReleaseFragment = { __typename?: 'Release', id: string, version: string, scopes: Array<string>, app: { __typename?: 'App', identifier: string }, flavours: Array<(
+export type ListReleaseFragment = { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<(
     { __typename?: 'Flavour' }
     & ListFlavourFragment
   )> };
@@ -3103,7 +3240,7 @@ export type StoreFlavourFragment = { __typename?: 'Flavour', id: string, name: s
     & StoreSelector_RocmSelector_Fragment
   )>, repo?: { __typename?: 'GithubRepo', id: string, name: string, user: string, repo: string, url: string } | null, definitions: Array<{ __typename?: 'Definition', id: string, name: string, description?: string | null, kind: ActionKind }>, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }> };
 
-export type StoreReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, entrypoint: string, app: { __typename?: 'App', id: string, identifier: string }, flavours: Array<(
+export type StoreReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, entrypoint: string, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<(
     { __typename?: 'Flavour' }
     & StoreFlavourFragment
   )> };
@@ -3143,6 +3280,27 @@ export type ScanRepoMutation = { __typename?: 'Mutation', scanRepo: (
     { __typename?: 'GithubRepo' }
     & RepoFragment
   ) };
+
+export type GetAppQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetAppQuery = { __typename?: 'Query', app: (
+    { __typename?: 'App' }
+    & AppFragment
+  ) };
+
+export type ListAppsQueryVariables = Exact<{
+  filters?: InputMaybe<AppFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListAppsQuery = { __typename?: 'Query', apps: Array<(
+    { __typename?: 'App' }
+    & ShelfAppFragment
+  )> };
 
 export type ListBackendsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3345,6 +3503,103 @@ export type AppStoreQuery = { __typename?: 'Query', releases: Array<(
     & StoreReleaseFragment
   )> };
 
+export const StoreSelectorFragmentDoc = gql`
+    fragment StoreSelector on Selector {
+  __typename
+  kind
+  required
+  ... on CudaSelector {
+    computeCapability
+    memory
+    count
+    cudaVersion
+  }
+  ... on RocmSelector {
+    apiVersion
+  }
+  ... on CPUSelector {
+    arch
+    minCount
+  }
+}
+    `;
+export const StoreFlavourFragmentDoc = gql`
+    fragment StoreFlavour on Flavour {
+  id
+  name
+  logo
+  originalLogo
+  image {
+    imageString
+    buildAt
+  }
+  requirements {
+    key
+    service
+    optional
+    description
+  }
+  selectors {
+    ...StoreSelector
+  }
+  repo {
+    id
+    name
+    user
+    repo
+    url
+  }
+  definitions {
+    id
+    name
+    description
+    kind
+  }
+  deployments {
+    id
+    status
+  }
+}
+    ${StoreSelectorFragmentDoc}`;
+export const StoreReleaseFragmentDoc = gql`
+    fragment StoreRelease on Release {
+  id
+  name
+  version
+  logo
+  originalLogo
+  scopes
+  entrypoint
+  app {
+    id
+    identifier
+    embedding
+  }
+  flavours {
+    ...StoreFlavour
+  }
+}
+    ${StoreFlavourFragmentDoc}`;
+export const AppFragmentDoc = gql`
+    fragment App on App {
+  id
+  identifier
+  embedding
+  releases(ordering: [{releasedAt: DESC}]) {
+    ...StoreRelease
+  }
+}
+    ${StoreReleaseFragmentDoc}`;
+export const ShelfAppFragmentDoc = gql`
+    fragment ShelfApp on App {
+  id
+  identifier
+  embedding
+  releases(ordering: [{releasedAt: DESC}], pagination: {limit: 1}) {
+    ...StoreRelease
+  }
+}
+    ${StoreReleaseFragmentDoc}`;
 export const ListBackendFragmentDoc = gql`
     fragment ListBackend on Backend {
   id
@@ -3981,11 +4236,17 @@ export const ListFlavourFragmentDoc = gql`
     fragment ListFlavour on Flavour {
   id
   name
+  logo
+  originalLogo
   release {
     id
     version
+    logo
+    originalLogo
     app {
+      id
       identifier
+      embedding
     }
   }
   selectors {
@@ -4020,14 +4281,21 @@ export const ListDefinitionFragmentDoc = gql`
   name
   hash
   description
+  kind
   flavours {
     id
     name
+    logo
+    originalLogo
     release {
       id
       version
+      logo
+      originalLogo
       app {
+        id
         identifier
+        embedding
       }
     }
   }
@@ -4036,8 +4304,50 @@ export const ListDefinitionFragmentDoc = gql`
 export const FlavourFragmentDoc = gql`
     fragment Flavour on Flavour {
   ...ListFlavour
+  selectors {
+    ...StoreSelector
+  }
+  image {
+    imageString
+    buildAt
+  }
+  requirements {
+    key
+    service
+    optional
+    description
+  }
+  repo {
+    id
+    name
+    user
+    repo
+    url
+  }
+  deployments {
+    id
+    status
+  }
+  definitions {
+    ...ListDefinition
+  }
+  release {
+    scopes
+    flavours {
+      id
+      name
+      selectors {
+        ...CudaSelector
+        ...RocmSelector
+      }
+    }
+  }
 }
-    ${ListFlavourFragmentDoc}`;
+    ${ListFlavourFragmentDoc}
+${StoreSelectorFragmentDoc}
+${ListDefinitionFragmentDoc}
+${CudaSelectorFragmentDoc}
+${RocmSelectorFragmentDoc}`;
 export const ListPodFragmentDoc = gql`
     fragment ListPod on Pod {
   id
@@ -4139,21 +4449,36 @@ export const ReleaseFragmentDoc = gql`
   id
   name
   version
+  logo
+  originalLogo
+  entrypoint
   app {
+    id
     identifier
+    embedding
+    releases(ordering: [{releasedAt: DESC}]) {
+      id
+      version
+    }
   }
   flavours {
     ...ListFlavour
+    ...StoreFlavour
   }
   scopes
 }
-    ${ListFlavourFragmentDoc}`;
+    ${ListFlavourFragmentDoc}
+${StoreFlavourFragmentDoc}`;
 export const ListReleaseFragmentDoc = gql`
     fragment ListRelease on Release {
   id
   version
+  logo
+  originalLogo
   app {
+    id
     identifier
+    embedding
   }
   scopes
   flavours {
@@ -4213,82 +4538,6 @@ export const ResourceFragmentDoc = gql`
   }
 }
     ${ListPodFragmentDoc}`;
-export const StoreSelectorFragmentDoc = gql`
-    fragment StoreSelector on Selector {
-  __typename
-  kind
-  required
-  ... on CudaSelector {
-    computeCapability
-    memory
-    count
-    cudaVersion
-  }
-  ... on RocmSelector {
-    apiVersion
-  }
-  ... on CPUSelector {
-    arch
-    minCount
-  }
-}
-    `;
-export const StoreFlavourFragmentDoc = gql`
-    fragment StoreFlavour on Flavour {
-  id
-  name
-  logo
-  originalLogo
-  image {
-    imageString
-    buildAt
-  }
-  requirements {
-    key
-    service
-    optional
-    description
-  }
-  selectors {
-    ...StoreSelector
-  }
-  repo {
-    id
-    name
-    user
-    repo
-    url
-  }
-  definitions {
-    id
-    name
-    description
-    kind
-  }
-  deployments {
-    id
-    status
-  }
-}
-    ${StoreSelectorFragmentDoc}`;
-export const StoreReleaseFragmentDoc = gql`
-    fragment StoreRelease on Release {
-  id
-  name
-  version
-  logo
-  originalLogo
-  scopes
-  entrypoint
-  app {
-    id
-    identifier
-  }
-  flavours {
-    ...StoreFlavour
-  }
-}
-    ${StoreFlavourFragmentDoc}`;
 export const DeleteBackendDocument = gql`
     mutation DeleteBackend($id: ID!) {
   deleteBackend(id: $id)
@@ -4449,6 +4698,77 @@ export function useScanRepoMutation(baseOptions?: ApolloReactHooks.MutationHookO
 export type ScanRepoMutationHookResult = ReturnType<typeof useScanRepoMutation>;
 export type ScanRepoMutationResult = Apollo.MutationResult<ScanRepoMutation>;
 export type ScanRepoMutationOptions = Apollo.BaseMutationOptions<ScanRepoMutation, ScanRepoMutationVariables>;
+export const GetAppDocument = gql`
+    query GetApp($id: ID!) {
+  app(id: $id) {
+    ...App
+  }
+}
+    ${AppFragmentDoc}`;
+
+/**
+ * __useGetAppQuery__
+ *
+ * To run a query within a React component, call `useGetAppQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAppQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAppQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetAppQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAppQuery, GetAppQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAppQuery, GetAppQueryVariables>(GetAppDocument, options);
+      }
+export function useGetAppLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAppQuery, GetAppQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAppQuery, GetAppQueryVariables>(GetAppDocument, options);
+        }
+export type GetAppQueryHookResult = ReturnType<typeof useGetAppQuery>;
+export type GetAppLazyQueryHookResult = ReturnType<typeof useGetAppLazyQuery>;
+export type GetAppQueryResult = Apollo.QueryResult<GetAppQuery, GetAppQueryVariables>;
+export const ListAppsDocument = gql`
+    query ListApps($filters: AppFilter, $pagination: OffsetPaginationInput) {
+  apps(filters: $filters, pagination: $pagination) {
+    ...ShelfApp
+  }
+}
+    ${ShelfAppFragmentDoc}`;
+
+/**
+ * __useListAppsQuery__
+ *
+ * To run a query within a React component, call `useListAppsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListAppsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListAppsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListAppsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListAppsQuery, ListAppsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListAppsQuery, ListAppsQueryVariables>(ListAppsDocument, options);
+      }
+export function useListAppsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListAppsQuery, ListAppsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListAppsQuery, ListAppsQueryVariables>(ListAppsDocument, options);
+        }
+export type ListAppsQueryHookResult = ReturnType<typeof useListAppsQuery>;
+export type ListAppsLazyQueryHookResult = ReturnType<typeof useListAppsLazyQuery>;
+export type ListAppsQueryResult = Apollo.QueryResult<ListAppsQuery, ListAppsQueryVariables>;
 export const ListBackendsDocument = gql`
     query ListBackends {
   backends {

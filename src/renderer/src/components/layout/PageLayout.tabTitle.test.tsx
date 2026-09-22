@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Route, Routes, useNavigate } from "react-router-dom";
 
 vi.mock("@/app/Arkitekt", () => ({
-  Arkitekt: { useActiveProfileId: () => "org-a" },
+  // `useActiveProfile` too: the page's share button stamps its link with the
+  // connection it was copied from. Null here — this test is about tab titles,
+  // and an unconnected app still names its tabs.
+  Arkitekt: { useActiveProfileId: () => "org-a", useActiveProfile: () => null },
 }));
 vi.mock("@/constants", () => ({ baseName: "" }));
 vi.mock("use-react-router-breadcrumbs", () => ({

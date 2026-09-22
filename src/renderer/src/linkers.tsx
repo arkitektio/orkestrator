@@ -760,6 +760,17 @@ export const KabinetResource = buildSmart({
   name: "Resource",
 });
 
+/**
+ * An app is the thing a scientist actually installs; releases and flavours are
+ * its versions and its builds. It is infrastructure, not a datum, so it gets no
+ * Knowledge tab.
+ */
+export const KabinetApp = buildSmart({
+  identifier: "@kabinet/app",
+  path: "kabinet/apps",
+  name: "App",
+});
+
 export const KabinetRelease = buildSmart({
   identifier: "@kabinet/release",
   path: "kabinet/releases",

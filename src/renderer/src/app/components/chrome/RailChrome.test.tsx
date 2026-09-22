@@ -10,9 +10,26 @@ import { RailChrome } from "./RailChrome";
 
 // The nav row reads the active tab's history for Back/Forward, so the bar
 // needs the tab store and the chrome router beneath it.
-vi.mock("@/app/Arkitekt", () => ({
-  Arkitekt: { useActiveProfileId: () => "org-a" },
+// The share button stamps the link with the connection it was copied from, so
+// the bar also needs an active profile to read that scope out of.
+const { profileRef } = vi.hoisted(() => ({
+  profileRef: { current: null as unknown },
 }));
+vi.mock("@/app/Arkitekt", () => ({
+  Arkitekt: {
+    useActiveProfileId: () => "org-a",
+    useActiveProfile: () => profileRef.current,
+  },
+}));
+
+const CONNECTED = {
+  identity: {
+    baseUrl: "https://go.arkitekt.live",
+    userId: "u1",
+    organizationId: "acme",
+  },
+  label: {},
+};
 vi.mock("@/constants", () => ({ baseName: "" }));
 
 const Shell = ({ children }: { children: React.ReactNode }) => (
@@ -277,6 +294,10 @@ describe("Back and Forward are greyed honestly", () => {
 });
 
 describe("share", () => {
+  beforeEach(() => {
+    profileRef.current = CONNECTED;
+  });
+
   const original = navigator.clipboard;
   afterEach(() => {
     Object.defineProperty(navigator, "clipboard", { value: original, configurable: true });
@@ -295,11 +316,56 @@ describe("share", () => {
     await act(async () => {
       screen.getByLabelText("Share").click();
     });
+    // Scoped: the same path on another deployment is a different object, so
+    // the link names the one it was copied from.
     expect(writeText).toHaveBeenCalledWith(
-      `https://arkitekt.live/deeplink?orkestrator=${encodeURIComponent("/somewhere")}`,
+      "https://arkitekt.live/deeplink?orkestrator=" +
+        "%2Fopen%3Fto%3Dhttps%253A%252F%252Fgo.arkitekt.live%26org%3Dacme%26path%3D%252Fsomewhere",
     );
     // It says so, for a moment.
     expect(screen.getByLabelText("Share").getAttribute("title")).toBe("Link copied");
+  });
+
+  it("falls back to a portable link when nothing is connected", async () => {
+    profileRef.current = null;
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(
+      <Shell>
+        <Driver />
+        <RailChrome />
+      </Shell>,
+    );
+    act(() => screen.getByText("drive-forward").click());
+    await act(async () => {
+      screen.getByLabelText("Share").click();
+    });
+    // There is no scope to promise, so none is claimed.
+    expect(writeText).toHaveBeenCalledWith(
+      `https://arkitekt.live/deeplink?orkestrator=${encodeURIComponent("/somewhere")}`,
+    );
+  });
+
+  it("copies the same link as a README badge on right-click", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(
+      <Shell>
+        <Driver />
+        <RailChrome />
+      </Shell>,
+    );
+    act(() => screen.getByText("drive-forward").click());
+    act(() => {
+      fireEvent.contextMenu(screen.getByLabelText("Share"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("menuitem", { name: /copy as badge/i }));
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      "[![Open in Arkitekt](https://arkitekt.live/img/badge/open-in-arkitekt.svg)]" +
+        `(https://arkitekt.live/deeplink?orkestrator=${encodeURIComponent("/somewhere")})`,
+    );
   });
 });
 

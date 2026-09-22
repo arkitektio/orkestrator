@@ -11,6 +11,24 @@ import type {
   VoiceStartConfig,
   VoiceStatusPayload,
 } from "../main/voice/protocol";
+import type {
+  MeshProbeResult,
+  NetworkProbeResult,
+  ProbeNetworkRequest,
+  RemedyId,
+  RemedyResult,
+} from "../main/doctor/protocol";
+
+/**
+ * Connection diagnostics. Probing happens in main because the renderer's
+ * `fetch` collapses DNS, refusal, TLS and timeout into one opaque error.
+ * `runRemedy` only accepts an id from the protocol's closed allowlist.
+ */
+export type DoctorApi = {
+  probeNetwork: (request: ProbeNetworkRequest) => Promise<NetworkProbeResult[]>;
+  probeMesh: () => Promise<MeshProbeResult>;
+  runRemedy: (id: RemedyId) => Promise<RemedyResult>;
+};
 
 export type VoiceApi = {
   start: (config: VoiceStartConfig) => Promise<VoiceStatusPayload>;
@@ -79,6 +97,7 @@ declare global {
       onUploadProgress: (uploadId: string, cb: (data: any) => void) => () => void;
       onUploadError: (uploadId: string, cb: (data: any) => void) => () => void;
       voice: VoiceApi;
+      doctor: DoctorApi;
       executeElectron: (task: Assign) => Promise<void>;
       onAgentYield: (cb: (data: any) => void) => () => void;
       onAgentDone: (cb: (data: any) => void) => () => void;

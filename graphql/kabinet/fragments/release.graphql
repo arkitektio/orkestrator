@@ -1,12 +1,29 @@
+# `logo` / `originalLogo` / `app.embedding` are what an app's icon is built
+# from: a real logo where one was uploaded, and otherwise the generated mark
+# that `embedding` gives a shape and a colour. See `appIdentity.ts`.
+# The detail fragment spreads BOTH flavour fragments: `ListFlavour` carries the
+# release back-reference a flavour card needs, `StoreFlavour` the image, repo,
+# requirements and deployments the page's panels show. The sibling versions come
+# from `app.releases`, which is also what powers the app page.
 fragment Release on Release {
   id
   name
   version
+  logo
+  originalLogo
+  entrypoint
   app {
+    id
     identifier
+    embedding
+    releases(ordering: [{ releasedAt: DESC }]) {
+      id
+      version
+    }
   }
   flavours {
     ...ListFlavour
+    ...StoreFlavour
   }
   scopes
 }
@@ -14,8 +31,12 @@ fragment Release on Release {
 fragment ListRelease on Release {
   id
   version
+  logo
+  originalLogo
   app {
+    id
     identifier
+    embedding
   }
   scopes
   flavours {
