@@ -10,9 +10,10 @@
 // win, linux / x64, arm64) so electron-builder.yml can reference them.
 import { execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(new URL("..", import.meta.url).pathname);
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SRC = join(ROOT, "tools", "meshd");
 const OUT = join(ROOT, "resources", "meshd");
 
