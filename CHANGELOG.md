@@ -1,3 +1,12 @@
+# [2.11.0](https://github.com/arkitektio/orkestrator/compare/v2.10.0...v2.11.0) (2026-09-22)
+
+
+### Features
+
+* better app page ([03e83dc](https://github.com/arkitektio/orkestrator/commit/03e83dc7e889143273e16e53f572c431a3cc5f3f))
+* better connection doctor ([ce53b60](https://github.com/arkitektio/orkestrator/commit/ce53b60208c63c7f620f61e9b7c3affa4796eaa2))
+* improve various components and tests with better handling and documentation ([0f5dbe2](https://github.com/arkitektio/orkestrator/commit/0f5dbe2e36f3c3c3f8e0ebb3398b8441577eda8d))
+
 # [2.10.0](https://github.com/arkitektio/orkestrator/compare/v2.9.0...v2.10.0) (2026-09-21)
 
 
