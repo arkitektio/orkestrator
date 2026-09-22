@@ -1,3 +1,10 @@
+## [2.12.1](https://github.com/arkitektio/orkestrator/compare/v2.12.0...v2.12.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **ci:** resolve repo root portably in build-meshd so Windows builds work ([bd6ef68](https://github.com/arkitektio/orkestrator/commit/bd6ef68db5496a4c0f22ff039785fe88e7974116))
+
 # [2.12.0](https://github.com/arkitektio/orkestrator/compare/v2.11.0...v2.12.0) (2026-09-22)
 
 
