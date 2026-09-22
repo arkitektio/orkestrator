@@ -16,6 +16,7 @@ import {
   reidentifyProfile,
   removeProfile,
   setActiveProfile,
+  updateProfileMesh,
   updateProfileSession,
   upsertProfile,
   writeStoredProfileBook,
@@ -275,6 +276,19 @@ describe("loadStoredProfileBook", () => {
     expect(loaded.activeProfileId).toBeNull();
   });
 
+  it("keeps a profile's mesh, and drops an unreadable mesh without the profile", () => {
+    const mesh = { id: "mesh-1", label: "Lab", controlUrl: "https://mesh.test", hosts: [], enabled: false };
+    writeStoredProfileBook(updateProfileMesh(seed(), "id-a", () => mesh), storage);
+    expect(loadStoredProfileBook(storage).profiles["id-a"].mesh).toEqual(mesh);
+
+    const raw = JSON.parse(storage.getItem(PROFILE_BOOK_STORAGE_KEY)!);
+    raw.profiles["id-a"].mesh = { id: "../../etc", label: 1 };
+    storage.setItem(PROFILE_BOOK_STORAGE_KEY, JSON.stringify(raw));
+    const loaded = loadStoredProfileBook(storage);
+    expect(Object.keys(loaded.profiles).sort()).toEqual(["id-a", "id-b"]);
+    expect(loaded.profiles["id-a"].mesh).toBeUndefined();
+  });
+
   it("discards an unparseable book rather than throwing", () => {
     storage.setItem(PROFILE_BOOK_STORAGE_KEY, "{not json");
     expect(loadStoredProfileBook(storage)).toEqual(emptyProfileBook());
@@ -335,6 +349,33 @@ describe("reidentifyProfile", () => {
     expect(next.activeProfileId).toBe(existingId);
     // "Added on" must not jump forward every time the user re-approves.
     expect(next.profiles[existingId].createdAt).toBe(1);
+  });
+
+  it("a re-approval keeps the row's mesh switch and pins, and takes the grant's node", () => {
+    const existingId = deriveProfileId(identity);
+    const existing = {
+      ...createProfileFromSession(sessionFor("lok.test", "old"), 1, existingId),
+      identity,
+      mesh: { id: "old-node", label: "Old", controlUrl: "https://mesh.old", hosts: ["data.lab"], enabled: false },
+    };
+    const pending = provisionalProfileId("https://lok.test/lok/f/");
+    const withMesh = {
+      ...createProfileFromSession(sessionFor("lok.test", "new"), 50, pending),
+      mesh: { id: "new-node", label: "New", controlUrl: "https://mesh.new", hosts: [], enabled: true },
+    };
+    const book = upsertProfile(upsertProfile(emptyProfileBook(), existing), withMesh);
+    expect(reidentifyProfile(book, pending, identity).profiles[existingId].mesh).toEqual({
+      id: "new-node",
+      label: "New",
+      controlUrl: "https://mesh.new",
+      hosts: ["data.lab"],
+      enabled: false,
+    });
+
+    // A grant that brought no key leaves the row's mesh alone.
+    const bare = createProfileFromSession(sessionFor("lok.test", "new"), 50, pending);
+    const kept = reidentifyProfile(upsertProfile(upsertProfile(emptyProfileBook(), existing), bare), pending, identity);
+    expect(kept.profiles[existingId].mesh).toEqual(existing.mesh);
   });
 
   it("does NOT collapse two hubs of the same organization", () => {

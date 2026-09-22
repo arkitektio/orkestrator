@@ -5,6 +5,8 @@ import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { checkServerIdentity, connect as tlsConnect } from "node:tls";
 import type { TLSSocket } from "node:tls";
+import { SocksClient } from "socks";
+import { SocksProxyAgent } from "socks-proxy-agent";
 import type {
   DnsStage,
   HttpStage,
@@ -183,7 +185,12 @@ const probeTls = (host: string, port: number, timeoutMs: number): Promise<TlsSta
 
 /* ────────────────────────────────── HTTP ──────────────────────────────── */
 
-const probeHttp = (target: ProbeTarget, url: string, timeoutMs: number): Promise<HttpStage> =>
+const probeHttp = (
+  target: ProbeTarget,
+  url: string,
+  timeoutMs: number,
+  agent?: SocksProxyAgent,
+): Promise<HttpStage> =>
   new Promise((resolve) => {
     let settled = false;
     const finish = (stage: HttpStage) => {
@@ -197,6 +204,7 @@ const probeHttp = (target: ProbeTarget, url: string, timeoutMs: number): Promise
       {
         method: "GET",
         timeout: timeoutMs,
+        agent,
         // The cert story is already known from the TLS stage; failing here
         // again would just hide the status code we came for.
         ...(target.ssl ? { rejectUnauthorized: false } : {}),
@@ -243,6 +251,49 @@ const probeHttp = (target: ProbeTarget, url: string, timeoutMs: number): Promise
     request.end();
   });
 
+/* ───────────────────────── through the mesh proxy ─────────────────────── */
+
+/**
+ * The same walk, but for a host the built-in mesh routes: dial through the
+ * mesh's SOCKS5 proxy (which resolves the name — MagicDNS never touches the
+ * OS), so the answer is about the peer and the service on it, not about this
+ * computer's DNS. `socks5h`-style: the hostname goes to the proxy.
+ */
+const probeTcpViaSocks = (host: string, port: number, proxyPort: number, timeoutMs: number): Promise<TcpStage> =>
+  new Promise((resolve) => {
+    const started = Date.now();
+    SocksClient.createConnection({
+      proxy: { host: "127.0.0.1", port: proxyPort, type: 5 },
+      command: "connect",
+      destination: { host, port },
+      timeout: timeoutMs,
+    })
+      .then(({ socket }) => {
+        socket.destroy();
+        resolve({ attempted: true, ok: true, ms: Date.now() - started });
+      })
+      .catch((error: unknown) => {
+        const message = errorMessage(error);
+        resolve({
+          attempted: true,
+          ok: false,
+          ms: Date.now() - started,
+          code: /timed? ?out/i.test(message) ? DOCTOR_TIMEOUT_CODE : "MESH_DIAL_FAILED",
+          message,
+        });
+      });
+  });
+
+const probeHttpViaSocks = (
+  target: ProbeTarget,
+  url: string,
+  proxyPort: number,
+  timeoutMs: number,
+): Promise<HttpStage> => {
+  const agent = new SocksProxyAgent(`socks5h://127.0.0.1:${proxyPort}`, { timeout: timeoutMs });
+  return probeHttp(target, url, timeoutMs, agent);
+};
+
 /* ─────────────────────────────── the walk ─────────────────────────────── */
 
 const SKIPPED_TCP: TcpStage = { attempted: false, ok: false, ms: 0 };
@@ -257,11 +308,13 @@ const SKIPPED_HTTP: HttpStage = { attempted: false, ok: false };
 export const probeTarget = async (
   target: ProbeTarget,
   timeoutMs: number,
+  /** The built-in mesh proxy this host is routed through, if any. */
+  viaMeshProxy?: number,
 ): Promise<NetworkProbeResult> => {
   const started = Date.now();
   const url = probeUrl(target);
   const port = portOf(target);
-  const done = (dns: DnsStage, tcp: TcpStage, tls: TlsStage, http: HttpStage) => ({
+  const done = (dns: DnsStage, tcp: TcpStage, tls: TlsStage, http: HttpStage): NetworkProbeResult => ({
     target,
     url,
     dns,
@@ -269,7 +322,16 @@ export const probeTarget = async (
     tls,
     http,
     totalMs: Date.now() - started,
+    ...(viaMeshProxy ? { viaMeshProxy } : {}),
   });
+
+  if (viaMeshProxy) {
+    const dns: DnsStage = { ok: true, skipped: true, lookupAddresses: [], resolveAddresses: [] };
+    const tcp = await probeTcpViaSocks(target.host, port, viaMeshProxy, timeoutMs);
+    if (!tcp.ok) return done(dns, tcp, SKIPPED_TLS, SKIPPED_HTTP);
+    const http = await probeHttpViaSocks(target, url, viaMeshProxy, timeoutMs);
+    return done(dns, tcp, SKIPPED_TLS, http);
+  }
 
   const dns = await probeDns(target.host);
   // No address at all from either resolver: nothing to connect to.

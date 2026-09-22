@@ -21,9 +21,13 @@ import { stat, writeFile } from "node:fs/promises";
 import { normalize, sep } from "node:path";
 import { Readable } from "node:stream";
 import { ShellService } from "./modules/ShellService";
-import { DoctorService } from "./doctor/DoctorService";
+import { DoctorService, defaultDoctorDeps } from "./doctor/DoctorService";
 import { VoiceService } from "./voice/VoiceService";
 import { ModelStore } from "./voice/ModelStore";
+import { MeshService } from "./mesh/MeshService";
+import { meshdBinaryPath } from "./mesh/meshdLocate";
+import { spawn } from "node:child_process";
+import { hostname as osHostname } from "node:os";
 import { APP_ORIGIN, APP_SCHEME } from "./scheme";
 
 // Minimal extension -> MIME map for the app:// static file handler. Kept inline
@@ -129,12 +133,38 @@ const windowManager = new WindowManager(transport);
 const appUpdater = new AppUpdater(transport, windowManager);
 const downloadManager = new DownloadManager(transport);
 const uploadService = new UploadService(transport);
-const bigFileUploadService = new BigFileUploadService(transport);
-const bigFileDownloadService = new BigFileDownloadService(transport);
-const shellService = new ShellService(transport);
+// The mesh sidecar: a userspace Tailscale node per organisation mesh (one Go
+// process, `tools/meshd`, hosting all of them), each with a local proxy. The
+// session's PAC script sends a mesh's hosts to its proxy, so the renderer,
+// its workers and WebSockets all reach the tailnet with no system VPN. The
+// binary ships in `extraResources` and is spawned with a literal argv; every
+// setting reaches it as JSON over stdin.
+const meshRoot = join(app.getPath("userData"), "mesh");
+const meshService = new MeshService(transport, windowManager, {
+  binaryPath: meshdBinaryPath({
+    packaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+    appRoot: join(__dirname, "..", ".."),
+    platform: process.platform,
+    arch: process.arch,
+  }),
+  spawn: (binary) => spawn(binary, ["--stdio"], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true }),
+  stateRoot: meshRoot,
+  hostname: `orkestrator-${osHostname().split(".")[0].toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 40) || "device"}`,
+  applyProxy: async (pacScript) => {
+    await app.whenReady();
+    await session.defaultSession.setProxy(pacScript ? { pacScript } : { mode: "direct" });
+    await session.defaultSession.forceReloadProxyConfig();
+  },
+});
+const meshProxyPort = (host: string) => meshService.proxyPortForHost(host);
 // Connection diagnostics: DNS/TCP/TLS probes and the Tailscale CLI live in
-// main because the renderer's fetch cannot tell those failures apart.
-const doctorService = new DoctorService(transport);
+// main because the renderer's fetch cannot tell those failures apart. A host
+// the built-in mesh routes is probed through that mesh's proxy.
+const doctorService = new DoctorService(transport, { ...defaultDoctorDeps(), proxyPortForHost: meshProxyPort });
+const bigFileUploadService = new BigFileUploadService(transport, meshProxyPort);
+const bigFileDownloadService = new BigFileDownloadService(transport, meshProxyPort);
+const shellService = new ShellService(transport);
 // Voice input: the speech model runs in a utilityProcess (`voice/worker.ts`,
 // built to `out/main/voice-worker.js`), started only once a user switches
 // voice input on. Models download into userData on first use.
@@ -159,6 +189,7 @@ appManager.register(bigFileDownloadService);
 appManager.register(shellService);
 appManager.register(doctorService);
 appManager.register(voiceService);
+appManager.register(meshService);
 
 let electronAgent: AgentGateway | null = null;
 
@@ -327,7 +358,7 @@ if (!gotTheLock) {
       // NOTE: AgentGateway assumes ipcMain is available, we could refactor it too,
       // but for now we leave it as is or pass standard ipcMain (which it imports directly).
       const { ipcMain } = require('electron');
-      electronAgent = new AgentGateway(ipcMain);
+      electronAgent = new AgentGateway(ipcMain, meshProxyPort);
     }
 
     // Handle deep link on Windows/Linux when app starts

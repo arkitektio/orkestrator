@@ -102,6 +102,13 @@ export type NetworkProbeResult = {
   target: ProbeTarget;
   /** The exact URL that was requested, so the report can show what was tried. */
   url: string;
+  /**
+   * Set when the host is routed through the built-in mesh: the probe went
+   * through that mesh's proxy exactly like the app's own requests do. DNS
+   * is then the mesh's business (skipped), TCP is the proxy's dial to the
+   * peer, and TLS is not inspected (the tunnel is encrypted anyway).
+   */
+  viaMeshProxy?: number;
   dns: DnsStage;
   tcp: TcpStage;
   tls: TlsStage;

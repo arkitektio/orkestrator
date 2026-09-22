@@ -22,6 +22,17 @@ import type {
   VoiceStartConfig,
   VoiceStatusPayload,
 } from "../main/voice/protocol";
+import {
+  MESH_CLAIM_CHANNEL,
+  MESH_EVENT_CHANNEL,
+  MESH_PING_CHANNEL,
+  MESH_STATUS_CHANNEL,
+  type MeshClaimRequest,
+  type MeshEvent,
+  type MeshPingRequest,
+  type MeshPingResult,
+  type MeshStatusPayload,
+} from "../main/mesh/protocol";
 
 // Subscribe `cb` to an ipcRenderer channel and return the disposer. Every
 // event listener exposed to the renderer must be removable, otherwise each
@@ -169,6 +180,18 @@ const api = {
     probeMesh: (): Promise<MeshProbeResult> => ipcRenderer.invoke(DOCTOR_MESH_CHANNEL),
     runRemedy: (id: RemedyId): Promise<RemedyResult> =>
       ipcRenderer.invoke(DOCTOR_REMEDY_CHANNEL, { id }),
+  },
+  /**
+   * Organisation meshes: the built-in userspace Tailscale node per mesh. A
+   * mesh belongs to a profile and lives in the profile book; the window only
+   * claims its active profile's mesh, which main validates. The sidecar
+   * binary and its arguments are fixed in main.
+   */
+  mesh: {
+    status: (): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_STATUS_CHANNEL),
+    claim: (request: MeshClaimRequest): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_CLAIM_CHANNEL, request),
+    ping: (request: MeshPingRequest): Promise<MeshPingResult[]> => ipcRenderer.invoke(MESH_PING_CHANNEL, request),
+    onEvent: (cb: (event: MeshEvent) => void) => subscribe<MeshEvent>(MESH_EVENT_CHANNEL, cb),
   },
   initAgent: (context: any) => ipcRenderer.invoke("agent:init", context),
   executeElectron: (task: Assign) => ipcRenderer.invoke("agent:execute", task),

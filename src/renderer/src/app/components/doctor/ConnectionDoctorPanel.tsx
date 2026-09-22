@@ -24,17 +24,8 @@ import type {
 } from "@/lib/arkitekt/doctor/findings";
 import { primaryFinding, secondaryFindings } from "@/lib/arkitekt/doctor/findings";
 import type { DoctorStatus } from "@/lib/arkitekt/doctor/useConnectionDoctor";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  Copy,
-  ExternalLink,
-  Info,
-  Loader2,
-  Stethoscope,
-  XCircle,
-} from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, ChevronDown, Copy, ExternalLink, Info, Loader2, Stethoscope, XCircle } from "lucide-react";
+import { Link, useInRouterContext } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -93,6 +84,9 @@ const RemedyButton = ({
   onRemedy: (id: RemedyId) => void;
 }) => {
   const [copied, setCopied] = useState(false);
+  // The welcome screen renders the doctor outside any router; a <Link> there
+  // would throw, so the remedy degrades to naming the page.
+  const inRouter = useInRouterContext();
 
   if (remedy.kind === "manual") {
     return <p className="text-xs text-muted-foreground">{remedy.instructions}</p>;
@@ -109,6 +103,24 @@ const RemedyButton = ({
       >
         <Copy className="mr-2 size-3.5" />
         {copied ? "Copied" : remedy.label}
+      </Button>
+    );
+  }
+
+  if (remedy.kind === "navigate") {
+    if (!inRouter) {
+      return (
+        <p className="text-xs text-muted-foreground">
+          {remedy.label}: open Settings › Mesh once you are signed in.
+        </p>
+      );
+    }
+    return (
+      <Button size="sm" variant="outline" asChild>
+        <Link to={remedy.path}>
+          <ArrowRight className="mr-2 size-3.5" />
+          {remedy.label}
+        </Link>
       </Button>
     );
   }

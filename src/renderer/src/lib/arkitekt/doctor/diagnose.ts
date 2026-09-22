@@ -3,6 +3,7 @@ import type {
   NetworkProbeResult,
   ProbeTarget,
 } from "../../../../../main/doctor/protocol";
+import type { MeshPeer, MeshSnapshot, MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import { classifyHost, isMeshClass } from "./classify";
 import type { DiagnoseInput, Finding } from "./findings";
 import { rankFindings } from "./findings";
@@ -21,6 +22,7 @@ import { matchPeer, tailnetMismatch } from "./meshMatch";
  */
 
 const TAILSCALE_DOWNLOAD = "https://tailscale.com/download";
+const MESH_SETTINGS = "/settings/mesh";
 const ARKITEKT_DOCS = "https://arkitekt.live/docs/introduction/basics";
 
 const targetsOf = (input: DiagnoseInput): ProbeTarget[] => input.targets;
@@ -29,6 +31,303 @@ const meshTargets = (targets: ProbeTarget[]): ProbeTarget[] =>
   targets.filter((target) => isMeshClass(classifyHost(target.host)));
 
 const labelOf = (target: ProbeTarget): string => target.label || target.host;
+
+/* ───────────────────────── built-in mesh (sidecar) ────────────────────── */
+
+const norm = (host: string): string => host.trim().toLowerCase().replace(/\.$/, "");
+
+const sameOrigin = (a?: string | null, b?: string | null): boolean => {
+  if (!a || !b) return false;
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return false;
+  }
+};
+
+/** The peer a host names, if the mesh knows one. */
+const peerFor = (mesh: MeshSnapshot, rawHost: string): MeshPeer | undefined => {
+  const host = norm(rawHost);
+  return (mesh.status.peers ?? []).find(
+    (peer) =>
+      (peer.dnsName && norm(peer.dnsName) === host) ||
+      (peer.hostName && norm(peer.hostName) === host) ||
+      peer.ips.includes(host),
+  );
+};
+
+/** Does this running mesh route the host? Mirrors `src/main/mesh/pac.ts`. */
+const meshCovers = (mesh: MeshSnapshot, rawHost: string): boolean => {
+  if (mesh.status.state !== "running") return false;
+  const host = norm(rawHost);
+  if (mesh.config.hosts.map(norm).includes(host)) return true;
+  const suffix = mesh.status.magicDnsSuffix ? norm(mesh.status.magicDnsSuffix) : undefined;
+  if (suffix && (host === suffix || host.endsWith(`.${suffix}`))) return true;
+  return !!peerFor(mesh, host);
+};
+
+const coveringMesh = (sidecar: MeshStatusPayload | undefined, host: string): MeshSnapshot | undefined =>
+  sidecar?.meshes.find((mesh) => meshCovers(mesh, host));
+
+/** The meshes that belong to the deployment being diagnosed. */
+const deploymentMeshes = (input: DiagnoseInput, sidecar: MeshStatusPayload): MeshSnapshot[] =>
+  sidecar.meshes.filter(
+    (mesh) =>
+      mesh.config.id === input.context.profileMesh?.id ||
+      sameOrigin(mesh.config.controlUrl, input.context.meshCoordUrl),
+  );
+
+const SIGN_IN_AGAIN = "Sign out of this deployment and sign in again.";
+
+/**
+ * The app's own mesh node, one verdict per way it can be wrong. Membership
+ * comes with the login and nothing else, so every remedy here is either
+ * "sign in again", "ask an administrator" or "pin the address" — never a
+ * sign-in flow of the mesh's own. Only raised for mesh-looking addresses.
+ */
+const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[] => {
+  const sidecar = input.sidecar;
+  if (!sidecar) return [];
+  const relevant = meshTargets(targets);
+  if (relevant.length === 0) return [];
+
+  const findings: Finding[] = [];
+  const hosts = relevant.map((target) => target.host);
+  const covered = relevant.filter((target) => coveringMesh(sidecar, target.host));
+  const uncovered = relevant.filter((target) => !coveringMesh(sidecar, target.host));
+
+  // ── switched off by the user: nothing runs, and nothing else is wrong ──
+  if (input.context.profileMesh?.enabled === false) {
+    findings.push({
+      id: "mesh.sidecar.disabled",
+      severity: "blocker",
+      title: "This profile's mesh is switched off",
+      detail:
+        "The addresses below are on a private mesh, and the mesh of the profile " +
+        "you are signed in to is turned off, so nothing routes to them.",
+      evidence: hosts,
+      remedy: { kind: "navigate", label: "Open mesh settings", path: MESH_SETTINGS },
+    });
+    return findings;
+  }
+
+  // ── the client itself ──
+  if (sidecar.sidecar.state === "unavailable") {
+    findings.push({
+      id: "mesh.sidecar.unavailable",
+      severity: "blocker",
+      title:
+        sidecar.sidecar.reason === "binary-missing"
+          ? "This build of Orkestrator has no mesh client"
+          : "Orkestrator's mesh client could not be started",
+      detail:
+        (sidecar.sidecar.reason === "binary-missing"
+          ? "The addresses below are on a private mesh, and this build ships without " +
+            "the built-in client that joins one, so they cannot be reached from it."
+          : "The addresses below are on a private mesh, and the built-in client that " +
+            "joins one failed to start on this computer.") +
+        (sidecar.sidecar.detail ? ` (${sidecar.sidecar.detail})` : ""),
+      evidence: hosts,
+    });
+    return findings;
+  }
+
+  // ── addresses the mesh routes: the probes went through it ──
+  for (const target of covered) {
+    const mesh = coveringMesh(sidecar, target.host)!;
+    const peer = peerFor(mesh, target.host);
+    const label = labelOf(target);
+    if (peer && peer.expired) {
+      findings.push({
+        id: "mesh.sidecar.peer-expired",
+        severity: "blocker",
+        title: `The machine behind ${target.host} has dropped off the ${mesh.config.label} mesh`,
+        detail:
+          "Its key has expired, so the mesh no longer carries traffic to it. " +
+          "Whoever runs that machine has to sign it in to the mesh again.",
+        evidence: [`peer: ${peer.dnsName ?? peer.hostName ?? target.host}`, `mesh: ${mesh.config.controlUrl}`],
+        targetLabel: label,
+      });
+    } else if (peer && !peer.online) {
+      findings.push({
+        id: "mesh.sidecar.peer-offline",
+        severity: "blocker",
+        title: `The machine behind ${target.host} is offline on the ${mesh.config.label} mesh`,
+        detail:
+          "This computer is on the mesh and the address is known there, but the " +
+          "machine it names is not connected right now — switched off, asleep, or " +
+          "its own mesh client stopped. Nothing on this computer can fix that.",
+        evidence: [`peer: ${peer.dnsName ?? peer.hostName ?? target.host}`, `mesh: ${mesh.config.controlUrl}`],
+        targetLabel: label,
+      });
+    }
+  }
+  if (covered.length > 0) {
+    const names = [...new Set(covered.map((target) => coveringMesh(sidecar, target.host)!.config.label))];
+    findings.push({
+      id: "mesh.sidecar.routed",
+      severity: "info",
+      title: `Checked through the ${names.join(", ")} mesh`,
+      detail:
+        "Orkestrator routes these addresses through its own mesh client, and the " +
+        "checks below went the same way, so they describe the machine on the mesh " +
+        "and the service on it — not this computer's DNS or the system Tailscale app.",
+      evidence: covered.map((target) => {
+        const peer = peerFor(coveringMesh(sidecar, target.host)!, target.host);
+        return `${labelOf(target)}: ${target.host}${peer ? ` → ${peer.dnsName ?? peer.hostName} (${peer.online ? "online" : "offline"})` : ""}`;
+      }),
+    });
+  }
+
+  if (uncovered.length === 0) return findings;
+
+  // ── addresses nothing routes: why not, exactly ──
+  const ours = deploymentMeshes(input, sidecar);
+  const uncoveredHosts = uncovered.map((target) => target.host);
+
+  for (const mesh of ours) {
+    const { config, status } = mesh;
+    const where = [`mesh: ${config.controlUrl}`, ...uncoveredHosts];
+    switch (status.state) {
+      case "needs-login":
+        findings.push({
+          id: "mesh.sidecar.needs-login",
+          severity: "blocker",
+          title: `This computer is no longer a member of the ${config.label} mesh`,
+          detail:
+            "Its membership expired or was revoked. Membership is granted when you " +
+            "sign in to the deployment, so signing in again — and being allowed the " +
+            "mesh — is what restores it.",
+          evidence: where,
+          remedy: { kind: "manual", instructions: SIGN_IN_AGAIN },
+        });
+        break;
+      case "needs-machine-auth":
+        findings.push({
+          id: "mesh.sidecar.needs-machine-auth",
+          severity: "blocker",
+          title: `The ${config.label} mesh is waiting for an administrator to approve this computer`,
+          detail:
+            "This computer has joined, but the mesh requires administrators to " +
+            "approve new machines before they can reach anything. Until then its " +
+            "addresses stay unreachable.",
+          evidence: where,
+          remedy: { kind: "manual", instructions: "Ask an administrator of the deployment to approve this computer." },
+        });
+        break;
+      case "error":
+        findings.push({
+          id: "mesh.sidecar.error",
+          severity: "blocker",
+          title: `The ${config.label} mesh could not be joined`,
+          detail:
+            "Orkestrator's mesh client reported an error for this mesh, so nothing " +
+            "is routed through it. Signing in again retries the join with a fresh key.",
+          evidence: [status.error ?? "unknown error", ...where],
+          remedy: { kind: "manual", instructions: SIGN_IN_AGAIN },
+        });
+        break;
+      case "starting":
+        findings.push({
+          id: "mesh.sidecar.starting",
+          severity: "warning",
+          title: `The ${config.label} mesh is still connecting`,
+          detail:
+            "Its addresses are not reachable until the node is up; that usually takes " +
+            "a few seconds. Run the checks again.",
+          evidence: where,
+        });
+        break;
+      case "stopped":
+        findings.push({
+          id: "mesh.sidecar.stopped",
+          severity: "blocker",
+          title: `The ${config.label} mesh is not running`,
+          detail:
+            sidecar.sidecar.state === "crashed"
+              ? `Orkestrator's mesh client stopped unexpectedly (${sidecar.sidecar.detail}), taking this mesh down with it.`
+              : "This computer is a member, but its node for this mesh is not up right now.",
+          evidence: where,
+          remedy: { kind: "manual", instructions: "Restart Orkestrator; if it happens again, sign out and back in." },
+        });
+        break;
+      case "running": {
+        const peers = (status.peers ?? []).map((peer) => peer.dnsName ?? peer.hostName ?? peer.ips[0]).filter(Boolean);
+        findings.push({
+          id: "mesh.sidecar.host-not-routed",
+          severity: "blocker",
+          title: `The ${config.label} mesh is up, but ${uncoveredHosts[0]} is not on it`,
+          detail:
+            "This computer is connected to the mesh, yet this address is neither " +
+            `under its name space${status.magicDnsSuffix ? ` (${status.magicDnsSuffix})` : ""}, ` +
+            "nor one of its machines, nor pinned to it. Either the deployment " +
+            "advertises an address the mesh does not know, or it belongs to a " +
+            "different mesh. Pinning the deployment's addresses to this mesh " +
+            "routes them anyway.",
+          evidence: [
+            ...uncoveredHosts.map((host) => `not routed: ${host}`),
+            `mesh machines: ${peers.length > 0 ? peers.join(", ") : "none"}`,
+            ...(config.hosts.length > 0 ? [`pinned: ${config.hosts.join(", ")}`] : []),
+          ],
+          remedy: { kind: "navigate", label: "Open mesh settings", path: MESH_SETTINGS },
+        });
+        break;
+      }
+    }
+  }
+
+  if (ours.length > 0) return findings;
+
+  // No mesh of ours at all for this deployment. If the system Tailscale app
+  // covers it, the system-client rules have the floor.
+  const systemMeshUp = input.mesh?.available && input.mesh.backendState === "Running";
+  if (systemMeshUp) return findings;
+
+  const meshCoordUrl = input.context.meshCoordUrl;
+  if (meshCoordUrl === null) {
+    findings.push({
+      id: "mesh.sidecar.not-advertised",
+      severity: "blocker",
+      title: "This deployment uses private mesh addresses but does not say which mesh",
+      detail:
+        `The address ${uncoveredHosts[0]} is a private mesh address, yet the deployment's ` +
+        "discovery document names no mesh control server, so Orkestrator has no " +
+        "way to join it. Whoever runs the deployment has to advertise its mesh " +
+        "(the mesh_coord_url in .well-known/fakts).",
+      evidence: uncoveredHosts,
+      docs: ARKITEKT_DOCS,
+    });
+  } else if (meshCoordUrl) {
+    findings.push({
+      id: "mesh.sidecar.not-granted",
+      severity: "blocker",
+      title: "This computer was not let into the deployment's mesh when you signed in",
+      detail:
+        `The deployment runs on a private mesh at ${meshCoordUrl}. Orkestrator asks to ` +
+        "join it with every sign-in; this time no membership came back — the " +
+        "approver declined it, or the deployment could not issue one. Signing in " +
+        "again asks once more; if it keeps being declined, ask an administrator.",
+      evidence: [`mesh: ${meshCoordUrl}`, ...uncoveredHosts],
+      remedy: { kind: "manual", instructions: SIGN_IN_AGAIN },
+      docs: ARKITEKT_DOCS,
+    });
+  } else {
+    findings.push({
+      id: "mesh.sidecar.not-joined",
+      severity: "blocker",
+      title: "This deployment is on a private mesh this computer has not joined",
+      detail:
+        `The address ${uncoveredHosts[0]} lives on a private mesh. Orkestrator joins a ` +
+        "deployment's mesh by itself when you sign in and the deployment allows " +
+        "it — this login did not include that.",
+      evidence: uncoveredHosts,
+      remedy: { kind: "manual", instructions: SIGN_IN_AGAIN },
+      docs: ARKITEKT_DOCS,
+    });
+  }
+
+  return findings;
+};
 
 /* ────────────────────────────── mesh rules ────────────────────────────── */
 
@@ -616,17 +915,28 @@ export const diagnose = (input: DiagnoseInput): Finding[] => {
     return rankFindings(findings);
   }
 
-  findings.push(...meshFindings(input.mesh, targets));
+  // A target the built-in mesh routes is probed THROUGH that mesh (main asks
+  // the same routing table), and only such a probe may speak for it: a
+  // direct probe of a mesh-routed host would report this computer's DNS,
+  // which the app never uses for it. The system-client rules only get the
+  // addresses our mesh does not cover.
+  const isCovered = (host: string) => !!coveringMesh(input.sidecar, host);
+  const uncoveredTargets = targets.filter((target) => !isCovered(target.host));
+  const systemMeshTargets = meshTargets(uncoveredTargets);
+
+  findings.push(...sidecarFindings(input, targets));
+  if (systemMeshTargets.length > 0) findings.push(...meshFindings(input.mesh, uncoveredTargets));
   findings.push(...discoveryFindings(input));
 
   for (const probe of input.network) {
+    if (isCovered(probe.target.host) && !probe.viaMeshProxy) continue;
     findings.push(...dnsFindings(probe, input.mesh));
     findings.push(...tcpFindings(probe));
     findings.push(...tlsFindings(probe));
     findings.push(...httpFindings(probe, input.context));
   }
 
-  findings.push(...meshHealthy(input.mesh, targets, findings));
+  if (systemMeshTargets.length > 0) findings.push(...meshHealthy(input.mesh, uncoveredTargets, findings));
 
   // Main got through where the app did not — the only finding that points at
   // the app itself rather than at the network.

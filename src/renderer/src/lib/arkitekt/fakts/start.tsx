@@ -28,11 +28,18 @@ export const deviceAuthorization = async ({
   controller,
   manifest,
   expirationTime,
+  requestAuthKey = false,
 }: {
   endpoint: FaktsEndpoint;
   controller: AbortController;
   manifest: EnhancedManifest;
   expirationTime?: number;
+  /**
+   * Ask lok to mint a mesh pre-auth key with this grant; it arrives once, in
+   * the token response the device-code poll ends on (`meshGrant.ts`). Set
+   * whenever the deployment has a mesh; lok dedups by `device_id`.
+   */
+  requestAuthKey?: boolean;
 }): Promise<DeviceAuthorization> => {
   const response = await fetch(endpoint.device_authorization_endpoint, {
     method: "POST",
@@ -43,6 +50,12 @@ export const deviceAuthorization = async ({
       // Orkestrator is an Electron desktop app; the kind is a label on the
       // registered client (the grant is the same either way).
       requested_client_kind: "desktop",
+      // Top-level, not inside the manifest: a manifest field would change
+      // the pinned manifest of every token already redeemed.
+      request_auth_key: requestAuthKey,
+      // The stable machine id, so a re-grant is the same device (and the
+      // same mesh node) to lok rather than a new one.
+      device_id: manifest.node_id,
     }),
     signal: controller.signal,
   });

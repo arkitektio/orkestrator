@@ -21,7 +21,18 @@ files:
   - "public/**/*"
   - "package.json"
   - "resources/**/*"
+  # The mesh sidecar is an executable: it cannot run from inside the asar, so
+  # it ships via extraResources below instead of the bundle.
+  - "!resources/meshd/**"
 asar: true
+# The mesh sidecar (tools/meshd, Go; built by scripts/build-meshd.mjs into
+# resources/meshd/<os>-<arch>/). Lands in <resourcesPath>/meshd/, which is
+# where src/main/mesh/meshdLocate.ts looks in a packaged build. On macOS it
+# is a Mach-O under Contents/Resources and is signed with the app.
+extraResources:
+  - from: "resources/meshd/${os}-${arch}"
+    to: "meshd"
+    filter: ["**/*"]
 # The voice engine's native addon and its shared libraries cannot be loaded
 # from inside the asar archive; they stay unpacked next to it.
 asarUnpack:

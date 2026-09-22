@@ -3,6 +3,7 @@ import { AppModule } from './AppModule';
 import { ipcMain } from 'electron';
 import fs from 'fs';
 import https from 'https';
+import { SocksProxyAgent } from 'socks-proxy-agent';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { BigFileUploadGrant } from '../schemas/mikro'; // or whatever the type is, I can use any here
@@ -20,6 +21,35 @@ const datalayerHttpsAgent = new https.Agent({
     rejectUnauthorized: false,
 });
 
+/**
+ * A datalayer behind an organisation mesh is only reachable from main through
+ * the mesh sidecar's SOCKS5 port (the renderer gets there via the session's
+ * PAC script; Node does not). `socks5h` = the sidecar resolves the name, so
+ * MagicDNS works without touching the OS resolver. Same TLS leniency as above.
+ */
+export const datalayerAgentFor = (
+    endpointUrl: string | undefined,
+    proxyPortForHost?: (host: string) => number | undefined,
+): { httpAgent: SocksProxyAgent | undefined; httpsAgent: SocksProxyAgent | https.Agent } => {
+    let host: string | undefined;
+    try {
+        host = endpointUrl ? new URL(endpointUrl).hostname : undefined;
+    } catch {
+        host = undefined;
+    }
+    const port = host ? proxyPortForHost?.(host) : undefined;
+    if (!port) return { httpAgent: undefined, httpsAgent: datalayerHttpsAgent };
+    const agent = new LenientSocksProxyAgent(`socks5h://127.0.0.1:${port}`, { keepAlive: true, maxSockets: 50 });
+    return { httpAgent: agent, httpsAgent: agent };
+};
+
+/** The SOCKS agent with the same TLS leniency as `datalayerHttpsAgent`. */
+class LenientSocksProxyAgent extends SocksProxyAgent {
+    connect(req: Parameters<SocksProxyAgent["connect"]>[0], opts: Parameters<SocksProxyAgent["connect"]>[1]) {
+        return super.connect(req, { ...opts, rejectUnauthorized: false } as typeof opts);
+    }
+}
+
 export class BigFileUploadService implements AppModule {
     private ipcTransport: IpcTransport;
     private activeUploads: Map<string, Upload> = new Map();
@@ -28,8 +58,11 @@ export class BigFileUploadService implements AppModule {
         // Required for implementing AppModule
     }
 
-    constructor(ipcTransport: IpcTransport) {
+    private readonly proxyPortForHost?: (host: string) => number | undefined;
+
+    constructor(ipcTransport: IpcTransport, proxyPortForHost?: (host: string) => number | undefined) {
         this.ipcTransport = ipcTransport;
+        this.proxyPortForHost = proxyPortForHost;
 
         ipcMain.handle("upload:bigFile", async (event, args: { uploadId: string, path: string, grant: BigFileUploadGrant, endpointUrl: string }) => {
             return this.handleUpload(event, args);
@@ -56,7 +89,7 @@ export class BigFileUploadService implements AppModule {
                 sessionToken: grant.sessionToken,
             },
             forcePathStyle: true,
-            requestHandler: { httpsAgent: datalayerHttpsAgent },
+            requestHandler: datalayerAgentFor(args.endpointUrl, this.proxyPortForHost),
         });
 
         const fileStream = fs.createReadStream(path);

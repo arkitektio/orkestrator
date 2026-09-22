@@ -8,6 +8,7 @@ import {
   useAvailableServices,
   useServiceState,
 } from "@/lib/arkitekt/hooks";
+import { useActiveProfile } from "@/lib/arkitekt/hooks";
 import { useArkitektActions } from "@/lib/arkitekt/provider";
 import type { ServiceRuntimeState } from "@/lib/arkitekt/types";
 import { Loader2, RefreshCw, Stethoscope, Unplug, WifiOff } from "lucide-react";
@@ -248,6 +249,7 @@ export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
   // Already only the configured ones: what this deployment actually offers.
   const configured = useAvailableServices();
   const { retryService } = useArkitektActions();
+  const activeProfile = useActiveProfile();
   const [diagnosing, setDiagnosing] = useState(false);
 
   /**
@@ -300,7 +302,15 @@ export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
           <ConnectionDoctor
             autoRun
             centered
-            context={{ kind: "service", serviceKey }}
+            context={{
+              kind: "service",
+              serviceKey,
+              endpointUrl: activeProfile?.session.endpoint.base_url,
+              // null = "the deployment names no mesh", a different verdict
+              // from "unknown" — see DoctorContext.
+              meshCoordUrl: activeProfile ? (activeProfile.session.endpoint.mesh_coord_url ?? null) : undefined,
+              profileMesh: activeProfile?.mesh,
+            }}
             buildTargets={() =>
               instance ? instanceToProbeTargets(serviceKey, instance) : []
             }

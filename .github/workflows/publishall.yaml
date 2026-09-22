@@ -52,6 +52,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The mesh sidecar (tools/meshd) is pure Go and cross-compiles for every
+      # target from any host; electron-builder picks the ${os}-${arch} dir.
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/meshd/go.mod
+          cache-dependency-path: tools/meshd/go.sum
+
+      - name: build-meshd
+        run: node scripts/build-meshd.mjs all
+
       - name: install-snapcraft
         if: matrix.os == 'ubuntu-latest'
         run: |

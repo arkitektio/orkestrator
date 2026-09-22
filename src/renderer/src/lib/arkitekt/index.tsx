@@ -143,6 +143,7 @@ export const buildArkitekt = <T extends ServiceBuilderMap, S extends ServiceBuil
     useRemoveProfile: () => useArkitektActions().removeProfile,
     useForgetAllProfiles: () => useArkitektActions().forgetAllProfiles,
     useSetProfileIdentity: () => useArkitektActions().setProfileIdentity,
+    useSetProfileMesh: () => useArkitektActions().setProfileMesh,
     useReportStatus: () => useArkitektActions().reportStatus,
     useCancelConnection: () => useArkitektActions().cancelConnection,
     useManifest: () => realManifest,

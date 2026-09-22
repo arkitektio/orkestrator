@@ -1,6 +1,7 @@
 import {
   Bug,
   Mic,
+  Network,
   Pin,
   Server,
   SlidersHorizontal,
@@ -75,6 +76,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: "Services",
     description: "What this deployment provides, and whether it is reachable.",
     icon: Server,
+    group: "system",
+  },
+  {
+    slug: "mesh",
+    label: "Mesh",
+    description: "The private network of the organisation you are signed in to.",
+    icon: Network,
     group: "system",
   },
   {
