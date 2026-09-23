@@ -1,4 +1,4 @@
-import { useDatalayerEndpoint } from "@/app/Arkitekt";
+import { useCoordinationEndpoint, useDatalayerEndpoint } from "@/app/Arkitekt";
 import { useCallback } from "react";
 
 const s3resolveWithEndpoint = (endpointUrl: string, key: string) => {
@@ -30,4 +30,23 @@ export const useResolve = () => {
   );
 
   return s3resolve;
+};
+
+/**
+ * `useResolve` for lok's media — avatars, logos — which the coordination
+ * server serves from its base path, not the modules' datalayer. An absolute
+ * URL (lok may hand out a finished short-lived link) passes through as is.
+ */
+export const useLokResolve = () => {
+  const endpoint = useCoordinationEndpoint();
+
+  return useCallback(
+    (key: string | undefined | null) => {
+      if (!key) return "";
+      if (/^https?:\/\//.test(key)) return key;
+      if (!endpoint) return "";
+      return s3resolveWithEndpoint(endpoint, key);
+    },
+    [endpoint],
+  );
 };

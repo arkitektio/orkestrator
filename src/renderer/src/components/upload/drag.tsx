@@ -1,6 +1,6 @@
 import { UploadOptions } from "@/datalayer/hooks/useUpload";
 import { acceptsFiles } from "@/lib/dnd/files";
-import { useDragSession, useDropTarget } from "@/lib/dnd/react";
+import { useCanDrop, useDropTarget } from "@/lib/dnd/react";
 import { useState } from "react";
 
 export type UploadFunc = (
@@ -27,8 +27,7 @@ export const DragZone: React.FC<{
   const [uploadFutures, setUploadFutures] = useState<UploadFuture[]>([]);
 
   // The zone shows itself only while files are in the air over the window.
-  const session = useDragSession();
-  const canDrop = session !== null && acceptsFiles(session);
+  const canDrop = useCanDrop(acceptsFiles);
 
   const { ref, isOver } = useDropTarget({
     accepts: acceptsFiles,

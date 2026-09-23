@@ -1,27 +1,31 @@
 import { useDialog } from "@/app/dialog";
 import { GraphQLListSearchField } from "@/components/fields/GraphQLListSearchField";
-import { GraphQLSearchField } from "@/components/fields/GraphQLSearchField";
 import { Button } from "@/components/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { useAddUserToOrganizationMutation, useOrganizationOptionsLazyQuery, useRoleOptionsLazyQuery } from "@/lok-next/api/graphql";
+import { useAddUserToOrganizationMutation, useMyContextQuery, useRoleOptionsLazyQuery } from "@/lok-next/api/graphql";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 type AddUserInfoForm = {
   roles: string[];
-  organization: string;
 };
 
-export const AddUserToOrganizationDialog = (props: { users: string[], organization?: string }) => {
+/**
+ * Adds users to the organization this profile acts in — the only one it has,
+ * so there is no organization to pick.
+ */
+export const AddUserToOrganizationDialog = (props: { users: string[] }) => {
   const [add] = useAddUserToOrganizationMutation();
   const [search] = useRoleOptionsLazyQuery();
-  const [searchOrg] = useOrganizationOptionsLazyQuery();
+  const { data: context } = useMyContextQuery();
+  const organization = context?.mycontext.organization;
 
   const { closeDialog } = useDialog();
 
   const dialog = async (data: AddUserInfoForm) => {
-    const { roles, organization } = data;
+    if (!organization) return;
+    const { roles } = data;
 
     // Send notification to each user
     const promises = props.users.map(userId =>
@@ -29,7 +33,7 @@ export const AddUserToOrganizationDialog = (props: { users: string[], organizati
         variables: {
           input: {
             user: userId,
-            organization: organization,
+            organization: organization.id,
             roles: roles,
           },
         },
@@ -38,10 +42,10 @@ export const AddUserToOrganizationDialog = (props: { users: string[], organizati
 
     try {
       await Promise.all(promises);
-      toast.success(`Notification sent to ${props.users.length} user${props.users.length > 1 ? 's' : ''}`);
+      toast.success(`Added ${props.users.length} user${props.users.length > 1 ? 's' : ''} to ${organization.name}`);
       return { data: { success: true } };
     } catch (error) {
-      toast.error("Failed to send notifications");
+      toast.error("Failed to add users");
       throw error;
     } finally {
       closeDialog();
@@ -50,7 +54,6 @@ export const AddUserToOrganizationDialog = (props: { users: string[], organizati
 
   const form = useForm<AddUserInfoForm>({
     defaultValues: {
-      organization: props.organization,
       roles: [],
     },
   });
@@ -61,22 +64,14 @@ export const AddUserToOrganizationDialog = (props: { users: string[], organizati
         onSubmit={form.handleSubmit(dialog)}
       >
         <DialogHeader>
-          <DialogTitle>Send Notification</DialogTitle>
+          <DialogTitle>Add to {organization?.name ?? "organization"}</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4">
           <div className="text-sm text-muted-foreground">
-            Sending notification to {props.users.length} user{props.users.length > 1 ? 's' : ''}
+            Adding {props.users.length} user{props.users.length > 1 ? 's' : ''}
           </div>
 
-          {!props.organization && (
-            <GraphQLSearchField
-              name="organization"
-              label="Organization"
-              description="Select organization for the user"
-              searchQuery={searchOrg}
-            />
-          )}
           <GraphQLListSearchField
             name="roles"
             label="Roles"
@@ -87,7 +82,7 @@ export const AddUserToOrganizationDialog = (props: { users: string[], organizati
 
         <DialogFooter className="mt-6">
           <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Sending..." : "Send Notification"}
+            {form.formState.isSubmitting ? "Adding…" : "Add"}
           </Button>
         </DialogFooter>
       </form>

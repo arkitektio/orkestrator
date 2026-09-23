@@ -7,7 +7,12 @@ import { buildPac, pacDataUrl, proxyPortForHost, routesFor, type PacRoute } from
 import {
   MESH_CLAIM_CHANNEL,
   MESH_EVENT_CHANNEL,
+  MESH_LOCK_INIT_CHANNEL,
+  MESH_LOCK_MAX_TRUSTED_KEYS,
+  MESH_LOCK_SIGN_CHANNEL,
+  isLockPublicKey,
   MESH_PING_CHANNEL,
+  MESH_RESTART_CHANNEL,
   MESH_STATUS_CHANNEL,
   parseMeshdLine,
   sanitizeMeshConfig,
@@ -16,6 +21,10 @@ import {
   type MeshdCommand,
   type MeshdEvent,
   type MeshEvent,
+  type MeshLockInitRequest,
+  type MeshLockInitResult,
+  type MeshLockSignRequest,
+  type MeshLockSignResult,
   type MeshNodeStatus,
   type MeshPingRequest,
   type MeshPingResult,
@@ -77,6 +86,9 @@ export type MeshServiceDeps = {
 const READY_TIMEOUT_MS = 15_000;
 const KILL_GRACE_MS = 3_000;
 const PING_TIMEOUT_MS = 30_000;
+const LOCK_SIGN_TIMEOUT_MS = 30_000;
+/** Init signs every machine on the mesh before the lock goes live. */
+const LOCK_INIT_TIMEOUT_MS = 90_000;
 
 export class MeshService implements AppModule {
   private child: MeshChild | undefined;
@@ -90,6 +102,11 @@ export class MeshService implements AppModule {
   private readonly nodeState = new Map<string, boolean>();
   /** Pings in flight, keyed `<meshId>::<target>`; settled by the final attempt. */
   private readonly pings = new Map<string, { resolve: (results: MeshPingResult[]) => void; results: MeshPingResult[] }>();
+  /** Tailnet Lock signatures in flight, keyed `<meshId>::<nodeKey>`. */
+  private readonly lockSigns = new Map<string, Promise<MeshLockSignResult>>();
+  private readonly lockSignWaiters = new Map<string, (result: MeshLockSignResult) => void>();
+  /** At most one lock init per mesh; its answer carries secrets, so it has exactly one waiter. */
+  private readonly lockInitWaiters = new Map<string, (result: MeshLockInitResult) => void>();
   private starting: Promise<void> | undefined;
   private lastPac: string | undefined;
   private quitting = false;
@@ -114,6 +131,13 @@ export class MeshService implements AppModule {
       return this.claim(sender?.id ?? 0, request);
     });
     this.transport.handleChannel(MESH_PING_CHANNEL, (_event, request: MeshPingRequest) => this.ping(request));
+    this.transport.handleChannel(MESH_LOCK_SIGN_CHANNEL, (_event, request: MeshLockSignRequest) =>
+      this.lockSign(request),
+    );
+    this.transport.handleChannel(MESH_LOCK_INIT_CHANNEL, (_event, request: MeshLockInitRequest) =>
+      this.lockInit(request),
+    );
+    this.transport.handleChannel(MESH_RESTART_CHANNEL, () => this.restart());
   }
 
   private readonly watched = new Set<number>();
@@ -248,6 +272,110 @@ export class MeshService implements AppModule {
     });
   }
 
+  /**
+   * Approve a machine Tailnet Lock keeps cut off, by signing its node key
+   * with this computer's lock key. Only a machine the mesh's own status lists
+   * as waiting, and only when this computer is a trusted signer — the
+   * renderer names a listed machine, it never hands over a key of its own.
+   * The sidecar checks the same again against the node's live lock state.
+   */
+  async lockSign(request: MeshLockSignRequest): Promise<MeshLockSignResult> {
+    const status = this.statuses.get(request?.meshId);
+    const nodeKey = typeof request?.nodeKey === "string" ? request.nodeKey.trim() : "";
+    const lock = status?.lock;
+    if (!status || status.state !== "running" || !lock?.enabled) {
+      throw new Error("Tailnet Lock is not on for a connected mesh");
+    }
+    if (!lock.trusted) throw new Error("This computer is not trusted to approve machines");
+    if (!(lock.pending ?? []).some((peer) => peer.nodeKey === nodeKey)) {
+      throw new Error("That machine is not waiting for approval");
+    }
+    if (!this.child) throw new Error("The mesh client is not running");
+    const key = `${request.meshId}::${nodeKey}`;
+    const inFlight = this.lockSigns.get(key);
+    if (inFlight) return inFlight;
+    const promise = new Promise<MeshLockSignResult>((resolve) => {
+      const timer = setTimeout(() => settle({ ok: false, error: "The mesh client did not answer" }), LOCK_SIGN_TIMEOUT_MS);
+      const settle = (result: MeshLockSignResult) => {
+        if (this.lockSignWaiters.get(key) !== settle) return;
+        clearTimeout(timer);
+        this.lockSignWaiters.delete(key);
+        this.lockSigns.delete(key);
+        resolve(result);
+      };
+      this.lockSignWaiters.set(key, settle);
+    });
+    this.lockSigns.set(key, promise);
+    this.send({ op: "lock-sign", id: request.meshId, nodeKey });
+    return promise;
+  }
+
+  /**
+   * Make this computer the mesh's Tailnet Lock key authority. Only when the
+   * mesh is connected, the coordination server allows it and the lock is not
+   * already set up; extra signers must be well-formed lock keys. The answer
+   * carries the disablement secret and goes back to this caller only — it is
+   * not broadcast, not logged and not kept.
+   */
+  async lockInit(request: MeshLockInitRequest): Promise<MeshLockInitResult> {
+    const status = this.statuses.get(request?.meshId);
+    const lock = status?.lock;
+    if (!status || status.state !== "running" || !lock) {
+      throw new Error("The mesh is not connected");
+    }
+    if (lock.enabled) throw new Error("Tailnet Lock is already set up for this mesh");
+    if (!lock.allowed) throw new Error("Tailnet Lock is not switched on for this mesh on the coordination server");
+    const raw = Array.isArray(request.trustedKeys) ? request.trustedKeys : [];
+    const trustedKeys = [
+      ...new Set(raw.map((key) => (typeof key === "string" ? key.trim().toLowerCase() : "")).filter(Boolean)),
+    ].filter((key) => key !== lock.publicKey);
+    if (!trustedKeys.every(isLockPublicKey)) throw new Error("Not a Tailnet Lock key (tlpub:…)");
+    if (trustedKeys.length > MESH_LOCK_MAX_TRUSTED_KEYS) {
+      throw new Error(`At most ${MESH_LOCK_MAX_TRUSTED_KEYS} other signers`);
+    }
+    if (this.lockInitWaiters.has(request.meshId)) throw new Error("Tailnet Lock is already being set up");
+    if (!this.child) throw new Error("The mesh client is not running");
+    const meshId = request.meshId;
+    return new Promise<MeshLockInitResult>((resolve) => {
+      const timer = setTimeout(
+        () => settle({ ok: false, error: "The mesh client did not answer. Check the mesh before trying again." }),
+        LOCK_INIT_TIMEOUT_MS,
+      );
+      const settle = (result: MeshLockInitResult) => {
+        if (this.lockInitWaiters.get(meshId) !== settle) return;
+        clearTimeout(timer);
+        this.lockInitWaiters.delete(meshId);
+        resolve(result);
+      };
+      this.lockInitWaiters.set(meshId, settle);
+      this.send({ op: "lock-init", id: meshId, trustedKeys });
+    });
+  }
+
+  /**
+   * "Check again": stop the sidecar, wait for it to go, and bring every
+   * claimed mesh back up in a fresh one. A fresh node gets a fresh map from
+   * the coordination server (a capability granted there, say), and a fresh
+   * process is the binary on disk now — a sidecar outlives rebuilds and app
+   * updates otherwise. Nodes keep their state, so nothing re-authenticates.
+   * Refused while a lock setup is running: its answer would be lost.
+   */
+  async restart(): Promise<MeshStatusPayload> {
+    if (this.lockInitWaiters.size > 0) throw new Error("Tailnet Lock is being set up; try again when it is done");
+    if (this.restarting) return this.restarting;
+    this.restarting = (async () => {
+      await this.killChild();
+      for (const config of this.configs()) await this.connect(config, undefined, false);
+      await this.publish();
+      return this.statusPayload();
+    })().finally(() => {
+      this.restarting = undefined;
+    });
+    return this.restarting;
+  }
+
+  private restarting: Promise<MeshStatusPayload> | undefined;
+
   /** For main's own Node clients: the proxy port a host tunnels through, if any. */
   proxyPortForHost(host: string): number | undefined {
     return proxyPortForHost(this.routes(), host);
@@ -374,6 +502,19 @@ export class MeshService implements AppModule {
       }
       return;
     }
+    if (event.ev === "lock-sign") {
+      this.lockSignWaiters.get(`${event.id}::${event.nodeKey}`)?.({ ok: event.ok, error: event.error || undefined });
+      return;
+    }
+    if (event.ev === "lock-init") {
+      // Carries the disablement secret: to its one waiter, nowhere else.
+      this.lockInitWaiters.get(event.id)?.({
+        ok: event.ok,
+        error: event.error || undefined,
+        disablementSecrets: event.ok ? event.disablementSecrets : undefined,
+      });
+      return;
+    }
     // status
     const { ev: _ev, ...status } = event;
     if (!this.wanted.has(status.id)) return; // a straggler after disconnect
@@ -390,9 +531,11 @@ export class MeshService implements AppModule {
     }
   }
 
-  private killChild() {
+  /** Resolves once the sidecar has exited (or been killed after the grace period). */
+  private killChild(): Promise<void> {
     const child = this.child;
-    if (!child) return;
+    if (!child) return Promise.resolve();
+    const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
     this.child = undefined;
     this.sidecar = { state: "idle" };
     try {
@@ -413,6 +556,8 @@ export class MeshService implements AppModule {
     child.once("exit", () => clearTimeout(timer));
     for (const id of this.wanted) this.setStatus({ id, state: "stopped" });
     if (!this.quitting) void this.publish();
+    // Never wait forever on a process that will not report its exit.
+    return Promise.race([exited, new Promise<void>((resolve) => setTimeout(resolve, KILL_GRACE_MS + 1_000))]);
   }
 
   // ── status, routing, broadcast ──

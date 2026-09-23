@@ -25,10 +25,17 @@ import type {
 import {
   MESH_CLAIM_CHANNEL,
   MESH_EVENT_CHANNEL,
+  MESH_LOCK_INIT_CHANNEL,
+  MESH_LOCK_SIGN_CHANNEL,
   MESH_PING_CHANNEL,
+  MESH_RESTART_CHANNEL,
   MESH_STATUS_CHANNEL,
   type MeshClaimRequest,
   type MeshEvent,
+  type MeshLockInitRequest,
+  type MeshLockInitResult,
+  type MeshLockSignRequest,
+  type MeshLockSignResult,
   type MeshPingRequest,
   type MeshPingResult,
   type MeshStatusPayload,
@@ -63,6 +70,8 @@ const api = {
     ipcRenderer.send("open-second-window", path);
   },
   getNodeId: () => ipcRenderer.invoke("get-node-id"),
+  /** Wipes everything this computer stored and relaunches as a fresh install. */
+  factoryReset: () => ipcRenderer.invoke("app:factory-reset"),
   /**
    * The renderer draws the title bar, so it needs the frame's controls and its
    * state. `onStateChanged` returns a disposer for the reason `subscribe`
@@ -73,6 +82,10 @@ const api = {
     minimize: () => ipcRenderer.send("window:minimize"),
     toggleMaximize: () => ipcRenderer.send("window:maximize-toggle"),
     close: () => ipcRenderer.send("window:close"),
+    /** The application menu as a native popup, at page coordinates (CSS px). */
+    popupAppMenu: (x: number, y: number) => ipcRenderer.send("window:popup-app-menu", x, y),
+    /** Whether the pointer is over any of our windows right now. */
+    pointerInApp: (): Promise<boolean> => ipcRenderer.invoke("window:pointer-in-app"),
     getState: () => ipcRenderer.invoke("window:get-state"),
     onStateChanged: (cb: (state: WindowChromeState) => void) =>
       subscribe<WindowChromeState>("window:state-changed", cb),
@@ -191,6 +204,11 @@ const api = {
     status: (): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_STATUS_CHANNEL),
     claim: (request: MeshClaimRequest): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_CLAIM_CHANNEL, request),
     ping: (request: MeshPingRequest): Promise<MeshPingResult[]> => ipcRenderer.invoke(MESH_PING_CHANNEL, request),
+    lockSign: (request: MeshLockSignRequest): Promise<MeshLockSignResult> =>
+      ipcRenderer.invoke(MESH_LOCK_SIGN_CHANNEL, request),
+    lockInit: (request: MeshLockInitRequest): Promise<MeshLockInitResult> =>
+      ipcRenderer.invoke(MESH_LOCK_INIT_CHANNEL, request),
+    restart: (): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_RESTART_CHANNEL),
     onEvent: (cb: (event: MeshEvent) => void) => subscribe<MeshEvent>(MESH_EVENT_CHANNEL, cb),
   },
   initAgent: (context: any) => ipcRenderer.invoke("agent:init", context),

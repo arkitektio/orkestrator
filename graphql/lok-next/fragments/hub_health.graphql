@@ -1,0 +1,32 @@
+fragment InstanceHealth on InstanceHealth {
+  healthy
+  reason
+  instance {
+    id
+    instanceId
+    name
+    aliases {
+      id
+    }
+  }
+}
+
+fragment HubHealth on Hub {
+  id
+  name
+  identifier
+  version
+  online
+  lastSeenAt
+  lastHealthy
+  meshConnected
+  meshHost
+  latestHealth {
+    id
+    healthy
+    createdAt
+    instances {
+      ...InstanceHealth
+    }
+  }
+}

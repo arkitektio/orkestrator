@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/app/Arkitekt";
+import { Arkitekt, Guard } from "@/app/Arkitekt";
 import {
   ActionLabel,
   ActionTrigger,
@@ -19,14 +19,59 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Send, Server, Settings, Stethoscope, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useMeshes } from "@/lib/mesh/useMeshes";
 import { toast } from "sonner";
-import { ConnectionDoctor } from "@/app/components/doctor/ConnectionDoctor";
+import { HubAwareConnectionDoctor } from "@/app/components/doctor/HubAwareConnectionDoctor";
 import { instanceToProbeTargets } from "@/lib/arkitekt/doctor/targets";
+import { toHubHealthFacts, type HubHealthFacts } from "@/lib/arkitekt/doctor/hubHealth";
+import type { ServiceRuntimeState } from "@/lib/arkitekt/types";
+import { useMyHubHealthQuery } from "@/lok-next/api/graphql";
 import type { ProbeTarget } from "../../../../main/doctor/protocol";
 import { FaktsViewer } from "../components/FaktsViewer";
+import { HubHealthCard } from "../components/HubHealthCard";
 import { ServiceCard } from "../components/ServiceCard";
 import { SettingsPage } from "../components/SettingsPage";
+
+const ServiceGrid = ({ services, hub }: { services: ServiceRuntimeState[]; hub?: HubHealthFacts }) => {
+  // Live, so a card says "through the mesh" exactly when requests go through it.
+  const { meshes, sidecar } = useMeshes();
+  const mesh = useMemo(() => ({ sidecar, meshes }), [sidecar, meshes]);
+  return services.length > 0 ? (
+    <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
+      {services.map((service) => (
+        <ServiceCard key={service.key} service={service} hub={hub} mesh={mesh} />
+      ))}
+    </div>
+  ) : (
+    <Card>
+      <CardContent className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <Server className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">No active services found</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+/** Hubs report on an interval; a slow poll keeps "last report" honest while the page is open. */
+const HUB_POLL_MS = 30_000;
+
+/** Only mounted under `Guard.Lok`: the hub's word, then the services with it. */
+const ServicesWithHub = ({ services }: { services: ServiceRuntimeState[] }) => {
+  const fakts = Arkitekt.useFakts();
+  const { data } = useMyHubHealthQuery({ pollInterval: HUB_POLL_MS });
+  const raw = data?.mycontext.hub;
+  const hub = raw ? toHubHealthFacts(raw, fakts?.instances ?? {}) : undefined;
+
+  return (
+    <>
+      {hub && <HubHealthCard hub={hub} />}
+      <ServiceGrid services={services} hub={hub} />
+    </>
+  );
+};
 
 /** What the deployment provides (fakts), whether each service answers, and a way to tell the coordination server so. */
 export const ServicesPage = () => {
@@ -126,22 +171,13 @@ export const ServicesPage = () => {
         </Card>
       )}
 
-      {services.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
-          {services.map((service) => (
-            <ServiceCard key={service.key} service={service} />
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <Server className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No active services found</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Guard.Lok
+        notConnectedFallback={<ServiceGrid services={services} />}
+        connectingFallback={<ServiceGrid services={services} />}
+        bootingFallback={<ServiceGrid services={services} />}
+      >
+        <ServicesWithHub services={services} />
+      </Guard.Lok>
 
       <Card>
         <CardHeader>
@@ -151,18 +187,20 @@ export const ServicesPage = () => {
           </CardTitle>
           <CardDescription>
             Checks every address above from this computer — DNS, the connection
-            itself, the certificate and the answer — and checks the network
-            software this deployment needs. Nothing is changed unless you ask.
+            itself, the certificate and the answer — checks the network
+            software this deployment needs, and sets it against what the hub
+            reports about itself. Nothing is changed unless you ask.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ConnectionDoctor
+          <HubAwareConnectionDoctor
             context={{
               kind: "service",
               serviceKey: "all",
               endpointUrl: activeProfile?.session.endpoint.base_url,
               meshCoordUrl: activeProfile ? (activeProfile.session.endpoint.mesh_coord_url ?? null) : undefined,
               profileMesh: activeProfile?.mesh,
+              coordinationAlias: activeProfile?.session.fakts.self.alias,
             }}
             buildTargets={buildTargets}
             subject={activeProfile?.session.endpoint.base_url ?? "this deployment"}

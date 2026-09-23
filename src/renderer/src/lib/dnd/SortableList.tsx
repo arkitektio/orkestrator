@@ -3,6 +3,7 @@ import {
   type ElementType,
   type ReactNode,
 } from "react";
+import type { DragEndInfo } from "./engine";
 import {
   useSortableList,
   useSortableRow,
@@ -35,6 +36,8 @@ import {
  *
  * `onReorder(id, to)`: `to` is the row's index once moved, as `arrayMove` has
  * it. `groupOf` keeps a row within its group, the groups lying together.
+ * `onDragEnd(id, info)`: a row's drag ended without a drop in this window —
+ * dragged out of it, say (`lib/dnd/outside.ts`).
  */
 
 export type SortableRowProps = {
@@ -52,6 +55,7 @@ type OwnProps<T> = {
   getId: (item: T) => string;
   onReorder: (id: string, to: number) => void;
   groupOf?: (item: T) => string;
+  onDragEnd?: (id: string, info: DragEndInfo) => void;
   axis?: SortableAxis;
   children: (item: T, row: SortableRowProps) => ReactNode;
 };
@@ -66,6 +70,7 @@ export const SortableList = <T, E extends ElementType = "div">({
   getId,
   onReorder,
   groupOf,
+  onDragEnd,
   axis,
   as,
   children,
@@ -93,7 +98,14 @@ export const SortableList = <T, E extends ElementType = "div">({
       {list.order.map((id, position) => {
         const entry = byId.get(id);
         return entry ? (
-          <SortableRowSlot key={id} list={list} id={id} index={entry.index} position={position}>
+          <SortableRowSlot
+            key={id}
+            list={list}
+            id={id}
+            index={entry.index}
+            position={position}
+            onDragEnd={onDragEnd}
+          >
             {(row) => children(entry.item, row)}
           </SortableRowSlot>
         ) : null;
@@ -108,14 +120,16 @@ const SortableRowSlot = ({
   id,
   index,
   position,
+  onDragEnd,
   children,
 }: {
   list: SortableListHandle;
   id: string;
   index: number;
   position: number;
+  onDragEnd?: (id: string, info: DragEndInfo) => void;
   children: (row: SortableRowProps) => ReactNode;
 }) => {
-  const { ref } = useSortableRow(list, id);
+  const { ref } = useSortableRow(list, id, onDragEnd);
   return <>{children({ ref, id, index, position })}</>;
 };

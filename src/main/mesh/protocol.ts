@@ -13,7 +13,11 @@
  * mesh in a single process; the app routes a deployment's hosts to the right
  * one with a PAC script (see `pac.ts`).
  *
- * PRIVACY: a status carries the tailnet name, peer names and addresses.
+ * PRIVACY: a status carries the tailnet name, peer names and addresses, and
+ * (in `lock`) the names and addresses of machines waiting for approval.
+ * SECRET: a `lock-init` answer carries the lock's disablement secrets. They go
+ * back only to the window that asked (as the invoke result), are never
+ * broadcast, logged or stored, and are shown to the user exactly once.
  * Nothing here may be attached to `src/main/issue-reporter.ts` without a
  * redaction pass first.
  */
@@ -22,6 +26,9 @@ export const MESH_EVENT_CHANNEL = "mesh:event";
 export const MESH_STATUS_CHANNEL = "mesh:status";
 export const MESH_CLAIM_CHANNEL = "mesh:claim";
 export const MESH_PING_CHANNEL = "mesh:ping";
+export const MESH_LOCK_SIGN_CHANNEL = "mesh:lock-sign";
+export const MESH_LOCK_INIT_CHANNEL = "mesh:lock-init";
+export const MESH_RESTART_CHANNEL = "mesh:restart";
 
 /**
  * One organisation mesh. It belongs to a PROFILE (organisation + hub), not to
@@ -113,6 +120,68 @@ export type MeshPingRequest = {
   target: string;
 };
 
+/** A machine Tailnet Lock keeps cut off until a signer approves it. */
+export type MeshLockPeer = {
+  /** "nodekey:…" — what gets signed. */
+  nodeKey: string;
+  /** Its MagicDNS name, without the trailing dot. */
+  name?: string;
+  ips: string[];
+};
+
+/**
+ * Tailnet Lock, as this node sees it. With the lock on, a machine reaches
+ * nobody until a trusted signer signs its node key. Machines waiting for that
+ * are not among `peers` (they are dropped from the netmap) — only in `pending`.
+ */
+export type MeshLockStatus = {
+  /**
+   * The coordination server lets this computer set the lock up (an
+   * administrator switched Tailnet Lock on for the mesh there). Only matters
+   * while `enabled` is false.
+   */
+  allowed: boolean;
+  enabled: boolean;
+  /** This computer is authorised; if not, it is cut off from every machine. */
+  signed: boolean;
+  /** This computer's lock key is trusted, so it may approve other machines. */
+  trusted: boolean;
+  /** "tlpub:…" — shared with a signer for `tailscale lock add` / `sign`. */
+  publicKey?: string;
+  /** "nodekey:…" — this computer's node key. */
+  nodeKey?: string;
+  pending?: MeshLockPeer[];
+};
+
+export type MeshLockSignRequest = {
+  meshId: string;
+  /** One of the mesh's `lock.pending` node keys, as the status lists them. */
+  nodeKey: string;
+};
+
+export type MeshLockSignResult = { ok: boolean; error?: string };
+
+/** "tlpub:" + 64 hex — a Tailnet Lock public key as `tailscale lock` prints it. */
+export const isLockPublicKey = (value: string): boolean => /^tlpub:[0-9a-f]{64}$/.test(value);
+
+export const MESH_LOCK_MAX_TRUSTED_KEYS = 15;
+
+/**
+ * Make this computer the mesh's key authority (`tailscale lock init`). This
+ * computer's own key is always trusted; `trustedKeys` adds other signers.
+ */
+export type MeshLockInitRequest = {
+  meshId: string;
+  trustedKeys: string[];
+};
+
+export type MeshLockInitResult = {
+  ok: boolean;
+  error?: string;
+  /** "disablement-secret:…" — the only way to switch the lock off again. See SECRET above. */
+  disablementSecrets?: string[];
+};
+
 /** One node's full status; the sidecar re-sends the whole thing on change. */
 export type MeshNodeStatus = {
   id: string;
@@ -125,6 +194,8 @@ export type MeshNodeStatus = {
   selfIps?: string[];
   selfDnsName?: string;
   peers?: MeshPeer[];
+  /** Absent when the node could not tell (no lock support on either side). */
+  lock?: MeshLockStatus;
   error?: string;
 };
 
@@ -165,6 +236,8 @@ export type MeshdCommand =
   | { op: "connect"; id: string; dir: string; controlUrl: string; hostname: string; authKey?: string }
   | { op: "disconnect"; id: string }
   | { op: "ping"; id: string; target: string }
+  | { op: "lock-sign"; id: string; nodeKey: string }
+  | { op: "lock-init"; id: string; trustedKeys: string[] }
   | { op: "status" }
   | { op: "shutdown" };
 
@@ -172,6 +245,8 @@ export type MeshdEvent =
   | { ev: "ready"; version: string }
   | ({ ev: "status" } & MeshNodeStatus)
   | ({ ev: "ping"; id: string } & MeshPingResult)
+  | ({ ev: "lock-sign"; id: string; nodeKey: string } & MeshLockSignResult)
+  | ({ ev: "lock-init"; id: string } & MeshLockInitResult)
   | { ev: "log"; id: string; message: string }
   | { ev: "error"; id: string; message: string };
 
@@ -187,7 +262,7 @@ export const parseMeshdLine = (line: string): MeshdEvent | undefined => {
   }
   if (!value || typeof value !== "object") return undefined;
   const ev = (value as { ev?: unknown }).ev;
-  if (ev === "ready" || ev === "status" || ev === "ping" || ev === "log" || ev === "error") {
+  if (ev === "ready" || ev === "status" || ev === "ping" || ev === "lock-sign" || ev === "lock-init" || ev === "log" || ev === "error") {
     return value as MeshdEvent;
   }
   return undefined;
@@ -222,6 +297,21 @@ export const isRoutableHost = (value: string): boolean =>
   /^[0-9a-f:.]+$/i.test(value);
 
 export const normalizeHost = (value: string): string => value.trim().toLowerCase().replace(/\.$/, "");
+
+/**
+ * The domain a mesh's control server names its tailnets under: the control
+ * URL's host, when it is a real multi-label name (not an IP, not `localhost`).
+ */
+export const controlDomain = (controlUrl: string): string | undefined => {
+  let host: string;
+  try {
+    host = normalizeHost(new URL(controlUrl).hostname);
+  } catch {
+    return undefined;
+  }
+  if (!host.includes(".") || /^[0-9.]+$/.test(host) || host.includes(":")) return undefined;
+  return isRoutableHost(host) ? host : undefined;
+};
 
 const isString = (value: unknown): value is string => typeof value === "string";
 

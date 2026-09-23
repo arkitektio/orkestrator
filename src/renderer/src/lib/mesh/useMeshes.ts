@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { MeshPingResult, MeshStatusPayload } from "../../../../main/mesh/protocol";
+import type { MeshLockInitResult, MeshLockSignResult, MeshPingResult, MeshStatusPayload } from "../../../../main/mesh/protocol";
 import { meshBridge } from "./bridge";
 
 /**
@@ -55,6 +55,46 @@ export const useMeshes = () => {
           ...all,
           [key]: { target, attempt: 1, final: true, ok: false, direct: false, error: cause instanceof Error ? cause.message : String(cause) },
         }));
+      }
+    },
+    /**
+     * Tailnet Lock: approve a waiting machine. The waiting list updates by
+     * itself once the next status no longer lists it.
+     */
+    lockSign: async (meshId: string, nodeKey: string): Promise<MeshLockSignResult> => {
+      const current = meshBridge();
+      if (!current) return { ok: false, error: "Meshes need the desktop app." };
+      try {
+        return await current.lockSign({ meshId, nodeKey });
+      } catch (cause) {
+        return { ok: false, error: cause instanceof Error ? cause.message : String(cause) };
+      }
+    },
+    /**
+     * Tailnet Lock: make this computer the mesh's key authority. The result
+     * carries the disablement secret — show it once, never keep it.
+     */
+    /**
+     * Restart the mesh client and reconnect: a fresh node gets a fresh map
+     * from the coordination server. Resolves with an error message, if any.
+     */
+    restart: async (): Promise<string | undefined> => {
+      const current = meshBridge();
+      if (!current) return "Meshes need the desktop app.";
+      try {
+        setPayload(await current.restart());
+        return undefined;
+      } catch (cause) {
+        return cause instanceof Error ? cause.message : String(cause);
+      }
+    },
+    lockInit: async (meshId: string, trustedKeys: string[]): Promise<MeshLockInitResult> => {
+      const current = meshBridge();
+      if (!current) return { ok: false, error: "Meshes need the desktop app." };
+      try {
+        return await current.lockInit({ meshId, trustedKeys });
+      } catch (cause) {
+        return { ok: false, error: cause instanceof Error ? cause.message : String(cause) };
       }
     },
   };

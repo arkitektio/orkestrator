@@ -3,7 +3,6 @@ import { Separator } from "@/components/ui/separator";
 import { LatestMentionsSection } from "@/kraph/components/sections/LatestMentionsSection";
 import { Username } from "../Me";
 import { RecentAppsSection } from "./RecentAppsSection";
-import { UserOrganizationsSection } from "./UserOrganizationsSection";
 
 export const DashboardLayout = () => {
   return (
@@ -27,14 +26,7 @@ export const DashboardLayout = () => {
         <Separator />
       </Guard.Kraph>
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Apps */}
-        <RecentAppsSection />
-
-        {/* User Organizations */}
-        <UserOrganizationsSection />
-      </div>
+      <RecentAppsSection />
     </div>
   );
 };

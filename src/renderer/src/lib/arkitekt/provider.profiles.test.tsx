@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, waitFor } from "@testing-library/react";
+import { act, render, waitFor } from "@testing-library/react";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -19,12 +19,6 @@ import {
 
 // The alias probe does real network work and is not what these tests are about:
 // pin it so every service resolves to its first alias instantly.
-vi.mock("./builder", () => ({
-  buildAliases: vi.fn(async ({ fakts }) => ({
-    aliasReports: { lok: { valid: true } },
-    aliasMap: { lok: fakts.instances.lok.aliases[0] },
-  })),
-}));
 vi.mock("./alias/resolve", () => ({
   checkAliasHealth: vi.fn(async () => true),
   resolveWorkingAlias: vi.fn(async ({ instance }) => instance.aliases[0]),
@@ -58,7 +52,9 @@ const sessionFor = (host: string, accessToken: string) => ({
     expires_in: 3600,
     refresh_token: `rt-${accessToken}`,
     client_id: "cid",
-    received_at: Date.now(),
+    // Stored long enough ago to be due: these tests are about what a refresh
+    // does. A fresh token is used as it is (see "a fresh token" below).
+    received_at: Date.now() - 2 * 3600_000,
   },
   aliasMap: { aliasMap: { lok: ALIAS } },
 });
@@ -187,7 +183,7 @@ describe("bootstrap from the profile book", () => {
 
     renderProvider();
 
-    await waitFor(() => expect(harness.state().hasBootstrapped).toBe(true));
+    await waitFor(() => expect(harness.state().activity.kind).not.toBe("booting"));
     expect(harness.state().connection).toBeUndefined();
     expect(Object.keys(harness.state().profileBook.profiles)).toHaveLength(2);
     expect(harness.state().profileBook.profiles["id-alpha"].status).toBe("stale");
@@ -236,7 +232,7 @@ describe("switchProfile", () => {
     expect(harness.state().connection).toBe(before);
     expect(harness.state().profileBook.activeProfileId).toBe("id-alpha");
     expect(harness.state().profileBook.profiles["id-beta"].status).toBe("stale");
-    expect(harness.state().switchingProfileId).toBeNull();
+    expect(harness.state().activity.kind).not.toBe("switching");
   });
 
   it("does NOT mark a profile stale when the deployment is merely unreachable", async () => {
@@ -263,6 +259,49 @@ describe("switchProfile", () => {
 
     const persisted = JSON.parse(storage.getItem(PROFILE_BOOK_STORAGE_KEY)!);
     expect(persisted.profiles["id-beta"].session.token.refresh_token).toBe("rt-beta-2");
+  });
+});
+
+describe("bring-ups overtake each other", () => {
+  const bootAlpha = async () => {
+    seedTwoProfiles();
+    fetchMock.mockResolvedValue(okRefresh("alpha-2"));
+    renderProvider();
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+    fetchMock.mockReset();
+  };
+
+  /** Holds the next token request until the test answers it. */
+  const holdRefresh = () => {
+    let answer: (accessToken: string) => void = () => {};
+    fetchMock.mockImplementationOnce(
+      () => new Promise((resolve) => { answer = (at) => resolve(okRefresh(at)); }),
+    );
+    return (accessToken: string) => answer(accessToken);
+  };
+
+  it("a cancelled switch keeps the current profile live, and still keeps the rotated token", async () => {
+    await bootAlpha();
+    const answer = holdRefresh();
+
+    let switched: Promise<void> = Promise.resolve();
+    act(() => {
+      switched = harness.actions.switchProfile("id-beta");
+    });
+    await waitFor(() => expect(harness.state().activity).toEqual({ kind: "switching", profileId: "id-beta" }));
+
+    act(() => harness.actions.cancelConnection());
+    expect(harness.state().activity.kind).toBe("settled");
+
+    answer("beta-2");
+    await act(async () => {
+      await switched;
+    });
+
+    expect(harness.state().profileBook.activeProfileId).toBe("id-alpha");
+    expect(harness.state().storedSession?.token.access_token).toBe("alpha-2");
+    // The refresh token was spent, so its successor must not be lost.
+    expect(loadStoredProfileBook(storage).profiles["id-beta"].session.token.refresh_token).toBe("rt-beta-2");
   });
 });
 
@@ -600,5 +639,49 @@ describe("React StrictMode", () => {
     expect(loadStoredProfileBook(storage).profiles["id-alpha"].session.token.refresh_token)
       .toBe("rt-alpha-2");
     expect(harness.state().storedSession?.token.refresh_token).toBe("rt-alpha-2");
+  });
+});
+
+describe("a fresh token", () => {
+  // Bringing a profile up only needs a usable token. Spending a refresh on
+  // every launch (and every popout) was pure cost: one round trip on the
+  // critical path, and one more rotation for every other window to adopt.
+  const freshBook = () => {
+    const fresh = (host: string, at: string, id: string, order: number) => {
+      const session = sessionFor(host, at);
+      return createProfileFromSession({ ...session, token: { ...session.token, received_at: Date.now() } }, order, id);
+    };
+    writeStoredProfileBook(
+      setActiveProfile(
+        upsertProfile(upsertProfile(emptyProfileBook(), fresh("alpha.test", "alpha-1", "id-alpha", 1)), fresh("beta.test", "beta-1", "id-beta", 2)),
+        "id-alpha",
+        10,
+      ),
+      storage,
+    );
+  };
+  const tokenCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/o/token/"));
+
+  it("boots without a token request", async () => {
+    freshBook();
+    renderProvider();
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(tokenCalls()).toHaveLength(0);
+    expect(harness.state().storedSession?.token.access_token).toBe("alpha-1");
+  });
+
+  it("switches without a token request", async () => {
+    freshBook();
+    renderProvider();
+    await waitFor(() => expect(harness.state().connection).toBeDefined());
+
+    await act(async () => {
+      await harness.actions.switchProfile("id-beta");
+    });
+
+    expect(tokenCalls()).toHaveLength(0);
+    expect(harness.state().storedSession?.token.access_token).toBe("beta-1");
   });
 });

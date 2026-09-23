@@ -4,7 +4,7 @@ import { FancyInput } from "@/components/ui/fancy-input";
 import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
 import { useDebounce } from "@/hooks/use-debounce";
 import { CubeIcon } from "@radix-ui/react-icons";
-import { AppleIcon, Home, User } from "lucide-react";
+import { AppleIcon, Home, User, Users } from "lucide-react";
 import * as React from "react";
 import { RiProfileFill } from "react-icons/ri";
 import {
@@ -17,39 +17,43 @@ import UserCard from "../components/cards/UserCard";
 export const NavigationPane = () => {
   return (
     <SidePaneNav columns={2}>
-      <SidePaneGroup title="Explore">
-        <PaneLink to="/lok">
-          <Home />
-          Home
+      <SidePaneGroup title="Team">
+        <PaneLink to="/team">
+          <Users />
+          Members
         </PaneLink>
-        <PaneLink to="/lok/me">
+        <PaneLink to="/team/me">
           <RiProfileFill />
           Me
         </PaneLink>
+        <PaneLink to="/team/overview">
+          <Home />
+          Overview
+        </PaneLink>
       </SidePaneGroup>
 
-      <SidePaneGroup title="Organization">
-        <PaneLink to="/lok/users">
+      <SidePaneGroup title="Admin">
+        <PaneLink to="/team/users">
           <User />
           Users
         </PaneLink>
-        <PaneLink to="/lok/apps">
+        <PaneLink to="/team/apps">
           <AppleIcon />
           Apps
         </PaneLink>
-        <PaneLink to="/lok/services">
+        <PaneLink to="/team/services">
           <CubeIcon />
           Services
         </PaneLink>
-        <PaneLink to="/lok/instances">
+        <PaneLink to="/team/instances">
           <CubeIcon />
           Instances
         </PaneLink>
-        <PaneLink to="/lok/redeemtokens">
+        <PaneLink to="/team/redeemtokens">
           <CubeIcon />
           Redeem Tokens
         </PaneLink>
-        <PaneLink to="/lok/computenodes">
+        <PaneLink to="/team/devices">
           <CubeIcon />
           Devices
         </PaneLink>

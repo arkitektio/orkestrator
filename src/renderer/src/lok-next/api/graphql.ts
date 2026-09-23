@@ -409,11 +409,51 @@ export type Hub = {
   id: Scalars['ID']['output'];
   /** The identifier of the hub. This should be a globally unique string that identifies the hub. We encourage you to use the reverse domain name notation. E.g. `com.example.myhub` */
   identifier: Scalars['ServiceIdentifier']['output'];
+  /** Whether the hub's last health report said it was healthy. Null if it never reported. */
+  lastHealthy?: Maybe<Scalars['Boolean']['output']>;
+  /** When the hub last reported its health. Null if it never has. */
+  lastSeenAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The hub's most recent health report, or null if it never reported. */
+  latestHealth?: Maybe<HubHealthReport>;
+  /** Whether the hub's last health report said its node is on the mesh. Null if it never reported mesh state. */
+  meshConnected?: Maybe<Scalars['Boolean']['output']>;
+  /** The hub node's MagicDNS name (or mesh IP), as last reported by the hub. Empty when unknown or off the mesh. */
+  meshHost: Scalars['String']['output'];
   /** The name of the hub. This should be a human readable name of the hub. */
   name: Scalars['String']['output'];
+  /** Whether the hub reported its health within the last three reporting intervals. */
+  online: Scalars['Boolean']['output'];
   /** The organization that this hub belongs to. */
   organization: Organization;
+  /** The hub software version, as last reported (empty if never reported). */
+  version: Scalars['String']['output'];
 };
+
+/** Hub(id, name, organization, identifier, description, creator, client, token, auth_key, last_seen_at, last_healthy, version, mesh_connected, mesh_host) */
+export type HubFilter = {
+  AND?: InputMaybe<HubFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<HubFilter>;
+  OR?: InputMaybe<HubFilter>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** One health report a hub posted to lok. */
+export type HubHealthReport = {
+  __typename?: 'HubHealthReport';
+  /** When the hub reported. */
+  createdAt: Scalars['DateTime']['output'];
+  /** Did the hub report itself healthy? */
+  healthy: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The per-instance health in this report. Only instances of the hub are listed. */
+  instances: Array<InstanceHealth>;
+};
+
+export type HubOrdering =
+  { id: Ordering; name?: never; }
+  |  { id?: never; name: Ordering; };
 
 /** An alias for a service instance. This is used to provide a more user-friendly name for the instance. */
 export type InstanceAlias = {
@@ -442,6 +482,17 @@ export type InstanceAlias = {
 export type InstanceAliasOrdering =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
+
+/** The health a hub reported for one of its service instances. */
+export type InstanceHealth = {
+  __typename?: 'InstanceHealth';
+  /** Did the hub report the instance healthy? */
+  healthy: Scalars['Boolean']['output'];
+  /** The service instance this entry is about. */
+  instance: ServiceInstance;
+  /** Why the instance is unhealthy, if the hub said. */
+  reason?: Maybe<Scalars['String']['output']>;
+};
 
 /** A single-use magic invite link that allows one person to join an organization. */
 export type Invite = {
@@ -786,7 +837,7 @@ export type Organization = {
   __typename?: 'Organization';
   /** The users that are currently active in the organization */
   activeUsers: Array<User>;
-  /** The logo of the organization */
+  /** The logo of the organization. Mirrors `profile.avatar`; prefer that field. */
   avatar?: Maybe<MediaStore>;
   /** The organization's default brand chroma (0–1), if set. Members can override it per-membership. */
   brandChroma?: Maybe<Scalars['Float']['output']>;
@@ -869,6 +920,8 @@ export type OrganizationProfile = {
 export type PresignedPostCredentials = {
   __typename?: 'PresignedPostCredentials';
   bucket: Scalars['String']['output'];
+  /** The Content-Type the upload form must send; the policy pins it exactly. */
+  contentType: Scalars['String']['output'];
   datalayer: Scalars['String']['output'];
   key: Scalars['String']['output'];
   policy: Scalars['String']['output'];
@@ -930,6 +983,9 @@ export type Query = {
   group: Group;
   groups: Array<Group>;
   hallo: Scalars['String']['output'];
+  /** A hub of the caller's organization, including its last reported health. The caller's own hub is also reachable as `mycontext { hub }`. */
+  hub: Hub;
+  hubs: Array<Hub>;
   invites: Array<Invite>;
   layer: Layer;
   layers: Array<Layer>;
@@ -1025,6 +1081,18 @@ export type QueryGroupArgs = {
 export type QueryGroupsArgs = {
   filters?: InputMaybe<GroupFilter>;
   ordering?: Array<GroupOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryHubArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryHubsArgs = {
+  filters?: InputMaybe<HubFilter>;
+  ordering?: Array<HubOrdering>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1256,6 +1324,8 @@ export type RenderInput = {
 };
 
 export type RequestMediaUploadInput = {
+  /** MIME type of the file. The upload must send the same Content-Type. Guessed from `key` when omitted. */
+  contentType?: InputMaybe<Scalars['String']['input']>;
   datalayer: Scalars['String']['input'];
   key: Scalars['String']['input'];
 };
@@ -1585,6 +1655,7 @@ export type UpdateServiceInstanceInput = {
  */
 export type User = {
   __typename?: 'User';
+  /** A short-lived URL of the user's avatar (`profile.avatar`), if they have one. */
   avatar?: Maybe<Scalars['String']['output']>;
   /** The communication channels that the user has */
   comChannels: Array<ComChannel>;
@@ -1773,7 +1844,7 @@ export type ListDeviceFragment = { __typename?: 'Device', id: string, name?: str
 
 export type ContextFragment = { __typename?: 'Context', roles: Array<string>, scope: Array<string>, organization: { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null }, user: { __typename?: 'User', id: string, username: string, memberships: Array<{ __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, organization: { __typename?: 'Organization', id: string } }> }, hub?: { __typename?: 'Hub', id: string, name: string, identifier: any } | null };
 
-export type PresignedPostCredentialsFragment = { __typename?: 'PresignedPostCredentials', xAmzAlgorithm: string, xAmzCredential: string, xAmzDate: string, xAmzSignature: string, key: string, bucket: string, datalayer: string, policy: string, store: string };
+export type PresignedPostCredentialsFragment = { __typename?: 'PresignedPostCredentials', xAmzAlgorithm: string, xAmzCredential: string, xAmzDate: string, xAmzSignature: string, key: string, bucket: string, datalayer: string, policy: string, store: string, contentType: string };
 
 export type DetailDeviceGroupFragment = { __typename?: 'DeviceGroup', id: string, name: string, devices: Array<(
     { __typename?: 'Device' }
@@ -1794,6 +1865,13 @@ export type ListGroupFragment = { __typename?: 'Group', id: string, name: string
 
 export type GroupProfileFragment = { __typename?: 'GroupProfile', id: string, name?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
+export type InstanceHealthFragment = { __typename?: 'InstanceHealth', healthy: boolean, reason?: string | null, instance: { __typename?: 'ServiceInstance', id: string, instanceId: string, name: string, aliases: Array<{ __typename?: 'InstanceAlias', id: string }> } };
+
+export type HubHealthFragment = { __typename?: 'Hub', id: string, name: string, identifier: any, version: string, online: boolean, lastSeenAt?: any | null, lastHealthy?: boolean | null, meshConnected?: boolean | null, meshHost: string, latestHealth?: { __typename?: 'HubHealthReport', id: string, healthy: boolean, createdAt: any, instances: Array<(
+      { __typename?: 'InstanceHealth' }
+      & InstanceHealthFragment
+    )> } | null };
+
 export type ListInviteFragment = { __typename?: 'Invite', id: string, token: string, status: string, createdAt: any, expiresAt?: any | null, createdBy: { __typename?: 'User', id: string, username: string }, createdFor: (
     { __typename?: 'Organization' }
     & ListOrganizationFragment
@@ -1813,7 +1891,7 @@ export type MembershipFragment = { __typename?: 'Membership', id: string, brandH
     & ListOrganizationFragment
   ) };
 
-export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
+export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, profile: { __typename?: 'OrganizationProfile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
 
 export type ListOrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
@@ -2035,6 +2113,7 @@ export type CreateRedeemTokenMutation = { __typename?: 'Mutation', createRedeemT
 export type RequestMediaUploadMutationVariables = Exact<{
   key: Scalars['String']['input'];
   datalayer: Scalars['String']['input'];
+  contentType?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -2217,6 +2296,14 @@ export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type HomePageStatsQuery = { __typename?: 'Query', userStats: { __typename?: 'UserStats', count: number } };
+
+export type MyHubHealthQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyHubHealthQuery = { __typename?: 'Query', mycontext: { __typename?: 'Context', hub?: (
+      { __typename?: 'Hub' }
+      & HubHealthFragment
+    ) | null } };
 
 export type LayersQueryVariables = Exact<{
   filters?: InputMaybe<LayerFilter>;
@@ -2605,6 +2692,7 @@ export const PresignedPostCredentialsFragmentDoc = gql`
   datalayer
   policy
   store
+  contentType
 }
     `;
 export const ListDeviceFragmentDoc = gql`
@@ -2668,6 +2756,41 @@ export const DetailGroupFragmentDoc = gql`
 }
     ${ListUserFragmentDoc}
 ${GroupProfileFragmentDoc}`;
+export const InstanceHealthFragmentDoc = gql`
+    fragment InstanceHealth on InstanceHealth {
+  healthy
+  reason
+  instance {
+    id
+    instanceId
+    name
+    aliases {
+      id
+    }
+  }
+}
+    `;
+export const HubHealthFragmentDoc = gql`
+    fragment HubHealth on Hub {
+  id
+  name
+  identifier
+  version
+  online
+  lastSeenAt
+  lastHealthy
+  meshConnected
+  meshHost
+  latestHealth {
+    id
+    healthy
+    createdAt
+    instances {
+      ...InstanceHealth
+    }
+  }
+}
+    ${InstanceHealthFragmentDoc}`;
 export const ListOrganizationFragmentDoc = gql`
     fragment ListOrganization on Organization {
   id
@@ -2710,6 +2833,12 @@ export const OrganizationFragmentDoc = gql`
   }
   avatar {
     presignedUrl
+  }
+  profile {
+    id
+    avatar {
+      presignedUrl
+    }
   }
   memberships {
     id
@@ -3513,8 +3642,10 @@ export type CreateRedeemTokenMutationHookResult = ReturnType<typeof useCreateRed
 export type CreateRedeemTokenMutationResult = Apollo.MutationResult<CreateRedeemTokenMutation>;
 export type CreateRedeemTokenMutationOptions = Apollo.BaseMutationOptions<CreateRedeemTokenMutation, CreateRedeemTokenMutationVariables>;
 export const RequestMediaUploadDocument = gql`
-    mutation RequestMediaUpload($key: String!, $datalayer: String!) {
-  requestMediaUpload(input: {key: $key, datalayer: $datalayer}) {
+    mutation RequestMediaUpload($key: String!, $datalayer: String!, $contentType: String) {
+  requestMediaUpload(
+    input: {key: $key, datalayer: $datalayer, contentType: $contentType}
+  ) {
     ...PresignedPostCredentials
   }
 }
@@ -3536,6 +3667,7 @@ export type RequestMediaUploadMutationFn = Apollo.MutationFunction<RequestMediaU
  *   variables: {
  *      key: // value for 'key'
  *      datalayer: // value for 'datalayer'
+ *      contentType: // value for 'contentType'
  *   },
  * });
  */
@@ -4181,6 +4313,42 @@ export function useHomePageStatsLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type HomePageStatsQueryHookResult = ReturnType<typeof useHomePageStatsQuery>;
 export type HomePageStatsLazyQueryHookResult = ReturnType<typeof useHomePageStatsLazyQuery>;
 export type HomePageStatsQueryResult = Apollo.QueryResult<HomePageStatsQuery, HomePageStatsQueryVariables>;
+export const MyHubHealthDocument = gql`
+    query MyHubHealth {
+  mycontext {
+    hub {
+      ...HubHealth
+    }
+  }
+}
+    ${HubHealthFragmentDoc}`;
+
+/**
+ * __useMyHubHealthQuery__
+ *
+ * To run a query within a React component, call `useMyHubHealthQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyHubHealthQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyHubHealthQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMyHubHealthQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MyHubHealthQuery, MyHubHealthQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MyHubHealthQuery, MyHubHealthQueryVariables>(MyHubHealthDocument, options);
+      }
+export function useMyHubHealthLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MyHubHealthQuery, MyHubHealthQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MyHubHealthQuery, MyHubHealthQueryVariables>(MyHubHealthDocument, options);
+        }
+export type MyHubHealthQueryHookResult = ReturnType<typeof useMyHubHealthQuery>;
+export type MyHubHealthLazyQueryHookResult = ReturnType<typeof useMyHubHealthLazyQuery>;
+export type MyHubHealthQueryResult = Apollo.QueryResult<MyHubHealthQuery, MyHubHealthQueryVariables>;
 export const LayersDocument = gql`
     query Layers($filters: LayerFilter, $pagination: OffsetPaginationInput) {
   layers(filters: $filters, pagination: $pagination) {

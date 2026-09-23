@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useSortableItem, useSortableListId } from "@/lib/dnd/sortable";
-import { cn } from "@/lib/utils";
+import { SortableList } from "@/lib/dnd/SortableList";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { PropertyListItem } from "./PropertyListItem";
@@ -15,42 +14,6 @@ interface PropertyListProps {
   onReorderProperties: (startIndex: number, endIndex: number) => void;
 }
 
-/** One row: draggable, and a place to drop another row of this list. */
-const SortableProperty = ({
-  list,
-  index,
-  onReorder,
-  children,
-}: {
-  list: string;
-  index: number;
-  onReorder: (startIndex: number, endIndex: number) => void;
-  children: React.ReactNode;
-}) => {
-  const { ref, edge } = useSortableItem({ list, index, onReorder });
-
-  return (
-    // The rows hold still during the drag; `layout` slides them once the
-    // order has changed.
-    <motion.div
-      ref={ref}
-      layout="position"
-      transition={{ duration: 0.15 }}
-      className="relative dragging:opacity-50"
-    >
-      {edge && (
-        <div
-          className={cn(
-            "pointer-events-none absolute left-0 right-0 h-1 rounded bg-primary",
-            edge === "before" ? "top-0 -mt-1" : "bottom-0 -mb-1",
-          )}
-        />
-      )}
-      {children}
-    </motion.div>
-  );
-};
-
 export function PropertyList({
   properties,
   selectedIndex,
@@ -58,7 +21,11 @@ export function PropertyList({
   onAddProperty,
   onReorderProperties,
 }: PropertyListProps) {
-  const list = useSortableListId();
+  // A property without a key yet (just added) is still a row of its own.
+  const idOf = (property: PropertyDefinition, index: number) =>
+    property.key || `property-${index}`;
+  const ids = properties.map(idOf);
+  const items = properties.map((property, index) => ({ property, index }));
 
   return (
     <div className="h-full flex flex-col border-r bg-background">
@@ -72,22 +39,29 @@ export function PropertyList({
 
       {/* Property List */}
       <ScrollArea className="flex-1 p-2">
-        <div className="space-y-1">
-          {properties.map((property, index) => (
-            <SortableProperty
-              key={property.key || index}
-              list={list}
-              index={index}
-              onReorder={onReorderProperties}
+        {/* The rows and nothing else: their places are measured from this
+            box. They part around the one being dragged, as the rail's tabs do. */}
+        <SortableList
+          items={items}
+          getId={({ property, index }) => idOf(property, index)}
+          onReorder={(id, to) => onReorderProperties(ids.indexOf(id), to)}
+          className="space-y-1"
+        >
+          {({ property, index }, row) => (
+            <motion.div
+              ref={row.ref}
+              layout="position"
+              transition={{ duration: 0.15 }}
+              className="dragging:opacity-0"
             >
               <PropertyListItem
                 property={property}
                 isActive={selectedIndex === index}
                 onClick={() => onSelectProperty(index)}
               />
-            </SortableProperty>
-          ))}
-        </div>
+            </motion.div>
+          )}
+        </SortableList>
       </ScrollArea>
 
       {/* Add Button */}

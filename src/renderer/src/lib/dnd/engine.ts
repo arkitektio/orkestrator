@@ -20,103 +20,17 @@
  * nowhere), which is what a spring-loaded tab or link wants.
  */
 
-export type DragModifiers = {
-  ctrlKey: boolean;
-  shiftKey: boolean;
-  altKey: boolean;
-  metaKey: boolean;
-};
+import type {
+  DragSession,
+  DragSourceConfig,
+  DragSourceHandle,
+  DropPayload,
+  DropTargetConfig,
+  DropTargetHandle,
+  InternalDragSession,
+} from "./types";
 
-/** A drag that began on one of our own sources, in this window. */
-export type InternalDragSession = {
-  origin: "internal";
-  kind: string;
-  data: unknown;
-  /** The keys held when the drag began. */
-  modifiers: DragModifiers;
-  source: HTMLElement;
-};
-
-/**
- * A drag that began anywhere else: the OS, another app, another window of
- * ours, or a natively draggable element we do not manage. Only the `types`
- * are known while it hovers — the browser withholds the data until the drop.
- */
-export type ExternalDragSession = {
-  origin: "external";
-  types: readonly string[];
-};
-
-export type DragSession = InternalDragSession | ExternalDragSession;
-
-export type ExternalDropPayload = ExternalDragSession & {
-  /** Every string entry of the `dataTransfer`, by type. */
-  data: Record<string, string>;
-  /** The original `File` objects, so `window.api.getFilePath` works on them. */
-  files: File[];
-};
-
-export type DropPayload = InternalDragSession | ExternalDropPayload;
-
-export type DragSourceConfig = {
-  kind: string;
-  getData: () => unknown;
-  /**
-   * What the drag looks like from outside this window: `dataTransfer` entries
-   * by type. Another window of ours reads these back on drop.
-   */
-  getExternalData?: () => Record<string, string>;
-  canDrag?: () => boolean;
-  /**
-   * What follows the pointer, in place of a picture of the node itself: a
-   * stack for a drag of several things, say. A plain element, built for the
-   * occasion; the browser takes a picture of it and it is gone a frame later.
-   * `null` leaves the browser's own picture of the node.
-   */
-  preview?: (context: DragPreviewContext) => DragPreview | null;
-};
-
-export type DragPreviewContext = {
-  data: unknown;
-  /** The node being dragged. */
-  node: HTMLElement;
-  /** Where in the node the pointer took hold, from its top left. */
-  grab: { x: number; y: number };
-};
-
-export type DragPreview = {
-  element: HTMLElement;
-  /** Where in `element` the pointer holds it, from its top left. */
-  x: number;
-  y: number;
-};
-
-/** Where the pointer is, in viewport coordinates. */
-export type DragPoint = { clientX: number; clientY: number };
-
-export type DropTargetConfig = {
-  accepts: (session: DragSession) => boolean;
-  onDrop?: (payload: DropPayload, point: DragPoint) => void;
-  /**
-   * The drag moved while this target held the claim. For a target that cares
-   * where on itself the drop would land (a sortable row); fires often.
-   */
-  onMove?: (point: DragPoint, session: DragSession) => void;
-  /** Marked while hovered, but never claims the drop. */
-  hoverOnly?: boolean;
-};
-
-export type DragSourceHandle = {
-  /** A stable ref callback. */
-  attach: (node: HTMLElement | null) => void;
-};
-
-export type DropTargetHandle = {
-  /** A stable ref callback. */
-  attach: (node: HTMLElement | null) => void;
-  subscribe: (listener: () => void) => () => void;
-  isOver: () => boolean;
-};
+export type * from "./types";
 
 export const DRAG_SOURCE_ATTRIBUTE = "data-drag-source";
 export const DROP_TARGET_ATTRIBUTE = "data-drop-target";
@@ -140,8 +54,17 @@ type TargetRecord = {
 const sources = new WeakMap<HTMLElement, SourceRecord>();
 const targets = new WeakMap<HTMLElement, TargetRecord>();
 
-/** The drag as the event handlers see it: set the instant it begins. */
-let session: DragSession | null = null;
+/**
+ * The drag as the event handlers see it: set the instant it begins. For one of
+ * our own, also the source's config (for its `onEnd`) and whether the pointer
+ * last went out of this window. One record, so an ending clears all of it.
+ */
+type ActiveDrag = {
+  session: DragSession;
+  config?: DragSourceConfig;
+  leftWindow: boolean;
+};
+let active: ActiveDrag | null = null;
 /**
  * The drag as subscribers see it. It trails `session` by a frame at the start
  * of an internal drag: Chromium takes the drag image after `dragstart`, and
@@ -151,6 +74,11 @@ let session: DragSession | null = null;
 let published: DragSession | null = null;
 let overNodes: HTMLElement[] = [];
 let root: HTMLElement | null = null;
+/**
+ * Bumped whenever a drop target attaches or detaches: what the resolution
+ * cache is keyed on, besides the event target and the session.
+ */
+let targetsVersion = 0;
 const sessionListeners = new Set<() => void>();
 
 const defer = (fn: () => void) => {
@@ -212,6 +140,7 @@ export const createDropTarget = (
     if (!node) return;
     current = null;
     targets.delete(node);
+    targetsVersion += 1;
     node.removeAttribute(DROP_TARGET_ATTRIBUTE);
     if (record.over) {
       overNodes = overNodes.filter((n) => n !== node);
@@ -243,6 +172,7 @@ export const createDropTarget = (
       detach();
       current = node;
       targets.set(node, record);
+      targetsVersion += 1;
       node.setAttribute(DROP_TARGET_ATTRIBUTE, "true");
     },
     subscribe: (listener) => {
@@ -301,13 +231,42 @@ type Resolution = {
   over: HTMLElement[];
 };
 
-/** Walk outwards from the event target; innermost accepting target claims. */
+/**
+ * The last resolution, and what it was for. `dragover` fires every few dozen
+ * milliseconds even while the pointer rests, and `dragenter` goes through the
+ * same handler just before it: the same element, the same drag and the same
+ * targets resolve the same way, so the walk — and every `accepts` on it —
+ * runs once per element the drag enters, not once per event.
+ */
+let cached: {
+  element: Element | null;
+  session: DragSession;
+  version: number;
+  resolution: Resolution;
+} | null = null;
+
 const resolve = (target: EventTarget | null, current: DragSession): Resolution => {
+  const element = elementOf(target);
+  if (
+    cached &&
+    cached.element === element &&
+    cached.session === current &&
+    cached.version === targetsVersion
+  ) {
+    return cached.resolution;
+  }
+  const resolution = walk(element, current);
+  cached = { element, session: current, version: targetsVersion, resolution };
+  return resolution;
+};
+
+/** Walk outwards from the element; innermost accepting target claims. */
+const walk = (element: Element | null, current: DragSession): Resolution => {
   const selector = `[${DROP_TARGET_ATTRIBUTE}]`;
   let claimant: Resolution["claimant"] = null;
   const hovered: HTMLElement[] = [];
 
-  let node = elementOf(target)?.closest<HTMLElement>(selector) ?? null;
+  let node = element?.closest<HTMLElement>(selector) ?? null;
   while (node) {
     const config = targets.get(node)?.getConfig();
     if (config && config.accepts(current)) {
@@ -324,6 +283,7 @@ const resolve = (target: EventTarget | null, current: DragSession): Resolution =
 };
 
 const publish = () => {
+  const session = active?.session ?? null;
   published = session;
   if (root) {
     if (session) {
@@ -338,33 +298,75 @@ const publish = () => {
   notify(sessionListeners);
 };
 
-const endSession = () => {
-  if (!session && !published && overNodes.length === 0) {
+/**
+ * Start the running drag. The stale-session check (`onMouseMove`) listens only
+ * while there is a drag to go stale: mouse events never reach it mid-drag, so
+ * at rest it would only run on every move of the app for nothing.
+ */
+const beginSession = (next: ActiveDrag) => {
+  if (!active) root?.ownerDocument.addEventListener("mousemove", onMouseMove);
+  active = next;
+};
+
+/**
+ * `event` is the `dragend` when that is what ended it — the one ending that
+ * tells the source where its drag went. Both the source and the document
+ * listen for it; the first to run takes the drag, so `onEnd` fires once.
+ */
+const endSession = (event?: Event) => {
+  if (!active && !published && overNodes.length === 0) {
     return;
   }
-  if (session?.origin === "internal") {
-    session.source.removeAttribute(DRAGGING_ATTRIBUTE);
-    session.source.removeEventListener("dragend", endSession);
+  const ended = active;
+  const internal = ended?.session.origin === "internal" ? ended.session : null;
+  if (internal) {
+    internal.source.removeAttribute(DRAGGING_ATTRIBUTE);
+    internal.source.removeEventListener("dragend", endSession);
   }
-  session = null;
+  if (ended) root?.ownerDocument.removeEventListener("mousemove", onMouseMove);
+  active = null;
+  cached = null;
   setOver([]);
   publish();
+
+  if (internal && ended?.config?.onEnd && event?.type === "dragend") {
+    const dropEffect = (event as DragEvent).dataTransfer?.dropEffect ?? "none";
+    ended.config.onEnd({ dropEffect, leftWindow: ended.leftWindow }, internal.data);
+  }
 };
 
 const sameTypes = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((type, index) => type === b[index]);
 
 /** The session for an event that is not ours to have started. */
-const ensureSession = (event: DragEvent): DragSession | null => {
+const ensureSession = (event: DragEvent): DragSession => {
+  const session = active?.session;
   if (session?.origin === "internal") {
     return session;
   }
   const types = Array.from(event.dataTransfer?.types ?? []);
   if (!session || !sameTypes(session.types, types)) {
-    session = { origin: "external", types };
+    beginSession({ session: { origin: "external", types }, leftWindow: false });
     publish();
   }
-  return session;
+  return active!.session;
+};
+
+/**
+ * Files nobody here wants: let go, the browser would navigate the window to
+ * them — unless somebody outside the engine has already claimed the event.
+ */
+const preventFileNavigation = (event: DragEvent, current: DragSession) => {
+  if (
+    current.origin === "external" &&
+    current.types.includes(FILES_TYPE) &&
+    !event.defaultPrevented
+  ) {
+    event.preventDefault();
+    if (event.type === "dragover" && event.dataTransfer) {
+      event.dataTransfer.dropEffect = "none";
+    }
+  }
 };
 
 const onDragStart = (event: DragEvent) => {
@@ -428,13 +430,13 @@ const onDragStart = (event: DragEvent) => {
     },
     source: dragged,
   };
-  session = started;
+  beginSession({ session: started, config, leftWindow: false });
   // A source that unmounts mid-drag (its list refetched) is detached by the
   // time `dragend` fires, so the event never reaches the document.
   dragged.addEventListener("dragend", endSession);
 
   defer(() => {
-    if (session !== started) return;
+    if (active?.session !== started) return;
     dragged.setAttribute(DRAGGING_ATTRIBUTE, "true");
     publish();
   });
@@ -442,7 +444,8 @@ const onDragStart = (event: DragEvent) => {
 
 const onDragOver = (event: DragEvent) => {
   const current = ensureSession(event);
-  if (!current) return;
+  // Back in the window, if it had left.
+  active!.leftWindow = false;
 
   const { claimant, over } = resolve(event.target, current);
   setOver(over);
@@ -463,18 +466,8 @@ const onDragOver = (event: DragEvent) => {
     return;
   }
 
-  // Nobody wants it. A file let go here would navigate the window to it —
-  // unless somebody outside the engine has already claimed the event.
-  if (
-    current.origin === "external" &&
-    current.types.includes(FILES_TYPE) &&
-    !event.defaultPrevented
-  ) {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = "none";
-    }
-  }
+  // Nobody wants it.
+  preventFileNavigation(event, current);
 };
 
 const onDragLeave = (event: DragEvent) => {
@@ -484,9 +477,10 @@ const onDragLeave = (event: DragEvent) => {
 
   // Our own drag may come back; somebody else's is over as far as we can
   // ever know.
-  if (session?.origin === "external") {
+  if (active?.session.origin === "external") {
     endSession();
   } else {
+    if (active) active.leftWindow = true;
     setOver([]);
   }
 };
@@ -506,17 +500,10 @@ const readPayload = (current: DragSession, transfer: DataTransfer | null): DropP
 
 const onDrop = (event: DragEvent) => {
   const current = ensureSession(event);
-  if (!current) return;
 
   const { claimant } = resolve(event.target, current);
   if (!claimant) {
-    if (
-      current.origin === "external" &&
-      current.types.includes(FILES_TYPE) &&
-      !event.defaultPrevented
-    ) {
-      event.preventDefault();
-    }
+    preventFileNavigation(event, current);
     endSession();
     return;
   }
@@ -530,11 +517,11 @@ const onDrop = (event: DragEvent) => {
 // Mouse events are suppressed for the length of a native drag, so a move with
 // no button held means whatever drag we think is running has ended without
 // telling us (cancelled with Escape over another window, say).
-const onMouseMove = (event: MouseEvent) => {
-  if (session && event.buttons === 0) {
+function onMouseMove(event: MouseEvent) {
+  if (active && event.buttons === 0) {
     endSession();
   }
-};
+}
 
 let installs = 0;
 
@@ -549,7 +536,6 @@ export const installDndEngine = (doc: Document = document) => {
     doc.addEventListener("dragleave", onDragLeave);
     doc.addEventListener("drop", onDrop);
     doc.addEventListener("dragend", endSession);
-    doc.addEventListener("mousemove", onMouseMove);
   }
 
   let installed = true;
@@ -565,7 +551,6 @@ export const installDndEngine = (doc: Document = document) => {
     doc.removeEventListener("dragleave", onDragLeave);
     doc.removeEventListener("drop", onDrop);
     doc.removeEventListener("dragend", endSession);
-    doc.removeEventListener("mousemove", onMouseMove);
     root = null;
   };
 };

@@ -1,11 +1,11 @@
 import { Action } from '../localactions/LocalActionProvider'
-import { Bell, Building2 } from 'lucide-react'
+import { BellRing, Building2 } from 'lucide-react'
 
 export const LOK_ACTIONS = {
   notify_user: {
-    description: 'Notify a user',
-    title: 'Notify User',
-    icon: Bell,
+    description: "Push a message to the user's registered phones",
+    title: 'Notify + send message',
+    icon: BellRing,
     conditions: [{ type: 'identifier', identifier: '@lok/user' }, { type: 'nopartner' }],
     collections: ['notify'],
     execute: async ({ state, dialog }) => {
@@ -13,12 +13,12 @@ export const LOK_ACTIONS = {
         .filter((item) => item.identifier === '@lok/user')
         .map((item) => item.object.id)
 
-      dialog.openDialog('notifyusers', { users })
+      dialog.openDialog('notifyusers', { users }, { size: 'medium' })
     }
   },
   add_user_to_organization: {
-    title: 'Add User',
-    description: 'Add a user to an organization',
+    title: 'Add to organization',
+    description: 'Add the user to the organization this profile acts in',
     icon: Building2,
     conditions: [{ type: 'identifier', identifier: '@lok/user' }, { type: 'nopartner' }],
     collections: ['notify'],

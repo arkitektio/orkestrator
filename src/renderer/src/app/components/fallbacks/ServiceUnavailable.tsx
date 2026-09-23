@@ -1,4 +1,4 @@
-import { ConnectionDoctor } from "@/app/components/doctor/ConnectionDoctor";
+import { HubAwareConnectionDoctor } from "@/app/components/doctor/HubAwareConnectionDoctor";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { aliasToHttpPath } from "@/lib/arkitekt/alias/helpers";
@@ -299,7 +299,7 @@ export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
         // Asked for, so it starts immediately and stays on this page: the
         // thing that failed is already on screen, and a sheet would cover it.
         diagnosing ? (
-          <ConnectionDoctor
+          <HubAwareConnectionDoctor
             autoRun
             centered
             context={{
@@ -310,6 +310,7 @@ export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
               // from "unknown" — see DoctorContext.
               meshCoordUrl: activeProfile ? (activeProfile.session.endpoint.mesh_coord_url ?? null) : undefined,
               profileMesh: activeProfile?.mesh,
+              coordinationAlias: activeProfile?.session.fakts.self.alias,
             }}
             buildTargets={() =>
               instance ? instanceToProbeTargets(serviceKey, instance) : []

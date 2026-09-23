@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { LokDevice, LokUser } from "@/linkers";
 import { useListDevicesQuery, useUserQuery } from "../api/graphql";
 import { cn } from "@/lib/utils";
@@ -92,7 +92,7 @@ export const UserAvatarUsername = (props: { sub: string }) => {
     },
   });
 
-  const resolve = useResolve();
+  const resolve = useLokResolve();
 
   return (
     <Tooltip>

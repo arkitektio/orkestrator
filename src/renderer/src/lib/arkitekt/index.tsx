@@ -31,6 +31,7 @@ import {
   useProfiles,
   useSelfService,
   useSwitchingProfileId,
+  useToken,
 } from "./hooks";
 // When using the Tauri API npm package:
 
@@ -167,13 +168,7 @@ export const buildArkitekt = <T extends ServiceBuilderMap, S extends ServiceBuil
     useConfigurationIssues: useConfigurationIssues,
     useService: <K extends keyof T,>(service: K): ReturnType<T[K]["builder"]> => useService(service as string) as ReturnType<T[K]["builder"]>,
     usePotentialService: <K extends keyof T,>(service: K): ReturnType<T[K]["builder"]> | undefined => usePotentialService(service as string) as ReturnType<T[K]["builder"]> | undefined,
-    useToken: () =>
-      useArkitektStore(
-        (s) =>
-          s.connection?.token?.access_token ||
-          s.storedSession?.token?.access_token ||
-          null,
-      ),
+    useToken,
     useArkitekt: useArkitekt,
     /** The vanilla store, for reading services from outside a render (prefetch). */
     useStoreApi: useArkitektStoreApi,

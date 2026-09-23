@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPac, proxyPortForHost, routesFor, type PacRoute } from "./pac";
+import { controlDomain } from "./protocol";
 import type { MeshConfig, MeshNodeStatus } from "./protocol";
 
 const config = (id: string, hosts: string[] = []): MeshConfig => ({
@@ -132,5 +133,44 @@ describe("proxyPortForHost", () => {
     expect(proxyPortForHost(routes, "x.b.mesh.example.org")).toBe(1002);
     expect(proxyPortForHost(routes, "mikro")).toBeUndefined();
     expect(proxyPortForHost(routes, "go.arkitekt.live")).toBeUndefined();
+  });
+});
+
+describe("the control server's domain", () => {
+  // No pinning: a deployment on the mesh routes the moment the node runs.
+  const bare = (id: string, port: number): MeshNodeStatus => ({ id, state: "running", proxyPort: port });
+
+  it("routes every subdomain of the control server, before peers or suffix are known", () => {
+    const pac = buildPac(routesFor([config("a")], new Map([["a", bare("a", 1001)]])))!;
+    expect(evaluate(pac, "mikro.lab.mesh.example.org")).toBe("SOCKS5 127.0.0.1:1001");
+    expect(evaluate(pac, "hub.mesh.example.org")).toBe("SOCKS5 127.0.0.1:1001");
+    expect(proxyPortForHost(routesFor([config("a")], new Map([["a", bare("a", 1001)]])), "hub.mesh.example.org")).toBe(1001);
+  });
+
+  it("never routes the control server itself — the node reaches it directly to join", () => {
+    const routes = routesFor([config("a")], new Map([["a", bare("a", 1001)]]));
+    expect(evaluate(buildPac(routes)!, "mesh.example.org")).toBe("DIRECT");
+    expect(evaluate(buildPac(routes)!, "notmesh.example.org")).toBe("DIRECT");
+    expect(proxyPortForHost(routes, "mesh.example.org")).toBeUndefined();
+  });
+
+  it("is dropped when two running meshes share a control server; their own suffixes still route", () => {
+    const routes = routesFor(
+      [config("a"), config("b")],
+      new Map([["a", running("a", 1001)], ["b", running("b", 1002)]]),
+    );
+    const pac = buildPac(routes)!;
+    expect(evaluate(pac, "x.a.mesh.example.org")).toBe("SOCKS5 127.0.0.1:1001");
+    expect(evaluate(pac, "x.b.mesh.example.org")).toBe("SOCKS5 127.0.0.1:1002");
+    expect(evaluate(pac, "x.c.mesh.example.org")).toBe("DIRECT");
+    expect(proxyPortForHost(routes, "x.c.mesh.example.org")).toBeUndefined();
+  });
+
+  it("is only a real multi-label name", () => {
+    expect(controlDomain("https://mesh.arkitekt.live")).toBe("mesh.arkitekt.live");
+    expect(controlDomain("https://Mesh.Arkitekt.Live:8443/path")).toBe("mesh.arkitekt.live");
+    expect(controlDomain("http://localhost:8080")).toBeUndefined();
+    expect(controlDomain("https://100.64.0.1")).toBeUndefined();
+    expect(controlDomain("not a url")).toBeUndefined();
   });
 });

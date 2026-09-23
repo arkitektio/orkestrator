@@ -15,7 +15,7 @@ import {
   planSameness,
   type SamenessPlan,
 } from "@/kraph/lib/sameness";
-import { useDragSession, useDropTarget } from "@/lib/dnd/react";
+import { useCanDrop, useDropTarget } from "@/lib/dnd/react";
 import { cn } from "@/lib/utils";
 import { acceptsSmartDrag, resolveSmartDrop } from "@/providers/smart/dragPayload";
 import type { Structure } from "@/types";
@@ -93,8 +93,7 @@ export const SameAsDropTarget = ({ self, term, onDone }: SameAsDropTargetProps) 
       void propose(partner);
     },
   });
-  const session = useDragSession();
-  const canDrop = session !== null && acceptsSmartDrag(session);
+  const canDrop = useCanDrop(acceptsSmartDrag);
 
   return (
     <>

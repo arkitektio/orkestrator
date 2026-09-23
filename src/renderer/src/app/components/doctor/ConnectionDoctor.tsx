@@ -8,6 +8,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type { DoctorContext } from "@/lib/arkitekt/doctor/findings";
+import type { HubHealthFacts } from "@/lib/arkitekt/doctor/hubHealth";
 import type { ProbeTarget } from "../../../../../main/doctor/protocol";
 import { useConnectionDoctor } from "@/lib/arkitekt/doctor/useConnectionDoctor";
 import { Stethoscope } from "lucide-react";
@@ -39,6 +40,8 @@ export type ConnectionDoctorProps = {
   autoRun?: boolean;
   /** Centre the controls, for a surface that is itself centred. */
   centered?: boolean;
+  /** The hub's own report — only where a lok client exists; see `HubAwareConnectionDoctor`. */
+  fetchHub?: () => Promise<HubHealthFacts | undefined>;
 };
 
 /** The report on its own, for a page that already has a heading. */
@@ -50,12 +53,13 @@ export const ConnectionDoctor = ({
   subject,
   autoRun,
   centered,
+  fetchHub,
 }: ConnectionDoctorProps) => {
   const { run, runRemedy, status, report, error, remedyResult } = useConnectionDoctor();
 
   const handleRun = useCallback(() => {
-    void run({ context, targets: buildTargets(), originalError, rendererReachable });
-  }, [run, context, buildTargets, originalError, rendererReachable]);
+    void run({ context, targets: buildTargets(), originalError, rendererReachable, fetchHub });
+  }, [run, context, buildTargets, originalError, rendererReachable, fetchHub]);
 
   // Once, on mount. `handleRun` changes identity whenever a caller rebuilds
   // `buildTargets` inline, and this must not turn into a probe loop.

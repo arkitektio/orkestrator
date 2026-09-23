@@ -19,6 +19,7 @@ import { SmartPrefetchProvider } from "@/providers/smart/SmartPrefetchProvider";
 import { SmartSurface } from "@/providers/smart/SmartSurface";
 import { TaskUpdater } from "@/rekuest/components/functional/TaskUpdater";
 import { TaskHookRunner } from "@/lib/taskhooks/TaskHookRunner";
+import { ExportHost } from "@/lib/export/ExportHost";
 import { AgentUpdater } from "@/rekuest/components/functional/AgentUpdater";
 import { UiCatalogRegistrar } from "@/rekuest/catalog/UiCatalogRegistrar";
 import { WidgetRegistryProvider } from "@/rekuest/widgets/WidgetsProvider";
@@ -161,6 +162,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     <CommandPaletteProvider>
                                     <WardRegistrar />
                                     <MeshSync />
+                                    {/* The cached brand, from the first frame — not after lok answers. */}
+                                    <OrganizationBrandSync />
                                     {/* One palette for the whole app. It used to
                                         be mounted per page, so it was missing on
                                         the dashboard and double-bound wherever
@@ -177,6 +180,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     <RefetchOnReactivate />
                                     <GcOnNavigate />
                                     <BuiltinDashboardWidgets />
+                                    <ExportHost />
                                     <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
                                       <TaskUpdater />
                                       <AgentUpdater />
@@ -186,7 +190,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                       <TaskHookRunner />
                                     </Guard.Rekuest>
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
-                                      <OrganizationBrandSync />
                                       <ProfileIdentitySync />
                                     </Guard.Lok>
                                     <Toaster />

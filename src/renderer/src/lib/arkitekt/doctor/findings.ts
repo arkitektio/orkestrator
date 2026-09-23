@@ -5,6 +5,8 @@ import type {
   RemedyId,
 } from "../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
+import type { HubHealthFacts } from "./hubHealth";
+import type { Alias } from "../fakts/faktsSchema";
 
 /**
  * What the doctor actually hands the user: a ranked list of sentences, each
@@ -53,7 +55,18 @@ export type Finding = {
  */
 export type DoctorContext = (
   | { kind: "discovery"; endpointUrl: string; meshCoordUrl?: string | null }
-  | { kind: "service"; serviceKey: string; endpointUrl?: string; meshCoordUrl?: string | null }
+  | {
+      kind: "service";
+      serviceKey: string;
+      endpointUrl?: string;
+      meshCoordUrl?: string | null;
+      /**
+       * lok's own alias on the coordination server (`fakts.self.alias`) — what
+       * the app actually talks to there once signed in, and so what the doctor
+       * probes for that hop, challenge path and all.
+       */
+      coordinationAlias?: Alias;
+    }
 ) & {
   /**
    * The active profile's own mesh (meshes belong to a profile): its id, to
@@ -82,7 +95,25 @@ export type DiagnoseInput = {
   rendererReachable?: boolean;
   /** False on a web build / when the preload bridge is missing. */
   probesAvailable?: boolean;
+  /**
+   * What the hub last told the coordination server about itself. Absent when
+   * the caller has no lok client (signed out) or lok did not answer.
+   */
+  hub?: HubHealthFacts;
 };
+
+/**
+ * How asking lok for the hub's report went. Kept apart from the report itself
+ * because "lok answered, the hub never reported" and "lok did not answer" are
+ * different facts about different hops.
+ */
+export type LokOutcome =
+  | { status: "ok"; hub: HubHealthFacts }
+  | { status: "no-hub" }
+  | { status: "failed"; message: string }
+  | { status: "timeout" }
+  /** No lok client on this surface (signed out), so nobody asked. */
+  | { status: "not-available" };
 
 export type DoctorReport = {
   startedAt: number;
@@ -93,6 +124,8 @@ export type DoctorReport = {
   network: NetworkProbeResult[];
   mesh?: MeshProbeResult;
   sidecar?: MeshStatusPayload;
+  hub?: HubHealthFacts;
+  lok?: LokOutcome;
 };
 
 const SEVERITY_ORDER: Record<FindingSeverity, number> = {
@@ -103,11 +136,12 @@ const SEVERITY_ORDER: Record<FindingSeverity, number> = {
 };
 
 /**
- * Within a severity, cause before symptom. A mesh problem explains every
- * timeout below it, so it is listed first; the per-target network noise sorts
- * last.
+ * Within a severity, cause before symptom. A computer that cannot reach the
+ * coordination server explains everything, a hub that is down explains its
+ * mesh peer going offline, a mesh problem explains every timeout below it, so
+ * they lead; the per-target network noise sorts last.
  */
-const FAMILY_ORDER = ["mesh.", "discovery.", "net.tls.", "net.http.", "net.tcp.", "net."];
+const FAMILY_ORDER = ["upstream.", "hub.", "mesh.", "discovery.", "net.tls.", "net.http.", "net.tcp.", "net."];
 
 const familyRank = (id: string): number => {
   const index = FAMILY_ORDER.findIndex((prefix) => id.startsWith(prefix));

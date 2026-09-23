@@ -21,7 +21,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
       </Sidebars>
 
     } pageActions={<>
-      <Link to="/lok/record">Record
+      <Link to="/team/record">Record
 
       </Link></>}>
       <DashboardLayout />

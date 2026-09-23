@@ -227,7 +227,14 @@ describe("mesh key on the grant", () => {
   };
   const auth = { jwks_url: "x", ionscale_auth_key: "tskey-auth-minted", ionscale_coord_url: "https://mesh.example.org" };
 
-  it("comes out of the auth block, and out of the stored token", () => {
+  it("comes out of the mesh block, and out of the stored token", () => {
+    const result = splitGrantResponse({ ...envelope, mesh: auth });
+    expect(result.mesh).toEqual({ authKey: "tskey-auth-minted", controlUrl: "https://mesh.example.org" });
+    expect(result.token).not.toHaveProperty("mesh");
+    expect(result.fakts).not.toHaveProperty("mesh");
+  });
+
+  it("still reads the block under its old name, auth", () => {
     const result = splitGrantResponse({ ...envelope, auth });
     expect(result.mesh).toEqual({ authKey: "tskey-auth-minted", controlUrl: "https://mesh.example.org" });
     expect(result.token).not.toHaveProperty("auth");
@@ -241,8 +248,38 @@ describe("mesh key on the grant", () => {
   });
 
   it("is dropped from a refresh response", () => {
-    const result = splitRefreshResponse({ ...envelope, auth });
+    const result = splitRefreshResponse({ ...envelope, auth, mesh: auth });
     expect(result).not.toHaveProperty("mesh");
+    expect(result.token).not.toHaveProperty("mesh");
     expect(result.token).not.toHaveProperty("auth");
+  });
+});
+
+describe("identity on the grant", () => {
+  const envelope = {
+    access_token: "at",
+    token_type: "Bearer",
+    client_id: "cid",
+    instances: {},
+  };
+  const alias = { id: "a", host: "go.arkitekt.live", ssl: true, challenge: "ok" };
+
+  it("comes from self, and stays on the stored fakts", () => {
+    const result = splitGrantResponse({
+      ...envelope,
+      self: { deployment_name: "Lab", alias, sub: "2", organization: "3", hub: "49" },
+    });
+    expect(result.identity).toEqual({ userId: "2", orgId: "3", hubId: "49" });
+    expect(result.fakts.self).toMatchObject({ sub: "2", organization: "3", hub: "49" });
+  });
+
+  it("is absent on a deployment that predates it", () => {
+    expect(splitGrantResponse({ ...envelope, self: { deployment_name: "Lab", alias } }).identity).toBeUndefined();
+  });
+
+  it("leaves hub and organization null when lok names none", () => {
+    expect(
+      splitGrantResponse({ ...envelope, self: { deployment_name: "Lab", alias, sub: "2", hub: null } }).identity,
+    ).toEqual({ userId: "2", orgId: null, hubId: null });
   });
 });

@@ -1,4 +1,4 @@
-import { useDragSession, useDropTarget } from "@/lib/dnd/react";
+import { useDragSessionSelector, useDropTarget } from "@/lib/dnd/react";
 import { acceptsSmartDrag, resolveSmartDrop } from "@/providers/smart/dragPayload";
 import { Identifier, Structure } from "@/types";
 
@@ -24,9 +24,11 @@ export const DropZone = ({
   // This zone only exists while something it could take is in the air, so it
   // reads the drag itself. Only drags from this window: one from outside keeps
   // its contents to itself until it is dropped.
-  const session = useDragSession();
-  const dragged =
-    session?.origin === "internal" ? resolveSmartDrop(session)?.partners : undefined;
+  // Resolved once per drag, and only a smart drag re-renders it: the others
+  // all resolve to `undefined`.
+  const dragged = useDragSessionSelector((session) =>
+    session?.origin === "internal" ? resolveSmartDrop(session)?.partners : undefined,
+  );
   const containedIds = compareWithList?.map((c) => c.id) ?? [];
   const fresh = dragged?.filter((i) => !containedIds.includes(i.object.id));
   const allItemsContained = !!fresh && fresh.length === 0;

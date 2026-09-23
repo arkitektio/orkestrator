@@ -624,62 +624,57 @@ export const OmeroArkModuleLink = buildModuleLink("omero-ark");
 
 export const LokUser = buildSmart({
   identifier: "@lok/user",
-  path: "lok/users",
+  path: "team/members",
   name: "User",
-});
-export const LokOrganization = buildSmart({
-  identifier: "@lok/organization",
-  path: "lok/organizations",
-  name: "Organization",
 });
 export const LokRedeemToken = buildSmart({
   identifier: "@lok/redeemtoken",
-  path: "lok/redeemtokens",
+  path: "team/redeemtokens",
   name: "Redeem Token",
 });
 export const LokGroup = buildSmart({
   identifier: "@lok/group",
-  path: "lok/groups",
+  path: "team/groups",
   name: "Group",
 });
 export const LokClient = buildSmart({
   identifier: "@lok/client",
-  path: "lok/clients",
+  path: "team/clients",
   name: "Client",
 });
 export const LokDevice = buildSmart({
   identifier: "@lok/device",
-  path: "lok/devices",
+  path: "team/devices",
   name: "Device ",
 });
 export const LokApp = buildSmart({
   identifier: "@lok/app",
-  path: "lok/apps",
+  path: "team/apps",
   name: "App",
 });
 export const LokRelease = buildSmart({
   identifier: "@lok/release",
-  path: "lok/releases",
+  path: "team/releases",
   name: "Release (Lok)",
 });
 export const LokService = buildSmart({
   identifier: "@lok/service",
-  path: "lok/services",
+  path: "team/services",
   name: "Service",
 });
 export const LokBackend = buildSmart({
   identifier: "@lok/backend",
-  path: "lok/backends",
+  path: "team/backends",
   name: "Backend (Lok)",
 });
 export const LokServiceInstance = buildSmart({
   identifier: "@lok/serviceinstance",
-  path: "lok/serviceinstances",
+  path: "team/serviceinstances",
   name: "Service Instance",
 });
 export const LokLayer = buildSmart({
   identifier: "@lok/layer",
-  path: "lok/layers",
+  path: "team/layers",
   name: "Layer",
 });
 
@@ -722,12 +717,12 @@ export const AlpakaCollection = buildSmart({
 });
 export const LokMapping = buildSmart({
   identifier: "@lok/mapping",
-  path: "lok/mappings",
+  path: "team/mappings",
   name: "Mapping",
 });
 export const LokComposition = buildSmart({
   identifier: "@lok/composition",
-  path: "lok/composition",
+  path: "team/composition",
   name: "Composition",
 });
 

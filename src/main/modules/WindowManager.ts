@@ -657,6 +657,32 @@ export class WindowManager implements AppModule {
             senderWindow(event)?.close();
         });
 
+        // Where a card dragged out of a window was let go: over one of our
+        // windows (a drop there is that window's business) or somewhere else —
+        // the desktop, when nothing took it. Read here, not from the renderer's
+        // `dragend` coordinates, which Chromium reports unreliably.
+        this.ipcTransport.handleChannel("window:pointer-in-app", () => {
+            const { x, y } = screen.getCursorScreenPoint();
+            return BrowserWindow.getAllWindows().some((win) => {
+                if (win.isDestroyed() || !win.isVisible() || win.isMinimized()) return false;
+                const b = win.getBounds();
+                return x >= b.x && x < b.x + b.width && y >= b.y && y < b.y + b.height;
+            });
+        });
+
+        // Windows and Linux have no visible menu bar (the caption is gone), so
+        // the rail's "…" button shows the application menu as a native popup
+        // instead. The renderer sends CSS pixels; `popup` wants window DIPs, so
+        // scale by the page zoom, which the renderer cannot separate from the
+        // display scale on its own.
+        this.ipcTransport.onChannel("window:popup-app-menu", (event, x: number, y: number) => {
+            const win = senderWindow(event);
+            const menu = Menu.getApplicationMenu();
+            if (!win || !menu) return;
+            const zoom = win.webContents.getZoomFactor();
+            menu.popup({ window: win, x: Math.round(x * zoom), y: Math.round(y * zoom) });
+        });
+
         // Seeds the renderer's first paint, so the bar is never briefly wrong.
         this.ipcTransport.handleChannel("window:get-state", (event) =>
             this.getChromeState(senderWindow(event)),

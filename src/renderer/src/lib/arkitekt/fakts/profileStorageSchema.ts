@@ -1,12 +1,7 @@
 import { z } from "zod";
 
 import { FaktsEndpointSchema } from "./endpointSchema";
-import {
-  clearStoredArkitektStorage,
-  loadStoredArkitektSession,
-  StoredArkitektSession,
-  StoredArkitektSessionSchema,
-} from "./sessionStorageSchema";
+import { StoredArkitektSession, StoredArkitektSessionSchema } from "../session/record";
 
 /**
  * Several logins, parked side by side.
@@ -107,6 +102,12 @@ export const ProfileMeshSchema = z.object({
   controlUrl: z.string(),
   hosts: z.array(z.string()).default([]),
   enabled: z.boolean().default(true),
+  /**
+   * The mesh's MagicDNS suffix, cached from the last time its node ran — so
+   * a launch can tell which aliases sit behind the mesh before the node is
+   * up, and hold their checks until it is (`lib/mesh/meshGate.ts`).
+   */
+  magicDnsSuffix: z.string().optional(),
 });
 
 export type ProfileMesh = z.infer<typeof ProfileMeshSchema>;
@@ -241,10 +242,6 @@ export const createProfileFromSession = (
 export const getActiveProfile = (book: StoredProfileBook): StoredProfile | null =>
   book.activeProfileId ? (book.profiles[book.activeProfileId] ?? null) : null;
 
-export const getActiveSession = (
-  book: StoredProfileBook,
-): StoredArkitektSession | null => getActiveProfile(book)?.session ?? null;
-
 /** Most recently used first — the order the switcher lists them in. */
 export const listProfiles = (book: StoredProfileBook): StoredProfile[] =>
   Object.values(book.profiles).sort((a, b) => b.lastUsedAt - a.lastUsedAt);
@@ -352,6 +349,21 @@ export const markProfileOk = (
     status: "ok",
     statusMessage: undefined,
   }));
+
+/**
+ * The profile holding a refresh chain. A chain is one OAuth client
+ * registration (`client_id`), and unlike a profile id it never changes: a
+ * re-key moves the row, not the chain. An in-flight rotation finds its
+ * profile through this, so a re-key landing mid-refresh cannot make it write
+ * the rotated token to an id that no longer exists.
+ */
+export const findProfileIdByChain = (
+  book: StoredProfileBook,
+  clientId: string | undefined,
+): string | undefined =>
+  clientId
+    ? Object.values(book.profiles).find((profile) => profile.session.token.client_id === clientId)?.id
+    : undefined;
 
 export const removeProfile = (
   book: StoredProfileBook,
@@ -467,6 +479,52 @@ const mergeProfileMesh = (
   return { ...kept, id: granted.id, label: granted.label, controlUrl: granted.controlUrl };
 };
 
+/**
+ * Put a fresh grant into the book, as the active profile — in ONE write.
+ *
+ * When the grant names who it is for (lok sends `sub` / `organization` /
+ * `hub` on `self`), the profile gets its final id right here: a re-approval
+ * lands on the row it already had — keeping its cached label, its creation
+ * date and its mesh's switch and pins, with the new session and the node the
+ * grant just joined — and a new login is written once, with nothing to re-key
+ * later. That removes the window in which a re-key could race a token
+ * rotation. A deployment that predates the identity gets the provisional id,
+ * and `reidentifyProfile` re-keys it once `mycontext` answers.
+ */
+export const admitGrantedProfile = (
+  book: StoredProfileBook,
+  session: StoredArkitektSession,
+  identity: { userId: string; orgId: string | null; hubId: string | null } | undefined,
+  mesh: ProfileMesh | undefined,
+  now: number = Date.now(),
+): { book: StoredProfileBook; profileId: string } => {
+  if (!identity) {
+    const profile = { ...createProfileFromSession(session, now), ...(mesh ? { mesh } : {}) };
+    return { book: setActiveProfile(upsertProfile(book, profile), profile.id, now), profileId: profile.id };
+  }
+
+  const nextIdentity: ProfileIdentity = {
+    baseUrl: session.endpoint.base_url,
+    userId: identity.userId,
+    organizationId: identity.orgId,
+    hubId: identity.hubId,
+  };
+  const id = deriveProfileId(nextIdentity);
+  const existing = book.profiles[id];
+  const nextMesh = mergeProfileMesh(existing?.mesh, mesh);
+  const profile: StoredProfile = {
+    id,
+    session,
+    identity: nextIdentity,
+    label: { ...existing?.label, ...deriveProfileLabel(session) },
+    status: "ok",
+    ...(nextMesh ? { mesh: nextMesh } : {}),
+    createdAt: existing?.createdAt ?? now,
+    lastUsedAt: now,
+  };
+  return { book: setActiveProfile(upsertProfile(book, profile), id, now), profileId: id };
+};
+
 /** Set, change or (`undefined`) forget a profile's mesh. */
 export const updateProfileMesh = (
   book: StoredProfileBook,
@@ -519,54 +577,20 @@ export const groupProfilesByDeployment = (
 
 // ── storage ──
 
+/**
+ * Write the book — unless it is byte-for-byte what is already stored. Every
+ * write fires a `storage` event in every other window, which re-parses the
+ * book and re-renders everything that reads it; a write that changes nothing
+ * should cost nothing. Returns whether it wrote.
+ */
 export function writeStoredProfileBook(
   book: StoredProfileBook,
   storage: Storage = localStorage,
-): void {
-  const parsed = StoredProfileBookSchema.parse(book);
-  storage.setItem(PROFILE_BOOK_STORAGE_KEY, JSON.stringify(parsed));
-}
-
-/**
- * Migrate the four flat keys (`endpoint` / `fakts` / `token` / `aliasMap`) — the
- * one session this app could hold before profiles existed — into a one-entry book.
- *
- * The legacy keys are DELETED afterwards rather than kept in sync: two sources of
- * truth would mean a token refresh written to the book alone silently diverges
- * from what an older build would read back.
- */
-export function migrateLegacyProfileStorage(
-  storage: Storage = localStorage,
-): StoredProfileBook {
-  const loaded = loadStoredArkitektSession(storage);
-  if (!loaded) {
-    return emptyProfileBook();
-  }
-
-  const parsed = StoredArkitektSessionSchema.safeParse(loaded);
-  if (!parsed.success) {
-    // Same rule the provider has always applied to a session it cannot read:
-    // drop it and fall back to a fresh connect. Throwing here would strand the
-    // user on an error screen that survives reload, because the unreadable
-    // entries would stay in storage.
-    console.warn(
-      "[arkitekt] Discarding unreadable legacy session during profile migration:",
-      parsed.error.issues,
-    );
-    clearStoredArkitektStorage(undefined, storage);
-    return emptyProfileBook();
-  }
-
-  const profile = createProfileFromSession(parsed.data);
-  const book = setActiveProfile(
-    setLastEndpoint(upsertProfile(emptyProfileBook(), profile), parsed.data.endpoint),
-    profile.id,
-  );
-
-  writeStoredProfileBook(book, storage);
-  clearStoredArkitektStorage(undefined, storage);
-
-  return book;
+): boolean {
+  const serialized = JSON.stringify(StoredProfileBookSchema.parse(book));
+  if (storage.getItem(PROFILE_BOOK_STORAGE_KEY) === serialized) return false;
+  storage.setItem(PROFILE_BOOK_STORAGE_KEY, serialized);
+  return true;
 }
 
 /**
@@ -580,7 +604,7 @@ export function loadStoredProfileBook(
   const raw = storage.getItem(PROFILE_BOOK_STORAGE_KEY);
 
   if (!raw) {
-    return migrateLegacyProfileStorage(storage);
+    return emptyProfileBook();
   }
 
   let json: unknown;

@@ -8,6 +8,7 @@ import {
   FinishBigfileUploadMutationVariables,
   BigFileAccessGrantFragment,
 } from "@/mikro-next/api/graphql";
+import type { ApolloClient } from "@apollo/client";
 import { useCallback } from "react";
 
 export type DownloadOptions = {
@@ -57,6 +58,49 @@ const downloadFromStore = async (
   });
 };
 
+/**
+ * Non-React big-file download: request an access grant, stream the file via the
+ * Electron IPC bridge, then finalize. Shared by `useMikroBigFileDownload` and
+ * the places with no React context (`lib/export/fileDownloaders.ts`).
+ */
+export const downloadMikroBigFile = async (
+  client: ApolloClient<unknown>,
+  datalayerEndpoint: string,
+  storeId: string,
+  fileName?: string,
+  options?: DownloadOptions,
+): Promise<string> => {
+  const data = await client.mutate<
+    RequestBigfileAccessMutation,
+    RequestBigfileAccessMutationVariables
+  >({
+    mutation: RequestBigfileAccessDocument,
+    variables: {
+      input: { storeId },
+    },
+  });
+
+  if (!data.data?.requestBigfileAccess) {
+    throw Error(`Failed to get download grant: ${JSON.stringify(data)}`);
+  }
+
+  const z = data.data.requestBigfileAccess;
+
+  const targetFileName = fileName || storeId; // Fallback to storeId if no name
+  const resultPath = await downloadFromStore(targetFileName, datalayerEndpoint, z, options);
+
+  await client.mutate<FinishBigfileUploadMutation, FinishBigfileUploadMutationVariables>({
+    mutation: FinishBigfileUploadDocument,
+    variables: {
+      input: {
+        storeId,
+      },
+    },
+  });
+
+  return resultPath;
+};
+
 export const useMikroBigFileDownload = () => {
   const client = useMikro();
   const datalayerEndpoint = useDatalayerEndpoint();
@@ -71,39 +115,7 @@ export const useMikroBigFileDownload = () => {
         throw Error("No datalayer endpoint configured");
       }
 
-      const data = await client.mutate<
-        RequestBigfileAccessMutation,
-        RequestBigfileAccessMutationVariables
-      >({
-        mutation: RequestBigfileAccessDocument,
-        variables: {
-          input: { storeId },
-        },
-      });
-
-      if (!data.data?.requestBigfileAccess) {
-        throw Error(`Failed to get download grant: ${JSON.stringify(data)}`);
-      }
-
-      const z = data.data.requestBigfileAccess;
-
-      console.log("Got download grant", z);
-
-      const targetFileName = fileName || storeId; // Fallback to storeId if no name
-      const resultPath = await downloadFromStore(targetFileName, datalayerEndpoint, z, options);
-
-      console.log("Finished download to", resultPath);
-
-      await client.mutate<FinishBigfileUploadMutation, FinishBigfileUploadMutationVariables>({
-        mutation: FinishBigfileUploadDocument,
-        variables: {
-          input: {
-            storeId,
-          },
-        },
-      });
-
-      return resultPath;
+      return downloadMikroBigFile(client, datalayerEndpoint, storeId, fileName, options);
     },
     [client, datalayerEndpoint],
   );

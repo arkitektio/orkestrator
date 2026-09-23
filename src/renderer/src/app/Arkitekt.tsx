@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import alpakaResult from "@/alpaka/api/fragments";
 import { manifest } from "@/constants";
 import dokumentsResult from "@/dokuments/api/fragments";
@@ -6,6 +7,8 @@ import kabinetResult from "@/kabinet/api/fragments";
 import kraphResult from "@/kraph/api/fragments";
 import { buildArkitekt } from "@/lib/arkitekt";
 import { aliasToHttpPath } from "@/lib/arkitekt/alias/helpers";
+import { coordinationBase } from "@/lib/arkitekt/coordination";
+import { useArkitektStore } from "@/lib/arkitekt/provider";
 import { createGraphQLServiceBuilder } from "@/lib/arkitekt/builders/graphQlServiceBuidler";
 import { ModuleRegistry, ServiceBuilderMap } from "@/lib/arkitekt/types";
 import {
@@ -268,6 +271,15 @@ export const useFake = () => {
 export const useDokuments = () => {
   return Arkitekt.useService("dokuments").client;
 };
+/**
+ * Where lok's media lives: the coordination server's base path, not the
+ * `datalayer` service from fakts (that one is the modules' store).
+ */
+export const useCoordinationEndpoint = (): string | undefined => {
+  const baseUrl = useArkitektStore((state) => state.connection?.endpoint?.base_url);
+  return useMemo(() => (baseUrl ? coordinationBase(baseUrl) : undefined), [baseUrl]);
+};
+
 export const useDatalayerEndpoint = (): string | undefined => {
   const url = Arkitekt.usePotentialService("datalayer")?.client?.url;
   return url;

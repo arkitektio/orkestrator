@@ -2,13 +2,13 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { ListRender } from "@/components/layout/ListRender";
 import { Card, CardContent } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { LokApp } from "@/linkers";
 import { useDetailAppQuery } from "../api/graphql";
 import ReleaseCard from "../components/cards/ReleaseCard";
 
 export const AppPage = asDetailQueryRoute(useDetailAppQuery, ({ data }) => {
-  const resolve = useResolve();
+  const resolve = useLokResolve();
 
   return (
     <LokApp.ModelPage

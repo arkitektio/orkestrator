@@ -1,10 +1,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { useMeQuery, useMyContextQuery } from "../api/graphql";
 
 export const Me = () => {
   const { data } = useMeQuery();
-  const resolve = useResolve();
+  const resolve = useLokResolve();
 
   return (
     <Avatar className="border-seperator border-border mx-auto cursor-pointer rounded-md">

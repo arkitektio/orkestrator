@@ -8,7 +8,8 @@ import {
 import { ConnectionDoctorSheet } from "@/app/components/doctor/ConnectionDoctor";
 import { endpointToProbeTargets } from "@/lib/arkitekt/doctor/targets";
 import { discover } from "@/lib/arkitekt/fakts/discover";
-import { AlertCircle, Loader2, Plus } from "lucide-react";
+import { popOutWindowOpen } from "@/lib/arkitekt/fakts/popout";
+import { AlertCircle, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import React from "react";
 
 export type AddProfileButtonProps = {
@@ -38,13 +39,18 @@ export const AddProfileButton = ({
   const autoLoginError = Arkitekt.useAutoLoginError();
   const [isConnecting, setIsConnecting] = React.useState(false);
   const [connectionError, setConnectionError] = React.useState<string | null>(null);
+  /** The approval page, once the grant has opened it — so it can be opened again. */
+  const [verificationUri, setVerificationUri] = React.useState<string | null>(null);
+  const controllerRef = React.useRef<AbortController | null>(null);
 
   const handleConnect = async () => {
     const controller = new AbortController();
+    controllerRef.current = controller;
 
     try {
       setIsConnecting(true);
       setConnectionError(null);
+      setVerificationUri(null);
 
       const endpoint = await discover({
         url: DEFAULT_COORDINATION_SERVER_URL,
@@ -55,16 +61,53 @@ export const AddProfileButton = ({
       await connect({
         endpoint,
         controller,
+        onVerificationUri: setVerificationUri,
       });
     } catch (error) {
-      console.error("Connection failed:", error);
-      setConnectionError(
-        error instanceof Error ? error.message : "Unable to connect to the coordination server.",
-      );
+      // Cancelled here: the user's choice, not a failure worth a red line.
+      if (!controller.signal.aborted) {
+        console.error("Connection failed:", error);
+        setConnectionError(
+          error instanceof Error ? error.message : "Unable to connect to the coordination server.",
+        );
+      }
     } finally {
-      setIsConnecting(false);
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+        setIsConnecting(false);
+        setVerificationUri(null);
+      }
     }
   };
+
+  const handleCancel = () => controllerRef.current?.abort();
+
+  const handleReopen = () => {
+    if (!verificationUri) return;
+    void popOutWindowOpen(verificationUri).catch((error) =>
+      setConnectionError(error instanceof Error ? error.message : "Could not open the browser."),
+    );
+  };
+
+  /** While the grant waits on the browser: a way back to it, and a way out. */
+  const waiting = isConnecting && (
+    <div className="flex items-center justify-center gap-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleReopen}
+        disabled={!verificationUri}
+        className="text-muted-foreground"
+      >
+        <ExternalLink className="h-3.5 w-3.5" />
+        Open browser again
+      </Button>
+      <Button variant="ghost" size="sm" onClick={handleCancel} className="text-muted-foreground">
+        <X className="h-3.5 w-3.5" />
+        Cancel
+      </Button>
+    </div>
+  );
 
   const label = `Add an account on ${DEFAULT_COORDINATION_SERVER_HOST}`;
 
@@ -72,7 +115,8 @@ export const AddProfileButton = ({
 
   const errors = (
     <>
-      {autoLoginError && <ErrorLine>{autoLoginError}</ErrorLine>}
+      {/* A grant started here fails into both; say it once. */}
+      {autoLoginError && autoLoginError !== connectionError && <ErrorLine>{autoLoginError}</ErrorLine>}
       {connectionError && <ErrorLine>{connectionError}</ErrorLine>}
       {/* "Could not connect" on its own leaves nowhere to go. The doctor is
           the next step, so it appears exactly when that happens. */}
@@ -110,6 +154,7 @@ export const AddProfileButton = ({
             </>
           )}
         </Button>
+        {waiting}
         {errors}
       </div>
     );
@@ -145,6 +190,7 @@ export const AddProfileButton = ({
 
       {/* `w-full` in the wrapping row means: on its own line, under the cards. */}
       <div className="flex w-full flex-col items-center gap-2 empty:hidden">
+        {waiting}
         {errors}
       </div>
     </>

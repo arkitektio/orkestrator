@@ -123,11 +123,19 @@ export const enhanceManifest = async (
 };
 
 
+/**
+ * Tell the coordination server which aliases worked. Best-effort and bounded:
+ * nothing waits on it, and a server that does not answer must not leave a
+ * request hanging for the life of the window.
+ */
 export const report = async (
   baseUrl: string,
   accessToken: string,
   reportRequest: ReportRequest,
+  { timeoutMs = 5000 }: { timeoutMs?: number } = {},
 ): Promise<boolean> => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     // The reporting client is identified by its Bearer access token (the JWT's
     // `client_id` claim) — the old opaque client token no longer exists.
@@ -138,6 +146,7 @@ export const report = async (
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(reportRequest),
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -149,6 +158,8 @@ export const report = async (
   } catch (e) {
     console.error("Report request error:", e);
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

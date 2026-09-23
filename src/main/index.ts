@@ -21,6 +21,7 @@ import { stat, writeFile } from "node:fs/promises";
 import { normalize, sep } from "node:path";
 import { Readable } from "node:stream";
 import { ShellService } from "./modules/ShellService";
+import { FactoryResetService, finishFactoryReset } from "./modules/FactoryReset";
 import { DoctorService, defaultDoctorDeps } from "./doctor/DoctorService";
 import { VoiceService } from "./voice/VoiceService";
 import { ModelStore } from "./voice/ModelStore";
@@ -126,6 +127,11 @@ app.commandLine.appendSwitch("ignore-certificate-errors", "true");
 // on every platform we ship (Metal / D3D / Vulkan), so no switches are needed
 // here; if that regresses, this is where the flags would go.
 
+// A factory reset requested last run empties userData now, before any
+// electron-store below opens its file (see ./modules/FactoryReset). When it
+// relaunches for a clean start this process is on its way out.
+const exitingForFactoryReset = finishFactoryReset();
+
 // Core Services
 const appManager = new AppManager();
 const transport = new IpcTransport();
@@ -165,6 +171,7 @@ const doctorService = new DoctorService(transport, { ...defaultDoctorDeps(), pro
 const bigFileUploadService = new BigFileUploadService(transport, meshProxyPort);
 const bigFileDownloadService = new BigFileDownloadService(transport, meshProxyPort);
 const shellService = new ShellService(transport);
+const factoryResetService = new FactoryResetService(transport);
 // Voice input: the speech model runs in a utilityProcess (`voice/worker.ts`,
 // built to `out/main/voice-worker.js`), started only once a user switches
 // voice input on. Models download into userData on first use.
@@ -187,6 +194,7 @@ appManager.register(uploadService);
 appManager.register(bigFileUploadService);
 appManager.register(bigFileDownloadService);
 appManager.register(shellService);
+appManager.register(factoryResetService);
 appManager.register(doctorService);
 appManager.register(voiceService);
 appManager.register(meshService);
@@ -228,7 +236,7 @@ function maybeInstallReactDevTools() {
 // (see `devtools.enabled` in graphQlServiceBuidler.tsx) for console inspection.
 
 // Ensure single instance
-const gotTheLock = app.requestSingleInstanceLock();
+const gotTheLock = !exitingForFactoryReset && app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
   app.quit();

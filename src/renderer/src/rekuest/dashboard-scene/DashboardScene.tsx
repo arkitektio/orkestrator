@@ -509,7 +509,7 @@ export const DashboardScene = () => {
     setPanelCount(event.api.panels.length);
   }, [addMaterializedBlok, layoutStorageKey, materializedBloks]);
 
-  const [{ isOver, canDrop }, dropRef] = useSmartDrop(
+  const [{ isOver }, dropRef] = useSmartDrop(
     (structures) => {
       const droppedAgent = structures.find(isDroppedAgent);
 
@@ -682,7 +682,7 @@ export const DashboardScene = () => {
 
         <div className="min-h-0 flex-1 overflow-hidden rounded-2xl">
           <div className="relative h-full w-full">
-            {isOver && canDrop && (
+            {isOver && (
               <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-background/50 backdrop-blur-sm">
                 <div className="rounded-xl border border-border/70 bg-background/90 px-4 py-3 text-sm shadow-lg">
                   Drop an agent card to choose and materialize a blok.

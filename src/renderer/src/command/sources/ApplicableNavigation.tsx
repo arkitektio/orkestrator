@@ -63,7 +63,11 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
     () =>
       searchRoutes(
         ROUTE_CATALOG,
-        modules.filter((m) => m.status === "ready").map((m) => ({ key: m.key, label: m.definition.label })),
+        [
+          // Team (lok) is the session's own service: signed in means it is up.
+          { key: "team", label: "Team" },
+          ...modules.filter((m) => m.status === "ready").map((m) => ({ key: m.key, label: m.definition.label })),
+        ],
         filter,
       ),
     [modules, filter],
@@ -204,7 +208,8 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
                     openDialog: openDialog as never,
                     toggleDebug: () => setDebug(!debug),
                     parkSession: () => void actions.disconnect(),
-                    reconnect: () => void actions.reconnect(),
+                    // A failure lands in `autoLoginError`, where the shell shows it.
+                    reconnect: () => void actions.reconnect().catch(() => {}),
                     clearCaches: () => void actions.clearAllServiceCaches(),
                     setTheme,
                     toggleTheme,

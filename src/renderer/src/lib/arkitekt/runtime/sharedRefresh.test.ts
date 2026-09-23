@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { StoredArkitektSession } from "../fakts/sessionStorageSchema";
+import type { StoredArkitektSession } from "../session/record";
 import {
   reconcilePersistedSession,
   refreshLockName,
@@ -172,6 +172,80 @@ describe("rotateProfileSession", () => {
 
   it("keys the lock per profile so different profiles do not queue behind each other", async () => {
     expect(refreshLockName("a")).not.toBe(refreshLockName("b"));
+  });
+
+  it("locks the refresh chain, not the profile id — a re-key must not open a second door", async () => {
+    const requested: string[] = [];
+    vi.stubGlobal("navigator", {
+      locks: { request: <R,>(name: string, callback: () => Promise<R>) => { requested.push(name); return callback(); } },
+    });
+    const rotate = (profileId: string) =>
+      rotateProfileSession({
+        profileId,
+        held: session("rt-1"),
+        readPersisted: async () => null,
+        refresh: async () => session("rt-2"),
+        persist: async () => {},
+      });
+
+    // The same chain under its provisional and its final id: one lock.
+    await rotate("base::pending::x");
+    await rotate("base::2::3::49");
+    expect(requested).toEqual([refreshLockName("cid"), refreshLockName("cid")]);
+  });
+});
+
+describe("rotateProfileSession({ reuseFresh })", () => {
+  it("uses a fresh token as it is — boot and switch send nothing", async () => {
+    const held = session("rt-1");
+    const refresh = vi.fn(async () => session("rt-2"));
+
+    const result = await rotateProfileSession({
+      profileId: "p",
+      held,
+      readPersisted: async () => held,
+      refresh,
+      persist: async () => {},
+      reuseFresh: true,
+    });
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(result).toEqual({ session: held, refreshed: false });
+  });
+
+  it("still refreshes a token that is due", async () => {
+    const held = session("rt-1", { received_at: Date.now() - 3600_000 });
+    const refresh = vi.fn(async () => session("rt-2"));
+
+    const result = await rotateProfileSession({
+      profileId: "p",
+      held,
+      readPersisted: async () => held,
+      refresh,
+      persist: async () => {},
+      reuseFresh: true,
+    });
+
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(result.refreshed).toBe(true);
+  });
+
+  it("still takes another window's rotation over the token it holds", async () => {
+    const held = session("rt-1");
+    const theirs = session("rt-2");
+    const refresh = vi.fn(async () => session("rt-3"));
+
+    const result = await rotateProfileSession({
+      profileId: "p",
+      held,
+      readPersisted: async () => theirs,
+      refresh,
+      persist: async () => {},
+      reuseFresh: true,
+    });
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(result.session.token.refresh_token).toBe("rt-2");
   });
 });
 

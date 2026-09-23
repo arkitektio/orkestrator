@@ -1,5 +1,5 @@
 import { ActiveFakts, Alias } from "../fakts/faktsSchema";
-import { StoredArkitektSession } from "../fakts/sessionStorageSchema";
+import { StoredArkitektSession } from "../session/record";
 import {
   ConnectedContext,
   EnhancedManifest,

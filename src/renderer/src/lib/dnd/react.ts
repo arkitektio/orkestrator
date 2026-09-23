@@ -1,5 +1,5 @@
 import { useLatestRef } from "@/hooks/useLatestRef";
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import {
   createDragSource,
   createDropTarget,
@@ -46,7 +46,37 @@ export const useDropTarget = (config: DropTargetConfig) => {
   return { ref: handle.attach, isOver };
 };
 
-/** The drag in the air over this window, if any. Re-renders as it starts and ends. */
+/**
+ * Something derived from the drag in the air, re-rendering only when THAT
+ * changes. A drag starting or ending re-renders every subscriber of the raw
+ * session; with a primitive `select` (a boolean) a component whose answer did
+ * not change — a tab reorder, to a surface that only takes smart cards — is
+ * left alone. `select` runs once per session, not once per render.
+ */
+export const useDragSessionSelector = <T,>(select: (session: DragSession | null) => T): T => {
+  const latest = useLatestRef(select);
+  const cache = useRef<{ session: DragSession | null; value: T } | null>(null);
+  const getSnapshot = useCallback(() => {
+    const session = getDragSession();
+    if (!cache.current || cache.current.session !== session) {
+      cache.current = { session, value: latest.current(session) };
+    }
+    return cache.current.value;
+  }, [latest]);
+  return useSyncExternalStore(subscribeDragSession, getSnapshot);
+};
+
+/**
+ * Whether what is in the air could be dropped here, for a surface that
+ * changes shape while it is — re-rendering only as the answer flips.
+ */
+export const useCanDrop = (accepts: (session: DragSession) => boolean): boolean =>
+  useDragSessionSelector((session) => session !== null && accepts(session));
+
+/**
+ * The drag in the air over this window, if any. Re-renders as ANY drag starts
+ * and ends; prefer `useCanDrop` / `useDragSessionSelector`.
+ */
 export const useDragSession = (): DragSession | null =>
   useSyncExternalStore(subscribeDragSession, getDragSession);
 

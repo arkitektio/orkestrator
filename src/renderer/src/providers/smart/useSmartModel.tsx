@@ -10,6 +10,7 @@ import { useDragSource, useDropTarget } from "@/lib/dnd/react";
 import { useSelectionStoreApi } from "../selection/SelectionContext";
 import { SelectionState } from "../selection/store";
 import { smartDropRegistryStore } from "./dropRegistry";
+import { onSmartDragEnd } from "./dragOut";
 import { buildStackPreview } from "./dragPreview";
 import {
   acceptsSmartDrag,
@@ -203,8 +204,12 @@ export const useSmartModel = ({
   const drag = useDragSource({
     kind: SMART_MODEL_DROP_TYPE,
     getData: (): SmartDragItem => ({ structures: dragStructures() }),
-    // What another window (or another app) receives.
+    // What another window of ours receives. Nothing else can take it.
     getExternalData: () => smartExternalData(dragStructures()),
+    // Let go on the desktop: download it, or ask how to export it.
+    onEnd: (info, data) => {
+      void onSmartDragEnd(info, data);
+    },
     // Several things in hand look like several things: a stack, this card on top.
     preview: ({ data, node, grab }) =>
       buildStackPreview(node, (data as SmartDragItem).structures.length, grab),

@@ -9,6 +9,7 @@ import { ModuleLoadingFallback } from "./components/fallbacks/ModuleLoading";
 import { QuietPage } from "./components/fallbacks/QuietPage";
 import { ShellSignInNotice } from "./components/shell/ShellSignInNotice";
 import { NotFound } from "./components/fallbacks/NotFound";
+import { LokRedirect } from "./components/navigation/LokRedirect";
 
 // The dashboard carries dockview; it is the index route, but a deep link into a
 // module should not pay for it.
@@ -83,7 +84,10 @@ export const AppRoutes = () => (
         <Route path="kabinet/*" element={protectModule(<KabinetModule />)} />
         <Route path="omero_ark/*" element={protectModule(<OmeroArkModule />)} />
         <Route path="kraph/*" element={protectModule(<KraphModule />)} />
-        <Route path="lok/*" element={protectModule(<LokNextModule />)} />
+        {/* Team is the lok module under its people-first name; `/lok/*` is
+            the old address, kept alive for open tabs and pasted links. */}
+        <Route path="team/*" element={protectModule(<LokNextModule />)} />
+        <Route path="lok/*" element={<LokRedirect />} />
         <Route path="settings/*" element={protectModule(<SettingsModule />)} />
         <Route path="blok/*" element={protectModule(<BlokModule />)} />
         <Route path="alpaka/*" element={protectModule(<AlpakaModule />)} />

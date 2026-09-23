@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { LokClient } from "@/linkers";
 import { Server, User } from "lucide-react";
 import { ListClientFragment } from "../../api/graphql";
@@ -20,7 +20,7 @@ interface Props {
 }
 
 const ClientCard = ({ item }: Props) => {
-  const resolve = useResolve();
+  const resolve = useLokResolve();
 
   return (
     <LokClient.Smart object={item} >

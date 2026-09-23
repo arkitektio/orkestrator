@@ -4,7 +4,7 @@ import { ConnectingFallback } from "@/app/components/fallbacks/Connecting";
 import { Guard } from "@/app/Arkitekt";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import AppPage from "./pages/AppPage";
 import AppsPage from "./pages/AppsPage";
 import ClientPage from "./pages/ClientPage";
@@ -15,8 +15,6 @@ import InstancesPage from "./pages/InstancesPage";
 import LayerPage from "./pages/LayerPage";
 import LayersPage from "./pages/LayersPage";
 import MePage from "./pages/MePage";
-import OrganizationPage from "./pages/OrganizationPage";
-import OrganizationsPage from "./pages/OrganizationsPage";
 import RecordPage from "./pages/RecordPage";
 import RedeemTokenPage from "./pages/RedeemTokenPage";
 import RedeemTokensPage from "./pages/RedeemTokensPage";
@@ -27,6 +25,7 @@ import ServicesPage from "./pages/ServicesPage";
 import UserPage from "./pages/UserPage";
 import UsersPage from "./pages/UsersPage";
 import StandardPane from "./panes/StandardPane";
+import TeamHomePage from "./pages/TeamHomePage";
 import { NotFound } from "@/app/components/fallbacks/NotFound";
 interface Props { }
 
@@ -46,6 +45,8 @@ export const LokNextModule: React.FC<Props> = () => {
           <Route path="me" element={<MePage />} />
           <Route path="record" element={<RecordPage />} />
           <Route path="users" element={<UsersPage />} />
+          {/* A member's profile. `users/:id` is its older address. */}
+          <Route path="members/:id" element={<UserPage />} />
           <Route path="users/:id" element={<UserPage />} />
           <Route path="apps" element={<AppsPage />} />
           <Route path="devices/:id" element={<DevicePage />} />
@@ -57,8 +58,9 @@ export const LokNextModule: React.FC<Props> = () => {
           <Route path="instances" element={<InstancesPage />} />
           <Route path="layers" element={<LayersPage />} />
           <Route path="layers/:id" element={<LayerPage />} />
-          <Route path="organizations/:id" element={<OrganizationPage />} />
-          <Route path="organizations" element={<OrganizationsPage />} />
+          {/* A profile acts in exactly one organization, and Team's start
+              page IS it — there is no other organization to list or open. */}
+          <Route path="organizations/*" element={<Navigate replace to="/team" />} />
           <Route path="services/:id" element={<ServicePage />} />
           <Route path="redeemtokens" element={<RedeemTokensPage />} />
           <Route path="redeemtokens/:id" element={<RedeemTokenPage />} />
@@ -66,7 +68,8 @@ export const LokNextModule: React.FC<Props> = () => {
             path="serviceinstances/:id"
             element={<ServiceInstancePage />}
           />
-          <Route index element={<HomePage />} />
+          <Route path="overview" element={<HomePage />} />
+          <Route index element={<TeamHomePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>

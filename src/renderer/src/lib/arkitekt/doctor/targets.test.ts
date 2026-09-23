@@ -3,6 +3,8 @@ import { aliasToHttpPath } from "../alias/helpers";
 import type { Alias, Instance } from "../fakts/faktsSchema";
 import {
   aliasToProbeTarget,
+  isUpstream,
+  upstreamTargets,
   endpointToProbeTargets,
   instanceToProbeTargets,
   probeTargetUrl,
@@ -27,6 +29,7 @@ describe("aliasToProbeTarget", () => {
       path: "mikro",
       probePath: ".well-known/fakts-challenge",
       label: "mikro",
+      role: "service",
     });
   });
 
@@ -94,5 +97,50 @@ describe("endpointToProbeTargets", () => {
     expect(endpointToProbeTargets("")).toEqual([]);
     expect(endpointToProbeTargets("   ")).toEqual([]);
     expect(endpointToProbeTargets("http://")).toEqual([]);
+  });
+});
+
+describe("upstreamTargets", () => {
+  it("probes lok's own alias on the coordination server, challenge and all", () => {
+    const targets = upstreamTargets({
+      kind: "service",
+      serviceKey: "all",
+      endpointUrl: "https://go.arkitekt.live/lok/f/",
+      coordinationAlias: { id: "self", host: "go.arkitekt.live", ssl: true, path: "lok", challenge: "ht" },
+    });
+    expect(targets).toHaveLength(1);
+    expect(targets[0]).toMatchObject({ role: "coordination", host: "go.arkitekt.live", path: "lok", probePath: "ht" });
+    expect(probeTargetUrl(targets[0])).toBe("https://go.arkitekt.live/lok/ht");
+  });
+
+  it("without the alias, falls back to discovery at the ORIGIN — never under base_url", () => {
+    // base_url is the fakts API (…/lok/f/); `/lok/f/.well-known/fakts` is served by nothing.
+    const [target] = upstreamTargets({ kind: "service", serviceKey: "all", endpointUrl: "https://go.arkitekt.live/lok/f/" });
+    expect(probeTargetUrl(target)).toBe("https://go.arkitekt.live/.well-known/fakts");
+  });
+
+  it("probes the coordination server's discovery and the mesh control root in service mode", () => {
+    const targets = upstreamTargets({
+      kind: "service",
+      serviceKey: "all",
+      endpointUrl: "https://go.arkitekt.live",
+      meshCoordUrl: "https://mesh.arkitekt.live",
+    });
+    expect(targets.map((target) => [target.role, target.host, target.probePath])).toEqual([
+      ["coordination", "go.arkitekt.live", ".well-known/fakts"],
+      ["mesh-control", "mesh.arkitekt.live", null],
+    ]);
+    expect(targets.every(isUpstream)).toBe(true);
+  });
+
+  it("adds no mesh control when the deployment names none or it is unknown", () => {
+    for (const meshCoordUrl of [null, undefined]) {
+      const targets = upstreamTargets({ kind: "service", serviceKey: "x", endpointUrl: "https://go.arkitekt.live", meshCoordUrl });
+      expect(targets.map((target) => target.role)).toEqual(["coordination"]);
+    }
+  });
+
+  it("adds nothing in discovery mode, whose targets already are the coordination server", () => {
+    expect(upstreamTargets({ kind: "discovery", endpointUrl: "https://go.arkitekt.live" })).toEqual([]);
   });
 });

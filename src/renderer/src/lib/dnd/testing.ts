@@ -97,3 +97,17 @@ export const dragOnto = (source: Element, target: Element, init: FireDragInit = 
     cancel: () => fireDrag(source, "dragend", { ...init, dataTransfer }),
   };
 };
+
+/**
+ * A drag from `source` that leaves the window and ends out there — let go on
+ * the desktop, as the source sees it. What `DragSourceConfig.onEnd` reports as
+ * `leftWindow` with the `dropEffect` the `dataTransfer` holds (`"none"`).
+ */
+export const dragOutOfWindow = (source: Element, init: FireDragInit = {}) => {
+  const dataTransfer = init.dataTransfer ?? new FakeDataTransfer();
+  fireDrag(source, "dragstart", { ...init, dataTransfer });
+  // No related target: the pointer went out of the window.
+  fireDrag(source.ownerDocument.body, "dragleave", { ...init, dataTransfer, relatedTarget: null });
+  fireDrag(source, "dragend", { ...init, dataTransfer });
+  return dataTransfer;
+};

@@ -3,7 +3,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { DialogButton } from "@/components/ui/dialog-button";
 import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { PlusIcon } from "lucide-react";
 import { useGetServiceQuery } from "../api/graphql";
@@ -11,7 +11,7 @@ import { useGetServiceQuery } from "../api/graphql";
 export type IRepresentationScreenProps = {};
 
 const Page = asDetailQueryRoute(useGetServiceQuery, ({ data }) => {
-  const resolve = useResolve();
+  const resolve = useLokResolve();
 
   return (
     <PageLayout

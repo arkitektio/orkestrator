@@ -13,7 +13,8 @@ import { REKUEST_ACTIONS } from "@/lib/rekuest/actions";
 import { linkBuilder } from "@/providers/smart/builder";
 import { smartRegistry } from "@/providers/smart/registry";
 import { structureTabTarget } from "@/providers/smart/tabTargets";
-import { Columns2, ExternalLink, FolderOpen, Link2, Link2Off, PanelLeftOpen } from "lucide-react";
+import { requestExport } from "@/lib/export/exportRequests";
+import { Columns2, Download, ExternalLink, FolderOpen, Link2, Link2Off, PanelLeftOpen } from "lucide-react";
 import { toast } from "sonner";
 import {
   getActiveProfile,
@@ -95,6 +96,22 @@ const OpenToTheSideAction: Action = {
     if (target) tabs.openBeside(target.to, { label: target.label, evict: true });
   },
   collections: ["smart"],
+};
+
+/**
+ * Bring a datum to disk. A file downloads straight away; anything else opens
+ * the export dialog to pick an exporter (`lib/export/ExportToFileDialog.tsx`).
+ * The same as dragging the card out onto the desktop.
+ */
+const ExportToFileAction: Action = {
+  title: "Export to file",
+  description: "Download it, or run an exporter that turns it into a file",
+  icon: Download,
+  conditions: [{ type: "nopartner" }, { type: "datum" }],
+  execute: async ({ state }) => {
+    requestExport(state.left);
+  },
+  collections: ["io"],
 };
 
 const PopOutAction: Action = {
@@ -230,5 +247,6 @@ export const {
     popout: PopOutAction,
     newtab: OpenInNewTabAction,
     opentotheside: OpenToTheSideAction,
+    exporttofile: ExportToFileAction,
     navigate: NavigateAction,
   } as const);

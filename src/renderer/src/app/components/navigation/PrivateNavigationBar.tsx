@@ -174,6 +174,44 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
  * service redrew the whole grid. Selecting by key, a tick in kraph re-renders
  * kraph's tile and nothing else, and the memo is no longer load-bearing.
  */
+/**
+ * A small recessed tile, as a browser gives its pinned sites.
+ *
+ * Inset rather than raised on purpose: the rail is the window's own surface,
+ * and a tile pressed INTO it reads as part of the chrome, where a raised chip
+ * would read as content sitting on top of it. The active one lifts out of the
+ * recess — lighter fill, brand ring — which is the same language the pinned
+ * rows below use, so "where I am" looks the same wherever it appears.
+ */
+const tileClass = (active: boolean) =>
+  cn(
+    // Fills its grid cell, so the tiles line up whatever the rail's width.
+    "flex h-9 w-full cursor-pointer items-center justify-center rounded-lg transition-colors",
+    "text-muted-foreground shadow-[inset_0_1px_2px_rgb(0_0_0/0.10)] ring-1",
+    active
+      ? "bg-background/80 text-foreground ring-primary/35 shadow-none"
+      : "bg-background/25 ring-border/30 hover:bg-background/55 hover:text-foreground",
+  );
+
+/**
+ * Team — the lok module — as a tile of its own.
+ *
+ * Not a `moduleRegistry` entry: lok is the session's own service, not one of
+ * the configured ones, so a registry row would read as "unconfigured". The rail
+ * only renders inside a signed-in shell, where lok is by definition ready.
+ */
+const TeamNavItem = () => (
+  <ModuleNavHover moduleKey="team" ready to="/team" label="Team" icon={matchIcon("team")}>
+    <DroppableNavLink to="/team" className="block" aria-label="Team">
+      {({ isActive }) => (
+        <span data-active={isActive} className={tileClass(isActive)}>
+          {matchIcon("team")}
+        </span>
+      )}
+    </DroppableNavLink>
+  </ModuleNavHover>
+);
+
 const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
   const moduleState = Arkitekt.useModuleState(moduleKey);
   const { retryModule } = Arkitekt.useActions();
@@ -201,25 +239,6 @@ const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
       {icon}
     </div>
   );
-
-  /**
-   * A small recessed tile, as a browser gives its pinned sites.
-   *
-   * Inset rather than raised on purpose: the rail is the window's own surface,
-   * and a tile pressed INTO it reads as part of the chrome, where a raised chip
-   * would read as content sitting on top of it. The active one lifts out of the
-   * recess — lighter fill, brand ring — which is the same language the pinned
-   * rows below use, so "where I am" looks the same wherever it appears.
-   */
-  const tileClass = (active: boolean) =>
-    cn(
-      // Fills its grid cell, so the tiles line up whatever the rail's width.
-      "flex h-9 w-full cursor-pointer items-center justify-center rounded-lg transition-colors",
-      "text-muted-foreground shadow-[inset_0_1px_2px_rgb(0_0_0/0.10)] ring-1",
-      active
-        ? "bg-background/80 text-foreground ring-primary/35 shadow-none"
-        : "bg-background/25 ring-border/30 hover:bg-background/55 hover:text-foreground",
-    );
 
   if (isInteractive) {
     return (
@@ -291,6 +310,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
   const availableKeys = Arkitekt.useAvailableModuleKeys();
   const readyModules = Arkitekt.useReadyModuleKeys();
   const moduleOrder = Object.keys(moduleRegistry).filter((key) => availableKeys.includes(key));
+  const preload = React.useMemo(() => ["team", ...readyModules], [readyModules]);
 
   return (
     <>
@@ -300,7 +320,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           to the open tabs below than to twelve stacked icons. `auto-fit` with a
           `1fr` max stretches the tiles across the full rail width and wraps to
           a new row only once a tile would drop below its minimum size. */}
-      <ModuleNavHoverGroup preload={readyModules}>
+      <ModuleNavHoverGroup preload={preload}>
       {/* `app-no-drag`: the rail's surface is a window-drag region, and a drag
           region eats the clicks of everything inside it that has not opted out.
           The gaps AROUND this grid still drag the window. */}
@@ -328,6 +348,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
             </Tooltip>
           )}
         </DroppableNavLink>
+        <TeamNavItem />
         {moduleOrder.map((moduleKey) => (
           <ModuleNavItem key={moduleKey} moduleKey={moduleKey} />
         ))}

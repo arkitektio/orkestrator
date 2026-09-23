@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ActiveFakts, ActiveFaktsSchema } from "./faktsSchema";
+import { ActiveFakts, ActiveFaktsSchema, grantIdentity, type GrantIdentity } from "./faktsSchema";
 import { TokenResponse, TokenResponseSchema } from "./tokenSchema";
 import { MeshGrantSchema, grantedMesh, type GrantedMesh } from "./meshGrant";
 
@@ -13,7 +13,9 @@ export const DEVICE_CODE_GRANT_TYPE =
 export const TokenGrantResponseSchema = TokenResponseSchema.extend({
   ...ActiveFaktsSchema.shape,
   /** A mesh key minted with the approval — grant responses only. */
-  auth: MeshGrantSchema.optional().nullable(),
+  mesh: MeshGrantSchema.nullish(),
+  /** The same block under its name before lok renamed it to `mesh`. */
+  auth: MeshGrantSchema.nullish(),
 });
 
 export type TokenGrantResponse = z.infer<typeof TokenGrantResponseSchema>;
@@ -23,6 +25,8 @@ export type GrantResult = {
   fakts: ActiveFakts;
   /** Never persisted by the renderer; used once to join (`claimProfileMesh`). */
   mesh?: GrantedMesh;
+  /** Who the grant is for, from `self`; absent on a lok that predates it. */
+  identity?: GrantIdentity;
 };
 
 /** A refresh may legitimately arrive without an envelope — see below. */
@@ -39,11 +43,12 @@ export const splitGrantResponse = (json: unknown): GrantResult => {
     throw new Error("Malformed token response");
   }
 
-  const { self, instances, statuses, auth, ...token } = parsed.data;
+  const { self, instances, statuses, mesh, auth, ...token } = parsed.data;
   return {
     token: { ...token, received_at: Date.now() },
     fakts: { self, instances, statuses },
-    mesh: grantedMesh(auth),
+    mesh: grantedMesh(mesh ?? auth),
+    identity: grantIdentity(self),
   };
 };
 
@@ -61,7 +66,7 @@ export const splitRefreshResponse = (json: unknown): RefreshResult => {
   if (withEnvelope.success) {
     // A refresh never carries a key (deliberately: it would be minted on
     // every hourly refresh); if one ever did, it is dropped here.
-    const { self, instances, statuses, auth: _auth, ...token } = withEnvelope.data;
+    const { self, instances, statuses, mesh: _mesh, auth: _auth, ...token } = withEnvelope.data;
     return {
       token: { ...token, received_at: Date.now() },
       fakts: { self, instances, statuses },
