@@ -14,6 +14,8 @@ export type DerivedGroup<D> = {
   title: string;
   /** The lens descriptor, or the intrinsic system's name. */
   subtitle?: string;
+  /** The lens this group came through, so the heading can link to it. */
+  lensId?: string;
   items: {
     dataset: D;
     /**
@@ -78,6 +80,7 @@ export const groupDerived = <L extends GroupableLens, D extends GroupableDerived
       key: systemId,
       title: "Lens",
       subtitle: lensLabel(lens),
+      lensId: lens.id,
       items: [],
     });
   }

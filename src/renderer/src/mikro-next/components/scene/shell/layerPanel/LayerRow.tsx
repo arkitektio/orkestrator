@@ -10,6 +10,7 @@ import {
   layerFlavor,
 } from "../../platform/layerui/layerIdentity";
 import { layerSwatchBackground } from "../../platform/layerui/renderGraphSwatch";
+import { lensLabel } from "../../../../lenses";
 
 /**
  * A single compact layer row for the right-hand Layers panel. Displays a
@@ -65,6 +66,9 @@ export const LayerRow = ({
   onSaveGraph?: () => void;
 }) => {
   const label = layerDisplayLabel(layer);
+  // Only a CROP earns a chip: a full lens is the dataset itself, which the name
+  // already says, so marking it would put the same word on every row.
+  const cropLabel = layer.lens.slices.length > 0 ? lensLabel(layer.lens) : null;
   const flavor = layerFlavor(layer);
   const hidden = layer.visible === false;
   // The highlight follows the EFFECTIVE target — the first visible layer by
@@ -115,6 +119,16 @@ export const LayerRow = ({
       >
         {label}
       </span>
+      {cropLabel && (
+        <MikroLens.DetailLink
+          object={{ id: layer.lens.id }}
+          className="hidden shrink-0 rounded-full border border-white/20 px-1.5 text-[9px] leading-4 text-white/70 hover:border-white/40 hover:text-white @3xs/card:inline-block"
+          title={`Through a crop lens: ${cropLabel}`}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+        >
+          crop
+        </MikroLens.DetailLink>
+      )}
       {/* Secondary to the name: the flavor badge only competes for width once
           the card is wide enough to seat both without truncating. */}
       <span

@@ -26,6 +26,7 @@ import { CreateRedeemTokenForm } from "@/lok-next/forms/CreateRedeemTokenForm";
 import { CreateServiceInstanceForm } from "@/lok-next/forms/CreateServiceInstance";
 import { UpdateServiceInstanceForm } from "@/lok-next/forms/UpdateServiceInstanceForm";
 import { AddLayerForm } from "@/mikro-next/forms/AddLayerForm";
+import { CreateLensForm } from "@/mikro-next/forms/CreateLensForm";
 import { CommitMeshDesignDialog } from "@/mikro-next/components/scene/features/meshDesign/ui/CommitMeshDesignDialog";
 import { CalibrateForm } from "@/mikro-next/forms/CalibrateForm";
 import { RegisterForm } from "@/mikro-next/forms/RegisterForm";
@@ -95,6 +96,7 @@ export const { DialogProvider, useDialog, registry } = createDialogProvider({
   register: RegisterForm,
   calibrate: CalibrateForm,
   createmikrofolder: CreateMikroFolderForm,
+  createlens: CreateLensForm,
   movetofolder: MoveToFolderForm,
   updatefolder: UpdateFolderForm,
 });

@@ -1,4 +1,4 @@
-import { MikroArrayDataset, MikroSparseDataset, MikroTableDataset } from "@/linkers";
+import { MikroArrayDataset, MikroLens, MikroSparseDataset, MikroTableDataset } from "@/linkers";
 import {
   Aperture,
   Grid2x2,
@@ -55,8 +55,8 @@ export const RESIDENT_KIND_LABEL: Record<Kind, string> = {
  *
  * There is no @mikro/annotationcollection, @mikro/meshcollection or
  * @mikro/dataarray linker, so those three name themselves rather than pretend
- * to be navigable. A Lens has no page of its own either, but it does have a
- * dataset — so it borrows that link.
+ * to be navigable. A Lens has no name of its own, so "lens" links to the lens
+ * and the dataset it borrows its name from links to the dataset.
  */
 export const ResidentLink = (props: {
   resident: Resident;
@@ -85,7 +85,7 @@ export const ResidentLink = (props: {
     case "Lens":
       return (
         <span className={className}>
-          a lens of{" "}
+          <MikroLens.DetailLink object={resident}>a lens</MikroLens.DetailLink> of{" "}
           <MikroArrayDataset.DetailLink object={resident.dataset}>
             {resident.dataset.name}
           </MikroArrayDataset.DetailLink>

@@ -24,6 +24,7 @@ import ScenesPage from "./pages/ScenesPage";
 import ScenePage from "./pages/ScenePage";
 import SceneRegistrationPage from "./pages/SceneRegistrationPage";
 import { LensPage } from "./pages/LensPage";
+import LensesPage from "./pages/LensesPage";
 import StandardPane from "./panes/StandardPane";
 
 export const MikroNextModule = () => {
@@ -45,6 +46,7 @@ export const MikroNextModule = () => {
           />
           <Route path="coordinatesystems" element={<CoordinateSystemsPage />} />
           <Route path="lenses/:id" element={<LensPage />} />
+          <Route path="lenses" element={<LensesPage />} />
           <Route path="files" element={<FilesPage />} />
           <Route path="annotations" element={<AnnotationsPage />} />
           <Route path="annotations/:id" element={<AnnotationPage />} />

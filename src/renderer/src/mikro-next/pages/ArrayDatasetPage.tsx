@@ -9,6 +9,7 @@ import { MoveToFolderButton } from '../components/folder/MoveToFolderButton'
 import { DatasetTitleOverlay } from '../components/arraydataset/DatasetTitleOverlay'
 import { Scene } from '../components/scene/Scene'
 import { DatasetInfoSidebar } from '../components/sidebars/DatasetInfoSidebar'
+import { LensesSidebar } from '../components/sidebars/LensesSidebar'
 
 export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ data }) => {
   const dataset = data.arrayDataset
@@ -74,6 +75,8 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
         <>
           <Sidebars.Tab label="Layers"><Scene.LayersSidebar /></Sidebars.Tab>
           <Sidebars.Tab label="Annotations"><Scene.AnnotationsSidebar /></Sidebars.Tab>
+          {/* Every way of looking at this dataset: the full lens and its crops. */}
+          <Sidebars.Tab label="Lenses"><LensesSidebar dataset={dataset.id} /></Sidebars.Tab>
           {/* Only when there is something to list — see Scene.hasMeshLayer. */}
           {Scene.hasMeshLayer(sceneData?.scene) && (
             <Sidebars.Tab label="Meshes"><Scene.MeshesSidebar /></Sidebars.Tab>

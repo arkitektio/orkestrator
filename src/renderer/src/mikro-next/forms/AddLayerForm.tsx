@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import {
   Blending,
   ColorMap,
@@ -1034,9 +1035,21 @@ const stepDescription = (source: Source): string => {
   }
 };
 
-const AddLayerFormInner = (props: { scene: string }) => {
+type AddLayerProps = {
+  scene: string;
+  /**
+   * Open straight on this lens' step — a lens dropped on a scene. Ignored when
+   * the lens is not among what the scene can reach, which the picker then says.
+   */
+  lens?: string;
+};
+
+const AddLayerFormInner = (props: AddLayerProps) => {
   const [search, setSearch] = useState("");
   const [source, setSource] = useState<Source | null>(null);
+  // One-shot: once the preselected lens has been applied (or found missing),
+  // Back returns to the picker like any other source.
+  const [preselect, setPreselect] = useState(props.lens);
 
   // The scene: its world, the server's own placeability answer (the set
   // `placeableIn` answers with, so the picker and the create mutations cannot
@@ -1103,6 +1116,23 @@ const AddLayerFormInner = (props: { scene: string }) => {
         : [],
     [world, graph, placeable, staged, capabilities, search],
   );
+
+  useEffect(() => {
+    if (!preselect || !sections.length) return;
+    for (const section of sections) {
+      for (const entry of section.entries) {
+        if (entry.kind !== "dataset") continue;
+        const option = entry.lenses.find((candidate) => candidate.lens.id === preselect);
+        if (option) {
+          setSource({ kind: "lens", dataset: entry, option });
+          setPreselect(undefined);
+          return;
+        }
+      }
+    }
+    setPreselect(undefined);
+    toast.info("That lens can't be placed in this scene's world, so pick a source instead");
+  }, [preselect, sections]);
 
   // Once a lens is chosen, its full provenance component: the ancestors the
   // reachable set could not see, and everything below. Merged into the
@@ -1204,7 +1234,7 @@ const AddLayerFormInner = (props: { scene: string }) => {
 
 // The mikro guard must wrap from the outside: the inner component's queries
 // fire on mount, before any JSX-level guard could stop them (CLAUDE.md §1).
-export const AddLayerForm = (props: { scene: string }) => (
+export const AddLayerForm = (props: AddLayerProps) => (
   <Guard.Mikro>
     <AddLayerFormInner {...props} />
   </Guard.Mikro>

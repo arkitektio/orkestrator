@@ -153,4 +153,33 @@ fragment DetailLens on Lens {
     axisNames
     shape
   }
+  # What was computed from this selection. The lens-level answer, narrower than
+  # the dataset's own `derivedDatasets` for a crop.
+  derivedDatasets {
+    ...ListArrayDataset
+  }
+  # The dataset's tile, so the page can lead with a picture when there is one.
+  latestSnapshot {
+    ...SceneSnapshot
+  }
+}
+
+# One lens as a card shows it: the selection line (`lensLabel` needs axisNames,
+# shape and slices) under its dataset's name, and a picture to put behind it.
+# `latestSnapshot` is borrowed from the dataset's nominated scene, so two lenses
+# of one dataset share a tile, and the selection line is what tells them apart.
+fragment ListLens on Lens {
+  id
+  axisNames
+  shape
+  slices {
+    ...DimSlice
+  }
+  dataset {
+    id
+    name
+  }
+  latestSnapshot {
+    ...SceneSnapshot
+  }
 }

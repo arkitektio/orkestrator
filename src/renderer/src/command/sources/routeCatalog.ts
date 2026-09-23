@@ -40,6 +40,7 @@ export const ROUTE_CATALOG: CatalogRoute[] = [
     route: arrayDatasetSpecLink(spec.slug),
     keywords: ["array datasets", "spec", spec.slug],
   })),
+  { module: "mikro", label: "Lenses", route: "/mikro/lenses", keywords: ["crops", "selections", "views"] },
   { module: "mikro", label: "Coordinate Systems", route: "/mikro/coordinatesystems" },
   { module: "mikro", label: "Table Datasets", route: "/mikro/tabledatasets", keywords: ["tables"] },
   { module: "mikro", label: "Sparse Datasets", route: "/mikro/sparsedatasets", keywords: ["matrices", "sparse", "csr", "anndata"] },

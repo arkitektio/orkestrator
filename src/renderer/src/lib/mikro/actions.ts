@@ -8,6 +8,10 @@ import {
   DeleteFolderDocument,
   DeleteFileDocument,
   DeleteSceneDocument,
+  DeleteLensDocument,
+  GetLensDocument,
+  GetLensQuery,
+  GetLensQueryVariables,
   GetArrayDatasetIntrinsicSystemDocument,
   GetArrayDatasetIntrinsicSystemQuery,
   GetArrayDatasetIntrinsicSystemQueryVariables,
@@ -32,6 +36,7 @@ import {
 import { linkBuilder } from "@/providers/smart/builder";
 import { sceneRegistrationLink } from "@/mikro-next/components/registration/entry";
 import {
+  Aperture,
   Boxes,
   Clapperboard,
   File,
@@ -295,6 +300,95 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         { source: { kind: 'arrayDataset', id: selected.object.id } },
         { className: 'max-w-3xl' },
       );
+    },
+  },
+  'create-scene-from-lens': {
+    title: 'Create Scene',
+    description:
+      "Bootstrap a scene over the space this lens' selection lives in: a crop's own coordinate system, or the dataset's grid for a full lens",
+    icon: Clapperboard,
+    pinned: true,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/lens' },
+      { type: 'nopartner' },
+    ],
+    execute: async ({ state, services, navigate }) => {
+      const selected = state.left.find((item) => item.identifier === '@mikro/lens');
+      if (!selected?.object?.id) {
+        throw new Error('No lens selected for Create Scene action');
+      }
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+
+      // There is no createSceneFromLens: a scene is built over a coordinate
+      // system, and a lens' space is one. Which layers the server stages over a
+      // crop's own space (the lens itself, or its dataset's full lens) is the
+      // server's call; ask for a lens-level bootstrap if that is not the crop.
+      const { data: lensData } = await mikro.client.query<GetLensQuery, GetLensQueryVariables>({
+        query: GetLensDocument,
+        variables: { id: selected.object.id },
+      });
+      const system = lensData?.lens.coordinateSystem;
+      if (!system) {
+        throw new Error('This lens has no coordinate system to build a scene over');
+      }
+
+      const { data } = await mikro.client.mutate<
+        CreateSceneFromCoordinateSystemMutation,
+        CreateSceneFromCoordinateSystemMutationVariables
+      >({
+        mutation: CreateSceneFromCoordinateSystemDocument,
+        variables: { input: { coordinateSystem: system.id } },
+        refetchQueries: [GetScenesDocument],
+      });
+      const scene = data?.createSceneFromCoordinateSystem;
+      if (!scene) {
+        throw new Error('Scene creation returned no scene');
+      }
+      navigate(linkBuilder('mikro/scenes')(scene.id));
+    },
+  },
+  // A lens dropped on a scene: the add-layer dialog, opened on that lens' step
+  // so its kind inference and defaults are the same as picking it by hand.
+  'add-lens-to-scene': {
+    title: 'Add as Layer',
+    description: 'Show this lens in the scene as a new layer',
+    icon: Layers,
+    pinned: true,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/lens' },
+      { type: 'pidentifier', identifier: '@mikro/scene' },
+    ],
+    execute: async ({ state, dialog }) => {
+      const lens = state.left.find((item) => item.identifier === '@mikro/lens');
+      const scene = state.right?.find((item) => item.identifier === '@mikro/scene');
+      if (!lens?.object?.id || !scene?.object?.id) {
+        throw new Error('Drop a lens on a scene to add it as a layer');
+      }
+      dialog.openDialog(
+        'addlayer',
+        { scene: scene.object.id, lens: lens.object.id },
+        { className: 'max-w-3xl' },
+      );
+    },
+  },
+  'create-lens-for-arrayDataset': {
+    title: 'New Lens…',
+    description: 'Cut a selection out of this dataset: some channels, a crop, a time range',
+    icon: Aperture,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/arraydataset' },
+      { type: 'nopartner' },
+    ],
+    collections: ['arrayDataset'],
+    execute: async ({ state, dialog }) => {
+      const selected = state.left.find((item) => item.identifier === '@mikro/arraydataset');
+      if (!selected?.object?.id) {
+        throw new Error('No dataset selected for New Lens action');
+      }
+      dialog.openDialog('createlens', { dataset: selected.object.id }, { size: 'medium' });
     },
   },
   'add-layer-to-scene': {
@@ -643,6 +737,14 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     service: 'mikro',
     typename: 'ArrayDataset',
     mutation: DeleteArrayDatasetDocument
+  }),
+  'delete-mikro-lens': buildDeleteAction<typeof Arkitekt>({
+    title: 'Delete Lens',
+    identifier: '@mikro/lens',
+    description: 'Delete the lens',
+    service: 'mikro',
+    typename: 'Lens',
+    mutation: DeleteLensDocument
   }),
   'delete-mikro-folder': buildDeleteAction<typeof Arkitekt>({
     title: 'Delete Folder',

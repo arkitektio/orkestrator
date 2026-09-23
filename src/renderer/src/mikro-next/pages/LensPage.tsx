@@ -2,6 +2,8 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { MikroArrayDataset, MikroCoordinateSystem, MikroLens } from "@/linkers";
 
 import { useGetLensQuery } from "../api/graphql";
+import ArrayDatasetCard from "../components/cards/ArrayDatasetCard";
+import { SnapshotBackdrop } from "../components/cards/SnapshotBackdrop";
 import { lensLabel } from "../lenses";
 
 /**
@@ -36,6 +38,13 @@ export const LensPage = asDetailQueryRoute(useGetLensQuery, ({ data }) => {
       actions={<MikroLens.Actions object={lens} />}
     >
       <div className="flex flex-col gap-6 p-6">
+        {lens.latestSnapshot && (
+          <SnapshotBackdrop
+            snapshot={lens.latestSnapshot}
+            className="aspect-[5/2] w-full max-w-3xl rounded-lg"
+          />
+        )}
+
         <div className="flex flex-col gap-1">
           <span className="text-xs uppercase tracking-wide text-muted-foreground">
             Selection
@@ -118,6 +127,19 @@ export const LensPage = asDetailQueryRoute(useGetLensQuery, ({ data }) => {
               : "None — this lens selects the whole array, so its space is the dataset's own grid"}
           </span>
         </div>
+
+        {lens.derivedDatasets.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+              Derived from this lens
+            </span>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
+              {lens.derivedDatasets.map((dataset) => (
+                <ArrayDatasetCard key={dataset.id} item={dataset} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </MikroLens.ModelPage>
   );

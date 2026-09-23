@@ -10105,7 +10105,21 @@ export type DetailLensFragment = { __typename?: 'Lens', id: string, shape: Array
   ) | (
     { __typename?: 'UnmappableTransformation' }
     & Transformation_UnmappableTransformation_Fragment
-  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
+  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> }, derivedDatasets: Array<(
+    { __typename?: 'ArrayDataset' }
+    & ListArrayDatasetFragment
+  )>, latestSnapshot?: (
+    { __typename?: 'SceneSnapshot' }
+    & SceneSnapshotFragment
+  ) | null };
+
+export type ListLensFragment = { __typename?: 'Lens', id: string, axisNames: Array<string>, shape: Array<number>, slices: Array<(
+    { __typename?: 'Slice' }
+    & DimSliceFragment
+  )>, dataset: { __typename?: 'ArrayDataset', id: string, name: string }, latestSnapshot?: (
+    { __typename?: 'SceneSnapshot' }
+    & SceneSnapshotFragment
+  ) | null };
 
 type OpticalElement_ApertureElement_Fragment = { __typename?: 'ApertureElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
 
@@ -11076,8 +11090,15 @@ export type CreateLensMutationVariables = Exact<{
 
 export type CreateLensMutation = { __typename?: 'Mutation', createLens: (
     { __typename?: 'Lens' }
-    & SceneLensFragment
+    & ListLensFragment
   ) };
+
+export type DeleteLensMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteLensMutation = { __typename?: 'Mutation', deleteLens: string };
 
 export type CreateMeshCollectionMutationVariables = Exact<{
   input: CreateMeshCollectionInput;
@@ -12499,15 +12520,17 @@ export type GetLensAnchorsQuery = { __typename?: 'Query', lens: { __typename?: '
       & FullCoordinateAnchorFragment
     )> } };
 
-export type ListLensesForDatasetQueryVariables = Exact<{
-  dataset: Scalars['ID']['input'];
+export type GetLensesQueryVariables = Exact<{
+  filters?: InputMaybe<LensFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<LensOrder> | LensOrder>;
 }>;
 
 
-export type ListLensesForDatasetQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'Lens', id: string, slices: Array<(
-      { __typename?: 'Slice' }
-      & DimSliceFragment
-    )> }> };
+export type GetLensesQuery = { __typename?: 'Query', lenses: Array<(
+    { __typename?: 'Lens' }
+    & ListLensFragment
+  )> };
 
 export type GetLensQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13435,24 +13458,6 @@ export const DetailAnnotationFragmentDoc = gql`
 }
     ${AnnotationFragmentDoc}
 ${ListSceneFragmentDoc}`;
-export const ListArrayDatasetFragmentDoc = gql`
-    fragment ListArrayDataset on ArrayDataset {
-  id
-  name
-  description
-  axisNames
-  shape
-  multiscale
-  spec
-  latestSnapshot {
-    ...SceneSnapshot
-  }
-  defaultScene {
-    id
-    name
-  }
-}
-    ${SceneSnapshotFragmentDoc}`;
 export const ListCoordinateSystemFragmentDoc = gql`
     fragment ListCoordinateSystem on CoordinateSystem {
   id
@@ -14084,6 +14089,24 @@ export const FolderFragmentDoc = gql`
     ${ProvenanceEntryFragmentDoc}
 ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
+export const ListArrayDatasetFragmentDoc = gql`
+    fragment ListArrayDataset on ArrayDataset {
+  id
+  name
+  description
+  axisNames
+  shape
+  multiscale
+  spec
+  latestSnapshot {
+    ...SceneSnapshot
+  }
+  defaultScene {
+    id
+    name
+  }
+}
+    ${SceneSnapshotFragmentDoc}`;
 export const DetailLensFragmentDoc = gql`
     fragment DetailLens on Lens {
   id
@@ -14105,9 +14128,35 @@ export const DetailLensFragmentDoc = gql`
     axisNames
     shape
   }
+  derivedDatasets {
+    ...ListArrayDataset
+  }
+  latestSnapshot {
+    ...SceneSnapshot
+  }
 }
     ${DimSliceFragmentDoc}
-${TransformationFragmentDoc}`;
+${TransformationFragmentDoc}
+${ListArrayDatasetFragmentDoc}
+${SceneSnapshotFragmentDoc}`;
+export const ListLensFragmentDoc = gql`
+    fragment ListLens on Lens {
+  id
+  axisNames
+  shape
+  slices {
+    ...DimSlice
+  }
+  dataset {
+    id
+    name
+  }
+  latestSnapshot {
+    ...SceneSnapshot
+  }
+}
+    ${DimSliceFragmentDoc}
+${SceneSnapshotFragmentDoc}`;
 export const CcdElementFragmentDoc = gql`
     fragment CCDElement on CCDElement {
   ...OpticalElement
@@ -17193,10 +17242,10 @@ export type UpdateVectorLayerMutationOptions = Apollo.BaseMutationOptions<Update
 export const CreateLensDocument = gql`
     mutation CreateLens($input: CreateLensInput!) {
   createLens(input: $input) {
-    ...SceneLens
+    ...ListLens
   }
 }
-    ${SceneLensFragmentDoc}`;
+    ${ListLensFragmentDoc}`;
 export type CreateLensMutationFn = Apollo.MutationFunction<CreateLensMutation, CreateLensMutationVariables>;
 
 /**
@@ -17223,6 +17272,37 @@ export function useCreateLensMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type CreateLensMutationHookResult = ReturnType<typeof useCreateLensMutation>;
 export type CreateLensMutationResult = Apollo.MutationResult<CreateLensMutation>;
 export type CreateLensMutationOptions = Apollo.BaseMutationOptions<CreateLensMutation, CreateLensMutationVariables>;
+export const DeleteLensDocument = gql`
+    mutation DeleteLens($id: ID!) {
+  deleteLens(input: {id: $id})
+}
+    `;
+export type DeleteLensMutationFn = Apollo.MutationFunction<DeleteLensMutation, DeleteLensMutationVariables>;
+
+/**
+ * __useDeleteLensMutation__
+ *
+ * To run a mutation, you first call `useDeleteLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteLensMutation, { data, loading, error }] = useDeleteLensMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteLensMutation, DeleteLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteLensMutation, DeleteLensMutationVariables>(DeleteLensDocument, options);
+      }
+export type DeleteLensMutationHookResult = ReturnType<typeof useDeleteLensMutation>;
+export type DeleteLensMutationResult = Apollo.MutationResult<DeleteLensMutation>;
+export type DeleteLensMutationOptions = Apollo.BaseMutationOptions<DeleteLensMutation, DeleteLensMutationVariables>;
 export const CreateMeshCollectionDocument = gql`
     mutation CreateMeshCollection($input: CreateMeshCollectionInput!) {
   createMeshCollection(input: $input) {
@@ -19420,44 +19500,43 @@ export function useGetLensAnchorsLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type GetLensAnchorsQueryHookResult = ReturnType<typeof useGetLensAnchorsQuery>;
 export type GetLensAnchorsLazyQueryHookResult = ReturnType<typeof useGetLensAnchorsLazyQuery>;
 export type GetLensAnchorsQueryResult = Apollo.QueryResult<GetLensAnchorsQuery, GetLensAnchorsQueryVariables>;
-export const ListLensesForDatasetDocument = gql`
-    query ListLensesForDataset($dataset: ID!) {
-  lenses(filters: {dataset: $dataset}) {
-    id
-    slices {
-      ...DimSlice
-    }
+export const GetLensesDocument = gql`
+    query GetLenses($filters: LensFilter, $pagination: OffsetPaginationInput, $ordering: [LensOrder!]) {
+  lenses(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...ListLens
   }
 }
-    ${DimSliceFragmentDoc}`;
+    ${ListLensFragmentDoc}`;
 
 /**
- * __useListLensesForDatasetQuery__
+ * __useGetLensesQuery__
  *
- * To run a query within a React component, call `useListLensesForDatasetQuery` and pass it any options that fit your needs.
- * When your component renders, `useListLensesForDatasetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetLensesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetLensesQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useListLensesForDatasetQuery({
+ * const { data, loading, error } = useGetLensesQuery({
  *   variables: {
- *      dataset: // value for 'dataset'
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *      ordering: // value for 'ordering'
  *   },
  * });
  */
-export function useListLensesForDatasetQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>) {
+export function useGetLensesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetLensesQuery, GetLensesQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>(ListLensesForDatasetDocument, options);
+        return ApolloReactHooks.useQuery<GetLensesQuery, GetLensesQueryVariables>(GetLensesDocument, options);
       }
-export function useListLensesForDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>) {
+export function useGetLensesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetLensesQuery, GetLensesQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>(ListLensesForDatasetDocument, options);
+          return ApolloReactHooks.useLazyQuery<GetLensesQuery, GetLensesQueryVariables>(GetLensesDocument, options);
         }
-export type ListLensesForDatasetQueryHookResult = ReturnType<typeof useListLensesForDatasetQuery>;
-export type ListLensesForDatasetLazyQueryHookResult = ReturnType<typeof useListLensesForDatasetLazyQuery>;
-export type ListLensesForDatasetQueryResult = Apollo.QueryResult<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>;
+export type GetLensesQueryHookResult = ReturnType<typeof useGetLensesQuery>;
+export type GetLensesLazyQueryHookResult = ReturnType<typeof useGetLensesLazyQuery>;
+export type GetLensesQueryResult = Apollo.QueryResult<GetLensesQuery, GetLensesQueryVariables>;
 export const GetLensDocument = gql`
     query GetLens($id: ID!) {
   lens(id: $id) {

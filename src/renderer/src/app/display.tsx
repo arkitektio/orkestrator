@@ -28,6 +28,7 @@ import { FileDisplay } from "@/mikro-next/displays/FileDisplay";
 import { SceneDisplay } from "@/mikro-next/displays/SceneDisplay";
 import { TableDatasetDisplay } from "@/mikro-next/displays/TableDatasetDisplay";
 import { SparseDatasetDisplay } from "@/mikro-next/displays/SparseDatasetDisplay";
+import { LensDisplay } from "@/mikro-next/displays/LensDisplay";
 
 // Import your display components here
 // Example:
@@ -43,6 +44,7 @@ export const { DisplayProvider, useDisplay, useDisplayComponent } =
     "@mikro/folder": FolderDisplay,
     "@mikro/tabledataset": TableDatasetDisplay,
     "@mikro/sparsedataset": SparseDatasetDisplay,
+    "@mikro/lens": LensDisplay,
     // elektro
     "@elektro/neuronmodel": NeuronModelDisplay,
     "@elektro/modelworkspace": ModelWorkspaceDisplay,

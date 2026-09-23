@@ -2,6 +2,10 @@
 # createSceneFromCoordinateSystem bootstraps over a dataset's own grid.
 mutation CreateLens($input: CreateLensInput!) {
   createLens(input: $input) {
-    ...SceneLens
+    ...ListLens
   }
+}
+
+mutation DeleteLens($id: ID!) {
+  deleteLens(input: { id: $id })
 }

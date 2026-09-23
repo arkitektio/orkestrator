@@ -24,14 +24,16 @@ query GetLensAnchors($id: ID!) {
   }
 }
 
-# Existing lenses over a dataset, so adding a layer can reuse a full lens
-# (slices: []) instead of minting a new one per layer.
-query ListLensesForDataset($dataset: ID!) {
-  lenses(filters: { dataset: $dataset }) {
-    id
-    slices {
-      ...DimSlice
-    }
+# Lenses for the list page, a dataset's lens row and anything else that shows
+# them as cards. Ordered by id only: a lens has no name or creation date to sort
+# by.
+query GetLenses(
+  $filters: LensFilter
+  $pagination: OffsetPaginationInput
+  $ordering: [LensOrder!]
+) {
+  lenses(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...ListLens
   }
 }
 

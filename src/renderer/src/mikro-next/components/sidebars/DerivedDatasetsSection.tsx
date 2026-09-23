@@ -4,7 +4,7 @@ import {
   EmptyDescription,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { MikroArrayDataset } from "@/linkers";
+import { MikroArrayDataset, MikroLens } from "@/linkers";
 import { Grid3x3 } from "lucide-react";
 import { GetArrayDatasetDerivedQuery } from "../../api/graphql";
 import { modifierSpecsOf, spatialSpecOf, splitAxesBySpec } from "../../specs";
@@ -154,7 +154,13 @@ export const DerivedDatasetsSection = ({
           <div key={group.key} className="flex flex-col gap-2">
             <div className="flex flex-col gap-0.5">
               <div className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                {group.title}
+                {group.lensId ? (
+                  <MikroLens.DetailLink object={{ id: group.lensId }} className="hover:text-primary">
+                    {group.title}
+                  </MikroLens.DetailLink>
+                ) : (
+                  group.title
+                )}
               </div>
               {group.subtitle && (
                 <div className="break-all font-mono text-[0.625rem] text-muted-foreground">
