@@ -1,13 +1,13 @@
-import { StoredArkitektSession } from "../fakts/sessionStorageSchema";
+import { StoredArkitektSession } from "../session/record";
+import type { ServiceMap } from "./connection";
 import {
+  AliasReport,
   ModuleRegistry,
   ModuleRuntimeState,
-  Service,
   ServiceBuilderMap,
   ServiceRuntimeState,
 } from "../types";
 
-export type ServiceMap = Record<string, Service>;
 
 export const buildConfigurationIssues = (
   serviceBuilderMap: ServiceBuilderMap,
@@ -90,6 +90,7 @@ export const buildServiceStates = (
       status,
       errors,
       lastCheckedAt: previous?.lastCheckedAt,
+      revalidating: previous?.revalidating,
       ...overrides?.[definition.key],
     };
   });
@@ -172,4 +173,37 @@ export const createModuleRegistryFromServices = (
   });
 
   return registry;
+};
+
+/**
+ * What `/report/` is told, read off the checks that already ran rather than
+ * probing every alias a second time. A missing required service or one that
+ * did not answer makes the report non-functional; an optional one that did
+ * not answer is reported with its reason but does not.
+ */
+export const aliasReportsFrom = (
+  requirements: { key: string; optional?: boolean }[],
+  states: Record<string, ServiceRuntimeState>,
+): { alias_reports: Record<string, AliasReport>; functional: boolean } => {
+  const alias_reports: Record<string, AliasReport> = {};
+  for (const requirement of requirements) {
+    const state = states[requirement.key];
+    if (!state?.instance) {
+      alias_reports[requirement.key] = {
+        valid: false,
+        reason: `Service instance not found for key: ${requirement.key}`,
+      };
+    } else if (state.status === "ready" && state.alias) {
+      alias_reports[requirement.key] = { valid: true, alias_id: state.alias.id };
+    } else {
+      alias_reports[requirement.key] = {
+        valid: !!requirement.optional,
+        reason: state.errors[0] ?? `No working alias for ${requirement.key}`,
+      };
+    }
+  }
+  return {
+    alias_reports,
+    functional: Object.values(alias_reports).every((report) => report.valid),
+  };
 };

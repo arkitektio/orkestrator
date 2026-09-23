@@ -50,8 +50,9 @@ export type MembershipBrandWriterProps = {
  * the IN-FLIGHT edit, `OrganizationBrandSync` owns CONFIRMED server state. The
  * edit has to be applied here and now because the remote layer outranks local
  * settings — leave it to the round trip and the app would ignore the slider
- * until the mutation lands. When it does land, the cache update walks
- * `OrganizationBrandSync` to the same value, so the two converge.
+ * until the mutation lands. When it does land, the cache update reaches
+ * `ProfileIdentitySync`, which stores it on the profile, and
+ * `OrganizationBrandSync` paints the same value from there — so the two converge.
  */
 export const MembershipBrandWriter = ({ brand }: MembershipBrandWriterProps) => {
   const { data } = useMyContextQuery({ fetchPolicy: "cache-first" });

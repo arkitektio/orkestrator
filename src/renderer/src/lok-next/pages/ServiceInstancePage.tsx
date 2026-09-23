@@ -11,12 +11,12 @@ import UserCard from "../components/cards/UserCard";
 import InstanceCompositionGraph from "../components/graphs/InstanceCompositionGraph";
 
 import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 
 export type IRepresentationScreenProps = {};
 
 const Page = asDetailQueryRoute(useGetServiceInstanceQuery, ({ data }) => {
-  const resolve = useResolve();
+  const resolve = useLokResolve();
   return (
     <PageLayout
       title="Lok"

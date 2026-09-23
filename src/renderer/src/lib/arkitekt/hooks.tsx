@@ -1,3 +1,4 @@
+import { hasBootstrapped, isGranting, switchingProfileId } from "./session/state";
 import { useContext, useMemo } from "react";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
@@ -46,9 +47,9 @@ export const useConnectionStatus = () =>
   useArkitektStore(
     useShallow((state) => ({
       hasSelfService: !!state.connection?.selfService,
-      connecting: state.connecting,
+      connecting: isGranting(state.activity),
       hasStoredSession: !!state.storedSession,
-      hasBootstrapped: state.hasBootstrapped,
+      hasBootstrapped: hasBootstrapped(state.activity),
       /**
        * A login this window is expected to come up in — seeded from the profile
        * book before the first paint, so it is knowable a full network round-trip
@@ -65,7 +66,7 @@ export const useHasActiveProfile = (): boolean =>
 /** A stored profile is being brought up right now (launch, not a browser grant). */
 export const useIsAutoLoggingIn = (): boolean =>
   useArkitektStore(
-    (state) => !state.hasBootstrapped && !!state.profileBook.activeProfileId,
+    (state) => !hasBootstrapped(state.activity) && !!state.profileBook.activeProfileId,
   );
 
 /**
@@ -167,10 +168,13 @@ export const usePotentialService = (key: string): Service | undefined =>
 
 
 
-export const useToken = () => {
-  const token = useArkitektStore((state) => state.connection?.token ?? state.storedSession?.token ?? null);
-  return token?.access_token || null;
-};
+/**
+ * The live access token. The session record is where a token lives — the
+ * rotation writes it there first; `connection.token` is only a mirror kept
+ * for consumers that hold the connection object (the agent).
+ */
+export const useToken = (): string | null =>
+  useArkitektStore((state) => state.storedSession?.token?.access_token ?? null);
 
 export const useConnection = () => useArkitektStore((state) => state.connection);
 
@@ -192,7 +196,7 @@ export const useActiveProfile = (): StoredProfile | null =>
 
 /** The profile a switch is currently proving, if any. */
 export const useSwitchingProfileId = (): string | null =>
-  useArkitektStore((state) => state.switchingProfileId);
+  useArkitektStore((state) => switchingProfileId(state.activity));
 
 export const useManifest = () => useArkitektStore((state) => state.manifest);
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { LokGroup } from "@/linkers";
 import { ListGroupFragment } from "../../api/graphql";
 
@@ -11,7 +11,7 @@ interface Props {
 }
 
 const TheCard = ({ item }: Props) => {
-  const resolve = useResolve();
+  const resolve = useLokResolve();
 
   return (
     <LokGroup.Smart object={item} >

@@ -24,10 +24,14 @@ import type {
 } from "@/lib/arkitekt/doctor/findings";
 import { primaryFinding, secondaryFindings } from "@/lib/arkitekt/doctor/findings";
 import type { DoctorStatus } from "@/lib/arkitekt/doctor/useConnectionDoctor";
-import { AlertTriangle, ArrowRight, CheckCircle2, ChevronDown, Copy, ExternalLink, Info, Loader2, Stethoscope, XCircle } from "lucide-react";
+import { breakingHop, buildConnectionPath } from "@/lib/arkitekt/doctor/path";
+import { formatReport } from "@/lib/arkitekt/doctor/reportText";
+import { ConnectionPath } from "./ConnectionPath";
+import { StageTable } from "./StageTable";
+import { AlertTriangle, ArrowRight, CheckCircle2, ChevronDown, ClipboardCopy, Copy, ExternalLink, Info, Loader2, Stethoscope, XCircle } from "lucide-react";
 import { Link, useInRouterContext } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 /**
  * The doctor's report, as pure props.
@@ -306,6 +310,31 @@ const FindingRow = ({
   );
 };
 
+/** Puts the plain-text report on the clipboard — the one hand-off to an admin. */
+const CopyReportButton = ({ report }: { report: DoctorReport }) => {
+  const [copied, setCopied] = useState(false);
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => {
+        void navigator.clipboard?.writeText(formatReport(report)).then(() => setCopied(true));
+      }}
+    >
+      <ClipboardCopy className="mr-2 size-3.5" />
+      {copied ? "Copied" : "Copy report"}
+    </Button>
+  );
+};
+
+const FindingList = ({ findings, onRemedy }: { findings: Finding[]; onRemedy: (id: RemedyId) => void }) => (
+  <ul role="list">
+    {findings.map((finding) => (
+      <FindingRow key={`${finding.id}-${finding.targetLabel ?? ""}`} finding={finding} onRemedy={onRemedy} />
+    ))}
+  </ul>
+);
+
 export const ConnectionDoctorPanel = ({
   report,
   status,
@@ -320,6 +349,9 @@ export const ConnectionDoctorPanel = ({
   const verdict = report ? primaryFinding(report.findings) : undefined;
   const rest = report ? secondaryFindings(report.findings) : [];
   const [showRest, setShowRest] = useState(false);
+  const [showAddresses, setShowAddresses] = useState(false);
+  const path = useMemo(() => (report ? buildConnectionPath(report) : []), [report]);
+  const breaking = breakingHop(path);
 
   return (
     <div className="space-y-4" aria-busy={running}>
@@ -340,6 +372,7 @@ export const ConnectionDoctorPanel = ({
           )}
           {running ? "Checking…" : report ? "Check again" : "Run diagnostics"}
         </Button>
+        {report && !running && <CopyReportButton report={report} />}
         {report && (
           <span className="text-[11px] text-muted-foreground/70">
             checked {report.targets.length}{" "}
@@ -373,6 +406,14 @@ export const ConnectionDoctorPanel = ({
 
       {verdict && <Verdict finding={verdict} onRemedy={onRemedy} />}
 
+      {report && path.length > 1 && (
+        <ConnectionPath
+          hops={path}
+          breaking={breaking}
+          renderFindings={(findings) => <FindingList findings={findings} onRemedy={onRemedy} />}
+        />
+      )}
+
       {rest.length > 0 && (
         <Collapsible open={showRest} onOpenChange={setShowRest} className={cn(centered && "text-center")}>
           <CollapsibleTrigger asChild>
@@ -393,6 +434,22 @@ export const ConnectionDoctorPanel = ({
                 />
               ))}
             </ul>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {report && report.network.length > 0 && (
+        <Collapsible open={showAddresses} onOpenChange={setShowAddresses} className={cn(centered && "text-center")}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="px-1 text-xs text-muted-foreground">
+              <ChevronDown
+                className={`mr-1 size-3.5 transition-transform ${showAddresses ? "rotate-180" : ""}`}
+              />
+              {showAddresses ? "Hide" : "Show"} every address we tried ({report.network.length})
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="text-left">
+            <StageTable probes={report.network} />
           </CollapsibleContent>
         </Collapsible>
       )}

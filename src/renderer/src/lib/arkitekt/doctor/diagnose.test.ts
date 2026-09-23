@@ -6,6 +6,7 @@ import type {
 } from "../../../../../main/doctor/protocol";
 import { diagnose } from "./diagnose";
 import type { DiagnoseInput, Finding } from "./findings";
+import type { HubHealthFacts } from "./hubHealth";
 
 /* ───────────────────────────── fixtures ───────────────────────────────── */
 
@@ -479,6 +480,19 @@ describe("built-in mesh findings", () => {
     expect(ids(findings)).not.toContain("net.dns.nxdomain");
   });
 
+  it("a host under the control server's domain counts as routed, with no pin and no peer", () => {
+    const hub = target({ host: "hub.lab.mesh.example.org", label: "mikro" });
+    const findings = run({
+      context: ctx(CONTROL),
+      targets: [hub],
+      // No MagicDNS suffix and no peers reported yet: only the domain rule applies.
+      sidecar: sidecarWith("running", { proxyPort: 5000, magicDnsSuffix: undefined, peers: [] }),
+      network: [{ ...viaMesh({ attempted: true, ok: true, status: 200 }), target: hub }],
+    });
+    expect(ids(findings)).toContain("mesh.sidecar.routed");
+    expect(ids(findings)).not.toContain("mesh.sidecar.host-not-routed");
+  });
+
   it("routed but a direct probe (routing tables disagree) says nothing about the host", () => {
     const findings = run({
       context: ctx(CONTROL),
@@ -559,5 +573,150 @@ describe("built-in mesh findings", () => {
       sidecar: sidecarWith("needs-login"),
     });
     expect(ids(findings).filter((id) => id.startsWith("mesh.sidecar."))).toEqual([]);
+  });
+});
+
+/* ───────────────────────── the hub's own report ───────────────────────── */
+
+describe("the hub's own report", () => {
+  const hub = (overrides: Partial<HubHealthFacts> = {}): HubHealthFacts => ({
+    name: "lab-hub",
+    online: true,
+    lastSeenAt: "2026-09-23T10:00:00Z",
+    version: "1.4.0",
+    meshConnected: true,
+    meshHost: "lab-hub.tailnet-cafe.ts.net",
+    services: { mikro: { healthy: true } },
+    ...overrides,
+  });
+
+  const mikro = target({ serviceKey: "mikro" });
+  const up = probe({ target: mikro });
+  const down = probe({
+    target: mikro,
+    tcp: { attempted: true, ok: false, code: "ETIMEDOUT", ms: 4000 },
+    tls: { attempted: false, ok: false },
+    http: { attempted: false, ok: false },
+  });
+  const withHub = (network: NetworkProbeResult[], facts: HubHealthFacts) =>
+    run({ targets: [mikro], network, hub: facts });
+
+  it("changes nothing when there is no hub report", () => {
+    expect(ids(run({ targets: [mikro], network: [up] }))).toEqual(["net.all-clear"]);
+  });
+
+  it("both sides up: one all-clear that says the hub agrees", () => {
+    const findings = withHub([up], hub());
+    expect(ids(findings)).toEqual(["net.all-clear"]);
+    expect(findings[0].detail).toContain("lab-hub reports the same services healthy");
+  });
+
+  it("the hub says the service is down: that is the verdict, and timeouts are demoted", () => {
+    const findings = withHub([down], hub({ services: { mikro: { healthy: false, reason: "db down" } } }));
+    expect(findings[0]).toMatchObject({ id: "hub.instance-unhealthy", severity: "blocker", targetLabel: "mikro" });
+    expect(findings[0].evidence).toContain("hub says: db down");
+    expect(byId(findings, "net.tcp.timeout")?.severity).toBe("info");
+  });
+
+  it("the hub sees it running but it does not answer here: the path is the problem", () => {
+    const findings = withHub([down], hub());
+    const finding = byId(findings, "hub.healthy-client-fails");
+    expect(finding?.severity).toBe("warning");
+    // Not a cause: the network finding still leads.
+    expect(findings[0].id).not.toBe("hub.healthy-client-fails");
+    expect(byId(findings, "net.tcp.timeout")?.severity).not.toBe("info");
+  });
+
+  it("a quiet hub and nothing answers: the hub looks down", () => {
+    const findings = withHub([down], hub({ online: false }));
+    expect(findings[0]).toMatchObject({ id: "hub.offline", severity: "blocker" });
+    expect(byId(findings, "net.tcp.timeout")?.severity).toBe("info");
+  });
+
+  it("a quiet hub whose services answer: a warning about the reporting, not the services", () => {
+    expect(withHub([up], hub({ online: false }))[0]).toMatchObject({ id: "hub.offline", severity: "warning" });
+  });
+
+  it("the service answers although the hub says it is down: a note, still all clear", () => {
+    const findings = withHub([up], hub({ services: { mikro: { healthy: false } } }));
+    expect(ids(findings)).toEqual(["net.all-clear", "hub.stale-report"]);
+  });
+
+  it("the hub is off the mesh and the addresses are mesh addresses", () => {
+    const findings = run({ targets: [mikro], network: [down], hub: hub({ meshConnected: false }), mesh: runningMesh() });
+    expect(findings[0]).toMatchObject({ id: "hub.mesh-disconnected", severity: "blocker" });
+  });
+
+  it("a hub that never reported is only a note", () => {
+    const findings = withHub([up], hub({ lastSeenAt: null }));
+    expect(ids(findings)).toEqual(["net.all-clear", "hub.never-reported"]);
+  });
+
+  it("without the desktop bridge the hub's word still gets through", () => {
+    const findings = run({ targets: [mikro], network: [], probesAvailable: false, hub: hub({ online: false }) });
+    expect(findings[0]).toMatchObject({ id: "hub.offline", severity: "blocker" });
+    expect(ids(findings)).toContain("doctor.unavailable");
+  });
+});
+
+/* ────────────────────────────── upstream hops ─────────────────────────── */
+
+describe("upstream hops", () => {
+  const coord = target({ host: "go.arkitekt.live", label: "https://go.arkitekt.live", probePath: ".well-known/fakts", role: "coordination" });
+  const control = target({ host: "mesh.arkitekt.live", label: "mesh control https://mesh.arkitekt.live", probePath: null, role: "mesh-control" });
+  const mikro = target({ serviceKey: "mikro", role: "service" });
+  const dead = (t: ProbeTarget) =>
+    probe({
+      target: t,
+      tcp: { attempted: true, ok: false, code: "ETIMEDOUT", ms: 4000 },
+      tls: { attempted: false, ok: false },
+      http: { attempted: false, ok: false },
+    });
+  const answers = (t: ProbeTarget, status = 200) =>
+    probe({ target: t, http: { attempted: true, ok: status < 400, status } });
+  const ctx = { kind: "service" as const, serviceKey: "mikro", endpointUrl: "https://go.arkitekt.live", meshCoordUrl: "https://mesh.arkitekt.live" };
+  const all = (network: NetworkProbeResult[], extra: Partial<DiagnoseInput> = {}) =>
+    run({ context: ctx, targets: [coord, control, mikro], network, mesh: runningMesh(), ...extra });
+
+  it("everything answers: the all-clear still leads", () => {
+    // mikro is a tailnet name and Tailscale runs, so the ok verdict is the mesh's.
+    expect(ids(all([answers(coord), answers(control, 404), answers(mikro)]))).toEqual(["mesh.healthy"]);
+  });
+
+  it("an HTTP 404 on the mesh control root is not a finding, and never a service one", () => {
+    const findings = all([answers(coord), answers(control, 404), answers(mikro)]);
+    expect(ids(findings)).not.toContain("net.http.404");
+  });
+
+  it("nothing answers, not even the coordination server: that is the verdict, everything else demoted", () => {
+    const findings = all([dead(coord), dead(control), dead(mikro)]);
+    expect(findings[0]).toMatchObject({ id: "upstream.coordination.unreachable", severity: "blocker" });
+    expect(findings[0].evidence?.[0]).toContain("TCP: ETIMEDOUT 4000ms");
+    expect(byId(findings, "net.tcp.timeout")?.severity).toBe("info");
+    expect(ids(findings)).not.toContain("net.all-clear");
+  });
+
+  it("the services answer but the coordination server does not: a warning, not all clear", () => {
+    const findings = all([dead(coord), answers(control), answers(mikro)]);
+    expect(findings[0]).toMatchObject({ id: "upstream.coordination.unreachable", severity: "warning" });
+    expect(ids(findings)).not.toContain("net.all-clear");
+  });
+
+  it("mesh control down while the mesh runs is only a note", () => {
+    const findings = all([answers(coord), dead(control), answers(mikro)]);
+    expect(ids(findings)).toEqual(["mesh.healthy", "upstream.mesh-control.unreachable"]);
+    expect(byId(findings, "upstream.mesh-control.unreachable")?.severity).toBe("info");
+  });
+
+  it("mesh control down and no mesh up blocks joining", () => {
+    const findings = all([answers(coord), dead(control), dead(mikro)], { mesh: runningMesh({ backendState: "Stopped" }) });
+    expect(byId(findings, "upstream.mesh-control.unreachable")?.severity).toBe("blocker");
+  });
+
+  it("the upstream probes do not count as service addresses for the hub comparison", () => {
+    const findings = all([dead(coord), answers(control), dead(mikro)], {
+      hub: { name: "lab-hub", online: false, lastSeenAt: "2026-09-23T10:00:00Z", version: "1", services: {} },
+    });
+    expect(byId(findings, "hub.offline")?.severity).toBe("blocker");
   });
 });

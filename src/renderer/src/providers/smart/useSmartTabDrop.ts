@@ -1,5 +1,5 @@
 import { useTabActions } from "@/command/tabs/TabsProvider";
-import { useDragSession, useDropTarget } from "@/lib/dnd/react";
+import { useCanDrop, useDropTarget } from "@/lib/dnd/react";
 import { toast } from "sonner";
 
 import { acceptsSmartDrag, resolveSmartDrop } from "./dragPayload";
@@ -17,10 +17,7 @@ export type SmartTabDropMode = "tab" | "beside";
  * one re-renders its component when a drag starts and when it ends, which is
  * why it is a hook a handful of places call and not a variant on everything.
  */
-export const useSmartDragActive = (): boolean => {
-  const session = useDragSession();
-  return session !== null && acceptsSmartDrag(session);
-};
+export const useSmartDragActive = (): boolean => useCanDrop(acceptsSmartDrag);
 
 /**
  * A drop target that opens what was dropped on it.

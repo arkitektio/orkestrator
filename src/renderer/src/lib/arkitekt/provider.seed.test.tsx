@@ -15,12 +15,6 @@ import {
 } from "./fakts/profileStorageSchema";
 
 // The alias probe does real network work and is not what this file is about.
-vi.mock("./builder", () => ({
-  buildAliases: vi.fn(async ({ fakts }) => ({
-    aliasReports: { lok: { valid: true } },
-    aliasMap: { lok: fakts.instances.lok.aliases[0] },
-  })),
-}));
 vi.mock("./alias/resolve", () => ({
   checkAliasHealth: vi.fn(async () => true),
   resolveWorkingAlias: vi.fn(async ({ instance }) => instance.aliases[0]),

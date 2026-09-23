@@ -3,11 +3,15 @@ import type {
   NetworkProbeResult,
   ProbeTarget,
 } from "../../../../../main/doctor/protocol";
-import type { MeshPeer, MeshSnapshot, MeshStatusPayload } from "../../../../../main/mesh/protocol";
+import { controlDomain, type MeshPeer, type MeshSnapshot, type MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import { classifyHost, isMeshClass } from "./classify";
 import type { DiagnoseInput, Finding } from "./findings";
 import { rankFindings } from "./findings";
+import type { HubHealthFacts } from "./hubHealth";
+import { HUB_VERDICT_TEXT, compareService } from "./hubHealth";
 import { matchPeer, tailnetMismatch } from "./meshMatch";
+import { failureLine } from "./stages";
+import { isUpstream } from "./targets";
 
 /**
  * Probe results in, sentences out. Pure: no network, no Electron, no clock.
@@ -32,6 +36,26 @@ const meshTargets = (targets: ProbeTarget[]): ProbeTarget[] =>
 
 const labelOf = (target: ProbeTarget): string => target.label || target.host;
 
+/**
+ * The targets the BUILT-IN mesh is responsible for: mesh-shaped addresses,
+ * plus anything under the deployment's mesh control domain — which the
+ * sidecar routes with no pinning (`pac.ts` rule 5) even though the name
+ * itself looks public — plus anything a running mesh already covers.
+ */
+const builtInMeshTargets = (input: DiagnoseInput, targets: ProbeTarget[]): ProbeTarget[] => {
+  const domain = typeof input.context.meshCoordUrl === "string" ? controlDomain(input.context.meshCoordUrl) : undefined;
+  return targets.filter((target) => {
+    const shape = classifyHost(target.host).class;
+    return (
+      // A bare single label is usually a docker/LAN name; it is only the
+      // mesh's business when a running mesh actually routes it.
+      (isMeshClass(classifyHost(target.host)) && shape !== "mesh-bare") ||
+      (!!domain && norm(target.host).endsWith(`.${domain}`)) ||
+      !!coveringMesh(input.sidecar, target.host)
+    );
+  });
+};
+
 /* ───────────────────────── built-in mesh (sidecar) ────────────────────── */
 
 const norm = (host: string): string => host.trim().toLowerCase().replace(/\.$/, "");
@@ -46,7 +70,7 @@ const sameOrigin = (a?: string | null, b?: string | null): boolean => {
 };
 
 /** The peer a host names, if the mesh knows one. */
-const peerFor = (mesh: MeshSnapshot, rawHost: string): MeshPeer | undefined => {
+export const peerFor = (mesh: MeshSnapshot, rawHost: string): MeshPeer | undefined => {
   const host = norm(rawHost);
   return (mesh.status.peers ?? []).find(
     (peer) =>
@@ -66,11 +90,26 @@ const meshCovers = (mesh: MeshSnapshot, rawHost: string): boolean => {
   return !!peerFor(mesh, host);
 };
 
-const coveringMesh = (sidecar: MeshStatusPayload | undefined, host: string): MeshSnapshot | undefined =>
-  sidecar?.meshes.find((mesh) => meshCovers(mesh, host));
+/**
+ * The running mesh that routes a host. The precise rules first; then the
+ * control server's domain (`pac.ts` rule 5), which only counts when exactly
+ * one running mesh claims it — two meshes on one control server tell their
+ * hosts apart by suffix, not by domain.
+ */
+export const coveringMesh = (sidecar: MeshStatusPayload | undefined, rawHost: string): MeshSnapshot | undefined => {
+  const exact = sidecar?.meshes.find((mesh) => meshCovers(mesh, rawHost));
+  if (exact || !sidecar) return exact;
+  const host = norm(rawHost);
+  const byDomain = sidecar.meshes.filter((mesh) => {
+    if (mesh.status.state !== "running") return false;
+    const domain = controlDomain(mesh.config.controlUrl);
+    return !!domain && host.endsWith(`.${domain}`);
+  });
+  return byDomain.length === 1 ? byDomain[0] : undefined;
+};
 
 /** The meshes that belong to the deployment being diagnosed. */
-const deploymentMeshes = (input: DiagnoseInput, sidecar: MeshStatusPayload): MeshSnapshot[] =>
+export const deploymentMeshes = (input: DiagnoseInput, sidecar: MeshStatusPayload): MeshSnapshot[] =>
   sidecar.meshes.filter(
     (mesh) =>
       mesh.config.id === input.context.profileMesh?.id ||
@@ -88,7 +127,7 @@ const SIGN_IN_AGAIN = "Sign out of this deployment and sign in again.";
 const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[] => {
   const sidecar = input.sidecar;
   if (!sidecar) return [];
-  const relevant = meshTargets(targets);
+  const relevant = builtInMeshTargets(input, targets);
   if (relevant.length === 0) return [];
 
   const findings: Finding[] = [];
@@ -874,18 +913,167 @@ const discoveryFindings = (input: DiagnoseInput): Finding[] => {
   return findings;
 };
 
+/* ─────────────────────── the hub's own report ─────────────────────────── */
+
+/** No clock in here, so the timestamp is shown as reported, not "2 min ago". */
+const hubEvidence = (hub: HubHealthFacts): string[] => [
+  `hub: ${hub.name}${hub.version ? ` (${hub.version})` : ""}`,
+  `last report: ${hub.lastSeenAt ?? "never"}`,
+  ...(hub.meshHost ? [`hub mesh address: ${hub.meshHost}`] : []),
+];
+
+/** Did any alias of this service answer from here? Undefined: not probed. */
+const clientReached = (input: DiagnoseInput, serviceKey: string): boolean | undefined => {
+  const probes = input.network.filter((probe) => probe.target.serviceKey === serviceKey);
+  if (probes.length === 0) return undefined;
+  return probes.some((probe) => probe.http.ok);
+};
+
+/**
+ * The hub's word, set against the probes. This is the only witness on the far
+ * side of the connection: it splits "the service is down" (nothing on this
+ * computer will fix it) from "the service is up and the path to it is broken"
+ * (which is what every other rule in here is about).
+ */
+const hubFindings = (input: DiagnoseInput): Finding[] => {
+  const hub = input.hub;
+  if (!hub) return [];
+  const evidence = hubEvidence(hub);
+
+  if (!hub.lastSeenAt) {
+    return [
+      {
+        id: "hub.never-reported",
+        severity: "info",
+        title: `${hub.name} has never reported its own health`,
+        detail:
+          "The hub does not tell the coordination server how it is doing, so " +
+          "only this computer's side of the connection could be checked.",
+        evidence,
+      },
+    ];
+  }
+
+  const probedKeys = [
+    ...new Set(input.network.map((probe) => probe.target.serviceKey).filter((key): key is string => !!key)),
+  ];
+  const anyAnswered = input.network.some((probe) => probe.http.ok);
+
+  if (!hub.online) {
+    const probed = input.network.length > 0;
+    const nothingAnswers = probed && !anyAnswered;
+    return [
+      {
+        id: "hub.offline",
+        severity: probed && anyAnswered ? "warning" : "blocker",
+        title:
+          probed && anyAnswered
+            ? `${hub.name} has stopped reporting, but its services answer`
+            : `${hub.name} has stopped reporting — the hub itself looks down`,
+        detail:
+          probed && anyAnswered
+            ? "The hub has gone quiet towards the coordination server, yet its services " +
+              "answer from here. Its health reporting is broken, not the services."
+            : "The hub has not checked in with the coordination server for several " +
+              "reporting intervals" +
+              (nothingAnswers ? ", and none of its addresses answer from here" : "") +
+              ". The machine, its network or the hub software is most likely down; " +
+              "nothing on this computer will fix that. Ask whoever runs the hub.",
+        evidence,
+      },
+    ];
+  }
+
+  const findings: Finding[] = [];
+
+  if (hub.meshConnected === false && builtInMeshTargets(input, targetsOf(input)).length > 0) {
+    findings.push({
+      id: "hub.mesh-disconnected",
+      severity: "blocker",
+      title: `${hub.name} reports that it is not on the mesh`,
+      detail:
+        "The addresses below are on a private mesh, and the hub says its own " +
+        "node is not connected to it, so nothing can reach it there — from any " +
+        "computer. This has to be fixed on the hub.",
+      evidence: [...evidence, ...builtInMeshTargets(input, targetsOf(input)).map((target) => target.host)],
+    });
+  }
+
+  for (const serviceKey of probedKeys) {
+    const reached = clientReached(input, serviceKey);
+    if (reached === undefined) continue;
+    const comparison = compareService(hub, serviceKey, reached ? "ok" : "failing");
+    const reason = comparison.reason ? [`hub says: ${comparison.reason}`] : [];
+
+    switch (comparison.verdict) {
+      case "agree-down":
+        findings.push({
+          id: "hub.instance-unhealthy",
+          severity: "blocker",
+          title: `${hub.name} reports ${serviceKey} as down`,
+          detail:
+            `${HUB_VERDICT_TEXT["agree-down"]} The service is failing on the hub ` +
+            "itself, so the connection from this computer is not the problem. Ask " +
+            "whoever runs the hub.",
+          evidence: [...reason, ...evidence],
+          targetLabel: serviceKey,
+        });
+        break;
+      case "path-broken":
+        findings.push({
+          id: "hub.healthy-client-fails",
+          severity: "warning",
+          title: `${hub.name} sees ${serviceKey} running, but it cannot be reached from here`,
+          detail:
+            `${HUB_VERDICT_TEXT["path-broken"]} The findings about the network and ` +
+            "the mesh are where the answer is.",
+          evidence,
+          targetLabel: serviceKey,
+        });
+        break;
+      case "stale-report":
+        findings.push({
+          id: "hub.stale-report",
+          severity: "info",
+          title: `${serviceKey} answers, although ${hub.name} reports it down`,
+          detail:
+            `${HUB_VERDICT_TEXT["stale-report"]} It may have recovered since the ` +
+            "last report.",
+          evidence: [...reason, ...evidence],
+          targetLabel: serviceKey,
+        });
+        break;
+      default:
+        break;
+    }
+  }
+
+  return findings;
+};
+
+/** Every probed service the hub reported on, and both sides call up. */
+const hubAgrees = (input: DiagnoseInput): boolean => {
+  const hub = input.hub;
+  if (!hub?.online) return false;
+  const keys = [...new Set(input.network.map((probe) => probe.target.serviceKey).filter((key): key is string => !!key))];
+  const compared = keys.map((key) => compareService(hub, key, clientReached(input, key) ? "ok" : "failing"));
+  return compared.length > 0 && compared.every((comparison) => comparison.verdict === "agree-ok");
+};
+
 /* ──────────────────────────── assembly ────────────────────────────────── */
 
 /**
- * A mesh blocker explains every timeout and NXDOMAIN underneath it. Keep those
- * in the report — they are the evidence — but stop them shouting over the one
- * sentence that actually helps.
+ * A mesh blocker — or a hub that says it is down — explains every timeout and
+ * NXDOMAIN underneath it. Keep those in the report — they are the evidence —
+ * but stop them shouting over the one sentence that actually helps.
  */
 const demoteSymptoms = (findings: Finding[]): Finding[] => {
-  const meshBlocker = findings.some(
-    (finding) => finding.id.startsWith("mesh.") && finding.severity === "blocker",
+  const causeBlocker = findings.some(
+    (finding) =>
+      (finding.id.startsWith("upstream.") || finding.id.startsWith("mesh.") || finding.id.startsWith("hub.")) &&
+      finding.severity === "blocker",
   );
-  if (!meshBlocker) return findings;
+  if (!causeBlocker) return findings;
 
   const SYMPTOMS = ["net.tcp.timeout", "net.tcp.unreachable", "net.dns.nxdomain"];
   return findings.map((finding) =>
@@ -893,7 +1081,7 @@ const demoteSymptoms = (findings: Finding[]): Finding[] => {
   );
 };
 
-export const diagnose = (input: DiagnoseInput): Finding[] => {
+const diagnoseServices = (input: DiagnoseInput): Finding[] => {
   const targets = targetsOf(input);
   const findings: Finding[] = [];
 
@@ -912,6 +1100,7 @@ export const diagnose = (input: DiagnoseInput): Finding[] => {
           : ""),
       evidence: targets.map((target) => target.host),
     });
+    findings.push(...hubFindings(input));
     return rankFindings(findings);
   }
 
@@ -955,18 +1144,128 @@ export const diagnose = (input: DiagnoseInput): Finding[] => {
     });
   }
 
-  if (findings.length === 0) {
-    findings.push({
+  const fromHub = hubFindings(input);
+
+  // Everything answered and the hub has nothing worse than a note: the
+  // verdict is still "all clear". Notes rank above `ok`, so they are placed
+  // after it by hand rather than left to `rankFindings`.
+  if (findings.length === 0 && fromHub.every((finding) => finding.severity === "info")) {
+    const agrees = hubAgrees(input);
+    const allClear: Finding = {
       id: "net.all-clear",
       severity: "ok",
       title: "Every address answered",
       detail:
         "All of the addresses this deployment advertises are reachable from " +
-        "this computer right now. Whatever went wrong was either temporary or " +
-        "is not a network problem — try connecting again.",
-      evidence: input.network.map((probe) => probe.url),
+        "this computer right now." +
+        (agrees ? ` ${input.hub!.name} reports the same services healthy.` : "") +
+        " Whatever went wrong was either temporary or is not a network " +
+        "problem — try connecting again.",
+      evidence: [
+        ...input.network.map((probe) => probe.url),
+        ...(agrees ? hubEvidence(input.hub!) : []),
+      ],
+    };
+    return [allClear, ...rankFindings(fromHub)];
+  }
+
+  findings.push(...fromHub);
+
+  return rankFindings(demoteSymptoms(findings));
+};
+
+/* ─────────────────────────── upstream hops ─────────────────────────────── */
+
+/**
+ * The hops in front of the services. Probed on every service-mode run so
+ * "the coordination server does not answer either" is a fact, not a guess —
+ * and that one fact outranks everything about the hub, because it means this
+ * computer is not getting out at all.
+ */
+const upstreamFindings = (
+  input: DiagnoseInput,
+  upstream: NetworkProbeResult[],
+  anyServiceAnswered: boolean,
+): Finding[] => {
+  const findings: Finding[] = [];
+  const failures = (probes: NetworkProbeResult[]) =>
+    probes.map((probe) => [probe.url, failureLine(probe)].filter(Boolean).join(" — "));
+
+  const coordination = upstream.filter((probe) => probe.target.role === "coordination");
+  if (coordination.length > 0 && !coordination.some((probe) => probe.http.ok)) {
+    const host = coordination[0].target.host;
+    findings.push(
+      anyServiceAnswered
+        ? {
+            id: "upstream.coordination.unreachable",
+            severity: "warning",
+            title: `The services answer, but ${host} does not`,
+            detail:
+              "This computer reaches the deployment but not the coordination server " +
+              "it signed in through. What works now keeps working until the session " +
+              "has to be refreshed; signing in, and the hub's own health report, will fail.",
+            evidence: failures(coordination),
+            targetLabel: host,
+          }
+        : {
+            id: "upstream.coordination.unreachable",
+            severity: "blocker",
+            title: `This computer cannot reach ${host} either`,
+            detail:
+              "Not even the coordination server answers, so this is not about the " +
+              "hub or any one service: this computer is not getting out. Check the " +
+              "internet connection, a VPN, a firewall or a proxy.",
+            evidence: failures(coordination),
+            targetLabel: host,
+          },
+    );
+  }
+
+  const control = upstream.filter((probe) => probe.target.role === "mesh-control");
+  // Any HTTP answer at all proves the server is there; its root has no contract.
+  if (control.length > 0 && !control.some((probe) => probe.http.status !== undefined)) {
+    const host = control[0].target.host;
+    const meshRunning =
+      (input.sidecar ? deploymentMeshes(input, input.sidecar) : []).some((mesh) => mesh.status.state === "running") ||
+      (input.mesh?.available === true && input.mesh.backendState === "Running");
+    findings.push({
+      id: "upstream.mesh-control.unreachable",
+      severity: meshRunning ? "info" : "blocker",
+      title: `The mesh control server ${host} does not answer`,
+      detail: meshRunning
+        ? "The mesh is already up, and a running node does not need its control " +
+          "server moment to moment — but a new sign-in, or a peer that changed " +
+          "address, will not get through until it is back."
+        : "Joining the mesh goes through this server, and it does not answer from " +
+          "here, so the private addresses below cannot be reached yet.",
+      evidence: failures(control),
+      targetLabel: host,
     });
   }
 
-  return rankFindings(demoteSymptoms(findings));
+  return findings;
+};
+
+export const diagnose = (input: DiagnoseInput): Finding[] => {
+  const upstream = input.network.filter((probe) => isUpstream(probe.target));
+  if (upstream.length === 0 && !input.targets.some(isUpstream)) return diagnoseServices(input);
+
+  const serviceNetwork = input.network.filter((probe) => !isUpstream(probe.target));
+  const base = diagnoseServices({
+    ...input,
+    targets: input.targets.filter((target) => !isUpstream(target)),
+    network: serviceNetwork,
+  });
+  const fromUpstream = upstreamFindings(input, upstream, serviceNetwork.some((probe) => probe.http.ok));
+
+  // Upstream fine: the service verdict stands exactly as ranked (including a
+  // hand-placed all-clear), and the upstream notes follow it — a note about
+  // the mesh control server must not take the headline from the services.
+  const loud = fromUpstream.some((finding) => finding.severity === "blocker" || finding.severity === "warning");
+  if (!loud) return [...base, ...fromUpstream];
+
+  // An upstream problem makes "every address answered" untrue.
+  return rankFindings(
+    demoteSymptoms([...base.filter((finding) => finding.id !== "net.all-clear"), ...fromUpstream]),
+  );
 };

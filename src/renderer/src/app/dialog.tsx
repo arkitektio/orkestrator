@@ -35,7 +35,7 @@ import { UpdateFolderForm } from "@/mikro-next/forms/UpdateFolderForm";
 import { CreateDatasetForm as CreateOmeroDatasetForm } from "@/omero-ark/forms/CreateDatasetForm";
 import { CreateProjectForm } from "@/omero-ark/forms/CreateProjectForm";
 import { CreateWorkspaceForm } from "@/reaktion/components/forms/CreateWorkspaceForm";
-import { ExportModelForm } from "@/elektro/forms/ExportModelForm";
+import { ExportToFileDialog } from "@/lib/export/ExportToFileDialog";
 import { AddExperimentLayerForm } from "@/elektro/forms/AddExperimentLayerForm";
 import { PlaceExperimentLayerForm } from "@/elektro/forms/PlaceExperimentLayerForm";
 import { CreateShortcutDialog } from "@/rekuest/components/dialogs/CreateShortcutDialog";
@@ -67,8 +67,9 @@ export const { DialogProvider, useDialog, registry } = createDialogProvider({
   createorganization: CreateOrganizationForm,
   // mikro scene: the mesh designer's commit (features/meshDesign)
   commitmeshdesign: CommitMeshDesignDialog,
+  // any smart model → a file on disk (drag-out to the desktop, "Export to file")
+  exporttofile: ExportToFileDialog,
   // elektro
-  exportelektromodel: ExportModelForm,
   addexperimentlayer: AddExperimentLayerForm,
   placeexperimentlayer: PlaceExperimentLayerForm,
   // kraph

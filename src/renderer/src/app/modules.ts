@@ -8,6 +8,7 @@ export const MODULE_PATHS = [
   "kabinet",
   "omero_ark",
   "kraph",
+  "team",
   "lok",
   "settings",
   "blok",

@@ -1,6 +1,10 @@
 import type {
   MeshClaimRequest,
   MeshEvent,
+  MeshLockInitRequest,
+  MeshLockInitResult,
+  MeshLockSignRequest,
+  MeshLockSignResult,
   MeshPingRequest,
   MeshPingResult,
   MeshStatusPayload,
@@ -14,6 +18,9 @@ export type MeshBridge = {
   status: () => Promise<MeshStatusPayload>;
   claim: (request: MeshClaimRequest) => Promise<MeshStatusPayload>;
   ping: (request: MeshPingRequest) => Promise<MeshPingResult[]>;
+  lockSign: (request: MeshLockSignRequest) => Promise<MeshLockSignResult>;
+  lockInit: (request: MeshLockInitRequest) => Promise<MeshLockInitResult>;
+  restart: () => Promise<MeshStatusPayload>;
   onEvent: (cb: (event: MeshEvent) => void) => () => void;
 };
 

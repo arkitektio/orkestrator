@@ -7,7 +7,9 @@ import {
   type StoredProfile,
   type StoredProfileBook,
 } from "@/lib/arkitekt/fakts/profileStorageSchema";
-import { claimProfileMesh, hintedProfileMesh, meshClaimFor, meshFromGrant } from "./profileMesh";
+import { claimProfileMesh, hintedProfileMesh, joinAndPark, joiningMeshes,
+  meshForIdentity, meshClaimFor, meshFromGrant } from "./profileMesh";
+import type { MeshEvent, MeshStatusPayload } from "../../../../main/mesh/protocol";
 
 const endpoint = {
   name: "test",
@@ -74,6 +76,21 @@ describe("hintedProfileMesh", () => {
     expect(hintedProfileMesh(book, endpoint, undefined)).toBeUndefined();
     expect(hintedProfileMesh(book, endpoint, { sub: "u1" })).toBeUndefined();
   });
+
+  it("without a hint, takes the one profile on that deployment that has a mesh", () => {
+    // "Add a login" passes no hint; re-approving must not mint a second node.
+    const book = bookOf(profile("a", "u1", "h1", MESH), profile("b", "u2", "h2", undefined));
+    expect(hintedProfileMesh(book, endpoint, undefined)?.id).toBe("mesh-1");
+  });
+});
+
+describe("meshForIdentity", () => {
+  it("is the mesh of exactly the profile the grant's identity names", () => {
+    const book = bookOf(profile("a", "u1", "h1", MESH));
+    expect(meshForIdentity(book, "a")?.id).toBe("mesh-1");
+    expect(meshForIdentity(book, "nope")).toBeUndefined();
+    expect(meshForIdentity(book, undefined)).toBeUndefined();
+  });
 });
 
 describe("claimProfileMesh", () => {
@@ -96,5 +113,60 @@ describe("claimProfileMesh", () => {
     (window as any).api = { mesh: { claim: async () => Promise.reject(new Error("boom")) } };
     vi.spyOn(console, "warn").mockImplementation(() => {});
     await expect(claimProfileMesh(MESH)).resolves.toBeUndefined();
+  });
+});
+
+describe("joinAndPark", () => {
+  /** A bridge whose node state the test moves along. */
+  const bridgeWith = (initial: string) => {
+    const listeners = new Set<(event: MeshEvent) => void>();
+    const status = (state: string, proxyPort?: number): MeshStatusPayload =>
+      ({
+        sidecar: { state: "ready", version: "t" },
+        meshes: [{ config: { ...meshClaimFor(MESH), hasNodeState: true }, status: { id: "mesh-1", state, proxyPort } }],
+      }) as MeshStatusPayload;
+    const claim = vi.fn(async () => status(initial));
+    (window as any).api = {
+      mesh: {
+        claim,
+        status: async () => status(initial),
+        onEvent: (listener: (event: MeshEvent) => void) => {
+          listeners.add(listener);
+          return () => listeners.delete(listener);
+        },
+      },
+    };
+    const emit = (state: string, proxyPort?: number) =>
+      listeners.forEach((listener) => listener({ type: "status", payload: status(state, proxyPort) }));
+    return { claim, emit };
+  };
+
+  it("joins with the one-shot key, stays 'joining' until the node ran, then lets it go", async () => {
+    const { claim, emit } = bridgeWith("starting");
+    const done = joinAndPark(MESH, "tskey-once");
+    await vi.waitFor(() => expect(claim).toHaveBeenCalled());
+
+    expect(claim.mock.calls[0][0]).toMatchObject({ authKey: "tskey-once", mesh: { id: "mesh-1" } });
+    expect(joiningMeshes.getSnapshot().has("mesh-1")).toBe(true);
+
+    emit("running", 1080);
+    expect(await done).toBe("running");
+    expect(joiningMeshes.getSnapshot().has("mesh-1")).toBe(false);
+  });
+
+  it("lets it go when the join fails or runs out of time", async () => {
+    vi.useFakeTimers();
+    bridgeWith("starting");
+    const done = joinAndPark(MESH, "k", { timeoutMs: 1000 });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(await done).toBe("timeout");
+    expect(joiningMeshes.getSnapshot().has("mesh-1")).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("does nothing without a bridge or for a switched-off mesh", async () => {
+    expect(await joinAndPark(MESH, "k")).toBe("none");
+    bridgeWith("starting");
+    expect(await joinAndPark({ ...MESH, enabled: false }, "k")).toBe("none");
   });
 });

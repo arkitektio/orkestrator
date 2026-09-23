@@ -1,14 +1,14 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Card, CardContent } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { LokLayer } from "@/linkers";
 import {
   useDetailLayerQuery
 } from "../api/graphql";
 
 export const LayerPage = asDetailQueryRoute(useDetailLayerQuery, ({ data }) => {
-  const resolve = useResolve();
+  const resolve = useLokResolve();
 
   return (
     <LokLayer.ModelPage

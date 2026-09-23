@@ -112,9 +112,8 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
         <PageDialogHost>{children}</PageDialogHost>
       </div>
 
-      {/* The right edge: nothing at rest, the open tabs when the pointer is
-          thrown at it (the card above gives up the width), a drop band while a
-          card is in the air. */}
+      {/* The right edge: nothing at rest, an "open to the side" drop band
+          while a card is in the air. */}
       <RightEdge />
       </div>
 

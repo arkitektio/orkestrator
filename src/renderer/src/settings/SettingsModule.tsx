@@ -9,6 +9,7 @@ import DeveloperPage from "./pages/DeveloperPage";
 import GeneralPage from "./pages/GeneralPage";
 import MeshPage from "./pages/MeshPage";
 import PalettePage from "./pages/PalettePage";
+import ResetPage from "./pages/ResetPage";
 import ServicesPage from "./pages/ServicesPage";
 import VoicePage from "./pages/VoicePage";
 import { DEFAULT_SECTION, SETTINGS_SECTIONS } from "./sections";
@@ -23,6 +24,7 @@ const PAGES: Record<string, React.FC> = {
   services: ServicesPage,
   mesh: MeshPage,
   developer: DeveloperPage,
+  reset: ResetPage,
 };
 
 export const SettingsModule: React.FC = () => (

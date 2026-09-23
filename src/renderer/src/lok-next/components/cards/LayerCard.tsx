@@ -1,7 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { LokLayer } from "@/linkers";
 import { ListLayerFragment } from "../../api/graphql";
 
@@ -11,7 +11,7 @@ interface Props {
 }
 
 const TheCard = ({ item }: Props) => {
-  const resolve = useResolve();
+  const resolve = useLokResolve();
 
   return (
     <LokLayer.Smart object={item} >

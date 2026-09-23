@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  admitGrantedProfile,
   buildScopeKey,
+  findProfileIdByChain,
   createProfileFromSession,
   deriveProfileId,
   emptyProfileBook,
@@ -22,7 +24,6 @@ import {
   writeStoredProfileBook,
   type StoredProfileBook,
 } from "./profileStorageSchema";
-import { ArkitektStorageKeys } from "./sessionStorageSchema";
 
 const ALIAS = { id: "a1", host: "localhost", ssl: false, challenge: "ht" };
 
@@ -54,26 +55,8 @@ const sessionFor = (host: string, accessToken = "at") => ({
   aliasMap: { aliasMap: { lok: ALIAS } },
 });
 
-/** The four flat keys this app used to persist, before profiles existed. */
+/** What the four flat keys held, before profiles existed. */
 const LEGACY_SESSION = sessionFor("lok.test");
-
-/** A session written by the pre-OAuth start/challenge/claim flow. */
-const PRE_OAUTH_SESSION = {
-  endpoint: {
-    name: "test",
-    version: "0.1.0",
-    claim: "https://lok.test/lok/f/claim/",
-    base_url: "https://lok.test/lok/f/",
-    frontend_url: "https://lok.test/",
-  },
-  fakts: {
-    instances: { lok: { service: "live.arkitekt.lok", identifier: "3", aliases: [ALIAS] } },
-    self: { deployment_name: "test", alias: ALIAS },
-    auth: { client_id: "cid", client_secret: "secret" },
-  },
-  token: { access_token: "at", token_type: "Bearer" },
-  aliasMap: { aliasMap: { lok: ALIAS } },
-};
 
 class MemoryStorage implements Storage {
   private map = new Map<string, string>();
@@ -98,14 +81,6 @@ class MemoryStorage implements Storage {
 }
 
 let storage: MemoryStorage;
-
-const writeLegacyKeys = (session: unknown) => {
-  const s = session as Record<string, unknown>;
-  storage.setItem(ArkitektStorageKeys.endpoint, JSON.stringify(s.endpoint));
-  storage.setItem(ArkitektStorageKeys.fakts, JSON.stringify(s.fakts));
-  storage.setItem(ArkitektStorageKeys.token, JSON.stringify(s.token));
-  storage.setItem(ArkitektStorageKeys.aliasMap, JSON.stringify(s.aliasMap));
-};
 
 beforeEach(() => {
   storage = new MemoryStorage();
@@ -190,46 +165,18 @@ describe("provisionalProfileId", () => {
   });
 });
 
-describe("migration from the four legacy keys", () => {
-  it("produces a one-profile book, active, and clears the legacy keys", () => {
-    writeLegacyKeys(LEGACY_SESSION);
-
-    const book = loadStoredProfileBook(storage);
-
-    expect(Object.keys(book.profiles)).toHaveLength(1);
-    const profile = getActiveProfile(book);
-    expect(profile).not.toBeNull();
-    expect(profile!.session.token.access_token).toBe("at");
-    // The label renders from endpoint/fakts alone, so a never-labelled profile
-    // still draws a row before lok has answered.
-    expect(profile!.label.deploymentName).toBe("lok.test");
-    expect(book.lastEndpoint?.token_endpoint).toBe(
-      "https://lok.test/lok/o/token/",
-    );
-
-    // Two sources of truth would silently diverge on the next token refresh.
-    expect(storage.getItem(ArkitektStorageKeys.token)).toBeNull();
-    expect(storage.getItem(ArkitektStorageKeys.endpoint)).toBeNull();
-
-    // And it is persisted, so the migration runs exactly once.
-    expect(storage.getItem(PROFILE_BOOK_STORAGE_KEY)).not.toBeNull();
-  });
-
-  it("discards a pre-OAuth session instead of throwing", () => {
-    // The protocol-1 -> 2 precedent: an unreadable session is a session we no
-    // longer have. Throwing would strand the user on an error screen that
-    // survives reload, because the bad entries would stay in storage.
-    writeLegacyKeys(PRE_OAUTH_SESSION);
-
-    const book = loadStoredProfileBook(storage);
-
-    expect(book.profiles).toEqual({});
-    expect(book.activeProfileId).toBeNull();
-    expect(storage.getItem(ArkitektStorageKeys.token)).toBeNull();
-  });
-
-  it("returns an empty book when there is nothing stored at all", () => {
+describe("loadStoredProfileBook with nothing stored", () => {
+  it("returns an empty book", () => {
     expect(loadStoredProfileBook(storage)).toEqual(emptyProfileBook());
+  });
+
+  it("ignores the four flat keys builds before profiles used — no migration any more", () => {
+    storage.setItem("endpoint", JSON.stringify(LEGACY_SESSION.endpoint));
+    storage.setItem("token", JSON.stringify(LEGACY_SESSION.token));
+    expect(loadStoredProfileBook(storage)).toEqual(emptyProfileBook());
+    // Reading is a read: nothing is written or removed.
+    expect(storage.getItem(PROFILE_BOOK_STORAGE_KEY)).toBeNull();
+    expect(storage.getItem("token")).not.toBeNull();
   });
 });
 
@@ -559,5 +506,84 @@ describe("setActiveProfile", () => {
   it("ignores an unknown id", () => {
     const book = emptyProfileBook();
     expect(setActiveProfile(book, "nope")).toBe(book);
+  });
+});
+
+describe("writeStoredProfileBook", () => {
+  it("writes only what changed — an identical book costs no write and no storage event", () => {
+    const book = setActiveProfile(
+      upsertProfile(emptyProfileBook(), createProfileFromSession(sessionFor("alpha.test"), 1, "id-alpha")),
+      "id-alpha",
+      10,
+    );
+    const setItem = vi.spyOn(storage, "setItem");
+
+    expect(writeStoredProfileBook(book, storage)).toBe(true);
+    expect(writeStoredProfileBook(book, storage)).toBe(false);
+    expect(writeStoredProfileBook(setActiveProfile(book, null), storage)).toBe(true);
+    expect(setItem).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("admitGrantedProfile", () => {
+  const identity = { userId: "2", orgId: "3", hubId: "49" };
+  const finalId = deriveProfileId({ baseUrl: "https://alpha.test/lok/f/", userId: "2", organizationId: "3", hubId: "49" });
+
+  it("writes a grant that names its identity under its final id, active", () => {
+    const { book, profileId } = admitGrantedProfile(emptyProfileBook(), sessionFor("alpha.test", "new"), identity, undefined, 7);
+    expect(profileId).toBe(finalId);
+    expect(book.activeProfileId).toBe(finalId);
+    expect(book.profiles[finalId]).toMatchObject({
+      identity: { userId: "2", organizationId: "3", hubId: "49" },
+      status: "ok",
+      createdAt: 7,
+    });
+  });
+
+  it("lands a re-approval on the row it had: new session, kept label and creation date, cleared stale", () => {
+    const existing = {
+      ...createProfileFromSession(sessionFor("alpha.test", "old"), 1, finalId),
+      identity: { baseUrl: "https://alpha.test/lok/f/", userId: "2", organizationId: "3", hubId: "49" },
+      label: { organizationName: "Lab", brandHue: 200 },
+    };
+    const stale = markProfileStale(upsertProfile(emptyProfileBook(), existing), finalId, "Signed out");
+
+    const { book } = admitGrantedProfile(stale, sessionFor("alpha.test", "new"), identity, undefined, 9);
+    const profile = book.profiles[finalId];
+    expect(Object.keys(book.profiles)).toEqual([finalId]);
+    expect(profile.session.token.access_token).toBe("new");
+    expect(profile.label).toMatchObject({ organizationName: "Lab", brandHue: 200, deploymentName: "alpha.test" });
+    expect(profile).toMatchObject({ status: "ok", createdAt: 1, lastUsedAt: 9 });
+    expect(profile.statusMessage).toBeUndefined();
+  });
+
+  it("keeps the row's mesh switch and pins, with the node the grant just joined", () => {
+    const kept = { id: "node-old", label: "alpha", controlUrl: "https://mesh.alpha.test", hosts: ["pin.lab"], enabled: true };
+    const existing = {
+      ...createProfileFromSession(sessionFor("alpha.test", "old"), 1, finalId),
+      identity: { baseUrl: "https://alpha.test/lok/f/", userId: "2", organizationId: "3", hubId: "49" },
+      mesh: kept,
+    };
+    const { book } = admitGrantedProfile(
+      upsertProfile(emptyProfileBook(), existing),
+      sessionFor("alpha.test", "new"),
+      identity,
+      { ...kept, id: "node-new", hosts: [] },
+    );
+    expect(book.profiles[finalId].mesh).toMatchObject({ id: "node-new", hosts: ["pin.lab"], enabled: true });
+  });
+
+  it("falls back to a provisional id when the grant names no identity", () => {
+    const { profileId } = admitGrantedProfile(emptyProfileBook(), sessionFor("alpha.test"), undefined, undefined);
+    expect(isProvisionalProfileId(profileId)).toBe(true);
+  });
+});
+
+describe("findProfileIdByChain", () => {
+  it("finds the profile holding a refresh chain, whatever its id became", () => {
+    const book = upsertProfile(emptyProfileBook(), createProfileFromSession(sessionFor("alpha.test"), 1, "renamed"));
+    expect(findProfileIdByChain(book, "cid")).toBe("renamed");
+    expect(findProfileIdByChain(book, "other")).toBeUndefined();
+    expect(findProfileIdByChain(book, undefined)).toBeUndefined();
   });
 });

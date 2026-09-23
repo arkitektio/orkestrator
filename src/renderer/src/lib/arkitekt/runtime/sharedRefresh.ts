@@ -1,4 +1,4 @@
-import type { StoredArkitektSession } from "../fakts/sessionStorageSchema";
+import type { StoredArkitektSession } from "../session/record";
 import { normalizeToken, shouldRefreshToken } from "./auth";
 
 /**
@@ -14,8 +14,10 @@ import { normalizeToken, shouldRefreshToken } from "./auth";
  *
  * Two rules keep that from happening:
  *
- * 1. Every refresh runs under a cross-window lock keyed by profile, so two
- *    windows can never be in the token endpoint with the same credential.
+ * 1. Every refresh runs under a cross-window lock keyed by the refresh CHAIN
+ *    (its `client_id`), so two windows can never be in the token endpoint
+ *    with the same credential. Keyed by the chain, not the profile id: a
+ *    profile can be re-keyed while its refresh is in flight, a chain cannot.
  * 2. Inside the lock, the persisted book is consulted before the network: if
  *    another window already rotated this profile, its token is adopted and, if
  *    still fresh, nothing is sent at all.
@@ -101,6 +103,14 @@ export type RotateProfileSessionOptions = {
   refresh: (session: StoredArkitektSession) => Promise<StoredArkitektSession>;
   /** Write the outcome — also INSIDE the lock, so no window reads a stale book. */
   persist: (session: StoredArkitektSession) => Promise<void>;
+  /**
+   * Bringing a profile up (boot, switch) only needs a USABLE token, not a new
+   * one: when the chain we would act on still has a fresh access token, use
+   * it and send nothing. Without this every launch — and every popout —
+   * spent a refresh. The hourly rotation never passes it: it runs because
+   * the token is stale, or because the server just rejected it.
+   */
+  reuseFresh?: boolean;
 };
 
 export type RotateProfileSessionResult = {
@@ -119,12 +129,14 @@ export const rotateProfileSession = async ({
   readPersisted,
   refresh,
   persist,
+  reuseFresh = false,
 }: RotateProfileSessionOptions): Promise<RotateProfileSessionResult> =>
-  withCrossWindowLock(refreshLockName(profileId), async () => {
+  withCrossWindowLock(refreshLockName(held.token.client_id ?? profileId), async () => {
     const persisted = await readPersisted().catch(() => null);
     const { session, action } = reconcilePersistedSession(held, persisted);
 
-    if (action === "adopt") {
+    const fresh = reuseFresh && !shouldRefreshToken(normalizeToken(session.token));
+    if (action === "adopt" || fresh) {
       await persist(session);
       return { session, refreshed: false };
     }

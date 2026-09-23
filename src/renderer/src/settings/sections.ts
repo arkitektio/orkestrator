@@ -3,6 +3,7 @@ import {
   Mic,
   Network,
   Pin,
+  RotateCcw,
   Server,
   SlidersHorizontal,
   Sparkles,
@@ -46,14 +47,14 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     slug: "general",
     label: "General",
-    description: "Everyday behaviour: previews, zoom and experiments.",
+    description: "Everyday behaviour: previews and experiments.",
     icon: SlidersHorizontal,
     group: "app",
   },
   {
     slug: "appearance",
     label: "Appearance",
-    description: "Colour mode, brand colours and the sidebar's glass.",
+    description: "Colour mode, brand colours, page zoom and the sidebar's glass.",
     icon: Sparkles,
     group: "app",
   },
@@ -90,6 +91,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: "Updates & developer",
     description: "Application updates, DevTools and debug mode.",
     icon: Bug,
+    group: "system",
+  },
+  {
+    slug: "reset",
+    label: "Factory reset",
+    description: "Erase everything Orkestrator stored on this computer.",
+    icon: RotateCcw,
     group: "system",
   },
 ];

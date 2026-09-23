@@ -36,7 +36,7 @@ import { ViewType } from "@/mikro-next/pages/FolderPage";
 import { DragSession } from "@/lib/dnd/engine";
 import { useSelection } from "@/providers/selection/SelectionContext";
 import { smartDragStructures } from "@/providers/smart/dragPayload";
-import { useSmartDrop } from "@/providers/smart/hooks";
+import { useSmartCanDrop, useSmartDrop } from "@/providers/smart/hooks";
 import { Structure } from "@/types";
 import {
   ArrowLeft,
@@ -707,7 +707,8 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
     [isMember],
   );
 
-  const [{ isOver, canDrop }, dropRef] = useSmartDrop(
+  const canDrop = useSmartCanDrop(acceptsDrop);
+  const [{ isOver }, dropRef] = useSmartDrop(
     async (structures: Structure[]) => {
       const idsFor = (identifier: string) =>
         structures

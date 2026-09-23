@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PageAction } from "@/components/ui/page-action";
 import { Image } from "@/components/ui/image";
 import { Separator } from "@/components/ui/separator";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { LokClient, LokDevice, RekuestTask } from "@/linkers";
 import {
   TaskEventKind,
@@ -82,7 +82,7 @@ const FailedTasks = ({ clientId }: { clientId: string }) => {
 };
 
 export default asDetailQueryRoute(useDetailClientQuery, ({ data }) => {
-  const resolve = useResolve();
+  const resolve = useLokResolve();
   const { openDialog } = useDialog();
 
   const handleReportClientBug = () => {

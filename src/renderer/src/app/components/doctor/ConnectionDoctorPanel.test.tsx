@@ -203,4 +203,70 @@ describe("ConnectionDoctorPanel", () => {
       "https://login.tailscale.com/a/abc",
     );
   });
+
+  const failedProbe = {
+    target: { host: "mikro.tailnet-cafe.ts.net", ssl: true, serviceKey: "mikro", label: "mikro", role: "service" as const },
+    url: "https://mikro.tailnet-cafe.ts.net/ht",
+    dns: { ok: true, lookupAddresses: ["100.64.0.2"], resolveAddresses: [] },
+    tcp: { attempted: true, ok: false, code: "ETIMEDOUT", ms: 4000 },
+    tls: { attempted: false, ok: false },
+    http: { attempted: false, ok: false },
+    totalMs: 4000,
+  };
+
+  const hubReport = (): DoctorReport => ({
+    ...report([finding({ id: "hub.healthy-client-fails", severity: "warning", title: "lab-hub sees mikro running", targetLabel: "mikro" })]),
+    targets: [failedProbe.target],
+    network: [failedProbe],
+    hub: {
+      name: "lab-hub",
+      online: true,
+      lastSeenAt: new Date().toISOString(),
+      version: "1.4.0",
+      services: { mikro: { healthy: true } },
+    },
+    lok: { status: "ok", hub: { name: "lab-hub", online: true, version: "1.4.0", services: {} } },
+  });
+
+  it("draws the path and marks the hop that breaks, with both sides of the service", () => {
+    renderPanel({ status: "done", report: hubReport() });
+
+    const path = screen.getByRole("region", { name: "Connection path" });
+    expect(path).toHaveTextContent("Hub lab-hub");
+    expect(path).toHaveTextContent("hub: healthy");
+    expect(path).toHaveTextContent("here: TCP: ETIMEDOUT 4000ms");
+    expect(screen.getByText("breaks here")).toBeInTheDocument();
+  });
+
+  it("opens a hop's findings on click", async () => {
+    renderPanel({ status: "done", report: hubReport() });
+    // The verdict names it once; expanding the mikro hop shows it again, in place.
+    expect(screen.getAllByText("lab-hub sees mikro running")).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: /mikro/ }));
+    expect(screen.getAllByText("lab-hub sees mikro running")).toHaveLength(2);
+  });
+
+  it("copies a plain-text report", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    renderPanel({ status: "done", report: hubReport() });
+
+    await userEvent.click(screen.getByRole("button", { name: /copy report/i }));
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain("<- breaks here");
+    expect(await screen.findByRole("button", { name: /copied/i })).toBeInTheDocument();
+  });
+
+  it("lists every address stage by stage", async () => {
+    renderPanel({ status: "done", report: hubReport() });
+    await userEvent.click(screen.getByRole("button", { name: /every address we tried \(1\)/i }));
+    const table = screen.getByRole("table");
+    expect(table).toHaveTextContent("ETIMEDOUT 4000ms");
+    expect(table).toHaveTextContent("direct");
+  });
+
+  it("shows no path before a run", () => {
+    renderPanel();
+    expect(screen.queryByRole("region", { name: "Connection path" })).not.toBeInTheDocument();
+  });
 });

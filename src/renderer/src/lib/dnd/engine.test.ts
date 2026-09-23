@@ -10,7 +10,7 @@ import {
   getDragSession,
   installDndEngine,
 } from "./engine";
-import { dragOnto, FakeDataTransfer, fireDrag } from "./testing";
+import { dragOnto, dragOutOfWindow, FakeDataTransfer, fireDrag } from "./testing";
 
 const el = (parent: Element = document.body, tag = "div") => {
   const node = document.createElement(tag);
@@ -196,6 +196,96 @@ describe("a drag between our own nodes", () => {
     document.body.dispatchEvent(move);
 
     expect(to.handle.isOver()).toBe(false);
+  });
+});
+
+describe("how a drag ended", () => {
+  const endingSource = (node: HTMLElement) => {
+    const onEnd = vi.fn();
+    createDragSource(() => ({ kind: "thing", getData: () => "payload", onEnd })).attach(node);
+    return onEnd;
+  };
+
+  it("tells the source a drag left the window and nobody took it", () => {
+    const from = el();
+    const onEnd = endingSource(from);
+
+    dragOutOfWindow(from);
+
+    expect(onEnd).toHaveBeenCalledTimes(1);
+    expect(onEnd).toHaveBeenCalledWith({ dropEffect: "none", leftWindow: true }, "payload");
+  });
+
+  it("forgets the leave once the drag comes back in", () => {
+    const from = el();
+    const onEnd = endingSource(from);
+    const dataTransfer = new FakeDataTransfer();
+
+    fireDrag(from, "dragstart", { dataTransfer });
+    fireDrag(document.body, "dragleave", { dataTransfer, relatedTarget: null });
+    fireDrag(document.body, "dragover", { dataTransfer });
+    fireDrag(from, "dragend", { dataTransfer });
+
+    expect(onEnd).toHaveBeenCalledWith({ dropEffect: "none", leftWindow: false }, "payload");
+  });
+
+  it("stays quiet when one of our targets took the drop", () => {
+    const from = el();
+    const onEnd = endingSource(from);
+    const to = target(el());
+
+    dragOnto(from, to.node).drop();
+
+    expect(to.onDrop).toHaveBeenCalledTimes(1);
+    expect(onEnd).not.toHaveBeenCalled();
+  });
+});
+
+describe("the hot path", () => {
+  it("resolves an element once per drag, however often dragover fires on it", () => {
+    const from = source(el());
+    const accepts = vi.fn((session: DragSession) => session.origin === "internal");
+    const to = target(el(), { accepts });
+    const dataTransfer = new FakeDataTransfer();
+
+    fireDrag(from, "dragstart", { dataTransfer });
+    fireDrag(to.node, "dragenter", { dataTransfer });
+    fireDrag(to.node, "dragover", { dataTransfer });
+    fireDrag(to.node, "dragover", { dataTransfer });
+
+    expect(accepts).toHaveBeenCalledTimes(1);
+    expect(to.handle.isOver()).toBe(true);
+  });
+
+  it("sees a target that appears mid-drag under a resting pointer", () => {
+    const from = source(el());
+    const outer = el();
+    const inner = el(outer);
+    const dataTransfer = new FakeDataTransfer();
+
+    fireDrag(from, "dragstart", { dataTransfer });
+    fireDrag(inner, "dragover", { dataTransfer });
+    const late = target(outer);
+    fireDrag(inner, "dragover", { dataTransfer });
+
+    expect(late.handle.isOver()).toBe(true);
+  });
+
+  it("listens for mouse moves only while a drag is running", () => {
+    const add = vi.spyOn(document, "addEventListener");
+    const remove = vi.spyOn(document, "removeEventListener");
+    const from = source(el());
+    const moveListeners = (spy: typeof add) =>
+      spy.mock.calls.filter(([type]) => type === "mousemove").length;
+
+    expect(moveListeners(add)).toBe(0);
+    fireDrag(from, "dragstart");
+    expect(moveListeners(add)).toBe(1);
+
+    // A move with no button held: the drag ended without telling us.
+    document.dispatchEvent(new MouseEvent("mousemove", { buttons: 0 }));
+    expect(getDragSession()).toBeNull();
+    expect(moveListeners(remove)).toBe(1);
   });
 });
 

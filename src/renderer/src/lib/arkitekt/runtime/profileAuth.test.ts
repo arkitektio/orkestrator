@@ -4,7 +4,7 @@ import { RefreshTokenError } from "./auth";
 import {
   classifyRefreshFailure,
   describeRefreshFailure,
-  refreshProfileToken,
+  refreshSession,
 } from "./profileAuth";
 import {
   createProfileFromSession,
@@ -83,7 +83,7 @@ describe("describeRefreshFailure", () => {
   });
 });
 
-describe("refreshProfileToken", () => {
+describe("refreshSession", () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
@@ -108,7 +108,7 @@ describe("refreshProfileToken", () => {
       }),
     });
 
-    const session = await refreshProfileToken(profile());
+    const session = await refreshSession(profile().session);
 
     expect(fetchMock.mock.calls[0][0]).toBe("https://lok.test/lok/o/token/");
     expect(session.token.refresh_token).toBe("new-rt");
@@ -129,7 +129,7 @@ describe("refreshProfileToken", () => {
       }),
     });
 
-    const session = await refreshProfileToken(profile());
+    const session = await refreshSession(profile().session);
 
     expect(session.fakts).toEqual(SESSION.fakts);
   });
@@ -142,8 +142,8 @@ describe("refreshProfileToken", () => {
       json: async () => ({ error: "invalid_grant" }),
     });
 
-    await expect(refreshProfileToken(profile())).rejects.toBeInstanceOf(RefreshTokenError);
-    await expect(refreshProfileToken(profile()).catch(classifyRefreshFailure)).resolves.toBe(
+    await expect(refreshSession(profile().session)).rejects.toBeInstanceOf(RefreshTokenError);
+    await expect(refreshSession(profile().session).catch(classifyRefreshFailure)).resolves.toBe(
       "expired",
     );
   });

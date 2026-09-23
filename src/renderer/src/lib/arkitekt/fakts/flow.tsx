@@ -19,6 +19,7 @@ export const flow = async ({
   expirationTime,
   hint,
   requestMeshKey = true,
+  onVerificationUri,
 }: {
   endpoint: FaktsEndpoint;
   controller: AbortController;
@@ -31,6 +32,8 @@ export const flow = async ({
   hint?: GrantHint;
   /** `false` when the profile being re-approved has its mesh switched off. */
   requestMeshKey?: boolean;
+  /** The approval page's URL, once opened — so the caller can offer to open it again. */
+  onVerificationUri?: (uri: string) => void;
 }): Promise<GrantResult> => {
   // 1. Device authorization (also dynamically registers our public client).
   //    A deployment with a mesh is asked for a one-shot key — unless this is
@@ -49,9 +52,9 @@ export const flow = async ({
   // 2. Open the configure page for the human, telling it which account and hub
   //    we are coming back as when we know (a re-approval), so they are not
   //    asked to find themselves in a list they did not expect.
-  const handle = await popOutWindowOpen(
-    withGrantHint(authorization.verification_uri_complete, hint),
-  );
+  const verificationUri = withGrantHint(authorization.verification_uri_complete, hint);
+  const handle = await popOutWindowOpen(verificationUri);
+  onVerificationUri?.(verificationUri);
 
   // 3. Poll the token endpoint until approved → tokens + instances
   try {

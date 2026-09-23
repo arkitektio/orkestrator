@@ -400,11 +400,72 @@ type Hub {
   """
   identifier: ServiceIdentifier!
 
+  """
+  Whether the hub's last health report said it was healthy. Null if it never reported.
+  """
+  lastHealthy: Boolean
+
+  """When the hub last reported its health. Null if it never has."""
+  lastSeenAt: DateTime
+
+  """The hub's most recent health report, or null if it never reported."""
+  latestHealth: HubHealthReport
+
+  """
+  Whether the hub's last health report said its node is on the mesh. Null if it never reported mesh state.
+  """
+  meshConnected: Boolean
+
+  """
+  The hub node's MagicDNS name (or mesh IP), as last reported by the hub. Empty when unknown or off the mesh.
+  """
+  meshHost: String!
+
   """The name of the hub. This should be a human readable name of the hub."""
   name: String!
 
+  """
+  Whether the hub reported its health within the last three reporting intervals.
+  """
+  online: Boolean!
+
   """The organization that this hub belongs to."""
   organization: Organization!
+
+  """The hub software version, as last reported (empty if never reported)."""
+  version: String!
+}
+
+"""
+Hub(id, name, organization, identifier, description, creator, client, token, auth_key, last_seen_at, last_healthy, version, mesh_connected, mesh_host)
+"""
+input HubFilter {
+  AND: HubFilter
+  DISTINCT: Boolean
+  NOT: HubFilter
+  OR: HubFilter
+  ids: [ID!]
+  search: String
+}
+
+"""One health report a hub posted to lok."""
+type HubHealthReport {
+  """When the hub reported."""
+  createdAt: DateTime!
+
+  """Did the hub report itself healthy?"""
+  healthy: Boolean!
+  id: ID!
+
+  """
+  The per-instance health in this report. Only instances of the hub are listed.
+  """
+  instances: [InstanceHealth!]!
+}
+
+input HubOrdering @oneOf {
+  id: Ordering
+  name: Ordering
 }
 
 """
@@ -457,6 +518,18 @@ type InstanceAlias {
 input InstanceAliasOrdering @oneOf {
   id: Ordering
   name: Ordering
+}
+
+"""The health a hub reported for one of its service instances."""
+type InstanceHealth {
+  """Did the hub report the instance healthy?"""
+  healthy: Boolean!
+
+  """The service instance this entry is about."""
+  instance: ServiceInstance!
+
+  """Why the instance is unhealthy, if the hub said."""
+  reason: String
 }
 
 """
@@ -674,7 +747,9 @@ type Organization {
   """The users that are currently active in the organization"""
   activeUsers(filters: UserFilter, ordering: [UserOrdering!]! = [], pagination: OffsetPaginationInput): [User!]!
 
-  """The logo of the organization"""
+  """
+  The logo of the organization. Mirrors `profile.avatar`; prefer that field.
+  """
   avatar: MediaStore
 
   """
@@ -743,6 +818,11 @@ Temporary Credentials for a file upload that can be used by a Client (e.g. in a 
 """
 type PresignedPostCredentials {
   bucket: String!
+
+  """
+  The Content-Type the upload form must send; the policy pins it exactly.
+  """
+  contentType: String!
   datalayer: String!
   key: String!
   policy: String!
@@ -802,6 +882,12 @@ type Query {
   group(id: ID!): Group!
   groups(filters: GroupFilter, ordering: [GroupOrdering!]! = [], pagination: OffsetPaginationInput): [Group!]!
   hallo: String!
+
+  """
+  A hub of the caller's organization, including its last reported health. The caller's own hub is also reachable as `mycontext { hub }`.
+  """
+  hub(id: ID!): Hub!
+  hubs(filters: HubFilter, ordering: [HubOrdering!]! = [], pagination: OffsetPaginationInput): [Hub!]!
   invites(filters: InviteFilter, ordering: [InviteOrdering!]! = [], pagination: OffsetPaginationInput): [Invite!]!
   layer(id: ID!): Layer!
   layers(filters: LayerFilter, ordering: [LayerOrdering!]! = [], pagination: OffsetPaginationInput): [Layer!]!
@@ -947,6 +1033,10 @@ input RenderInput {
 }
 
 input RequestMediaUploadInput {
+  """
+  MIME type of the file. The upload must send the same Content-Type. Guessed from `key` when omitted.
+  """
+  contentType: String = null
   datalayer: String!
   key: String!
 }
@@ -1256,6 +1346,9 @@ input UpdateServiceInstanceInput {
 
 "\nA User is a person that can log in to the system. They are uniquely identified by their username.\nAnd can have an email address associated with them (but don't have to).\n\nA user can be assigned to groups and has a profile that can be used to display information about them.\nDetail information about a user can be found in the profile.\n\nAll users can have social accounts associated with them. These are used to authenticate the user with external services,\nsuch as ORCID or GitHub.\n\n"
 type User {
+  """
+  A short-lived URL of the user's avatar (`profile.avatar`), if they have one.
+  """
   avatar: String
 
   """The communication channels that the user has"""

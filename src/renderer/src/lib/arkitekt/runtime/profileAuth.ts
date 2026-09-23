@@ -1,21 +1,6 @@
-import type { StoredArkitektSession } from "../fakts/sessionStorageSchema";
+import type { StoredArkitektSession } from "../session/record";
 import type { StoredProfile } from "../fakts/profileStorageSchema";
 import { isAbortLikeError, refreshAccessToken, RefreshTokenError } from "./auth";
-
-/**
- * Proving a PARKED profile's credential, before anything is swapped.
- *
- * Deliberately not routed through `TokenRotation` / the provider's
- * `refreshTokenRef`: that rotation is bound to the ACTIVE session — it reads the
- * session out of the store and writes the result back to the active slot — so
- * using it here would refresh the wrong profile and then overwrite the wrong
- * one's token. This is a plain round-trip whose result the caller persists to the
- * slot it came from.
- */
-export const refreshProfileToken = async (
-  profile: StoredProfile,
-  controller?: AbortController,
-): Promise<StoredArkitektSession> => refreshSession(profile.session, controller);
 
 /**
  * One refresh round-trip for a stored session, returning the rotated session.

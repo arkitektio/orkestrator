@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { LokClient } from "@/linkers";
 import { useClientQuery } from "../api/graphql";
 import { clientAppVersion } from "../lib/clientLabels";
@@ -12,7 +12,7 @@ export const ClientAvatar = (props: { clientId: string }) => {
     },
   });
 
-  const resolve = useResolve();
+  const resolve = useLokResolve();
   const client = data?.client;
 
   return (
@@ -45,7 +45,7 @@ export const ClientImage = (props: { clientId: string, className?: string }) => 
     },
   });
 
-  const resolve = useResolve();
+  const resolve = useLokResolve();
 
   return (
     <img

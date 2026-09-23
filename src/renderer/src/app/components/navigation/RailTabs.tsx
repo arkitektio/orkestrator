@@ -16,6 +16,9 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useSpringLoaded } from "@/lib/dnd/react";
+import { useLatestRef } from "@/hooks/useLatestRef";
+import type { DragEndInfo } from "@/lib/dnd/engine";
+import { endedOutsideApp } from "@/lib/dnd/outside";
 import { SortableList, type SortableRowProps } from "@/lib/dnd/SortableList";
 import { cn } from "@/lib/utils";
 import { acceptsSmartDrag } from "@/providers/smart/dragPayload";
@@ -353,7 +356,7 @@ export const RailTabs = () => {
   const split = useSplit();
   // The view tab: the pair's owner when split, else the focused tab itself.
   const viewId = split?.left ?? activeId;
-  const { open, move } = useTabActions();
+  const { open, move, close } = useTabActions();
   const rows = useMemo(() => rowsOf(tabs), [tabs]);
   // The tabs the strip first rendered with (restored ones) do not animate in.
   // Lazy STATE rather than a ref written during render: it is initialised once
@@ -368,6 +371,26 @@ export const RailTabs = () => {
       for (const [tabId, index] of rowMoves(rows, tabs, id, to)) move(tabId, index);
     },
     [rows, tabs, move],
+  );
+
+  // A row dragged out of the app and let go outside every window of ours
+  // becomes a window of its own, as a browser tab does: the tab MOVES — it
+  // opens there where it is now, and closes here. A pair's partner stays: the
+  // new window shows one page, the owner, which is what the row stands for.
+  const latest = useLatestRef({ rows, close });
+  const onDragEnd = useCallback(
+    (id: string, info: DragEndInfo) => {
+      void endedOutsideApp(info).then((outside) => {
+        if (!outside || !window.api?.openSecondWindow) return;
+        const { rows, close } = latest.current;
+        const tab = rows.find((row) => row.id === id)?.tabs[0];
+        if (!tab) return;
+        const { pathname, search, hash } = tab.history.location;
+        window.api.openSecondWindow(`${pathname}${search}${hash}`);
+        close(tab.id);
+      });
+    },
+    [latest],
   );
 
   return (
@@ -399,6 +422,7 @@ export const RailTabs = () => {
         getId={getRowId}
         onReorder={reorder}
         groupOf={rowBlock}
+        onDragEnd={onDragEnd}
         className="flex min-w-0 flex-col gap-0.5"
       >
         {(row, sortable) => (

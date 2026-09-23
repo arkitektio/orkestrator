@@ -1,10 +1,11 @@
+import type { SessionActivity } from "./session/state";
 import type { ReactNode } from "react";
 
 import { FaktsEndpoint } from "./fakts/endpointSchema";
 import type { GrantHint } from "./fakts/grantHint";
 import { ActiveFakts, Alias, Instance } from "./fakts/faktsSchema";
 import { Manifest } from "./fakts/manifestSchema";
-import { StoredArkitektSession } from "./fakts/sessionStorageSchema";
+import { StoredArkitektSession } from "./session/record";
 import {
   ProfileIdentity,
   ProfileLabel,
@@ -139,6 +140,11 @@ export type ServiceRuntimeState = {
   status: ServiceHealthStatus;
   errors: string[];
   lastCheckedAt?: number;
+  /**
+   * A ready service being checked again. It stays `ready` — and its guarded
+   * subtree mounted — while this is set; only a failed check takes it down.
+   */
+  revalidating?: boolean;
 };
 
 export type ModuleRuntimeState = {
@@ -175,6 +181,12 @@ export type ConnectFunction = (options: {
    * that comes back decides who was actually approved. See `fakts/grantHint.ts`.
    */
   hint?: GrantHint;
+  /**
+   * Called with the approval page's URL once it has been opened, so a caller
+   * can offer to open it again (the user closed the tab, or it opened in the
+   * wrong browser).
+   */
+  onVerificationUri?: (uri: string) => void;
 }) => Promise<void>;
 
 export type DisconnectFunction = () => Promise<void>;
@@ -185,9 +197,10 @@ export type AppContext<
 > = {
   manifest: EnhancedManifest;
   connection?: ConnectedContext<T, S>;
+  /** The last bring-up's failure, shown until the next one starts. */
   autoLoginError?: string;
-  connecting: boolean;
-  hasBootstrapped: boolean;
+  /** What the session is doing: booting, granting, switching, or settled. */
+  activity: SessionActivity;
   configurationIssues: string[];
   serviceStates: Record<string, ServiceRuntimeState>;
   moduleStates: Record<string, ModuleRuntimeState>;
@@ -200,12 +213,6 @@ export type AppContext<
   storedSession: StoredArkitektSession | null;
   /** Every login this app is holding, and which of them is live. */
   profileBook: StoredProfileBook;
-  /**
-   * The profile a switch is currently proving. Deliberately NOT `connecting`:
-   * the whole point is that the app stays usable on the current profile while
-   * the new one's credential is checked, so only the switcher row spins.
-   */
-  switchingProfileId: string | null;
   /**
    * The profile that is live for THIS RUN ONLY — signed in with "stay signed
    * in" unticked.
@@ -248,10 +255,11 @@ export type AppFunctions = {
     },
   ) => Promise<void>;
   /**
-   * Sign one profile out on this computer: its parked credential is dropped and
-   * the entry is left marked signed-out, so the account stays in the list as a
-   * one-click way back in but nothing can auto-log into it. If it is the live
-   * profile, the connection goes down with it.
+   * Sign one profile out on this computer: the entry is marked stale ("signed
+   * out"), so the account stays in the list as a one-click way back in — via
+   * a fresh grant, never its old credential — and nothing auto-logs into it.
+   * The credential itself stays in the book until that grant replaces it. If
+   * it is the live profile, the connection goes down with it.
    *
    * Local only, like `removeProfile` — there is no `revocation_endpoint`, so
    * the token stays valid server-side until it expires.

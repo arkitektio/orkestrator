@@ -11,11 +11,13 @@ import {
   DOCTOR_NETWORK_CHANNEL,
   DOCTOR_REMEDY_CHANNEL,
   isRemedyId,
+  PROBE_ROLES,
 } from "./protocol";
 import type {
   MeshProbeResult,
   NetworkProbeResult,
   ProbeNetworkRequest,
+  ProbeRole,
   ProbeTarget,
   RemedyId,
   RemedyResult,
@@ -88,6 +90,8 @@ const sanitizeTarget = (raw: unknown): ProbeTarget | null => {
     path: typeof target.path === "string" ? target.path : null,
     probePath: typeof target.probePath === "string" ? target.probePath : null,
     label: typeof target.label === "string" ? target.label.slice(0, 120) : undefined,
+    serviceKey: typeof target.serviceKey === "string" ? target.serviceKey.slice(0, 120) : undefined,
+    role: PROBE_ROLES.includes(target.role as ProbeRole) ? target.role : undefined,
   };
 };
 

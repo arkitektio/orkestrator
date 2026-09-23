@@ -9,8 +9,15 @@ fragment Organization on Organization {
     identifier
     description
   }
+  # Deprecated: mirrors `profile.avatar`, read only as a fallback.
   avatar {
     presignedUrl
+  }
+  profile {
+    id
+    avatar {
+      presignedUrl
+    }
   }
   memberships {
     id

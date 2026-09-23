@@ -18,7 +18,12 @@ import RailTabs, { TAB_SPRING_DELAY_MS } from "./RailTabs";
 import { NEW_TAB_PATH } from "@/command/tabs/tabs";
 import { SMART_MODEL_DROP_TYPE } from "@/constants";
 import { createDragSource, installDndEngine } from "@/lib/dnd/engine";
-import { dragOnto as dragNodeOnto, FakeDataTransfer, fireDrag } from "@/lib/dnd/testing";
+import {
+  dragOnto as dragNodeOnto,
+  dragOutOfWindow,
+  FakeDataTransfer,
+  fireDrag,
+} from "@/lib/dnd/testing";
 
 /** The strip, with the dnd engine listening — its rows are drop targets. */
 const renderStrip = () => render(<RailTabs />);
@@ -446,5 +451,45 @@ describe("reordering the strip", () => {
     v.move.mockClear();
     fireEvent.keyDown(rowOf("One"), { key: "ArrowDown" });
     expect(v.move).not.toHaveBeenCalled();
+  });
+});
+
+describe("dragging a tab out of the window", () => {
+  const located = (id: string, label: string, path: string) => ({
+    ...tab(id, label),
+    history: { location: { pathname: path, search: "?view=3d", hash: "" } },
+  });
+
+  const dragOut = async (label: string, pointerInApp: boolean) => {
+    const openSecondWindow = vi.fn();
+    // @ts-expect-error - stand in for the preload injection
+    window.api = { openSecondWindow, windowControls: { pointerInApp: async () => pointerInApp } };
+    const actions = value({ tabs: [located("t1", "One", "/mikro/files/1"), tab("t2", "Two")] });
+    tabsValue.mockReturnValue(actions);
+    renderStrip();
+
+    const row = screen.getByText(label).closest<HTMLElement>("[draggable='true']")!;
+    await act(async () => {
+      dragOutOfWindow(row);
+      await Promise.resolve();
+    });
+    return { openSecondWindow, close: actions.close };
+  };
+
+  afterEach(() => {
+    // @ts-expect-error - clean up the injected global
+    delete window.api;
+  });
+
+  it("moves the tab into a window of its own, where it is now", async () => {
+    const { openSecondWindow, close } = await dragOut("One", false);
+    expect(openSecondWindow).toHaveBeenCalledWith("/mikro/files/1?view=3d");
+    expect(close).toHaveBeenCalledWith("t1");
+  });
+
+  it("stays put when let go over another window of ours", async () => {
+    const { openSecondWindow, close } = await dragOut("One", true);
+    expect(openSecondWindow).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
   });
 });

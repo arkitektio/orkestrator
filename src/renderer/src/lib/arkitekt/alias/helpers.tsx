@@ -37,3 +37,14 @@ export const aliasToWsPath = (alias: Alias, append: string): string => {
 
   return url;
 };
+
+/** Would a client built for `a` talk to the same place as one built for `b`? */
+export const sameAlias = (a: Alias | undefined, b: Alias | undefined): boolean =>
+  !!a &&
+  !!b &&
+  a.id === b.id &&
+  a.host === b.host &&
+  (a.port ?? null) === (b.port ?? null) &&
+  (a.path ?? null) === (b.path ?? null) &&
+  a.ssl === b.ssl &&
+  a.challenge === b.challenge;

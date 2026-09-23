@@ -1,128 +1,17 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { DragPoint } from "./engine";
+import { DragEndInfo, DragPoint } from "./engine";
 import { useDragSource, useDropTarget } from "./react";
 
 /**
- * Reordering by drag, two ways.
- *
- * The plain way (`useSortableItem`): the rows stay where they are and a line
- * shows where the dragged one would go. Nothing is measured or animated while
- * the pointer moves.
- *
- * The parting way (`useSortableList` / `useSortableRow`): the list re-renders
- * in the order it would have, as the pointer moves, so the rows part around a
- * gap. The hooks only decide the order; give the rows framer's `layout` and
- * they slide.
+ * Reordering by drag: a list whose rows part around the one being dragged.
+ * The list re-renders in the order it would have as the pointer moves, so the
+ * rows make a gap; the hooks only decide the order — give the rows framer's
+ * `layout` and they slide. `SortableList.tsx` is the same, as a component.
  */
 
 export type SortableAxis = "vertical" | "horizontal";
-export type SortableEdge = "before" | "after";
-
-type Rect = { top: number; left: number; width: number; height: number };
-
-/** Which half of `rect` the pointer is in. */
-export const closestEdge = (
-  rect: Rect,
-  point: DragPoint,
-  axis: SortableAxis,
-): SortableEdge =>
-  axis === "vertical"
-    ? point.clientY < rect.top + rect.height / 2
-      ? "before"
-      : "after"
-    : point.clientX < rect.left + rect.width / 2
-      ? "before"
-      : "after";
-
-/**
- * Where the item at `from` ends up when dropped on that edge of the item at
- * `over` — its index in the list once it has moved, as `arrayMove` and
- * react-hook-form's `move` take it.
- */
-export const reorderedIndex = (from: number, over: number, edge: SortableEdge) => {
-  const slot = edge === "before" ? over : over + 1;
-  return from < slot ? slot - 1 : slot;
-};
-
-type SortableDragData = { list: string; index: number };
 
 const SORTABLE_KIND = "sortable";
-
-/** One id per list, so a row can only be dropped among its own. */
-export const useSortableListId = () => useId();
-
-/**
- * A row of a sortable list: drag it, or drop another row of the same list on
- * it. `edge` is where the line goes — `null` when nothing is over the row, or
- * when dropping there would leave the order as it is.
- */
-export const useSortableItem = ({
-  list,
-  index,
-  axis = "vertical",
-  onReorder,
-}: {
-  list: string;
-  index: number;
-  axis?: SortableAxis;
-  onReorder: (from: number, to: number) => void;
-}) => {
-  const nodeRef = useRef<HTMLElement | null>(null);
-  const [hover, setHover] = useState<{ from: number; edge: SortableEdge } | null>(null);
-
-  const drag = useDragSource({
-    kind: SORTABLE_KIND,
-    getData: (): SortableDragData => ({ list, index }),
-  });
-
-  const edgeAt = (point: DragPoint) =>
-    nodeRef.current
-      ? closestEdge(nodeRef.current.getBoundingClientRect(), point, axis)
-      : "before";
-
-  const { ref: drop, isOver } = useDropTarget({
-    accepts: (session) =>
-      session.origin === "internal" &&
-      session.kind === SORTABLE_KIND &&
-      (session.data as SortableDragData).list === list,
-    onMove: (point, session) => {
-      if (session.origin !== "internal") return;
-      const from = (session.data as SortableDragData).index;
-      const edge = edgeAt(point);
-      setHover((previous) =>
-        previous?.from === from && previous.edge === edge ? previous : { from, edge },
-      );
-    },
-    onDrop: (payload, point) => {
-      if (payload.origin !== "internal") return;
-      const from = (payload.data as SortableDragData).index;
-      const to = reorderedIndex(from, index, edgeAt(point));
-      if (to !== from) {
-        onReorder(from, to);
-      }
-    },
-  });
-
-  const ref = useCallback(
-    (node: HTMLElement | null) => {
-      nodeRef.current = node;
-      drag(node);
-      drop(node);
-    },
-    [drag, drop],
-  );
-
-  const edge =
-    isOver && hover && reorderedIndex(hover.from, index, hover.edge) !== hover.from
-      ? hover.edge
-      : null;
-
-  return { ref, edge };
-};
-
-/* ------------------------------------------------------------------------ */
-/* The parting way                                                           */
-/* ------------------------------------------------------------------------ */
 
 /**
  * Where the row at `from` would sit — its index once moved — with the pointer
@@ -298,10 +187,16 @@ export const useSortableList = ({
 };
 
 /** A row of a `useSortableList`: what is dragged. The engine marks it `data-dragging`. */
-export const useSortableRow = (list: SortableList, id: string) => {
+export const useSortableRow = (
+  list: SortableList,
+  id: string,
+  /** The row's drag ended without a drop in this window (`DragSourceConfig.onEnd`). */
+  onDragEnd?: (id: string, info: DragEndInfo) => void,
+) => {
   const drag = useDragSource({
     kind: SORTABLE_KIND,
     getData: (): SortableRowDragData => ({ list: list.id, id }),
+    onEnd: onDragEnd ? (info) => onDragEnd(id, info) : undefined,
   });
 
   const { rows } = list;

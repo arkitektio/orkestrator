@@ -1,5 +1,5 @@
 import type { MeshConfig, MeshNodeStatus } from "./protocol";
-import { isRoutableHost, normalizeHost } from "./protocol";
+import { controlDomain, isRoutableHost, normalizeHost } from "./protocol";
 
 /**
  * The routing table for Chromium, as a PAC script.
@@ -11,7 +11,14 @@ import { isRoutableHost, normalizeHost } from "./protocol";
  *   2. a peer's own name (full MagicDNS name and short hostname)
  *   3. anything under the mesh's MagicDNS suffix
  *   4. a peer's tailnet IP
- *   5. DIRECT
+ *   5. anything under the mesh CONTROL server's domain — `mesh.arkitekt.live`
+ *      routes `*.mesh.arkitekt.live`, which is where ionscale names every
+ *      tailnet's machines. This is what routes a deployment through its mesh
+ *      with no pinning: it applies as soon as the node runs, before its peers
+ *      or suffix are known. The control host itself is never routed (the node
+ *      reaches it directly to join), and a domain two running meshes share
+ *      is dropped as ambiguous — their own suffixes (3) still tell them apart.
+ *   6. DIRECT
  *
  * Names are unique per tailnet by construction (ionscale forms them as
  * `<machine>.<tailnet>.<suffix>`), but 100.64/10 addresses and short labels
@@ -34,7 +41,10 @@ export type PacRoute = {
   peerNames: string[];
   /** Rule 4 — tailnet IPs of the peers and of ourselves. */
   ips: string[];
+  /** Rule 5 — the control server's host; its SUBDOMAINS route here. */
+  domain?: string;
 };
+
 
 const proxyString = (port: number): string => `SOCKS5 127.0.0.1:${port}`;
 
@@ -59,6 +69,7 @@ export const routesFor = (configs: MeshConfig[], statuses: Map<string, MeshNodeS
       suffix: status.magicDnsSuffix ? normalizeHost(status.magicDnsSuffix) : undefined,
       peerNames: [...peerNames].filter(isRoutableHost),
       ips: [...ips].filter(isRoutableHost),
+      domain: controlDomain(config.controlUrl),
     });
   }
   return routes;
@@ -100,12 +111,14 @@ export const buildPac = (routes: PacRoute[]): string | undefined => {
   const suffixes = routes
     .filter((route) => route.suffix)
     .map((route) => [route.suffix as string, proxyString(route.proxyPort)] as const);
+  const domains = Object.entries(uniqueClaims(routes, (route) => (route.domain ? [route.domain] : [])));
 
   if (
     Object.keys(pinned).length === 0 &&
     Object.keys(names).length === 0 &&
     Object.keys(ips).length === 0 &&
-    suffixes.length === 0
+    suffixes.length === 0 &&
+    domains.length === 0
   ) {
     return undefined;
   }
@@ -118,6 +131,7 @@ export const buildPac = (routes: PacRoute[]): string | undefined => {
     `var NAMES = ${JSON.stringify(names)};`,
     `var IPS = ${JSON.stringify(ips)};`,
     `var SUFFIXES = ${JSON.stringify(suffixes)};`,
+    `var DOMAINS = ${JSON.stringify(domains)};`,
     "function FindProxyForURL(url, host) {",
     "  host = host.toLowerCase();",
     "  if (host.charAt(host.length - 1) === '.') host = host.slice(0, -1);",
@@ -127,6 +141,10 @@ export const buildPac = (routes: PacRoute[]): string | undefined => {
     "  for (var i = 0; i < SUFFIXES.length; i++) {",
     "    var s = SUFFIXES[i][0];",
     "    if (host === s || dnsDomainIs(host, '.' + s)) return SUFFIXES[i][1];",
+    "  }",
+    // Strict subdomains only: the control server itself stays DIRECT.
+    "  for (var j = 0; j < DOMAINS.length; j++) {",
+    "    if (dnsDomainIs(host, '.' + DOMAINS[j][0])) return DOMAINS[j][1];",
     "  }",
     "  return 'DIRECT';",
     "}",
@@ -153,6 +171,10 @@ export const proxyPortForHost = (routes: PacRoute[], rawHost: string): number | 
   if (ips[host]) return portOf(ips[host]);
   for (const route of routes) {
     if (route.suffix && (host === route.suffix || host.endsWith(`.${route.suffix}`))) return route.proxyPort;
+  }
+  const domains = uniqueClaims(routes, (route) => (route.domain ? [route.domain] : []));
+  for (const [domain, proxy] of Object.entries(domains)) {
+    if (host.endsWith(`.${domain}`)) return portOf(proxy);
   }
   return undefined;
 };

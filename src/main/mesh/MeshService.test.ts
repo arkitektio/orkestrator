@@ -295,9 +295,169 @@ describe("MeshService", () => {
     expect(pingEvents[1]).toMatchObject({ type: "ping", meshId: id, result: { direct: true, endpoint: "10.0.0.7:41641" } });
   });
 
+  describe("Tailnet Lock approval", () => {
+    const id = "lab";
+    const WAITING = "nodekey:aaaa";
+    const lockStatus = (lock: object | undefined, state = "running") => ({
+      ev: "status",
+      id,
+      state,
+      proxyPort: 5000,
+      peers: [],
+      lock,
+    });
+
+    const running = async (lock: object | undefined, state = "running") => {
+      await h.service.claim(1, { mesh: LAB });
+      await flush();
+      const child = h.children[0];
+      child.say(lockStatus(lock, state));
+      await flush();
+      return child;
+    };
+
+    const signer = { enabled: true, signed: true, trusted: true, pending: [{ nodeKey: WAITING, name: "new-box", ips: [] }] };
+
+    it("refuses before reaching the sidecar unless this computer may sign that machine", async () => {
+      const child = await running({ ...signer, trusted: false });
+      await expect(h.service.lockSign({ meshId: id, nodeKey: WAITING })).rejects.toThrow(/not trusted/i);
+
+      child.say(lockStatus(signer));
+      await flush();
+      await expect(h.service.lockSign({ meshId: id, nodeKey: "nodekey:bbbb" })).rejects.toThrow(/not waiting/i);
+      await expect(h.service.lockSign({ meshId: "other", nodeKey: WAITING })).rejects.toThrow(/not on/i);
+
+      child.say(lockStatus({ ...signer, enabled: false }));
+      await flush();
+      await expect(h.service.lockSign({ meshId: id, nodeKey: WAITING })).rejects.toThrow(/not on/i);
+
+      child.say(lockStatus(signer, "starting"));
+      await flush();
+      await expect(h.service.lockSign({ meshId: id, nodeKey: WAITING })).rejects.toThrow(/not on/i);
+
+      expect(child.commands.some((c) => c.op === "lock-sign")).toBe(false);
+    });
+
+    it("sends one sign for a listed machine and settles with the sidecar's answer", async () => {
+      const child = await running(signer);
+      const first = h.service.lockSign({ meshId: id, nodeKey: ` ${WAITING} ` });
+      const second = h.service.lockSign({ meshId: id, nodeKey: WAITING });
+      await flush();
+      expect(child.commands.filter((c) => c.op === "lock-sign")).toEqual([{ op: "lock-sign", id, nodeKey: WAITING }]);
+      child.say({ ev: "lock-sign", id, nodeKey: WAITING, ok: false, error: "tailnet lock: this node is not trusted" });
+      await expect(first).resolves.toEqual({ ok: false, error: "tailnet lock: this node is not trusted" });
+      await expect(second).resolves.toEqual({ ok: false, error: "tailnet lock: this node is not trusted" });
+
+      const again = h.service.lockSign({ meshId: id, nodeKey: WAITING });
+      await flush();
+      child.say({ ev: "lock-sign", id, nodeKey: WAITING, ok: true });
+      await expect(again).resolves.toEqual({ ok: true, error: undefined });
+    });
+
+    it("gives up when the sidecar never answers", async () => {
+      await running(signer);
+      vi.useFakeTimers();
+      const done = h.service.lockSign({ meshId: id, nodeKey: WAITING });
+      vi.advanceTimersByTime(31_000);
+      await expect(done).resolves.toEqual({ ok: false, error: "The mesh client did not answer" });
+      vi.useRealTimers();
+    });
+  });
+
+  describe("Tailnet Lock setup", () => {
+    const id = "lab";
+    const OURS = `tlpub:${"a".repeat(64)}`;
+    const THEIRS = `tlpub:${"b".repeat(64)}`;
+    const available = { allowed: true, enabled: false, signed: false, trusted: false, publicKey: OURS };
+
+    const running = async (lock: object | undefined) => {
+      await h.service.claim(1, { mesh: LAB });
+      await flush();
+      const child = h.children[0];
+      child.say({ ev: "status", id, state: "running", proxyPort: 5000, peers: [], lock });
+      await flush();
+      return child;
+    };
+
+    it("refuses before reaching the sidecar unless the lock can be set up here", async () => {
+      const child = await running({ ...available, allowed: false });
+      await expect(h.service.lockInit({ meshId: id, trustedKeys: [] })).rejects.toThrow(/not switched on/i);
+
+      child.say({ ev: "status", id, state: "running", proxyPort: 5000, peers: [], lock: { ...available, enabled: true } });
+      await flush();
+      await expect(h.service.lockInit({ meshId: id, trustedKeys: [] })).rejects.toThrow(/already set up/i);
+
+      child.say({ ev: "status", id, state: "running", proxyPort: 5000, peers: [], lock: available });
+      await flush();
+      await expect(h.service.lockInit({ meshId: id, trustedKeys: ["nodekey:abc"] })).rejects.toThrow(/not a tailnet lock key/i);
+      await expect(h.service.lockInit({ meshId: id, trustedKeys: [`${THEIRS}; rm -rf`] })).rejects.toThrow(/not a tailnet lock key/i);
+      await expect(h.service.lockInit({ meshId: "other", trustedKeys: [] })).rejects.toThrow(/not connected/i);
+
+      expect(child.commands.some((c) => c.op === "lock-init")).toBe(false);
+    });
+
+    it("sends the other signers once, and hands the secret only to the caller", async () => {
+      const child = await running(available);
+      const done = h.service.lockInit({ meshId: id, trustedKeys: [` ${THEIRS.toUpperCase().replace("TLPUB", "tlpub")} `, THEIRS, OURS] });
+      await flush();
+      await expect(h.service.lockInit({ meshId: id, trustedKeys: [] })).rejects.toThrow(/already being set up/i);
+      expect(child.commands.filter((c) => c.op === "lock-init")).toEqual([{ op: "lock-init", id, trustedKeys: [THEIRS] }]);
+
+      const before = h.sent.length;
+      child.say({ ev: "lock-init", id, ok: true, disablementSecrets: ["disablement-secret:ABCD"] });
+      await expect(done).resolves.toEqual({ ok: true, error: undefined, disablementSecrets: ["disablement-secret:ABCD"] });
+      expect(JSON.stringify(h.sent.slice(before))).not.toContain("disablement-secret");
+    });
+
+    it("reports a failed init without secrets, and can be retried", async () => {
+      const child = await running(available);
+      const failed = h.service.lockInit({ meshId: id, trustedKeys: [] });
+      await flush();
+      child.say({ ev: "lock-init", id, ok: false, error: "tka init-begin RPC: 403", disablementSecrets: ["disablement-secret:NOPE"] });
+      await expect(failed).resolves.toEqual({ ok: false, error: "tka init-begin RPC: 403", disablementSecrets: undefined });
+
+      const again = h.service.lockInit({ meshId: id, trustedKeys: [] });
+      await flush();
+      child.say({ ev: "lock-init", id, ok: true, disablementSecrets: ["disablement-secret:ABCD"] });
+      await expect(again).resolves.toMatchObject({ ok: true });
+    });
+  });
+
+  it("restarts into a fresh sidecar and reconnects every claimed mesh from its state", async () => {
+    await h.service.claim(1, { mesh: LAB, authKey: "tskey-once" });
+    await flush();
+    const old = h.children[0];
+    old.stdin.on("finish", () => setTimeout(() => old.emit("exit", 0), 0));
+
+    const payload = await h.service.restart();
+    expect(old.commands.at(-1)).toEqual({ op: "shutdown" });
+    expect(h.children).toHaveLength(2);
+    // Reconnected from the node's own state: the one-shot key is not replayed.
+    expect(h.children[1].commands).toEqual([
+      { op: "connect", id: "lab", dir: "/state/mesh/lab", controlUrl: LAB.controlUrl, hostname: "orkestrator-test" },
+    ]);
+    expect(payload.sidecar).toEqual({ state: "ready", version: "test" });
+  });
+
+  it("refuses a restart while Tailnet Lock is being set up", async () => {
+    await h.service.claim(1, { mesh: LAB });
+    await flush();
+    h.children[0].say({
+      ev: "status",
+      id: "lab",
+      state: "running",
+      proxyPort: 5000,
+      lock: { allowed: true, enabled: false, signed: false, trusted: false, publicKey: `tlpub:${"a".repeat(64)}` },
+    });
+    await flush();
+    void h.service.lockInit({ meshId: "lab", trustedKeys: [] });
+    await flush();
+    await expect(h.service.restart()).rejects.toThrow(/being set up/i);
+  });
+
   it("exposes the IPC surface as a closed set of channels", () => {
     expect([...h.handlers.keys()].sort()).toEqual(
-["mesh:claim", "mesh:ping", "mesh:status"].sort(),
+["mesh:claim", "mesh:lock-init", "mesh:lock-sign", "mesh:ping", "mesh:restart", "mesh:status"].sort(),
     );
   });
 });

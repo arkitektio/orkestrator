@@ -27,6 +27,14 @@ export const DOCTOR_MAX_TIMEOUT_MS = 15000;
 export const DOCTOR_DEFAULT_TIMEOUT_MS = 4000;
 
 /**
+ * Which hop of the connection a target stands for. The coordination server
+ * and the mesh control server are probed alongside the services so "is it the
+ * hub, or is it everything?" is answered by a check instead of inferred.
+ */
+export const PROBE_ROLES = ["service", "coordination", "mesh-control"] as const;
+export type ProbeRole = (typeof PROBE_ROLES)[number];
+
+/**
  * One address to probe.
  *
  * Structural on purpose: this is NOT the renderer's zod `Alias`, because main
@@ -43,6 +51,10 @@ export type ProbeTarget = {
   probePath?: string | null;
   /** "mikro alias 2 of 3" — for display and for keying findings. Never in argv. */
   label?: string;
+  /** The fakts service this alias belongs to, to tie it to the hub's report. Never in argv. */
+  serviceKey?: string;
+  /** Which hop this is; absent means a service alias. Never in argv. */
+  role?: ProbeRole;
 };
 
 /**

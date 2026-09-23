@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { StoredArkitektSessionSchema } from "./sessionStorageSchema";
+import { StoredArkitektSessionSchema } from "./record";
 
 /**
  * The protocol-2 migration hinges on one assumption: a session written by the

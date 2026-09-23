@@ -122,7 +122,7 @@ describe("DoctorService bounds", () => {
   it("coerces a hostile target into the protocol shape", async () => {
     const { transport, probeNetwork } = setup();
     await transport.invoke(DOCTOR_NETWORK_CHANNEL, {
-      targets: [{ host: "  x.example ", port: 99999, ssl: "yes", path: 42, label: "l".repeat(500) }],
+      targets: [{ host: "  x.example ", port: 99999, ssl: "yes", path: 42, label: "l".repeat(500), serviceKey: 7 }],
     });
     const passed = probeNetwork.mock.calls[0][0];
     expect(passed.host).toBe("x.example");
@@ -130,6 +130,27 @@ describe("DoctorService bounds", () => {
     expect(passed.ssl).toBe(true);
     expect(passed.path).toBeNull();
     expect(passed.label).toHaveLength(120);
+    expect(passed.serviceKey).toBeUndefined();
+  });
+
+  it("keeps a target's service key, so its result can be tied to the hub's report", async () => {
+    const { transport, probeNetwork } = setup();
+    await transport.invoke(DOCTOR_NETWORK_CHANNEL, {
+      targets: [{ host: "x.example", ssl: true, serviceKey: "mikro" }],
+    });
+    expect(probeNetwork.mock.calls[0][0].serviceKey).toBe("mikro");
+  });
+
+  it("keeps a known hop role and drops anything else", async () => {
+    const { transport, probeNetwork } = setup();
+    await transport.invoke(DOCTOR_NETWORK_CHANNEL, {
+      targets: [
+        { host: "a.example", ssl: true, role: "coordination" },
+        { host: "b.example", ssl: true, role: "rm -rf" },
+      ],
+    });
+    expect(probeNetwork.mock.calls[0][0].role).toBe("coordination");
+    expect(probeNetwork.mock.calls[1][0].role).toBeUndefined();
   });
 
   it("answers an empty or missing target list without probing", async () => {

@@ -20,8 +20,13 @@ export type ResolvedSmartDrop = {
 
 /**
  * How a smart drag looks from another window of ours: the structures as they
- * are. The two standard types ride along for everything that is not us — a
- * text field takes the JSON, a browser the link.
+ * are, and nothing else. No `text/plain` or `text/uri-list` for the rest of
+ * the world: the macOS desktop took the text as a `.textClipping`, and a drag
+ * something outside accepted cannot be told from one let go on the desktop,
+ * which is where a drag-out means "download / export this" (`dragOut.ts`).
+ *
+ * The standard types are still READ (`resolveSmartDrop`), for drags that
+ * started elsewhere.
  */
 export const STRUCTURES_MIME = "application/x-arkitekt-structures";
 const URI_LIST_MIME = "text/uri-list";
@@ -30,17 +35,10 @@ const TEXT_MIME = "text/plain";
 const EXTERNAL_SMART_TYPES = [STRUCTURES_MIME, URI_LIST_MIME, TEXT_MIME];
 
 export const smartExternalData = (structures: Structure[]): Record<string, string> => {
-  const first = structures.at(0);
-  if (!first) {
+  if (structures.length === 0) {
     return {};
   }
-  return {
-    [STRUCTURES_MIME]: JSON.stringify(structures),
-    [TEXT_MIME]: JSON.stringify(first),
-    [URI_LIST_MIME]: structures
-      .map(({ identifier, object }) => `arkitekt://${identifier}:${object.id}`)
-      .join("\r\n"),
-  };
+  return { [STRUCTURES_MIME]: JSON.stringify(structures) };
 };
 
 /**

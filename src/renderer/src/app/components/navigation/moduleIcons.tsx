@@ -22,6 +22,7 @@ export const matchIcon = (key: string) => {
       return <PiDatabaseLight className="h-4 w-4" />;
     case "fluss":
       return <Workflow className="h-4 w-4" />;
+    case "team":
     case "lok":
       return <Users2 className="h-4 w-4" />;
     case "settings":

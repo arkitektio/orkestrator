@@ -1,0 +1,7 @@
+query MyHubHealth {
+  mycontext {
+    hub {
+      ...HubHealth
+    }
+  }
+}

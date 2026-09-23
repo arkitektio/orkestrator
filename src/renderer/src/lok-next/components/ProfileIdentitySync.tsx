@@ -15,10 +15,10 @@ import { resolveContextBrand } from "../lib/membershipBrand";
  * the existing row if that organization in that hub was already stored) and caches the label
  * the switcher draws parked profiles from.
  *
- * Renders nothing — it exists only to own that one write, exactly like its
- * sibling `OrganizationBrandSync`, and like that one it must be mounted inside
- * `Guard.Lok`: `useMyContextQuery` needs lok's Apollo client, which only exists
- * once the service is ready.
+ * Renders nothing — it exists only to own that one write. The brand it
+ * caches is what `OrganizationBrandSync` paints, from the first frame of the
+ * next launch. It must be mounted inside `Guard.Lok`: `useMyContextQuery`
+ * needs lok's Apollo client, which only exists once the service is ready.
  */
 export const ProfileIdentitySync = () => {
   const { data } = useMyContextQuery({ fetchPolicy: "cache-and-network" });

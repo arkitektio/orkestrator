@@ -73,12 +73,7 @@ describe("FaktsEndpointSchema", () => {
 
     const paths = parsed.error!.issues.map((i) => i.path.join("."));
     expect(paths).toEqual(
-      expect.arrayContaining([
-        "frontend_url",
-        "configure",
-        "device_authorization_endpoint",
-        "token_endpoint",
-      ]),
+      expect.arrayContaining(["device_authorization_endpoint", "token_endpoint"]),
     );
   });
 });

@@ -10,11 +10,15 @@
 //	stdin  → {"op":"connect","id":..,"dir":..,"controlUrl":..,"hostname":..,"authKey":..}
 //	         {"op":"disconnect","id":..}
 //	         {"op":"ping","id":..,"target":<tailnet ip>}   (disco ping, like `tailscale ping`)
+//	         {"op":"lock-sign","id":..,"nodeKey":"nodekey:.."} (Tailnet Lock: approve a waiting machine)
+//	         {"op":"lock-init","id":..,"trustedKeys":["tlpub:.."]} (Tailnet Lock: become the key authority)
 //	         {"op":"status"}             (re-emit every node's status)
 //	         {"op":"shutdown"}
 //	stdout ← {"ev":"ready","version":..}
 //	         {"ev":"status", ...MeshNodeStatus}
 //	         {"ev":"ping","id":..,"target":..,"attempt":..,"final":..,...}
+//	         {"ev":"lock-sign","id":..,"nodeKey":..,"ok":..,"error":..}
+//	         {"ev":"lock-init","id":..,"ok":..,"error":..,"disablementSecrets":[..]}
 //	         {"ev":"log","id":..,"message":..}
 //	         {"ev":"error","id":..,"message":..}
 //
@@ -67,6 +71,9 @@ type command struct {
 	Hostname   string `json:"hostname,omitempty"`
 	AuthKey    string `json:"authKey,omitempty"`
 	Target     string `json:"target,omitempty"`
+	NodeKey    string `json:"nodeKey,omitempty"`
+	// Other signers' lock keys for lock-init; this node's own is implied.
+	TrustedKeys []string `json:"trustedKeys,omitempty"`
 }
 
 type peer struct {
@@ -118,7 +125,9 @@ type nodeStatus struct {
 	SelfIPs        []string `json:"selfIps,omitempty"`
 	SelfDNSName    string   `json:"selfDnsName,omitempty"`
 	Peers          []peer   `json:"peers,omitempty"`
-	Error          string   `json:"error,omitempty"`
+	// Tailnet Lock, when the node could tell (see lock.go).
+	Lock  *lockStatus `json:"lock,omitempty"`
+	Error string      `json:"error,omitempty"`
 }
 
 type node struct {
@@ -126,6 +135,7 @@ type node struct {
 	srv      *tsnet.Server
 	lc       *local.Client
 	listener net.Listener
+	proxy    int
 	cancel   context.CancelFunc
 	mu       sync.Mutex
 	last     nodeStatus
@@ -209,6 +219,24 @@ func handle(cmd command) {
 			return
 		}
 		go n.ping(cmd.Target)
+	case "lock-sign":
+		nodMu.Lock()
+		n := nodes[cmd.ID]
+		nodMu.Unlock()
+		if n == nil {
+			emit(lockSignEvent{Ev: "lock-sign", ID: cmd.ID, NodeKey: cmd.NodeKey, Error: "no such node"})
+			return
+		}
+		go n.lockSign(cmd.NodeKey)
+	case "lock-init":
+		nodMu.Lock()
+		n := nodes[cmd.ID]
+		nodMu.Unlock()
+		if n == nil {
+			emit(lockInitEvent{Ev: "lock-init", ID: cmd.ID, Error: "no such node"})
+			return
+		}
+		go n.lockInit(cmd.TrustedKeys)
 	case "status":
 		nodMu.Lock()
 		all := make([]*node, 0, len(nodes))
@@ -292,7 +320,7 @@ func connect(cmd command) error {
 	// side, so MagicDNS names work with no OS integration) and HTTP CONNECT
 	// (for Node clients in the main process).
 	socksLn, httpLn := proxymux.SplitSOCKSAndHTTP(ln)
-	n := &node{id: id, srv: srv, lc: lc, listener: ln}
+	n := &node{id: id, srv: srv, lc: lc, listener: ln, proxy: port}
 	ss := &socks5.Server{Logf: logger.Discard, Dialer: n.dial}
 	go func() {
 		if err := ss.Serve(socksLn); err != nil && !errors.Is(err, net.ErrClosed) {
@@ -369,6 +397,8 @@ func (n *node) dial(ctx context.Context, network, addr string) (net.Conn, error)
 	}
 	return n.srv.Dial(ctx, network, addr)
 }
+
+func (n *node) port() int { return n.proxy }
 
 func disconnect(id string) {
 	nodMu.Lock()
@@ -461,6 +491,13 @@ func (n *node) refresh(ctx context.Context, port int) {
 		return
 	}
 	next := snapshot(n.id, port, st)
+	// A node or server without Tailnet Lock answers with an error; that is
+	// not a status failure, there is just no lock to report.
+	lctx, lcancel := context.WithTimeout(ctx, 5*time.Second)
+	if lock, err := n.lc.TailnetLockStatus(lctx); err == nil {
+		next.Lock = lockSnapshot(lock, lockAllowed(st))
+	}
+	lcancel()
 	n.mu.Lock()
 	changed := !reflect.DeepEqual(next, n.last)
 	n.last = next

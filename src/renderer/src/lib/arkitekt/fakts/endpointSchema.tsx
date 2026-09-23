@@ -3,9 +3,9 @@ import { z } from "zod";
 /**
  * The `.well-known/fakts` document (protocol 2).
  *
- * The three endpoint fields the flow actually runs on are required: a
+ * The two OAuth endpoints the flow actually runs on are required: a
  * deployment that still speaks the pre-OAuth protocol (start → challenge →
- * claim) has none of them and fails discovery here, loudly, instead of
+ * claim) has neither and fails discovery here, loudly, instead of
  * half-working later.
  */
 export const FaktsEndpointSchema = z.object({
@@ -14,11 +14,13 @@ export const FaktsEndpointSchema = z.object({
   protocol_version: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   base_url: z.string().url(),
-  /** Deprecated server-side in favour of `configure`, but still sent. */
-  frontend_url: z.string().url(),
-
-  /** Configure-page template; the literal `{code}` is substituted by us. */
-  configure: z.string().url(),
+  /**
+   * Still sent by servers, read by nothing here: the device grant opens
+   * `verification_uri_complete`. Optional so a deployment that drops them
+   * keeps working.
+   */
+  frontend_url: z.string().url().optional().nullable(),
+  configure: z.string().url().optional().nullable(),
   /** RFC 8628 device authorization + dynamic client registration. */
   device_authorization_endpoint: z.string().url(),
   /** The OAuth2 token endpoint: device-code poll, then refresh. */

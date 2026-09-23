@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const openBeside = vi.hoisted(() => vi.fn());
@@ -7,12 +7,8 @@ vi.mock("@/command/tabs/TabsProvider", () => ({
   useTabActions: () => ({ open: vi.fn(), openBeside }),
 }));
 
-// The strip itself has its own tests; here it is only what the panel holds.
-vi.mock("./RailTabs", () => ({ default: () => <div data-testid="rail-tabs" /> }));
-
-// The panel's exit waits for a tween that never finishes in jsdom, and the
-// leaving node would linger and defeat every "it closed" assertion. What is
-// tested here is when the edge shows what, not the slide.
+// The band's fade-in is a tween that never finishes in jsdom. What is tested
+// here is when the edge shows what, not the fade.
 vi.mock("framer-motion", async () => {
   const React = await import("react");
   const MOTION_ONLY = ["initial", "animate", "exit", "transition", "layout"];
@@ -68,11 +64,6 @@ const beginDrag = async () => {
   return card;
 };
 
-const sentinel = () => screen.getByTestId("right-edge-sentinel");
-/** Open, as the page sees it: the panel has width and the tabs are in it. */
-const isOpen = () =>
-  screen.queryByTestId("right-edge-tabs")?.getAttribute("data-state") === "revealed";
-
 let uninstall: () => void;
 
 beforeEach(() => {
@@ -84,71 +75,45 @@ beforeEach(() => {
 afterEach(() => uninstall());
 
 describe("the window's right edge", () => {
-  it("takes no room, and holds no tab strip, until the pointer reaches the edge", () => {
+  it("is nothing at rest, so it cannot swallow clicks meant for the page", () => {
     render(<RightEdge />);
-    expect(isOpen()).toBe(false);
-    expect(screen.getByTestId("right-edge-tabs").style.width).toBe("0px");
-    expect(screen.queryByTestId("rail-tabs")).toBeNull();
-  });
-
-  it("slides the tabs in when the pointer touches the edge, pushing the page aside", () => {
-    render(<RightEdge />);
-    fireEvent.mouseEnter(sentinel());
-    expect(isOpen()).toBe(true);
-    expect(screen.getByTestId("right-edge-tabs").style.width).toBe("var(--rail-width)");
-    expect(screen.getByTestId("rail-tabs")).toBeTruthy();
-  });
-
-  it("closes on a move that lands clearly left of the panel", () => {
-    render(<RightEdge />);
-    fireEvent.mouseEnter(sentinel());
-    const panel = screen.getByTestId("right-edge-tabs");
-    vi.spyOn(panel, "getBoundingClientRect").mockReturnValue({ left: 800 } as DOMRect);
-
-    // Still on it: silence means "on the panel", as with the title bar.
-    act(() => {
-      fireEvent.mouseMove(document, { clientX: 820 });
-    });
-    expect(isOpen()).toBe(true);
-
-    act(() => {
-      fireEvent.mouseMove(document, { clientX: 400 });
-    });
-    expect(isOpen()).toBe(false);
-  });
-
-  it("keeps the panel while the pointer is on a menu it opened", () => {
-    render(<RightEdge />);
-    fireEvent.mouseEnter(sentinel());
-    const panel = screen.getByTestId("right-edge-tabs");
-    vi.spyOn(panel, "getBoundingClientRect").mockReturnValue({ left: 800 } as DOMRect);
-
-    const menu = document.createElement("div");
-    menu.setAttribute("role", "menu");
-    document.body.appendChild(menu);
-    act(() => {
-      fireEvent.mouseMove(menu, { clientX: 400 });
-    });
-    expect(isOpen()).toBe(true);
-  });
-
-  it("closes on Escape", () => {
-    render(<RightEdge />);
-    fireEvent.mouseEnter(sentinel());
-    act(() => {
-      fireEvent.keyDown(document, { key: "Escape" });
-    });
-    expect(isOpen()).toBe(false);
-  });
-
-  it("becomes the drop band — and only that — while a card is in the air", async () => {
-    render(<RightEdge />);
-    fireEvent.mouseEnter(sentinel());
-    await beginDrag();
-
-    expect(screen.getByTestId("right-edge-drop")).toBeTruthy();
+    expect(screen.queryByTestId("right-edge-drop")).toBeNull();
+    // The tab peek that used to live here is gone.
     expect(screen.queryByTestId("right-edge-tabs")).toBeNull();
     expect(screen.queryByTestId("right-edge-sentinel")).toBeNull();
+  });
+
+  it("waits invisibly at the edge while a card is in the air", async () => {
+    render(<RightEdge />);
+    await beginDrag();
+    expect(screen.getByTestId("right-edge-drop").getAttribute("data-state")).toBe("closed");
+    // Nothing drawn: only the empty catch strip, the panel shut.
+    expect(screen.getByTestId("right-edge-catch").childElementCount).toBe(0);
+  });
+
+  it("slides open, pushing the page aside, when the card reaches it", async () => {
+    render(<RightEdge />);
+    const card = await beginDrag();
+    act(() => {
+      dragOnto(card, screen.getByTestId("right-edge-catch"));
+    });
+    expect(screen.getByTestId("right-edge-drop").getAttribute("data-state")).toBe("open");
+  });
+
+  it("stays open while the card rests on the edge it opened", async () => {
+    // The panel opens from 0px, so the pointer is still over the catch for
+    // the next dragover; the catch stepping aside flickered the edge shut.
+    render(<RightEdge />);
+    const card = await beginDrag();
+    const catchStrip = screen.getByTestId("right-edge-catch");
+    act(() => {
+      dragOnto(card, catchStrip);
+    });
+    expect(catchStrip.className).not.toContain("pointer-events-none");
+    act(() => {
+      fireDrag(catchStrip, "dragover");
+    });
+    expect(screen.getByTestId("right-edge-drop").getAttribute("data-state")).toBe("open");
   });
 
   it("opens what is let go on the band beside the page", async () => {

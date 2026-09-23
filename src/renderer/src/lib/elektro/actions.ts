@@ -16,7 +16,7 @@ import { useActiveWorkspaceStore } from '@/elektro/lib/activeWorkspaceStore'
 import { findOrCreateExperimentForWorld } from '@/elektro/lib/openOnTimeline'
 import { ElektroExperiment, ElektroModelWorkspace } from '@/linkers'
 import { ApolloClient, NormalizedCache } from '@apollo/client'
-import { AudioLines, Download, LayoutDashboard, Layers } from 'lucide-react'
+import { AudioLines, LayoutDashboard, Layers } from 'lucide-react'
 import { Action } from '../localactions/LocalActionProvider'
 import { buildDeleteAction } from '../localactions/builders/deleteAction'
 
@@ -76,32 +76,6 @@ const createWorkspaceFromModel: Action = {
     store.setActiveModel(model.id)
 
     navigate(ElektroModelWorkspace.linkBuilder(workspaceId))
-  },
-}
-
-/**
- * Open the exporter dialog for a neuron model: pick a rekuest exporter action
- * (neuronmodel in, file out), run it, and let the task-hook runner auto-download
- * the resulting file when the (potentially long-running) task finishes.
- */
-const exportNeuronModel: Action = {
-  title: 'Export Model',
-  description: 'Run an exporter on this neuron model and download the result',
-  icon: Download,
-  collections: ['io'],
-  conditions: [
-    { type: 'identifier', identifier: '@elektro/neuronmodel' },
-    { type: 'nopartner' },
-  ],
-  execute: async ({ state, dialog }) => {
-    const model = state.left[0]?.object
-    if (!model) {
-      throw new Error('No neuron model provided for Export action')
-    }
-    dialog.openDialog('exportelektromodel', {
-      modelId: model.id,
-      modelName: typeof model.name === 'string' ? model.name : undefined,
-    })
   },
 }
 
@@ -185,7 +159,6 @@ export const ELEKTRO_ACTIONS: Record<string, Action> = {
     mutation: DeleteExperimentDocument
   }),
   createElektroWorkspaceFromModel: createWorkspaceFromModel,
-  exportElektroNeuronModel: exportNeuronModel,
   deleteElektroNeuronModel: buildDeleteAction({
     title: 'Delete Neuron Model',
     identifier: '@elektro/neuronmodel',

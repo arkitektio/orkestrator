@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useLokResolve } from "@/datalayer/hooks/useResolve";
 import { LokClient, LokUser } from "@/linkers";
 import { DetailClientFragment } from "@/lok-next/api/graphql";
 import { Handle, NodeProps, Position, Node } from "@xyflow/react";
@@ -8,7 +8,7 @@ import { memo } from "react";
 
 export const ClientNode = memo(
   ({ data, isConnectable }: NodeProps<Node<DetailClientFragment>>) => {
-    const resolve = useResolve();
+    const resolve = useLokResolve();
 
     return (
       <>

@@ -76,6 +76,7 @@ const setWindowState = (state: Partial<{ maximized: boolean; fullscreen: boolean
         ...state,
       })),
       onStateChanged: vi.fn(() => () => {}),
+      popupAppMenu: vi.fn(),
     },
   };
 };
@@ -185,6 +186,23 @@ describe("navigation controls", () => {
     expect(screen.getByLabelText("Back")).toBeInTheDocument();
     expect(screen.getByLabelText("Forward")).toBeInTheDocument();
     expect(screen.getByLabelText("Reload")).toBeInTheDocument();
+  });
+});
+
+describe("the application menu", () => {
+  // Windows lost its caption and Linux its frame, so neither shows a menu bar;
+  // the "…" button is the only way left to File / Edit / View / Window.
+  it.each(["win32", "linux"])("pops the native menu up under the button on %s", (platform) => {
+    setElectron(platform);
+    render(<Shell><RailChrome /></Shell>);
+    fireEvent.click(screen.getByLabelText("Application menu"));
+    expect(window.api.windowControls.popupAppMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([["darwin"], [undefined]])("is not offered on %s, which keeps a menu bar or has none", (platform) => {
+    setElectron(platform);
+    render(<Shell><RailChrome /></Shell>);
+    expect(screen.queryByLabelText("Application menu")).not.toBeInTheDocument();
   });
 });
 

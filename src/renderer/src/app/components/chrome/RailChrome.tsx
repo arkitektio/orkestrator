@@ -1,6 +1,6 @@
 import { dragZoneDoubleClick, getChromeMode, trafficLightGutter, useWindowState } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight, Check, Code2, Link2, Link2Off, MoreHorizontal, RotateCw, Share2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronsRight, Code2, Link2, Link2Off, MoreHorizontal, RotateCw, Share2 } from "lucide-react";
 
 import { Fragment } from "react";
 
@@ -70,7 +70,7 @@ type NavItem = {
  * itself and folds buttons from the right behind a "…" menu — Share goes
  * first, Back last, in the order they are least missed.
  */
-const NavButtons = () => {
+const NavButtons = ({ appMenu }: { appMenu: boolean }) => {
   const { back, forward, canGoBack, canGoForward, location } = useActiveTabNavigation();
   const { copy, copyPrivate, copyBadge, copied } = useCopyUniversalLink(location);
   const { ref, width } = useMeasuredWidth<HTMLDivElement>();
@@ -156,7 +156,9 @@ const NavButtons = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button type="button" aria-label="More" title="More" className={navButtonClass}>
-              <MoreHorizontal className="h-3.5 w-3.5" />
+              {/* "…" is taken by the app menu where there is one, so the
+                  overflow reads as the browser's "more buttons" chevron. */}
+              {appMenu ? <ChevronsRight className="h-3.5 w-3.5" /> : <MoreHorizontal className="h-3.5 w-3.5" />}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-36">
@@ -185,8 +187,31 @@ const NavButtons = () => {
   );
 };
 
+/**
+ * The application menu (File / Edit / View / Window), where the OS no longer
+ * shows it. Windows has lost its caption and Linux its frame, so neither has a
+ * menu bar; main pops the real menu up natively under this button — the same
+ * items and accelerators macOS keeps in its global menu bar.
+ */
+const AppMenuButton = () => (
+  <button
+    type="button"
+    aria-label="Application menu"
+    title="Menu"
+    className={navButtonClass}
+    onClick={(event) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      window.api?.windowControls?.popupAppMenu?.(rect.left, rect.bottom + 4);
+    }}
+  >
+    <MoreHorizontal className="h-3.5 w-3.5" />
+  </button>
+);
+
 export const RailChrome = () => {
   const mode = getChromeMode();
+  // `autohide` is Windows, `buttons` Linux: the two with no menu bar.
+  const appMenu = mode === "autohide" || mode === "buttons";
   const { fullscreen, maximized } = useWindowState();
 
   const gutter = trafficLightGutter(mode, fullscreen);
@@ -209,7 +234,9 @@ export const RailChrome = () => {
           />
         )}
 
-        <NavButtons />
+        <NavButtons appMenu={appMenu} />
+
+        {appMenu && <AppMenuButton />}
 
         {/* Linux is the one genuinely frameless platform, so it is the one that
             needs us to supply these — inline here rather than stranded at the

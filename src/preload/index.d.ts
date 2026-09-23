@@ -21,6 +21,10 @@ import type {
 import type {
   MeshClaimRequest,
   MeshEvent,
+  MeshLockInitRequest,
+  MeshLockInitResult,
+  MeshLockSignRequest,
+  MeshLockSignResult,
   MeshPingRequest,
   MeshPingResult,
   MeshStatusPayload,
@@ -40,6 +44,12 @@ export type MeshApi = {
   claim: (request: MeshClaimRequest) => Promise<MeshStatusPayload>;
   /** Disco-ping a peer (one of the addresses the status lists); every attempt, last marked final. */
   ping: (request: MeshPingRequest) => Promise<MeshPingResult[]>;
+  /** Tailnet Lock: approve one of the mesh's waiting machines (this computer must be a signer). */
+  lockSign: (request: MeshLockSignRequest) => Promise<MeshLockSignResult>;
+  /** Tailnet Lock: make this computer the mesh's key authority; the answer carries the disablement secret. */
+  lockInit: (request: MeshLockInitRequest) => Promise<MeshLockInitResult>;
+  /** Restart the mesh client and reconnect every claimed mesh ("check again"). */
+  restart: () => Promise<MeshStatusPayload>;
   onEvent: (cb: (event: MeshEvent) => void) => () => void;
 };
 
@@ -97,10 +107,13 @@ declare global {
         template?: string;
       }) => Promise<void>;
       getNodeId: () => Promise<string>;
+      factoryReset: () => Promise<void>;
       windowControls: {
         minimize: () => void;
         toggleMaximize: () => void;
         close: () => void;
+        popupAppMenu: (x: number, y: number) => void;
+        pointerInApp: () => Promise<boolean>;
         getState: () => Promise<WindowChromeState>;
         onStateChanged: (cb: (state: WindowChromeState) => void) => () => void;
         setTheme: (theme: ChromeTheme, source?: ChromeThemeSource) => void;

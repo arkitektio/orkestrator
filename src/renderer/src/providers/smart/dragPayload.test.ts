@@ -62,10 +62,18 @@ describe("a smart drag seen from another window", () => {
     expect(partners).toEqual([image, roi]);
   });
 
+  it("offers nothing outside the app can take — no desktop clipping, no link", () => {
+    // A drag nobody outside accepts is how a drop on the desktop is told apart
+    // from one another app took (`dragOut.ts`).
+    expect(Object.keys(smartExternalData([image, roi]))).toEqual([
+      "application/x-arkitekt-structures",
+    ]);
+  });
+
   it("reads a link as the object it names — an id that is not JSON included", () => {
     // The link used to be run through JSON.parse: a numeric id came out as a
     // bare number in place of the object, and any other id threw.
-    const { "text/uri-list": uriList } = smartExternalData([image, roi]);
+    const uriList = "arkitekt://@mikro/image:12\r\narkitekt://@mikro/roi:9f3c-uuid";
     expect(resolveSmartDrop(external({ "text/uri-list": uriList }))?.partners).toEqual([
       { identifier: "@mikro/image", object: { id: "12" } },
       { identifier: "@mikro/roi", object: { id: "9f3c-uuid" } },

@@ -3,8 +3,9 @@ import { z } from "zod";
 /**
  * The mesh credential lok may mint with a grant.
  *
- * It rides as `auth` on the token response of the device-code grant — the
- * one response that ends the poll — when the authorization request carried
+ * It rides as `mesh` on the token response of the device-code grant — the
+ * one response that ends the poll (older lok releases named the block
+ * `auth`) — when the authorization request carried
  * `request_auth_key: true` and the approver, the deployment and ionscale all
  * agreed. It is minted once, on approval, and burned with the device code,
  * so no refresh-token response ever repeats it. A pre-auth key for the
