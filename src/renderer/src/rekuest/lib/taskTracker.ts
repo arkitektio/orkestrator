@@ -84,6 +84,28 @@ export const isGloballyNotified = (reference: string) =>
   globallyNotified.has(reference);
 
 /**
+ * References whose task must never reach the rail island — a surface that
+ * fires tasks as its own interaction (a blok button) and shows the outcome
+ * itself, if at all. Unlike `registeredCallbacks` this does not end with the
+ * task's terminal event: a task that finishes before its `create` payload is
+ * hydrated would otherwise slip through. Consumed when the create is handled.
+ */
+const silencedReferences = new Set<string>();
+const MAX_SILENCED = 1000;
+
+export const silenceTask = (reference: string) => {
+  if (silencedReferences.size >= MAX_SILENCED) {
+    const oldest = silencedReferences.values().next().value;
+    if (oldest !== undefined) silencedReferences.delete(oldest);
+  }
+  silencedReferences.add(reference);
+};
+
+/** True (once) if the task was silenced; forgets the reference. */
+export const consumeSilenced = (reference: string) =>
+  silencedReferences.delete(reference);
+
+/**
  * Bridge between a task's id and its client-generated reference.
  *
  * The non-traversable `TaskEventChange` only carries the task **id**, while

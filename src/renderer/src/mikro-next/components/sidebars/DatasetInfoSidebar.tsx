@@ -11,6 +11,7 @@ import {
   arrayNbytes,
   baseDtypeOf,
   datasetNbytes,
+  datasetStoredBytes,
   formatBytes,
   formatShape,
 } from "../../specs";
@@ -35,6 +36,7 @@ type PageDataset = GetArrayDatasetQuery["arrayDataset"];
 export const DatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) => {
   const dtype = baseDtypeOf(dataset.dataArrays);
   const nbytes = datasetNbytes(dataset.dataArrays);
+  const storedNbytes = datasetStoredBytes(dataset.dataArrays);
   // `level` is a field, not a position — the API does not promise order.
   const levels = [...dataset.dataArrays].sort((a, b) => a.level - b.level);
   // Storage layout off the base level, like the dtype: `store.chunks` is the
@@ -109,7 +111,7 @@ export const DatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) => {
                 </span>
               </button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-80 gap-1.5">
+            <PopoverContent align="start" className="w-96 gap-1.5">
               <div className="text-xs font-semibold">
                 Data arrays
                 {dataset.multiscale && (
@@ -118,29 +120,49 @@ export const DatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) => {
                   </span>
                 )}
               </div>
-              {levels.map((array) => (
-                <div
-                  key={array.id}
-                  className="flex items-baseline justify-between gap-2"
-                >
-                  <span className="shrink-0 text-muted-foreground">
-                    L{array.level}
-                  </span>
-                  <span className="min-w-0 break-all font-mono">
-                    {formatShape(dataset.axisNames, array.shape)}
-                  </span>
-                  <span className="shrink-0 font-mono text-muted-foreground">
-                    {(() => {
-                      const levelBytes = arrayNbytes(array);
-                      return levelBytes === undefined
-                        ? "?"
-                        : formatBytes(levelBytes);
-                    })()}
-                  </span>
-                </div>
-              ))}
-              <div className="text-[0.625rem] text-muted-foreground">
-                Uncompressed, computed from shape × dtype.
+              {/* Two sizes per level: what it is (shape × dtype) and what it
+                  costs on disk (the store's measured sizeBytes, after
+                  compression). "–" where a store was never measured. */}
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-baseline gap-x-3 gap-y-1">
+                <span />
+                <span />
+                <span className="text-right text-[0.625rem] text-muted-foreground">
+                  Uncompressed
+                </span>
+                <span className="text-right text-[0.625rem] text-muted-foreground">
+                  On disk
+                </span>
+                {levels.map((array) => {
+                  const levelBytes = arrayNbytes(array);
+                  const storedBytes = datasetStoredBytes([array]);
+                  return (
+                    <div key={array.id} className="contents">
+                      <span className="text-muted-foreground">L{array.level}</span>
+                      <span className="min-w-0 break-all font-mono">
+                        {formatShape(dataset.axisNames, array.shape)}
+                      </span>
+                      <span className="text-right font-mono text-muted-foreground">
+                        {levelBytes === undefined ? "?" : formatBytes(levelBytes)}
+                      </span>
+                      <span className="text-right font-mono">
+                        {storedBytes === undefined ? "–" : formatBytes(storedBytes)}
+                      </span>
+                    </div>
+                  );
+                })}
+                {levels.length > 1 && (
+                  <>
+                    <span className="col-span-2 border-t border-border pt-1 text-muted-foreground">
+                      Total
+                    </span>
+                    <span className="border-t border-border pt-1 text-right font-mono text-muted-foreground">
+                      {formatBytes(nbytes)}
+                    </span>
+                    <span className="border-t border-border pt-1 text-right font-mono font-medium">
+                      {storedNbytes === undefined ? "–" : formatBytes(storedNbytes)}
+                    </span>
+                  </>
+                )}
               </div>
             </PopoverContent>
           </Popover>

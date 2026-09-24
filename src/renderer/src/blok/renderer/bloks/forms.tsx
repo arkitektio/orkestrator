@@ -42,10 +42,10 @@ import * as z from 'zod';
 import {
   BlokPropSchemas,
   createBlokComponent,
-  useAction,
   useBlok,
   useChecks,
   useEventAction,
+  usePendingAction,
   useValidation,
   useValue,
 } from '../runtime';
@@ -116,7 +116,7 @@ export const Button = createBlokComponent(
     const child = useValue(blok.child);
     const children = useValue(blok.children);
     const icon = useValue(blok.icon);
-    const onClick = useAction(blok.onClick);
+    const {run: onClick, pending} = usePendingAction(blok.onClick);
     const className = useValue(blok.className);
     const rawVariant = useValue(blok.variant);
     const size = useValue(blok.size);
@@ -142,10 +142,11 @@ export const Button = createBlokComponent(
         size={size ?? 'default'}
         // `ShadButton` already applies `buttonVariants({variant, size,
         // className})` internally, so only the extras belong here.
-        className={cn(fullWidth && 'w-full', className)}
+        className={cn(fullWidth && 'w-full', pending && 'animate-pulse', className)}
         onClick={onClick}
         disabled={isDisabled}
         title={blockingReason}
+        aria-busy={pending || undefined}
       >
         {renderIcon(icon)}
         {child ? buildChild(child) : renderContent(children ?? label, buildChild)}

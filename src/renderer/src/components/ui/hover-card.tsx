@@ -5,6 +5,7 @@ import * as React from "react"
 
 import { useChromeZoomClass } from "@/components/layout/ChromeSurface"
 import { cn } from "@/lib/utils"
+import { resolveTriggerAsChild } from "./trigger-child"
 
 function HoverCard({
   ...props
@@ -13,10 +14,15 @@ function HoverCard({
 }
 
 function HoverCardTrigger({
+  asChild,
   ...props
 }: React.ComponentProps<typeof HoverCardPrimitive.Trigger>) {
   return (
-    <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" {...props} />
+    <HoverCardPrimitive.Trigger
+      data-slot="hover-card-trigger"
+      asChild={resolveTriggerAsChild(asChild, props.children)}
+      {...props}
+    />
   )
 }
 

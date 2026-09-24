@@ -7,7 +7,6 @@ import {
 import { Image } from "@/components/ui/image";
 import { useResolve } from "@/datalayer/hooks/useResolve";
 import { MikroArrayDataset } from "@/linkers";
-import { ResponsiveContainerGrid } from "@/components/layout/ContainerGrid";
 import { Card } from "@/components/ui/card";
 
 const LatestArrayDatasetsWidget = () => {
@@ -29,7 +28,13 @@ const LatestArrayDatasetsWidget = () => {
       ) : datasets.length === 0 ? (
         <p className="text-xs text-muted-foreground">No datasets yet</p>
       ) : (
-        <ResponsiveContainerGrid className="[&>*:first-child]:@lg:col-span-2 [&>*:first-child]:@lg:row-span-2">
+        // Columns answer to the widget panel's `@container`, never to how many
+        // datasets came back: square snapshot tiles start at two per row, so
+        // a narrow panel does not stack eight full-width squares.
+        <div
+          className="grid grid-cols-2 gap-2 @xs:grid-cols-3 @md:grid-cols-4 @2xl:grid-cols-6 @4xl:grid-cols-8 [&>*:first-child]:@md:col-span-2 [&>*:first-child]:@md:row-span-2"
+          data-enableselect="true"
+        >
             {datasets.map((dataset) => (
               <MikroArrayDataset.Smart key={dataset.id} object={dataset}>
                 <MikroArrayDataset.DetailLink
@@ -56,7 +61,7 @@ const LatestArrayDatasetsWidget = () => {
                 </MikroArrayDataset.DetailLink>
               </MikroArrayDataset.Smart>
             ))}
-        </ResponsiveContainerGrid>
+        </div>
       )}
     </div>
   );

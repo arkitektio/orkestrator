@@ -298,6 +298,56 @@ export function useAction(
   }, [actionCall, component, scope, store]);
 }
 
+/**
+ * `useAction` plus whether what it started is still running: `pending` stays
+ * true until every promise the host returned for this handler's calls has
+ * settled (an agent call whose task has not ended yet). Synchronous actions
+ * and hosts that return nothing never set it.
+ */
+export function usePendingAction<TSchema extends z.ZodTypeAny>(
+  handle: BlokPropHandle<TSchema> | undefined,
+): {run: (() => void) | undefined; pending: boolean} {
+  const store = useBlokRuntimeStoreApi();
+  const scope = useBlokScope();
+  const actionCall = handle ? getPropActionCall(handle.prop) : undefined;
+  const component = handle?.component;
+  const [inFlight, setInFlight] = React.useState(0);
+
+  const mountedRef = React.useRef(true);
+  React.useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const run = React.useMemo(() => {
+    if (!actionCall || !component) {
+      return undefined;
+    }
+
+    return () => {
+      const context = createLiveResolutionContext(store, scope);
+      const result = runActionCall(actionCall, context, component);
+
+      if (!result.ok) {
+        console.error(`[blok] action on "${component.id}" failed: ${result.error}`);
+        return;
+      }
+
+      if (result.value instanceof Promise) {
+        setInFlight(count => count + 1);
+        const settle = () => {
+          if (mountedRef.current) setInFlight(count => Math.max(0, count - 1));
+        };
+        result.value.then(settle, settle);
+      }
+    };
+  }, [actionCall, component, scope, store]);
+
+  return {run, pending: inFlight > 0};
+}
+
 /** The scope name a change handler's arguments address the new value by. */
 export const BLOK_EVENT_SCOPE_KEY = '$event';
 

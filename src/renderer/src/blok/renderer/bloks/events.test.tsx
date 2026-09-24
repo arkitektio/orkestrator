@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import {cleanup, fireEvent, screen} from '@testing-library/react';
+import {act, cleanup, fireEvent, screen} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import * as z from 'zod';
 import {createBlokCatalog, createBlokFunction} from '../runtime';
@@ -111,5 +111,52 @@ describe('$event', () => {
     fireEvent.click(screen.getByRole('button'));
 
     expect(record).toHaveBeenCalledWith('clicked');
+  });
+});
+
+describe('Button pending', () => {
+  const agentButton = [
+    {
+      id: 'go',
+      component: 'Button',
+      props: [
+        {key: 'label', static_value: 'Go'},
+        {key: 'onClick', agent_call: {dependency: 'self', operation: 'move', arguments: []}},
+      ],
+    },
+  ];
+
+  it('pulses until the dispatched task settles', async () => {
+    let settle: () => void = () => undefined;
+    const {store} = renderBlokDocument(catalog, agentButton);
+    act(() => {
+      store.getState().setDispatchAction(
+        () => new Promise<void>(resolve => {
+          settle = resolve;
+        }),
+      );
+    });
+
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    expect(button.className).toContain('animate-pulse');
+
+    await act(async () => {
+      settle();
+    });
+    expect(button.getAttribute('aria-busy')).toBeNull();
+    expect(button.className).not.toContain('animate-pulse');
+  });
+
+  it('does not pulse when the host returns nothing', () => {
+    const {store} = renderBlokDocument(catalog, agentButton);
+    act(() => {
+      store.getState().setDispatchAction(() => undefined);
+    });
+
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
+    expect(button.getAttribute('aria-busy')).toBeNull();
   });
 });

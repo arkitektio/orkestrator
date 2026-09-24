@@ -4,6 +4,7 @@ import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
+import { resolveTriggerAsChild } from "./trigger-child"
 
 function Drawer({
   ...props
@@ -12,9 +13,10 @@ function Drawer({
 }
 
 function DrawerTrigger({
+  asChild,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Trigger>) {
-  return <DrawerPrimitive.Trigger data-slot="drawer-trigger" {...props} />
+  return <DrawerPrimitive.Trigger data-slot="drawer-trigger" asChild={resolveTriggerAsChild(asChild, props.children)} {...props} />
 }
 
 function DrawerPortal({

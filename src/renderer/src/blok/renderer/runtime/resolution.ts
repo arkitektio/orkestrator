@@ -321,7 +321,8 @@ const runActionCall = (
   }
 
   if (actionCall.type === 'agent') {
-    context.dispatchAction(
+    // The value is the host's pending handle (a promise), if it returned one.
+    const pending = context.dispatchAction(
       {
         dependency: actionCall.call.dependency,
         operation: actionCall.call.operation,
@@ -329,7 +330,7 @@ const runActionCall = (
       },
       component,
     );
-    return {ok: true, value: undefined};
+    return {ok: true, value: pending};
   }
 
   // Explicitly not `requirePure`: an action is the one position where an

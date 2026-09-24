@@ -1,6 +1,7 @@
 "use client"
 
 import { Collapsible as CollapsiblePrimitive } from "radix-ui"
+import { resolveTriggerAsChild } from "./trigger-child"
 
 function Collapsible({
   ...props
@@ -9,11 +10,13 @@ function Collapsible({
 }
 
 function CollapsibleTrigger({
+  asChild,
   ...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {
   return (
     <CollapsiblePrimitive.CollapsibleTrigger
       data-slot="collapsible-trigger"
+      asChild={resolveTriggerAsChild(asChild, props.children)}
       {...props}
     />
   )

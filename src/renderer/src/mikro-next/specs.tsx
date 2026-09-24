@@ -256,6 +256,27 @@ export const datasetNbytes = (dataArrays: readonly SizedArray[]): number | undef
   return dataArrays.length > 0 ? total : undefined
 }
 
+/**
+ * Bytes the dataset actually holds on disk: the sum of every level's measured
+ * `store.sizeBytes`, i.e. after compression — unlike `datasetNbytes`. The
+ * `ByteCount` scalar may arrive as a numeric string, so it is coerced. Same
+ * rule as `datasetNbytes`: undefined as soon as any level is unmeasured (older
+ * stores never recorded it), never a partial sum.
+ */
+export const datasetStoredBytes = (
+  dataArrays: readonly { store: { sizeBytes?: unknown } }[]
+): number | undefined => {
+  let total = 0
+  for (const array of dataArrays) {
+    const raw = array.store.sizeBytes
+    if (raw === null || raw === undefined || raw === '') return undefined
+    const bytes = Number(raw)
+    if (!Number.isFinite(bytes)) return undefined
+    total += bytes
+  }
+  return dataArrays.length > 0 ? total : undefined
+}
+
 /** `1.5 GB`-style rendering, binary-1024 steps like the file pages use. */
 export const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B'

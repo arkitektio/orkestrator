@@ -1,5 +1,6 @@
 import { Button, ButtonProps } from "./button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
+import { markButtonLike } from "./trigger-child";
 
 export const TooltipButton = ({
   children,
@@ -13,3 +14,5 @@ export const TooltipButton = ({
     <TooltipContent>{tooltip}</TooltipContent>
   </Tooltip>
 );
+
+markButtonLike(TooltipButton);

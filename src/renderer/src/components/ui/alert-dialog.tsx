@@ -7,6 +7,7 @@ import { usePageDialogHost } from "@/components/layout/PageDialogHost"
 import { useChromeZoomClass } from "@/components/layout/ChromeSurface"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { resolveTriggerAsChild } from "./trigger-child"
 
 function AlertDialog({
   ...props
@@ -15,10 +16,15 @@ function AlertDialog({
 }
 
 function AlertDialogTrigger({
+  asChild,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
   return (
-    <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
+    <AlertDialogPrimitive.Trigger
+      data-slot="alert-dialog-trigger"
+      asChild={resolveTriggerAsChild(asChild, props.children)}
+      {...props}
+    />
   )
 }
 

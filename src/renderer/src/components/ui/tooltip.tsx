@@ -3,6 +3,7 @@ import * as React from "react"
 
 import { useChromeZoomClass } from "@/components/layout/ChromeSurface"
 import { cn } from "@/lib/utils"
+import { resolveTriggerAsChild } from "./trigger-child"
 
 function TooltipProvider({
   delayDuration = 0,
@@ -28,9 +29,10 @@ function Tooltip({
 }
 
 function TooltipTrigger({
+  asChild,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" asChild={resolveTriggerAsChild(asChild, props.children)} {...props} />
 }
 
 function TooltipContent({

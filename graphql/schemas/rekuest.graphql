@@ -28,6 +28,11 @@ type Action {
   """Optional description of the action."""
   description: String
 
+  """
+  This action's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
+  """
+  embedding: Embedding
+
   """Unique hash identifying the action definition."""
   hash: ActionHash!
 
@@ -397,6 +402,11 @@ type Agent {
   """Is the agent currently connected."""
   connected: Boolean!
 
+  """
+  What this agent is, in a sentence. Client-declared at registration; null for an agent that never declared one.
+  """
+  description: String
+
   """Device associated with the agent, via its client (if any)."""
   device: Device
 
@@ -616,6 +626,11 @@ input AgentFilter {
 
 input AgentInput {
   """
+  What this agent is, in a sentence. Omitting it leaves whatever the agent already has: a name is what identifies it, a description is what tells two of them apart.
+  """
+  description: String = null
+
+  """
   For a WEBHOOK agent: the URL the backend POSTs messages (Assign, Cancel, Caller* events) to.
   """
   hookUrl: String = null
@@ -770,7 +785,7 @@ input ArgPortInput {
   effects: [EffectInput!] = null
 
   """
-  The identifier of a structure port. This is used to uniquely identify a specific type of structure.
+  The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it.
   """
   identifier: String = null
 
@@ -2157,6 +2172,11 @@ enum EffectKind {
   MESSAGE
 }
 
+"""
+A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it).
+"""
+scalar Embedding
+
 input FinishMediaUploadInput {
   storeId: String!
   valid: Boolean! = true
@@ -2243,6 +2263,11 @@ input ImplementAgentInput {
   The blocks of the agent. This is used to specify the initial blocks of the agent
   """
   bloks: [BlokImplementationInput!] = null
+
+  """
+  What this agent is, in a sentence. Omitting it leaves whatever the agent already has, unlike `name`, which falls back to the client id.
+  """
+  description: String = null
 
   """
   A unique hash of the agent definition. An agent can use this hash to check if its definition has changed and if it needs to update its implementations and states. This is used to optimize the update process by only updating the implementations and states that have changed.
@@ -3936,7 +3961,7 @@ input ReturnPortInput {
   effects: [EffectInput!] = null
 
   """
-  The identifier of a structure port. This is used to uniquely identify a specific type of structure.
+  The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it.
   """
   identifier: String = null
 

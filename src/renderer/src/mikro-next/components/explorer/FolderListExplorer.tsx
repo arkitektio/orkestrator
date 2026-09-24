@@ -63,6 +63,8 @@ import {
 import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CreateFolderForm } from "../../forms/CreateFolderForm";
+import { datasetStoredBytes } from "../../specs";
+import { DatasetStoredSize } from "./DatasetStoredSize";
 
 
 type ViewMode = "grid" | "list" | "table";
@@ -154,6 +156,18 @@ const formatFileSize = (fileSizeInBytes?: number | null) => {
   return `${Math.max(size, 0.1).toFixed(1)} ${byteUnits[unitIndex]}`;
 };
 
+/** What an item holds on disk, where the API says: a file's size, a dataset's measured stores. */
+const itemBytes = (item: ExplorerItem): number | undefined => {
+  switch (item.__typename) {
+    case "File":
+      return item.size ?? undefined;
+    case "ArrayDataset":
+      return datasetStoredBytes(item.dataArrays);
+    default:
+      return undefined;
+  }
+};
+
 const getItemTypeLabel = (item: ExplorerItem) => {
   switch (item.__typename) {
     case "Folder":
@@ -171,12 +185,19 @@ const getItemTypeLabel = (item: ExplorerItem) => {
   }
 };
 
-const getItemMeta = (item: ExplorerItem) => {
+const getItemMeta = (item: ExplorerItem): React.ReactNode => {
   switch (item.__typename) {
     case "Folder":
       return item.description || "Nested folder";
-    case "ArrayDataset":
-      return item.shape.map((extent, index) => `${extent}${item.axisNames[index] ?? "?"}`).join(" ");
+    case "ArrayDataset": {
+      const shape = item.shape.map((extent, index) => `${extent}${item.axisNames[index] ?? "?"}`).join(" ");
+      if (datasetStoredBytes(item.dataArrays) === undefined) return shape;
+      return (
+        <>
+          {shape} · <DatasetStoredSize dataArrays={item.dataArrays} axisNames={item.axisNames} />
+        </>
+      );
+    }
     case "TableDataset":
       return item.description || item.axisNames.join(" × ");
     case "MeshCollection":
@@ -1127,8 +1148,8 @@ export const useFolderExplorer = (folder: FolderFragment) => {
       let bValue: string | number = bName;
 
       if (sortField === "size") {
-        aValue = a.__typename === "File" ? a.size ?? 0 : 0;
-        bValue = b.__typename === "File" ? b.size ?? 0 : 0;
+        aValue = itemBytes(a) ?? 0;
+        bValue = itemBytes(b) ?? 0;
       }
 
       if (sortField === "kind") {

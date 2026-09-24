@@ -13,6 +13,20 @@ query Children($id: ID!, $pagination: ChildrenPaginationInput, $filters: FolderC
     ...ListFile
     ...ListFolder
     ...ListArrayDataset
+    # Only here, not on ListArrayDataset: the folder view shows what a dataset
+    # holds on disk, the sum of every level's measured `sizeBytes`, and breaks
+    # that sum down per level in a tooltip.
+    ... on ArrayDataset {
+      dataArrays {
+        id
+        level
+        shape
+        store {
+          id
+          sizeBytes
+        }
+      }
+    }
     ...ListTableDataset
     # A mesh collection carries no name — it is identified by its version.
     ... on MeshCollection {

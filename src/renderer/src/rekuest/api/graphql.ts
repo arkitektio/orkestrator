@@ -26,6 +26,8 @@ export type Scalars = {
   Args: { input: any; output: any; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
+  /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it). */
+  Embedding: { input: any; output: any; }
   /** The `Identifier` scalar is a structure identifier of the form `@package/key` (e.g. `@mikro/image`) that types STRUCTURE, MEMORY_STRUCTURE and INTERFACE ports */
   Identifier: { input: any; output: any; }
   /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf). */
@@ -60,6 +62,8 @@ export type Action = {
   definedAt: Scalars['DateTime']['output'];
   /** Optional description of the action. */
   description?: Maybe<Scalars['String']['output']>;
+  /** This action's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
+  embedding?: Maybe<Scalars['Embedding']['output']>;
   /** Unique hash identifying the action definition. */
   hash: Scalars['ActionHash']['output'];
   /** Unique ID of the action. */
@@ -403,6 +407,8 @@ export type Agent = {
   client: Client;
   /** Is the agent currently connected. */
   connected: Scalars['Boolean']['output'];
+  /** What this agent is, in a sentence. Client-declared at registration; null for an agent that never declared one. */
+  description?: Maybe<Scalars['String']['output']>;
   /** Device associated with the agent, via its client (if any). */
   device?: Maybe<Device>;
   /** Historical records of agent's hardware. */
@@ -600,6 +606,8 @@ export type AgentFilter = {
 };
 
 export type AgentInput = {
+  /** What this agent is, in a sentence. Omitting it leaves whatever the agent already has: a name is what identifies it, a description is what tells two of them apart. */
+  description?: InputMaybe<Scalars['String']['input']>;
   /** For a WEBHOOK agent: the URL the backend POSTs messages (Assign, Cancel, Caller* events) to. */
   hookUrl?: InputMaybe<Scalars['String']['input']>;
   /** For a WEBHOOK agent: the shared secret used to HMAC-sign messages in both directions (outbound delivery and POST intake). */
@@ -721,7 +729,7 @@ export type ArgPortInput = {
   dimension?: InputMaybe<Scalars['String']['input']>;
   /** The effects of the port */
   effects?: InputMaybe<Array<EffectInput>>;
-  /** The identifier of a structure port. This is used to uniquely identify a specific type of structure. */
+  /** The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it. */
   identifier?: InputMaybe<Scalars['String']['input']>;
   /** The key of the port: unique among its siblings, free of '..', not 'value'. LIST/DICT item ports are conventionally keyed '...'. */
   key: Scalars['String']['input'];
@@ -1814,6 +1822,8 @@ export enum HookKind {
 export type ImplementAgentInput = {
   /** The blocks of the agent. This is used to specify the initial blocks of the agent */
   bloks?: InputMaybe<Array<BlokImplementationInput>>;
+  /** What this agent is, in a sentence. Omitting it leaves whatever the agent already has, unlike `name`, which falls back to the client id. */
+  description?: InputMaybe<Scalars['String']['input']>;
   /** A unique hash of the agent definition. An agent can use this hash to check if its definition has changed and if it needs to update its implementations and states. This is used to optimize the update process by only updating the implementations and states that have changed. */
   hash?: InputMaybe<Scalars['String']['input']>;
   /** The implementations of the agent. This is used to specify the initial implementations of the agent */
@@ -3872,7 +3882,7 @@ export type ReturnPortInput = {
   dimension?: InputMaybe<Scalars['String']['input']>;
   /** The effects of the port */
   effects?: InputMaybe<Array<EffectInput>>;
-  /** The identifier of a structure port. This is used to uniquely identify a specific type of structure. */
+  /** The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it. */
   identifier?: InputMaybe<Scalars['String']['input']>;
   /** The key of the port: unique among its siblings, free of '..', not 'value'. LIST/DICT item ports are conventionally keyed '...'. */
   key: Scalars['String']['input'];
@@ -5402,10 +5412,10 @@ export type BlokFragment = { __typename?: 'Blok', id: string, name: string, desc
     & BlokDiagnosticFragment
   )> };
 
-export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, blok: (
+export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, createdAt: any, blok: (
     { __typename?: 'Blok' }
     & BlokFragment
-  ), agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string } }> };
+  ), agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string };
 
@@ -8734,6 +8744,8 @@ ${BlokDiagnosticFragmentDoc}`;
 export const MaterializedBlokFragmentDoc = gql`
     fragment MaterializedBlok on MaterializedBlok {
   id
+  name
+  createdAt
   blok {
     ...Blok
   }
@@ -8741,6 +8753,8 @@ export const MaterializedBlokFragmentDoc = gql`
     key
     agent {
       id
+      name
+      connected
     }
   }
 }

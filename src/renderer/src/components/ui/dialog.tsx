@@ -6,6 +6,7 @@ import { usePageDialogHost } from "@/components/layout/PageDialogHost"
 import { useChromeZoomClass } from "@/components/layout/ChromeSurface"
 import { cn } from "@/lib/utils"
 import { XIcon } from "lucide-react"
+import { resolveTriggerAsChild } from "./trigger-child"
 
 function Dialog({
   ...props
@@ -14,9 +15,10 @@ function Dialog({
 }
 
 function DialogTrigger({
+  asChild,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" asChild={resolveTriggerAsChild(asChild, props.children)} {...props} />
 }
 
 function DialogPortal({

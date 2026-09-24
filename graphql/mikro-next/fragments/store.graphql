@@ -11,6 +11,9 @@ fragment ZarrStore on ZarrStore {
   # Shard (outer storage object) shape; null when unsharded.
   shards
   version
+  # Bytes on disk, measured when the upload finished (after compression). Null
+  # while unfinished, and for stores written before this was recorded.
+  sizeBytes
 }
 
 fragment ParquetStore on ParquetStore {

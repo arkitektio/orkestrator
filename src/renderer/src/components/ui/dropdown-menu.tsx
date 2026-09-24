@@ -4,6 +4,7 @@ import * as React from "react"
 import { useChromeZoomClass } from "@/components/layout/ChromeSurface"
 import { cn } from "@/lib/utils"
 import { CheckIcon, ChevronRightIcon } from "lucide-react"
+import { resolveTriggerAsChild } from "./trigger-child"
 
 function DropdownMenu({
   ...props
@@ -20,11 +21,13 @@ function DropdownMenuPortal({
 }
 
 function DropdownMenuTrigger({
+  asChild,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
   return (
     <DropdownMenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
+      asChild={resolveTriggerAsChild(asChild, props.children)}
       {...props}
     />
   )

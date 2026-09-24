@@ -10406,7 +10406,7 @@ export type SparseDatasetFragment = { __typename?: 'SparseDataset', id: string, 
       & SparseStoreReadFragment
     ) }>, axisReferences: Array<{ __typename?: 'SparseAxisReference', id: string, axis: string, references: { __typename?: 'TableDataset', id: string, name: string, axisNames: Array<string> } }> };
 
-export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null };
+export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null };
 
 export type ParquetStoreFragment = { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null };
 
@@ -12009,7 +12009,7 @@ export type ChildrenQueryVariables = Exact<{
 
 
 export type ChildrenQuery = { __typename?: 'Query', children: Array<{ __typename?: 'AnnotationCollection', id: string, name: string } | (
-    { __typename?: 'ArrayDataset' }
+    { __typename?: 'ArrayDataset', dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, store: { __typename?: 'ZarrStore', id: string, sizeBytes?: any | null } }> }
     & ListArrayDatasetFragment
   ) | (
     { __typename?: 'File' }
@@ -13541,6 +13541,7 @@ export const ZarrStoreFragmentDoc = gql`
   chunks
   shards
   version
+  sizeBytes
 }
     `;
 export const DataArrayFragmentDoc = gql`
@@ -18214,6 +18215,17 @@ export const ChildrenDocument = gql`
     ...ListFile
     ...ListFolder
     ...ListArrayDataset
+    ... on ArrayDataset {
+      dataArrays {
+        id
+        level
+        shape
+        store {
+          id
+          sizeBytes
+        }
+      }
+    }
     ...ListTableDataset
     ... on MeshCollection {
       id

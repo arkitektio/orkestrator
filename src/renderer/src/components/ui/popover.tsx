@@ -5,6 +5,7 @@ import * as React from "react"
 
 import { useChromeZoomClass } from "@/components/layout/ChromeSurface"
 import { cn } from "@/lib/utils"
+import { resolveTriggerAsChild } from "./trigger-child"
 
 function Popover({
   ...props
@@ -13,9 +14,10 @@ function Popover({
 }
 
 function PopoverTrigger({
+  asChild,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
+  return <PopoverPrimitive.Trigger data-slot="popover-trigger" asChild={resolveTriggerAsChild(asChild, props.children)} {...props} />
 }
 
 function PopoverContent({

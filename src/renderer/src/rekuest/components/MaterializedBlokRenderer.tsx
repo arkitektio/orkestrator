@@ -1,15 +1,13 @@
 import { buildAssignInput } from "@/rekuest/assign";
 import * as React from 'react';
 import BlokRenderer from '@/blok/renderer/BlokRenderer';
-import {
-  isRecord,
-  splitPathSegments,
-  useBlokRuntime,
-  type BlokDispatchActionHandler,
-} from '@/blok/renderer/runtime';
-import {toast} from 'sonner';
-import {useAssignMutation} from '@/rekuest/api/graphql';
+import {useBlokRuntime, type BlokDispatchActionHandler} from '@/blok/renderer/runtime';
+import {formatApolloError} from '@/lib/errorHandler';
+import {v4 as uuidv4} from 'uuid';
+import {useAssign} from '@/rekuest/hooks/useAssign';
 import {useAgentLiveState} from '@/rekuest/hooks/useLiveState';
+import {isTerminalEvent, silenceTask, trackTask} from '@/rekuest/lib/taskTracker';
+import {collectDemandedStateInterfaces} from './blokDemands';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 
 type MaterializedBlokData = {
@@ -35,89 +33,6 @@ type MaterializedBlokRendererProps = Omit<
   materializedBlok: MaterializedBlokData;
 };
 
-const collectArgumentDemandPaths = (
-  argument: unknown,
-  registerPath: (path: string) => void,
-) => {
-  if (!isRecord(argument)) {
-    return;
-  }
-
-  if (typeof argument.value_path === 'string') {
-    registerPath(argument.value_path);
-  }
-
-  if (Array.isArray(argument.value_list)) {
-    argument.value_list.forEach(item => collectArgumentDemandPaths(item, registerPath));
-  }
-
-  if (Array.isArray(argument.value_dict)) {
-    argument.value_dict.forEach(item => collectArgumentDemandPaths(item, registerPath));
-  }
-
-  if (isRecord(argument.util_call) && Array.isArray(argument.util_call.arguments)) {
-    argument.util_call.arguments.forEach(item => collectArgumentDemandPaths(item, registerPath));
-  }
-
-  if (isRecord(argument.agent_call) && Array.isArray(argument.agent_call.arguments)) {
-    argument.agent_call.arguments.forEach(item => collectArgumentDemandPaths(item, registerPath));
-  }
-};
-
-// Walks the runtime-shaped (snake_case) tree produced by `useBlokDocument`.
-const collectDemandedStateInterfaces = (
-  roots: ReadonlyArray<unknown>,
-  dependencyKeys: Set<string>,
-): Map<string, Set<string>> => {
-  const demandedInterfaces = new Map<string, Set<string>>();
-
-  const registerPath = (path: string) => {
-    const [dependencyKey, stateInterface] = splitPathSegments(path);
-
-    if (!dependencyKey || !stateInterface || !dependencyKeys.has(dependencyKey)) {
-      return;
-    }
-
-    const interfaces = demandedInterfaces.get(dependencyKey) ?? new Set<string>();
-    interfaces.add(stateInterface);
-    demandedInterfaces.set(dependencyKey, interfaces);
-  };
-
-  const visitNode = (node: unknown) => {
-    if (!isRecord(node)) {
-      return;
-    }
-
-    if (Array.isArray(node.props)) {
-      node.props.forEach(prop => {
-        if (!isRecord(prop)) {
-          return;
-        }
-
-        if (isRecord(prop.dynamic_value) && typeof prop.dynamic_value.path === 'string') {
-          registerPath(prop.dynamic_value.path);
-        }
-
-        if (isRecord(prop.agent_call) && Array.isArray(prop.agent_call.arguments)) {
-          prop.agent_call.arguments.forEach(argument => collectArgumentDemandPaths(argument, registerPath));
-        }
-
-        if (isRecord(prop.util_call) && Array.isArray(prop.util_call.arguments)) {
-          prop.util_call.arguments.forEach(argument => collectArgumentDemandPaths(argument, registerPath));
-        }
-      });
-    }
-
-    if (Array.isArray(node.children)) {
-      node.children.forEach(visitNode);
-    }
-  };
-
-  roots.forEach(visitNode);
-
-  return demandedInterfaces;
-};
-
 const MaterializedDependencyInterfaceSync = (props: {
   dependencyKey: string;
   stateInterface: string;
@@ -131,6 +46,8 @@ const MaterializedDependencyInterfaceSync = (props: {
   const clearAgentMappingStateUpdate = useBlokRuntime(state => state.clearAgentMappingStateUpdate);
   const runtimePath = `${dependencyKey}/${stateInterface}`;
 
+  // Write on every update, clear only when the binding itself goes away.
+  // Clearing between updates would flash the demo state back for a frame.
   React.useEffect(() => {
     if (value == null) {
       return;
@@ -138,15 +55,8 @@ const MaterializedDependencyInterfaceSync = (props: {
 
     setRuntimeValue(runtimePath, value);
     setAgentMappingStateUpdate(dependencyKey, agentId, stateInterface, value, revision);
-
-    return () => {
-      clearRuntimeValue(runtimePath);
-      clearAgentMappingStateUpdate(dependencyKey, stateInterface);
-    };
   }, [
     agentId,
-    clearAgentMappingStateUpdate,
-    clearRuntimeValue,
     dependencyKey,
     revision,
     runtimePath,
@@ -155,6 +65,14 @@ const MaterializedDependencyInterfaceSync = (props: {
     stateInterface,
     value,
   ]);
+
+  React.useEffect(
+    () => () => {
+      clearRuntimeValue(runtimePath);
+      clearAgentMappingStateUpdate(dependencyKey, stateInterface);
+    },
+    [agentId, clearAgentMappingStateUpdate, clearRuntimeValue, dependencyKey, runtimePath, stateInterface],
+  );
 
   return null;
 };
@@ -194,10 +112,21 @@ const MaterializedBlokRuntimeSync = (props: {
   );
 };
 
+/**
+ * Agent calls go straight to the bound agent: `agent` + `interface`. The
+ * `operation` names an implementation interface on that agent (for `self`, the
+ * registering agent's own interface), never an Action id — so `action:` is
+ * never set here.
+ *
+ * A blok button is the blok's own interaction: no toast, and the task is
+ * silenced so it never surfaces in the rail's task island. The returned
+ * promise settles when the task ends, which is what makes a `Button` pulse
+ * while its task runs (`usePendingAction`).
+ */
 const useMaterializedDispatchAction = (
   agentMappings: MaterializedBlokData['agentMappings'],
 ) => {
-  const [assign] = useAssignMutation();
+  const {assign} = useAssign();
   const agentIdByDependency = React.useMemo(
     () => new Map(agentMappings.map(mapping => [mapping.key, mapping.agent.id] as const)),
     [agentMappings],
@@ -205,28 +134,37 @@ const useMaterializedDispatchAction = (
 
   return React.useCallback<BlokDispatchActionHandler>(
     (action) => {
-      const agentId = action?.dependency ? agentIdByDependency.get(action.dependency) : undefined;
+      const agentId = agentIdByDependency.get(action.dependency);
 
       if (!agentId) {
-        toast.error(`No agent mapping found for dependency ${action?.dependency ?? 'unknown'}.`);
+        console.error(`Blok dependency "${action.dependency}" is not bound to an agent.`);
         return;
       }
 
-      void assign({
-        variables: {
-          input: buildAssignInput({
+      const reference = uuidv4();
+      silenceTask(reference);
+
+      return new Promise<void>(resolve => {
+        // Registered before the assign so no early event is missed; the
+        // tracker unregisters itself on the terminal event.
+        const untrack = trackTask(reference, event => {
+          if (isTerminalEvent(event.kind)) resolve();
+        });
+
+        assign(
+          buildAssignInput({
             agent: agentId,
-            action: action.operation,
+            interface: action.operation,
             args: action.arguments ?? {},
-            hooks: [],
+            reference,
           }),
-        },
-      }).catch((error: unknown) => {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : `Failed to dispatch ${action.operation}.`,
-        );
+        ).catch((error: unknown) => {
+          untrack();
+          resolve();
+          console.error(
+            `Blok action ${action.operation} failed: ${formatApolloError(error, 'rekuest')}`,
+          );
+        });
       });
     },
     [agentIdByDependency, assign],

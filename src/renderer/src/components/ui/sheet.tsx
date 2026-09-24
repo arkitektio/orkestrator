@@ -8,15 +8,17 @@ import { usePageDialogHost } from "@/components/layout/PageDialogHost"
 import { useChromeZoomClass } from "@/components/layout/ChromeSurface"
 import { cn } from "@/lib/utils"
 import { XIcon } from "lucide-react"
+import { resolveTriggerAsChild } from "./trigger-child"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
 }
 
 function SheetTrigger({
+  asChild,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" asChild={resolveTriggerAsChild(asChild, props.children)} {...props} />
 }
 
 function SheetClose({

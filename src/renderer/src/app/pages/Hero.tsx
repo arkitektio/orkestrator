@@ -98,7 +98,11 @@ const components = {
 
 // ── Helpers ──
 
-/** Add a widget as a new split panel — never as a tab, alternating right/below */
+/**
+ * Add a widget as a new split panel — never as a tab. It splits the last panel
+ * along its longer side, so the layout follows the room the grid has (a wide
+ * dashboard fills rows, a narrow one stacks) rather than the panel count.
+ */
 const addWidgetPanel = (
   api: DockviewApi,
   w: DashboardWidgetRegistration,
@@ -108,9 +112,9 @@ const addWidgetPanel = (
   // effect unmounts the whole dashboard.
   if (panels.some((p) => p.id === w.key)) return;
   const lastPanel = panels.length > 0 ? panels[panels.length - 1] : null;
-  // Alternate off the panel count rather than a module-level cursor, which
-  // survived remounts and made the same widget set lay out differently.
-  const direction = panels.length % 2 === 1 ? "right" : "below";
+  // A tie (including an unmeasured 0×0 panel) goes right.
+  const direction =
+    lastPanel && lastPanel.api.height > lastPanel.api.width ? "below" : "right";
   api.addPanel({
     id: w.key,
     component: "widget",

@@ -60,6 +60,8 @@ import {
 } from "@/mikro-next/api/graphql";
 import { ViewType } from "@/mikro-next/pages/FolderPage";
 import { ProvenanceSidebar } from "../sidebars/ProvenanceSidebar";
+import { datasetStoredBytes, formatBytes } from "../../specs";
+import { DatasetStoredSize } from "./DatasetStoredSize";
 
 export type Item = ChildrenQuery["children"][0];
 
@@ -174,6 +176,36 @@ export const columns: ColumnDef<Item>[] = [
     cell: ({ row }) => (
       <span className="capitalize">{row.getValue("type")}</span>
     ),
+  },
+  {
+    // A file's size, or what a dataset's stores hold on disk. Undefined when
+    // the API does not say (other kinds, stores measured before sizeBytes).
+    id: "size",
+    accessorFn: (item) => {
+      if (item.__typename === "File") return item.size ?? undefined;
+      if (item.__typename === "ArrayDataset") return datasetStoredBytes(item.dataArrays);
+      return undefined;
+    },
+    sortUndefined: "last",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Size
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const item = row.original;
+      if (item.__typename === "ArrayDataset" && datasetStoredBytes(item.dataArrays) !== undefined) {
+        return <DatasetStoredSize dataArrays={item.dataArrays} axisNames={item.axisNames} />;
+      }
+      const bytes = row.getValue<number | undefined>("size");
+      return <span>{bytes === undefined ? "-" : formatBytes(bytes)}</span>;
+    },
   },
   {
     id: "createdAt",

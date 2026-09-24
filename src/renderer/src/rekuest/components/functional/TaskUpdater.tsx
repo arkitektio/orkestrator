@@ -13,6 +13,7 @@ import {
   deliverHeldEvents,
   deliverToCallback,
   holdForCallback,
+  consumeSilenced,
   isGloballyNotified,
   isTaskLive,
   mapReference,
@@ -113,6 +114,9 @@ export const TaskUpdater = () => {
 
           void hydrateAndInsertMyTask(client, create).then((task) => {
             if (!task) {
+              return;
+            }
+            if (create.reference && consumeSilenced(create.reference)) {
               return;
             }
             if (

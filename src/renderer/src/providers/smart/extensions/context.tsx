@@ -33,6 +33,8 @@ export const ObjectButton = (props: ObjectButtonProps) => {
   return (
     <Popover>
       <PopoverTrigger
+        // The child is the button: a trigger of its own would nest one.
+        asChild
         onPointerEnter={() =>
           prefetcher?.prefetch({
             objects: props.objects,

@@ -8,6 +8,7 @@ import {
   arrayNbytes,
   baseDtypeOf,
   datasetNbytes,
+  datasetStoredBytes,
   dtypeBytes,
   formatAxes,
   formatBytes,
@@ -226,6 +227,26 @@ describe('arrayNbytes and datasetNbytes', () => {
 
   it('is undefined for no arrays at all', () => {
     expect(datasetNbytes([])).toBeUndefined()
+  })
+})
+
+describe('datasetStoredBytes', () => {
+  const array = (sizeBytes: unknown) => ({ store: { sizeBytes } })
+
+  it('sums the measured size of every level', () => {
+    expect(datasetStoredBytes([array(1000), array(250)])).toBe(1250)
+  })
+
+  it('accepts ByteCount serialized as a numeric string', () => {
+    expect(datasetStoredBytes([array('5000000000'), array(1)])).toBe(5000000001)
+  })
+
+  it('refuses a partial sum when any level is unmeasured', () => {
+    expect(datasetStoredBytes([array(1000), array(null)])).toBeUndefined()
+  })
+
+  it('is undefined for no arrays at all', () => {
+    expect(datasetStoredBytes([])).toBeUndefined()
   })
 })
 

@@ -97,10 +97,16 @@ export type BlokInvokeFunctionHandler = (
   options?: BlokInvokeOptions,
 ) => BlokInvokeResult;
 
+/**
+ * Dispatches an agent call. A host that can follow the resulting task returns
+ * a promise that settles when the task ends (either way) — components use it
+ * to show that their action is still running (`usePendingAction`). Hosts that
+ * cannot (the preview) return nothing.
+ */
 export type BlokDispatchActionHandler = (
   action: BlokResolvedAgentCall,
   component: BlokComponentNode,
-) => void;
+) => void | Promise<unknown>;
 
 /**
  * Lexical scope introduced by `foreach` and by a child's `basePath`.

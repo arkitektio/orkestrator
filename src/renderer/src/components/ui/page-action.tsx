@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ActionSlotMode, PageActionPolicy } from "@/components/layout/actionPlan";
 import { cn } from "@/lib/utils";
+import { markButtonLike } from "./trigger-child";
 import React, { createContext, isValidElement, useContext } from "react";
 
 export type { ActionSlotMode, CollapseMode, PageActionPolicy } from "@/components/layout/actionPlan";
@@ -167,6 +168,7 @@ export const PageAction = ({
     </Button>
   );
 };
+markButtonLike(PageAction);
 
 /**
  * The part of a control that goes when the row is down to icons — its label,
@@ -204,6 +206,7 @@ export const ActionTrigger = ({
     <Button variant={variant} size={slotSize} className={cn("gap-2", className)} {...props} />
   );
 };
+markButtonLike(ActionTrigger);
 
 export type PageActionSlotProps = PageActionPolicy & {
   children: React.ReactNode;
