@@ -1,10 +1,19 @@
+import { ReleaseNotes } from "@/app/updates/ReleaseNotesView";
+import type { UpdateProblem } from "@/app/updates/updateErrors";
 import {
   updateError as recordUpdateError,
   useUpdateState,
 } from "@/app/updates/updateStore";
-import { AlertTriangle, CheckCircle, Download, RefreshCw, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Download,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, AlertDescription } from "./alert";
+import { Alert, AlertDescription, AlertTitle } from "./alert";
 import { Button } from "./button";
 import { Progress } from "./progress";
 import {
@@ -27,8 +36,15 @@ type UpdateChannel = "latest" | "next";
  * listener from zero.
  */
 export const UpdateChecker: React.FC = () => {
-  const { phase, version: updateVersion, releaseNotes, percent, status, error } =
-    useUpdateState((state) => state);
+  const {
+    phase,
+    version: updateVersion,
+    releaseNotes,
+    percent,
+    status,
+    problem,
+  } = useUpdateState((state) => state);
+  const error = phase === "error" ? problem : undefined;
 
   const isChecking = phase === "checking";
   const updateAvailable =
@@ -42,6 +58,7 @@ export const UpdateChecker: React.FC = () => {
     (phase === "available" ||
       phase === "downloaded" ||
       phase === "none" ||
+      phase === "pending" ||
       phase === "error");
 
   const [channel, setChannel] = useState<UpdateChannel>("latest");
@@ -72,7 +89,10 @@ export const UpdateChecker: React.FC = () => {
       const result = await window.updates.checkForUpdates();
       // On success the updater's own events drive the store.
       if (!result.success || result.error) {
-        recordUpdateError(result.error ?? "Update check failed");
+        recordUpdateError({
+          message: result.error ?? "Update check failed",
+          code: result.code,
+        });
       }
     } catch (error) {
       recordUpdateError(error);
@@ -90,7 +110,10 @@ export const UpdateChecker: React.FC = () => {
         const result = await window.updates.setChannel(value);
         if (!result.success || result.error) {
           setChannel(previous);
-          recordUpdateError(result.error || "Failed to switch update channel");
+          recordUpdateError({
+            message: result.error || "Failed to switch update channel",
+            code: result.code,
+          });
         }
         // On success the updater's events report the check result.
       } catch (error) {
@@ -113,6 +136,9 @@ export const UpdateChecker: React.FC = () => {
     }
     if (error) {
       return <AlertTriangle className="h-4 w-4" />;
+    }
+    if (phase === "pending") {
+      return <Clock className="h-4 w-4" />;
     }
     if (updateAvailable) {
       return <Download className="h-4 w-4" />;
@@ -200,44 +226,90 @@ export const UpdateChecker: React.FC = () => {
             <X className="h-4 w-4" />
           </Button>
 
-          <div className="pr-8">
-            {error && (
-              <>
+          {problem && (phase === "error" || phase === "pending") && (
+            <>
+              {phase === "pending" ? (
+                <Clock className="h-4 w-4" />
+              ) : (
                 <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Update check failed:</strong> {error}
-                </AlertDescription>
-              </>
-            )}
+              )}
+              <AlertTitle className="pr-8">{problem.title}</AlertTitle>
+              <AlertDescription>
+                <p>{problem.message}</p>
+                <ProblemDetail problem={problem} />
+              </AlertDescription>
+            </>
+          )}
 
-            {updateAvailable && !error && (
-              <>
-                <Download className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Update available:</strong> Version {updateVersion} is ready to download.
-                  {releaseNotes && (
-                    <div className="mt-2 text-sm">
-                      <strong>Release Notes:</strong>
-                      <div className="mt-1 max-h-32 overflow-y-auto text-xs">
-                        {releaseNotes}
-                      </div>
-                    </div>
-                  )}
-                </AlertDescription>
-              </>
-            )}
+          {updateAvailable && (
+            <>
+              <Download className="h-4 w-4" />
+              <AlertTitle className="pr-8">
+                {phase === "downloaded"
+                  ? `Version ${updateVersion} is ready`
+                  : `Version ${updateVersion} is available`}
+              </AlertTitle>
+              <AlertDescription>
+                <p>
+                  {phase === "downloaded"
+                    ? "Restart to install it, or it installs the next time you quit."
+                    : "It downloads in the background."}
+                </p>
+                {phase === "downloaded" && (
+                  <Button
+                    size="sm"
+                    className="mt-2 gap-1.5"
+                    onClick={() => void window.updates?.quitAndInstall()}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Restart now
+                  </Button>
+                )}
+              </AlertDescription>
+            </>
+          )}
 
-            {checkComplete && !updateAvailable && !error && (
-              <>
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>You're up to date!</strong> No updates are available at this time.
-                </AlertDescription>
-              </>
-            )}
-          </div>
+          {phase === "none" && (
+            <>
+              <CheckCircle className="h-4 w-4" />
+              <AlertTitle className="pr-8">You're up to date</AlertTitle>
+              <AlertDescription>
+                No updates are available at this time.
+              </AlertDescription>
+            </>
+          )}
         </Alert>
       )}
+
+      {updateAvailable && releaseNotes && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted-foreground">
+            What's new
+          </div>
+          <ReleaseNotes
+            notes={releaseNotes}
+            className="max-h-72 overflow-y-auto pr-2"
+          />
+        </div>
+      )}
     </div>
+  );
+};
+
+/**
+ * The updater's own words, folded away: useful for a bug report, noise for
+ * everyone else. Hidden when it would only repeat the message above it.
+ */
+const ProblemDetail = ({ problem }: { problem: UpdateProblem }) => {
+  if (problem.detail.trim() === problem.message.trim()) return null;
+  return (
+    <details className="mt-2 text-xs">
+      <summary className="cursor-pointer select-none text-muted-foreground hover:text-foreground">
+        Details
+      </summary>
+      <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-2 font-mono text-[11px]">
+        {problem.detail}
+      </pre>
+    </details>
   );
 };

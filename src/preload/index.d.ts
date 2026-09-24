@@ -143,16 +143,18 @@ declare global {
       onAgentLog: (cb: (data: any) => void) => () => void;
     };
     updates: {
-      checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string }>;
+      /** `code` is electron-updater's error code, e.g. `ERR_UPDATER_CHANNEL_FILE_NOT_FOUND`. */
+      checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string; code?: string }>;
       getChannel: () => Promise<{ channel: "latest" | "next"; version: string }>;
-      setChannel: (channel: "latest" | "next") => Promise<{ success: boolean; result?: any; error?: string }>;
+      setChannel: (channel: "latest" | "next") => Promise<{ success: boolean; result?: any; error?: string; code?: string }>;
       /** Each subscription returns its disposer — call it on unmount. */
       onStatus: (callback: (status: string) => void) => () => void;
       onAvailable: (callback: (info: any) => void) => () => void;
       onNone: (callback: () => void) => () => void;
       onProgress: (callback: (progress: any) => void) => () => void;
       onDownloaded: (callback: (info: any) => void) => () => void;
-      onError: (callback: (error: any) => void) => () => void;
+      /** `{ message, code? }` from current main builds; a string from older ones. */
+      onError: (callback: (error: { message: string; code?: string } | string) => void) => () => void;
       /** Restart into the downloaded update. */
       quitAndInstall: () => Promise<{ success: boolean }>;
     };

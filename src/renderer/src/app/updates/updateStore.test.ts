@@ -63,6 +63,18 @@ describe("updateStore", () => {
     expect(state().error).toContain("net::ERR_FAILED");
   });
 
+  it("reads a half-published release as pending, not as an error", () => {
+    updateError({
+      message:
+        "Cannot find latest-mac.yml in the latest release artifacts (https://github.com/o/r/releases/download/v2.14.0/latest-mac.yml): HttpError: 404",
+      code: "ERR_UPDATER_CHANNEL_FILE_NOT_FOUND",
+    });
+
+    expect(state()).toMatchObject({ phase: "pending", version: "2.14.0" });
+    expect(state().error).toBeUndefined();
+    expect(state().problem?.kind).toBe("pending");
+  });
+
   it("clears an error once a fresh check starts", () => {
     updateError("boom");
     updateChecking("Checking…");

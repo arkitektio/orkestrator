@@ -172,6 +172,8 @@ fragment Blok on Blok {
 
 fragment MaterializedBlok on MaterializedBlok {
   id
+  name
+  createdAt
   blok {
     ...Blok
   }
@@ -179,6 +181,8 @@ fragment MaterializedBlok on MaterializedBlok {
     key
     agent {
       id
+      name
+      connected
     }
   }
 }

@@ -11,7 +11,8 @@ import { dismissUpdate, useUpdateState } from "./updateStore";
 /**
  * An app update downloading, ready, or failed — one row in the rail.
  *
- * Deliberately silent for `checking` and `available`: the check is background
+ * Deliberately silent for `checking`, `available` and `pending` (a release
+ * whose builds are still uploading — main re-checks by itself): the check is background
  * noise nobody asked for, and with `autoDownload` on, "available" becomes
  * "downloading" within a tick. What the user needs to know is that something is
  * being fetched, and that a restart is now worth it.
@@ -21,9 +22,8 @@ import { dismissUpdate, useUpdateState } from "./updateStore";
  * the next quit either way.
  */
 export const UpdateIsland = () => {
-  const { phase, version, percent, error, dismissed } = useUpdateState(
-    (state) => state,
-  );
+  const { phase, version, percent, error, problem, dismissed } =
+    useUpdateState((state) => state);
 
   const show =
     !dismissed &&
@@ -55,7 +55,7 @@ export const UpdateIsland = () => {
               phase === "downloaded"
                 ? `${label} ready`
                 : phase === "error"
-                  ? "Update failed"
+                  ? (problem?.title ?? "Update failed")
                   : label
             }
             working={phase === "downloading"}
