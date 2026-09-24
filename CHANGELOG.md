@@ -1,3 +1,10 @@
+# [2.15.0](https://github.com/arkitektio/orkestrator/compare/v2.14.0...v2.15.0) (2026-09-24)
+
+
+### Features
+
+* enhance dashboard widget layout and responsiveness ([1557b09](https://github.com/arkitektio/orkestrator/commit/1557b093ecc62d5af2b7baaa18de4fd0cb58559d))
+
 # [2.14.0](https://github.com/arkitektio/orkestrator/compare/v2.13.0...v2.14.0) (2026-09-24)
 
 
