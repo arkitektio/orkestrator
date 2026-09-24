@@ -8,17 +8,19 @@ import { effectiveScalarTransfer } from "../../../platform/model/renderGraph";
  *
  * `LayerState.renderKind === "rgb"` promises exactly three visible CHANNEL
  * sources, tinted pure red / green / blue in slot order, over ONE shared
- * contrast window, with gamma 1, no colormap, no curve, no invert, no per-slot
- * opacity, additive blend. Everything the general builder packs per slot is
- * therefore either a compile-time constant here or one of FIVE scalars — and
+ * contrast window, with gamma 1, no colormap, no curve, no invert, additive
+ * blend. Per-slot opacity IS allowed: it is the plane's white-balance gain
+ * (`normalizeRgbLayer`). Everything the general builder packs per slot is
+ * therefore either a compile-time constant here or one of EIGHT scalars — and
  * there is no colormap atlas at all:
  *
  * `buildColormapAtlas` bakes a CONSTANT-tint row for a `colormap == null`
  * channel with an explicit color (the "RESPONSE-CURVE CONVENTION" note in
  * `platform/gpu/colormaps.tsx`), so the general path's contribution for slot
- * k is `tint_k/255 · (opacity · norm_k)` = `norm_k · e_k` — the identity
- * basis. Summed additively over a zero accumulator that is simply
- * `vec3(norm_r, norm_g, norm_b)`: three taps assemble the colour directly and
+ * k is `tint_k/255 · (opacity_k · norm_k)` = `gain_k · norm_k · e_k`. Summed
+ * additively over a zero accumulator that is simply
+ * `vec3(gain_r·norm_r, gain_g·norm_g, gain_b·norm_b)`: three taps and three
+ * multiplies assemble the colour directly and
  * the three LUT samples the general path pays are provably the identity.
  * (`rgbUniforms.test.ts` pins that the rows ARE constant, so a change to the
  * atlas convention fails here rather than silently tinting the fast path
@@ -35,6 +37,10 @@ export type RgbUniformData = {
   /** Shared contrast window, normalized into the shader's [0,1] base space. */
   climMin: number;
   climMax: number;
+  /** White-balance gain per primary — the slot's `opacity`, 1 when unset. */
+  gainR: number;
+  gainG: number;
+  gainB: number;
 };
 
 const clampSlab = (index: number | null | undefined, maxChannelIndex: number): number =>
@@ -57,6 +63,10 @@ export function buildRgbUniformData(
     const source = sources[i];
     return source?.type === "channel" ? clampSlab(source.intensityIndex, maxChannelIndex) : 0;
   };
+  const gainOf = (i: number): number => {
+    const source = sources[i];
+    return source?.type === "channel" ? (source.transfer.opacity ?? 1) : 1;
+  };
   const first = sources[0];
   const transfer = first?.type === "channel" ? first.transfer : undefined;
   const scalar = effectiveScalarTransfer(
@@ -68,5 +78,8 @@ export function buildRgbUniformData(
     slabB: slabOf(2),
     climMin: climToUnit(scalar.climMin, minValue, maxValue, 0),
     climMax: climToUnit(scalar.climMax, minValue, maxValue, 1),
+    gainR: gainOf(0),
+    gainG: gainOf(1),
+    gainB: gainOf(2),
   };
 }

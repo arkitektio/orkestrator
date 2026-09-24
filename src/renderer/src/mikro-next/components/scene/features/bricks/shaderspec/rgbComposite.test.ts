@@ -14,6 +14,7 @@ const generalRgbSample = (
   dataMin: number,
   dataMax: number,
   slots: readonly SlotTransfer[],
+  opacities: readonly number[] = [1, 1, 1],
 ) => {
   const tints: readonly [number, number, number][] = [
     [1, 0, 0],
@@ -25,7 +26,7 @@ const generalRgbSample = (
   slots.forEach((slot, k) => {
     if (!slot.visible) return;
     const n = normalizeSlotValue(raw[k], dataMin, dataMax, slot);
-    const weight = 1 * n; // opacity 1
+    const weight = opacities[k] * n;
     for (let i = 0; i < 3; i++) accum[i] += tints[k][i] * weight;
     norm = Math.max(norm, n);
   });
@@ -49,6 +50,15 @@ describe("rgbSampleContribution ≡ the general path over three basis-tinted slo
     const fast = rgbSampleContribution([r, g, b], 0, 255, window);
     const general = generalRgbSample([r, g, b], 0, 255, slots);
     expect(fast.color).toEqual(general.color);
+    expect(fast.norm).toBe(general.norm);
+  });
+
+  it.each(raws)("agrees under white-balance gains for raw (%d, %d, %d)", (r, g, b) => {
+    const gains = [0.6, 1, 0.35] as const;
+    const fast = rgbSampleContribution([r, g, b], 0, 255, window, gains);
+    const general = generalRgbSample([r, g, b], 0, 255, slots, gains);
+    expect(fast.color).toEqual(general.color);
+    // The ray still ranks by the unweighted norm, so projection is unchanged.
     expect(fast.norm).toBe(general.norm);
   });
 

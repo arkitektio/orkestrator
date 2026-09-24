@@ -24,8 +24,12 @@ export type Scalars = {
   Any: { input: any; output: any; }
   /** The `ArrayLike` scalar type represents a reference to a store previously created by the user n a datalayer */
   ArrayLike: { input: any; output: any; }
+  /** A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string. */
+  ByteCount: { input: any; output: any; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
+  /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it). */
+  Embedding: { input: any; output: any; }
   /** A reference to an uploaded **fabriks store**: one prefix holding `fabriks.json`, both catalogs and every octree level. Request it with `requestFabriksUpload`, write the tree, land the manifest last, then `finishFabriksUpload` -- which reads the manifest and refuses a prefix without one. A collection registered this way declares no grid and no encoding: the server reads them from the artifact, so they cannot be stated wrong */
   FabriksLike: { input: any; output: any; }
   /** The `FileLike` scalar type represents a reference to a big file storage previously created by the user n a datalayer */
@@ -99,6 +103,7 @@ export type AffineTransformation = Transformation & {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -106,6 +111,7 @@ export type AffineTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -545,6 +551,8 @@ export type ArrayDataset = {
   /** Everything computed from this dataset, whatever kind of container it is: the derived datasets `derivedDatasets` lists, and also the measurement tables, mesh collections and annotation collections that named this dataset as their source. A separate field rather than a widening of that one, which stays honestly about *datasets*. Same edges, same kind-blindness: an UNMAPPABLE child came from here even though its geometry did not survive */
   derivedResidents: Array<Resident>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This dataset's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
+  embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The files written out of this dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
   exports: Array<FileLink>;
   /** The folder this dataset is filed in. Organisational only: it says where a user keeps this dataset, never where the data sits in space -- that is `intrinsicSystem` and the edges out of it */
@@ -760,18 +768,6 @@ export type ArraySample = SampleStep & {
   system: CoordinateSystem;
 };
 
-/** Input for assigning object-level permissions to a user */
-export type AssignUserPermissionInput = {
-  /** The type identifier of the object, e.g. "@mikro/image" */
-  identifier: Scalars['String']['input'];
-  /** The primary key of the object to assign permissions on */
-  object: Scalars['ID']['input'];
-  /** The permissions to assign, e.g. ["view_image", "change_image"] */
-  permissions: Array<Scalars['String']['input']>;
-  /** The primary key of the user to assign permissions to */
-  user: Scalars['ID']['input'];
-};
-
 /** An input for associating a set of items with another item, e.g. putting images into a dataset */
 export type AssociateInput = {
   /** The ID of the target item */
@@ -966,12 +962,12 @@ export type BigFileStore = {
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
-  maxBytes?: Maybe<Scalars['Int']['output']>;
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
-  sizeBytes?: Maybe<Scalars['Int']['output']>;
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
 
@@ -987,7 +983,7 @@ export type BigFileUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -1071,6 +1067,7 @@ export type ByDimensionTransformation = Transformation & {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -1078,6 +1075,7 @@ export type ByDimensionTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -1903,6 +1901,7 @@ export type CreateRgbLayerInput = {
   redIndex?: InputMaybe<Scalars['Int']['input']>;
   scene: Scalars['ID']['input'];
   visible?: InputMaybe<Scalars['Boolean']['input']>;
+  whiteBalance?: InputMaybe<Array<Scalars['Float']['input']>>;
 };
 
 /** Bootstrap a renderable scene over an existing coordinate system. Over an ownerless SHARED space the sources already registered into it become layers, up to the policy's nchildren sources -- each source's path to world is the one registration createCoordinateSystem authored. Over an owned system (a dataset's intrinsic pixels, a physical space, a collection's space) the container's own data becomes the layer: it is in its own space by construction, so no edge exists or is authored. A multi-channel image becomes one layer per channel, each with its own hue, order and visibility, so a viewer can control the channels separately; an RGB photograph stays one layer. Rerunning makes another scene over the same space, which outlives them all */
@@ -2393,10 +2392,10 @@ export type FabriksStore = {
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
-  maxBytes?: Maybe<Scalars['Int']['output']>;
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   path: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
-  sizeBytes?: Maybe<Scalars['Int']['output']>;
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
   specVersion?: Maybe<Scalars['String']['output']>;
 };
 
@@ -2413,7 +2412,7 @@ export type FabriksUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -2442,6 +2441,7 @@ export type FieldTransformation = Transformation & {
   /** The coordinate system of the array whose values are this map. Its value axis says what they mean: COORDINATE for absolute positions, DISPLACEMENT for offsets, none at all for a scalar array whose single value is a position. Equal to `input` when the array's own pixels are the map, as for a label mask keying a table of objects */
   field?: Maybe<CoordinateSystem>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -2449,6 +2449,7 @@ export type FieldTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -2811,6 +2812,8 @@ export type Folder = {
   createdThroughBy?: Maybe<User>;
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This folder's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
+  embedding?: Maybe<Scalars['Embedding']['output']>;
   files: Array<File>;
   id: Scalars['ID']['output'];
   isDefault: Scalars['Boolean']['output'];
@@ -3155,6 +3158,7 @@ export type IdentityTransformation = Transformation & {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -3162,6 +3166,7 @@ export type IdentityTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -3374,10 +3379,10 @@ export type KonnektionStore = {
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
-  maxBytes?: Maybe<Scalars['Int']['output']>;
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   path: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
-  sizeBytes?: Maybe<Scalars['Int']['output']>;
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
   specVersion?: Maybe<Scalars['String']['output']>;
 };
 
@@ -3394,7 +3399,7 @@ export type KonnektionUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -4086,6 +4091,7 @@ export type MapAxisTransformation = Transformation & {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes, positionally matched to `outputAxes` */
   inputAxes: Array<Scalars['String']['output']>;
@@ -4093,6 +4099,7 @@ export type MapAxisTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes, positionally matched to `inputAxes` */
   outputAxes: Array<Scalars['String']['output']>;
@@ -4138,13 +4145,13 @@ export type MediaStore = {
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
-  maxBytes?: Maybe<Scalars['Int']['output']>;
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   /** Compatibility field returning the canonical S3 object path. */
   presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
-  sizeBytes?: Maybe<Scalars['Int']['output']>;
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
 
@@ -4164,7 +4171,7 @@ export type MediaUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -4510,8 +4517,6 @@ export type ModelChange = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  /** Assign a user permission to an object */
-  assignUserPermission: Array<UserObjectPermission>;
   /** Attach unstructured metadata to a file */
   attachUnstructuredMeta: UnstructuredMeta;
   /** Delete every registration INTO a shared space in one call, returning the deleted edge ids. The space, the scenes over it (their layers drop to UNREGISTERED) and the space's own claims into wider spaces all survive. Guarded by the space's creator: clearing a space is the space-owner's act */
@@ -4754,11 +4759,6 @@ export type Mutation = {
   updateTransformation: Transformation;
   /** Update a vector layer's glyph style, sampling stride, magnitude scale, colormap window and compositing settings. A patch: what is not sent keeps its current value */
   updateVectorLayer: VectorLayer;
-};
-
-
-export type MutationAssignUserPermissionArgs = {
-  input: AssignUserPermissionInput;
 };
 
 
@@ -5923,13 +5923,13 @@ export type ParquetStore = {
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
-  maxBytes?: Maybe<Scalars['Int']['output']>;
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   /** Compatibility field returning the canonical S3 object path. */
   presignedUrl: Scalars['String']['output'];
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
-  sizeBytes?: Maybe<Scalars['Int']['output']>;
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
 
@@ -5950,7 +5950,7 @@ export type ParquetUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
@@ -6995,7 +6995,7 @@ export type RequestBigFileAccessInput = {
 
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['Int']['input']>;
+  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
   host?: InputMaybe<Scalars['String']['input']>;
   originalFileName: Scalars['String']['input'];
   port?: InputMaybe<Scalars['Int']['input']>;
@@ -7049,7 +7049,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['Int']['input']>;
+  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
   originalFileName: Scalars['String']['input'];
 };
 
@@ -7125,6 +7125,8 @@ export type RgbLayer = Layer & {
   redIndex: Scalars['Int']['output'];
   scene: Scene;
   visible: Scalars['Boolean']['output'];
+  /** Per-component gains [red, green, blue], multiplied into the components before the shared contrast limits. Null: no correction, the same as [1, 1, 1] */
+  whiteBalance?: Maybe<Array<Scalars['Float']['output']>>;
 };
 
 
@@ -7172,6 +7174,7 @@ export type RotationTransformation = Transformation & {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -7179,6 +7182,7 @@ export type RotationTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -7280,6 +7284,7 @@ export type ScaleTransformation = Transformation & {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -7287,6 +7292,7 @@ export type ScaleTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -7483,6 +7489,7 @@ export type SequenceTransformation = Transformation & {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -7490,6 +7497,7 @@ export type SequenceTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -7808,12 +7816,12 @@ export type SparseStore = {
   /** The stored layouts, one per `layouts/<encoding>` child. Which axis a layout's `indptr` indexes decides which question it answers in one contiguous read, so a store holding one layout offers one capability and a store holding both offers both. Empty while the store is unpopulated, which is the only state in which what it holds is unknown */
   layouts: Array<SparseLayout>;
   /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
-  maxBytes?: Maybe<Scalars['Int']['output']>;
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   path: Scalars['String']['output'];
   /** The shape of the matrix, as the root block declares it and every layout agrees. Two axes */
   shape?: Maybe<Array<Scalars['Int']['output']>>;
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
-  sizeBytes?: Maybe<Scalars['Int']['output']>;
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
   /** The version of the `sporadik` block this store was accepted under. A spec selects how every byte in the prefix is read, so an unknown one is refused rather than guessed at */
   spec?: Maybe<Scalars['String']['output']>;
 };
@@ -7831,7 +7839,7 @@ export type SparseUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -7921,6 +7929,8 @@ export type TableDataset = {
   /** Every edge from this table's space back into data it was computed from, in declared order -- the first is the primary parent, the one that places it. UNMAPPABLE where the lineage is recorded but no geometry is claimed; empty for a freestanding table. The same relation a derived dataset's `derivedFrom` records */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This table's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
+  embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The files written out of this table dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
   exports: Array<FileLink>;
   /** The folder this table dataset is filed in. Organisational only: it says where a user keeps this table, never where its rows sit in space -- that is `coordinateSystem` and the edges out of it */
@@ -8271,6 +8281,7 @@ export type Transformation = {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -8278,6 +8289,7 @@ export type Transformation = {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -8341,6 +8353,7 @@ export type TranslationTransformation = Transformation & {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -8348,6 +8361,7 @@ export type TranslationTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -8389,6 +8403,7 @@ export type UnmappableTransformation = Transformation & {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   id: Scalars['ID']['output'];
+  /** The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   input?: Maybe<CoordinateSystem>;
   /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
   inputAxes: Array<Scalars['String']['output']>;
@@ -8396,6 +8411,7 @@ export type UnmappableTransformation = Transformation & {
   invariance: TransformInvariance;
   kind: TransformKind;
   name?: Maybe<Scalars['String']['output']>;
+  /** The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper */
   output?: Maybe<CoordinateSystem>;
   /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
   outputAxes: Array<Scalars['String']['output']>;
@@ -8628,6 +8644,7 @@ export type UpdateRgbLayerInput = {
   order?: InputMaybe<Scalars['Int']['input']>;
   redIndex?: InputMaybe<Scalars['Int']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
+  whiteBalance?: InputMaybe<Array<Scalars['Float']['input']>>;
 };
 
 /** Input for setting a scene's viewer preferences. Every field is optional and an omitted one is left alone, so a client may set one preference without restating the others */
@@ -8694,7 +8711,6 @@ export type UpdateVectorLayerInput = {
 /** A user account. The sub is the stable subject identifier from the identity provider; creator and assigner fields across the API reference this type. */
 export type User = {
   __typename?: 'User';
-  activeOrganization?: Maybe<Organization>;
   id: Scalars['ID']['output'];
   preferredUsername: Scalars['String']['output'];
   sub: Scalars['String']['output'];
@@ -8902,13 +8918,13 @@ export type ZarrStore = {
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   /** The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this */
-  maxBytes?: Maybe<Scalars['Int']['output']>;
+  maxBytes?: Maybe<Scalars['ByteCount']['output']>;
   path: Scalars['String']['output'];
   shape: Array<Scalars['Int']['output']>;
   /** Shard (outer storage object) shape for zarr v3 sharding_indexed arrays; null when unsharded. Shards exist to cut object count — readers should still treat `chunks` as the brick unit. */
   shards?: Maybe<Array<Scalars['Int']['output']>>;
   /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
-  sizeBytes?: Maybe<Scalars['Int']['output']>;
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
   storageTransformers?: Maybe<Scalars['JSON']['output']>;
   version?: Maybe<Scalars['String']['output']>;
 };
@@ -8926,7 +8942,7 @@ export type ZarrUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
@@ -9671,11 +9687,11 @@ export type TransformationFragment = Transformation_AffineTransformation_Fragmen
 
 export type BigFileUploadGrantFragment = { __typename?: 'BigFileUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, store: string };
 
-export type MediaUploadGrantFragment = { __typename?: 'MediaUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: number, store: string };
+export type MediaUploadGrantFragment = { __typename?: 'MediaUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: any, store: string };
 
-export type ZarrUploadGrantFragment = { __typename?: 'ZarrUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string };
+export type ZarrUploadGrantFragment = { __typename?: 'ZarrUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: any, store: string };
 
-export type ParquetUploadGrantFragment = { __typename?: 'ParquetUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string };
+export type ParquetUploadGrantFragment = { __typename?: 'ParquetUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: any, store: string };
 
 export type BigFileAccessGrantFragment = { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string };
 
@@ -9693,7 +9709,7 @@ export type GeneralParquetAccessGrantFragment = { __typename?: 'GeneralParquetAc
 
 export type GeneralFabriksAccessGrantFragment = { __typename?: 'GeneralFabriksAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
-export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: number, store: string };
+export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: any, store: string };
 
 export type GeneralKonnektionAccessGrantFragment = { __typename?: 'GeneralKonnektionAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
@@ -9968,7 +9984,7 @@ type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', xColumn?: stri
     & PlacementStepFragment
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
-type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', intensityAxis?: string | null, redIndex: number, greenIndex: number, blueIndex: number, climMin?: number | null, climMax?: number | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
+type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', intensityAxis?: string | null, redIndex: number, greenIndex: number, blueIndex: number, climMin?: number | null, climMax?: number | null, whiteBalance?: Array<number> | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
     { __typename?: 'Lens' }
     & SceneLensFragment
   ), pathToWorld?: Array<(
@@ -10392,7 +10408,7 @@ export type SparseDatasetFragment = { __typename?: 'SparseDataset', id: string, 
 
 export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null };
 
-export type ParquetStoreFragment = { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: number | null };
+export type ParquetStoreFragment = { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null };
 
 export type BigFileStoreFragment = { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: (
     { __typename?: 'BigFileAccessGrant' }
@@ -11088,13 +11104,6 @@ export type CreateMeshCollectionMutation = { __typename?: 'Mutation', createMesh
     { __typename?: 'MeshCollection' }
     & MeshCollectionFragment
   ) };
-
-export type AssignUserPermissionsMutationVariables = Exact<{
-  input: AssignUserPermissionInput;
-}>;
-
-
-export type AssignUserPermissionsMutation = { __typename?: 'Mutation', assignUserPermission: Array<{ __typename?: 'UserObjectPermission', permission: string, user: { __typename?: 'User', sub: string } }> };
 
 export type DeleteSceneMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -14660,6 +14669,7 @@ export const SceneLayerFragmentDoc = gql`
     blueIndex
     climMin
     climMax
+    whiteBalance
   }
   ... on PhasorLayer {
     lens {
@@ -17256,42 +17266,6 @@ export function useCreateMeshCollectionMutation(baseOptions?: ApolloReactHooks.M
 export type CreateMeshCollectionMutationHookResult = ReturnType<typeof useCreateMeshCollectionMutation>;
 export type CreateMeshCollectionMutationResult = Apollo.MutationResult<CreateMeshCollectionMutation>;
 export type CreateMeshCollectionMutationOptions = Apollo.BaseMutationOptions<CreateMeshCollectionMutation, CreateMeshCollectionMutationVariables>;
-export const AssignUserPermissionsDocument = gql`
-    mutation AssignUserPermissions($input: AssignUserPermissionInput!) {
-  assignUserPermission(input: $input) {
-    user {
-      sub
-    }
-    permission
-  }
-}
-    `;
-export type AssignUserPermissionsMutationFn = Apollo.MutationFunction<AssignUserPermissionsMutation, AssignUserPermissionsMutationVariables>;
-
-/**
- * __useAssignUserPermissionsMutation__
- *
- * To run a mutation, you first call `useAssignUserPermissionsMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useAssignUserPermissionsMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [assignUserPermissionsMutation, { data, loading, error }] = useAssignUserPermissionsMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useAssignUserPermissionsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AssignUserPermissionsMutation, AssignUserPermissionsMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<AssignUserPermissionsMutation, AssignUserPermissionsMutationVariables>(AssignUserPermissionsDocument, options);
-      }
-export type AssignUserPermissionsMutationHookResult = ReturnType<typeof useAssignUserPermissionsMutation>;
-export type AssignUserPermissionsMutationResult = Apollo.MutationResult<AssignUserPermissionsMutation>;
-export type AssignUserPermissionsMutationOptions = Apollo.BaseMutationOptions<AssignUserPermissionsMutation, AssignUserPermissionsMutationVariables>;
 export const DeleteSceneDocument = gql`
     mutation DeleteScene($id: ID!) {
   deleteScene(input: {id: $id})

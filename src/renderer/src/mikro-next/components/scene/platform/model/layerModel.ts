@@ -26,6 +26,7 @@ import {
   resolveProjectionMode,
 } from "./renderGraph";
 import { resolveIntensityAxis, resolvePhasorAxis } from "./dims";
+import { readGains } from "./whiteBalanceGains";
 import { composeLayerAffine, type SceneTransformContext } from "@/lib/scene/coords/transformGraph";
 
 export type { SceneTransformContext };
@@ -84,6 +85,10 @@ const RGB_TINTS: readonly (readonly [number, number, number])[] = [
   [0, 0, 255],
 ];
 
+/** An rgb plane's opacity is its white-balance gain: unset, or finite and > 0. */
+const isWhiteBalanceGain = (opacity: number | null | undefined): boolean =>
+  opacity === null || opacity === undefined || (Number.isFinite(opacity) && opacity > 0);
+
 const isTint = (color: number[] | null, tint: readonly [number, number, number]): boolean =>
   !!color && color.length >= 3 && color[0] === tint[0] && color[1] === tint[1] && color[2] === tint[2];
 
@@ -130,7 +135,12 @@ export const resolveRenderKind = (
     const plainTints = channels.every(
       (channel, index) =>
         channel.visible &&
-        isPlainScalarTransfer(channel.transfer) &&
+        // Per-slot opacity is ALLOWED here, unlike the intensity arm: on an
+        // rgb layer it is the white-balance gain of that primary
+        // (`normalizeRgbLayer`), and the rgb emitters multiply it in exactly
+        // as the general path's `weight = opacity · norm` does.
+        isPlainScalarTransfer({ ...channel.transfer, opacity: null }) &&
+        isWhiteBalanceGain(channel.transfer.opacity) &&
         // A named colormap would override the tint, so it must be absent.
         channel.transfer.colormap === null &&
         (channel.transfer.gamma === null || channel.transfer.gamma === 1) &&
@@ -525,6 +535,12 @@ export const normalizeIntensityLayer = (
  *
  * A plane index may repeat (a two-channel acquisition shown as R=G); nothing
  * here forbids it, and the compositor handles it as three ordinary slots.
+ *
+ * `whiteBalance` lands on the three planes' slot OPACITY: the general
+ * compositor's contribution is `tint · opacity · norm`, which is exactly a
+ * per-primary gain after the window, and the rgb material multiplies the same
+ * scalars in (`rgbUniforms.ts`). A neutral gain stays null, so an unbalanced
+ * layer normalizes exactly as it did before the field existed.
  */
 export const normalizeRgbLayer = (
   layer: RgbLayerFragment,
@@ -532,10 +548,12 @@ export const normalizeRgbLayer = (
   scene: SceneTransformContext,
 ): LayerState => {
   const [baseMin, baseMax] = resolveBaseRange(layer);
+  const gains = readGains(layer.whiteBalance);
   const plane = (
     label: string,
     intensityIndex: number,
     color: readonly [number, number, number],
+    gain: number,
   ): ChannelRenderNode => ({
     type: "channel",
     kind: CHANNEL_KIND,
@@ -551,14 +569,14 @@ export const normalizeRgbLayer = (
       colorStops: null,
       stops: null,
       gamma: null,
-      opacity: null,
+      opacity: gain === 1 ? null : gain,
       invert: null,
     },
   });
   const sources = [
-    plane("Red", layer.redIndex, RGB_TINTS[0]),
-    plane("Green", layer.greenIndex, RGB_TINTS[1]),
-    plane("Blue", layer.blueIndex, RGB_TINTS[2]),
+    plane("Red", layer.redIndex, RGB_TINTS[0], gains[0]),
+    plane("Green", layer.greenIndex, RGB_TINTS[1], gains[1]),
+    plane("Blue", layer.blueIndex, RGB_TINTS[2], gains[2]),
   ];
   // Across the three planes the compositing is addition — an RGB image IS the
   // sum of its basis-tinted planes. The layer's own `blending` describes how it

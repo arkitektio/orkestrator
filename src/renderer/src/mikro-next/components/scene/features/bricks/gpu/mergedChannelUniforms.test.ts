@@ -151,6 +151,7 @@ describe("buildMergedChannelUniformData — rgb specialization input", () => {
       climMax: merged.climMax[0],
       gamma: merged.gamma[0],
       row: merged.row[0],
+      gains: [1, 1, 1],
     });
     expect(fixedMemberUniforms(merged, rgbMember)).toEqual({
       slabs: [0, 1, 2],
@@ -158,7 +159,23 @@ describe("buildMergedChannelUniformData — rgb specialization input", () => {
       climMax: merged.climMax[1],
       gamma: 1,
       row: merged.row[1],
+      gains: [1, 1, 1],
     });
+  });
+
+  it("fixedMemberUniforms carries an rgb member's white-balance gains (slot opacities)", () => {
+    const balanced = layer(
+      rgb().channels.map((c, i) => ({
+        ...c,
+        transfer: { ...c.transfer, opacity: [1, 0.7, 0.4][i] },
+      })),
+      { renderKind: "rgb" },
+    );
+    const merged = build([
+      { layerId: "plain", layer: layer([channel()], { renderKind: "intensity" }), slotOffset: 0 },
+      { layerId: "rgb", layer: balanced, slotOffset: 1 },
+    ]);
+    expect(fixedMemberUniforms(merged, merged.members[1]).gains).toEqual([1, 0.7, 0.4]);
   });
 });
 

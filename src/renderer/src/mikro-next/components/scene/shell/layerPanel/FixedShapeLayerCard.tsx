@@ -24,6 +24,7 @@ import {
   TransferEditor,
 } from "../../features/volume/rendergraph/RenderNodeEditor";
 import { RgbChannelEditor } from "./RgbChannelEditor";
+import { readGains, storedGains } from "./whiteBalance";
 import { LayerRow } from "./LayerRow";
 import { UnplannableNotice } from "./UnplannableNotice";
 import { type LayerCardProps } from "./cardShell";
@@ -173,6 +174,20 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
       })),
     );
 
+  /**
+   * White balance: the three per-primary gains, carried as the planes' slot
+   * opacities (`normalizeRgbLayer`). Opacity is a WINDOW scalar
+   * (`channelDataSignature.ts`), so a gain drag takes the allocation-free
+   * window path in both brick layers rather than a rebuild.
+   */
+  const setRgbWhiteBalance = (gains: readonly number[]) =>
+    pushChannels(
+      layer.channels.map((channel, i) => ({
+        ...channel,
+        transfer: { ...channel.transfer, opacity: gains[i] === 1 ? null : (gains[i] ?? null) },
+      })),
+    );
+
   /** All three plane indices at once — a preset moves two or three of them,
    *  and three separate writes would republish the layer mid-edit. */
   const setRgbPlanes = (indices: readonly number[]) =>
@@ -242,6 +257,11 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
             // one candidate, and unpersisted until now — a remapped layer came
             // back addressing the old axis on the next load.
             intensityAxis: red?.intensityAxis ?? null,
+            // The planes' slot opacities ARE the white balance
+            // (`normalizeRgbLayer`); neutral persists as null.
+            whiteBalance: storedGains(
+              readGains([red, green, blue].map((plane) => plane?.transfer.opacity ?? 1)),
+            ),
           },
         },
       });
@@ -321,6 +341,7 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
               onPlanes={setRgbPlanes}
               onWindow={setRgbWindow}
               onIntensityAxis={setRgbAxis}
+              onWhiteBalance={setRgbWhiteBalance}
             />
           )}
           {layer.__typename !== "RgbLayer" && (

@@ -204,6 +204,10 @@ export type RgbPlaneNodes = TraversalNodesPublic & {
   /** The ONE contrast window all three channels share. */
   uClimMin: UniformNodeLike<number>;
   uClimMax: UniformNodeLike<number>;
+  /** White-balance gain per primary (the slot opacities). */
+  uGainR: UniformNodeLike<number>;
+  uGainG: UniformNodeLike<number>;
+  uGainB: UniformNodeLike<number>;
   /** Atlas-slab index of the red / green / blue channel. */
   uSlabR: UniformNodeLike<number>;
   uSlabG: UniformNodeLike<number>;
@@ -223,6 +227,9 @@ const makeRgbNodes = (data: RgbUniformData): any => ({
   maxValue: uniform(1, "float"),
   uClimMin: uniform(data.climMin, "float"),
   uClimMax: uniform(data.climMax, "float"),
+  uGainR: uniform(data.gainR, "float"),
+  uGainG: uniform(data.gainG, "float"),
+  uGainB: uniform(data.gainB, "float"),
   uSlabR: uniform(data.slabR, "int"),
   uSlabG: uniform(data.slabG, "int"),
   uSlabB: uniform(data.slabB, "int"),
@@ -233,6 +240,9 @@ const makeRgbNodes = (data: RgbUniformData): any => ({
 export function updateRgbNodes(nodes: RgbPlaneNodes, data: RgbUniformData): void {
   nodes.uClimMin.value = data.climMin;
   nodes.uClimMax.value = data.climMax;
+  nodes.uGainR.value = data.gainR;
+  nodes.uGainG.value = data.gainG;
+  nodes.uGainB.value = data.gainB;
   nodes.uSlabR.value = data.slabR;
   nodes.uSlabG.value = data.slabG;
   nodes.uSlabB.value = data.slabB;
@@ -240,15 +250,16 @@ export function updateRgbNodes(nodes: RgbPlaneNodes, data: RgbUniformData): void
 
 /**
  * The RGB transfer: the shared `emitScalarNormalize` per slab with the ONE
- * window and NO gamma (`pow(x, 1)` is `x`; the omission is exact).
+ * window and NO gamma (`pow(x, 1)` is `x`; the omission is exact), each
+ * primary scaled by its white-balance gain.
  * CPU mirror: `shaderspec/rgbComposite.ts` `rgbSampleContribution`.
  */
 export const emitRgbNormalize = (n: any, raw: { r: any; g: any; b: any }): any => {
   const window = { climMin: n.uClimMin, climMax: n.uClimMax, gamma: null };
   return vec3(
-    emitScalarNormalize(n, window, raw.r),
-    emitScalarNormalize(n, window, raw.g),
-    emitScalarNormalize(n, window, raw.b),
+    emitScalarNormalize(n, window, raw.r).mul(n.uGainR),
+    emitScalarNormalize(n, window, raw.g).mul(n.uGainG),
+    emitScalarNormalize(n, window, raw.b).mul(n.uGainB),
   );
 };
 
@@ -257,7 +268,7 @@ export const emitRgbNormalize = (n: any, raw: { r: any; g: any; b: any }): any =
  *
  * Same traversal as the intensity plane (one residency resolve per pixel, then
  * taps), and the composite is the identity: the general path's contribution
- * for slot k is a CONSTANT basis tint × (opacity 1 · norm_k) summed additively
+ * for slot k is a CONSTANT basis tint × (gain_k · norm_k) summed additively
  * over a zero accumulator — see `rgbUniforms.ts` for why the tint rows are
  * constant — so three taps and three normalizes ARE the colour. Dropped
  * relative to the general plane material, per pixel: the 16-slot loop with its

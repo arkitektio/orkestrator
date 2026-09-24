@@ -522,6 +522,13 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   // drag. This effect writes the fresh scalars straight into the existing
   // uniform nodes instead. Runs redundantly after a structural rebuild (both
   // keys move) — a harmless double write of identical values.
+  //
+  // It MUST also re-run whenever the full push above does (declared after it,
+  // so it lands last): that push hands `updateChannelNodes` and
+  // `fixedMemberUniforms` the STRUCTURE-keyed `channelData`, whose window
+  // scalars (clim, and an rgb member's white-balance gains) are stale by
+  // design. A zoom moves `planTargetLevel` and re-runs that push; without
+  // this re-apply the window reverted to the last structural rebuild's.
   const channelWindowKey = useMemo(
     () =>
       isPrimary
@@ -556,6 +563,10 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
     pool?.minValue,
     pool?.maxValue,
     invalidate,
+    // The full push's triggers — see above.
+    planTargetLevel,
+    layer?.projection,
+    isoThreshold,
   ]);
 
   // Range-decode uniforms, tracked on every poolsVersion bump: the pool's

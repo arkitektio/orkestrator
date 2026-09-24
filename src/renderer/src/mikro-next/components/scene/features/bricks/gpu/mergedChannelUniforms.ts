@@ -104,10 +104,16 @@ export type FixedMemberUniforms = {
   gamma: number;
   /** Colormap-atlas row of slot 0 (intensity only; rgb samples no LUT). */
   row: number;
+  /** Per-slot opacity of the first three slots — an rgb member's white-balance
+   *  gains (`normalizeRgbLayer`). The intensity arm ignores them. */
+  gains: [number, number, number];
 };
 
 export function fixedMemberUniforms(
-  data: Pick<ChannelUniformData, "channelIndex" | "climMin" | "climMax" | "gamma" | "row">,
+  data: Pick<
+    ChannelUniformData,
+    "channelIndex" | "climMin" | "climMax" | "gamma" | "row" | "opacity"
+  >,
   member: Pick<MergedMemberUniforms, "slotFirst" | "slotCount">,
 ): FixedMemberUniforms {
   const at = (k: number) => member.slotFirst + Math.min(k, Math.max(0, member.slotCount - 1));
@@ -121,6 +127,7 @@ export function fixedMemberUniforms(
     climMax: data.climMax[member.slotFirst] ?? 1,
     gamma: data.gamma[member.slotFirst] ?? 1,
     row: data.row[member.slotFirst] ?? 0,
+    gains: [data.opacity[at(0)] ?? 1, data.opacity[at(1)] ?? 1, data.opacity[at(2)] ?? 1],
   };
 }
 

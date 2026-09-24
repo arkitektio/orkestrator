@@ -24,6 +24,8 @@ import {
   resolvePlanes,
   type PlaneHistogram,
 } from "./rgbPlanes";
+import { WhiteBalanceSection } from "./WhiteBalanceSection";
+import type { Gains } from "./whiteBalance";
 
 /**
  * The rendering block of an `RgbLayer` card.
@@ -39,7 +41,9 @@ import {
  * ## What is deliberately NOT here
  *
  * Per-channel windows, per-channel gamma, per-channel colormaps and
- * per-channel mute. Each is refused for two independent reasons, and both are
+ * per-channel mute. (White balance is NOT one of these: it is one stored
+ * layer field, `whiteBalance`, and it rides on the slot opacities the rgb
+ * material already multiplies in — see `whiteBalance.ts`.) Each is refused for two independent reasons, and both are
  * worth knowing before adding one back:
  *
  *  - `UpdateRgbLayerInput` has no column for any of them, so the edit could
@@ -114,6 +118,7 @@ export const RgbChannelEditor = ({
   onPlanes,
   onWindow,
   onIntensityAxis,
+  onWhiteBalance,
 }: {
   layer: LayerState;
   /** The three plane indices, in R/G/B slot order. One write for a preset and
@@ -122,6 +127,8 @@ export const RgbChannelEditor = ({
   onPlanes: (indices: readonly number[]) => void;
   onWindow: (climMin: number, climMax: number) => void;
   onIntensityAxis: (axis: string) => void;
+  /** The three per-primary gains, written as the planes' slot opacities. */
+  onWhiteBalance: (gains: Gains) => void;
 }) => {
   const [openSlot, setOpenSlot] = useState<number | null>(null);
 
@@ -185,6 +192,11 @@ export const RgbChannelEditor = ({
   const transfer = layer.channels[0]?.transfer;
   const climMin = transfer?.climMin ?? dtypeMin;
   const climMax = transfer?.climMax ?? dtypeMax;
+
+  const gains = useMemo<Gains>(
+    () => [0, 1, 2].map((slot) => layer.channels[slot]?.transfer.opacity ?? 1) as unknown as Gains,
+    [layer.channels],
+  );
 
   const pick = (slot: number, index: number) => {
     onPlanes(indices.map((current, i) => (i === slot ? index : current)));
@@ -342,6 +354,16 @@ export const RgbChannelEditor = ({
           onChange={(next) => onWindow(next.min, next.max)}
         />
       </CardSection>
+
+      <WhiteBalanceSection
+        layerId={layer.id}
+        gains={gains}
+        slabs={[indices[0], indices[1], indices[2]]}
+        mapped={mapped}
+        climMin={climMin}
+        climMax={climMax}
+        onChange={onWhiteBalance}
+      />
 
       <CardSection title="source">
         <div className="flex flex-wrap items-center gap-1">

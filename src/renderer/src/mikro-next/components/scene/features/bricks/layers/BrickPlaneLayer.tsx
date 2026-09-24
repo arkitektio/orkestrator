@@ -290,7 +290,14 @@ export const BrickPlaneLayer = ({ layerId }: { layerId: string }) => {
   // window signature, so the structure-keyed rebuilds above stayed put —
   // write the fresh scalars into the existing uniform nodes instead. Runs
   // redundantly after a structural rebuild — a harmless double write of
-  // identical values. The explicit `invalidate()` matters: the frameloop is
+  // identical values.
+  //
+  // It MUST also re-run whenever the full push above does (same deps, and it
+  // is declared after it so it lands last): that push writes the
+  // STRUCTURE-keyed data, whose window scalars (clim, and an rgb layer's
+  // white-balance gains) are stale by design. A zoom moves `planTargetLevel`,
+  // re-runs the full push, and without this re-apply the window reverted to
+  // whatever it was at the last structural rebuild. The explicit `invalidate()` matters: the frameloop is
   // "demand" (SceneViewport), and with the bridges isolated a drag tick may
   // cause NO React commit near the canvas to carry the redraw.
   useEffect(() => {
@@ -320,7 +327,19 @@ export const BrickPlaneLayer = ({ layerId }: { layerId: string }) => {
     }
     invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bundle, channelWindowKey, pool?.minValue, pool?.maxValue]);
+  }, [
+    bundle,
+    channelWindowKey,
+    pool?.minValue,
+    pool?.maxValue,
+    // The full push's triggers — see above.
+    channelData,
+    intensityData,
+    rgbData,
+    planTargetLevel,
+    slabBaseZ,
+    isDebug,
+  ]);
 
   // The traversal contract, shared with the other plane material.
   usePlaneTraversalUniforms(bundle?.nodes, {

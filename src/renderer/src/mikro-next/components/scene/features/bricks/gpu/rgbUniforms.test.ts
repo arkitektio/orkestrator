@@ -17,7 +17,8 @@ import { CHANNEL_KIND } from "../../../platform/model/renderGraph";
  * Two claims are pinned, and the shader is only exact if BOTH hold:
  *  1. the five scalars the slim builder hands the material equal slots 0..2 of
  *     the general builder (slab indices, the shared window, and the constants
- *     the fast path compiles away: gamma 1, opacity 1, visible, no invert);
+ *     the fast path compiles away: gamma 1, visible, no invert — opacity is
+ *     the white-balance gain and stays a uniform);
  *  2. the general path's colormap-atlas rows for these three sources are
  *     CONSTANT pure-basis tints — that is what makes the LUT tap droppable.
  *     If `buildColormapAtlas` ever bakes a tint as a ramp, (2) fails and the
@@ -97,6 +98,12 @@ describe("buildRgbUniformData ≡ slots 0..2 of buildChannelUniformData", () => 
       SLOTS.map((i) => channel(i, { transfer: transfer(RGB[i], { gamma: 1, opacity: 1 }) })),
     ],
     ["a slab index past the pool's last", [channel(0, {}, 99), channel(1), channel(2)]],
+    [
+      "white-balance gains (per-slot opacity)",
+      SLOTS.map((i) =>
+        channel(i, { transfer: transfer(RGB[i], { opacity: [1, 0.8, 0.5][i] }) }),
+      ),
+    ],
   ];
 
   it.each(cases)("earns renderKind rgb for %s", (_label, sources) => {
@@ -112,6 +119,8 @@ describe("buildRgbUniformData ≡ slots 0..2 of buildChannelUniformData", () => 
     expect([s.slabR, s.slabG, s.slabB]).toEqual(g.channelIndex.slice(0, 3));
     expect(s.climMin).toBe(g.climMin[0]);
     expect(s.climMax).toBe(g.climMax[0]);
+    // The gains ARE the general path's per-slot opacity, weight = opacity · norm.
+    expect([s.gainR, s.gainG, s.gainB]).toEqual(g.opacity.slice(0, 3));
   });
 
   it.each(cases)(
@@ -122,7 +131,7 @@ describe("buildRgbUniformData ≡ slots 0..2 of buildChannelUniformData", () => 
       expect(g.climMin.slice(0, 3)).toEqual([g.climMin[0], g.climMin[0], g.climMin[0]]);
       expect(g.climMax.slice(0, 3)).toEqual([g.climMax[0], g.climMax[0], g.climMax[0]]);
       expect(g.gamma.slice(0, 3)).toEqual([1, 1, 1]);
-      expect(g.opacity.slice(0, 3)).toEqual([1, 1, 1]);
+      // Opacity is NOT a constant: it is the white-balance gain, a uniform.
       expect(g.visible.slice(0, 3)).toEqual([1, 1, 1]);
       expect(g.invert.slice(0, 3)).toEqual([0, 0, 0]);
     },

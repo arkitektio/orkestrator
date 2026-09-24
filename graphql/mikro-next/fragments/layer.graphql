@@ -452,6 +452,8 @@ fragment SceneLayer on Layer {
     # acquisition, so per-plane contrast would misrepresent it.
     climMin
     climMax
+    # Per-primary gains after that window; null = neutral.
+    whiteBalance
   }
   ... on PhasorLayer {
     lens {

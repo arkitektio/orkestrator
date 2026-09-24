@@ -259,6 +259,19 @@ describe("normalizeRgbLayer", () => {
   it("earns renderKind rgb", () => {
     expect(normalizeRgbLayer(rgbLayer(), null, SCENE).renderKind).toBe("rgb");
   });
+
+  it("puts whiteBalance on the planes' slot opacity and stays rgb", () => {
+    const state = normalizeRgbLayer(rgbLayer({ whiteBalance: [1, 0.7, 0.4] }), null, SCENE);
+    expect(state.channels.map((c) => c.transfer.opacity)).toEqual([null, 0.7, 0.4]);
+    expect(state.renderKind).toBe("rgb");
+  });
+
+  it("reads a null or malformed whiteBalance as neutral", () => {
+    for (const whiteBalance of [null, [1, 2], [1, 0, 1]]) {
+      const state = normalizeRgbLayer(rgbLayer({ whiteBalance }), null, SCENE);
+      expect(state.channels.map((c) => c.transfer.opacity)).toEqual([null, null, null]);
+    }
+  });
 });
 
 describe("normalizePhasorLayer", () => {
@@ -351,6 +364,22 @@ describe("resolveRenderKind", () => {
     // Swap two and it is an ordinary three-channel composite again.
     const swapped = [rgbSources[1], rgbSources[0], rgbSources[2]];
     expect(resolveRenderKind(swapped, Blending.Additive)).toBe("graph");
+  });
+
+  it("keeps rgb under white-balance gains (per-slot opacity), but not a zero gain", () => {
+    const balanced = (gains: readonly (number | null)[]) =>
+      [
+        [255, 0, 0],
+        [0, 255, 0],
+        [0, 0, 255],
+      ].map((color, i) =>
+        channel({ transfer: plainTransfer({ colormap: null, color, opacity: gains[i] }) }),
+      );
+    expect(resolveRenderKind(balanced([1, 0.7, 0.4]), Blending.Additive)).toBe("rgb");
+    expect(resolveRenderKind(balanced([null, 2, null]), Blending.Additive)).toBe("rgb");
+    // A zero or non-finite gain is not a balance the rgb material promises.
+    expect(resolveRenderKind(balanced([1, 0, 1]), Blending.Additive)).toBe("graph");
+    expect(resolveRenderKind(balanced([1, Number.NaN, 1]), Blending.Additive)).toBe("graph");
   });
 
   it("keeps rgb for EVERY mapping the RGB card can produce", () => {

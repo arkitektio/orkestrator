@@ -44,6 +44,10 @@ type AffineTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -57,6 +61,10 @@ type AffineTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -632,6 +640,11 @@ type ArrayDataset {
   description: String
 
   """
+  This dataset's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
+  """
+  embedding: Embedding
+
+  """
   The files written out of this dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles`
   """
   exports(filters: FileLinkFilter): [FileLink!]!
@@ -905,23 +918,6 @@ type ArraySample implements SampleStep {
   system: CoordinateSystem!
 }
 
-"""Input for assigning object-level permissions to a user"""
-input AssignUserPermissionInput {
-  """
-  The type identifier of the object, e.g. "@mikro/image"
-  """
-  identifier: String!
-
-  """The primary key of the object to assign permissions on"""
-  object: ID!
-
-  """The permissions to assign, e.g. ["view_image", "change_image"]"""
-  permissions: [String!]!
-
-  """The primary key of the user to assign permissions to"""
-  user: ID!
-}
-
 """
 An input for associating a set of items with another item, e.g. putting images into a dataset
 """
@@ -1176,7 +1172,7 @@ type BigFileStore {
   """
   The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
   """
-  maxBytes: Int
+  maxBytes: ByteCount
   originalFileName: String
   path: String!
   presignedUrl: String!
@@ -1184,7 +1180,7 @@ type BigFileStore {
   """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
   """
-  sizeBytes: Int
+  sizeBytes: ByteCount
 }
 
 """Temporary S3 credentials for uploading a big file."""
@@ -1193,7 +1189,7 @@ type BigFileUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   region: String!
@@ -1308,6 +1304,10 @@ type ByDimensionTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -1321,6 +1321,10 @@ type ByDimensionTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -1358,6 +1362,11 @@ type ByDimensionTransformation implements Transformation {
   """
   version: Int!
 }
+
+"""
+A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string.
+"""
+scalar ByteCount
 
 """Detector"""
 type CCDElement implements OpticalElement {
@@ -2438,6 +2447,7 @@ input CreateRgbLayerInput {
   redIndex: Int = 0
   scene: ID!
   visible: Boolean = null
+  whiteBalance: [Float!] = null
 }
 
 """
@@ -2955,6 +2965,11 @@ enum ElementKind {
   WAVEPLATE
 }
 
+"""
+A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it).
+"""
+scalar Embedding
+
 """Euler angles for 3D orientation"""
 type Euler {
   rx: Float
@@ -3072,13 +3087,13 @@ type FabriksStore {
   """
   The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
   """
-  maxBytes: Int
+  maxBytes: ByteCount
   path: String!
 
   """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
   """
-  sizeBytes: Int
+  sizeBytes: ByteCount
   specVersion: String
 }
 
@@ -3090,7 +3105,7 @@ type FabriksUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   region: String!
@@ -3125,6 +3140,10 @@ type FieldTransformation implements Transformation {
   """
   field: CoordinateSystem
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -3138,6 +3157,10 @@ type FieldTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -3656,6 +3679,11 @@ type Folder {
   createdThroughBy: User
   creator: User
   description: String
+
+  """
+  This folder's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
+  """
+  embedding: Embedding
   files(filters: FileFilter, ordering: [FileOrder!]! = [], pagination: OffsetPaginationInput): [File!]!
   id: ID!
   isDefault: Boolean!
@@ -4070,6 +4098,10 @@ type IdentityTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -4083,6 +4115,10 @@ type IdentityTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -4312,13 +4348,13 @@ type KonnektionStore {
   """
   The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
   """
-  maxBytes: Int
+  maxBytes: ByteCount
   path: String!
 
   """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
   """
-  sizeBytes: Int
+  sizeBytes: ByteCount
   specVersion: String
 }
 
@@ -4330,7 +4366,7 @@ type KonnektionUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   region: String!
@@ -5206,6 +5242,10 @@ type MapAxisTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """The names of the input axes, positionally matched to `outputAxes`"""
@@ -5217,6 +5257,10 @@ type MapAxisTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """The names of the output axes, positionally matched to `inputAxes`"""
@@ -5273,7 +5317,7 @@ type MediaStore {
   """
   The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
   """
-  maxBytes: Int
+  maxBytes: ByteCount
   originalFileName: String
   path: String!
 
@@ -5283,7 +5327,7 @@ type MediaStore {
   """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
   """
-  sizeBytes: Int
+  sizeBytes: ByteCount
 }
 
 """A presigned PUT grant for uploading a media object."""
@@ -5292,7 +5336,7 @@ type MediaUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   region: String!
@@ -5700,9 +5744,6 @@ type ModelChange {
 }
 
 type Mutation {
-  """Assign a user permission to an object"""
-  assignUserPermission(input: AssignUserPermissionInput!): [UserObjectPermission!]!
-
   """Attach unstructured metadata to a file"""
   attachUnstructuredMeta(input: UnstructuredMetaInput!): UnstructuredMeta!
 
@@ -6918,7 +6959,7 @@ type ParquetStore {
   """
   The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
   """
-  maxBytes: Int
+  maxBytes: ByteCount
   originalFileName: String
   path: String!
 
@@ -6928,7 +6969,7 @@ type ParquetStore {
   """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
   """
-  sizeBytes: Int
+  sizeBytes: ByteCount
 }
 
 """Temporary S3 credentials for uploading a parquet store."""
@@ -6938,7 +6979,7 @@ type ParquetUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   secretKey: String!
@@ -7893,7 +7934,7 @@ input RequestBigFileAccessInput {
 
 input RequestBigFileUploadInput {
   contentType: String = null
-  fileSize: Int = null
+  fileSize: ByteCount = null
   host: String = null
   originalFileName: String!
   port: Int = null
@@ -7947,7 +7988,7 @@ input RequestMediaAccessInput {
 
 input RequestMediaUploadInput {
   contentType: String = null
-  fileSize: Int = null
+  fileSize: ByteCount = null
   originalFileName: String!
 }
 
@@ -8044,6 +8085,11 @@ type RgbLayer implements Layer {
   redIndex: Int!
   scene: Scene!
   visible: Boolean!
+
+  """
+  Per-component gains [red, green, blue], multiplied into the components before the shared contrast limits. Null: no correction, the same as [1, 1, 1]
+  """
+  whiteBalance: [Float!]
 }
 
 """
@@ -8061,6 +8107,10 @@ type RotationTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -8074,6 +8124,10 @@ type RotationTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -8229,6 +8283,10 @@ type ScaleTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -8242,6 +8300,10 @@ type ScaleTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -8481,6 +8543,10 @@ type SequenceTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -8494,6 +8560,10 @@ type SequenceTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -8945,7 +9015,7 @@ type SparseStore {
   """
   The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
   """
-  maxBytes: Int
+  maxBytes: ByteCount
   path: String!
 
   """
@@ -8956,7 +9026,7 @@ type SparseStore {
   """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
   """
-  sizeBytes: Int
+  sizeBytes: ByteCount
 
   """
   The version of the `sporadik` block this store was accepted under. A spec selects how every byte in the prefix is read, so an unknown one is refused rather than guessed at
@@ -8972,7 +9042,7 @@ type SparseUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   region: String!
@@ -9074,6 +9144,11 @@ type TableDataset {
   """
   derivedFrom: [Transformation!]!
   description: String
+
+  """
+  This table's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
+  """
+  embedding: Embedding
 
   """
   The files written out of this table dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles`
@@ -9527,6 +9602,10 @@ interface Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -9540,6 +9619,10 @@ interface Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -9629,6 +9712,10 @@ type TranslationTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -9642,6 +9729,10 @@ type TranslationTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -9710,6 +9801,10 @@ type UnmappableTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
+
+  """
+  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   input: CoordinateSystem
 
   """
@@ -9723,6 +9818,10 @@ type UnmappableTransformation implements Transformation {
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
+
+  """
+  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
+  """
   output: CoordinateSystem
 
   """
@@ -10054,6 +10153,7 @@ input UpdateRgbLayerInput {
   order: Int = null
   redIndex: Int = null
   visible: Boolean = null
+  whiteBalance: [Float!] = null
 }
 
 """
@@ -10132,7 +10232,6 @@ input UpdateVectorLayerInput {
 A user account. The sub is the stable subject identifier from the identity provider; creator and assigner fields across the API reference this type.
 """
 type User {
-  activeOrganization: Organization
   id: ID!
   preferredUsername: String!
   sub: String!
@@ -10367,7 +10466,7 @@ type ZarrStore {
   """
   The byte budget the upload grant advertised for this store. Advertised, not enforced: a session policy bounds what a credential may write, never how much, so a store may exceed this
   """
-  maxBytes: Int
+  maxBytes: ByteCount
   path: String!
   shape: [Int!]!
 
@@ -10379,7 +10478,7 @@ type ZarrStore {
   """
   How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
   """
-  sizeBytes: Int
+  sizeBytes: ByteCount
   storageTransformers: JSON
   version: String
 }
@@ -10391,7 +10490,7 @@ type ZarrUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   secretKey: String!

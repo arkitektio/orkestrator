@@ -355,6 +355,13 @@ export function updateChannelWindows(
       fixed.uClimMin.value = windows.climMin[slots.slotFirst] ?? 0;
       fixed.uClimMax.value = windows.climMax[slots.slotFirst] ?? 1;
       fixed.uGamma.value = windows.gamma[slots.slotFirst] ?? 1;
+      // Opacity is a window scalar, and on an rgb member it is the
+      // white-balance gain — a gain drag lands here, not in a rebuild.
+      const at = (k: number) =>
+        slots.slotFirst + Math.min(k, Math.max(0, slots.slotCount - 1));
+      fixed.uGain0.value = windows.opacity[at(0)] ?? 1;
+      fixed.uGain1.value = windows.opacity[at(1)] ?? 1;
+      fixed.uGain2.value = windows.opacity[at(2)] ?? 1;
     }
   }
 }
@@ -1463,6 +1470,10 @@ export type VolumeMaterialNodes = TraversalNodesPublic &
         uClimMax: UniformNodeLike<number>;
         uGamma: UniformNodeLike<number>;
         uRow: UniformNodeLike<number>;
+        /** An rgb member's white-balance gain per primary (slot opacities). */
+        uGain0: UniformNodeLike<number>;
+        uGain1: UniformNodeLike<number>;
+        uGain2: UniformNodeLike<number>;
       };
     }[];
   };
@@ -1609,6 +1620,9 @@ export function createVolumeNodeMaterial(
         uClimMax: uniform(fx.climMax, "float"),
         uGamma: uniform(fx.gamma, "float"),
         uRow: uniform(fx.row, "float"),
+        uGain0: uniform(fx.gains[0], "float"),
+        uGain1: uniform(fx.gains[1], "float"),
+        uGain2: uniform(fx.gains[2], "float"),
       },
     };
   });
@@ -2253,12 +2267,13 @@ export function createVolumeNodeMaterial(
         if (memberFns[m].emitRgb) {
           const gradSlab = int(mem.fixed.uSlab0).toVar();
           // THREE basis-tinted slots over ONE window: the general path's
-          // per-slot contribution is a CONSTANT tint row × (opacity 1 · norm),
-          // summed additively — i.e. `vec3(normR, normG, normB)` with no LUT
-          // sample at all (`rgbUniforms.ts` explains and its test pins the
-          // constant rows). The ray ranks by the max per-slot norm, exactly as
-          // the general loop's `sampleNorm = max(...)` does. CPU mirror:
-          // `shaderspec/rgbComposite.ts`.
+          // per-slot contribution is a CONSTANT tint row × (gain · norm),
+          // summed additively — i.e. `vec3(gR·normR, gG·normG, gB·normB)` with
+          // no LUT sample at all (`rgbUniforms.ts` explains and its test pins
+          // the constant rows). The gain is the slot opacity, i.e. the layer's
+          // white balance. The ray ranks by the max per-slot UNWEIGHTED norm,
+          // exactly as the general loop's `sampleNorm = max(norm)` does. CPU
+          // mirror: `shaderspec/rgbComposite.ts`.
           If(resolved.status.greaterThanEqual(0.5), () => {
             // ONE tap on an rgba8 atlas, three otherwise (emitRgbTaps).
             const raw = emitRgbTaps(
@@ -2271,7 +2286,9 @@ export function createVolumeNodeMaterial(
             const nR = float(fixedNormalize(m, raw.r)).toVar(nm("fxNr"));
             const nG = float(fixedNormalize(m, raw.g)).toVar(nm("fxNg"));
             const nB = float(fixedNormalize(m, raw.b)).toVar(nm("fxNb"));
-            sampleColor.assign(vec3(nR, nG, nB));
+            sampleColor.assign(
+              vec3(nR.mul(mem.fixed.uGain0), nG.mul(mem.fixed.uGain1), nB.mul(mem.fixed.uGain2)),
+            );
             sampleNorm.assign(max(nR, max(nG, nB)));
             // Shade the structure actually on screen: the brightest of the
             // three basis slabs. One window covers all three, so the gradient's
@@ -2628,6 +2645,9 @@ export function updateMergedMemberNodes(
       f.uClimMax.value = fx.climMax;
       f.uGamma.value = fx.gamma;
       f.uRow.value = fx.row;
+      f.uGain0.value = fx.gains[0];
+      f.uGain1.value = fx.gains[1];
+      f.uGain2.value = fx.gains[2];
     }
   }
 }
