@@ -1,3 +1,11 @@
+# [2.14.0](https://github.com/arkitektio/orkestrator/compare/v2.13.0...v2.14.0) (2026-09-24)
+
+
+### Features
+
+* implement white balance gains for RGB layers ([295b7b5](https://github.com/arkitektio/orkestrator/commit/295b7b58897c89338392fcf09350d6dbd1a6b93f))
+* with white balance ([27131fb](https://github.com/arkitektio/orkestrator/commit/27131fb76ec28ef1266c993bd61a8ae7f674a7a6))
+
 # [2.13.0](https://github.com/arkitektio/orkestrator/compare/v2.12.1...v2.13.0) (2026-09-23)
 
 
