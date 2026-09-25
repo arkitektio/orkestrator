@@ -75,7 +75,7 @@ describe("asking an agent from the palette", () => {
 
   it("attaches what is in context to the question", async () => {
     query = "whats that?";
-    renderAsk([{ identifier: "@mikro/image", object: { id: "42" } }]);
+    renderAsk([{ identifier: "@mikro/image", id: "42" }]);
 
     act(() => screen.getByText("Ask an agent").click());
     await flush();

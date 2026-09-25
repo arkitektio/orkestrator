@@ -122,11 +122,11 @@ const useEntityRelationItems = (ctx: SmartSectionContext): SectionItems<Relation
   const partner = ctx.partners?.at(0);
 
   const source = useGetDetailInstanceQuery({
-    variables: { id: object?.object.id ?? "" },
+    variables: { id: object?.id ?? "" },
     skip: !object,
   });
   const target = useGetDetailInstanceQuery({
-    variables: { id: partner?.object.id ?? "" },
+    variables: { id: partner?.id ?? "" },
     skip: !partner,
   });
 

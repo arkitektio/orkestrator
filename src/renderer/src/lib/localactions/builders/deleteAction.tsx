@@ -115,7 +115,7 @@ export const buildDeleteAction = <
     const failures: { id: string; error: unknown }[] = [];
     let done = 0;
     for (const structure of targets) {
-      const id = structure.object.id;
+      const id = structure.id;
       try {
         await service.mutate({
           mutation: params.mutation,

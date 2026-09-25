@@ -23,7 +23,7 @@ export const MeasurementsBlock = ({
     <div className="flex flex-row items-center justify-between gap-2">
       <div className="text-sm font-semibold">Measurements</div>
       <ObjectButton
-        objects={[{ identifier, object }]}
+        objects={[{ identifier, id: object.id }]}
         sections={{ exclude: ["kraph"] }}
         expect={["@mikro/metric"]}
         onDone={onChanged}

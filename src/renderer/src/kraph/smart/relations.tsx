@@ -53,7 +53,7 @@ export const StructureRelateButton = (props: {
         const left = await createStructure({
           variables: {
             input: {
-              object: object.object.id,
+              object: object.id,
               identifier: object.identifier,
             },
           },
@@ -62,7 +62,7 @@ export const StructureRelateButton = (props: {
         const right = await createStructure({
           variables: {
             input: {
-              object: props.right.object.id,
+              object: props.right.id,
               identifier: props.right.identifier,
             },
           },
@@ -146,8 +146,8 @@ export const EntityRelateButton = (props: {
       await assertRelation({
         variables: {
           input: {
-            sourceId: props.source.object.id,
-            targetId: props.target.object.id,
+            sourceId: props.source.id,
+            targetId: props.target.id,
             term: termOf(props.category),
           },
         },

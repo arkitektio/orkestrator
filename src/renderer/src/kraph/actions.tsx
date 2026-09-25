@@ -16,6 +16,12 @@ import {
   DeleteNaturalEventCategoryDocument,
   DeleteProtocolEventCategoryDocument,
   AssertInformsDocument,
+  GetEntityCategoryDocument,
+  GetStructureDocument,
+  type GetEntityCategoryQuery,
+  type GetEntityCategoryQueryVariables,
+  type GetStructureQuery,
+  type GetStructureQueryVariables,
 } from "./api/graphql";
 import { smartRegistry } from "@/providers/smart/registry";
 import type { Structure } from "@/types";
@@ -40,7 +46,7 @@ export const NewEntityAction: Action = {
     if (!state.left || state.left.length === 0) {
       throw new Error("No graph provided for Create New Entity action");
     }
-    const graph = state.left[0].object;
+    const graph = state.left[0];
     if (!graph) {
       throw new Error("No graph object found for Create New Entity action");
     }
@@ -66,7 +72,7 @@ export const LinkStructureToEntityAction: Action = {
     },
   ],
   execute: async ({ state, services }) => {
-    const entity = state.right?.[0]?.object;
+    const entity = state.right?.[0];
     if (!entity || typeof entity.id !== "string") {
       throw new Error("No entity selected to link this structure to");
     }
@@ -84,12 +90,18 @@ export const LinkStructureToEntityAction: Action = {
     );
 
     for (const structure of structures) {
+      // The foreign reference lives on kraph's structure row; ask kraph for it
+      // rather than trusting whatever fragment a card happened to carry.
+      const { data } = await client.query<GetStructureQuery, GetStructureQueryVariables>({
+        query: GetStructureDocument,
+        variables: { id: structure.id },
+      });
       await client.mutate({
         mutation: AssertInformsDocument,
         variables: {
           input: {
-            structureIdentifier: String(structure.object.identifier ?? structure.identifier),
-            structureObject: String(structure.object.object ?? structure.object.id),
+            structureIdentifier: data.structure.identifier,
+            structureObject: data.structure.object,
             entityId: entity.id,
           },
         },
@@ -137,7 +149,7 @@ export const AttestNodeAction: Action = {
       if (!mutation) continue;
       await client.mutate({
         mutation,
-        variables: { id: String(node.object.id) },
+        variables: { id: String(node.id) },
       });
     }
   },
@@ -164,7 +176,7 @@ export const RetractLinksAction: Action = {
 
     const ids = state.left
       .filter((node) => node.identifier === "@kraph/link")
-      .map((node) => String(node.object.id));
+      .map((node) => String(node.id));
     if (ids.length === 0) return;
 
     await confirm({
@@ -184,10 +196,8 @@ export const RetractLinksAction: Action = {
 
 /** How a datum is named in a confirmation: its label if it has one, else its model and id. */
 const describeDatum = (structure: Structure) => {
-  const { label, name } = structure.object;
-  if (typeof label === "string" && label) return label;
-  if (typeof name === "string" && name) return name;
-  return `${smartRegistry.getDisplayName(structure.identifier)} ${structure.object.id}`;
+  if (structure.label) return structure.label;
+  return `${smartRegistry.getDisplayName(structure.identifier)} ${structure.id}`;
 };
 
 /**
@@ -325,7 +335,7 @@ export const KRAPH_ACTIONS = {
       dialog.openSheet(
         "createprotocoleventcategory",
         {
-          graph: state.left[0].object.id,
+          graph: state.left[0].id,
         },
         { className: "w-[600px] max-w-none" },
       );
@@ -347,19 +357,20 @@ export const KRAPH_ACTIONS = {
         identifier: "@kraph/entitycategory",
       },
     ],
-    execute: async ({ state, dialog }) => {
-      const graphField = state.left[0]?.object?.graph;
-      const graph =
-        graphField &&
-        typeof graphField === "object" &&
-        !Array.isArray(graphField) &&
-        "id" in graphField &&
-        typeof graphField.id === "string"
-          ? graphField.id
-          : undefined;
-      if (!graph) {
-        throw new Error("Structure category does not have a graph. Use the context menu to select a graph.");
+    execute: async ({ state, dialog, services }) => {
+      // A structure kind belongs to no graph; the entity category it is
+      // measured against does, so the new category goes into that graph.
+      const category = state.right?.[0];
+      if (!category) {
+        throw new Error("Drop the structure kind onto an entity category.");
       }
+      const client = (services.kraph as unknown as { client: ApolloClient<NormalizedCache> })
+        .client;
+      const { data } = await client.query<GetEntityCategoryQuery, GetEntityCategoryQueryVariables>({
+        query: GetEntityCategoryDocument,
+        variables: { id: category.id },
+      });
+      const graph = data.entityCategory.graph.id;
       dialog.openDialog("createnewmeasurement", {
         left: state.left,
         right: state.right || [],

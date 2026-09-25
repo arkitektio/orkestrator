@@ -14,7 +14,7 @@ import { termKindLabel } from "../lib/terms";
  * exist out here.
  */
 export const EntityDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetInstanceQuery({ variables: { id: props.object } });
+  const { data } = useGetInstanceQuery({ variables: { id: props.id } });
 
   if (!data?.instance) {
     return <div className="text-xs text-muted-foreground">Entity not found</div>;

@@ -83,7 +83,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         (item) => item.identifier === '@rekuest/agent',
       )
 
-      if (!selectedAgent?.object?.id) {
+      if (!selectedAgent?.id) {
         throw new Error('No agent selected for Rename / Update Agent action')
       }
 
@@ -93,7 +93,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       >({
         query: AgentDocument,
         variables: {
-          id: selectedAgent.object.id,
+          id: selectedAgent.id,
         },
         fetchPolicy: 'network-only',
       })
@@ -133,7 +133,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
           mutation: DeleteBlokDocument,
           variables: {
             input: {
-              id: structure.object.id,
+              id: structure.id,
             },
           },
         })
@@ -141,7 +141,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         services.rekuest.client.cache.evict({
           id: services.rekuest.client.cache.identify({
             __typename: 'Blok',
-            id: structure.object.id,
+            id: structure.id,
           }),
         })
       }
@@ -178,7 +178,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
           mutation: DeleteMaterializedBlokDocument,
           variables: {
             input: {
-              id: structure.object.id,
+              id: structure.id,
             },
           },
         })
@@ -186,7 +186,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         services.rekuest.client.cache.evict({
           id: services.rekuest.client.cache.identify({
             __typename: 'MaterializedBlok',
-            id: structure.object.id,
+            id: structure.id,
           }),
         })
       }
@@ -223,7 +223,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
           mutation: DeleteDashboardDocument,
           variables: {
             input: {
-              id: structure.object.id,
+              id: structure.id,
             },
           },
         })
@@ -231,7 +231,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         services.rekuest.client.cache.evict({
           id: services.rekuest.client.cache.identify({
             __typename: 'Dashboard',
-            id: structure.object.id,
+            id: structure.id,
           }),
         })
       }
@@ -294,12 +294,19 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
           continue
         }
 
+        // The pin state is the agent's, not the structure's: read it from
+        // rekuest (usually a cache hit from the card that was clicked).
+        const { data } = await services.rekuest.client.query<AgentQuery, AgentQueryVariables>({
+          query: AgentDocument,
+          variables: { id: structure.id },
+        })
+
         await services.rekuest.client.mutate<PinAgentMutation, PinAgentMutationVariables>({
           mutation: PinAgentDocument,
           variables: {
             input: {
-              id: structure.object.id,
-              pin: !structure.object.pinned,
+              id: structure.id,
+              pin: !data.agent.pinned,
             },
           },
         })
@@ -330,7 +337,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         await client.mutate<BounceMutation, BounceMutationVariables>({
           mutation: BounceDocument,
           variables: {
-            input: { agent: structure.object.id }
+            input: { agent: structure.id }
           }
         })
       })
@@ -359,7 +366,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         await client.mutate<KickMutation, KickMutationVariables>({
           mutation: KickDocument,
           variables: {
-            input: { agent: structure.object.id }
+            input: { agent: structure.id }
           }
         })
       })
@@ -388,7 +395,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         await client.mutate<BlockMutation, BlockMutationVariables>({
           mutation: BlockDocument,
           variables: {
-            input: { agent: structure.object.id }
+            input: { agent: structure.id }
           }
         })
       })
@@ -417,7 +424,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         await client.mutate<UnblockMutation, UnblockMutationVariables>({
           mutation: UnblockDocument,
           variables: {
-            input: { agent: structure.object.id }
+            input: { agent: structure.id }
           }
         })
       })
@@ -445,7 +452,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         (item) => item.identifier === '@rekuest/implementation',
       )
 
-      if (!structure?.object?.id) {
+      if (!structure?.id) {
         throw new Error('No implementation selected')
       }
 
@@ -454,7 +461,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         ImplementationQueryVariables
       >({
         query: ImplementationDocument,
-        variables: { id: structure.object.id },
+        variables: { id: structure.id },
         fetchPolicy: 'cache-first',
       })
 
@@ -477,11 +484,11 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         (item) => item.identifier === ACTION_IDENTIFIER,
       )
 
-      if (!structure?.object?.id) {
+      if (!structure?.id) {
         throw new Error('No action selected')
       }
 
-      dialog.openDialog('actionassign', { id: structure.object.id })
+      dialog.openDialog('actionassign', { id: structure.id })
     },
     collections: ['io'],
   },
@@ -495,11 +502,11 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         (item) => item.identifier === ACTION_IDENTIFIER,
       )
 
-      if (!structure?.object?.id) {
+      if (!structure?.id) {
         throw new Error('No action selected')
       }
 
-      dialog.openDialog('createshortcut', { id: structure.object.id })
+      dialog.openDialog('createshortcut', { id: structure.id })
     },
     collections: ['io'],
   },
@@ -513,15 +520,13 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         (item) => item.identifier === ACTION_IDENTIFIER,
       )
 
-      if (!structure?.object?.id) {
+      if (!structure?.id) {
         throw new Error('No action selected')
       }
 
-      // Lists and the detail page carry the hash on the object; a bare
-      // `{ id }` structure (e.g. from a link) needs the lookup.
-      const carried = structure.object.hash
-      let hash: string | undefined =
-        typeof carried === 'string' ? carried : undefined
+      // A structure carries only its id; the hash is rekuest's to answer
+      // (cache-first, so a card that already showed it costs nothing).
+      let hash: string | undefined
 
       if (!hash) {
         if (!services.rekuest) {
@@ -533,7 +538,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
           ActionHashQueryVariables
         >({
           query: ActionHashDocument,
-          variables: { id: structure.object.id },
+          variables: { id: structure.id },
           fetchPolicy: 'cache-first',
         })
 
@@ -563,7 +568,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       // mixed selection can include other types — never pass those on.
       const actionIds = state.left
         .filter((item) => item.identifier === ACTION_IDENTIFIER)
-        .map((item) => item.object?.id)
+        .map((item) => item.id)
         .filter((id): id is string => Boolean(id))
 
       if (actionIds.length === 0) {

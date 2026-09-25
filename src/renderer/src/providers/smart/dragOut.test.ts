@@ -6,7 +6,7 @@ vi.mock("@/lib/export/exportRequests", () => ({ requestExport }));
 
 import { onSmartDragEnd } from "./dragOut";
 
-const structures = [{ identifier: "@mikro/file", object: { id: "1" } }];
+const structures = [{ identifier: "@mikro/file", id: "1" }];
 
 const setPointerInApp = (inApp: boolean | undefined) => {
   // @ts-expect-error - stand in for the preload injection

@@ -39,8 +39,8 @@ vi.mock("@/kraph/components/tables/MetricsTable", () => ({
   MetricsTable: ({ metrics }: { metrics: unknown[] }) => <div data-testid="metrics">{metrics.length}</div>,
 }));
 vi.mock("@/command/Menu", () => ({
-  DisplayWidget: ({ identifier, object }: { identifier: string; object: string }) => (
-    <span data-testid="display">{identifier}:{object}</span>
+  DisplayWidget: ({ identifier, id }: { identifier: string; id: string }) => (
+    <span data-testid="display">{identifier}:{id}</span>
   ),
 }));
 vi.mock("@/linkers", () => {

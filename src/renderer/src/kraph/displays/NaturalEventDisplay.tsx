@@ -9,7 +9,7 @@ import Timestamp from "@/components/ui/timestamp";
  * and the view-grain read requires one.
  */
 export const NaturalEventDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetInstanceQuery({ variables: { id: props.object } });
+  const { data } = useGetInstanceQuery({ variables: { id: props.id } });
 
   if (!data?.instance) {
     return <div className="text-xs text-muted-foreground">Event not found</div>;

@@ -12,7 +12,7 @@ import {
 
 export type TalkableStructure = {
   identifier: string;
-  object: { id: string | number };
+  id: string | number;
 };
 
 /**
@@ -113,7 +113,7 @@ export const useTalkAbout = (options: {
               description: !about
                 ? undefined
                 : structures.length === 1
-                  ? `Conversation about ${structures[0].identifier} ${structures[0].object.id}`
+                  ? `Conversation about ${structures[0].identifier} ${structures[0].id}`
                   : `Conversation about ${structures.length} selected structures`,
               talkingAbout: about ? talkingAbout : undefined,
             },

@@ -30,7 +30,7 @@ export const handleExportRequest = (
 
   for (const file of files) {
     const downloader = FILE_DOWNLOADERS[file.identifier];
-    downloader.download(deps.ctx, file.object.id).catch((error: unknown) => {
+    downloader.download(deps.ctx, file.id).catch((error: unknown) => {
       toast.error(
         `Couldn't download ${structureLabel(file)}: ${error instanceof Error ? error.message : String(error)}`,
       );

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import type { Identifier, Object } from "@/types";
+import type { Identifier, Object, Structure } from "@/types";
 import { useState } from "react";
 import { LabelCard } from "./LabelCard";
 import { LabelChip } from "./LabelChip";
@@ -21,7 +21,7 @@ export type LabelsBlockProps = {
 export const LabelsBlock = ({ identifier, object, meId }: LabelsBlockProps) => {
   const knowledge = useKnowledge(identifier, object);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const self = { identifier, object };
+  const self: Structure = { identifier, id: object.id };
 
   const claimedKeys = [
     ...knowledge.labels.map((label) => label.term.key),

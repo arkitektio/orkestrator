@@ -5,7 +5,7 @@ import { useGetPodQuery } from "../api/graphql";
 export const PodDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetPodQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     }
   });
 

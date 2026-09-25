@@ -30,7 +30,7 @@ export const DropZone = ({
     session?.origin === "internal" ? resolveSmartDrop(session)?.partners : undefined,
   );
   const containedIds = compareWithList?.map((c) => c.id) ?? [];
-  const fresh = dragged?.filter((i) => !containedIds.includes(i.object.id));
+  const fresh = dragged?.filter((i) => !containedIds.includes(i.id));
   const allItemsContained = !!fresh && fresh.length === 0;
   const canDrop =
     !!fresh && (allItemsContained || accepts.includes(fresh.at(0)?.identifier || ""));

@@ -1,5 +1,6 @@
 import { SMART_MODEL_DROP_TYPE } from "@/constants";
 import { DragSession, DropPayload } from "@/lib/dnd/engine";
+import { fromLegacy, sameStructure } from "@/lib/structure";
 import { Structure } from "@/types";
 
 /**
@@ -55,8 +56,7 @@ export const acceptsSmartDrag = (session: DragSession) =>
  * cards is two `Structure`s, and one that crossed from another window is a
  * third.
  */
-const isSameStructure = (left: Structure, right: Structure) =>
-  left.identifier === right.identifier && left.object.id === right.object.id;
+const isSameStructure = sameStructure;
 
 const includesStructure = (structures: Structure[], structure: Structure) =>
   structures.some((candidate) => isSameStructure(candidate, structure));
@@ -95,12 +95,17 @@ export const getSmartDropObjects = (
     : [self];
 };
 
-const isStructure = (value: unknown): value is Structure => {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  return "identifier" in value && "object" in value;
+/**
+ * Structures as another window wrote them. A window still on the pre-v1
+ * shape (`{ identifier, object: { id } }`) is read too, so a drag between an
+ * updated and a not-yet-updated window keeps working.
+ */
+const readStructures = (value: unknown): Structure[] | null => {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const structures = value.map(fromLegacy);
+  return structures.every((structure): structure is Structure => structure !== null)
+    ? structures
+    : null;
 };
 
 const isSmartDragItem = (value: unknown): value is SmartDragItem => {
@@ -130,7 +135,7 @@ const structuresFromUriList = (uriList: string | undefined): Structure[] =>
     .map((line) => line.trim().match(ARKITEKT_URL))
     .filter((match): match is RegExpMatchArray => match !== null)
     // A link names the object, it does not carry it: the id is all there is.
-    .map(([, identifier, id]) => ({ identifier, object: { id } }));
+    .map(([, identifier, id]) => ({ identifier, id }));
 
 /**
  * The structures an internal drag carries, while it is still in the air.
@@ -158,8 +163,8 @@ export const resolveSmartDrop = (payload: DropPayload): ResolvedSmartDrop | null
     };
   }
 
-  const structures = parseJson(payload.data[STRUCTURES_MIME]);
-  if (Array.isArray(structures) && structures.length > 0 && structures.every(isStructure)) {
+  const structures = readStructures(parseJson(payload.data[STRUCTURES_MIME]));
+  if (structures) {
     return { partners: structures, omitDefaultBehaviour: false };
   }
 
@@ -168,8 +173,8 @@ export const resolveSmartDrop = (payload: DropPayload): ResolvedSmartDrop | null
     return { partners: linked, omitDefaultBehaviour: false };
   }
 
-  const single = parseJson(payload.data[TEXT_MIME]);
-  if (isStructure(single)) {
+  const single = fromLegacy(parseJson(payload.data[TEXT_MIME]));
+  if (single) {
     return { partners: [single], omitDefaultBehaviour: false };
   }
 

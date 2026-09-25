@@ -38,7 +38,8 @@ const drop = (mode: SmartTabDropMode, structures: Structure[]) => {
 
 const image = (id: string, name?: string): Structure => ({
   identifier: "@mikro/image",
-  object: name ? { id, name } : { id },
+  id,
+  ...(name ? { label: name } : {}),
 });
 
 let uninstall: () => void;
@@ -80,7 +81,7 @@ describe("dropping a card where tabs live", () => {
   });
 
   it("says so rather than opening a blank tab when nothing knows the identifier", () => {
-    drop("tab", [{ identifier: "@nowhere/thing", object: { id: "1" } }]);
+    drop("tab", [{ identifier: "@nowhere/thing", id: "1" }]);
     expect(actions.open).not.toHaveBeenCalled();
     expect(toastError).toHaveBeenCalled();
   });

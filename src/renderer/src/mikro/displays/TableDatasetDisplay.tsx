@@ -3,7 +3,7 @@ import { MikroTableDataset } from "@/linkers";
 import { useGetTableDatasetQuery } from "@/mikro/api/graphql";
 
 export const TableDatasetDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetTableDatasetQuery({ variables: { id: props.object } });
+  const { data } = useGetTableDatasetQuery({ variables: { id: props.id } });
 
   if (!data?.tableDataset) {
     return (
@@ -16,7 +16,7 @@ export const TableDatasetDisplay = (props: DisplayWidgetProps) => {
 
   if (props.context === "command") {
     return (
-      <MikroTableDataset.DetailLink object={{ id: props.object }}>
+      <MikroTableDataset.DetailLink object={{ id: props.id }}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-medium text-sm truncate">{dataset.name}</span>
           {columnCount > 0 && (
@@ -30,7 +30,7 @@ export const TableDatasetDisplay = (props: DisplayWidgetProps) => {
   }
 
   return (
-    <MikroTableDataset.DetailLink object={{ id: props.object }}>
+    <MikroTableDataset.DetailLink object={{ id: props.id }}>
       <div className="w-full rounded-lg border border-border/60 bg-card p-3 space-y-2">
         <div className="font-semibold text-sm">{dataset.name}</div>
         {dataset.axisNames.length > 0 && (

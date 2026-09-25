@@ -96,7 +96,7 @@ type PlacementDialogOption = {
 const isDroppedAgent = (
   structure: Structure,
 ): structure is Structure & { object: DroppedAgent } => {
-  return structure.identifier === "@rekuest/agent" && typeof structure.object?.id === "string";
+  return structure.identifier === "@rekuest/agent" && typeof structure.id === "string";
 };
 
 const useDebouncedString = (value: string, delayMs = 250) => {

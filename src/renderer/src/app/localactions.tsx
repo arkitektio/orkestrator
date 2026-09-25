@@ -34,8 +34,7 @@ const NavigateAction: Action = {
     },
   ],
   execute: async ({ state, navigate }) => {
-    const identifier = state.left[0].identifier;
-    const object = state.left[0].object;
+    const { identifier, id } = state.left[0];
     if (!identifier) {
       throw new Error("No identifier provided for Open action");
     }
@@ -44,7 +43,7 @@ const NavigateAction: Action = {
     if (!path) {
       throw new Error(`No path found for identifier ${identifier}`);
     }
-    navigate(linkBuilder(path)(object.id));
+    navigate(linkBuilder(path)(id));
   },
   collections: ["smart"],
 };
@@ -126,8 +125,7 @@ const PopOutAction: Action = {
   ],
   execute: async ({ state }) => {
     for (const item of state.left) {
-      const identifier = item.identifier;
-      const object = item.object;
+      const { identifier, id } = item;
       if (!identifier) {
         throw new Error("No identifier provided for Open action");
       }
@@ -136,7 +134,7 @@ const PopOutAction: Action = {
       if (!path) {
         throw new Error(`No path found for identifier ${identifier}`);
       }
-      window.api.openSecondWindow(linkBuilder(path)(object.id));
+      window.api.openSecondWindow(linkBuilder(path)(id));
     }
   },
   collections: ["smart"],
@@ -161,8 +159,8 @@ const activeShareScope = (): ShareScope | null => {
 
 /** The page a structure lives on, as a router location. */
 const structureLocation = (state: ActionParams["state"]) => {
-  const { identifier, object } = state.left[0];
-  const path = smartRegistry.buildModelPath(identifier, object.id);
+  const { identifier, id } = state.left[0];
+  const path = smartRegistry.buildModelPath(identifier, id);
   if (!path) {
     throw new Error(`No path found for identifier ${identifier}`);
   }

@@ -374,7 +374,7 @@ const SmartHoverSurface = ({
             {target &&
               getSmartBuilderAdapters().renderHover({
                 identifier: target.structure.identifier,
-                object: target.structure.object,
+                object: { id: target.structure.id },
               })}
           </div>
         </div>

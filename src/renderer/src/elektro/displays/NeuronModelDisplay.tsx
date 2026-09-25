@@ -14,7 +14,7 @@ const EmbeddedMorphology = React.lazy(() =>
 export const NeuronModelDisplay = (props: DisplayWidgetProps) => {
   const { data } = useDetailNeuronModelQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     },
   });
 

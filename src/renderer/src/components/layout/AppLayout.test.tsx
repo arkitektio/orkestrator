@@ -101,7 +101,7 @@ describe("dropping a card on the rail", () => {
     document.body.appendChild(card);
     createDragSource(() => ({
       kind: SMART_MODEL_DROP_TYPE,
-      getData: () => ({ structures: [{ identifier: "@x/thing", object: { id: "9" } }] }),
+      getData: () => ({ structures: [{ identifier: "@x/thing", id: "9" }] }),
     })).attach(card);
     await act(async () => {
       fireDrag(card, "dragstart");

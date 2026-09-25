@@ -705,7 +705,7 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
 
   const isMember = useCallback(
     (structure: Structure) =>
-      members.has(structureKey(structure.identifier, structure.object.id)),
+      members.has(structureKey(structure.identifier, structure.id)),
     [members],
   );
 
@@ -734,7 +734,7 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
       const idsFor = (identifier: string) =>
         structures
           .filter((item) => item.identifier === identifier && !isMember(item))
-          .map((item) => item.object.id);
+          .map((item) => item.id);
 
       // One mutation per kind — the backend files each kind separately.
       const filings = [

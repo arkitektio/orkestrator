@@ -5,7 +5,7 @@ import { useGetSceneQuery } from "@/mikro/api/graphql";
 export const SceneDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetSceneQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     },
     // See ScenePage: a layer whose `asAffine` cannot condense must null that
     // one field, not discard the scene.

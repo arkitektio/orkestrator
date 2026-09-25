@@ -10,7 +10,7 @@ import {
   unregisterSmartNode,
 } from "./nodeRegistry";
 
-const structure = (id: string) => ({ identifier: "@test/thing", object: { id } });
+const structure = (id: string) => ({ identifier: "@test/thing", id });
 
 describe("smartNodeAt", () => {
   it("resolves the registered card around a nested target", () => {
@@ -20,7 +20,7 @@ describe("smartNodeAt", () => {
     document.body.appendChild(card);
     registerSmartNode(card, structure("a"));
 
-    expect(smartNodeAt(inner)?.structure.object.id).toBe("a");
+    expect(smartNodeAt(inner)?.structure.id).toBe("a");
     expect(smartNodeAt(document.body)).toBeNull();
 
     unregisterSmartNode(card);
@@ -40,7 +40,7 @@ describe("smartNodeAt", () => {
     unregisterSmartNode(dropZone);
     dropZone.setAttribute("data-smart", "true");
 
-    expect(smartNodeAt(leaf)?.structure.object.id).toBe("outer");
+    expect(smartNodeAt(leaf)?.structure.id).toBe("outer");
     card.remove();
   });
 });

@@ -82,7 +82,7 @@ const isStructure = (value: unknown): value is Structure => {
 const isDroppedAgent = (
   structure: Structure,
 ): structure is Structure & { object: DroppedAgent } => {
-  return structure.identifier === RekuestAgent.identifier && typeof structure.object?.id === "string";
+  return structure.identifier === RekuestAgent.identifier && typeof structure.id === "string";
 };
 
 const parseStructureFromText = (value: string): Structure | null => {

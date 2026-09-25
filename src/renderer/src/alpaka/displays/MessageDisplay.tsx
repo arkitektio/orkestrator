@@ -12,9 +12,9 @@ import { Markdown } from "@/components/ui/markdown";
 export const MessageDisplay = (props: DisplayWidgetProps) => {
   const { data, loading } = useGetMessageQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     },
-    skip: !props.object,
+    skip: !props.id,
   });
 
   const message = data?.message;

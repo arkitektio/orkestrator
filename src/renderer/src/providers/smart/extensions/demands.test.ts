@@ -7,8 +7,8 @@ import {
 import { DemandKind, PortKind } from "@/rekuest/api/graphql";
 import { buildDemands, buildImplementationDemand, demandKey } from "./demands";
 
-const image = (id: string) => ({ identifier: "@mikro/image", object: { id } });
-const dataset = (id: string) => ({ identifier: "@mikro/dataset", object: { id } });
+const image = (id: string) => ({ identifier: "@mikro/image", id });
+const dataset = (id: string) => ({ identifier: "@mikro/dataset", id });
 
 const hasUndefined = (value: unknown): boolean =>
   value === undefined ||
@@ -105,5 +105,43 @@ describe("kabinet enums", () => {
     expect(KabinetDemandKind.Returns).toBe(DemandKind.Returns);
     expect(KabinetPortKind.Structure).toBe(PortKind.Structure);
     expect(KabinetPortKind.List).toBe(PortKind.List);
+  });
+});
+
+describe("descriptors", () => {
+  const withAxes = (id: string, axes: string[]) => ({
+    identifier: "@mikro/image",
+    id,
+    descriptors: { axes },
+  });
+
+  it("sends what one structure provides with its match", () => {
+    const [args] = buildDemands({ objects: [withAxes("1", ["c", "z"])] }).single;
+    expect(args.matches?.[0]).toEqual({
+      at: 0,
+      kind: PortKind.Structure,
+      identifier: "@mikro/image",
+      descriptors: [{ key: "axes", value: ["c", "z"] }],
+    });
+  });
+
+  it("sends a list's descriptors only when every item agrees", () => {
+    const agree = buildDemands({ objects: [withAxes("1", ["z"]), withAxes("2", ["z"])] }).single;
+    expect(agree[0].matches?.[0].children?.[0].descriptors).toEqual([{ key: "axes", value: ["z"] }]);
+
+    const disagree = buildDemands({ objects: [withAxes("1", ["z"]), withAxes("2", ["t"])] }).single;
+    expect(disagree[0].matches?.[0].children?.[0]).not.toHaveProperty("descriptors");
+  });
+
+  it("keys on descriptors, but not on their key order", () => {
+    const a = { identifier: "@mikro/image", id: "1", descriptors: { axes: ["z"], dtype: "u8" } };
+    const b = { identifier: "@mikro/image", id: "2", descriptors: { dtype: "u8", axes: ["z"] } };
+    expect(demandKey({ objects: [a] })).toBe(demandKey({ objects: [b] }));
+    expect(demandKey({ objects: [a] })).not.toBe(demandKey({ objects: [image("1")] }));
+  });
+
+  it("leaves a structure without descriptors purely structural", () => {
+    const [args] = buildDemands({ objects: [image("1")] }).single;
+    expect(args.matches?.[0]).not.toHaveProperty("descriptors");
   });
 });

@@ -4,7 +4,7 @@ import { useGetSparseDatasetQuery } from "@/mikro/api/graphql";
 import { describeShape, sparseDatasetTitle } from "@/mikro/components/sparse/sparseFacts";
 
 export const SparseDatasetDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetSparseDatasetQuery({ variables: { id: props.object } });
+  const { data } = useGetSparseDatasetQuery({ variables: { id: props.id } });
 
   if (!data?.sparseDataset) {
     return (
@@ -17,7 +17,7 @@ export const SparseDatasetDisplay = (props: DisplayWidgetProps) => {
 
   if (props.context === "command") {
     return (
-      <MikroSparseDataset.DetailLink object={{ id: props.object }}>
+      <MikroSparseDataset.DetailLink object={{ id: props.id }}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-medium text-sm truncate">{sparseDatasetTitle(dataset.name)}</span>
           <span className="text-xs text-muted-foreground shrink-0 font-mono">
@@ -29,7 +29,7 @@ export const SparseDatasetDisplay = (props: DisplayWidgetProps) => {
   }
 
   return (
-    <MikroSparseDataset.DetailLink object={{ id: props.object }}>
+    <MikroSparseDataset.DetailLink object={{ id: props.id }}>
       <div className="w-full rounded-lg border border-border/60 bg-card p-3 space-y-2">
         <div className="font-semibold text-sm">{sparseDatasetTitle(dataset.name)}</div>
         <div className="font-mono text-xs text-muted-foreground">{shape}</div>

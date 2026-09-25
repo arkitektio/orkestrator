@@ -1,3 +1,4 @@
+import { toWire } from "@/lib/structure";
 import { useDialog } from "@/app/dialog";
 import { buildAssignInput } from "@/rekuest/assign";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,7 @@ const buildShortcutArgs = (
       toast.error("No key found for self");
       return null;
     }
-    keys[key] = props.objects[0].object;
+    keys[key] = toWire(props.objects[0]);
   }
 
   if (props.objects.length > 1) {
@@ -43,10 +44,7 @@ const buildShortcutArgs = (
       toast.error("No key found for self");
       return null;
     }
-    keys[key] = props.objects.map((obj) => ({
-      __identifier: obj.identifier,
-      object: obj.object,
-    }));
+    keys[key] = props.objects.map(toWire);
   }
 
   if (props.partners && props.partners.length === 1) {
@@ -55,10 +53,7 @@ const buildShortcutArgs = (
       toast.error("No key found for partner");
       return null;
     }
-    keys[key] = {
-      __identifier: props.partners[0].identifier,
-      object: props.partners[0].object,
-    };
+    keys[key] = toWire(props.partners[0]);
   }
 
   if (props.partners && props.partners.length > 1) {
@@ -71,10 +66,7 @@ const buildShortcutArgs = (
       toast.error("No key found for partner");
       return null;
     }
-    keys[key] = props.partners.map((obj) => ({
-      __identifier: obj.identifier,
-      object: obj.object,
-    }));
+    keys[key] = props.partners.map(toWire);
   }
 
   return keys;

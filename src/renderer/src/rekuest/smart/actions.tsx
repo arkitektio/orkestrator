@@ -1,3 +1,4 @@
+import { toWire } from "@/lib/structure";
 import { useDialog } from "@/app/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -52,10 +53,7 @@ const buildActionArgs = (
       toast.error("No key found for self");
       return null;
     }
-    keys[key] = {
-      __identifier: props.objects[0].identifier,
-      object: props.objects[0].object.id,
-    };
+    keys[key] = toWire(props.objects[0]);
   }
 
   if (props.objects.length > 1) {
@@ -68,10 +66,7 @@ const buildActionArgs = (
       toast.error("No key found for self");
       return null;
     }
-    keys[key] = props.objects.map((item) => ({
-      __identifier: item.identifier,
-      object: item.object.id,
-    }));
+    keys[key] = props.objects.map((item) => (toWire(item)));
   }
 
   if (props.partners && props.partners.length === 1) {
@@ -80,10 +75,7 @@ const buildActionArgs = (
       toast.error("No key found for partner");
       return null;
     }
-    keys[key] = {
-      __identifier: props.partners[0].identifier,
-      object: props.partners[0].object.id,
-    };
+    keys[key] = toWire(props.partners[0]);
   }
 
   if (props.partners && props.partners.length > 1) {
@@ -96,10 +88,7 @@ const buildActionArgs = (
       toast.error("No key found for partner");
       return null;
     }
-    keys[key] = props.partners.map((item) => ({
-      __identifier: item.identifier,
-      object: item.object.id,
-    }));
+    keys[key] = props.partners.map((item) => (toWire(item)));
   }
 
   return keys;
@@ -199,10 +188,7 @@ export const DirectImplementationAssignment = (
           openDialog("createshortcut", {
             id: props.action.id,
             args: {
-              [props.action.args?.at(0)?.key || "object"]: {
-                __identifier: firstObject.identifier,
-                object: firstObject.object,
-              },
+              [props.action.args?.at(0)?.key || "object"]: toWire(firstObject),
             },
           });
         }}
@@ -578,7 +564,7 @@ export const BatchAssignButton = (
     }
 
     for (const object of props.objects) {
-      const keys: Record<string, unknown> = { [key]: {__identifier: object.identifier, object: object.object.id } };
+      const keys: Record<string, unknown> = { [key]: toWire(object) };
 
       if (props.partners && props.partners.length === 1) {
         const partnerKey = action.args?.at(1)?.key;
@@ -586,10 +572,7 @@ export const BatchAssignButton = (
           toast.error("No key found for partner");
           return;
         }
-        keys[partnerKey] = {
-          __identifier: props.partners[0].identifier,
-          object: props.partners[0].object.id,
-        };
+        keys[partnerKey] = toWire(props.partners[0]);
       }
 
       if (props.partners && props.partners.length > 1) {
@@ -602,10 +585,7 @@ export const BatchAssignButton = (
           toast.error("No key found for partner");
           return;
         }
-        keys[partnerKey] = props.partners.map((partner) => ({
-          __identifier: partner.identifier,
-          object: partner.object.id,
-        }));
+        keys[partnerKey] = props.partners.map((partner) => (toWire(partner)));
       }
 
       const unknownKeys = action.args.filter((arg) => arg.key && !keys[arg.key]);

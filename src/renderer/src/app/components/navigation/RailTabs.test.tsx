@@ -34,7 +34,7 @@ const dragOnto = (node: Element) => {
   document.body.appendChild(card);
   createDragSource(() => ({
     kind: SMART_MODEL_DROP_TYPE,
-    getData: () => ({ structures: [{ identifier: "@x/thing", object: { id: "1" } }] }),
+    getData: () => ({ structures: [{ identifier: "@x/thing", id: "1" }] }),
   })).attach(card);
 
   let drag!: ReturnType<typeof dragNodeOnto>;

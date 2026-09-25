@@ -42,7 +42,7 @@ export const TalkAboutHit = ({
     title: () => `Talk about ${label}`,
     onDone,
   });
-  const talk = () => void openRoom([{ identifier, object: { id } }], prompt, target);
+  const talk = () => void openRoom([{ identifier, id }], prompt, target);
 
   // Fire once per bump, never on mount.
   const seen = useRef(requested);

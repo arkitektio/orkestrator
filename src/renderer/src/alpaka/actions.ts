@@ -44,7 +44,7 @@ export const RescanProviderAction: Action = {
     const failures: { id: string; error: unknown }[] = []
     let done = 0
     for (const structure of targets) {
-      const id = structure.object.id
+      const id = structure.id
       try {
         await client.mutate<RefreshProviderMutation, RefreshProviderMutationVariables>({
           mutation: RefreshProviderDocument,

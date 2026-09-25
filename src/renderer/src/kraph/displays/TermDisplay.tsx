@@ -5,7 +5,7 @@ import { termKindLabel, termTint } from "../lib/terms";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const TermDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetTermQuery({ variables: { id: props.object } });
+  const { data } = useGetTermQuery({ variables: { id: props.id } });
 
   if (!data?.term) {
     return <div className="text-xs text-muted-foreground">Not found</div>;
@@ -15,7 +15,7 @@ export const TermDisplay = (props: DisplayWidgetProps) => {
 
   if (props.context === "command") {
     return (
-      <KraphTerm.DetailLink object={{ id: props.object }}>
+      <KraphTerm.DetailLink object={{ id: props.id }}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-medium text-sm truncate">{term.key}</span>
           <span className="text-xs text-muted-foreground shrink-0">
@@ -27,7 +27,7 @@ export const TermDisplay = (props: DisplayWidgetProps) => {
   }
 
   return (
-    <KraphTerm.DetailLink object={{ id: props.object }}>
+    <KraphTerm.DetailLink object={{ id: props.id }}>
       <div className="w-full rounded-lg border border-border/60 bg-card p-3 space-y-1 relative overflow-hidden">
         <div
           className="absolute inset-x-0 top-0 h-1"

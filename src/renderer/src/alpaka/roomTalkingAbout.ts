@@ -2,7 +2,7 @@ import type { StructureInput } from "./api/graphql";
 
 /**
  * Alpaka references foreign objects by a numeric id, while the app-level
- * `Structure` carries `object.id` as a string. Everything that hands a
+ * `Structure` carries `id` as a string. Everything that hands a
  * structure to alpaka goes through {@link toStructureInput} so the coercion
  * (and the "not a number" case) lives in one place.
  */
@@ -10,9 +10,9 @@ export type RoomTalkingAboutStructure = StructureInput;
 
 export const toStructureInput = (structure: {
   identifier: string;
-  object?: { id?: string | number | null } | null;
+  id?: string | number | null;
 }): StructureInput | null => {
-  const rawObject = structure.object?.id;
+  const rawObject = structure.id;
 
   if (rawObject == null || rawObject === "") {
     return null;
@@ -28,7 +28,7 @@ export const toStructureInput = (structure: {
 export const toStructureInputs = (
   structures: readonly {
     identifier: string;
-    object?: { id?: string | number | null } | null;
+    id?: string | number | null;
   }[],
 ): StructureInput[] =>
   structures

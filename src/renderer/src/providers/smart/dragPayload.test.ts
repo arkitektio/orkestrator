@@ -13,8 +13,8 @@ import {
   STRUCTURES_MIME,
 } from "./dragPayload";
 
-const image = { identifier: "@mikro/image", object: { id: "12", name: "cells" } };
-const roi = { identifier: "@mikro/roi", object: { id: "9f3c-uuid" } };
+const image = { identifier: "@mikro/image", id: "12", label: "cells" };
+const roi = { identifier: "@mikro/roi", id: "9f3c-uuid" };
 
 const internal = (
   data: unknown,
@@ -75,8 +75,8 @@ describe("a smart drag seen from another window", () => {
     // bare number in place of the object, and any other id threw.
     const uriList = "arkitekt://@mikro/image:12\r\narkitekt://@mikro/roi:9f3c-uuid";
     expect(resolveSmartDrop(external({ "text/uri-list": uriList }))?.partners).toEqual([
-      { identifier: "@mikro/image", object: { id: "12" } },
-      { identifier: "@mikro/roi", object: { id: "9f3c-uuid" } },
+      { identifier: "@mikro/image", id: "12" },
+      { identifier: "@mikro/roi", id: "9f3c-uuid" },
     ]);
   });
 
@@ -106,7 +106,7 @@ describe("whether a drag could be structures", () => {
 });
 
 describe("what a drag carries", () => {
-  const other = { identifier: "@mikro/image", object: { id: "40" } };
+  const other = { identifier: "@mikro/image", id: "40" };
 
   it("is the card alone when it is not part of a selection", () => {
     expect(getSmartDragStructures([], image)).toEqual([image]);
@@ -120,14 +120,14 @@ describe("what a drag carries", () => {
   });
 
   it("knows the card by what it names, not by the object in hand", () => {
-    const again = { identifier: image.identifier, object: { id: image.object.id } };
+    const again = { identifier: image.identifier, id: image.id };
     expect(getSmartDragStructures([roi, again], image)).toEqual([image, roi]);
   });
 });
 
 describe("the left side of a drop", () => {
-  const dropped = { identifier: "@mikro/image", object: { id: "40" } };
-  const target = { identifier: "@mikro/dataset", object: { id: "7" } };
+  const dropped = { identifier: "@mikro/image", id: "40" };
+  const target = { identifier: "@mikro/dataset", id: "7" };
 
   it("is the selection, dropping on one of the selected", () => {
     expect(getSmartDropObjects([image, roi], image, [dropped])).toEqual([image, roi]);

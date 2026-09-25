@@ -4,12 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Structure } from "@/types";
 import { createSelectionStore, selectFocus, type Selectable } from "./store";
 
-// `isSameStructure` compares `identifier` (string) AND `object` (by reference),
-// so structures that should be "the same" must share the same object reference.
-const objA = { id: "a" };
-const objB = { id: "b" };
-const sA: Structure = { identifier: "@x/s", object: objA };
-const sB: Structure = { identifier: "@x/s", object: objB };
+// Structures are compared by value: identifier + id.
+const sA: Structure = { identifier: "@x/s", id: "a" };
+const sB: Structure = { identifier: "@x/s", id: "b" };
 
 const fakeSelectable = (
   structure: Structure,
@@ -109,7 +106,7 @@ describe("registerSelectables / unregisterSelectables", () => {
     const listener = vi.fn();
     const unsubscribe = store.subscribe(listener);
     const sels = Array.from({ length: 50 }, (_, i) =>
-      fakeSelectable({ identifier: "@x/s", object: { id: String(i) } }, {
+      fakeSelectable({ identifier: "@x/s", id: String(i) }, {
         left: i,
         top: 0,
         width: 1,

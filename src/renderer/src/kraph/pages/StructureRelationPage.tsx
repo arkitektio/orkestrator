@@ -30,13 +30,13 @@ const Page = asDetailQueryRoute(useGetStructureRelationQuery, ({ data }) => {
           {data.structureRelation.source.__typename == "Structure" && (
             <DisplayWidget
               identifier={data.structureRelation.source.identifier}
-              object={data.structureRelation.source.object}
+              id={data.structureRelation.source.object}
             />
           )}
           {data.structureRelation.target.__typename == "Structure" && (
             <DisplayWidget
               identifier={data.structureRelation.target.identifier}
-              object={data.structureRelation.target.object}
+              id={data.structureRelation.target.object}
             />
           )}
         </div>

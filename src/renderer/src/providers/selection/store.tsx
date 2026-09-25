@@ -1,6 +1,7 @@
 import { Box, boxesIntersect } from "@air/react-drag-to-select";
 import { createStore, StoreApi } from "zustand/vanilla";
 
+import { sameStructure } from "@/lib/structure";
 import { Structure } from "@/types";
 
 export interface Selectable {
@@ -8,8 +9,7 @@ export interface Selectable {
   item: HTMLElement;
 }
 
-const isSameStructure = (left: Structure, right: Structure) =>
-  left.identifier === right.identifier && left.object === right.object;
+const isSameStructure = sameStructure;
 
 export interface SelectionState {
   selection: Structure[];

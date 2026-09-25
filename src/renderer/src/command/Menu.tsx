@@ -47,7 +47,7 @@ type DisplayIdentifier = Parameters<typeof useDisplayComponent>[0];
 
 export const DisplayWidget = (props: {
   identifier: string;
-  object: string;
+  id: string;
   link?: boolean;
   context?: "command" | "widget";
 }) => {
@@ -59,14 +59,14 @@ export const DisplayWidget = (props: {
 
   const widgetElement = createElement(Widget, {
     small: true,
-    object: props.object,
+    id: props.id,
     identifier: props.identifier,
     context: props.context || "widget",
   });
 
   if (props.link) {
     return (
-      <SmartLink identifier={props.identifier} object={props.object}>
+      <SmartLink identifier={props.identifier} object={props.id}>
         <Suspense>{widgetElement}</Suspense>
       </SmartLink>
     );
@@ -85,7 +85,7 @@ export const DisplayWidgetHub = () => {
           <>
             <DisplayWidget
               identifier={modifier.identifier}
-              object={modifier.id}
+              id={modifier.id}
               context="widget"
             />
           </>
@@ -100,7 +100,7 @@ export const ModifierRender = (props: { modifier: Modifier; context?: "command" 
     return (
       <DisplayWidget
         identifier={props.modifier.identifier}
-        object={props.modifier.id}
+        id={props.modifier.id}
         context={props.context || "widget"}
       />
     );
@@ -357,10 +357,10 @@ export const CommandMenu = (props: {
                     </ContextCard>
                   ))}
                   {!hasSmartModifier && props.objects?.map((m) => (
-                    <div key={`object-${m.identifier}-${m.object.id}`}>
+                    <div key={`object-${m.identifier}-${m.id}`}>
                       <DisplayWidget
                         identifier={m.identifier}
-                        object={m.object.id}
+                        id={m.id}
                         context="command"
                       />
                     </div>

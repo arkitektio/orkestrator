@@ -13,8 +13,7 @@ import { REKUEST_ACTIONS } from "./actions";
 const structure = (
   identifier: string,
   id: string,
-  extra: Record<string, unknown> = {},
-): Structure => ({ identifier, object: { id, ...extra } }) as Structure;
+): Structure => ({ identifier, id });
 
 const makeClient = (cleaned = 1) => ({
   query: vi.fn(async () => ({ data: { action: { id: "1", hash: "fetched-hash" } } })),
@@ -105,15 +104,7 @@ describe("Copy Hash", () => {
     });
   });
 
-  it("uses the hash the structure already carries", async () => {
-    const { client } = await run("rekuest-copy-action-hash", [
-      structure("@rekuest/action", "1", { hash: "carried-hash" }),
-    ]);
-    expect(writeText).toHaveBeenCalledWith("carried-hash");
-    expect(client.query).not.toHaveBeenCalled();
-  });
-
-  it("looks the hash up for a bare { id } structure", async () => {
+  it("asks rekuest for the hash: a structure carries only its id", async () => {
     const { client } = await run("rekuest-copy-action-hash", [
       structure("@rekuest/action", "1"),
     ]);

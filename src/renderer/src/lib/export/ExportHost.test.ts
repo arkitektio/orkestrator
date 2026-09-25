@@ -14,8 +14,8 @@ vi.mock("@/providers/download/DownloadProvider", () => ({ useDownload: () => ({}
 
 import { handleExportRequest } from "./ExportHost";
 
-const file = (id: string) => ({ identifier: "@mikro/file", object: { id } });
-const image = (id: string) => ({ identifier: "@mikro/arraydataset", object: { id } });
+const file = (id: string) => ({ identifier: "@mikro/file", id });
+const image = (id: string) => ({ identifier: "@mikro/arraydataset", id });
 
 const run = (structures: ReturnType<typeof file>[]) => {
   const openExportDialog = vi.fn();

@@ -23,9 +23,8 @@ export const ExportModelButton = (props: {
           {
             structure: {
               identifier: NEURON_MODEL_IDENTIFIER,
-              object: props.object.name
-                ? { id: props.object.id, name: props.object.name }
-                : { id: props.object.id },
+              id: props.object.id,
+              ...(props.object.name ? { label: props.object.name } : {}),
             },
           },
           { size: "medium" },

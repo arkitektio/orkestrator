@@ -27,7 +27,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                   left: [
                     {
                       identifier: '@rekuest/blok',
-                      object: { id: data.blok.id },
+                      id: data.blok.id,
                     },
                   ],
                   isCommand: false,

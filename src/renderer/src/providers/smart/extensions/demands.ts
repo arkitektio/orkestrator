@@ -7,6 +7,7 @@ import {
   PortMatchInput,
 } from "@/rekuest/api/graphql";
 import React from "react";
+import type { JSONObject, Structure } from "@/types";
 import type { SmartContextProps } from "./types";
 
 /**
@@ -40,27 +41,59 @@ export type SmartDemands = {
 export const arityOf = (items: readonly unknown[] | undefined): Arity =>
   !items || items.length === 0 ? "none" : items.length === 1 ? "one" : "many";
 
+/** Key-sorted JSON, so equal descriptors serialise equally. */
+const stableJson = (value: JSONObject): string =>
+  JSON.stringify(Object.keys(value).sort().map((key) => [key, value[key]]));
+
+/**
+ * What one side of the selection PROVIDES, as rekuest descriptors: the
+ * descriptors every structure on that side shares. A list whose items
+ * disagree provides nothing in common, and the match stays structural.
+ */
+export const sideDescriptors = (
+  items: readonly Pick<Structure, "descriptors">[] | undefined,
+): JSONObject | undefined => {
+  const first = items?.[0]?.descriptors;
+  if (!items || !first || Object.keys(first).length === 0) return undefined;
+  const key = stableJson(first);
+  return items.every((item) => item.descriptors && stableJson(item.descriptors) === key)
+    ? first
+    : undefined;
+};
+
 /** Only the fields the demands read, so equal-but-new arrays share a key. */
-export const demandKey = (source: DemandSource): string =>
-  [
+export const demandKey = (source: DemandSource): string => {
+  const objectDescriptors = sideDescriptors(source.objects);
+  const partnerDescriptors = sideDescriptors(source.partners);
+  return [
     source.objects[0]?.identifier ?? "",
     arityOf(source.objects),
     source.partners?.[0]?.identifier ?? "",
     arityOf(source.partners),
     source.returns?.join(",") ?? "",
+    objectDescriptors ? stableJson(objectDescriptors) : "",
+    partnerDescriptors ? stableJson(partnerDescriptors) : "",
   ].join("|");
+};
 
-const structureAt = (at: number, identifier: string): PortMatchInput => ({
+const structureAt = (at: number, identifier: string, descriptors?: JSONObject): PortMatchInput => ({
   at,
   kind: PortKind.Structure,
   identifier,
+  ...(descriptors
+    ? {
+        descriptors: Object.keys(descriptors)
+          .sort()
+          .map((key) => ({ key, value: descriptors[key] })),
+      }
+    : {}),
 });
 
 // The child index is the position INSIDE the list, so it is 0 for either side.
-const listOfStructureAt = (at: number, identifier: string): PortMatchInput => ({
+const listOfStructureAt = (at: number, identifier: string, descriptors?: JSONObject): PortMatchInput => ({
   at,
   kind: PortKind.List,
-  children: [structureAt(0, identifier)],
+  children: [structureAt(0, identifier, descriptors)],
 });
 
 const args = (matches: PortMatchInput[]): PortDemandInput => ({
@@ -72,11 +105,13 @@ const sideDemand = (
   at: number,
   identifier: string | undefined,
   arity: Arity,
-  options?: { forceSingle?: boolean },
+  options?: { forceSingle?: boolean; descriptors?: JSONObject },
 ): PortDemandInput | null => {
   if (!identifier || arity === "none") return null;
-  if (arity === "one" || options?.forceSingle) return args([structureAt(at, identifier)]);
-  return args([listOfStructureAt(at, identifier)]);
+  if (arity === "one" || options?.forceSingle) {
+    return args([structureAt(at, identifier, options?.descriptors)]);
+  }
+  return args([listOfStructureAt(at, identifier, options?.descriptors)]);
 };
 
 const returnsDemand = (returns: readonly string[] | undefined): PortDemandInput | null =>
@@ -121,16 +156,19 @@ export const buildDemands = (source: DemandSource): SmartDemands => {
   const objects = arityOf(source.objects);
   const partners = arityOf(source.partners);
 
-  const partnerDemand = sideDemand(1, partnerIdentifier, partners);
+  const objectDescriptors = sideDescriptors(source.objects);
+  const partnerDemand = sideDemand(1, partnerIdentifier, partners, {
+    descriptors: sideDescriptors(source.partners),
+  });
   const returns = returnsDemand(source.returns);
 
   const single = present([
-    sideDemand(0, objectIdentifier, objects),
+    sideDemand(0, objectIdentifier, objects, { descriptors: objectDescriptors }),
     partnerDemand,
     returns,
   ]);
   const batch = present([
-    sideDemand(0, objectIdentifier, objects, { forceSingle: true }),
+    sideDemand(0, objectIdentifier, objects, { forceSingle: true, descriptors: objectDescriptors }),
     partnerDemand,
     returns,
   ]);

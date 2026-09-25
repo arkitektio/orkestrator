@@ -3,7 +3,7 @@ import { KraphStructure } from "@/linkers";
 import { useGetStructureQuery } from "../api/graphql";
 
 export const StructureDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetStructureQuery({ variables: { id: props.object } });
+  const { data } = useGetStructureQuery({ variables: { id: props.id } });
 
   if (!data?.structure) {
     return <div className="text-xs text-muted-foreground">Structure not found</div>;

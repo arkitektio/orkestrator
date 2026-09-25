@@ -48,7 +48,7 @@ export const KABINET_ACTIONS: Record<string, Action> = {
       }
       // Only the repos in a mixed selection; the condition matches on any.
       const repos = state.left.filter(
-        (structure) => structure.identifier === REPO_IDENTIFIER && structure.object?.id
+        (structure) => structure.identifier === REPO_IDENTIFIER && structure.id
       )
       if (repos.length === 0) {
         throw new Error('No repository selected')
@@ -57,7 +57,7 @@ export const KABINET_ACTIONS: Record<string, Action> = {
       for (const [index, repo] of repos.entries()) {
         await client.mutate<ScanRepoMutation, ScanRepoMutationVariables>({
           mutation: ScanRepoDocument,
-          variables: { id: String(repo.object.id) }
+          variables: { id: String(repo.id) }
         })
         onProgress?.(((index + 1) / repos.length) * 100)
       }

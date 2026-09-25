@@ -2,6 +2,7 @@ import { Guard } from "@/app/Arkitekt";
 import { StructureRoomsSidebar } from "@/alpaka/sidebars/StructureRoomsSidebar";
 import { CommandContext } from "@/command/CommandContext";
 import { ObjectButton } from "@/providers/smart/ObjectButton";
+import { structure } from "@/lib/structure";
 import { Identifier, Object } from "@/types";
 import {
   cloneElement,
@@ -128,7 +129,11 @@ export const ModelPageLayout = ({
   pageActions,
   chat = true,
 }: ModelPageLayoutProps) => {
-  const objects = useMemo(() => [{ identifier, object }], [identifier, object]);
+  const label = typeof object.label === "string" ? object.label : typeof object.name === "string" ? object.name : undefined;
+  const objects = useMemo(
+    () => [structure(identifier, object.id, { label })],
+    [identifier, object.id, label],
+  );
   const datum = smartRegistry.isDatum(identifier);
   const knowledgeSidebar = (
     <KnowledgeSidebar identifier={identifier} object={object} />

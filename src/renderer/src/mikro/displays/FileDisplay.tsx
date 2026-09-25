@@ -13,7 +13,7 @@ function formatBytes(bytes: number | null | undefined): string {
 export const FileDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetFileQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     },
   });
 

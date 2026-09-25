@@ -3,7 +3,7 @@ import {
   useInformingStructuresQuery,
   type KnowledgeInstanceFragment,
 } from "@/kraph/api/graphql";
-import type { Identifier, Object } from "@/types";
+import type { Structure } from "@/types";
 
 /**
  * One other member of the sameness component, shown by its evidence. Instances
@@ -16,14 +16,14 @@ const SameAsMember = ({
   self,
 }: {
   instanceId: string;
-  self: { identifier: Identifier; object: Object };
+  self: Structure;
 }) => {
   const { data, loading } = useInformingStructuresQuery({
     variables: { entityId: instanceId },
   });
   const structures = (data?.informingStructures ?? []).filter(
     (structure) =>
-      !(structure.identifier === self.identifier && structure.object === self.object.id),
+      !(structure.identifier === self.identifier && structure.object === self.id),
   );
 
   if (loading && !data) {
@@ -42,7 +42,7 @@ const SameAsMember = ({
         <li key={structure.id} className="min-w-0">
           <DisplayWidget
             identifier={structure.identifier}
-            object={structure.object}
+            id={structure.object}
             link
             context="command"
           />
@@ -58,7 +58,7 @@ export const SameAsList = ({
   self,
 }: {
   instance: KnowledgeInstanceFragment;
-  self: { identifier: Identifier; object: Object };
+  self: Structure;
 }) => {
   const members = instance.component.filter((id) => id !== instance.id);
 

@@ -1,4 +1,5 @@
 import { SMART_MODEL_DROP_TYPE } from "@/constants";
+import { sameStructure, structure } from "@/lib/structure";
 import { Structure } from "@/types";
 import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react";
 import { createSelector } from "reselect";
@@ -47,13 +48,11 @@ const createSelectionSnapshotSelector = (self: Structure) =>
       bselection,
       selectedIndex:
         selection.findIndex(
-          (item) =>
-            item.identifier === self.identifier && item.object === self.object,
+          (item) => sameStructure(item, self),
         ) + 1,
       bselectedIndex:
         bselection.findIndex(
-          (item) =>
-            item.identifier === self.identifier && item.object === self.object,
+          (item) => sameStructure(item, self),
         ) + 1,
     }),
   );
@@ -102,9 +101,10 @@ export const useSmartModel = ({
   object,
 }: Pick<SmartModelProps, "identifier" | "object">): UseSmartModelResult => {
   const selectionStore = useSelectionStoreApi();
-  const self = useMemo(
-    () => ({ identifier, object }),
-    [identifier, object.id], // Only re-create if identifier or object id changes, not if other object attributes change
+  const label = typeof object.label === "string" ? object.label : typeof object.name === "string" ? object.name : undefined;
+  const self = useMemo<Structure>(
+    () => structure(identifier, object.id, { label }),
+    [identifier, object.id, label], // Not on other fragment fields: they never leave the module
   );
 
 
@@ -314,7 +314,7 @@ export const useSmartModel = ({
       syncAttribute(node, "data-identifier", identifier);
       // Only the id: nothing parses this attribute (SelectionBox checks for its
       // presence), and serializing the whole fragment per card was expensive.
-      syncAttribute(node, "data-object", self.object.id);
+      syncAttribute(node, "data-object", self.id);
       syncAttribute(node, "data-selectable", "true");
       // The delegated context menu / hover card (`SmartSurface`) resolves the
       // card under the pointer through this registry.

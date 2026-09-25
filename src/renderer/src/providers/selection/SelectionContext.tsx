@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useMemo } from "react";
 import { useStore } from "zustand";
 
+import { sameStructure } from "@/lib/structure";
 import { Structure } from "@/types";
 import { selectFocus, SelectionState } from "./store";
 import { SelectionContextType, SelectionSnapshot } from "./types";
@@ -91,16 +92,14 @@ export const useMySelect = (options: { self: Structure }) => {
 
   const isSelected = useMemo(() => {
     const me = selection.findIndex(
-      (item) =>
-        item.identifier === self.identifier && item.object === self.object,
+      (item) => sameStructure(item, self),
     );
     return me != -1 ? me + 1 : undefined;
   }, [selection, self]);
 
   const isBSelected = useMemo(() => {
     const me = bselection.findIndex(
-      (item) =>
-        item.identifier === self.identifier && item.object === self.object,
+      (item) => sameStructure(item, self),
     );
     return me != -1 ? me + 1 : undefined;
   }, [bselection, self]);
@@ -137,8 +136,7 @@ export const useMySelection = (
 
   const variables = useMemo(() => {
     const me = selection.find(
-      (item) =>
-        item.identifier === iam.identifier && item.object === iam.object,
+      (item) => sameStructure(item, iam),
     );
 
     if (!me) return { me: undefined, hasfocus: false, isSelected: false };
@@ -149,7 +147,7 @@ export const useMySelection = (
       isSelected: true,
 
       hasfocus:
-        focus?.identifier === iam.identifier && focus?.object === iam.object,
+        sameStructure(focus, iam),
       myindex: myindex,
     };
   }, [selection, focus]);
@@ -166,9 +164,7 @@ export const useMySelection = (
           }
           if (iam) {
             const array = selection.filter(
-              (item) =>
-                item.object !== iam.object ||
-                item.identifier !== iam.identifier,
+              (item) => !sameStructure(item, iam),
             );
             if (array.length === 0) {
               setIsMultiSelecting(false);

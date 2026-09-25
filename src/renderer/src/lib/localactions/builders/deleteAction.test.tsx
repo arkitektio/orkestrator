@@ -7,7 +7,7 @@ import type { ActionState, Structure } from "../LocalActionProvider";
 import { buildDeleteAction } from "./deleteAction";
 
 const structure = (identifier: string, id: string): Structure =>
-  ({ identifier, object: { id } }) as Structure;
+  ({ identifier, id }) as Structure;
 
 const makeClient = (
   mutate: (options: { variables: { id: string } }) => Promise<unknown>,

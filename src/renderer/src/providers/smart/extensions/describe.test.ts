@@ -6,7 +6,7 @@ import { describeStructures } from "./describe";
 smartRegistry.register({ identifier: "@t/image", path: "t/images", name: "Image", datum: false });
 smartRegistry.register({ identifier: "@t/entity", path: "t/entities", name: "Entity", datum: false });
 
-const of = (identifier: string, id: string) => ({ identifier, object: { id } });
+const of = (identifier: string, id: string) => ({ identifier, id });
 
 describe("structures in words", () => {
   it("names one thing without counting it", () => {

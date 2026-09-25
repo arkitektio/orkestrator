@@ -42,11 +42,10 @@ export const useSmartDropZone = ({
   identifier,
   object,
 }: Pick<SmartModelProps, "identifier" | "object">): UseSmartDropZoneResult => {
-  const self = React.useMemo(
-    () => ({ identifier, object }),
+  const self = React.useMemo<Structure>(
+    () => ({ identifier, id: object.id }),
     // Keyed on the id (as in useSmartModel): a refetched fragment with the
     // same id must not invalidate the drop target.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [identifier, object.id],
   );
   const [partners, setPartners] = useState<Structure[]>([]);
@@ -95,7 +94,7 @@ export const useSmartDropZone = ({
       }
 
       syncAttribute(node, "data-identifier", identifier);
-      syncAttribute(node, "data-object", self.object.id);
+      syncAttribute(node, "data-object", self.id);
     },
     [drop, identifier, self, refs],
   );

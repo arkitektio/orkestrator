@@ -64,7 +64,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         (item) => item.identifier === '@mikro/arraydataset',
       );
 
-      if (!selected?.object?.id) {
+      if (!selected?.id) {
         throw new Error('No array dataset selected for Create Scene action');
       }
 
@@ -84,7 +84,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         GetArrayDatasetIntrinsicSystemQueryVariables
       >({
         query: GetArrayDatasetIntrinsicSystemDocument,
-        variables: { id: selected.object.id },
+        variables: { id: selected.id },
       });
 
       const system = datasetData?.arrayDataset.intrinsicSystem;
@@ -129,7 +129,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         (item) => item.identifier === '@mikro/coordinatesystem',
       );
 
-      if (!selected?.object?.id) {
+      if (!selected?.id) {
         throw new Error('No coordinate system selected for Create Scene action');
       }
 
@@ -145,7 +145,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         mutation: CreateSceneFromCoordinateSystemDocument,
         // `policy` is left to the server default (nchildren cap, meshes on,
         // tables untransformed).
-        variables: { input: { coordinateSystem: selected.object.id } },
+        variables: { input: { coordinateSystem: selected.id } },
         // Refresh the global scene list and the source system's page, whose
         // Scenes section lists exactly this inverse relation.
         refetchQueries: [GetScenesDocument, GetCoordinateSystemDocument],
@@ -180,12 +180,12 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       const selected = state.left.find(
         (item) => item.identifier === '@mikro/coordinatesystem',
       );
-      if (!selected?.object?.id) {
+      if (!selected?.id) {
         throw new Error('No coordinate system selected for Register action');
       }
       dialog.openDialog(
         'register',
-        { target: selected.object.id },
+        { target: selected.id },
         // The axis-mapping table needs the width addlayer already claims.
         { className: 'max-w-3xl' },
       );
@@ -207,14 +207,14 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       const dataset = state.right?.find(
         (item) => item.identifier === '@mikro/arraydataset',
       );
-      if (!target?.object?.id || !dataset?.object?.id) {
+      if (!target?.id || !dataset?.id) {
         throw new Error('Register needs both a coordinate system and a dataset');
       }
       dialog.openDialog(
         'register',
         {
-          target: target.object.id,
-          source: { kind: 'arrayDataset', id: dataset.object.id },
+          target: target.id,
+          source: { kind: 'arrayDataset', id: dataset.id },
         },
         { className: 'max-w-3xl' },
       );
@@ -236,14 +236,14 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       const table = state.right?.find(
         (item) => item.identifier === '@mikro/tabledataset',
       );
-      if (!target?.object?.id || !table?.object?.id) {
+      if (!target?.id || !table?.id) {
         throw new Error('Register needs both a coordinate system and a table');
       }
       dialog.openDialog(
         'register',
         {
-          target: target.object.id,
-          source: { kind: 'tabledataset', id: table.object.id },
+          target: target.id,
+          source: { kind: 'tabledataset', id: table.id },
         },
         { className: 'max-w-3xl' },
       );
@@ -263,12 +263,12 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       const selected = state.left.find(
         (item) => item.identifier === '@mikro/arraydataset',
       );
-      if (!selected?.object?.id) {
+      if (!selected?.id) {
         throw new Error('No dataset selected for Calibrate action');
       }
       dialog.openDialog(
         'calibrate',
-        { dataset: selected.object.id },
+        { dataset: selected.id },
         { className: 'max-w-2xl' },
       );
     },
@@ -287,12 +287,12 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       const selected = state.left.find(
         (item) => item.identifier === '@mikro/arraydataset',
       );
-      if (!selected?.object?.id) {
+      if (!selected?.id) {
         throw new Error('No dataset selected for Register Into action');
       }
       dialog.openDialog(
         'register',
-        { source: { kind: 'arrayDataset', id: selected.object.id } },
+        { source: { kind: 'arrayDataset', id: selected.id } },
         { className: 'max-w-3xl' },
       );
     },
@@ -312,13 +312,13 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         (item) => item.identifier === '@mikro/scene',
       );
 
-      if (!selected?.object?.id) {
+      if (!selected?.id) {
         throw new Error('No scene selected for Add Layer action');
       }
 
       dialog.openDialog(
         'addlayer',
-        { scene: selected.object.id },
+        { scene: selected.id },
         { className: 'max-w-3xl' },
       );
     },
@@ -345,11 +345,11 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         (item) => item.identifier === '@mikro/scene',
       );
 
-      if (!selected?.object?.id) {
+      if (!selected?.id) {
         throw new Error('No scene selected for Align Layers action');
       }
 
-      navigate(sceneRegistrationLink(selected.object.id));
+      navigate(sceneRegistrationLink(selected.id));
     },
   },
   'update-mikro-folder': {
@@ -366,7 +366,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         (item) => item.identifier === '@mikro/folder',
       );
 
-      if (!selectedFolder?.object?.id) {
+      if (!selectedFolder?.id) {
         throw new Error('No folder selected for Rename / Update Folder action');
       }
 
@@ -381,7 +381,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       >({
         query: GetFolderDocument,
         variables: {
-          id: selectedFolder.object.id,
+          id: selectedFolder.id,
         },
         fetchPolicy: 'network-only',
       });
@@ -416,7 +416,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     execute: async ({ state, dialog }) => {
       const ids = state.left
         .filter((item) => item.identifier === '@mikro/file')
-        .map((item) => item.object.id)
+        .map((item) => item.id)
 
       if (ids.length === 0) {
         throw new Error('No files selected for Move to Folder action')
@@ -441,7 +441,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     execute: async ({ state, dialog }) => {
       const ids = state.left
         .filter((item) => item.identifier === '@mikro/arraydataset')
-        .map((item) => item.object.id)
+        .map((item) => item.id)
 
       if (ids.length === 0) {
         throw new Error('No datasets selected for Move to Folder action')
@@ -491,10 +491,10 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       await client.mutate<PutFoldersInFolderMutation, PutFoldersInFolderMutationVariables>({
         mutation: PutFoldersInFolderDocument,
         variables: {
-          selfs: folders.map((i) => i.object.id),
-          other: inside.object.id
+          selfs: folders.map((i) => i.id),
+          other: inside.id
         },
-        refetchQueries: getRefetchableQueriesForEntities(client, folders.map((d) => ({ typename: "Folder", id: d.object.id })))
+        refetchQueries: getRefetchableQueriesForEntities(client, folders.map((d) => ({ typename: "Folder", id: d.id })))
       })
     }
   },
@@ -534,10 +534,10 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       await client.mutate<PutArrayDatasetsInFolderMutation, PutArrayDatasetsInFolderMutationVariables>({
         mutation: PutArrayDatasetsInFolderDocument,
         variables: {
-          selfs: datasets.map((i) => i.object.id),
-          other: inside.object.id
+          selfs: datasets.map((i) => i.id),
+          other: inside.id
         },
-        refetchQueries: getRefetchableQueriesForEntities(client, datasets.map((f) => ({ typename: "ArrayDataset", id: f.object.id })))
+        refetchQueries: getRefetchableQueriesForEntities(client, datasets.map((f) => ({ typename: "ArrayDataset", id: f.id })))
      })
     }
   },
@@ -577,10 +577,10 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       await client.mutate<PutTableDatasetsInFolderMutation, PutTableDatasetsInFolderMutationVariables>({
         mutation: PutTableDatasetsInFolderDocument,
         variables: {
-          selfs: tables.map((i) => i.object.id),
-          other: inside.object.id
+          selfs: tables.map((i) => i.id),
+          other: inside.id
         },
-        refetchQueries: getRefetchableQueriesForEntities(client, tables.map((f) => ({ typename: "TableDataset", id: f.object.id })))
+        refetchQueries: getRefetchableQueriesForEntities(client, tables.map((f) => ({ typename: "TableDataset", id: f.id })))
      })
     }
   },
@@ -620,10 +620,10 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       await client.mutate<PutFilesInFolderMutation, PutFilesInFolderMutationVariables>({
         mutation:   PutFilesInFolderDocument,
         variables: {
-          selfs: files.map((i) => i.object.id),
-          other: inside.object.id
+          selfs: files.map((i) => i.id),
+          other: inside.id
         },
-        refetchQueries: getRefetchableQueriesForEntities(client, files.map((f) => ({ typename: "File", id: f.object.id })))
+        refetchQueries: getRefetchableQueriesForEntities(client, files.map((f) => ({ typename: "File", id: f.id })))
       })
     }
   },

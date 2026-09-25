@@ -55,7 +55,7 @@ export type PlanSamenessInput = {
 };
 
 export const isSameDatum = (a: Structure, b: Structure) =>
-  a.identifier === b.identifier && a.object.id === b.object.id;
+  a.identifier === b.identifier && a.id === b.id;
 
 /** The ENTITY instances a datum is evidence for; an unseen datum has none. */
 export const readLabels = async (
@@ -67,7 +67,7 @@ export const readLabels = async (
     KnowledgeForStructureQueryVariables
   >({
     query: KnowledgeForStructureDocument,
-    variables: { identifier: structure.identifier, object: structure.object.id },
+    variables: { identifier: structure.identifier, object: structure.id },
     errorPolicy: "all",
     fetchPolicy: "network-only",
   });
@@ -157,7 +157,7 @@ export const executeSameness = async (
         input: {
           term: plan.term,
           supportingEvidence: [
-            { identifier: plan.evidence.identifier, object: plan.evidence.object.id },
+            { identifier: plan.evidence.identifier, object: plan.evidence.id },
           ],
           sameAs: [plan.sameAs],
         },

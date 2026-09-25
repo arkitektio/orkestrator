@@ -21,6 +21,6 @@ export const resolveContextObjects = (
     .filter((modifier) => modifier.identifier === identifier)
     .map((modifier) => ({
       identifier: modifier.identifier as Identifier,
-      object: { id: modifier.id },
+      id: modifier.id,
     }));
 };

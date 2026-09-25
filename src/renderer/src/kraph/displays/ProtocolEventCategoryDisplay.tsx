@@ -5,7 +5,7 @@ import { useGetProtocolEventCategoryQuery } from "../api/graphql";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const ProtocolEventCategoryDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetProtocolEventCategoryQuery({ variables: { id: props.object } });
+  const { data } = useGetProtocolEventCategoryQuery({ variables: { id: props.id } });
 
   if (!data?.protocolEventCategory) {
     return <div className="text-xs text-muted-foreground">Not found</div>;
@@ -15,7 +15,7 @@ export const ProtocolEventCategoryDisplay = (props: DisplayWidgetProps) => {
 
   if (props.context === "command") {
     return (
-      <KraphProtocolEventCategory.DetailLink object={{ id: props.object }}>
+      <KraphProtocolEventCategory.DetailLink object={{ id: props.id }}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-medium text-sm truncate">{cat.label}</span>
           {cat.description && (
@@ -27,7 +27,7 @@ export const ProtocolEventCategoryDisplay = (props: DisplayWidgetProps) => {
   }
 
   return (
-    <KraphProtocolEventCategory.DetailLink object={{ id: props.object }}>
+    <KraphProtocolEventCategory.DetailLink object={{ id: props.id }}>
       <div className="w-full rounded-lg border border-border/60 bg-card p-3 space-y-1">
         {cat.image && (
           <WithKraphMediaUrl media={cat.image}>

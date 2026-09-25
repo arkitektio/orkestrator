@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -47,11 +47,11 @@ describe("RunOnSubmenu", () => {
 
     await act(async () => {
       fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
-      // Radix's FocusScope hands focus back on a zero timer after unmount.
-      await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(screen.queryByTestId("picker")).not.toBeInTheDocument();
-    expect(screen.getByTestId("search")).toHaveFocus();
+    // Radix's FocusScope hands focus back on a timer after unmount; how many
+    // ticks that takes depends on load, so wait for it rather than count.
+    await waitFor(() => expect(screen.getByTestId("search")).toHaveFocus());
   });
 
   it("does nothing outside a submenu", () => {

@@ -5,7 +5,7 @@ import { useGetFolderQuery } from "@/mikro/api/graphql";
 export const FolderDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetFolderQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     },
   });
 

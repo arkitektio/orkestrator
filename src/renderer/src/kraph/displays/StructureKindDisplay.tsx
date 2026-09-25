@@ -4,7 +4,7 @@ import { useGetStructureKindQuery } from "../api/graphql";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const StructureKindDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetStructureKindQuery({ variables: { id: props.object } });
+  const { data } = useGetStructureKindQuery({ variables: { id: props.id } });
 
   if (!data?.structureKind) {
     return <div className="text-xs text-muted-foreground">Not found</div>;
@@ -14,7 +14,7 @@ export const StructureKindDisplay = (props: DisplayWidgetProps) => {
 
   if (props.context === "command") {
     return (
-      <KraphStructureKind.DetailLink object={{ id: props.object }}>
+      <KraphStructureKind.DetailLink object={{ id: props.id }}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-medium text-sm truncate">{cat.label}</span>
           <span className="text-xs text-muted-foreground font-mono shrink-0">{cat.identifier}</span>
@@ -24,7 +24,7 @@ export const StructureKindDisplay = (props: DisplayWidgetProps) => {
   }
 
   return (
-    <KraphStructureKind.DetailLink object={{ id: props.object }}>
+    <KraphStructureKind.DetailLink object={{ id: props.id }}>
       <div className="w-full rounded-lg border border-border/60 bg-card p-3 space-y-1">
         {cat.image && (
           <WithKraphMediaUrl media={cat.image}>

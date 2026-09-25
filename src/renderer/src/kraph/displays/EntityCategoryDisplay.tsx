@@ -4,7 +4,7 @@ import { TermBadge } from "../components/TermBadge";
 
 export const EntityCategoryDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetEntityCategoryQuery({
-    variables: { id: props.object },
+    variables: { id: props.id },
   });
 
   return (

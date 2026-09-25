@@ -54,7 +54,7 @@ const beginDrag = async () => {
   document.body.appendChild(card);
   createDragSource(() => ({
     kind: SMART_MODEL_DROP_TYPE,
-    getData: () => ({ structures: [{ identifier: "@x/thing", object: { id: "1" } }] }),
+    getData: () => ({ structures: [{ identifier: "@x/thing", id: "1" }] }),
   })).attach(card);
 
   await act(async () => {

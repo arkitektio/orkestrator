@@ -26,7 +26,7 @@ export const DelegatingStructureWidget = (props: ReturnWidgetProps) => {
 
   return (
     <Widget
-      object={String(object)}
+      id={String(object)}
       small={true}
       identifier={props.port.identifier}
     />

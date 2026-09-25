@@ -175,7 +175,7 @@ export const StructureRoomsSidebar = ({
   // Alpaka addresses foreign objects by a numeric id. A structure whose id
   // isn't one cannot be talked about, and asking anyway would have the server
   // reject the whole query.
-  const talkingAbout = toStructureInput({ identifier, object });
+  const talkingAbout = toStructureInput({ identifier, id: object.id });
   const { data, loading, error, refetch } = useListRoomsQuery({
     skip: !talkingAbout,
     variables: {

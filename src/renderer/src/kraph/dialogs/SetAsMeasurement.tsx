@@ -51,7 +51,7 @@ export const SetAsMeasurement = (props: {
         variables: {
           input: {
             identifier: source.identifier,
-            object: source.object.id,
+            object: source.id,
           },
         },
       });
@@ -141,7 +141,7 @@ export const SetAsMeasurement = (props: {
             <span className="text-muted-foreground">Source</span>
             <div className="mt-1 font-medium">{source.identifier}</div>
             <div className="font-mono text-xs text-muted-foreground">
-              {source.object.id}
+              {source.id}
             </div>
           </div>
         ) : null}

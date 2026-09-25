@@ -19,11 +19,11 @@ const section = (
   Row: () => null,
 });
 
-const one = (): SmartContextProps => ({ objects: [{ identifier: "@mikro/image", object: { id: "1" } }] });
+const one = (): SmartContextProps => ({ objects: [{ identifier: "@mikro/image", id: "1" }] });
 const two = (): SmartContextProps => ({
   objects: [
-    { identifier: "@mikro/image", object: { id: "1" } },
-    { identifier: "@mikro/image", object: { id: "2" } },
+    { identifier: "@mikro/image", id: "1" },
+    { identifier: "@mikro/image", id: "2" },
   ],
 });
 

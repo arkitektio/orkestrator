@@ -125,7 +125,7 @@ configureSmartBuilder({
     );
   },
   renderObjectButton: ({ identifier, object, ...props }: SmartObjectButtonProps & { identifier: string }) => {
-    return <ObjectButton objects={[{ identifier, object }]} {...props} />;
+    return <ObjectButton objects={[{ identifier, id: object.id }]} {...props} />;
   },
   renderNewButton: ({ identifier, ...props }: SmartNewButtonProps & { identifier: string }) => {
     return <ObjectButton returns={[identifier]} objects={[]} {...props} />;

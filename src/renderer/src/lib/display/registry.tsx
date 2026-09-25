@@ -1,9 +1,14 @@
 import { Identifier } from "@/types";
 import React, { createContext, useContext } from "react";
 
+/**
+ * What a display surface is handed (module spec: `display` gets
+ * `{ identifier, id, small }`). The display fetches the rest itself from its
+ * own service; nothing else about the object crosses the border.
+ */
 export type DisplayWidgetProps = {
   identifier: Identifier;
-  object: string;
+  id: string;
   small?: boolean; // Optional prop for small display
   context?: "command" | "widget"; // "command" = compact, "widget" = full display
 };

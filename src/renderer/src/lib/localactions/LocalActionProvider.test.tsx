@@ -24,7 +24,7 @@ import { getActionEntriesForState, getActionsForState } from "./LocalActionProvi
 import { orderActionEntries } from "./LocalActionProvider";
 
 const structure = (identifier: string, id = "1"): Structure =>
-  ({ identifier, object: { id } }) as Structure;
+  ({ identifier, id }) as Structure;
 
 const action = (conditions: Condition[], over: Partial<Action> = {}): Action => ({
   title: over.title ?? "Action",

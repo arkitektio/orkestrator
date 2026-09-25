@@ -13,19 +13,15 @@ export type TabTarget = { to: string; label: string };
  * The label is the object's own name where it has one, so a tab reads as the
  * thing rather than as its id; the display name and id are the floor.
  */
-export const structureTabTarget = ({ identifier, object }: Structure): TabTarget | null => {
-  const path = smartRegistry.buildModelPath(identifier, object.id);
+export const structureTabTarget = ({ identifier, id, label }: Structure): TabTarget | null => {
+  const path = smartRegistry.buildModelPath(identifier, id);
   if (!path) {
     return null;
   }
 
-  const named = object.label ?? object.name;
   return {
     to: path.startsWith("/") ? path : `/${path}`,
-    label:
-      typeof named === "string" && named
-        ? named
-        : `${smartRegistry.getDisplayName(identifier)} ${object.id}`,
+    label: label || `${smartRegistry.getDisplayName(identifier)} ${id}`,
   };
 };
 

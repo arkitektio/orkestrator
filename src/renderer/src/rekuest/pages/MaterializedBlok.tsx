@@ -93,7 +93,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
             left: [
               {
                 identifier: '@rekuest/materialized_blok',
-                object: { id: materializedBlok.id },
+                id: materializedBlok.id,
               },
             ],
             isCommand: false,

@@ -20,7 +20,7 @@ import {
  */
 export const ArrayDatasetDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetListArrayDatasetQuery({
-    variables: { id: props.object },
+    variables: { id: props.id },
   });
 
   if (!data?.arrayDataset) {

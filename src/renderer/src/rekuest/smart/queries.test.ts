@@ -9,7 +9,7 @@ import {
   shortcutsVariables,
 } from "./queries";
 
-const demands = buildDemands({ objects: [{ identifier: "@mikro/image", object: { id: "1" } }] });
+const demands = buildDemands({ objects: [{ identifier: "@mikro/image", id: "1" }] });
 
 describe("query variables", () => {
   it("omit an empty search and a missing collection", () => {
@@ -36,7 +36,7 @@ describe("query variables", () => {
   });
 
   it("are deep-equal across calls (the cache-hit precondition)", () => {
-    expect(actionsVariables(buildDemands({ objects: [{ identifier: "@mikro/image", object: { id: "2" } }] }).single)).toEqual(
+    expect(actionsVariables(buildDemands({ objects: [{ identifier: "@mikro/image", id: "2" }] }).single)).toEqual(
       actionsVariables(demands.single),
     );
   });

@@ -4,7 +4,7 @@ import { TermBadge } from "../components/TermBadge";
 import { useGetNaturalEventCategoryQuery } from "../api/graphql";
 
 export const NaturalEventCategoryDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetNaturalEventCategoryQuery({ variables: { id: props.object } });
+  const { data } = useGetNaturalEventCategoryQuery({ variables: { id: props.id } });
 
   if (!data?.naturalEventCategory) {
     return <div className="text-xs text-muted-foreground">Not found</div>;
@@ -14,7 +14,7 @@ export const NaturalEventCategoryDisplay = (props: DisplayWidgetProps) => {
 
   if (props.context === "command") {
     return (
-      <KraphNaturalEventCategory.DetailLink object={{ id: props.object }}>
+      <KraphNaturalEventCategory.DetailLink object={{ id: props.id }}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-medium text-sm truncate">{cat.label}</span>
           {cat.description && (
@@ -26,7 +26,7 @@ export const NaturalEventCategoryDisplay = (props: DisplayWidgetProps) => {
   }
 
   return (
-    <KraphNaturalEventCategory.DetailLink object={{ id: props.object }}>
+    <KraphNaturalEventCategory.DetailLink object={{ id: props.id }}>
       <div className="w-full rounded-lg border border-border/60 bg-card p-3 space-y-1">
         <div className="font-semibold text-sm">{cat.label}</div>
         <TermBadge term={cat.term} />

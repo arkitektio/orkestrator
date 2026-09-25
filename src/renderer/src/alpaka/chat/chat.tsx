@@ -442,7 +442,7 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
             toStructureInputs(
               parsed.map((structure) => ({
                 identifier: structure?.identifier,
-                object: { id: structure?.object },
+                id: structure?.object,
               })),
             ),
           );

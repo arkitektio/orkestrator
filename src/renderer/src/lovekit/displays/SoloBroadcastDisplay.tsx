@@ -71,7 +71,7 @@ export const StreamJoiner = (props: { broadcast: SoloBroadcastFragment }) => {
 export const SoloBroadcastDisplay = (props: DisplayWidgetProps) => {
   const { data, error } = useGetSoloBroadcastQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     },
   });
 

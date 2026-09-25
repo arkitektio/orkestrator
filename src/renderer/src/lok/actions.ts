@@ -11,7 +11,7 @@ export const LOK_ACTIONS = {
     execute: async ({ state, dialog }) => {
       const users = state.left
         .filter((item) => item.identifier === '@lok/user')
-        .map((item) => item.object.id)
+        .map((item) => item.id)
 
       dialog.openDialog('notifyusers', { users }, { size: 'medium' })
     }
@@ -25,7 +25,7 @@ export const LOK_ACTIONS = {
     execute: async ({ state, dialog }) => {
       const users = state.left
         .filter((item) => item.identifier === '@lok/user')
-        .map((item) => item.object.id)
+        .map((item) => item.id)
 
       dialog.openSheet('addusertoorganization', { users }, { className: 'max-w-4xl' })
     }

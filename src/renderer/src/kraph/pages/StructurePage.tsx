@@ -44,7 +44,7 @@ const Page = asDetailQueryRoute(useGetStructureQuery, ({ data }) => {
         <Card className="flex flex-row gap-2 p-4">
           <DisplayWidget
             identifier={data.structure.identifier}
-            object={data.structure.object}
+            id={data.structure.object}
             link
           />
         </Card>

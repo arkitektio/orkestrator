@@ -64,7 +64,7 @@ const remoteSection = (store: ReturnType<typeof remoteStore>): SmartContextSecti
   Row: row("Remote"),
 });
 
-const objects = [{ identifier: "@mikro/image", object: { id: "1" } }];
+const objects = [{ identifier: "@mikro/image", id: "1" }];
 
 describe("SmartContext", () => {
   beforeEach(() => {

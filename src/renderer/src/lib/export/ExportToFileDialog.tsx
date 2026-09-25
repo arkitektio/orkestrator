@@ -169,7 +169,7 @@ const ExporterRunForm = (props: {
     action?.args
       .filter((arg) => arg.identifier === props.structure.identifier)
       .reduce<Record<string, unknown>>((acc, arg) => {
-        acc[arg.key] = props.structure.object.id;
+        acc[arg.key] = props.structure.id;
         return acc;
       }, {}) ?? {};
 

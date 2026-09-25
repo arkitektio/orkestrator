@@ -35,7 +35,7 @@ const createWorkspaceFromModel: Action = {
     { type: 'nopartner' },
   ],
   execute: async ({ state, services, navigate }) => {
-    const model = state.left[0]?.object
+    const model = state.left[0]
     if (!model) {
       throw new Error('No neuron model provided for Create Workspace action')
     }
@@ -46,8 +46,8 @@ const createWorkspaceFromModel: Action = {
     }
 
     const name =
-      typeof model.name === 'string' && model.name
-        ? `${model.name} Workspace`
+      model.label
+        ? `${model.label} Workspace`
         : 'New Workspace'
 
     const created = await client.mutate<
@@ -95,7 +95,7 @@ const openArrayDatasetOnTimeline: Action = {
     { type: 'nopartner' },
   ],
   execute: async ({ state, services, navigate }) => {
-    const dataset = state.left[0]?.object
+    const dataset = state.left[0]
     if (!dataset) {
       throw new Error('No dataset provided for Open on Timeline action')
     }
@@ -139,7 +139,7 @@ const addExperimentLayer: Action = {
     { type: 'nopartner' },
   ],
   execute: async ({ state, dialog }) => {
-    const experiment = state.left[0]?.object
+    const experiment = state.left[0]
     if (!experiment) {
       throw new Error('No experiment provided for Add Layer action')
     }

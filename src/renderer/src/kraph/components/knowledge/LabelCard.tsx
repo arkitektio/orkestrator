@@ -69,7 +69,7 @@ export const LabelCard = ({ instance, self, meId, onChanged }: LabelCardProps) =
         <CollapsibleContent className="pt-2">
           <EvidenceForEntity
             identifier={self.identifier}
-            object={self.object}
+            object={{ id: self.id }}
             onDone={onChanged}
           />
         </CollapsibleContent>

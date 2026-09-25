@@ -12,24 +12,23 @@ import {
 describe("toStructureInput", () => {
   it("coerces a numeric string id to a number", () => {
     expect(
-      toStructureInput({ identifier: "@mikro/image", object: { id: "42" } }),
+      toStructureInput({ identifier: "@mikro/image", id: "42" }),
     ).toEqual({ identifier: "@mikro/image", object: 42 });
   });
 
   it("passes a numeric id through", () => {
     expect(
-      toStructureInput({ identifier: "@mikro/image", object: { id: 42 } }),
+      toStructureInput({ identifier: "@mikro/image", id: 42 }),
     ).toEqual({ identifier: "@mikro/image", object: 42 });
   });
 
   it.each([
-    ["a non-numeric id", { id: "abc" }],
-    ["a non-integer id", { id: "1.5" }],
-    ["an empty id", { id: "" }],
-    ["a null id", { id: null }],
-    ["a missing object", null],
-  ])("rejects %s", (_label, object) => {
-    expect(toStructureInput({ identifier: "@mikro/image", object })).toBeNull();
+    ["a non-numeric id", "abc"],
+    ["a non-integer id", "1.5"],
+    ["an empty id", ""],
+    ["a null id", null],
+  ])("rejects %s", (_label, id) => {
+    expect(toStructureInput({ identifier: "@mikro/image", id })).toBeNull();
   });
 });
 
@@ -37,9 +36,9 @@ describe("toStructureInputs", () => {
   it("keeps the addressable structures and drops the rest", () => {
     expect(
       toStructureInputs([
-        { identifier: "@mikro/image", object: { id: "1" } },
-        { identifier: "@kraph/graph", object: { id: "not-a-number" } },
-        { identifier: "@mikro/folder", object: { id: "3" } },
+        { identifier: "@mikro/image", id: "1" },
+        { identifier: "@kraph/graph", id: "not-a-number" },
+        { identifier: "@mikro/folder", id: "3" },
       ]),
     ).toEqual([
       { identifier: "@mikro/image", object: 1 },
@@ -49,7 +48,7 @@ describe("toStructureInputs", () => {
 
   it("returns an empty list when nothing is addressable", () => {
     expect(
-      toStructureInputs([{ identifier: "@kraph/graph", object: { id: "x" } }]),
+      toStructureInputs([{ identifier: "@kraph/graph", id: "x" }]),
     ).toEqual([]);
   });
 });

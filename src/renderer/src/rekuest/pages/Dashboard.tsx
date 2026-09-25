@@ -18,7 +18,7 @@ export const DashboardPage = asDetailQueryRoute(useGetDashboardQuery, ({ data, r
             left: [
               {
                 identifier: '@rekuest/dashboard',
-                object: { id: data.dashboard.id },
+                id: data.dashboard.id,
               },
             ],
             isCommand: false,

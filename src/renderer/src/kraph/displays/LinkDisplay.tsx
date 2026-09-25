@@ -10,7 +10,7 @@ import { useGetLinkQuery } from "../api/graphql";
  * the thing worth showing.
  */
 export const LinkDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetLinkQuery({ variables: { id: props.object } });
+  const { data } = useGetLinkQuery({ variables: { id: props.id } });
 
   if (!data?.link) {
     return <div className="text-xs text-muted-foreground">Link not found</div>;

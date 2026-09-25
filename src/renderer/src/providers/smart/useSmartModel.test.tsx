@@ -21,8 +21,8 @@ const Card = ({ id }: { id: string }) => {
     <div
       ref={ref}
       data-testid={id}
-      data-left={dropObjects.map((s) => s.object.id).join(",")}
-      data-right={partners.map((s) => s.object.id).join(",")}
+      data-left={dropObjects.map((s) => s.id).join(",")}
+      data-right={partners.map((s) => s.id).join(",")}
     />
   );
 };
@@ -46,13 +46,13 @@ const select = (...ids: string[]) =>
     store.getState().flushSelectables();
     const { selectables, setSelection } = store.getState();
     setSelection(
-      ids.map((id) => selectables.find((s) => s.structure.object.id === id)!.structure),
+      ids.map((id) => selectables.find((s) => s.structure.id === id)!.structure),
     );
   });
 
 const carried = (dataTransfer: FakeDataTransfer) =>
-  (JSON.parse(dataTransfer.getData(STRUCTURES_MIME)) as { object: { id: string } }[]).map(
-    (s) => s.object.id,
+  (JSON.parse(dataTransfer.getData(STRUCTURES_MIME)) as { id: string }[]).map(
+    (s) => s.id,
   );
 
 beforeEach(() => {
