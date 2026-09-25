@@ -3,12 +3,14 @@ import { useSettings } from "@/providers/settings/SettingsContext";
 import React from "react";
 import { createSmartPrefetcher, type PrefetchClient } from "./extensions/prefetch";
 import { SmartPrefetchContext } from "./extensions/prefetchContext";
+import { smartSections } from "./hostRegistries";
 
 /**
  * One prefetcher for the app, handed to `SmartSurface` (hover, selection) and
- * to every `ObjectButton` (pointer enter). It reads the rekuest client off the
- * Arkitekt store at call time, so it works from document listeners and copes
- * with the service coming up later.
+ * to every `ObjectButton` (pointer enter). It warms what the registered
+ * sections ask for, reading each service's client off the Arkitekt store at
+ * call time, so it works from document listeners and copes with a service
+ * coming up later.
  *
  * An experiment (Settings → General): with `experimentMenuPrefetch` off there
  * is no prefetcher at all — the context stays null, which every consumer
@@ -22,13 +24,14 @@ export const SmartPrefetchProvider = ({ children }: { children: React.ReactNode 
     () =>
       enabled
         ? createSmartPrefetcher({
-            getClients: () => {
+            getSections: () => smartSections().sections,
+            getClient: (service) => {
               const state = store.getState();
-              const ready = state.serviceStates.rekuest?.status === "ready";
-              const client = ready
-                ? (state.connection?.serviceMap.rekuest?.client as PrefetchClient | undefined)
-                : undefined;
-              return { rekuest: client };
+              if (state.serviceStates[service]?.status !== "ready") return undefined;
+              const services = state.connection?.serviceMap as
+                | Record<string, { client?: unknown } | undefined>
+                | undefined;
+              return services?.[service]?.client as PrefetchClient | undefined;
             },
           })
         : null,

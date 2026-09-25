@@ -6,8 +6,18 @@ import {
   AllActionsQueryVariables,
   DemandKind,
   PortKind,
+  type PortDemandInput,
 } from "@/rekuest/api/graphql";
 import type { SearchOptions } from "@/rekuest/smart/queries";
+
+/**
+ * Kabinet's generated `PortDemandInput` is field-for-field rekuest's, with its
+ * own copies of the enums (same string values — pinned by `queries.test.ts`),
+ * so rekuest's demand builder serves kabinet's definition search too.
+ */
+export const toKabinetDemands = (
+  demands: readonly PortDemandInput[],
+): KabinetPortDemandInput[] => demands as unknown as KabinetPortDemandInput[];
 
 export const SMART_DEFINITION_LIMIT = 12;
 

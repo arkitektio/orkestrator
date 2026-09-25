@@ -11,7 +11,7 @@ import type {
 } from "@/lib/module-spec";
 import type { ProfileSection } from "@/lib/profile/section";
 import type { TaskHook } from "@/lib/taskhooks/types";
-import type { SmartContextSection } from "@/providers/smart/extensions/section";
+import type { SmartContextSection, SmartMenuWrapperProps } from "@/providers/smart/extensions/section";
 import type { Object } from "@/types";
 
 /**
@@ -58,6 +58,8 @@ export type ModuleBuiltins = {
   actions?: Record<string, Action<any>>;
   /** `section` surfaces: what this module adds to other models' pages. */
   pageSections?: readonly PageSection[];
+  /** EXTENSION: wrappers around the smart menu and palette (rekuest's "Run on"). */
+  menuWrappers?: readonly ComponentType<SmartMenuWrapperProps>[];
   /** EXTENSION: sections of the smart context menu. */
   sections?: readonly SmartContextSection<any>[];
   /** EXTENSION: sections of a member's profile page. */

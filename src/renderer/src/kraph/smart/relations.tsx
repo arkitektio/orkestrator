@@ -6,10 +6,8 @@ import {
   useAssertRelationExistsMutation,
   useAssertStructureExistsMutation,
   useAssertStructureRelationExistsMutation,
-  useListGraphsQuery,
 } from "@/kraph/api/graphql";
 import { Structure } from "@/types";
-import { CommandGroup } from "cmdk";
 import { Network, Ruler } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
@@ -168,53 +166,5 @@ export const EntityRelateButton = (props: {
       description={props.category.graph.name}
       icon={Network}
     />
-  );
-};
-
-export const MeasurementActions = (props: PassDownProps) => {
-  const firstObject = props.objects.at(0);
-  const dialog = useDialog();
-
-  const { data: pinnedGraphs } = useListGraphsQuery({
-    variables: {
-      filters: { pinned: true },
-    },
-    fetchPolicy: "cache-and-network",
-  });
-
-  if (!firstObject) {
-    return null;
-  }
-
-  if (!pinnedGraphs?.graphs.length) {
-    return null;
-  }
-
-  return (
-    <CommandGroup
-      heading={
-        <span className="font-light text-xs w-full items-center ml-2 w-full inline-flex gap-2">
-          <Ruler className="h-3.5 w-3.5" />
-          <span>Create Measurement Category</span>
-        </span>
-      }
-    >
-      {pinnedGraphs.graphs.map((graph) => (
-        <CommandActionRow
-          key={graph.id}
-          value={`create-measurement-${graph.id}`}
-          onSelect={() =>
-            dialog.openDialog("createnewmeasurement", {
-              left: props.objects,
-              right: props.partners || [],
-              graph: graph.id,
-            })
-          }
-          title={`In "${graph.name}"`}
-          description={graph.description ?? undefined}
-          icon={Ruler}
-        />
-      ))}
-    </CommandGroup>
   );
 };

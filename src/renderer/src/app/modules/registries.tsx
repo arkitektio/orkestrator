@@ -148,6 +148,8 @@ export const moduleSections = derived(
   (): SmartContextSection<any>[] => concat((builtins) => builtins.sections),
 );
 
+export const moduleMenuWrappers = derived(() => concat((builtins) => builtins.menuWrappers));
+
 export const moduleProfileSections = derived(
   (): ProfileSection[] => concat((builtins) => builtins.profileSections),
 );

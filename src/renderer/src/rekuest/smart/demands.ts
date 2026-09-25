@@ -1,4 +1,3 @@
-import type { PortDemandInput as KabinetPortDemandInput } from "@/kabinet/api/graphql";
 import {
   ActionDemandInput,
   DemandKind,
@@ -8,14 +7,14 @@ import {
 } from "@/rekuest/api/graphql";
 import React from "react";
 import type { JSONObject, Structure } from "@/types";
-import type { SmartContextProps } from "./types";
+import type { SmartContextProps } from "../../providers/smart/extensions/types";
 
 /**
  * The port demands the menu asks the servers with: "an action whose first arg
  * takes one of these, whose second takes one of those, returning that".
  *
  * One builder for every section (rekuest actions, shortcuts, implementations,
- * the batch variants, kabinet definitions) and for the prefetcher, so the
+ * the batch variants, kabinet definitions) and for their prefetch, so the
  * variables are byte-identical wherever they are built — the Apollo cache key
  * is the serialised `filters`, and a prefetch only pays off if the later hook
  * reads the same entry. Nothing here emits an `undefined`-valued key.
@@ -183,14 +182,6 @@ export const buildDemands = (source: DemandSource): SmartDemands => {
     batchImplementation: buildImplementationDemand(batch),
   };
 };
-
-/**
- * Kabinet's generated `PortDemandInput` is field-for-field the same input with
- * its own copies of the enums (same string values — pinned by `demands.test.ts`).
- */
-export const toKabinetDemands = (
-  demands: readonly PortDemandInput[],
-): KabinetPortDemandInput[] => demands as unknown as KabinetPortDemandInput[];
 
 /** Memoized on `demandKey`, so a fresh `objects` array per render does not rebuild. */
 export const useSmartDemands = (source: DemandSource): SmartDemands => {

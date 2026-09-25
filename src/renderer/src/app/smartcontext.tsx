@@ -5,7 +5,7 @@ import {
   type SmartSectionRegistry,
 } from "@/providers/smart/extensions/sectionRegistry";
 import { derived } from "@/lib/module-host/lazy";
-import { moduleSections } from "./modules/registries";
+import { moduleMenuWrappers, moduleSections } from "./modules/registries";
 
 const build = derived(() => createSmartSectionRegistry([...LOCAL_SECTIONS, ...moduleSections()]));
 
@@ -22,4 +22,4 @@ export const SMART_SECTIONS: SmartSectionRegistry = {
 };
 
 // The menu (`providers/smart/extensions/context`) reads the sections through this.
-provideSmartRegistries({ sections: SMART_SECTIONS });
+provideSmartRegistries({ sections: SMART_SECTIONS, menuWrappers: moduleMenuWrappers });

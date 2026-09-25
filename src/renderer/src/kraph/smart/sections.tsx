@@ -22,8 +22,7 @@ import type {
   SmartContextSection,
   SmartSectionContext,
 } from "@/providers/smart/extensions/section";
-import { SectionHost } from "@/providers/smart/extensions/SectionHost";
-import type { PassDownProps, SmartContextProps } from "@/providers/smart/extensions/types";
+import type { SmartContextProps } from "@/providers/smart/extensions/types";
 import { useStableData } from "@/providers/smart/extensions/useStableData";
 import {
   CreateMeasurementButton,
@@ -300,23 +299,3 @@ export const KRAPH_SECTIONS: SmartContextSection<any>[] = [
   KRAPH_ENTITY_RELATIONS_SECTION,
   KRAPH_STRUCTURE_RELATIONS_SECTION,
 ];
-
-/* Standalone forms. */
-
-export const ApplicableMeasurements = (props: PassDownProps) => (
-  <SectionHost section={KRAPH_MEASUREMENTS_SECTION} context={props} />
-);
-export const EntityRelationActions = (props: PassDownProps) => (
-  <SectionHost section={KRAPH_ENTITY_RELATIONS_SECTION} context={props} />
-);
-export const StructureRelationActions = (props: PassDownProps) => (
-  <SectionHost section={KRAPH_STRUCTURE_RELATIONS_SECTION} context={props} />
-);
-/** Whichever kraph sections apply to these ends. */
-export const ApplicableRelations = (props: PassDownProps) => (
-  <>
-    {KRAPH_SECTIONS.filter((section) => section.applies(props)).map((section) => (
-      <SectionHost key={section.id} section={section} context={props} />
-    ))}
-  </>
-);

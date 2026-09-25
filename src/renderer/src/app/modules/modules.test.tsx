@@ -81,3 +81,14 @@ describe("page sections", () => {
     expect(ids("@lok/client", { placement: "main", slot: null }, false)).toEqual(["rekuest.clientfailures"]);
   }, 60_000);
 });
+
+describe("the smart menu's module parts", () => {
+  it("offers exactly the palette sections to ⌘K, and rekuest's Run-on around both", async () => {
+    await import("./install");
+    const { SMART_SECTIONS } = await import("@/app/smartcontext");
+    const { moduleMenuWrappers } = await import("./registries");
+    const palette = SMART_SECTIONS.sections.filter((section) => section.palette).map((section) => section.id);
+    expect(palette).toEqual(["local.actions", "rekuest.shortcuts", "rekuest.actions", "kabinet.definitions"]);
+    expect(moduleMenuWrappers().map((wrapper) => wrapper.name)).toEqual(["RunOnSubmenu"]);
+  }, 60_000);
+});

@@ -51,6 +51,9 @@ export const resolveSections = (
     if (exclude?.some((selector) => matchesSelector(section.id, selector))) {
       return false;
     }
+    if (props.sections?.palette && !section.palette) {
+      return false;
+    }
     return section.applies(props);
   });
 };

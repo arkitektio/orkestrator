@@ -1,26 +1,20 @@
-import type { ApolloClient, DocumentNode } from "@apollo/client";
-import { AllPrimaryActionsDocument, ShortcutsDocument } from "@/rekuest/api/graphql";
-import type { Structure } from "@/types";
-import { buildDemands } from "./demands";
-import { actionsVariables, shortcutsVariables } from "@/rekuest/smart/queries";
+import type { ApolloClient } from "@apollo/client";
+import type { SmartContextSection, SmartPrefetchTarget } from "./section";
 
 /**
- * Warms the Apollo cache for the two sections that carry the menu — primary
- * actions and shortcuts — before the menu opens (a hovered card, a changed
- * selection). The open-time hooks run `cache-and-network` with the very same
- * variables, so they render the warmed rows synchronously and refetch behind.
+ * Warms the Apollo cache for the menu's sections before it opens (a hovered
+ * card, a changed selection). Each section says what to warm
+ * (`SmartContextSection.prefetch`, built with the same variables its
+ * `useItems` uses), so the open-time hooks render the warmed rows
+ * synchronously and refetch behind. This file knows no module: it owns the
+ * TTL, the dedupe and asking the right service's client.
  *
  * Keys are remembered for a while so scrolling a grid of sixty cards does not
  * issue sixty no-op `client.query` calls; freshness is the hook's business.
  */
 
 export type PrefetchClient = Pick<ApolloClient<object>, "query">;
-export type PrefetchClients = { rekuest?: PrefetchClient };
-export type PrefetchTarget = {
-  objects: Structure[];
-  partners?: Structure[];
-  collection?: string;
-};
+export type PrefetchTarget = SmartPrefetchTarget;
 
 export type SmartPrefetcher = {
   prefetch: (target: PrefetchTarget) => void;
@@ -32,9 +26,19 @@ export type SmartPrefetcher = {
 export const PREFETCH_TTL_MS = 60_000;
 export const PREFETCH_MAX_KEYS = 200;
 
+/** Key-sorted JSON, so equal variables dedupe however they were built. */
+const stableJson = (value: unknown): string =>
+  JSON.stringify(value, (_key, inner) =>
+    inner && typeof inner === "object" && !Array.isArray(inner)
+      ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : inner,
+  );
+
 export const createSmartPrefetcher = (options: {
-  /** Re-evaluated per call: a service can become ready later. */
-  getClients: () => PrefetchClients;
+  /** The registered sections, re-read per call (modules come and go). */
+  getSections: () => readonly SmartContextSection<any>[];
+  /** A READY service's client, re-read per call: a service can come up later. */
+  getClient: (service: string) => PrefetchClient | undefined;
   now?: () => number;
   ttlMs?: number;
   maxKeys?: number;
@@ -55,46 +59,23 @@ export const createSmartPrefetcher = (options: {
     }
   };
 
-  const warm = (
-    client: PrefetchClient,
-    name: string,
-    query: DocumentNode,
-    variables: Record<string, unknown>,
-    demandKey: string,
-    collection: string | undefined,
-  ) => {
-    const key = `${name}:${demandKey}:${collection ?? ""}`;
-    const last = seen.get(key);
-    if (last !== undefined && now() - last < ttl) return;
-    remember(key);
-    client
-      .query({ query, variables, fetchPolicy: "cache-first", errorPolicy: "ignore" })
-      // A failed warm-up should retry next time, not be remembered as done.
-      .catch(() => seen.delete(key));
-  };
-
   return {
     prefetch(target) {
       if (target.objects.length === 0) return;
-      const client = options.getClients().rekuest;
-      if (!client) return;
-      const demands = buildDemands(target);
-      warm(
-        client,
-        "actions",
-        AllPrimaryActionsDocument,
-        actionsVariables(demands.single, { collection: target.collection }),
-        demands.key,
-        target.collection,
-      );
-      warm(
-        client,
-        "shortcuts",
-        ShortcutsDocument,
-        shortcutsVariables(demands.single),
-        demands.key,
-        undefined,
-      );
+      for (const section of options.getSections()) {
+        for (const { service, name, query, variables } of section.prefetch?.(target) ?? []) {
+          const client = options.getClient(service);
+          if (!client) continue;
+          const key = `${section.id}:${name}:${stableJson(variables)}`;
+          const last = seen.get(key);
+          if (last !== undefined && now() - last < ttl) continue;
+          remember(key);
+          client
+            .query({ query, variables, fetchPolicy: "cache-first", errorPolicy: "ignore" })
+            // A failed warm-up should retry next time, not be remembered as done.
+            .catch(() => seen.delete(key));
+        }
+      }
     },
     clear() {
       seen.clear();

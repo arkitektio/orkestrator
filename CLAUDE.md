@@ -114,13 +114,20 @@ the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
   with the host's local-actions section.
 - `SectionHost` owns the guard, heading, empty rule, error line, stale-row
   narrowing and the status report; a section is just a query + a row.
-- Remote `useItems` go through `useSmartDemands` + the `queries.ts` variable
-  builders and `useStableData` (keep rows while a search refetch runs). The
-  prefetcher (`extensions/prefetch.ts`) uses the same builders, so keep them in
-  sync or the warmed cache entry is never hit.
-- Callers narrow the menu with `sections={{ only | exclude }}`, never with a
-  new `disableX` prop. Per-row Radix roots are out: the "Run on" picker is one
-  `RunOnSubmenu` per menu, shortcut keys go through `bindShortcutKey`.
+- Remote `useItems` go through the module's own demand/variable builders
+  (rekuest: `rekuest/smart/demands.ts` + `queries.ts`) and `useStableData`
+  (keep rows while a search refetch runs). A section warms its cache by
+  declaring `prefetch(target)` → `{ service, name, query, variables }[]`,
+  built with the SAME builders, or the warmed entry is never hit; the host
+  prefetcher (`extensions/prefetch.ts`) owns TTL, dedupe and the client.
+- Callers narrow the menu with `sections={{ only | exclude | palette }}`,
+  never with a new `disableX` prop. A section opts into the ⌘K palette with
+  `palette: true` (the palette renders them through `PaletteSections`).
+- Per-row Radix roots are out: machinery that must wrap the whole menu
+  (rekuest's single "Run on" picker, outside `<Command>`) is a module
+  `menuWrappers` builtin, rendered by `SmartMenuWrappers`. Shortcut keys go
+  through `bindShortcutKey`. `providers/smart` and `command/Menu` import no
+  module code.
 
 ## 5. Module boundaries
 

@@ -1,4 +1,6 @@
 import type { Action } from "@/lib/localactions/LocalActionProvider";
+import type { ComponentType } from "react";
+import type { SmartMenuWrapperProps } from "./extensions/section";
 import type { SmartSectionRegistry } from "./extensions/sectionRegistry";
 
 /**
@@ -14,11 +16,14 @@ import type { SmartSectionRegistry } from "./extensions/sectionRegistry";
 type SmartRegistries = {
   actions: Record<string, Action<any>>;
   sections: SmartSectionRegistry;
+  /** Read on every render: a function, so it follows modules coming and going. */
+  menuWrappers: () => readonly ComponentType<SmartMenuWrapperProps>[];
 };
 
 const registries: SmartRegistries = {
   actions: {},
   sections: { sections: [] },
+  menuWrappers: () => [],
 };
 
 export const provideSmartRegistries = (provided: Partial<SmartRegistries>) => {
@@ -27,3 +32,4 @@ export const provideSmartRegistries = (provided: Partial<SmartRegistries>) => {
 
 export const smartActions = () => registries.actions;
 export const smartSections = () => registries.sections;
+export const smartMenuWrappers = () => registries.menuWrappers();

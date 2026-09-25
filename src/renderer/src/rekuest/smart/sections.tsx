@@ -2,20 +2,21 @@ import { Guard } from "@/app/Arkitekt";
 import {
   DetailImplementationFragment,
   ListShortcutFragment,
+  AllPrimaryActionsDocument,
   PrimaryActionFragment,
+  ShortcutsDocument,
   useAllPrimaryActionsQuery,
   useImplementationsQuery,
   useShortcutsQuery,
 } from "@/rekuest/api/graphql";
 import { Boxes, PlayCircle, Zap } from "lucide-react";
-import { useSmartDemands } from "@/providers/smart/extensions/demands";
+import { buildDemands, useSmartDemands } from "@/rekuest/smart/demands";
 import type {
   SectionItems,
   SmartContextSection,
   SmartSectionContext,
 } from "@/providers/smart/extensions/section";
-import { SectionHost } from "@/providers/smart/extensions/SectionHost";
-import type { PassDownProps, SmartContextProps } from "@/providers/smart/extensions/types";
+import type { SmartContextProps } from "@/providers/smart/extensions/types";
 import { useStableData } from "@/providers/smart/extensions/useStableData";
 import {
   AssignButton,
@@ -129,6 +130,7 @@ const implementationParts = (implementation: DetailImplementationFragment) => [
 
 export const REKUEST_SHORTCUTS_SECTION: SmartContextSection<ListShortcutFragment> = {
   id: "rekuest.shortcuts",
+  palette: true,
   module: "rekuest",
   title: "Shortcuts",
   icon: Zap,
@@ -140,10 +142,20 @@ export const REKUEST_SHORTCUTS_SECTION: SmartContextSection<ListShortcutFragment
   itemKey: (shortcut) => shortcut.id,
   searchParts: (shortcut) => [shortcut.name, shortcut.description],
   Row: ({ item, context }) => <ShortcutButton shortcut={item} {...context} />,
+  // The variables `useShortcutItems` opens with (no search yet).
+  prefetch: (target) => [
+    {
+      service: "rekuest",
+      name: "shortcuts",
+      query: ShortcutsDocument,
+      variables: shortcutsVariables(buildDemands(target).single),
+    },
+  ],
 };
 
 export const REKUEST_ACTIONS_SECTION: SmartContextSection<PrimaryActionFragment> = {
   id: "rekuest.actions",
+  palette: true,
   module: "rekuest",
   title: "Run",
   icon: PlayCircle,
@@ -155,6 +167,15 @@ export const REKUEST_ACTIONS_SECTION: SmartContextSection<PrimaryActionFragment>
   itemKey: (action) => action.id,
   searchParts: actionParts,
   Row: ({ item, context }) => <AssignButton action={item} {...context} />,
+  // The variables `useActionItems` opens with (no search yet).
+  prefetch: (target) => [
+    {
+      service: "rekuest",
+      name: "actions",
+      query: AllPrimaryActionsDocument,
+      variables: actionsVariables(buildDemands(target).single, { collection: target.collection }),
+    },
+  ],
 };
 
 export const REKUEST_IMPLEMENTATIONS_SECTION: SmartContextSection<DetailImplementationFragment> = {
@@ -213,19 +234,3 @@ export const REKUEST_SECTIONS: SmartContextSection<any>[] = [
 ];
 
 /* Standalone forms, for callers that compose sections themselves (the palette). */
-
-export const ApplicableShortcuts = (props: PassDownProps) => (
-  <SectionHost section={REKUEST_SHORTCUTS_SECTION} context={props} />
-);
-export const ApplicableActions = (props: PassDownProps) => (
-  <SectionHost section={REKUEST_ACTIONS_SECTION} context={props} />
-);
-export const ApplicableImplementations = (props: PassDownProps) => (
-  <SectionHost section={REKUEST_IMPLEMENTATIONS_SECTION} context={props} />
-);
-export const ApplicableBatchActions = (props: PassDownProps) => (
-  <SectionHost section={REKUEST_BATCH_ACTIONS_SECTION} context={props} />
-);
-export const ApplicableBatchImplementations = (props: PassDownProps) => (
-  <SectionHost section={REKUEST_BATCH_IMPLEMENTATIONS_SECTION} context={props} />
-);

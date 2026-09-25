@@ -17,7 +17,7 @@ import { ArrowRight, PlayIcon } from "lucide-react";
 import React from "react";
 import { describeStructures } from "./describe";
 import { useSmartPrefetcher } from "./prefetchContext";
-import { RunOnSubmenu } from "@/rekuest/smart/RunOnSubmenu";
+import { SmartMenuWrappers } from "./SmartMenuWrappers";
 import type { SmartSectionContext } from "./section";
 import { SectionHost } from "./SectionHost";
 import { resolveSections, SmartSectionRegistry } from "./sectionRegistry";
@@ -139,7 +139,7 @@ export const SmartContext = ({
 
   return (
     <SectionStatusProvider store={store}>
-      <RunOnSubmenu context={props} returnFocusTo={selection.inputRef}>
+      <SmartMenuWrappers context={props} returnFocusTo={selection.inputRef}>
         <div ref={selection.rootRef} className="contents">
           <SmartContextHeader {...props} />
 
@@ -173,7 +173,7 @@ export const SmartContext = ({
             </CommandList>
           </Command>
         </div>
-      </RunOnSubmenu>
+      </SmartMenuWrappers>
     </SectionStatusProvider>
   );
 };

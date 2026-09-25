@@ -17,6 +17,7 @@ import { REKUEST_PROFILE_SECTIONS } from "./profile/sections";
 import { RekuestEntitySearch } from "./search";
 import { ClientFailedTasks } from "./sections/ClientFailedTasks";
 import { DeviceAgents } from "./sections/DeviceAgents";
+import { RunOnSubmenu } from "./smart/RunOnSubmenu";
 import { REKUEST_SECTIONS } from "./smart/sections";
 
 export const REKUEST_MODULE = defineModule({
@@ -58,6 +59,8 @@ export const REKUEST_MODULE = defineModule({
       },
     ],
     sections: REKUEST_SECTIONS,
+    // One "Run on" picker per menu, around (not inside) its command list.
+    menuWrappers: [RunOnSubmenu],
     profileSections: REKUEST_PROFILE_SECTIONS,
     background: [
       TaskUpdater,

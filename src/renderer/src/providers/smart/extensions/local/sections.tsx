@@ -3,8 +3,6 @@ import { Action, orderActionEntries } from "@/lib/localactions/LocalActionProvid
 import { Sparkles } from "lucide-react";
 import React from "react";
 import type { SectionItems, SmartContextSection, SmartSectionContext } from "../section";
-import { SectionHost } from "../SectionHost";
-import type { PassDownProps } from "../types";
 import { LocalActionCommand } from "./localactions";
 
 type LocalActionEntry = { id: string; action: Action };
@@ -32,6 +30,7 @@ const useLocalActionItems = (ctx: SmartSectionContext): SectionItems<LocalAction
 
 export const LOCAL_ACTIONS_SECTION: SmartContextSection<LocalActionEntry> = {
   id: "local.actions",
+  palette: true,
   module: "local",
   title: "Default",
   icon: Sparkles,
@@ -51,7 +50,3 @@ export const LOCAL_ACTIONS_SECTION: SmartContextSection<LocalActionEntry> = {
 };
 
 export const LOCAL_SECTIONS: SmartContextSection<any>[] = [LOCAL_ACTIONS_SECTION];
-
-export const ApplicableLocalActions = (props: PassDownProps) => (
-  <SectionHost section={LOCAL_ACTIONS_SECTION} context={props} />
-);

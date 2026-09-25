@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { buildDemands } from "@/providers/smart/extensions/demands";
+import { buildDemands } from "@/rekuest/smart/demands";
 import {
   SMART_ACTION_LIMIT,
   SMART_SHORTCUT_LIMIT,

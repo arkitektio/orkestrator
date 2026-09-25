@@ -1,4 +1,3 @@
-import { Guard } from "@/app/Arkitekt";
 import { useDisplayComponent } from "@/app/display";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,13 +12,8 @@ import { Command as CommandPrimitive } from "cmdk";
 import { Dialog } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { SmartLink } from "@/providers/smart/builder";
-import { ApplicableDefinitions } from "@/kabinet/smart/sections";
-import { ApplicableLocalActions } from "@/providers/smart/extensions/local/sections";
-import { RunOnSubmenu } from "@/rekuest/smart/RunOnSubmenu";
-import {
-  ApplicableActions,
-  ApplicableShortcuts,
-} from "@/rekuest/smart/sections";
+import { PaletteSections } from "@/providers/smart/extensions/PaletteSections";
+import { SmartMenuWrappers } from "@/providers/smart/extensions/SmartMenuWrappers";
 import { Structure } from "@/types";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { DialogPortal } from "@radix-ui/react-dialog";
@@ -202,40 +196,18 @@ export const CommandMenu = (props: {
   // With something in context, what you can DO with it leads the list.
   const hasContext = objects.length > 0;
 
-  // Everything that acts on the context. Local actions come first: they are
-  // synchronous, so they are on screen the moment the palette opens.
+  // Everything that acts on the context: every registered section that offers
+  // itself to the palette (local actions first, by priority: synchronous, so
+  // on screen the moment the palette opens).
   const actionSources = (
-    <>
-      <ApplicableLocalActions
-        filter={searchFilter}
-        objects={objects}
-        partners={props.partners}
-        onDone={closePalette}
-      />
-      <Guard.Rekuest>
-        <ApplicableShortcuts
-          filter={searchFilter}
-          objects={objects}
-          partners={props.partners}
-          onDone={closePalette}
-        />
-        <ApplicableActions
-          filter={searchFilter}
-          objects={objects}
-          collection={props.collection}
-          partners={props.partners}
-          onDone={closePalette}
-        />
-      </Guard.Rekuest>
-      <Guard.Kabinet>
-        <ApplicableDefinitions
-          filter={searchFilter}
-          objects={objects}
-          partners={props.partners}
-          returns={props.returns || []}
-        />
-      </Guard.Kabinet>
-    </>
+    <PaletteSections
+      filter={searchFilter}
+      objects={objects}
+      partners={props.partners}
+      returns={props.returns}
+      collection={props.collection}
+      onDone={closePalette}
+    />
   );
 
   // ⌘T opens a new tab — with its own history — which works signed in or out,
@@ -304,7 +276,7 @@ export const CommandMenu = (props: {
             // No CSS open/close animation: `usePaletteGrow` animates the box.
           )}
         >
-          <RunOnSubmenu context={{ objects, partners: props.partners, onDone: closePalette }}>
+          <SmartMenuWrappers context={{ objects, partners: props.partners, onDone: closePalette }}>
           <Command
             shouldFilter={false}
             className="bg-transparent [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground/90 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-1 [&_[cmdk-group]]:px-2 [&_[cmdk-item]]:min-h-10 [&_[cmdk-item]]:rounded-lg [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2 [&_[cmdk-item]]:transition-colors [&_[cmdk-item][data-selected=true]]:bg-primary/10 [&_[cmdk-item][data-selected=true]]:text-foreground [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4"
@@ -419,7 +391,7 @@ export const CommandMenu = (props: {
               </div>
             </div>
           </Command>
-          </RunOnSubmenu>
+          </SmartMenuWrappers>
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>

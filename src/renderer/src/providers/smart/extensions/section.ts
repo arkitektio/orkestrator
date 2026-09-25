@@ -1,5 +1,6 @@
 import type { FilterParts } from "@/command/filter";
 import type { ServiceGuardProps } from "@/lib/arkitekt";
+import type { DocumentNode } from "@apollo/client";
 import type React from "react";
 import type { SmartContextProps } from "./types";
 
@@ -14,15 +15,11 @@ import type { SmartContextProps } from "./types";
  * is adding a descriptor; nothing in `context.tsx` changes.
  */
 
-export type SmartSectionModule =
-  | "local"
-  | "alpaka"
-  | "rekuest"
-  | "kraph"
-  | "kabinet";
+/** The contributing module's namespace (`"rekuest"`), or `"local"` for the host's own. */
+export type SmartSectionModule = string;
 
 /** `"<module>.<name>"`, e.g. `"rekuest.actions"`. */
-export type SmartSectionId = `${SmartSectionModule}.${string}`;
+export type SmartSectionId = `${string}.${string}`;
 
 /** A whole module (`"kraph"` matches every `kraph.*`) or one section id. */
 export type SmartSectionSelector = SmartSectionModule | SmartSectionId;
@@ -31,6 +28,8 @@ export type SmartSectionSelector = SmartSectionModule | SmartSectionId;
 export type SmartSectionSelection = {
   only?: readonly SmartSectionSelector[];
   exclude?: readonly SmartSectionSelector[];
+  /** Only the sections that offer themselves to the command palette. */
+  palette?: boolean;
 };
 
 /** Local actions are computed synchronously; everything else asks a server. */
@@ -86,4 +85,36 @@ export type SmartContextSection<T = unknown> = {
    */
   searchParts?: (item: T) => FilterParts;
   Row: React.ComponentType<{ item: T; context: SmartSectionContext }>;
+  /** Also offered in the ⌘K palette (under its own search), not only in the menu. */
+  palette?: boolean;
+  /**
+   * Queries worth warming before the menu opens (hover, selection change),
+   * as data: the host owns the TTL, dedupe and which client answers. Build the
+   * variables with the SAME builders `useItems` uses, or the warmed cache
+   * entry is never hit.
+   */
+  prefetch?: (target: SmartPrefetchTarget) => readonly SmartPrefetchQuery[];
+};
+
+export type SmartPrefetchTarget = Pick<SmartContextProps, "objects" | "partners" | "returns" | "collection">;
+
+export type SmartPrefetchQuery = {
+  /** The service key whose client runs it (`"rekuest"`). */
+  service: string;
+  /** Part of the dedupe key, e.g. `"actions"`. */
+  name: string;
+  query: DocumentNode;
+  variables: Record<string, unknown>;
+};
+
+/**
+ * Wraps the whole menu (and the palette), OUTSIDE its `<Command>`: for
+ * machinery a row cannot host itself, such as rekuest's single "Run on"
+ * submenu (cmdk would swallow Enter inside the list). Must always render its
+ * children.
+ */
+export type SmartMenuWrapperProps = {
+  context: SmartContextProps;
+  returnFocusTo?: React.RefObject<HTMLElement | null>;
+  children: React.ReactNode;
 };

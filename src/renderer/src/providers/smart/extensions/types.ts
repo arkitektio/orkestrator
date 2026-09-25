@@ -1,18 +1,14 @@
-import { TaskEventFragment } from "@/rekuest/api/graphql";
 import type { PageActionPolicy } from "@/components/layout/actionPlan";
 import { Structure } from "@/types";
 import React from "react";
 import type { SmartSectionContext, SmartSectionSelection } from "./section";
 
-export type OnDone = (args: {
-  event?: TaskEventFragment;
-  kind: "local" | "action" | "shortcut" | "relation" | "measurement";
-}) => void;
-
-export type OnError = (args: {
-  event?: TaskEventFragment;
-  kind: "local" | "action" | "shortcut" | "relation" | "measurement";
-}) => void;
+/**
+ * A row finished. `kind` names what ran ("local", "action", "shortcut", …),
+ * `event` is whatever the contributing module reports (rekuest: the task's
+ * last event); the host only passes both through.
+ */
+export type OnDone = (args: { event?: unknown; kind: string }) => void;
 
 export type SmartContextProps = {
   children?: React.ReactNode;

@@ -5,9 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandItem } from "@/components/ui/command";
 
 vi.mock("@/hooks/use-debounce", () => ({ useDebounce: <T,>(value: T) => value }));
-vi.mock("@/rekuest/smart/RunOnSubmenu", () => ({
-  RunOnSubmenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
 
 import { SmartContext } from "./context";
 import type { SectionItems, SmartContextSection } from "./section";

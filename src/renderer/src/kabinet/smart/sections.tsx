@@ -6,13 +6,11 @@ import {
 import { useAllActionsQuery } from "@/rekuest/api/graphql";
 import { Download } from "lucide-react";
 import React from "react";
-import { toKabinetDemands, useSmartDemands } from "@/providers/smart/extensions/demands";
+import { useSmartDemands } from "@/rekuest/smart/demands";
 import type { SectionItems, SmartContextSection, SmartSectionContext } from "@/providers/smart/extensions/section";
-import { SectionHost } from "@/providers/smart/extensions/SectionHost";
-import type { PassDownProps } from "@/providers/smart/extensions/types";
 import { useStableData } from "@/providers/smart/extensions/useStableData";
 import { InstallAction, InstallButton } from "./definitions";
-import { KABINET_ENGINES_VARIABLES, definitionsVariables } from "./queries";
+import { KABINET_ENGINES_VARIABLES, definitionsVariables, toKabinetDemands } from "./queries";
 
 type InstallItem = { definition: ListDefinitionFragment; action: InstallAction };
 
@@ -55,6 +53,7 @@ const useInstallItems = (ctx: SmartSectionContext): SectionItems<InstallItem> =>
 
 export const KABINET_DEFINITIONS_SECTION: SmartContextSection<InstallItem> = {
   id: "kabinet.definitions",
+  palette: true,
   module: "kabinet",
   title: "Installable",
   icon: Download,
@@ -73,7 +72,3 @@ export const KABINET_DEFINITIONS_SECTION: SmartContextSection<InstallItem> = {
 };
 
 export const KABINET_SECTIONS: SmartContextSection<any>[] = [KABINET_DEFINITIONS_SECTION];
-
-export const ApplicableDefinitions = (props: PassDownProps) => (
-  <SectionHost section={KABINET_DEFINITIONS_SECTION} context={props} />
-);
