@@ -12,7 +12,7 @@ import {
   arrayDatasetSpecLink as elektroArrayDatasetSpecLink,
 } from "@/elektro/specs";
 
-import "@/core/app/modules/install";
+import "@/app/modules/install";
 import { routeCatalog, searchRoutes } from "./routeCatalog";
 
 const ROUTE_CATALOG = routeCatalog();

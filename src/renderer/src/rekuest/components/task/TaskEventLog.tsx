@@ -10,7 +10,7 @@ import {
   PortKind,
   ReturnPortFragment,
 } from "@/rekuest/api/graphql";
-import { UnknownReturnWidget } from "@/core/app/shadCnWidgetRegistry";
+import { UnknownReturnWidget } from "@/app/shadCnWidgetRegistry";
 import { Clock } from "lucide-react";
 import { ReactNode, memo, useEffect, useMemo, useState } from "react";
 import Timestamp from "@/core/components/ui/timestamp";
