@@ -1,4 +1,4 @@
-import { defineModule } from "@/lib/module-host/define";
+import { defineModule } from "@/core/lib/module-host/define";
 import { SoloBroadcastDisplay } from "./displays/SoloBroadcastDisplay";
 import { manifest } from "./manifest";
 import { LOVEKIT_NAV_LINKS } from "./navLinks";

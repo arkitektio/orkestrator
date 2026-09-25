@@ -1,7 +1,7 @@
 import { createStore } from "zustand/vanilla";
 import { immer } from "zustand/middleware/immer";
 import { AxisType, PreferredView, SceneFragment, SceneLayerFragment } from "@/mikro/api/graphql";
-import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
 import { sameDimExtents, type DimExtent } from "../model/dimExtents";
 import { isBrickLayer, type BrickLayerFragment } from "../model/layerGuards";
 import { reconcileSceneLayers } from "../model/layerReconcile";
@@ -17,7 +17,7 @@ import {
   type SceneTransformContext,
 } from "../model/layerModel";
 import { planDefaultVolumeLods } from "../quality/lodPlanning";
-import { composeLayerAffine, spatialAxisTriple } from "@/lib/scene/coords/transformGraph";
+import { composeLayerAffine, spatialAxisTriple } from "@/core/lib/scene/coords/transformGraph";
 import type { FabriksInstanceColormap } from "../gpu/instanceColormaps";
 
 // Re-exported for the store's many consumers (the model lives in core/).

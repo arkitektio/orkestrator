@@ -1,5 +1,5 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { LokApp } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { LokApp } from "@/core/linkers";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import React from "react";
 import AppList from "../components/lists/AppList";

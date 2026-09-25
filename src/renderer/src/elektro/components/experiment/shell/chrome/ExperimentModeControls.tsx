@@ -10,10 +10,10 @@ import {
   Undo2,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import { useAutoscale } from "../../platform/edits/useAutoscale";
-import { ButtonGroup } from "@/components/ui/button-group";
-import { cn } from "@/lib/utils";
+import { ButtonGroup } from "@/core/components/ui/button-group";
+import { cn } from "@/core/lib/utils";
 import { useExperimentStore } from "../../platform/stores/experimentStore";
 import { useRangeStore, useRangeStoreApi } from "../../platform/stores/rangeStore";
 import {

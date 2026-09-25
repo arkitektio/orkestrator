@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/card";
-import { KraphRelationCategory } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { KraphRelationCategory } from "@/core/linkers";
 import {
   BaseEdge,
   EdgeLabelRenderer,

@@ -1,7 +1,7 @@
-import { asDetailQueryRoute } from '@/app/routes/DetailQueryRoute'
-import { Sidebars } from '@/components/layout/Sidebars'
-import { PageAction } from '@/components/ui/page-action'
-import { RekuestTask } from '@/linkers'
+import { asDetailQueryRoute } from '@/core/app/routes/DetailQueryRoute'
+import { Sidebars } from '@/core/components/layout/Sidebars'
+import { PageAction } from '@/core/components/ui/page-action'
+import { RekuestTask } from '@/core/linkers'
 import {
   DetailTaskFragment,
   useCancelMutation,
@@ -18,7 +18,7 @@ import { TaskTimeline } from '@/rekuest/components/spaces/task/panels/TaskTimeli
 import { LiveTicker } from '@/rekuest/components/spaces/task/LiveTicker'
 import { LiveStatusStrip } from '@/rekuest/components/spaces/task/panels/LiveStatusStrip'
 import { ChildTaskUpdater } from '@/rekuest/components/updaters/ChildTaskUpdater'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/core/components/ui/resizable'
 import type {} from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 import { useReassign } from '@/rekuest/hooks/useReassign'

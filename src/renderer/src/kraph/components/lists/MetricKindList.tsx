@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { KraphMetricKind } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { KraphMetricKind } from "@/core/linkers";
 import {
   MetricKindFilter,
   OffsetPaginationInput,

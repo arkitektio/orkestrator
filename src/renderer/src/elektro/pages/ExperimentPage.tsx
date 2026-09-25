@@ -1,9 +1,9 @@
 import type { ApolloError } from "@apollo/client";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { ElektroExperiment } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { ElektroExperiment } from "@/core/linkers";
 import { useGetExperimentSceneQuery } from "../api/graphql";
 import { ExperimentScene } from "../components/experiment/ExperimentScene";
 import { parseBrushRange } from "../components/experiment/platform/coords/brushRange";

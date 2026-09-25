@@ -1,8 +1,8 @@
-import { useDialog } from "@/app/dialog";
-import { GraphQLListSearchField } from "@/components/fields/GraphQLListSearchField";
-import { Button } from "@/components/ui/button";
-import { DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { useDialog } from "@/core/app/dialog";
+import { GraphQLListSearchField } from "@/core/components/fields/GraphQLListSearchField";
+import { Button } from "@/core/components/ui/button";
+import { DialogFooter, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
+import { Form } from "@/core/components/ui/form";
 import { useAddUserToOrganizationMutation, useMyContextQuery, useRoleOptionsLazyQuery } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";

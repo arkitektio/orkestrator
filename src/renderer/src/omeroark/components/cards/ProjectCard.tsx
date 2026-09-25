@@ -1,7 +1,7 @@
 import React from "react";
-import { OmeroArkProject } from "@/linkers";
+import { OmeroArkProject } from "@/core/linkers";
 
-import { Card } from "@/components/ui/card";
+import { Card } from "@/core/components/ui/card";
 import { ListProjectFragment } from "../../api/graphql";
 
 interface Props {

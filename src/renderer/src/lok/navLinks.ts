@@ -1,4 +1,4 @@
-import type { NavLinkDecl } from "@/lib/module-host/define";
+import type { NavLinkDecl } from "@/core/lib/module-host/define";
 
 /**
  * lok's pages, for the ⌘K palette (a `navLinks` builtin). Mirrors the

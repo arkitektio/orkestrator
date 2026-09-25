@@ -19,9 +19,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/core/components/ui/card";
 import { AgentSelectionDialog } from "@/rekuest/dialogs/AgentSelectionDialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import { ResolutionFragment } from "@/rekuest/api/graphql";
 
 const elk = new ELK();

@@ -1,8 +1,8 @@
 import React from "react";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { RekuestTask } from "@/linkers";
+import { Card, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { RekuestTask } from "@/core/linkers";
 
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/components/ui/timestamp";
 import { ListTaskFragment } from "../../api/graphql";
 interface Props {
   item: ListTaskFragment;

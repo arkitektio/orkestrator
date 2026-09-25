@@ -1,7 +1,7 @@
 import {
   useDatalayerEndpoint,
   useKraph
-} from "@/app/Arkitekt";
+} from "@/core/app/Arkitekt";
 import {
   MediaUploadGrantFragment,
   RequestMediaUploadDocument,

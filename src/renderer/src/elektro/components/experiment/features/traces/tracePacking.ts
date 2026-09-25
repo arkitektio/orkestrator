@@ -2,7 +2,7 @@ import {
   FLOATS_PER_SEGMENT,
   segmentCountFor,
   writeRunPairs,
-} from "@/lib/scene/gpu/lineBuffer";
+} from "@/core/lib/scene/gpu/lineBuffer";
 import type { DrawSegment } from "../../platform/quality/traceResidency";
 
 /**

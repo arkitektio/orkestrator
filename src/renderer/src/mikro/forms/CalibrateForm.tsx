@@ -1,13 +1,13 @@
-import { Guard } from "@/app/Arkitekt";
-import { useGraphQLDialog } from "@/app/hooks/useGraphQLDialog";
-import { Button } from "@/components/ui/button";
+import { Guard } from "@/core/app/Arkitekt";
+import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
+import { Button } from "@/core/components/ui/button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from "@/core/components/ui/dialog";
+import { Input } from "@/core/components/ui/input";
 import { AlertTriangle } from "lucide-react";
 import { useMemo, useState } from "react";
 import {

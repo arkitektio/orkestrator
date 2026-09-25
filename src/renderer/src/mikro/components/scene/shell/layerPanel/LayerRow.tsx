@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { MikroLens } from "@/linkers";
+import { Button } from "@/core/components/ui/button";
+import { MikroLens } from "@/core/linkers";
 import { Crosshair, Eye, EyeOff, Focus, Save, Trash2 } from "lucide-react";
 import { LayerState, useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";

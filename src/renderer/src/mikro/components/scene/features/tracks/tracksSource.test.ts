@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FLOATS_PER_SEGMENT } from "@/lib/scene/gpu/lineBuffer";
+import { FLOATS_PER_SEGMENT } from "@/core/lib/scene/gpu/lineBuffer";
 import { isTrackLoadError, loadTrackGeometry, valueSpanOf } from "./tracksSource";
 import type { AttributeLookupEngine } from "@/mikro/lib/attributes/lookupEngine";
 

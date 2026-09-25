@@ -1,4 +1,4 @@
-import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
+import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
 import {
   RequestBigfileAccessDocument,
   RequestBigfileAccessMutation,

@@ -3,9 +3,9 @@ import {
   HoverSectionLabel,
   HoverShell,
   HoverSkeleton,
-} from "@/components/hover/HoverShell";
-import { Progress } from "@/components/ui/progress";
-import { Object } from "@/types";
+} from "@/core/components/hover/HoverShell";
+import { Progress } from "@/core/components/ui/progress";
+import { Object } from "@/core/types";
 import { formatDistanceToNow } from "date-fns";
 import { useHoverTaskQuery } from "../../api/graphql";
 import { TaskStatusIcon, formatEventKind } from "../../lib/taskStatus";

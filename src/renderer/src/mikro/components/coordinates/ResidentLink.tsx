@@ -1,4 +1,4 @@
-import { MikroArrayDataset, MikroSparseDataset, MikroTableDataset } from "@/linkers";
+import { MikroArrayDataset, MikroSparseDataset, MikroTableDataset } from "@/core/linkers";
 import {
   Aperture,
   Grid2x2,

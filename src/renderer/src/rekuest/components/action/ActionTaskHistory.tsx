@@ -1,4 +1,4 @@
-import { createList } from "@/components/layout/createList";
+import { createList } from "@/core/components/layout/createList";
 import {
   ListTasksQuery,
   Ordering,

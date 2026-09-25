@@ -1,11 +1,11 @@
 import { asGraphDetailQueryRoute } from "@/kraph/routes/graphRoutes";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Sidebars } from "@/components/layout/Sidebars";
+import { FormSheet } from "@/core/components/dialog/FormDialog";
+import { Sidebars } from "@/core/components/layout/Sidebars";
 import {
   KraphEntity,
   KraphProtocolEvent,
   KraphProtocolEventCategory
-} from "@/linkers";
+} from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetProtocolEventQuery } from "../api/graphql";
 

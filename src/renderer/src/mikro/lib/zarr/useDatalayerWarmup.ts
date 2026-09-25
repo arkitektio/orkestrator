@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from "react";
-import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
-import { assertWebGPUSupported } from "@/lib/scene/gpu/webgpuSupport";
-import type { MikroClient } from "@/lib/zarr/store/types";
+import { workerPool } from "@/core/lib/zarr/pool/sharedWorkerPool";
+import { assertWebGPUSupported } from "@/core/lib/scene/gpu/webgpuSupport";
+import type { MikroClient } from "@/core/lib/zarr/store/types";
 import { getGeneralAccess } from "./access";
-import { useMikro } from "@/app/Arkitekt";
+import { useMikro } from "@/core/app/Arkitekt";
 import { coldOpenTimeline } from "@/mikro/components/scene/platform/perf/coldOpenTimeline";
 
 /**

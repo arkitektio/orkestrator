@@ -1,5 +1,5 @@
-import { StructureDisplay } from "@/components/display/StructureDisplay";
-import { useReportNotificationCount } from "@/providers/dashboard/notificationCount";
+import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { useReportNotificationCount } from "@/core/providers/dashboard/notificationCount";
 import { MessageSquare } from "lucide-react";
 import { useMyMentionsQuery } from "../api/graphql";
 

@@ -1,7 +1,7 @@
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import Timestamp from "@/components/ui/timestamp";
-import { KabinetDefinition, KabinetFlavour, KabinetRelease } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { Input } from "@/core/components/ui/input";
+import Timestamp from "@/core/components/ui/timestamp";
+import { KabinetDefinition, KabinetFlavour, KabinetRelease } from "@/core/linkers";
 import { Boxes, Container, GitBranch, KeyRound, Plug, Tag } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { appGradient } from "./AppIcon";

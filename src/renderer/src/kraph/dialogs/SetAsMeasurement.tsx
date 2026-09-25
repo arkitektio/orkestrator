@@ -1,16 +1,16 @@
-import { useDialog } from "@/app/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useDialog } from "@/core/app/dialog";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useDebounce } from "@/hooks/use-debounce";
+} from "@/core/components/ui/card";
+import { Input } from "@/core/components/ui/input";
+import { ScrollArea } from "@/core/components/ui/scroll-area";
+import { useDebounce } from "@/core/hooks/use-debounce";
 import {
   ListMeasurementCategoryWithGraphFragment,
   useAssertMeasurementExistsMutation,
@@ -18,7 +18,7 @@ import {
   useEntityCategoriesMatchingDescriptorQuery,
   useListEntitiesQuery,
 } from "@/kraph/api/graphql";
-import { Structure } from "@/types";
+import { Structure } from "@/core/types";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { Activity, CircleDot } from "lucide-react";
 import { useState } from "react";

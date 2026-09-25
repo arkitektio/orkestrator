@@ -1,8 +1,8 @@
 import { AudioLines } from "lucide-react";
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { formatDisplay } from "@/lib/quantities";
-import { ElektroArrayDataset } from "@/linkers";
+import { Button } from "@/core/components/ui/button";
+import { formatDisplay } from "@/core/lib/quantities";
+import { ElektroArrayDataset } from "@/core/linkers";
 import type { NeuronModelSessionFragment } from "../../api/graphql";
 import { useOpenClockOnTimeline } from "../../lib/useOpenClockOnTimeline";
 

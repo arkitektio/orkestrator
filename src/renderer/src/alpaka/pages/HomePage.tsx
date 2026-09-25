@@ -1,15 +1,15 @@
-import { Guard } from "@/app/Arkitekt";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import Timestamp from "@/components/ui/timestamp";
-import { AlpakaRoom } from "@/linkers";
-import { cn } from "@/lib/utils";
-import { useSelf } from "@/app/hooks/useSelf";
+import { Guard } from "@/core/app/Arkitekt";
+import { PageLayout } from "@/core/components/layout/PageLayout";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { HelpSidebar } from "@/core/components/sidebars/help";
+import { Button } from "@/core/components/ui/button";
+import { Input } from "@/core/components/ui/input";
+import { Skeleton } from "@/core/components/ui/skeleton";
+import { Textarea } from "@/core/components/ui/textarea";
+import Timestamp from "@/core/components/ui/timestamp";
+import { AlpakaRoom } from "@/core/linkers";
+import { cn } from "@/core/lib/utils";
+import { useSelf } from "@/core/app/hooks/useSelf";
 
 import {
   ArrowRight,

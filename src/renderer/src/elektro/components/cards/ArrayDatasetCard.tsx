@@ -1,9 +1,9 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { formatShape } from "@/lib/arrays/formatShape";
-import { cn } from "@/lib/utils";
-import { ElektroArrayDataset } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { Card } from "@/core/components/ui/card";
+import { formatShape } from "@/core/lib/arrays/formatShape";
+import { cn } from "@/core/lib/utils";
+import { ElektroArrayDataset } from "@/core/linkers";
 import { ListArrayDatasetFragment } from "../../api/graphql";
 import { specsOf } from "../../specs";
 

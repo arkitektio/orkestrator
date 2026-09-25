@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { RekuestAction } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { RekuestAction } from "@/core/linkers";
 import {
   useActionOverviewQuery,
   useDetailActionQuery,

@@ -1,4 +1,4 @@
-import type { Structure } from "@/types";
+import type { Structure } from "@/core/types";
 import type { ApolloClient } from "@apollo/client";
 import {
   AssertEntityExistsDocument,

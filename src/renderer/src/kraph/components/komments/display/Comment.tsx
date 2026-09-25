@@ -1,8 +1,8 @@
-import { StructureDisplay } from "@/components/display/StructureDisplay";
-import { Card, CardContent } from "@/components/ui/card";
+import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { Card, CardContent } from "@/core/components/ui/card";
 
-import { cn } from "@/lib/utils";
-import Timestamp from "@/components/ui/timestamp";
+import { cn } from "@/core/lib/utils";
+import Timestamp from "@/core/components/ui/timestamp";
 import {
   DescendantType,
   LeafType,

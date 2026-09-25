@@ -1,4 +1,4 @@
-import { scopedSmartOf, smartOf } from "@/providers/smart/fromManifest";
+import { scopedSmartOf, smartOf } from "@/core/providers/smart/fromManifest";
 import { manifest } from "./manifest";
 
 // Kraph's smart objects (Smart cards, links, pages), built from the models

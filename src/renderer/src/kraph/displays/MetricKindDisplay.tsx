@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphMetricKind } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KraphMetricKind } from "@/core/linkers";
 import { useGetMetricKindQuery } from "../api/graphql";
 
 export const MetricKindDisplay = (props: DisplayWidgetProps) => {

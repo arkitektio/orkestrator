@@ -1,5 +1,5 @@
-import { useDialog } from "@/app/dialog";
-import { Structure } from "@/types";
+import { useDialog } from "@/core/app/dialog";
+import { Structure } from "@/core/types";
 import {
   ListStructureRelationCategoryWithGraphFragment,
   useAssertStructureRelationExistsMutation,

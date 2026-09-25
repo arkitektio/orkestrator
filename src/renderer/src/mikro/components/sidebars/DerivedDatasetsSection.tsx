@@ -1,10 +1,10 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/core/components/ui/badge";
 import {
   Empty,
   EmptyDescription,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { MikroArrayDataset } from "@/linkers";
+} from "@/core/components/ui/empty";
+import { MikroArrayDataset } from "@/core/linkers";
 import { Grid3x3 } from "lucide-react";
 import { GetArrayDatasetDerivedQuery } from "../../api/graphql";
 import { modifierSpecsOf, spatialSpecOf, splitAxesBySpec } from "../../specs";

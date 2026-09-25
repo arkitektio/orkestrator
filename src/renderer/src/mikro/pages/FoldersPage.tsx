@@ -1,6 +1,6 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { PageAction } from "@/components/ui/page-action";
-import { MikroFolder } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { PageAction } from "@/core/components/ui/page-action";
+import { MikroFolder } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import React from "react";
 import { GetFoldersDocument, useCreateFolderMutation } from "../api/graphql";

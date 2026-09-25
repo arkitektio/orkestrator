@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/core/components/ui/card";
 import { ValidationError } from "@/fluss/validation/types";
 import { Ban } from "lucide-react";
 import { RemainingErrorRender } from "../../ErrorRender";

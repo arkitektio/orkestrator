@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
+} from "@/core/components/ui/popover";
+import { Slider } from "@/core/components/ui/slider";
+import { Switch } from "@/core/components/ui/switch";
 import { Camera, Settings2 } from "lucide-react";
-import { MikroCoordinateSystem } from "@/linkers";
+import { MikroCoordinateSystem } from "@/core/linkers";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { resolveProbeStrategy } from "../../platform/probe/probeModes";
 import type { ProbeMode } from "../../platform/probe/probeTypes";
@@ -37,7 +37,7 @@ import { ProjectionMode } from "@/mikro/api/graphql";
 import { identityOf } from "../../platform/model/objectIdentity";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
-import { useSettings } from "@/providers/settings/SettingsContext";
+import { useSettings } from "@/core/providers/settings/SettingsContext";
 
 const SettingRow = ({
   label,

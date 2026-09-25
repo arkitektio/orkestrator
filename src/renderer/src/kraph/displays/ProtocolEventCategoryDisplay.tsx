@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphProtocolEventCategory } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KraphProtocolEventCategory } from "@/core/linkers";
 import { TermBadge } from "../components/TermBadge";
 import { useGetProtocolEventCategoryQuery } from "../api/graphql";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";

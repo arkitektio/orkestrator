@@ -4,11 +4,11 @@ import {
   PopoutNote,
   PopoutSection,
   ThreeDPopoutCard,
-} from "@/components/popout/ThreeDPopoutCard";
+} from "@/core/components/popout/ThreeDPopoutCard";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
-import { ElektroArrayDataset, ElektroSection } from "@/linkers";
+import { ElektroArrayDataset, ElektroSection } from "@/core/linkers";
 import { AudioLines, PanelRightClose, PanelRightOpen } from "lucide-react";
 import {
   CompartmentFragment,

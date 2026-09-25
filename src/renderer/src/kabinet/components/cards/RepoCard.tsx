@@ -4,9 +4,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { KabinetRepo } from "@/linkers";
+} from "@/core/components/ui/card";
+import { Badge } from "@/core/components/ui/badge";
+import { KabinetRepo } from "@/core/linkers";
 import { GitBranch, Github, Package2 } from "lucide-react";
 import { ListRepoFragment } from "../../api/graphql";
 

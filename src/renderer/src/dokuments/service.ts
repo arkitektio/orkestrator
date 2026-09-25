@@ -1,4 +1,4 @@
-import { createGraphQLServiceBuilder } from "@/lib/arkitekt/builders/graphQlServiceBuidler";
+import { createGraphQLServiceBuilder } from "@/core/lib/arkitekt/builders/graphQlServiceBuidler";
 import dokumentsResult from "./api/fragments";
 
 /**

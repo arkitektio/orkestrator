@@ -1,4 +1,4 @@
-import { useRegisterDashboardWidget } from "@/providers/dashboard/hooks";
+import { useRegisterDashboardWidget } from "@/core/providers/dashboard/hooks";
 import { Loader2, PlayCircle } from "lucide-react";
 import { useHomePageStatsQuery as useRekuestHomePageStatsQuery } from "@/rekuest/api/graphql";
 

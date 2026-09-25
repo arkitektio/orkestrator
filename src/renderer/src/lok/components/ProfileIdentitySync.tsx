@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { Arkitekt } from "@/app/Arkitekt";
+import { Arkitekt } from "@/core/app/Arkitekt";
 import { useMyContextQuery } from "../api/graphql";
 import { resolveContextBrand } from "../lib/membershipBrand";
 

@@ -8,8 +8,8 @@ import {
   SquareDashed,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
+import { Button } from "@/core/components/ui/button";
+import { ButtonGroup } from "@/core/components/ui/button-group";
 import { useExperimentStore } from "../../platform/stores/experimentStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { ANNOTATE_TOOLS, toolSpec, type AnnotateTool } from "./annotationTools";

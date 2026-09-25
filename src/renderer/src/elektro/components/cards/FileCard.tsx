@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { ElektroFile } from "@/linkers";
+import { Card, CardContent, CardTitle } from "@/core/components/ui/card";
+import { cn } from "@/core/lib/utils";
+import { ElektroFile } from "@/core/linkers";
 import { ListFileFragment } from "../../api/graphql";
 
 interface Props {

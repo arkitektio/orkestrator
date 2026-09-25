@@ -1,8 +1,8 @@
-import { Guard } from "@/app/Arkitekt";
-import { Separator } from "@/components/ui/separator";
-import { useSelf } from "@/app/hooks/useSelf";
-import { SmartDropZone } from "@/providers/smart/Drop";
-import { Identifier, Object } from "@/types";
+import { Guard } from "@/core/app/Arkitekt";
+import { Separator } from "@/core/components/ui/separator";
+import { useSelf } from "@/core/app/hooks/useSelf";
+import { SmartDropZone } from "@/core/providers/smart/Drop";
+import { Identifier, Object } from "@/core/types";
 import { Komments } from "../komments/Komments";
 import { LabelsBlock } from "../knowledge/LabelsBlock";
 import { MeasurementsBlock } from "../knowledge/MeasurementsBlock";

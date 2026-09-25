@@ -1,14 +1,14 @@
 import { asGraphScopeQueryRoute } from "@/kraph/routes/graphRoutes";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { KraphGraph } from "@/linkers";
+import { FormSheet } from "@/core/components/dialog/FormDialog";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { KraphGraph } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import {
   useGetGraphQuery,
   useUpdateGraphMutation,
 } from "../api/graphql";
 
-import { PageAction } from "@/components/ui/page-action";
+import { PageAction } from "@/core/components/ui/page-action";
 import OntologyGraph from "../components/designer/OntologyGraph";
 import { ProjectionBadge } from "../components/ProjectionBadge";
 import ScatterPlotList from "../components/lists/ScatterPlotList";

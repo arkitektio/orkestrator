@@ -1,6 +1,6 @@
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { MikroHistory } from "@/linkers";
+import { Card, CardContent } from "@/core/components/ui/card";
+import { MikroHistory } from "@/core/linkers";
 import { ProvenanceEntryFragment } from "../../api/graphql";
 import { ProvenanceEntryBody } from "../provenance/ProvenanceEntryBody";
 

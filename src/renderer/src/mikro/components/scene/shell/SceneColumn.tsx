@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { Button } from '@/core/components/ui/button'
+import { cn } from '@/core/lib/utils'
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 

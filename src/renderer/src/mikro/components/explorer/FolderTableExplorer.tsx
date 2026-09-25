@@ -21,8 +21,8 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/core/components/ui/button";
+import { Checkbox } from "@/core/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -31,14 +31,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { CollapsibleSearch } from "@/components/ui/collapsible-search";
+} from "@/core/components/ui/dropdown-menu";
+import { CollapsibleSearch } from "@/core/components/ui/collapsible-search";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
   PageActionGroup,
-} from "@/components/ui/page-action";
+} from "@/core/components/ui/page-action";
 import {
   Table,
   TableBody,
@@ -46,12 +46,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/core/components/ui/table";
 
-import { Sidebars } from "@/components/layout/Sidebars";
-import { useDebounce } from "@/hooks/use-debounce";
-import { MikroArrayDataset, MikroFile, MikroFolder, MikroTableDataset } from "@/linkers";
-import { SlotSections } from "@/components/layout/PageSections";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { useDebounce } from "@/core/hooks/use-debounce";
+import { MikroArrayDataset, MikroFile, MikroFolder, MikroTableDataset } from "@/core/linkers";
+import { SlotSections } from "@/core/components/layout/PageSections";
 import {
   ChildrenQuery,
   FolderFragment,

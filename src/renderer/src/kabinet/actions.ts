@@ -7,9 +7,9 @@ import {
 } from '@/kabinet/api/graphql'
 import { ApolloClient, NormalizedCache } from '@apollo/client'
 import { RefreshCw } from 'lucide-react'
-import type { Service } from '@/lib/arkitekt/types'
-import { buildDeleteAction } from '@/lib/localactions/builders/deleteAction'
-import { Action } from '@/lib/localactions/LocalActionProvider'
+import type { Service } from '@/core/lib/arkitekt/types'
+import { buildDeleteAction } from '@/core/lib/localactions/builders/deleteAction'
+import { Action } from '@/core/lib/localactions/LocalActionProvider'
 
 const REPO_IDENTIFIER = '@kabinet/repo'
 

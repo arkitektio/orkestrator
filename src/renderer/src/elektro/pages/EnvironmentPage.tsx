@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Badge } from "@/components/ui/badge";
-import { ElektroEnvironment, ElektroMechanism } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Badge } from "@/core/components/ui/badge";
+import { ElektroEnvironment, ElektroMechanism } from "@/core/linkers";
 import { useDetailModEnvironmentQuery } from "../api/graphql";
 
 export type IRepresentationScreenProps = {};

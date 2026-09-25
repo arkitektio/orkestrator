@@ -1,7 +1,7 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Card, CardContent } from "@/components/ui/card";
-import { PageSections } from "@/components/layout/PageSections";
-import { KabinetBackend } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Card, CardContent } from "@/core/components/ui/card";
+import { PageSections } from "@/core/components/layout/PageSections";
+import { KabinetBackend } from "@/core/linkers";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { useGetBackendQuery } from "../api/graphql";
 import PodCard from "../components/cards/PodCard";

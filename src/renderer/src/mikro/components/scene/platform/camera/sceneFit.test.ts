@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { computeFitPose } from "@/lib/scene/camera/fitPose";
+import { computeFitPose } from "@/core/lib/scene/camera/fitPose";
 import { computeSceneWorldBox } from "./sceneFit";
 import type { LayerState } from "../model/layerModel";
 

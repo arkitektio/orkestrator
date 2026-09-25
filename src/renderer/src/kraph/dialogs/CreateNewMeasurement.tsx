@@ -1,10 +1,10 @@
-import { useDialog } from "@/app/dialog";
-import { AutoDerivedStringField, StringField } from "@/components/fields/StringField";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useDialog } from "@/core/app/dialog";
+import { AutoDerivedStringField, StringField } from "@/core/components/fields/StringField";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { Form } from "@/core/components/ui/form";
+import { Input } from "@/core/components/ui/input";
+import { ScrollArea } from "@/core/components/ui/scroll-area";
 import {
   CreateMeasurementCategoryInput,
   useCreateMeasurementCategoryMutation,
@@ -12,7 +12,7 @@ import {
   useListStructureKindsQuery,
 } from "@/kraph/api/graphql";
 import { ageNameify, validateAgeName } from "@/kraph/forms/utils";
-import { Structure } from "@/types";
+import { Structure } from "@/core/types";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";

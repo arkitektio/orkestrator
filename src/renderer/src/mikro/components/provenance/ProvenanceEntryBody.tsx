@@ -1,7 +1,7 @@
-import { StructureDisplay } from "@/components/display/StructureDisplay";
-import { RekuestTask } from "@/linkers";
+import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { RekuestTask } from "@/core/linkers";
 
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/components/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
 import { changeShape, summarizeFields } from "./provenanceSummary";
 

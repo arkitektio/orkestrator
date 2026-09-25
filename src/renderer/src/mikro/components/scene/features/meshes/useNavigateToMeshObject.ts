@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import * as THREE from "three";
-import { applyFitToCamera, padDegenerateAxes } from "@/lib/scene/camera/cameraFit";
+import { applyFitToCamera, padDegenerateAxes } from "@/core/lib/scene/camera/cameraFit";
 import type { FabriksObjectEntry } from "./fabriks/fabriksCatalogs";
 import { useModeStoreApi } from "../../platform/stores/modeStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";

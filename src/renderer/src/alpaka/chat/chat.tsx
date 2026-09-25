@@ -7,9 +7,9 @@ import {
   firstMessageAttachments,
   toStructureInputs,
 } from "@/alpaka/roomTalkingAbout";
-import { Guard, useRekuest } from "@/app/Arkitekt";
+import { Guard, useRekuest } from "@/core/app/Arkitekt";
 import { buildAssignInput } from "@/rekuest/assign";
-import { useSmartDrop } from "@/providers/smart/hooks";
+import { useSmartDrop } from "@/core/providers/smart/hooks";
 import {
   Ban,
   Bot,
@@ -19,21 +19,21 @@ import {
   MessageSquareText,
   PackagePlus,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/core/components/ui/card";
 import { ChatList } from "./chat-list";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Form } from "@/components/ui/form";
-import { ArgsContainer } from "@/components/ports/ArgsContainer";
-import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
-import { usePortForm } from "@/lib/ports/usePortForm";
-import { submittedDataToRekuestFormat } from "@/lib/ports/utils";
-import { Button } from "@/components/ui/button";
+import { Form } from "@/core/components/ui/form";
+import { ArgsContainer } from "@/core/components/ports/ArgsContainer";
+import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
+import { usePortForm } from "@/core/lib/ports/usePortForm";
+import { submittedDataToRekuestFormat } from "@/core/lib/ports/utils";
+import { Button } from "@/core/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/core/components/ui/popover";
 import {
   Command,
   CommandGroup,
@@ -41,7 +41,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command";
+} from "@/core/components/ui/command";
 import {
   useAllActionsQuery,
   useDetailActionQuery,
@@ -58,7 +58,7 @@ import {
   PortKind as KabinetPortKind,
 } from "@/kabinet/api/graphql";
 import { useHashActionWithProgress } from "@/rekuest/hooks/useHashActionWithProgress";
-import { KabinetDefinition } from "@/linkers";
+import { KabinetDefinition } from "@/core/linkers";
 import { useAssignWithCallback } from "@/rekuest/hooks/useAssign";
 import { useTasks } from "@/rekuest/hooks/useTasks";
 import {

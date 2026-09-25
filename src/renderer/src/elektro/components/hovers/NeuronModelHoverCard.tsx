@@ -2,9 +2,9 @@ import {
   HoverRow,
   HoverShell,
   HoverSkeleton,
-} from "@/components/hover/HoverShell";
-import { Badge } from "@/components/ui/badge";
-import { Object } from "@/types";
+} from "@/core/components/hover/HoverShell";
+import { Badge } from "@/core/components/ui/badge";
+import { Object } from "@/core/types";
 import { useDetailNeuronModelQuery } from "../../api/graphql";
 
 export const NeuronModelHoverCard = ({ object }: { object: Object }) => {

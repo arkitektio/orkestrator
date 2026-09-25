@@ -1,12 +1,12 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { AlpakaMessage, AlpakaRoom } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { AlpakaMessage, AlpakaRoom } from "@/core/linkers";
 import { useGetMessageQuery } from "../api/graphql";
 import { agentDisplayName, displayInitials } from "../agentName";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/core/components/ui/card";
 import { MessageSquare, ArrowUpRight } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { StructureDisplay } from "@/components/display/StructureDisplay";
-import { Markdown } from "@/components/ui/markdown";
+import { Avatar, AvatarFallback } from "@/core/components/ui/avatar";
+import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { Markdown } from "@/core/components/ui/markdown";
 
 export const MessageDisplay = (props: DisplayWidgetProps) => {
   const { data, loading } = useGetMessageQuery({

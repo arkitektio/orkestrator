@@ -1,10 +1,10 @@
 import { Pencil, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import type { ExpTableDatasetFragment } from "@/elektro/api/graphql";
 import { useElektroParquetEngine } from "@/elektro/components/store/parquetEngine";
-import { readColumnDistinct, readColumnDomain } from "@/lib/parquet/columnStats";
-import { ColorMap } from "@/lib/scene/gpu/colormaps";
+import { readColumnDistinct, readColumnDomain } from "@/core/lib/parquet/columnStats";
+import { ColorMap } from "@/core/lib/scene/gpu/colormaps";
 import {
   entryProblem,
   pickerOptions,

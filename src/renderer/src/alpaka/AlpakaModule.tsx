@@ -1,6 +1,6 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/app/Arkitekt";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
+import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { Guard } from "@/core/app/Arkitekt";
+import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import CollectionPage from "./pages/CollectionPage";
@@ -13,7 +13,7 @@ import ProvidersPage from "./pages/ProvidersPage";
 import RoomPage from "./pages/RoomPage";
 import RoomsPage from "./pages/RoomsPage";
 import StandardPane from "./panes/StandardPane";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/app/components/fallbacks/NotFound";
 interface Props { }
 
 export const AlpakaModule: React.FC<Props> = () => {

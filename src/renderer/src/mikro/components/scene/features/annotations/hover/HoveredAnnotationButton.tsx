@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EllipsisIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { MikroAnnotation } from "@/linkers";
-import { useSettings } from "@/providers/settings/SettingsContext";
+import { Button } from "@/core/components/ui/button";
+import { MikroAnnotation } from "@/core/linkers";
+import { useSettings } from "@/core/providers/settings/SettingsContext";
 
 import { useViewStoreApi } from "../../../platform/stores/viewStore";
 import {

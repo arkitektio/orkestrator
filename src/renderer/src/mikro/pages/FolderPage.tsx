@@ -1,10 +1,10 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Badge } from "@/components/ui/badge";
-import { UploadWrapper } from "@/components/upload/wrapper";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Badge } from "@/core/components/ui/badge";
+import { UploadWrapper } from "@/core/components/upload/wrapper";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
 import { useCreateFile } from "@/mikro/api/hooks";
-import { MikroFolder } from "@/linkers";
+import { MikroFolder } from "@/core/linkers";
 import { useState } from "react";
 import { useGetFolderQuery } from "../api/graphql";
 import {

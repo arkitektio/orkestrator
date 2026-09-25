@@ -15,17 +15,17 @@ import {
 import { ChevronDown, Download } from "lucide-react";
 import * as React from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+} from "@/core/components/ui/dropdown-menu";
+import { Input } from "@/core/components/ui/input";
+import { Switch } from "@/core/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -33,18 +33,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/core/components/ui/table";
 
 import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
-import { DateTimePicker } from "@/components/ui/datetime-picker";
-import { FancyInput } from "@/components/ui/fancy-input";
+import { Card } from "@/core/components/ui/card";
+import { DateTimePicker } from "@/core/components/ui/datetime-picker";
+import { FancyInput } from "@/core/components/ui/fancy-input";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/core/components/ui/tooltip";
 import {
   EntityCategoryFragment,
   EntityFilter,
@@ -56,9 +56,9 @@ import {
   useAssertMetricValueMutation
 } from "@/kraph/api/graphql";
 import { buildItoldyousoMetric, isManuallyAssertable } from "@/kraph/lib/itoldyouso";
-import { KraphNode } from "@/linkers";
+import { KraphNode } from "@/core/linkers";
 import { Plus, RefreshCw } from "lucide-react";
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/components/ui/timestamp";
 import { ViewOptions } from "../types";
 
 

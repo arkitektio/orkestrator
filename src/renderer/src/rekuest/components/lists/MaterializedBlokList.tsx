@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { RekuestMaterializedBlok } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { RekuestMaterializedBlok } from "@/core/linkers";
 import {
   OffsetPaginationInput,
   useListMaterializedBloksQuery,

@@ -4,7 +4,7 @@ import { useThree } from "@react-three/fiber";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { Line2NodeMaterial } from "three/webgpu";
-import { writeLineDistances, writePolylinePairs } from "@/lib/scene/gpu/lineBuffer";
+import { writeLineDistances, writePolylinePairs } from "@/core/lib/scene/gpu/lineBuffer";
 import type { OutlinePoint } from "../model/geometry";
 
 /**

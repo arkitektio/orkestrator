@@ -1,10 +1,10 @@
-import { useRegisterDashboardWidget } from "@/providers/dashboard/hooks";
+import { useRegisterDashboardWidget } from "@/core/providers/dashboard/hooks";
 import { Boxes, Loader2 } from "lucide-react";
 import {
   useHomePageQuery as useMikroHomePageQuery,
   useHomePageStatsQuery as useMikroHomePageStatsQuery,
 } from "@/mikro/api/graphql";
-import { useResolve } from "@/datalayer/hooks/useResolve";
+import { useResolve } from "@/core/datalayer/hooks/useResolve";
 
 const MikroWidget = () => {
   const resolve = useResolve();

@@ -1,12 +1,12 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/core/components/ui/card";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/components/ui/carousel";
-import { ActionDescription } from "@/lib/ports/ActionDescription";
+} from "@/core/components/ui/carousel";
+import { ActionDescription } from "@/core/lib/ports/ActionDescription";
 import { ListDefinitionFragment, useListDefinitionsQuery } from "../api/graphql";
 import { logoFor, releaseIdentity } from "../appIdentity";
 import { AppIcon } from "./AppIcon";

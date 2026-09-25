@@ -1,4 +1,4 @@
-import { useDatalayerEndpoint, useElektro } from "@/app/Arkitekt";
+import { useDatalayerEndpoint, useElektro } from "@/core/app/Arkitekt";
 import { ApolloClient, NormalizedCache } from "@apollo/client";
 import { useMemo } from "react";
 import {

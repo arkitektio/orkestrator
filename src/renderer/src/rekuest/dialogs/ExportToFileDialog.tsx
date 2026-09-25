@@ -1,15 +1,15 @@
-import { useDialog } from "@/app/dialog";
-import { Button } from "@/components/ui/button";
+import { useDialog } from "@/core/app/dialog";
+import { Button } from "@/core/components/ui/button";
 import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { ArgsContainer } from "@/components/ports/ArgsContainer";
-import { FormActionDescription } from "@/lib/ports/ActionDescription";
-import { usePendingHooksStore } from "@/lib/taskhooks/pendingHooksStore";
-import { smartRegistry } from "@/providers/smart/registry";
+} from "@/core/components/ui/dialog";
+import { Form } from "@/core/components/ui/form";
+import { ArgsContainer } from "@/core/components/ports/ArgsContainer";
+import { FormActionDescription } from "@/core/lib/ports/ActionDescription";
+import { usePendingHooksStore } from "@/core/lib/taskhooks/pendingHooksStore";
+import { smartRegistry } from "@/core/providers/smart/registry";
 import {
   ActionFilter,
   DemandKind,
@@ -18,17 +18,17 @@ import {
 } from "@/rekuest/api/graphql";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useAction } from "@/rekuest/hooks/useAction";
-import { usePortForm } from "@/lib/ports/usePortForm";
-import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
-import { Structure } from "@/types";
+import { usePortForm } from "@/core/lib/ports/usePortForm";
+import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
+import { Structure } from "@/core/types";
 import { ArrowLeft, Download } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-import { FILE_DOWNLOADERS } from "@/app/modules/registries";
-import { structureLabel } from "@/lib/export/structureLabel";
-import { FILE_DOWNLOAD_HOOK } from "@/lib/export/taskHooks";
+import { FILE_DOWNLOADERS } from "@/core/app/modules/registries";
+import { structureLabel } from "@/core/lib/export/structureLabel";
+import { FILE_DOWNLOAD_HOOK } from "@/core/lib/export/taskHooks";
 
 export type ExportToFileDialogProps = {
   structure: Structure;

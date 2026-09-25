@@ -1,4 +1,4 @@
-import type { MikroClient } from "@/lib/zarr/store/types";
+import type { MikroClient } from "@/core/lib/zarr/store/types";
 import type { FabriksStoreFragment } from "@/mikro/api/graphql";
 import { buildS3FetchConfig, getGeneralAccess } from "@/mikro/lib/zarr/access";
 import { FabriksCollection } from "./fabriksCollection";

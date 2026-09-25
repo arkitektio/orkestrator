@@ -34,7 +34,7 @@ import {
   AgentDependencyInput,
   ReturnPortInput as RekuestReturnPortInput,
 } from "@/rekuest/api/graphql";
-import { portToDefaults } from "@/lib/ports/utils";
+import { portToDefaults } from "@/core/lib/ports/utils";
 import { v4 as uuidv4 } from "uuid";
 import {
   ActionFragment,

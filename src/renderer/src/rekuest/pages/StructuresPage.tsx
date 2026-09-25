@@ -1,4 +1,4 @@
-import { RekuestStructure } from "@/linkers";
+import { RekuestStructure } from "@/core/linkers";
 import StructureList from "../components/lists/StructureList";
 const Page = () => {
   return (

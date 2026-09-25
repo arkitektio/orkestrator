@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphGraph } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KraphGraph } from "@/core/linkers";
 import { useGetGraphQuery } from "../api/graphql";
 
 export const GraphDisplay = (props: DisplayWidgetProps) => {

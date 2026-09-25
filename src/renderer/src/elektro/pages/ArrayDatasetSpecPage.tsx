@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
-import { Explainer } from "@/components/explainer/Explainer";
-import { ElektroArrayDataset } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { ElektroArrayDataset } from "@/core/linkers";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { ARRAY_DATASET_SPEC_BY_SLUG } from "../specs";
 

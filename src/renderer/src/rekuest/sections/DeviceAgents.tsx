@@ -1,4 +1,4 @@
-import type { Object } from "@/types";
+import type { Object } from "@/core/types";
 import AgentList from "../components/lists/AgentList";
 
 /**

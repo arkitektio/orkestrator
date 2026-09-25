@@ -1,16 +1,16 @@
-import { StructureDisplay } from "@/components/display/StructureDisplay";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Separator } from "@/components/ui/separator";
+import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { PageLayout } from "@/core/components/layout/PageLayout";
+import { Separator } from "@/core/components/ui/separator";
 
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { PageAction } from "@/components/ui/page-action";
-import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { HelpSidebar } from "@/core/components/sidebars/help";
+import { PageAction } from "@/core/components/ui/page-action";
+import { CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { DateTimeRangePicker } from "@/core/components/ui/date-time-range-picker";
 
 import { Database } from "lucide-react";
-import { parseAsBoolean, parseAsIsoDateTime, useQueryState } from "@/hooks/use-search-param-state";
+import { parseAsBoolean, parseAsIsoDateTime, useQueryState } from "@/core/hooks/use-search-param-state";
 import { usePeerHomePageQuery } from "../api/graphql";
 import FolderList from "../components/lists/FolderList";
 import FileList from "../components/lists/FileList";

@@ -1,21 +1,21 @@
-import { useDialog } from "@/app/dialog";
+import { useDialog } from "@/core/app/dialog";
 import { buildAssignInput } from "@/rekuest/assign";
-import { GraphQLListSearchField } from "@/components/fields/GraphQLListSearchField";
-import { Button } from "@/components/ui/button";
+import { GraphQLListSearchField } from "@/core/components/fields/GraphQLListSearchField";
+import { Button } from "@/core/components/ui/button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { ArgsContainer } from "@/components/ports/ArgsContainer";
-import { FormActionDescription } from "@/lib/ports/ActionDescription";
+} from "@/core/components/ui/dialog";
+import { Form } from "@/core/components/ui/form";
+import { ArgsContainer } from "@/core/components/ports/ArgsContainer";
+import { FormActionDescription } from "@/core/lib/ports/ActionDescription";
 import { v4 as uuidv4 } from "uuid";
 import { useHooksSearchLazyQuery } from "../api/graphql";
 import { useAction } from "../hooks/useAction";
-import { usePortForm } from "@/lib/ports/usePortForm";
-import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
+import { usePortForm } from "@/core/lib/ports/usePortForm";
+import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
 
 
 

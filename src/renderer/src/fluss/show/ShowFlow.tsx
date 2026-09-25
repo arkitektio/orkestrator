@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
-import { RekuestTask } from "@/linkers";
+import { Button } from "@/core/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader } from "@/core/components/ui/card";
+import { ScrollArea } from "@/core/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/core/components/ui/sheet";
+import { cn } from "@/core/lib/utils";
+import { RekuestTask } from "@/core/linkers";
 import { FlowFragment } from "@/fluss/api/graphql";
 import { DetailImplementationFragment } from "@/rekuest/api/graphql";
 import { ImplementationActionButton } from "@/rekuest/buttons/ImplementationActionButton";

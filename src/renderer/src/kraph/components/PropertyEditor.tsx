@@ -1,8 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { DateTimePicker } from "@/components/ui/datetime-picker";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/core/components/ui/button";
+import { DateTimePicker } from "@/core/components/ui/datetime-picker";
+import { Input } from "@/core/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
+import { Textarea } from "@/core/components/ui/textarea";
 import { GetEntityDocument, PropertyDefinitionFragment, useAssertMetricValueMutation, ValueKind } from "@/kraph/api/graphql";
 import { buildItoldyousoMetric, isManuallyAssertable } from "@/kraph/lib/itoldyouso";
 import { Check, Pencil, X } from "lucide-react";

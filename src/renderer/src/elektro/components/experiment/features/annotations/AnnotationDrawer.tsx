@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { isTypingTarget } from "@/lib/input/keyboardTarget";
+import { isTypingTarget } from "@/core/lib/input/keyboardTarget";
 import type { LayerState } from "../../platform/model/layerModel";
 import { pixelAtTime, timeAtPixel, yAtPixel } from "../../platform/camera/rangeToCamera";
 import { rowHitAt } from "../../platform/coords/rowHit";

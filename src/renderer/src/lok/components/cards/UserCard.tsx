@@ -1,8 +1,8 @@
 import React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { LokUser } from "@/linkers";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
+import { Card, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { LokUser } from "@/core/linkers";
 import { ListUserFragment } from "../../api/graphql";
 
 interface Props {

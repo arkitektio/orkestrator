@@ -1,4 +1,4 @@
-import type { ParquetQueryEngine } from "@/lib/parquet/parquetEngine";
+import type { ParquetQueryEngine } from "@/core/lib/parquet/parquetEngine";
 import { unitIdColumn, type UnitTableLike } from "../sources/unitTable";
 import { chainSql, entryProblem, type PickerEntry, type TableRef } from "./pickerModel";
 

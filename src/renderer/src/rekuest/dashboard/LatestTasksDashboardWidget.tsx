@@ -1,11 +1,11 @@
-import { useRegisterDashboardWidget } from "@/providers/dashboard/hooks";
+import { useRegisterDashboardWidget } from "@/core/providers/dashboard/hooks";
 import { ListChecks, Loader2 } from "lucide-react";
 import { useListTasksQuery, Ordering } from "@/rekuest/api/graphql";
 import { statusTextColor, formatEventKind } from "@/rekuest/lib/taskStatus";
-import { RekuestTask } from "@/linkers";
-import Timestamp from "@/components/ui/timestamp";
-import { Card } from "@/components/ui/card";
-import { ResponsiveContainerGrid } from "@/components/layout/ContainerGrid";
+import { RekuestTask } from "@/core/linkers";
+import Timestamp from "@/core/components/ui/timestamp";
+import { Card } from "@/core/components/ui/card";
+import { ResponsiveContainerGrid } from "@/core/components/layout/ContainerGrid";
 
 const LatestTasksWidget = () => {
   const { data, loading } = useListTasksQuery({

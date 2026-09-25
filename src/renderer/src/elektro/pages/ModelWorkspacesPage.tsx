@@ -1,5 +1,5 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { ElektroModelWorkspace } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { ElektroModelWorkspace } from "@/core/linkers";
 import React from "react";
 import ModelWorkspaceList from "../components/lists/ModelWorkspaceList";
 

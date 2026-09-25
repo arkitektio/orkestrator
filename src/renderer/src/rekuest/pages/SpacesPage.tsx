@@ -1,7 +1,7 @@
-import { RekuestSpace } from "@/linkers";
+import { RekuestSpace } from "@/core/linkers";
 import SpacesList from "../components/lists/SpacesList";
 import { useCreateSpaceMutation } from "../api/graphql";
-import { PageAction } from "@/components/ui/page-action";
+import { PageAction } from "@/core/components/ui/page-action";
 
 const Page = () => {
 

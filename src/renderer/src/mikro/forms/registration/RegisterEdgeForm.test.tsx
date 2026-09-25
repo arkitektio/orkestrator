@@ -18,11 +18,11 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const closeDialog = vi.fn();
 
-vi.mock("@/app/dialog", () => ({
+vi.mock("@/core/app/dialog", () => ({
   useDialog: () => ({ closeDialog, openDialog: vi.fn(), openSheet: vi.fn() }),
 }));
 
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/app/Arkitekt", () => ({
   useMikro: () =>
     new ApolloClient({ link: new MockLink([]), cache: new InMemoryCache() }),
   Guard: { Mikro: ({ children }: { children: React.ReactNode }) => children },
@@ -30,7 +30,7 @@ vi.mock("@/app/Arkitekt", () => ({
 
 // The linkers module reaches deep into the smart/provider tree; the edge form
 // only needs it to render a name.
-vi.mock("@/linkers", () => ({
+vi.mock("@/core/linkers", () => ({
   MikroCoordinateSystem: {
     DetailLink: ({ children }: { children: React.ReactNode }) => children,
   },

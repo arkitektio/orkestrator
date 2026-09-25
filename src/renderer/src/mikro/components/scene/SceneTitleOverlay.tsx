@@ -1,4 +1,4 @@
-import { MikroScene } from '@/linkers'
+import { MikroScene } from '@/core/linkers'
 import { GetSceneQuery } from '../../api/graphql'
 
 type PageScene = GetSceneQuery['scene']

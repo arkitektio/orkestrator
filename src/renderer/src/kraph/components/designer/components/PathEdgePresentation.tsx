@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card } from "@/core/components/ui/card";
 import { ReactNode } from "react";
 import { useEdgePaths, useIsEdgePossible } from "../OntologyGraphProvider";
 

@@ -1,11 +1,11 @@
-import { useDialog } from "@/app/dialog";
-import { Button } from "@/components/ui/button";
-import { DateTimePicker } from "@/components/ui/datetime-picker";
-import { Form } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { useDialog } from "@/core/app/dialog";
+import { Button } from "@/core/components/ui/button";
+import { DateTimePicker } from "@/core/components/ui/datetime-picker";
+import { Form } from "@/core/components/ui/form";
+import { Input } from "@/core/components/ui/input";
+import { Label } from "@/core/components/ui/label";
+import { Switch } from "@/core/components/ui/switch";
+import { Textarea } from "@/core/components/ui/textarea";
 import {
   EntityCategoryFragment,
   PropertyDefinitionFragment,

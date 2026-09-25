@@ -1,9 +1,9 @@
-import { useDialog } from "@/app/dialog";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MikroCoordinateSystem } from "@/linkers";
+import { useDialog } from "@/core/app/dialog";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { MikroCoordinateSystem } from "@/core/linkers";
 import { Ruler, Waypoints } from "lucide-react";
 
 import {

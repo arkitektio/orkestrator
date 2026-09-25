@@ -1,7 +1,7 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/app/Arkitekt";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
+import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { Guard } from "@/core/app/Arkitekt";
+import { NotFound } from "@/core/app/components/fallbacks/NotFound";
+import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import EntityCategoriesPage from "./pages/EntityCategoriesPage";

@@ -1,7 +1,7 @@
 import { resolveAxisIndices, type AxisIndices, type LayerAxisDims } from "../model/dims";
-import type { TransformLike } from "@/lib/scene/coords/transformGraph";
-import { relativeLevelScaleFactors } from "@/lib/scene/coords/levelScale";
-import { effectiveChunkShapeOf } from "@/lib/zarr/runner/get-worker";
+import type { TransformLike } from "@/core/lib/scene/coords/transformGraph";
+import { relativeLevelScaleFactors } from "@/core/lib/scene/coords/levelScale";
+import { effectiveChunkShapeOf } from "@/core/lib/zarr/runner/get-worker";
 
 /**
  * Canonical per-layer pyramid geometry for the octree renderer. Everything in
@@ -108,7 +108,7 @@ export const hasPhasorSlabs = (geo: LayerLevelGeometry): boolean =>
 export {
   absoluteLevelScale,
   relativeLevelScaleFactors,
-} from "@/lib/scene/coords/levelScale";
+} from "@/core/lib/scene/coords/levelScale";
 
 /** Structural subset of a `DataArray` fragment that `buildLevelSources` needs. */
 export type DataArraySource = {

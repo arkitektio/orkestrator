@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { assertWebGPUSupported } from "@/lib/scene/gpu/webgpuSupport";
+import { assertWebGPUSupported } from "@/core/lib/scene/gpu/webgpuSupport";
 import { ExperimentSystemHost } from "./ExperimentSystemHost";
 import { MIN_VISIBLE_SAMPLES } from "./experimentSystem";
 import { FEATURE_SLICES } from "./featureSlices";

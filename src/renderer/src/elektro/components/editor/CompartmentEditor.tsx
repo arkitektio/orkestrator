@@ -1,10 +1,10 @@
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/core/components/ui/button";
+import { Label } from "@/core/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/core/components/ui/popover";
 import { RgbaColorPicker } from "react-colorful";
 import { EditableCompartment } from "../../lib/modelSerialization";
 import { objectToRgba, rgbaToCss, rgbaToObject } from "../../lib/color";

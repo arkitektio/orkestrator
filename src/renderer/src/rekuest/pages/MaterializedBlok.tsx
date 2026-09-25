@@ -1,13 +1,13 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { registry } from "@/app/localactions";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { LocalActionButton } from "@/components/ui/localactionbutton";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { registry } from "@/core/app/localactions";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { LocalActionButton } from "@/core/components/ui/localactionbutton";
 import {
   RekuestAgent,
   RekuestBlok,
   RekuestMaterializedBlok,
-} from "@/linkers";
-import { cn } from "@/lib/utils";
+} from "@/core/linkers";
+import { cn } from "@/core/lib/utils";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
 import { MaterializedBlokFragment, useMaterializedBlokQuery } from "../api/graphql";
 

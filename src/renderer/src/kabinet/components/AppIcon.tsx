@@ -1,5 +1,5 @@
-import { useMarkImage } from "@/lib/marks/useMarkImage";
-import { cn } from "@/lib/utils";
+import { useMarkImage } from "@/core/lib/marks/useMarkImage";
+import { cn } from "@/core/lib/utils";
 import { useState } from "react";
 import { hueFor, type AppIdentity } from "../appIdentity";
 

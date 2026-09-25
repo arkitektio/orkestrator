@@ -1,4 +1,4 @@
-import { bigFileDownloader, type FileDownloader } from "@/lib/export/fileDownloaders";
+import { bigFileDownloader, type FileDownloader } from "@/core/lib/export/fileDownloaders";
 import { GetFileDocument } from "./api/graphql";
 import { downloadMikroBigFile } from "./datalayer/useMikroBigFileDownload";
 

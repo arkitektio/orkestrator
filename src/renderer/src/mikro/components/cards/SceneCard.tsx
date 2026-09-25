@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { MikroScene } from "@/linkers";
+import { Card, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { cn } from "@/core/lib/utils";
+import { MikroScene } from "@/core/linkers";
 import { ListSceneFragment } from "../../api/graphql";
 import { SnapshotBackdrop } from "./SnapshotBackdrop";
 

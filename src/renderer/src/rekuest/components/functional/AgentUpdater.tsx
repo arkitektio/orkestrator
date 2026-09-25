@@ -1,4 +1,4 @@
-import { useRekuest } from "@/app/Arkitekt";
+import { useRekuest } from "@/core/app/Arkitekt";
 import type { ApolloClient, Reference } from "@apollo/client";
 import { useEffect } from "react";
 import { toast } from "sonner";

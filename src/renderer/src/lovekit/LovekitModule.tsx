@@ -1,6 +1,6 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/app/Arkitekt";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
+import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { Guard } from "@/core/app/Arkitekt";
+import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
@@ -8,7 +8,7 @@ import StreamPage from "./pages/StreamPage";
 import StandardPane from "./panes/StandardPane";
 import SoloBroadcast from "./pages/SoloBroadcast";
 import SoloBroadcasts from "./pages/SoloBroadcasts";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/app/components/fallbacks/NotFound";
 interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {

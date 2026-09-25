@@ -1,17 +1,17 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/core/components/ui/button";
+import { Card } from "@/core/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { RekuestAgent } from "@/linkers";
-import { useSmartDrop } from "@/providers/smart/hooks";
+} from "@/core/components/ui/dialog";
+import { Input } from "@/core/components/ui/input";
+import { RekuestAgent } from "@/core/linkers";
+import { useSmartDrop } from "@/core/providers/smart/hooks";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
-import type { Structure } from "@/types";
+import type { Structure } from "@/core/types";
 import {
   Direction,
   DockviewApi,

@@ -12,7 +12,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 let client: ApolloClient<unknown>;
 const setProfileIdentity = vi.fn();
 
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/app/Arkitekt", () => ({
   Arkitekt: {
     useSelfService: () => ({ client }),
     useActiveProfileId: () => "pending-1",

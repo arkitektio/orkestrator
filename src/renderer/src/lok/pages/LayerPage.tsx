@@ -1,8 +1,8 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Card, CardContent } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { LokLayer } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Card, CardContent } from "@/core/components/ui/card";
+import { Image } from "@/core/components/ui/image";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { LokLayer } from "@/core/linkers";
 import {
   useDetailLayerQuery
 } from "../api/graphql";

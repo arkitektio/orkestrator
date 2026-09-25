@@ -1,8 +1,8 @@
 import { useGlobalSearchQuery } from "@/lok/api/graphql";
 import { CommandGroup } from "cmdk";
 
-import { EntityRow } from "@/command/sources/entity/EntityRow";
-import { GroupHeading, PER_TYPE_LIMIT } from "@/command/sources/entity/shared";
+import { EntityRow } from "@/core/command/sources/entity/EntityRow";
+import { GroupHeading, PER_TYPE_LIMIT } from "@/core/command/sources/entity/shared";
 
 /** Lok's slice: people and groups. Mounted only inside `Guard.Lok`. */
 export const LokEntitySearch = ({ term, onDone }: { term: string; onDone?: () => void }) => {

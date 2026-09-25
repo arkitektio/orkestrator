@@ -1,10 +1,10 @@
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DialogButton } from "@/components/ui/dialog-button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { PageLayout } from "@/core/components/layout/PageLayout";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { DialogButton } from "@/core/components/ui/dialog-button";
+import { Input } from "@/core/components/ui/input";
+import { Skeleton } from "@/core/components/ui/skeleton";
+import { cn } from "@/core/lib/utils";
 import { useDebounce } from "@uidotdev/usehooks";
 import {
   ArrowRight,

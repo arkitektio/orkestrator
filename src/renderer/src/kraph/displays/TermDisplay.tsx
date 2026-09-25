@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphTerm } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KraphTerm } from "@/core/linkers";
 import { useGetTermQuery } from "../api/graphql";
 import { termKindLabel, termTint } from "../lib/terms";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";

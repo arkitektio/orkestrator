@@ -1,4 +1,4 @@
-import { defineModule } from "@/lib/module-host/define";
+import { defineModule } from "@/core/lib/module-host/define";
 import { FLUSS_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
 import { FLUSS_NAV_LINKS } from "./navLinks";

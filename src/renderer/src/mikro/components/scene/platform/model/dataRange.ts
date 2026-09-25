@@ -1,5 +1,5 @@
 import type { DataType } from "zarrita";
-import { mapDTypeToMinMax } from "@/lib/zarr/indexing/dtype";
+import { mapDTypeToMinMax } from "@/core/lib/zarr/indexing/dtype";
 /**
  * The shape both functions here read: a brick-backed layer's lens, whether that
  * layer arrived as a fragment or already normalized into `LayerState`.

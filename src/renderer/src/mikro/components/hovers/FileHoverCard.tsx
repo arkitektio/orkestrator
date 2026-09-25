@@ -1,4 +1,4 @@
-import { Object } from "@/types";
+import { Object } from "@/core/types";
 import { useGetFileQuery } from "../../api/graphql";
 import { HoverRow, HoverShell, HoverSkeleton } from "./HoverShell";
 

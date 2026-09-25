@@ -14,7 +14,7 @@ import {
   updateVolumePostUniforms,
 } from "../../platform/gpu/volumePost";
 import { useModeStore } from "../../platform/stores/modeStore";
-import { EXCLUDE_FROM_CAPTURE } from "@/lib/scene/capture/captureVisibility";
+import { EXCLUDE_FROM_CAPTURE } from "@/core/lib/scene/capture/captureVisibility";
 import {
   COMPOSITOR_INTERNAL,
   collectPassSets,

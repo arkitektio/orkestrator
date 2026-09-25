@@ -1,8 +1,8 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { ListRender } from "@/components/layout/ListRender";
-import { Image } from "@/components/ui/image";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { LokApp } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { Image } from "@/core/components/ui/image";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { LokApp } from "@/core/linkers";
 import { useDetailReleaseQuery } from "../api/graphql";
 import ClientCard from "../components/cards/ClientCard";
 

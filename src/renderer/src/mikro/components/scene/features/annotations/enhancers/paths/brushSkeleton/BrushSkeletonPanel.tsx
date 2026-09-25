@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Toggle } from "@/components/ui/toggle";
+import { Button } from "@/core/components/ui/button";
+import { Slider } from "@/core/components/ui/slider";
+import { Toggle } from "@/core/components/ui/toggle";
 import { useBrushSkeleton } from "./useBrushSkeleton";
 import { useBrushSkeletonStore } from "../../brushSkeletonStore";
 import { SurfaceQualityControls } from "../../shared/SurfaceQualityControls";

@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { MikroSparseDataset } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { MikroSparseDataset } from "@/core/linkers";
 import { useGetSparseDatasetQuery } from "@/mikro/api/graphql";
 import { describeShape, sparseDatasetTitle } from "@/mikro/components/sparse/sparseFacts";
 

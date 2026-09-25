@@ -1,8 +1,8 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageSections } from "@/components/layout/PageSections";
-import { KabinetFlavour } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { PageSections } from "@/core/components/layout/PageSections";
+import { KabinetFlavour } from "@/core/linkers";
 import { ListFlavourFragment } from "../../api/graphql";
 import { logoFor, releaseIdentity } from "../../appIdentity";
 import { AppIcon } from "../AppIcon";

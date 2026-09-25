@@ -1,7 +1,7 @@
 import {  MediaAccessGrantFragment, MediaStoreFragment, RequestMediaAccessDocument, RequestMediaAccessInput, RequestMediaAccessMutation, RequestMediaAccessMutationVariables } from "@/rekuest/api/graphql";
-import { grantExpiresAt, presignS3Url } from "@/lib/datalayer/s3request";
+import { grantExpiresAt, presignS3Url } from "@/core/lib/datalayer/s3request";
 import { ApolloClient } from "@apollo/client";
-import { useDatalayerEndpoint, useRekuest } from "@/app/Arkitekt";
+import { useDatalayerEndpoint, useRekuest } from "@/core/app/Arkitekt";
 import React from "react";
 
 /** A grant plus the absolute expiry derived from its `expiresIn` — computed

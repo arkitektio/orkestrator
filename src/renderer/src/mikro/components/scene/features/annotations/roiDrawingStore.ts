@@ -1,6 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import { immer } from "zustand/middleware/immer";
-import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
 import { AnnotationKind } from "@/mikro/api/graphql";
 import { DEFAULT_TRACE_WEIGHTS, type TraceWeights } from "./enhancers/paths/vectorTrace/traceCost";
 

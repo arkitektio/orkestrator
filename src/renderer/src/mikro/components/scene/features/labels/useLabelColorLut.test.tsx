@@ -24,7 +24,7 @@ vi.mock("@/mikro/lib/attributes/AttributeServiceProvider", () => ({
 const setLabelColorLut = vi.fn();
 // The hook reaches for the client and the datalayer endpoint to answer a SPARSE
 // colouring. These cover the COLUMN arm, which touches neither.
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/app/Arkitekt", () => ({
   useMikro: () => ({ mutate: vi.fn(), query: vi.fn() }),
   useDatalayerEndpoint: () => "https://datalayer.test",
 }));

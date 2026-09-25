@@ -1,6 +1,6 @@
-import { createList } from "@/components/layout/createList";
+import { createList } from "@/core/components/layout/createList";
 import { useListModelWorkspacesQuery } from "@/elektro/api/graphql";
-import { ElektroModelWorkspace } from "@/linkers";
+import { ElektroModelWorkspace } from "@/core/linkers";
 import ModelWorkspaceCard from "../cards/ModelWorkspaceCard";
 
 const TList = createList({

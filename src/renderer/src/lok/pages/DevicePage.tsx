@@ -1,8 +1,8 @@
-import { Arkitekt } from "@/app/Arkitekt";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { LokDevice } from "@/linkers";
-import { PageSections } from "@/components/layout/PageSections";
+import { Arkitekt } from "@/core/app/Arkitekt";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { FormSheet } from "@/core/components/dialog/FormDialog";
+import { LokDevice } from "@/core/linkers";
+import { PageSections } from "@/core/components/layout/PageSections";
 import { Pencil } from "lucide-react";
 import { useGetDeviceQuery } from "../api/graphql";
 import { UpdateComputeNodeForm } from "../forms/UpdateComputeNodeForm";

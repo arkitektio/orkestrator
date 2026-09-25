@@ -1,7 +1,7 @@
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@/core/components/ui/badge";
+import { Card } from "@/core/components/ui/card";
 import { StandingFragment } from "../api/graphql";
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/components/ui/timestamp";
 
 /**
  * Who has taken what position on a claim, and when.

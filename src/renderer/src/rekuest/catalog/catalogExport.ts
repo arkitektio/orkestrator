@@ -1,6 +1,6 @@
 import {buildRegisterUiCatalogInput} from '@/rekuest/catalog/uiCatalogInput';
-import {defaultBlokCatalog, UI_CATALOG_DESCRIPTION, UI_CATALOG_NAME} from '@/blok/renderer/catalog';
-import {describeBlokCatalog} from '@/blok/renderer/runtime';
+import {defaultBlokCatalog, UI_CATALOG_DESCRIPTION, UI_CATALOG_NAME} from '@/core/blok/renderer/catalog';
+import {describeBlokCatalog} from '@/core/blok/renderer/runtime';
 
 /**
  * The two JSON documents this client publishes for its blok catalog:

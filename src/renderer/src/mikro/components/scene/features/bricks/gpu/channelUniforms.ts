@@ -8,7 +8,7 @@ import { cursorPaletteColor, resolvePhasorScale, type PhasorScale } from "../../
 import { effectiveScalarTransfer, type PhasorRenderNode } from "../../../platform/model/renderGraph";
 import { buildColormapAtlas } from "../../../platform/gpu/colormaps";
 import { MAX_CHANNELS, MAX_CURSORS, MAX_CURSOR_POINTS } from "./channelLimits";
-import { toBase } from "@/lib/quantities";
+import { toBase } from "@/core/lib/quantities";
 
 /**
  * Compositor uniform data shared by the 2D and 3D brick materials.

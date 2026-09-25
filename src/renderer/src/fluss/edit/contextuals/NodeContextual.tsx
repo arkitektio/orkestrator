@@ -5,11 +5,11 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from "@/core/components/ui/command";
 import { NodeContextualParams } from "@/fluss/types";
 import { useEditFlowStore, useEditNode } from "../context";
 import { parentNode } from "../store/graph";
-import { ContextualContainer } from "@/components/ui/contextual-container";
+import { ContextualContainer } from "@/core/components/ui/contextual-container";
 import { useActionNodeFactory } from "./subflow";
 import { useActionSearch } from "./useActionSearch";
 

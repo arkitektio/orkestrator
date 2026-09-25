@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/core/components/ui/button";
+import { Input } from "@/core/components/ui/input";
 import { ColorMap } from "@/mikro/api/graphql";
 import { useMemo, useRef, useState } from "react";
 import { Maximize2, RotateCcw, Spline } from "lucide-react";

@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { MikroSparseDataset, MikroTableDataset } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { MikroSparseDataset, MikroTableDataset } from "@/core/linkers";
 import { GetSparseDatasetQuery } from "../../api/graphql";
 import { SparseAnchorsOverlay } from "./SparseAnchorsOverlay";
 import {

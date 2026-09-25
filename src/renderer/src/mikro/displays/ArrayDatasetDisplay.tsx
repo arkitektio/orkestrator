@@ -1,6 +1,6 @@
-import { Badge } from "@/components/ui/badge";
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { MikroArrayDataset } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { MikroArrayDataset } from "@/core/linkers";
 import { Grid3x3 } from "lucide-react";
 import { SnapshotBackdrop } from "../components/cards/SnapshotBackdrop";
 import { useGetListArrayDatasetQuery } from "../api/graphql";

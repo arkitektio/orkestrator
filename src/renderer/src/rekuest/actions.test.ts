@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/app/dialog", () => ({ useDialog: () => ({}) }));
+vi.mock("@/core/app/dialog", () => ({ useDialog: () => ({}) }));
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), info: vi.fn(), error: vi.fn() },
 }));
 
 import { CleanupActionsDocument } from "@/rekuest/api/graphql";
-import type { ActionState, Structure } from "@/lib/localactions/LocalActionProvider";
+import type { ActionState, Structure } from "@/core/lib/localactions/LocalActionProvider";
 import { REKUEST_ACTIONS } from "./actions";
 
 const structure = (

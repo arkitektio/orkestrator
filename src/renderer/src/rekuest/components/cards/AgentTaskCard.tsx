@@ -1,9 +1,9 @@
 import React from "react";
-import { cn } from "@/lib/utils";
-import { RekuestTask } from "@/linkers";
+import { cn } from "@/core/lib/utils";
+import { RekuestTask } from "@/core/linkers";
 import { ListTaskFragment } from "@/rekuest/api/graphql";
 import { TaskStatusIcon } from "@/rekuest/lib/taskStatus";
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/components/ui/timestamp";
 
 interface Props {
   item: ListTaskFragment;

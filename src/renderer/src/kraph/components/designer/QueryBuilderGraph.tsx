@@ -1,21 +1,21 @@
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/core/components/ui/button";
+import { Checkbox } from "@/core/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/core/components/ui/dialog";
+import { Input } from "@/core/components/ui/input";
+import { Label } from "@/core/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/core/components/ui/select";
 
 import {
   GraphFragment,
@@ -23,7 +23,7 @@ import {
   useCreateGraphTableQueryMutation,
   useUpdateGraphTableQueryMutation
 } from "@/kraph/api/graphql";
-import { KraphGraphQuery } from "@/linkers";
+import { KraphGraphQuery } from "@/core/linkers";
 import {
   ReactFlow,
   ReactFlowInstance,

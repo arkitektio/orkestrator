@@ -1,5 +1,5 @@
-import { createList } from "@/components/layout/createList";
-import { MikroFolder } from "@/linkers";
+import { createList } from "@/core/components/layout/createList";
+import { MikroFolder } from "@/core/linkers";
 import {
   FolderFilter,
   OffsetPaginationInput,

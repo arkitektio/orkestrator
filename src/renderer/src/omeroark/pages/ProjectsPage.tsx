@@ -1,6 +1,6 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { PageAction } from "@/components/ui/page-action";
-import { OmeroArkProject } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { PageAction } from "@/core/components/ui/page-action";
+import { OmeroArkProject } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import ProjectList from "../components/lists/ProjectList";
 

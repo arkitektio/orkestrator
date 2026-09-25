@@ -1,4 +1,4 @@
-import { useOmeroArk } from "@/app/Arkitekt";
+import { useOmeroArk } from "@/core/app/Arkitekt";
 import {
   LazyQueryHookOptions,
   MutationHookOptions,
@@ -9,7 +9,7 @@ import {
   useQuery as useApolloQuery,
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
-import { onApolloError } from "@/lib/errorHandler";
+import { onApolloError } from "@/core/lib/errorHandler";
 
 type MutationFuncType = typeof useApolloMutation;
 type QueryFuncType = typeof useApolloQuery;

@@ -1,5 +1,5 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Slider } from "@/components/ui/slider";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/components/ui/collapsible";
+import { Slider } from "@/core/components/ui/slider";
 import { ChevronDown, ClipboardCopy, Circle, Square } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import {

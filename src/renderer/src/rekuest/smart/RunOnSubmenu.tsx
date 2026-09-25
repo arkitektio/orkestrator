@@ -1,11 +1,11 @@
-import { Guard } from "@/app/Arkitekt";
+import { Guard } from "@/core/app/Arkitekt";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+} from "@/core/components/ui/context-menu";
 import React from "react";
-import type { SmartContextProps } from "@/providers/smart/extensions/types";
+import type { SmartContextProps } from "@/core/providers/smart/extensions/types";
 import { DirectImplementationAssignment } from "./actions";
 import { RunOnApi, RunOnContext, RunOnTarget } from "./runOnContext";
 

@@ -19,9 +19,9 @@ import {
 import { StructureInput } from "@/alpaka/api/graphql";
 import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 import React, { useState } from "react";
-import { EmojiPicker } from "@/components/emoji-picker";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { EmojiPicker } from "@/core/components/emoji-picker";
+import { Button } from "@/core/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
 
 interface ChatBottombarProps {
   sendMessage: (text: string) => void;

@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { MikroScene } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { MikroScene } from "@/core/linkers";
 import { useGetSceneQuery } from "@/mikro/api/graphql";
 
 export const SceneDisplay = (props: DisplayWidgetProps) => {

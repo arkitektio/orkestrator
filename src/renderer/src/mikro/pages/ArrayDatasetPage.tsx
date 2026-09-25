@@ -1,7 +1,7 @@
-import { asDetailQueryRoute } from '@/app/routes/DetailQueryRoute'
+import { asDetailQueryRoute } from '@/core/app/routes/DetailQueryRoute'
 import { useSceneOpen } from "../lib/zarr/useDatalayerWarmup";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { MikroArrayDataset } from '@/linkers'
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { MikroArrayDataset } from '@/core/linkers'
 import { useCallback, useState } from 'react'
 import { useGetArrayDatasetQuery, useGetSceneQuery } from '../api/graphql'
 import { DatasetBackdrop } from '../components/arraydataset/DatasetBackdrop'

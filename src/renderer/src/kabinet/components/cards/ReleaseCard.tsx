@@ -4,9 +4,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { PageSections } from "@/components/layout/PageSections";
-import { KabinetRelease } from "@/linkers";
+} from "@/core/components/ui/card";
+import { PageSections } from "@/core/components/layout/PageSections";
+import { KabinetRelease } from "@/core/linkers";
 import { ListReleaseFragment } from "../../api/graphql";
 import { releaseIdentity } from "../../appIdentity";
 import { AppIcon } from "../AppIcon";

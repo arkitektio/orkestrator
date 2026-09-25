@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { Line2NodeMaterial, MeshBasicNodeMaterial } from "three/webgpu";
-import { bindField } from "@/lib/scene/stores/bindStore";
+import { bindField } from "@/core/lib/scene/stores/bindStore";
 import { bandKey, useViewerStoreApi, type Band } from "../stores/viewerStore";
 import { useSegmentGeometry, writeSegments } from "./segmentGeometry";
 

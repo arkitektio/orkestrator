@@ -1,4 +1,4 @@
-import { evalTransform } from "@/lib/scene/coords/transformGraph";
+import { evalTransform } from "@/core/lib/scene/coords/transformGraph";
 
 /**
  * Reducing a view's `asAffine` to the one number pair a timeline needs.

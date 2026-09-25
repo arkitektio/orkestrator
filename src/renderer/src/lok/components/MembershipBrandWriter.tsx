@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { setBrandRemote } from "@/providers/settings/brandTheme";
+import { Button } from "@/core/components/ui/button";
+import { setBrandRemote } from "@/core/providers/settings/brandTheme";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { UpdateMembershipColorsMutation } from "../api/graphql";

@@ -1,14 +1,14 @@
-import { Sidebars } from "@/components/layout/Sidebars";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { HelpSidebar } from "@/core/components/sidebars/help";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
-} from "@/components/ui/page-action";
-import { CollapsibleSearch } from "@/components/ui/collapsible-search";
-import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
+} from "@/core/components/ui/page-action";
+import { CollapsibleSearch } from "@/core/components/ui/collapsible-search";
+import { DateTimeRangePicker } from "@/core/components/ui/date-time-range-picker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,15 +16,15 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/core/components/ui/dropdown-menu";
 import {
   parseAsBoolean,
   parseAsIsoDateTime,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
-} from "@/hooks/use-search-param-state";
-import { RekuestAction } from "@/linkers";
+} from "@/core/hooks/use-search-param-state";
+import { RekuestAction } from "@/core/linkers";
 import { ArrowUpDown, Layers, Wifi } from "lucide-react";
 import { useMemo } from "react";
 import { ActionKind } from "../api/graphql";

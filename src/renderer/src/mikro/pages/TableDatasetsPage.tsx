@@ -1,5 +1,5 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { MikroTableDataset } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { MikroTableDataset } from "@/core/linkers";
 import React from "react";
 import TableDatasetList from "../components/lists/TableDatasetList";
 

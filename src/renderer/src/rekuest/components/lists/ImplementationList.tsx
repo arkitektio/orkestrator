@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { RekuestImplementation } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { RekuestImplementation } from "@/core/linkers";
 import { ImplementationFilter, ImplementationOrder, OffsetPaginationInput, useListImplementationsQuery } from "@/rekuest/api/graphql";
 import ImplementationCard from "../cards/ImplementationCard";
 

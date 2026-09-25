@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { KabinetRelease } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { KabinetRelease } from "@/core/linkers";
 
 import { OffsetPaginationInput, useListReleasesQuery } from "../../api/graphql";
 import ReleaseCard from "../cards/ReleaseCard";

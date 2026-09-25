@@ -1,17 +1,17 @@
-import { GraphQLCreatableSearchField } from "@/components/fields/GraphQLCreateableSearchField";
-import { GraphQLSearchField } from "@/components/fields/GraphQLSearchField";
-import { ParagraphField } from "@/components/fields/ParagraphField";
-import { StringField } from "@/components/fields/StringField";
-import { SwitchField } from "@/components/fields/SwitchField";
+import { GraphQLCreatableSearchField } from "@/core/components/fields/GraphQLCreateableSearchField";
+import { GraphQLSearchField } from "@/core/components/fields/GraphQLSearchField";
+import { ParagraphField } from "@/core/components/fields/ParagraphField";
+import { StringField } from "@/core/components/fields/StringField";
+import { SwitchField } from "@/core/components/fields/SwitchField";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { DialogFooter } from "@/components/ui/dialog";
+} from "@/core/components/ui/accordion";
+import { Button } from "@/core/components/ui/button";
+import { Checkbox } from "@/core/components/ui/checkbox";
+import { DialogFooter } from "@/core/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -19,15 +19,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
+} from "@/core/components/ui/form";
+import { Label } from "@/core/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/core/components/ui/select";
 import {
   CheckSquare,
   FileText,
@@ -57,9 +57,9 @@ import {
 import { keyify } from "./utils";
 import { DerivationRuleEditor } from "../components/schema-builder/DerivationRuleEditor";
 import { buildDerivationRule } from "../components/schema-builder/utils";
-import { useGraphQLDialog } from "@/app/hooks/useGraphQLDialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { cn } from "@/lib/utils";
+import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
+import { RadioGroup, RadioGroupItem } from "@/core/components/ui/radio-group";
+import { cn } from "@/core/lib/utils";
 import { ClaimRulesEditor } from "../components/schema-builder/ClaimRuleEditor";
 import {
   ClaimRuleDraft,

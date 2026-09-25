@@ -1,6 +1,6 @@
 import React from "react";
-import { Card, CardTitle } from "@/components/ui/card";
-import { MikroTableDataset } from "@/linkers";
+import { Card, CardTitle } from "@/core/components/ui/card";
+import { MikroTableDataset } from "@/core/linkers";
 import { ListTableDatasetFragment } from "../../api/graphql";
 
 interface Props {

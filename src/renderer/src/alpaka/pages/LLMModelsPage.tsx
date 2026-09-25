@@ -1,7 +1,7 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { PageAction } from "@/components/ui/page-action";
-import { AlpakaLLMModel } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { PageLayout } from "@/core/components/layout/PageLayout";
+import { PageAction } from "@/core/components/ui/page-action";
+import { AlpakaLLMModel } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import LLMModelList from "../components/lists/LLMModelList";

@@ -1,13 +1,13 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { Image } from "@/components/ui/image";
-import { DragZone } from "@/components/upload/drag";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { FormSheet } from "@/core/components/dialog/FormDialog";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { PageAction } from "@/core/components/ui/page-action";
+import { Image } from "@/core/components/ui/image";
+import { DragZone } from "@/core/components/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import {
   KraphRelationCategory
-} from "@/linkers";
+} from "@/core/linkers";
 import {
   useGetRelationCategoryQuery,
   useUpdateRelationCategoryMutation

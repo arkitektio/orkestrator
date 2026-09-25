@@ -1,4 +1,4 @@
-import { useDialog } from "@/app/dialog";
+import { useDialog } from "@/core/app/dialog";
 import {
   ListMeasurementCategoryWithGraphFragment,
   ListRelationCategoryFragment,
@@ -7,12 +7,12 @@ import {
   useAssertStructureExistsMutation,
   useAssertStructureRelationExistsMutation,
 } from "@/kraph/api/graphql";
-import { Structure } from "@/types";
+import { Structure } from "@/core/types";
 import { Network, Ruler } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
-import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
-import type { PassDownProps } from "@/providers/smart/extensions/types";
+import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
+import type { PassDownProps } from "@/core/providers/smart/extensions/types";
 
 /**
  * The rows of the kraph slice of the smart context menu: what you can record

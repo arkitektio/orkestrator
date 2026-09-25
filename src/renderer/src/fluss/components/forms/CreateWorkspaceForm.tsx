@@ -1,8 +1,8 @@
-import { useGraphQLDialog } from "@/app/hooks/useGraphQLDialog";
-import { StringField } from "@/components/fields/StringField";
-import { Button } from "@/components/ui/button";
-import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
+import { StringField } from "@/core/components/fields/StringField";
+import { Button } from "@/core/components/ui/button";
+import { DialogFooter, DialogHeader } from "@/core/components/ui/dialog";
+import { Form } from "@/core/components/ui/form";
 import {
   CreateWorkspaceMutation,
   useCreateWorkspaceMutation,

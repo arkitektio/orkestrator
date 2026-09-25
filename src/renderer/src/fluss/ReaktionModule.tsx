@@ -1,6 +1,6 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
-import { Guard } from "@/app/Arkitekt";
+import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
+import { Guard } from "@/core/app/Arkitekt";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import Flow from "./pages/Flow";
@@ -10,7 +10,7 @@ import Runs from "./pages/Runs";
 import Workspace from "./pages/Workspace";
 import Workspaces from "./pages/Workspaces";
 import SearchPane from "./panes/SearchPane";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/app/components/fallbacks/NotFound";
 
 interface Props { }
 

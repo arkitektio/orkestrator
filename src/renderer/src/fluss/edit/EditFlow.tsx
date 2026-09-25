@@ -1,5 +1,5 @@
-import { Guard } from "@/app/Arkitekt";
-import { toast } from "@/components/ui/use-toast";
+import { Guard } from "@/core/app/Arkitekt";
+import { toast } from "@/core/components/ui/use-toast";
 import { FlowFragment, GraphInput } from "@/fluss/api/graphql";
 import { EditFlowCanvas } from "@/fluss/edit/components/EditFlowCanvas";
 import { EditFlowStoreContext } from "@/fluss/edit/context";

@@ -1,7 +1,7 @@
 import {
   useDatalayerEndpoint,
   useMikro
-} from "@/app/Arkitekt";
+} from "@/core/app/Arkitekt";
 import {
   BigFileUploadGrantFragment,
   FinishBigfileUploadDocument,

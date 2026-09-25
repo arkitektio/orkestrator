@@ -1,5 +1,5 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { MikroSparseDataset } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { MikroSparseDataset } from "@/core/linkers";
 import React from "react";
 import { useSparseDatasetFilterBar } from "../components/filter/SparseDatasetFilterBar";
 import SparseDatasetList from "../components/lists/SparseDatasetList";

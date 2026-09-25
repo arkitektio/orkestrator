@@ -1,6 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import * as THREE from "three";
-import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
 
 /** Camera facts the matrix alone cannot provide (perspective LOD math). */
 export interface CameraPose {

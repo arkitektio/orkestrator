@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphRelation } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KraphRelation } from "@/core/linkers";
 import { useGetRelationQuery } from "../api/graphql";
 
 export const RelationDisplay = (props: DisplayWidgetProps) => {

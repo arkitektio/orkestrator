@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphStructureKind } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KraphStructureKind } from "@/core/linkers";
 import { useGetStructureKindQuery } from "../api/graphql";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 

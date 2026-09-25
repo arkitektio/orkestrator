@@ -1,9 +1,9 @@
-import { Guard } from "@/app/Arkitekt";
-import { ProfileSectionFrame } from "@/lib/profile/ProfileSections";
-import { ProfileRow, ProfileRows } from "@/lib/profile/rows";
-import type { ProfileContext, ProfileSection } from "@/lib/profile/section";
-import { cn } from "@/lib/utils";
-import { RekuestAgent } from "@/linkers";
+import { Guard } from "@/core/app/Arkitekt";
+import { ProfileSectionFrame } from "@/core/lib/profile/ProfileSections";
+import { ProfileRow, ProfileRows } from "@/core/lib/profile/rows";
+import type { ProfileContext, ProfileSection } from "@/core/lib/profile/section";
+import { cn } from "@/core/lib/utils";
+import { RekuestAgent } from "@/core/linkers";
 import { formatDistanceToNow } from "date-fns";
 import { Bot } from "lucide-react";
 import { AgentOrder, Ordering, useAgentsQuery } from "../api/graphql";

@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import {
   GraphFragment,
   useUpdateGraphVisualMutation,

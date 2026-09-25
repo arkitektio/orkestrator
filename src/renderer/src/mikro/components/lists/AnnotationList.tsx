@@ -1,5 +1,5 @@
-import { createList } from "@/components/layout/createList";
-import { MikroAnnotation } from "@/linkers";
+import { createList } from "@/core/components/layout/createList";
+import { MikroAnnotation } from "@/core/linkers";
 
 import { useGetAnnotationsQuery } from "../../api/graphql";
 import AnnotationCard from "../cards/AnnotationCard";

@@ -1,4 +1,4 @@
-import { RekuestImplementation } from "@/linkers";
+import { RekuestImplementation } from "@/core/linkers";
 import { Ordering } from "../api/graphql";
 import ImplementationList from "../components/lists/ImplementationList";
 const Page = () => {

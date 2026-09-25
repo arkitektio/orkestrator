@@ -1,5 +1,5 @@
 import { AlertTriangle, Loader2, Redo2, RotateCcw, Save, Undo2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import { useRegistrationSave } from "../hooks/useRegistrationSave";
 import { useRegistration, useRegistrationApi } from "../store/context";
 import { isDirty } from "../store/registrationStore";

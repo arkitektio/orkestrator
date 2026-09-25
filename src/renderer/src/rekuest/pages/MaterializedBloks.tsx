@@ -1,4 +1,4 @@
-import { RekuestMaterializedBlok } from "@/linkers";
+import { RekuestMaterializedBlok } from "@/core/linkers";
 import MaterializedBlokList from "../components/lists/MaterializedBlokList";
 
 const Page = () => {

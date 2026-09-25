@@ -1,11 +1,11 @@
-import { StructureDisplay } from "@/components/display/StructureDisplay";
-import { ListRender } from '@/components/layout/ListRender'
-import { SidebarLayout } from '@/components/layout/SidebarLayout'
-import { FancyInput } from '@/components/ui/fancy-input'
-import { DroppableNavLink } from '@/components/ui/link'
-import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { PaneLink, SidePaneGroup, SidePaneNav } from '@/components/ui/sidepane'
-import { Toggle } from '@/components/ui/toggle'
+import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { ListRender } from '@/core/components/layout/ListRender'
+import { SidebarLayout } from '@/core/components/layout/SidebarLayout'
+import { FancyInput } from '@/core/components/ui/fancy-input'
+import { DroppableNavLink } from '@/core/components/ui/link'
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/core/components/ui/popover'
+import { PaneLink, SidePaneGroup, SidePaneNav } from '@/core/components/ui/sidepane'
+import { Toggle } from '@/core/components/ui/toggle'
 
 import { useDebounce } from '@uidotdev/usehooks'
 import { ArrowDown, Axis3d, File, Folder, Grid2x2, Grid3x3, Home, PenTool, Table2 } from 'lucide-react'

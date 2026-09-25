@@ -1,16 +1,16 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { AsyncBoundary } from "@/components/boundaries/AsyncBoundary";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Slider } from "@/components/ui/slider";
-import { RekuestState } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { AsyncBoundary } from "@/core/components/boundaries/AsyncBoundary";
+import { Card } from "@/core/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
+import { Slider } from "@/core/components/ui/slider";
+import { RekuestState } from "@/core/linkers";
 import {
   StateFragment,
   useCheckoutQuery,
   useGetStateQuery,
   useWatchStateSubscription,
 } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
+import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
 import { useRef, useState } from "react";
 import { applyPatch } from "fast-json-patch";
 

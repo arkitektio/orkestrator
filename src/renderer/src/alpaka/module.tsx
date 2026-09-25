@@ -1,4 +1,4 @@
-import { defineModule } from "@/lib/module-host/define";
+import { defineModule } from "@/core/lib/module-host/define";
 import { ALPAKA_ACTIONS } from "./actions";
 import { MessageDisplay } from "./displays/MessageDisplay";
 import { ALPAKA_DIALOGS } from "./dialogRegistry";

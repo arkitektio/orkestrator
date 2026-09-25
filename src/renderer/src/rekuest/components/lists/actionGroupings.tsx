@@ -1,4 +1,4 @@
-import { GroupByDef } from "@/components/layout/GroupableListRenderer";
+import { GroupByDef } from "@/core/components/layout/GroupableListRenderer";
 import { BrowseActionFragment } from "@/rekuest/api/graphql";
 import {
   actionsBrowseLink,

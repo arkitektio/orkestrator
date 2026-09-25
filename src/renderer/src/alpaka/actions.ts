@@ -7,8 +7,8 @@ import {
 } from '@/alpaka/api/graphql'
 import { ApolloClient, NormalizedCache } from '@apollo/client'
 import { RefreshCw } from 'lucide-react'
-import { buildDeleteAction } from "@/lib/localactions/builders/deleteAction";
-import { Action } from "@/lib/localactions/LocalActionProvider";
+import { buildDeleteAction } from "@/core/lib/localactions/builders/deleteAction";
+import { Action } from "@/core/lib/localactions/LocalActionProvider";
 
 const PROVIDER_IDENTIFIER = '@alpaka/provider'
 

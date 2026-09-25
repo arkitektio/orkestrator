@@ -1,8 +1,8 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
-import { DokumentsPage } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Image } from "@/core/components/ui/image";
+import { useResolve } from "@/core/datalayer/hooks/useResolve";
+import { DokumentsPage } from "@/core/linkers";
 import { useGetPageQuery } from "../api/graphql";
 
 export const PagePage = asDetailQueryRoute(

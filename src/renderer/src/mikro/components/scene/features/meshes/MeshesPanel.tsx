@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { Box, Eye, Focus, PencilRuler, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Button } from "@/core/components/ui/button";
+import { Card, CardTitle } from "@/core/components/ui/card";
 import {
   meshObjectBox,
   useNavigateToMeshBox,

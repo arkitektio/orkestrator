@@ -1,4 +1,4 @@
-import { Slider } from "@/components/ui/slider";
+import { Slider } from "@/core/components/ui/slider";
 import { Spline } from "lucide-react";
 import { memo, useMemo } from "react";
 import {
@@ -16,8 +16,8 @@ import {
   OpacityRow,
   RowLabel,
   formatCount,
-} from "@/lib/scene/layerui/cardControls";
-import { ColormapSelect } from "@/lib/scene/layerui/ColormapSelect";
+} from "@/core/lib/scene/layerui/cardControls";
+import { ColormapSelect } from "@/core/lib/scene/layerui/ColormapSelect";
 import { CONTINUOUS_COLORMAP_CHOICES } from "../../platform/layerui/colormap-utils";
 import { DEFAULT_TAIL_WINDOW } from "./TracksLayer";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";

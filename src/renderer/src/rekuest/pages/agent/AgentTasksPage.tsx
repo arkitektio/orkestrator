@@ -1,8 +1,8 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { RekuestAgent } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { DateTimeRangePicker } from "@/core/components/ui/date-time-range-picker";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { RekuestAgent } from "@/core/linkers";
 import {
   TaskEventKind,
   Ordering,
@@ -13,7 +13,7 @@ import {
   TASK_DONE_FILTER_OPTIONS as DONE_OPTIONS,
   TASK_STATE_FILTER_OPTIONS as STATE_OPTIONS,
 } from "@/rekuest/lib/taskStatus";
-import { parseAsBoolean, parseAsIsoDateTime, parseAsStringLiteral, useQueryState, parseAsArrayOf } from "@/hooks/use-search-param-state";
+import { parseAsBoolean, parseAsIsoDateTime, parseAsStringLiteral, useQueryState, parseAsArrayOf } from "@/core/hooks/use-search-param-state";
 import { X } from "lucide-react";
 
 export const AgentTasksPage = asDetailQueryRoute(

@@ -1,17 +1,17 @@
-import { Guard } from "@/app/Arkitekt";
-import { useGraphQLDialog } from "@/app/hooks/useGraphQLDialog";
-import { ChoicesField } from "@/components/fields/ChoicesField";
-import { FloatField } from "@/components/fields/FloatField";
-import { SwitchField } from "@/components/fields/SwitchField";
-import { Button } from "@/components/ui/button";
+import { Guard } from "@/core/app/Arkitekt";
+import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
+import { ChoicesField } from "@/core/components/fields/ChoicesField";
+import { FloatField } from "@/core/components/fields/FloatField";
+import { SwitchField } from "@/core/components/fields/SwitchField";
+import { Button } from "@/core/components/ui/button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "@/core/components/ui/dialog";
+import { Form } from "@/core/components/ui/form";
+import { Input } from "@/core/components/ui/input";
 import { modifierSpecsOf, spatialSpecOf } from "@/mikro/specs";
 import {
   ChevronDown,

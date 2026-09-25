@@ -1,9 +1,9 @@
 
 
-import { useDialog } from "@/app/dialog";
-import { StringField } from "@/components/fields/StringField";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { useDialog } from "@/core/app/dialog";
+import { StringField } from "@/core/components/fields/StringField";
+import { DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
+import { Form } from "@/core/components/ui/form";
 import { useCreateOrganizationMutation } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";

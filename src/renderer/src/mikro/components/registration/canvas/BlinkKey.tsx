@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { isTypingTarget } from "@/lib/input/keyboardTarget";
+import { isTypingTarget } from "@/core/lib/input/keyboardTarget";
 import { useLayerSessionVisibility } from "../../scene/sceneHost";
 import { useRegistration } from "../store/context";
 

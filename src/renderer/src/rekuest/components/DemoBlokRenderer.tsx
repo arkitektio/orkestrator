@@ -1,5 +1,5 @@
 import * as React from 'react';
-import BlokRenderer from '@/blok/renderer/BlokRenderer';
+import BlokRenderer from '@/core/blok/renderer/BlokRenderer';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 
 type DemoBlokData = {

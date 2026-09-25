@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { ElektroNeuronModel } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { ElektroNeuronModel } from "@/core/linkers";
 import { DetailNeuronModelFragment } from "../../api/graphql";
 import { neuronModelCounts } from "./counts";
 

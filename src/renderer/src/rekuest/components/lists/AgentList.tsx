@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { RekuestAgent } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { RekuestAgent } from "@/core/linkers";
 import {
   AgentFilter,
   AgentOrder,

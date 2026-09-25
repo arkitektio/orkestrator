@@ -1,21 +1,21 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/core/components/ui/button";
+import { Input } from "@/core/components/ui/input";
+import { Label } from "@/core/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+} from "@/core/components/ui/select";
+import { Slider } from "@/core/components/ui/slider";
 import { ArrowRight, Plus, Radio, Trash2, Zap } from "lucide-react";
 import {
   EditableNetConnection,
   EditableNetStimulator,
   EditableNetSynapse,
 } from "../../lib/modelSerialization";
-import { QuantityInput } from "@/components/fields/QuantityInput";
+import { QuantityInput } from "@/core/components/fields/QuantityInput";
 
 export type NetworkEditorProps = {
   synapses: EditableNetSynapse[];

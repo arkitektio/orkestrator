@@ -1,4 +1,4 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/core/components/ui/scroll-area";
 import { MessageSquare } from "lucide-react";
 import { ListCommentType } from "../types";
 import { Comment } from "./Comment";

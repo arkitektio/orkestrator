@@ -1,9 +1,9 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { AsyncBoundary } from "@/components/boundaries/AsyncBoundary";
-import { Card } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RekuestAgent } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { AsyncBoundary } from "@/core/components/boundaries/AsyncBoundary";
+import { Card } from "@/core/components/ui/card";
+import { Slider } from "@/core/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
+import { RekuestAgent } from "@/core/linkers";
 import {
   StateFragment,
   useAgentQuery,
@@ -11,7 +11,7 @@ import {
   useCheckoutQuery,
 } from "@/rekuest/api/graphql";
 import { useAgentStates } from "@/rekuest/hooks/useLiveState";
-import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
+import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
 import { useMemo, useState } from "react";
 
 const AgentStateValueDisplay = ({

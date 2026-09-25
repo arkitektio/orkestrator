@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KabinetPod } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KabinetPod } from "@/core/linkers";
 import { useGetPodQuery } from "../api/graphql";
 
 export const PodDisplay = (props: DisplayWidgetProps) => {

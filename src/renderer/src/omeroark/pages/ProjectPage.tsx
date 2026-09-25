@@ -1,12 +1,12 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { ListRender } from "@/components/layout/ListRender";
-import { DialogButton } from "@/components/ui/dialog-button";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { DialogButton } from "@/core/components/ui/dialog-button";
 import {
   DetailPane,
   DetailPaneHeader,
   DetailPaneTitle,
-} from "@/components/ui/pane";
-import { OmeroArkProject } from "@/linkers";
+} from "@/core/components/ui/pane";
+import { OmeroArkProject } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import { useGetProjectQuery } from "../api/graphql";
 import DatasetCard from "../components/cards/DatasetCard";

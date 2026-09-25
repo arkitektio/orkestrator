@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Timestamp from "@/components/ui/timestamp";
-import { RekuestAgent, RekuestImplementation } from "@/linkers";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/components/ui/card";
+import Timestamp from "@/core/components/ui/timestamp";
+import { RekuestAgent, RekuestImplementation } from "@/core/linkers";
 import { ProvidingImplementationFragment } from "@/rekuest/api/graphql";
 import {
   AgentStatus,

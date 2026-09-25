@@ -1,8 +1,8 @@
 import { ActionKind, DetailActionFragment } from "@/rekuest/api/graphql";
 import PortConstraintBadges, {
   PortConstraint,
-} from "@/components/ports/PortConstraintBadges";
-import { portToLabel } from "@/lib/ports/utils";
+} from "@/core/components/ports/PortConstraintBadges";
+import { portToLabel } from "@/core/lib/ports/utils";
 
 type ArgPort = DetailActionFragment["args"][number];
 type ReturnPort = DetailActionFragment["returns"][number];

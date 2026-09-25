@@ -1,11 +1,11 @@
-import { Guard } from "@/app/Arkitekt";
-import { Card } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
-import { useResolve } from "@/datalayer/hooks/useResolve";
-import { ProfileSectionFrame } from "@/lib/profile/ProfileSections";
-import { ProfileRow, ProfileRows } from "@/lib/profile/rows";
-import type { ProfileContext, ProfileSection } from "@/lib/profile/section";
-import { MikroArrayDataset, MikroFile, MikroFolder } from "@/linkers";
+import { Guard } from "@/core/app/Arkitekt";
+import { Card } from "@/core/components/ui/card";
+import { Image } from "@/core/components/ui/image";
+import { useResolve } from "@/core/datalayer/hooks/useResolve";
+import { ProfileSectionFrame } from "@/core/lib/profile/ProfileSections";
+import { ProfileRow, ProfileRows } from "@/core/lib/profile/rows";
+import type { ProfileContext, ProfileSection } from "@/core/lib/profile/section";
+import { MikroArrayDataset, MikroFile, MikroFolder } from "@/core/linkers";
 import { Boxes, File, Folder, Images } from "lucide-react";
 import {
   Ordering,

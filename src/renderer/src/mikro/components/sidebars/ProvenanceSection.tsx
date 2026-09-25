@@ -1,4 +1,4 @@
-import { MikroHistory } from "@/linkers";
+import { MikroHistory } from "@/core/linkers";
 import { ProvenanceEntryFragment } from "../../api/graphql";
 import { ProvenanceEntryBody } from "../provenance/ProvenanceEntryBody";
 

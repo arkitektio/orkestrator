@@ -1,4 +1,4 @@
-import { Guard } from "@/app/Arkitekt";
+import { Guard } from "@/core/app/Arkitekt";
 import {
   ListDefinitionFragment,
   useAllPrimaryDefinitionsQuery,
@@ -7,8 +7,8 @@ import { useAllActionsQuery } from "@/rekuest/api/graphql";
 import { Download } from "lucide-react";
 import React from "react";
 import { useSmartDemands } from "@/rekuest/smart/demands";
-import type { SectionItems, SmartContextSection, SmartSectionContext } from "@/providers/smart/extensions/section";
-import { useStableData } from "@/providers/smart/extensions/useStableData";
+import type { SectionItems, SmartContextSection, SmartSectionContext } from "@/core/providers/smart/extensions/section";
+import { useStableData } from "@/core/providers/smart/extensions/useStableData";
 import { InstallAction, InstallButton } from "./definitions";
 import { KABINET_ENGINES_VARIABLES, definitionsVariables, toKabinetDemands } from "./queries";
 

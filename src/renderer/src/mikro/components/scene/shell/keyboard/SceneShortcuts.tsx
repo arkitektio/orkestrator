@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { isTypingTarget } from "../../platform/input/keyboardTarget";

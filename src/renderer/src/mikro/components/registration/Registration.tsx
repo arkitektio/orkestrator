@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Guard } from "@/app/Arkitekt";
+import { Guard } from "@/core/app/Arkitekt";
 import { SceneHostGuard } from "../scene/sceneHost";
 import { BlinkKey } from "./canvas/BlinkKey";
 import { Gizmo } from "./canvas/Gizmo";

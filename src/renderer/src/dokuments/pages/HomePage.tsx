@@ -1,4 +1,4 @@
-import { PageLayout } from "@/components/layout/PageLayout";
+import { PageLayout } from "@/core/components/layout/PageLayout";
 import FileList from "@/dokuments/components/lists/FileList";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import React from "react";

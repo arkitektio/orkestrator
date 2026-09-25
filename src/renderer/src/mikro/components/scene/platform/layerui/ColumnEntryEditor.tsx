@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/core/components/ui/input";
+import { Slider } from "@/core/components/ui/slider";
+import { Switch } from "@/core/components/ui/switch";
 import {
   ColorMap,
   ColumnControl,
   useGetTableDatasetLazyQuery,
 } from "@/mikro/api/graphql";
-import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
+import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
 import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import { loadSparseSource } from "@/mikro/lib/sparse/sparseSource";
 import { sliceDomain, sliceHistogram } from "@/mikro/lib/sparse/sliceStats";
@@ -29,7 +29,7 @@ import {
   qualitativePalette,
   sampleColormapCSS,
 } from "./colormap-utils";
-import { ColormapSelect, type ColormapChoice } from "@/lib/scene/layerui/ColormapSelect";
+import { ColormapSelect, type ColormapChoice } from "@/core/lib/scene/layerui/ColormapSelect";
 import { SparsePositionPicker } from "./SparsePositionPicker";
 import {
   DEFAULT_INSTANCE_COLORMAP,

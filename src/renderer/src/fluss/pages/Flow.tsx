@@ -1,4 +1,4 @@
-import { Guard } from "@/app/Arkitekt";
+import { Guard } from "@/core/app/Arkitekt";
 import { useFlowQuery } from "@/fluss/api/graphql";
 import { EditFlow } from "@/fluss/edit/EditFlow";
 import { useParams } from "react-router-dom";

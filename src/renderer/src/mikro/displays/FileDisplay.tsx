@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { MikroFile } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { MikroFile } from "@/core/linkers";
 import { useGetFileQuery } from "@/mikro/api/graphql";
 
 function formatBytes(bytes: number | null | undefined): string {

@@ -1,16 +1,16 @@
-import { StructureDisplay } from "@/components/display/StructureDisplay";
+import { StructureDisplay } from "@/core/components/display/StructureDisplay";
 import React from "react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/core/components/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { RekuestTask } from "@/linkers";
+} from "@/core/components/ui/card";
+import { RekuestTask } from "@/core/linkers";
 
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/components/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
 
 interface HistoryCardProps {

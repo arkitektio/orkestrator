@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
+import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
 import { acquireAttributeService } from "@/mikro/lib/attributes/attributeService";
 import { createAttributeResolver } from "@/mikro/lib/attributes/attributeResolver";
 import {

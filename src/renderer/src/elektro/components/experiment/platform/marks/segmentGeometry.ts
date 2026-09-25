@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import type { InterleavedBufferAttribute } from "three";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
-import { FLOATS_PER_SEGMENT } from "@/lib/scene/gpu/lineBuffer";
+import { FLOATS_PER_SEGMENT } from "@/core/lib/scene/gpu/lineBuffer";
 
 /**
  * A `LineSegmentsGeometry` with a fixed CAPACITY, written in place.

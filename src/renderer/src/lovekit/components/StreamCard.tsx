@@ -1,6 +1,6 @@
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { LovekitStream } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { cn } from "@/core/lib/utils";
+import { LovekitStream } from "@/core/linkers";
 import { ListStreamFragment } from "../api/graphql";
 
 

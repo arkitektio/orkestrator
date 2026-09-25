@@ -1,4 +1,4 @@
-import type { MikroClient } from "@/lib/zarr/store/types";
+import type { MikroClient } from "@/core/lib/zarr/store/types";
 import type { KonnektionStoreFragment } from "@/mikro/api/graphql";
 import { buildS3FetchConfig, getGeneralAccess } from "@/mikro/lib/zarr/access";
 import { S3ParquetStore } from "@/mikro/components/scene/platform/parquet/s3ParquetStore";

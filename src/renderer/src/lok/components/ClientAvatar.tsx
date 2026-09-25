@@ -1,7 +1,7 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { LokClient } from "@/linkers";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { LokClient } from "@/core/linkers";
 import { useClientQuery } from "../api/graphql";
 import { clientAppVersion } from "../lib/clientLabels";
 

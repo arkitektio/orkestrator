@@ -1,5 +1,5 @@
 import type { SliceGet, SliceSet } from "./sliceTypes";
-import type { BrandTarget } from "@/providers/settings/brandTheme";
+import type { BrandTarget } from "@/core/providers/settings/brandTheme";
 /**
  * Viewport furniture the user can toggle, plus the sampled brand hue.
  */

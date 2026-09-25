@@ -1,4 +1,4 @@
-import { RekuestBlok } from "@/linkers";
+import { RekuestBlok } from "@/core/linkers";
 import BlokList from "../components/lists/BlokList";
 
 const Page = () => {

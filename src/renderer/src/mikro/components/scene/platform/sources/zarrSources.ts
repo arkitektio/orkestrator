@@ -2,12 +2,12 @@ import {
   MikroClient,
   SceneZarrStoreDescriptor,
   ZarrStore,
-} from "@/lib/zarr/store/types";
-import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
+} from "@/core/lib/zarr/store/types";
+import { ConfiguredS3Store } from "@/core/lib/zarr/store/s3Store";
 import { SceneFragment } from "@/mikro/api/graphql";
 import { isBrickLayer } from "../model/layerGuards";
 import { buildS3FetchConfig, getGeneralAccess } from "@/mikro/lib/zarr/access";
-import { openZarrArray, type OpenedZarrArray } from "@/lib/zarr/openArray";
+import { openZarrArray, type OpenedZarrArray } from "@/core/lib/zarr/openArray";
 import { coldOpenTimeline } from "../perf/coldOpenTimeline";
 
 export { requestGeneralAccess } from "@/mikro/lib/zarr/access";

@@ -1,7 +1,7 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardTitle } from "@/components/ui/card";
-import { MikroCoordinateSystem } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { Card, CardTitle } from "@/core/components/ui/card";
+import { MikroCoordinateSystem } from "@/core/linkers";
 import { ListCoordinateSystemFragment } from "../../api/graphql";
 import { occupancyLabel } from "../coordinates/residents";
 

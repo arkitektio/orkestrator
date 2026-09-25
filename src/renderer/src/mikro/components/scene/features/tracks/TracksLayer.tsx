@@ -33,7 +33,7 @@ import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServi
 import {
   placementToSpatialAffine,
   spatialAxisTriple,
-} from "@/lib/scene/coords/transformGraph";
+} from "@/core/lib/scene/coords/transformGraph";
 import type { SceneLayerFragment } from "@/mikro/api/graphql";
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { paletteRowFor, DEFAULT_MEASURE_COLORMAP } from "../../platform/attributes/valueLut";
@@ -48,7 +48,7 @@ import {
   valueSpanOf,
   type TrackGeometry,
 } from "./tracksSource";
-import { bindField } from "@/lib/scene/stores/bindStore";
+import { bindField } from "@/core/lib/scene/stores/bindStore";
 
 /** Tail length in timepoints when the layer has not been told otherwise. */
 export const DEFAULT_TAIL_WINDOW = 10;

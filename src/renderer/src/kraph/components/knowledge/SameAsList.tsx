@@ -1,9 +1,9 @@
-import { DisplayWidget } from "@/command/Menu";
+import { DisplayWidget } from "@/core/command/Menu";
 import {
   useInformingStructuresQuery,
   type KnowledgeInstanceFragment,
 } from "@/kraph/api/graphql";
-import type { Structure } from "@/types";
+import type { Structure } from "@/core/types";
 
 /**
  * One other member of the sameness component, shown by its evidence. Instances

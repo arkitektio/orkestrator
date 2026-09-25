@@ -1,4 +1,4 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/core/components/ui/alert";
 import {
   CommentsForDocument,
   CommentsForQuery,

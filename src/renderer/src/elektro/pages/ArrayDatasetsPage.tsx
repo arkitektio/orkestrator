@@ -1,5 +1,5 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { ElektroArrayDataset } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { ElektroArrayDataset } from "@/core/linkers";
 import React from "react";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 

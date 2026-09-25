@@ -1,8 +1,8 @@
 import { Canvas } from "@react-three/fiber";
 import { useEffect } from "react";
-import { useTabVisible } from "@/command/tabs/TabVisibilityContext";
-import { isTypingTarget } from "@/lib/input/keyboardTarget";
-import { createWebGPURendererFactory } from "@/lib/scene/gpu/createWebGPURenderer";
+import { useTabVisible } from "@/core/command/tabs/TabVisibilityContext";
+import { isTypingTarget } from "@/core/lib/input/keyboardTarget";
+import { createWebGPURendererFactory } from "@/core/lib/scene/gpu/createWebGPURenderer";
 import { AnnotationDrawer } from "../features/annotations/AnnotationDrawer";
 import { AnnotationToolbar } from "../features/annotations/AnnotationToolbar";
 import { MarkLabelsOverlay } from "../features/events/MarkLabelsOverlay";

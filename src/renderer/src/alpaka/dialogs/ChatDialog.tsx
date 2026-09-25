@@ -1,7 +1,7 @@
 import { Role, useChatMutation } from "@/alpaka/api/graphql";
-import { useDialog } from "@/app/dialog";
-import { Button } from "@/components/ui/button";
-import { DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useDialog } from "@/core/app/dialog";
+import { Button } from "@/core/components/ui/button";
+import { DialogFooter, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
 import { BoldPlugin, CodePlugin, ItalicPlugin, UnderlinePlugin } from "@platejs/basic-nodes/react";
 import {
   Bold,

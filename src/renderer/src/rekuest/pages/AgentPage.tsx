@@ -1,12 +1,12 @@
-import { useRekuest } from "@/app/Arkitekt";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { VerticalListRender } from "@/components/layout/VerticalListRender";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PageAction, PageActionGroup } from "@/components/ui/page-action";
-import { cn } from "@/lib/utils";
-import { RekuestAgent, RekuestState } from "@/linkers";
+import { useRekuest } from "@/core/app/Arkitekt";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { VerticalListRender } from "@/core/components/layout/VerticalListRender";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { PageAction, PageActionGroup } from "@/core/components/ui/page-action";
+import { cn } from "@/core/lib/utils";
+import { RekuestAgent, RekuestState } from "@/core/linkers";
 import {
   AgentFragment,
   useAgentQuery,
@@ -21,7 +21,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { Pin, PinOff } from "lucide-react";
 import { useEffect } from "react";
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/components/ui/timestamp";
 import {
   applyTaskChangeScalars,
   hydrateAndInsertAgentTask,

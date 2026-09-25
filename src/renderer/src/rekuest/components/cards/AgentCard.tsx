@@ -1,8 +1,8 @@
-import { StructureDisplay } from "@/components/display/StructureDisplay";
+import { StructureDisplay } from "@/core/components/display/StructureDisplay";
 import React from "react";
-import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { RekuestAgent } from "@/linkers";
+import { Card, CardFooter, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { cn } from "@/core/lib/utils";
+import { RekuestAgent } from "@/core/linkers";
 
 import { ListAgentFragment } from "@/rekuest/api/graphql";
 

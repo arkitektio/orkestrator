@@ -21,18 +21,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 
-import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
+import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
 import { collapsibleLensDims } from "../../platform/model/dimExtents";
-import { createSettler } from "@/lib/scene/perf/settle";
+import { createSettler } from "@/core/lib/scene/perf/settle";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
-import { composeLayerAffine } from "@/lib/scene/coords/transformGraph";
+import { composeLayerAffine } from "@/core/lib/scene/coords/transformGraph";
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { paletteRowFor, DEFAULT_MEASURE_COLORMAP } from "../../platform/attributes/valueLut";
 import { isVectorLayer, type VectorLayerFragment } from "../../platform/model/layerGuards";
 import { createVectorMaterial, type VectorGlyphKind, type VectorMaterialBundle } from "./vectorsMaterial";
 import { loadVectorField, type VectorField } from "./vectorsSource";
-import { bindFields } from "@/lib/scene/stores/bindStore";
+import { bindFields } from "@/core/lib/scene/stores/bindStore";
 
 export const VectorLayerRenderer = ({ layerId }: { layerId: string }) => {
   const layer = useSceneStore((s) => s.sceneLayers.find((candidate) => candidate.id === layerId));

@@ -1,13 +1,13 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
-import { FancyInput } from "@/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { SidebarLayout } from "@/core/components/layout/SidebarLayout";
+import { FancyInput } from "@/core/components/ui/fancy-input";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/components/ui/sidepane";
 import {
   Popover,
   PopoverAnchor,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/core/components/ui/popover";
 import { useDebounce } from "@uidotdev/usehooks";
 import { ArrowDown, Home, Image } from "lucide-react";
 import * as React from "react";

@@ -1,15 +1,15 @@
 import React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
+import { Badge } from "@/core/components/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { LokClient } from "@/linkers";
+} from "@/core/components/ui/card";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { LokClient } from "@/core/linkers";
 import { Server, User } from "lucide-react";
 import { ListClientFragment } from "../../api/graphql";
 import { clientAppIdentifier } from "@/lok/lib/clientLabels";

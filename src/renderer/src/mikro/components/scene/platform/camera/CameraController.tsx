@@ -22,7 +22,7 @@ import {
   OrthographicCamera,
   PerspectiveCamera,
 } from "@react-three/drei";
-import { NAVIGATE_BUTTONS_3D } from "@/lib/scene/camera/navigateButtons";
+import { NAVIGATE_BUTTONS_3D } from "@/core/lib/scene/camera/navigateButtons";
 
 /**
  * Button maps per (display mode × interaction mode).

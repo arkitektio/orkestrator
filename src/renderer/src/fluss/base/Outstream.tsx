@@ -2,8 +2,8 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { portToLabel } from "@/lib/ports/utils";
+} from "@/core/components/ui/tooltip";
+import { portToLabel } from "@/core/lib/ports/utils";
 import { Handle, Position } from "@xyflow/react";
 import { useState } from "react";
 import { StreamPort } from "@/fluss/types";

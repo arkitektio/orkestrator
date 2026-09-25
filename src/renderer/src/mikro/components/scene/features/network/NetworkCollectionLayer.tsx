@@ -1,7 +1,7 @@
 import { useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
+import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
 
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 import { useModeStore } from "../../platform/stores/modeStore";

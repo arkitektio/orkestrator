@@ -1,7 +1,7 @@
-import { toWire } from "@/lib/structure";
-import { useDialog } from "@/app/dialog";
+import { toWire } from "@/core/lib/structure";
+import { useDialog } from "@/core/app/dialog";
 import { buildAssignInput } from "@/rekuest/assign";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/core/components/ui/badge";
 import { LightningBoltIcon } from "@radix-ui/react-icons";
 import React from "react";
 import { toast } from "sonner";
@@ -10,8 +10,8 @@ import { TaskEventFragment, ListShortcutFragment, PortKind } from "@/rekuest/api
 import { trackTask } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Zap } from "lucide-react";
-import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
-import type { SmartContextProps } from "@/providers/smart/extensions/types";
+import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
+import type { SmartContextProps } from "@/core/providers/smart/extensions/types";
 import { bindShortcutKey } from "./shortcutKeybinds";
 
 /** The Shortcuts row; the section is a descriptor in `./sections.tsx`. */

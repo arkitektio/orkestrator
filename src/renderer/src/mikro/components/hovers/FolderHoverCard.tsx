@@ -1,6 +1,6 @@
-import { Badge } from "@/components/ui/badge";
-import { MikroFile } from "@/linkers";
-import { Object } from "@/types";
+import { Badge } from "@/core/components/ui/badge";
+import { MikroFile } from "@/core/linkers";
+import { Object } from "@/core/types";
 import { formatDistanceToNow } from "date-fns";
 import { FileIcon } from "lucide-react";
 import { useGetFolderQuery } from "../../api/graphql";

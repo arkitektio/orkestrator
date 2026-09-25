@@ -7,8 +7,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+} from "@/core/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
 import {
   useLabelColorByOptionsLazyQuery,
   useLabelFilterByOptionsLazyQuery,

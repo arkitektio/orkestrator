@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { MikroSparseDataset } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { MikroSparseDataset } from "@/core/linkers";
 import {
   OffsetPaginationInput,
   SparseDatasetFilter,

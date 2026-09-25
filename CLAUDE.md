@@ -8,10 +8,10 @@ backend, opens a dialog, or adds an action to a model.
 Anything specific to one backend module — above all **GraphQL queries/mutations
 against a particular service** (mikro, rekuest, kraph, kabinet, alpaka,
 omero_ark, lok, …) — must be wrapped in that module's guard from
-`@/app/Arkitekt`: `Guard.Mikro`, `Guard.Rekuest`, `Guard.Kraph`, etc. (built via
+`@/core/app/Arkitekt`: `Guard.Mikro`, `Guard.Rekuest`, `Guard.Kraph`, etc. (built via
 `Arkitekt.buildServiceGuard("…")`).
 
-`buildGuard` (`src/renderer/src/lib/arkitekt/index.tsx`) renders `children` only
+`buildGuard` (`src/renderer/src/core/lib/arkitekt/index.tsx`) renders `children` only
 when the service state is `"ready"`; otherwise it renders the relevant fallback
 prop (`unavailable` / `unconfigured` / `configuring` / `challenging`, default
 `null`). Common form: `<Guard.Rekuest unavailable={<></>}>…</Guard.Rekuest>`.
@@ -29,9 +29,9 @@ until the service is ready.
 Examples in-tree:
 - Builtins the host mounts for a module (displays, hover cards, palette
   search, background components) are wrapped in that module's guard by the
-  host (`moduleGuard` in `app/modules/registries.tsx`); a module does not
+  host (`moduleGuard` in `core/app/modules/registries.tsx`); a module does not
   guard its own builtins.
-- `providers/smart/extensions/SectionHost.tsx` wraps each menu section's query
+- `core/providers/smart/extensions/SectionHost.tsx` wraps each menu section's query
   in the section's `Guard` (declared on its descriptor, see §4).
 - The dialog provider wraps every dialog in `<Guard.Rekuest>`.
 
@@ -40,13 +40,13 @@ Examples in-tree:
 Dialogs are a central **id registry**, not ad-hoc `<Dialog>` instances.
 
 - **Factory:** `createDialogProvider(registry)` in
-  `src/renderer/src/lib/generic/providers/DialogProvider.tsx` → returns
+  `src/renderer/src/core/lib/generic/providers/DialogProvider.tsx` → returns
   `{ DialogProvider, useDialog, registry }`.
-- **Registry:** `src/renderer/src/app/dialog.tsx` merges the host's own dialogs
+- **Registry:** `src/renderer/src/core/app/dialog.tsx` merges the host's own dialogs
   with every module's `<module>/dialogRegistry.ts` (a map of string id →
   component, e.g. `createentity: CreateEntityForm`), passed in as the
   module's `dialogs` builtin. It is type-safe: `openDialog`'s props are
-  inferred per id from the component (`app/modules/dialogTypes.ts`).
+  inferred per id from the component (`core/app/modules/dialogTypes.ts`).
 - **Use:**
   ```ts
   const { openDialog, openSheet, closeDialog } = useDialog();
@@ -62,7 +62,7 @@ Dialogs are a central **id registry**, not ad-hoc `<Dialog>` instances.
 
 **To add a dialog:** build the component (own props, `closeDialog` on success),
 add it to its module's `<module>/dialogRegistry.ts`, then open it by id from
-anywhere with `useDialog()`. Host-owned dialogs go in `app/dialog.tsx`.
+anywhere with `useDialog()`. Host-owned dialogs go in `core/app/dialog.tsx`.
 
 ## 3. Local actions are the primary way to add model-specific actions
 
@@ -70,7 +70,7 @@ Model-specific actions (open a dialog, navigate, run a mutation) should be
 **local actions** — not one-off buttons hand-placed in a card.
 
 - **Definition:** an `Action`
-  (`src/renderer/src/lib/localactions/LocalActionProvider.tsx`) has `title`,
+  (`src/renderer/src/core/lib/localactions/LocalActionProvider.tsx`) has `title`,
   `description`, `icon?`, `pinned?`, `conditions` (readonly), optional
   `collections`, and `execute(params)`. `conditions` decide when it applies, e.g.
   `{ type: "identifier", identifier: "@kraph/graph" }`, `{ type: "nopartner" }`,
@@ -82,7 +82,7 @@ Model-specific actions (open a dialog, navigate, run a mutation) should be
   `dialog.openDialog("createX", {...})`.
 - **Registration:** each module's action map (`<module>/actions.ts`,
   e.g. `MIKRO_ACTIONS`) is its `actions` builtin in `<module>/module.tsx`;
-  `app/localactions.tsx` merges every module's with the host's own via
+  `core/app/localactions.tsx` merges every module's with the host's own via
   `createLocalActionProvider(...)`. Example: `kraph/actions.tsx`
   `NewEntityAction` → `dialog.openDialog("createentity", { category: graph })`.
 
@@ -90,7 +90,7 @@ Model-specific actions (open a dialog, navigate, run a mutation) should be
 `useMatchingActionEntries`, so one registered action with the right `conditions`
 automatically appears in **both**:
 1. the **menu** — `SmartContext` → the `local.actions` section
-   (`providers/smart/extensions/local/sections.tsx`), shown on right-click /
+   (`core/providers/smart/extensions/local/sections.tsx`), shown on right-click /
    in the floating partner panel.
 2. the **button** — `ObjectButton` renders `SmartContext` in a popover.
 
@@ -103,14 +103,14 @@ local action. Module-specific `execute` bodies still follow convention #1.
 ## 4. The smart context menu is a section registry
 
 The right-click menu / `ObjectButton` popover (`SmartContext` in
-`providers/smart/extensions/context.tsx`) renders **section descriptors**, not
+`core/providers/smart/extensions/context.tsx`) renders **section descriptors**, not
 a hardcoded list. A `SmartContextSection` (`extensions/section.ts`) has `id`
 (`"<module>.<name>"`), `priority`, `tier` (`instant` = synchronous, painted in
 the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
 `useItems(ctx)` → `{ items, status }`, `itemKey`, `searchParts?`, `Row`.
 
 - Each module exports its descriptors from `<module>/smart/sections.tsx` and
-  passes them as its `sections` builtin; `app/smartcontext.tsx` merges them
+  passes them as its `sections` builtin; `core/app/smartcontext.tsx` merges them
   with the host's local-actions section.
 - `SectionHost` owns the guard, heading, empty rule, error line, stale-row
   narrowing and the status report; a section is just a query + a row.
@@ -126,50 +126,57 @@ the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
 - Per-row Radix roots are out: machinery that must wrap the whole menu
   (rekuest's single "Run on" picker, outside `<Command>`) is a module
   `menuWrappers` builtin, rendered by `SmartMenuWrappers`. Shortcut keys go
-  through `bindShortcutKey`. `providers/smart` and `command/Menu` import no
+  through `bindShortcutKey`. `core/providers/smart` and `core/command/Menu` import no
   module code.
 
 ## 5. Module boundaries
+
+The source root holds only the entry files (`main.tsx`, `App.tsx`,
+`index.css`), `core/` (the host: app shell, components, providers, lib,
+palette, settings, blok renderer, voice, datalayer, and the shared
+`core/types.tsx` / `core/linkers.tsx` / `core/constants.tsx`) and one
+folder per module.
+
 
 Every module (a backend service: mikro, kraph, rekuest, …) is one folder
 named after its identifier namespace (`@kraph/*` lives in `kraph/`, routes
 under `/kraph`). Its public face is four files; the host imports nothing
 else from it:
 
-- `manifest.ts` — **data only** (module spec v1, `lib/module-spec`):
+- `manifest.ts` — **data only** (module spec v1, `core/lib/module-spec`):
   namespace, fakts service, label, and its models (identifier, name, route,
   datum). The single source for a model's route and name.
 - `linkers.tsx` — its smart objects, built from the manifest's models
-  (`smartOf(manifest, "@kraph/graph")`). The root `@/linkers` is a barrel.
+  (`smartOf(manifest, "@kraph/graph")`). The root `@/core/linkers` is a barrel.
 - `service.ts` — its client binding (fakts requirement key + Apollo builder).
 - `module.tsx` — its **builtins**: `defineModule({ manifest, builtins })`
   with `page`, `nav`, `navLinks`, `displays`, `hovers`, `dialogs`, `actions`,
   `pageSections`, `sections`, `menuWrappers`, `profileSections`,
   `background`, `railIslands`, `search`, `paletteSources`,
   `paletteHitActions`, `optionSources`, `operations`, `taskHooks`,
-  `fileDownloaders` (see `lib/module-host/define.ts`).
+  `fileDownloaders` (see `core/lib/module-host/define.ts`).
 
-The host derives every registry from these (`app/modules/`): `index.ts`
-(manifests + services, data only — `app/Arkitekt` reads it), `install.tsx`
+The host derives every registry from these (`core/app/modules/`): `index.ts`
+(manifests + services, data only — `core/app/Arkitekt` reads it), `install.tsx`
 (registers every first-party `module.tsx` with the module host, imported once
 by `AppProvider`), and `registries.tsx` (a leaf: derives each registry from
-the module host, `lib/module-host/host.ts`). Rules:
+the module host, `core/lib/module-host/host.ts`). Rules:
 
 - **Modules register.** `registerModule(definition)` validates the manifest,
   refuses a taken namespace or a builtin id another module claims, and
   returns `unregister`. First-party modules go through `registerModules`,
   which throws on refusal. A module can arrive or leave at runtime.
 - **Registries are derived, never built at import.** A file a module
-  component imports for a hook (`app/dialog`, `app/localactions`, …) must
+  component imports for a hook (`core/app/dialog`, `core/app/localactions`, …) must
   never import module code or read a registry while being evaluated. Use
-  `derived` / `derivedRecord` (`lib/module-host/lazy.ts`): built on use,
+  `derived` / `derivedRecord` (`core/lib/module-host/lazy.ts`): built on use,
   rebuilt when the host's version moves. A component that LISTS modules
   (routes, palette, page sections) calls `useModuleHostVersion()` so it
-  re-renders when one arrives. `app/modules/modules.test.tsx` checks every
+  re-renders when one arrives. `core/app/modules/modules.test.tsx` checks every
   entry order.
 - **Only Structures cross.** `Structure = { identifier, id, descriptors?,
-  label? }`, compared by value (`lib/structure.ts`). A module never imports
-  another module's components or GraphQL; `app/moduleBoundaries.test.ts`
+  label? }`, compared by value (`core/lib/structure.ts`). A module never imports
+  another module's components or GraphQL; `core/app/moduleBoundaries.test.ts`
   fails on any edge not in `moduleBoundaries.allowlist.ts`, and that list only
   shrinks. Cross-module UI goes through host slots:
   - **Displays:** `<StructureDisplay identifier="@lok/user" id={sub}
@@ -188,15 +195,15 @@ the module host, `lib/module-host/host.ts`). Rules:
     display it.
   - **Pickers** over another module's models use
     `useStructureOptions("@lok/user")` / `useStructureOptionList(…)`
-    (`app/hooks/useStructureOptions`); the owner answers through an
+    (`core/app/hooks/useStructureOptions`); the owner answers through an
     `optionSources` builtin with its own client.
   - **Asking another module to do something** that returns data (create a
     room, …) is a named operation: its `operations` builtin
     (`"alpaka.startRoom"`), called with `useOperation(name)`.
-  - **The signed-in user** is the host's: `useSelf()` (`app/hooks/useSelf`),
+  - **The signed-in user** is the host's: `useSelf()` (`core/app/hooks/useSelf`),
     never a lok `me` query.
   - A module that genuinely builds on another service declares it
     (`manifest.requires.services`, e.g. fluss and kabinet on rekuest); that
     edge is then "kept" in the allowlist, never silently tolerated.
-- `providers/smart` is host library: it reads app registries through
-  `providers/smart/hostRegistries.ts`, never by importing `app/*`.
+- `core/providers/smart` is host library: it reads app registries through
+  `core/providers/smart/hostRegistries.ts`, never by importing `core/app/*`.

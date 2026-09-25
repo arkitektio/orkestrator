@@ -14,23 +14,23 @@ import {
 import { ChevronDown, Download, RefreshCw } from "lucide-react";
 import * as React from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { FancyInput } from "@/components/ui/fancy-input";
+} from "@/core/components/ui/dropdown-menu";
+import { FancyInput } from "@/core/components/ui/fancy-input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/core/components/ui/select";
 import {
   Table,
   TableBody,
@@ -38,7 +38,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/core/components/ui/table";
 import {
   ListStructuresQuery,
   Ordering,
@@ -47,7 +47,7 @@ import {
   StructureOrder,
   useListStructuresQuery,
 } from "@/kraph/api/graphql";
-import { KraphStructure } from "@/linkers";
+import { KraphStructure } from "@/core/linkers";
 import { ViewOptions } from "../types";
 
 const calculateColumns = (

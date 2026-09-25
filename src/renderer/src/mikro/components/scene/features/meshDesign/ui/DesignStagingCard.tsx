@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Eye, EyeOff, Plus, Redo2, Trash2, Undo2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { useDialog } from "@/app/dialog";
+import { Button } from "@/core/components/ui/button";
+import { Slider } from "@/core/components/ui/slider";
+import { useDialog } from "@/core/app/dialog";
 import { useModeStore } from "../../../platform/stores/modeStore";
 import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
 import { useBrushSkeletonStoreApi } from "../../annotations/enhancers/brushSkeletonStore";

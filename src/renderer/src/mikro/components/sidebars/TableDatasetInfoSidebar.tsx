@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { MikroCoordinateSystem, MikroTableDataset } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { MikroCoordinateSystem, MikroTableDataset } from "@/core/linkers";
 import {
   GetTableDatasetQuery,
   ColumnRole,

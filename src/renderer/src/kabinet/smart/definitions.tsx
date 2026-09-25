@@ -1,10 +1,10 @@
-import { useRekuest } from "@/app/Arkitekt";
+import { useRekuest } from "@/core/app/Arkitekt";
 import { ListDefinitionFragment } from "@/kabinet/api/graphql";
 import { useHashActionWithProgress } from "@/rekuest/hooks/useHashActionWithProgress";
 import { Download } from "lucide-react";
 import React from "react";
-import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
-import { KabinetDefinition } from "@/linkers";
+import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
+import { KabinetDefinition } from "@/core/linkers";
 
 /** The Installable row; the section is a descriptor in `./sections.tsx`. */
 

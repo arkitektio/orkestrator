@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { MikroCoordinateSystem } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { MikroCoordinateSystem } from "@/core/linkers";
 
 import { GetCoordinateSystemQuery } from "../../api/graphql";
 import {

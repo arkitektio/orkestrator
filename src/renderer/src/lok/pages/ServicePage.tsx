@@ -1,9 +1,9 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Card, CardContent } from "@/components/ui/card";
-import { DialogButton } from "@/components/ui/dialog-button";
-import { Image } from "@/components/ui/image";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { PageLayout } from "@/core/components/layout/PageLayout";
+import { Card, CardContent } from "@/core/components/ui/card";
+import { DialogButton } from "@/core/components/ui/dialog-button";
+import { Image } from "@/core/components/ui/image";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { PlusIcon } from "lucide-react";
 import { useGetServiceQuery } from "../api/graphql";

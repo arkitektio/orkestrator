@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { ElektroNeuronModel, ElektroSection } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { ElektroNeuronModel, ElektroSection } from "@/core/linkers";
 import { DetailCellFragment } from "../../api/graphql";
 import { rgbaToCss } from "../../lib/color";
 import SessionCard from "../cards/SessionCard";

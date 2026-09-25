@@ -2,8 +2,8 @@ import {
   HoverRow,
   HoverShell,
   HoverSkeleton,
-} from "@/components/hover/HoverShell";
-import { Object } from "@/types";
+} from "@/core/components/hover/HoverShell";
+import { Object } from "@/core/types";
 import { formatDistanceToNow } from "date-fns";
 import { useGetExperimentSceneQuery } from "../../api/graphql";
 

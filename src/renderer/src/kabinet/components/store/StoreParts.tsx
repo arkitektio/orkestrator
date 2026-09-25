@@ -1,18 +1,18 @@
-import { Guard } from "@/app/Arkitekt";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Guard } from "@/core/app/Arkitekt";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from "@/core/components/ui/dropdown-menu";
+import { cn } from "@/core/lib/utils";
 import { Cpu, Download, Sparkles, Zap } from "lucide-react";
 import React from "react";
 import { StoreFlavourFragment } from "../../api/graphql";
-import { PageSections } from "@/components/layout/PageSections";
+import { PageSections } from "@/core/components/layout/PageSections";
 import { selectorLabel, StoreApp } from "./storeModel";
 
 export const HardwareBadges = ({

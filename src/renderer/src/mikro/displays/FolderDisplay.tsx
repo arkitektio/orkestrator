@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { MikroFolder } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { MikroFolder } from "@/core/linkers";
 import { useGetFolderQuery } from "@/mikro/api/graphql";
 
 export const FolderDisplay = (props: DisplayWidgetProps) => {

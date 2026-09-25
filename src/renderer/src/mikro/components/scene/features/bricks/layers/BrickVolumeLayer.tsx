@@ -17,7 +17,7 @@ import {
   hoverProbeEnabled,
   type ProbeGateInput,
 } from "../../../platform/probe/probeGating";
-import { createRafCoalescer } from "@/lib/scene/perf/rafCoalesce";
+import { createRafCoalescer } from "@/core/lib/scene/perf/rafCoalesce";
 import {
   effectiveProbeLayerId,
   layerAnswersProbe,

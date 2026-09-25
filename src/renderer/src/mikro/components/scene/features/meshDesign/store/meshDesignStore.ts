@@ -1,5 +1,5 @@
 import { createStore } from "zustand/vanilla";
-import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
 import { eraseNearPolyline, mergeGeometry, type Vec3 } from "../ops/sculpt";
 import type { SculptField } from "../field/sculptField";
 

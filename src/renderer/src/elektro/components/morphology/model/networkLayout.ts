@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { DetailNeuronModelFragment } from "../../../api/graphql";
-import { toBase } from "@/lib/quantities";
+import { toBase } from "@/core/lib/quantities";
 import { Morphology, perpendicularTo, pointAlong } from "./buildMorphology";
 
 /**

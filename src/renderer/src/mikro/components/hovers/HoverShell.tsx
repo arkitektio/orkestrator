@@ -1,5 +1,5 @@
 import { WithMikroMediaUrl } from "@/mikro/datalayer/mikroAccess";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/lib/utils";
 import React from "react";
 
 // Re-export the generic hover chrome so the mikro hover cards can keep
@@ -9,7 +9,7 @@ export {
   HoverSectionLabel,
   HoverShell,
   HoverSkeleton,
-} from "@/components/hover/HoverShell";
+} from "@/core/components/hover/HoverShell";
 
 /**
  * The schema hands `SceneSnapshot.majorColor` over as RGB in 0..1 — the same

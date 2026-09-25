@@ -1,7 +1,7 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
 import { ChatLayout } from "@/alpaka/chat/chat-layout";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { AlpakaRoom } from "@/linkers";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { AlpakaRoom } from "@/core/linkers";
 import { RoomInfoSidebar } from "../sidebars/RoomInfoSidebar";
 import { useEffect } from "react";
 import {

@@ -1,7 +1,7 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/core/components/ui/card";
 import { ListMetricKindFragment } from "@/kraph/api/graphql";
-import { KraphMetricKind } from "@/linkers";
+import { KraphMetricKind } from "@/core/linkers";
 
 interface Props {
   item: ListMetricKindFragment;

@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/card";
-import { KraphTerm } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { KraphTerm } from "@/core/linkers";
 import React from "react";
 import TermList from "../components/lists/TermList";
 

@@ -10,7 +10,7 @@ import {
   RowAction,
   Segment,
   SegmentGroup,
-} from "@/lib/scene/layerui/cardControls";
+} from "@/core/lib/scene/layerui/cardControls";
 import { getLayerDtypeRange } from "../../platform/layerui/contrast-utils";
 import type { LayerState } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";

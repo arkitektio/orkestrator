@@ -1,10 +1,10 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Badge } from "@/components/ui/badge";
-import { PageAction } from "@/components/ui/page-action";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Badge } from "@/core/components/ui/badge";
+import { PageAction } from "@/core/components/ui/page-action";
 import { useMikroBigFileDownload } from "@/mikro/datalayer/useMikroBigFileDownload";
-import { MikroFile } from "@/linkers";
-import { useDownload } from "@/providers/download/DownloadProvider";
+import { MikroFile } from "@/core/linkers";
+import { useDownload } from "@/core/providers/download/DownloadProvider";
 import { DownloadIcon, FileIcon, Grid3x3 } from "lucide-react";
 import { useGetFileQuery } from "../api/graphql";
 import { MoveToFolderButton } from "../components/folder/MoveToFolderButton";

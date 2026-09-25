@@ -1,4 +1,4 @@
-import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
+import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
 import { SceneFragment } from "@/mikro/api/graphql";
 import { AttributeServiceProvider } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import {
@@ -15,8 +15,8 @@ import {
   createConfiguredSceneStores,
   openMissingSceneArrays,
 } from "../platform/sources/zarrSources";
-import { openSceneArrays } from "@/lib/zarr/openArray";
-import { assertWebGPUSupported } from "@/lib/scene/gpu/webgpuSupport";
+import { openSceneArrays } from "@/core/lib/zarr/openArray";
+import { assertWebGPUSupported } from "@/core/lib/scene/gpu/webgpuSupport";
 import {
   AnimationStoreContext,
   createAnimationStore,

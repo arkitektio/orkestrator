@@ -1,7 +1,7 @@
 
-import { createList } from "@/components/layout/createList";
+import { createList } from "@/core/components/layout/createList";
 import { useListNeuronModelsQuery } from "@/elektro/api/graphql";
-import { ElektroNeuronModel } from "@/linkers";
+import { ElektroNeuronModel } from "@/core/linkers";
 import NeuronModelCard from "../cards/NeuronModelCard";
 
 const TList = createList({

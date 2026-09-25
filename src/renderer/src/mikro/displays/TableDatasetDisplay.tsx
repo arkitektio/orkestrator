@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { MikroTableDataset } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { MikroTableDataset } from "@/core/linkers";
 import { useGetTableDatasetQuery } from "@/mikro/api/graphql";
 
 export const TableDatasetDisplay = (props: DisplayWidgetProps) => {

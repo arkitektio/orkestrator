@@ -1,4 +1,4 @@
-import { MikroCoordinateSystem } from "@/linkers";
+import { MikroCoordinateSystem } from "@/core/linkers";
 import { GetArrayDatasetQuery } from "../../api/graphql";
 import { useDatasetWorlds } from "../arraydataset/DatasetBackdrop";
 import {

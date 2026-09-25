@@ -1,6 +1,6 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { PageAction } from "@/components/ui/page-action";
-import { AlpakaRoom } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { PageAction } from "@/core/components/ui/page-action";
+import { AlpakaRoom } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import RoomList from "../components/lists/RoomList";

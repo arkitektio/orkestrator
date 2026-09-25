@@ -1,8 +1,8 @@
-import { useDialog } from "@/app/dialog";
-import { GraphQLCreatableSearchField } from "@/components/fields/GraphQLCreateableSearchField";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { useDialog } from "@/core/app/dialog";
+import { GraphQLCreatableSearchField } from "@/core/components/fields/GraphQLCreateableSearchField";
+import { Button } from "@/core/components/ui/button";
+import { DialogFooter } from "@/core/components/ui/dialog";
+import { Form } from "@/core/components/ui/form";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";

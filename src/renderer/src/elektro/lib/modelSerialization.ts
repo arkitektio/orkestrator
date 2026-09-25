@@ -15,7 +15,7 @@ import {
   SectionParamMapInput,
   SynapseKind,
 } from "../api/graphql";
-import { toBase } from "@/lib/quantities";
+import { toBase } from "@/core/lib/quantities";
 
 // The editor works on the `config` object read via `DetailNeuronModelFragment`.
 // These aliases pin the exact runtime shapes so the serializer can map them to

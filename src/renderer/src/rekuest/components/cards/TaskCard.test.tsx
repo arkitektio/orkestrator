@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/linkers", () => {
+vi.mock("@/core/linkers", () => {
   const Link = ({ children }: { children: React.ReactNode }) => <a>{children}</a>;
   return {
     RekuestTask: {
@@ -12,7 +12,7 @@ vi.mock("@/linkers", () => {
     RekuestAgent: { DetailLink: Link },
   };
 });
-vi.mock("@/components/ui/timestamp", () => ({
+vi.mock("@/core/components/ui/timestamp", () => ({
   default: () => <span>some time ago</span>,
 }));
 

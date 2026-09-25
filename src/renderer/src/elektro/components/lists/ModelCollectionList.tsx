@@ -1,7 +1,7 @@
 
-import { createList } from "@/components/layout/createList";
+import { createList } from "@/core/components/layout/createList";
 import { useListModelCollectionsQuery } from "@/elektro/api/graphql";
-import { ElektroModelCollection } from "@/linkers";
+import { ElektroModelCollection } from "@/core/linkers";
 import ModelCollectionCard from "../cards/ModelCollectionCard";
 
 const TList = createList({

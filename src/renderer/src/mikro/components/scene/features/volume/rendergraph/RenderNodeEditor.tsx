@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
+import { Button } from "@/core/components/ui/button";
+import { Input } from "@/core/components/ui/input";
+import { Switch } from "@/core/components/ui/switch";
+import { Slider } from "@/core/components/ui/slider";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/core/components/ui/select";
 import {
   Command,
   CommandEmpty,
@@ -17,13 +17,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from "@/core/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { SwatchColorPicker } from "@/components/color/SwatchColorPicker";
+} from "@/core/components/ui/popover";
+import { SwatchColorPicker } from "@/core/components/color/SwatchColorPicker";
 import {
   Blending,
   ColorMap,

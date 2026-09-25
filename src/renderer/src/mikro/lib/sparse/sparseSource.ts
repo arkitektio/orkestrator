@@ -16,8 +16,8 @@ import {
   type SparseColouringSourceFragment,
   type SparseColouringSourceQuery,
 } from "@/mikro/api/graphql";
-import type { MikroClient } from "@/lib/zarr/store/types";
-import { LruMap } from "@/lib/generic/lruMap";
+import type { MikroClient } from "@/core/lib/zarr/store/types";
+import { LruMap } from "@/core/lib/generic/lruMap";
 import { openSparseLayout, pickLayout, readSparseSlice, sliceAsValues } from "./sparseSlice";
 
 const sources = new LruMap<Promise<SparseColouringSourceFragment>>(16);

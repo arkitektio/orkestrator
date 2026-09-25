@@ -40,9 +40,9 @@ import {
   UnblockMutation,
   UnblockMutationVariables
 } from '@/rekuest/api/graphql'
-import type { Arkitekt } from '@/app/Arkitekt'
-import { buildDeleteAction } from '@/lib/localactions/builders/deleteAction'
-import { Action } from '@/lib/localactions/LocalActionProvider'
+import type { Arkitekt } from '@/core/app/Arkitekt'
+import { buildDeleteAction } from '@/core/lib/localactions/builders/deleteAction'
+import { Action } from '@/core/lib/localactions/LocalActionProvider'
 import { Ban, Bookmark, Eraser, Hash, LogOut, Pencil, Pin, Play, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 

@@ -1,7 +1,7 @@
-import { ErrorPage } from "@/app/components/fallbacks/ErrorPage";
-import { LoadingPage } from "@/app/components/fallbacks/LoadingPage";
-import type { DetailVariables, HookFunction } from "@/app/routes/DetailQueryRoute";
-import { useDebugReport } from "@/providers/debug/useDebugReport";
+import { ErrorPage } from "@/core/app/components/fallbacks/ErrorPage";
+import { LoadingPage } from "@/core/app/components/fallbacks/LoadingPage";
+import type { DetailVariables, HookFunction } from "@/core/app/routes/DetailQueryRoute";
+import { useDebugReport } from "@/core/providers/debug/useDebugReport";
 import { ApolloQueryResult, OperationVariables, QueryHookOptions } from "@apollo/client";
 import React from "react";
 import { useParams } from "react-router-dom";

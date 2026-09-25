@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { MikroTableDataset } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { MikroTableDataset } from "@/core/linkers";
 import {
   OffsetPaginationInput,
   TableDatasetFilter,

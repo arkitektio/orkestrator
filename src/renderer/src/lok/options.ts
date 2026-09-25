@@ -1,4 +1,4 @@
-import type { OptionSource } from "@/lib/module-host/options";
+import type { OptionSource } from "@/core/lib/module-host/options";
 import {
   AppsDocument,
   type AppsQuery,

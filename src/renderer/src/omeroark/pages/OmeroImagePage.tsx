@@ -1,13 +1,13 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { PageLayout } from "@/core/components/layout/PageLayout";
 import {
   DetailPane,
   DetailPaneHeader,
   DetailPaneTitle,
-} from "@/components/ui/pane";
-import { OmeroArkImage } from "@/linkers";
-import { SlotSections } from "@/components/layout/PageSections";
+} from "@/core/components/ui/pane";
+import { OmeroArkImage } from "@/core/linkers";
+import { SlotSections } from "@/core/components/layout/PageSections";
 import { useGetOmeroImageQuery } from "../api/graphql";
 import AuthorizedImage from "../components/Thumbnail";
 

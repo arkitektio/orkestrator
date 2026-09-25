@@ -1,4 +1,4 @@
-import { ScaleBarView } from "@/lib/scene/chrome/ScaleBar";
+import { ScaleBarView } from "@/core/lib/scene/chrome/ScaleBar";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { isPhysicalUnit, unitLabel as resolveUnitLabel } from "../../platform/coords/sceneUnits";

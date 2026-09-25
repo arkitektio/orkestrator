@@ -3,15 +3,15 @@ import {
   CommandGroup,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { useDebounce } from "@/hooks/use-debounce";
+} from "@/core/components/ui/command";
+import { useDebounce } from "@/core/hooks/use-debounce";
 import {
   TermKind,
   useSearchAssignableTermsQuery,
   type AssignableTermFragment,
 } from "@/kraph/api/graphql";
 import { termTint } from "@/kraph/lib/terms";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/lib/utils";
 // Raw, not `CommandInput`: that one wraps itself in a padded group with its
 // own border, a second search bar inside a panel that already is one.
 import { Command as CommandPrimitive } from "cmdk";

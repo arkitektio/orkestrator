@@ -1,25 +1,25 @@
-import { CreatableListSearchField } from "@/components/fields/CreatableListSearchField";
-import { useDialog } from "@/app/dialog";
-import { GraphQLCreatableSearchField } from "@/components/fields/GraphQLCreateableSearchField";
-import { ParagraphField } from "@/components/fields/ParagraphField";
-import { SearchOptions } from "@/components/fields/SearchField";
-import { StringField } from "@/components/fields/StringField";
-import { Button } from "@/components/ui/button";
+import { CreatableListSearchField } from "@/core/components/fields/CreatableListSearchField";
+import { useDialog } from "@/core/app/dialog";
+import { GraphQLCreatableSearchField } from "@/core/components/fields/GraphQLCreateableSearchField";
+import { ParagraphField } from "@/core/components/fields/ParagraphField";
+import { SearchOptions } from "@/core/components/fields/SearchField";
+import { StringField } from "@/core/components/fields/StringField";
+import { Button } from "@/core/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Form } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
+} from "@/core/components/ui/collapsible";
+import { Form } from "@/core/components/ui/form";
+import { Separator } from "@/core/components/ui/separator";
 import {
   CreateStructureRelationCategoryMutationVariables,
   useCreateInlineGraphMutation,
   useCreateStructureRelationCategoryMutation,
   useSearchGraphsLazyQuery,
 } from "@/kraph/api/graphql";
-import { smartRegistry } from "@/providers/smart/registry";
-import { Structure } from "@/types";
+import { smartRegistry } from "@/core/providers/smart/registry";
+import { Structure } from "@/core/types";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 

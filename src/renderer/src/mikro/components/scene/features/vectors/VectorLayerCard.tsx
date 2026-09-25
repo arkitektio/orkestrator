@@ -17,8 +17,8 @@
  * Write cadence is the mesh card's: fold into the store immediately so the
  * canvas previews, mutate on commit.
  */
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { Button } from "@/core/components/ui/button";
+import { Slider } from "@/core/components/ui/slider";
 import { Eye, EyeOff, Trash2, Wind } from "lucide-react";
 import { memo } from "react";
 import {
@@ -33,8 +33,8 @@ import {
   CardSection,
   OpacityRow,
   RowLabel,
-} from "@/lib/scene/layerui/cardControls";
-import { ColormapSelect } from "@/lib/scene/layerui/ColormapSelect";
+} from "@/core/lib/scene/layerui/cardControls";
+import { ColormapSelect } from "@/core/lib/scene/layerui/ColormapSelect";
 import { CONTINUOUS_COLORMAP_CHOICES } from "../../platform/layerui/colormap-utils";
 import type { VectorLayerFragment } from "../../platform/model/layerGuards";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";

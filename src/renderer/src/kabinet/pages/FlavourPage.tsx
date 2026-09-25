@@ -1,8 +1,8 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Timestamp from "@/components/ui/timestamp";
-import { KabinetApp, KabinetFlavour, KabinetRelease } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Badge } from "@/core/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
+import Timestamp from "@/core/components/ui/timestamp";
+import { KabinetApp, KabinetFlavour, KabinetRelease } from "@/core/linkers";
 import { Boxes, Container, GitBranch, KeyRound, Layers, Server } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
 import { PodStatus, useGetFlavourQuery } from "../api/graphql";

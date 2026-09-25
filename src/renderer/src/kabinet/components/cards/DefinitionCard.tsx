@@ -4,9 +4,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { ActionDescription } from "@/lib/ports/ActionDescription";
-import { KabinetDefinition } from "@/linkers";
+} from "@/core/components/ui/card";
+import { ActionDescription } from "@/core/lib/ports/ActionDescription";
+import { KabinetDefinition } from "@/core/linkers";
 import { ListDefinitionFragment } from "../../api/graphql";
 
 interface Props {

@@ -1,5 +1,5 @@
 import { createStore } from "zustand/vanilla";
-import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
 import type { CoordinateSystemLike } from "../coords/timeAxis";
 import type { LayerState, PersistedLayer } from "../model/layerModel";
 import { rawLayerOf, type ExperimentLayerFragment, type LayerFragments } from "./layerFragments";

@@ -1,6 +1,6 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/app/Arkitekt";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
+import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { Guard } from "@/core/app/Arkitekt";
+import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import { Route, Routes } from "react-router-dom";
 import { ConnectedGuard } from "./ConnectedGuard";
 import DatasetPage from "./pages/DatasetPage";
@@ -10,7 +10,7 @@ import OmeroImagePage from "./pages/OmeroImagePage";
 import ProjectPage from "./pages/ProjectPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import StandardPane from "./panes/StandardPane";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/app/components/fallbacks/NotFound";
 
 
 export const OmeroArkModule = () => {

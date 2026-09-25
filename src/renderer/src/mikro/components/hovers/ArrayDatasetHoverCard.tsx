@@ -1,6 +1,6 @@
-import { Badge } from "@/components/ui/badge";
-import { MikroScene } from "@/linkers";
-import { Object } from "@/types";
+import { Badge } from "@/core/components/ui/badge";
+import { MikroScene } from "@/core/linkers";
+import { Object } from "@/core/types";
 import { formatDistanceToNow } from "date-fns";
 import { Clapperboard, Grid3x3 } from "lucide-react";
 import { useGetListArrayDatasetQuery } from "../../api/graphql";

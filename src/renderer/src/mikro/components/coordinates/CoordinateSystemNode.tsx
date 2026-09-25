@@ -1,4 +1,4 @@
-import { MikroCoordinateSystem } from "@/linkers";
+import { MikroCoordinateSystem } from "@/core/linkers";
 import { NodeProps } from "@xyflow/react";
 import { Boxes, Globe } from "lucide-react";
 import CircleNode from "./CircleNode";

@@ -1,9 +1,9 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { LovekitSoloBroadcast } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { LovekitSoloBroadcast } from "@/core/linkers";
 import { useGetSoloBroadcastQuery } from "../api/graphql";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/lib/utils";
 import { StreamJoiner } from "../components/StreamJoiner";
 
 export default asDetailQueryRoute(

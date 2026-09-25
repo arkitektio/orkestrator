@@ -1,5 +1,5 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { cn } from "@/core/lib/utils";
 import { datasetStoredBytes, formatBytes } from "../../specs";
 
 type SizedLevel = {

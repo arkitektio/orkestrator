@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { RekuestAgent } from "@/linkers";
-import type { Object } from "@/types";
+import { Button } from "@/core/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { RekuestAgent } from "@/core/linkers";
+import type { Object } from "@/core/types";
 import { buildAssignInput } from "../assign";
 import {
   DemandKind,

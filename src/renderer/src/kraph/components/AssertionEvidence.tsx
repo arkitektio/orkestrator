@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/core/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
 import { FlaskConical } from "lucide-react";
 import { useMetricsForAssertionLazyQuery } from "../api/graphql";
 

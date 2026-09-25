@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/card";
-import { useActionDescription } from "@/lib/ports/ActionDescription";
+import { Card } from "@/core/components/ui/card";
+import { useActionDescription } from "@/core/lib/ports/ActionDescription";
 import { Args } from "@/fluss/base/Args";
 import { Constants } from "@/fluss/base/Constants";
 import { InStream } from "@/fluss/base/Instream";

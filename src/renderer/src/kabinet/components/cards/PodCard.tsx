@@ -5,8 +5,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { KabinetPod } from "@/linkers";
+} from "@/core/components/ui/card";
+import { KabinetPod } from "@/core/linkers";
 import { ListPodFragment } from "../../api/graphql";
 
 interface Props {

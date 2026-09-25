@@ -1,4 +1,4 @@
-import { ScaleBarView } from "@/lib/scene/chrome/ScaleBar";
+import { ScaleBarView } from "@/core/lib/scene/chrome/ScaleBar";
 import { useMorphologyStore } from "../stores/morphologyStore";
 
 /** The shared ruler, fed by the canvas's µm-per-pixel readout. */

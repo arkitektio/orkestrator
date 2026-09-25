@@ -1,13 +1,13 @@
-import { Guard } from "@/app/Arkitekt";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Guard } from "@/core/app/Arkitekt";
+import { Button } from "@/core/components/ui/button";
+import { Input } from "@/core/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/core/components/ui/select";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { useListMechanismsQuery } from "../../api/graphql";

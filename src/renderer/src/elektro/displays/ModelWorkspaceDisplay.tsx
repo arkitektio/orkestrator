@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
 import { useDetailModelWorkspaceQuery } from "../api/graphql";
 
 export const ModelWorkspaceDisplay = (props: DisplayWidgetProps) => {

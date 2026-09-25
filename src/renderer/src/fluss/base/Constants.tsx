@@ -1,14 +1,14 @@
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { notEmpty } from "@/lib/utils";
+import { Button } from "@/core/components/ui/button";
+import { Form } from "@/core/components/ui/form";
+import { notEmpty } from "@/core/lib/utils";
 import { FlussArgPortFragment } from "@/fluss/api/graphql";
 import { AssignWidgetFragment } from "@/rekuest/api/graphql";
-import { usePortForm } from "@/lib/ports/usePortForm";
-import { EffectWrapper } from "@/lib/ports/EffectWrapper";
-import { ArgPort as RekuestArgPort } from "@/lib/ports/types";
-import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
-import { portHash, submittedDataToRekuestFormat } from "@/lib/ports/utils";
-import { useLatestRef } from "@/hooks/useLatestRef";
+import { usePortForm } from "@/core/lib/ports/usePortForm";
+import { EffectWrapper } from "@/core/lib/ports/EffectWrapper";
+import { ArgPort as RekuestArgPort } from "@/core/lib/ports/types";
+import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
+import { portHash, submittedDataToRekuestFormat } from "@/core/lib/ports/utils";
+import { useLatestRef } from "@/core/hooks/useLatestRef";
 
 import { ChevronUpIcon, DoubleArrowUpIcon } from "@radix-ui/react-icons";
 import { useEffect, useMemo } from "react";
@@ -42,10 +42,10 @@ export const ArgsContainer = ({
   path,
 }: {
   ports: FlussArgPortFragment[];
-  options?: import("@/lib/ports/types").PortOptions;
+  options?: import("@/core/lib/ports/types").PortOptions;
   bound?: string;
   path: string[];
-  registry: import("@/lib/ports/types").WidgetRegistryType;
+  registry: import("@/core/lib/ports/types").WidgetRegistryType;
   onToArg?: (port: FlussArgPortFragment) => void;
   onToGlobal?: (port: FlussArgPortFragment, key?: string | undefined) => void;
 }) => {

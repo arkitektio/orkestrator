@@ -6,7 +6,7 @@ import {
   type KnowledgeStructureFragment,
 } from "@/kraph/api/graphql";
 import { isNotKnownYet } from "@/kraph/lib/knowledgeErrors";
-import type { Identifier, Object } from "@/types";
+import type { Identifier, Object } from "@/core/types";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 

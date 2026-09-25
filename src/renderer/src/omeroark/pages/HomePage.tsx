@@ -1,8 +1,8 @@
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { DialogButton } from "@/components/ui/dialog-button";
-import { OmeroArkProject } from "@/linkers";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { PageLayout } from "@/core/components/layout/PageLayout";
+import { HelpSidebar } from "@/core/components/sidebars/help";
+import { DialogButton } from "@/core/components/ui/dialog-button";
+import { OmeroArkProject } from "@/core/linkers";
 import { PlusIcon } from "@radix-ui/react-icons";
 import { useNavigate } from "react-router-dom";
 import ProjectList from "../components/lists/ProjectList";

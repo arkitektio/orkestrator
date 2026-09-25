@@ -1,12 +1,12 @@
-import { PageSections } from "@/components/layout/PageSections";
-import { useDialog } from "@/app/dialog";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { DialogButton } from "@/components/ui/dialogbutton";
-import { DragZone } from "@/components/upload/drag";
+import { PageSections } from "@/core/components/layout/PageSections";
+import { useDialog } from "@/core/app/dialog";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { PageAction } from "@/core/components/ui/page-action";
+import { DialogButton } from "@/core/components/ui/dialogbutton";
+import { DragZone } from "@/core/components/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
-import { KraphEntityCategory } from "@/linkers";
+import { KraphEntityCategory } from "@/core/linkers";
 import { Plus, Settings2 } from "lucide-react";
 import { useNavigate as useNavigateRouter } from "react-router-dom";
 import {

@@ -1,7 +1,7 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlpakaCollection } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { AlpakaCollection } from "@/core/linkers";
 import { Library } from "lucide-react";
 import { ListChromaCollectionFragment } from "../../api/graphql";
 

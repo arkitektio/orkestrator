@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import { useAssertInformsMutation } from "@/kraph/api/graphql";
 import { AssignedEntity, EntityAssigner } from "@/kraph/components/EntityAssigner";
-import type { Identifier, Object } from "@/types";
+import type { Identifier, Object } from "@/core/types";
 import { useState } from "react";
 import { toast } from "sonner";
 

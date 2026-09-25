@@ -1,8 +1,8 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { ListRender } from "@/components/layout/ListRender";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { useActionDescription } from "@/lib/ports/ActionDescription";
-import { KabinetDefinition } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { useActionDescription } from "@/core/lib/ports/ActionDescription";
+import { KabinetDefinition } from "@/core/linkers";
 import { useCallback } from "react";
 import { useGetDefinitionQuery } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";

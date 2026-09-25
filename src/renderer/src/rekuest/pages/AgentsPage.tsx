@@ -1,4 +1,4 @@
-import { RekuestAgent } from "@/linkers";
+import { RekuestAgent } from "@/core/linkers";
 import AgentList from "@/rekuest/components/lists/AgentList";
 const Page = () => {
   return (

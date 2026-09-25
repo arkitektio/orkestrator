@@ -1,5 +1,5 @@
-import { buildDeleteAction } from "@/lib/localactions/builders/deleteAction";
-import { Action } from "@/lib/localactions/LocalActionProvider";
+import { buildDeleteAction } from "@/core/lib/localactions/builders/deleteAction";
+import { Action } from "@/core/lib/localactions/LocalActionProvider";
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
 import {
   DeleteEntityCategoryDocument,
@@ -23,8 +23,8 @@ import {
   type GetStructureQuery,
   type GetStructureQueryVariables,
 } from "./api/graphql";
-import { smartRegistry } from "@/providers/smart/registry";
-import type { Structure } from "@/types";
+import { smartRegistry } from "@/core/providers/smart/registry";
+import type { Structure } from "@/core/types";
 import { Equal, Link2, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
 import { toast } from "sonner";
 import { executeSameness, explainSameness, planSameness } from "./lib/sameness";

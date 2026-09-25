@@ -24,9 +24,9 @@ import {
   prefetchShardIndex,
   readArrayMetadataCached,
   type ArrayMetadata,
-} from "@/lib/zarr/runner/index";
-import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
-import { INTERACTIVE_FETCH_PRIORITY } from "@/lib/zarr/pool/types";
+} from "@/core/lib/zarr/runner/index";
+import { workerPool } from "@/core/lib/zarr/pool/sharedWorkerPool";
+import { INTERACTIVE_FETCH_PRIORITY } from "@/core/lib/zarr/pool/types";
 import { getInitialVolumeTextureBudgetBytes } from "../../../platform/quality/lodPlanning";
 import {
   dtypeRangeIsWeakProxy,
@@ -42,7 +42,7 @@ import {
   type EmptyValueBits,
 } from "../octree/brickEncoding";
 import { ChunkRefRegistry } from "../octree/chunkRefRegistry";
-import { ByteBudgetChunkCache } from "@/lib/zarr/caches/byteBudgetChunkCache";
+import { ByteBudgetChunkCache } from "@/core/lib/zarr/caches/byteBudgetChunkCache";
 import {
   BrickPoolState,
   selectTrimCandidates,

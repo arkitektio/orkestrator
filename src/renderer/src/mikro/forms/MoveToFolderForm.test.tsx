@@ -16,12 +16,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const closeDialog = vi.fn();
-vi.mock("@/app/dialog", () => ({
+vi.mock("@/core/app/dialog", () => ({
   useDialog: () => ({ closeDialog, openDialog: vi.fn(), openSheet: vi.fn() }),
 }));
 
 let client: ApolloClient<unknown>;
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/app/Arkitekt", () => ({
   useMikro: () => client,
 }));
 
@@ -31,7 +31,7 @@ import {
   Ordering,
   PutFilesInFolderDocument,
 } from "@/mikro/api/graphql";
-import { Dialog } from "@/components/ui/dialog";
+import { Dialog } from "@/core/components/ui/dialog";
 import { MoveToFolderForm } from "./MoveToFolderForm";
 
 const folder = (id: string, name: string) => ({

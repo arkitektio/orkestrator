@@ -1,4 +1,4 @@
-import { ListRender } from "@/components/layout/ListRender";
+import { ListRender } from "@/core/components/layout/ListRender";
 import { ProvenanceEntryFragment } from "@/mikro/api/graphql";
 import HistoryCard from "../cards/HistoryCard";
 

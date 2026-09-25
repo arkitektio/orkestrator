@@ -1,5 +1,5 @@
-import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/core/components/ui/context-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
 import { Constants } from "@/fluss/base/Constants";
 import { InStream } from "@/fluss/base/Instream";
 import { OutStream } from "@/fluss/base/Outstream";

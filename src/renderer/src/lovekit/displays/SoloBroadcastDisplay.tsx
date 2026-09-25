@@ -1,6 +1,6 @@
-import { useLivekit } from "@/app/Arkitekt";
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { cn } from "@/lib/utils";
+import { useLivekit } from "@/core/app/Arkitekt";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { cn } from "@/core/lib/utils";
 import {
   SoloBroadcastFragment,
   useGetSoloBroadcastQuery,

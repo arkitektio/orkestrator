@@ -1,4 +1,4 @@
-import { ElektroCell, ElektroNeuronModel } from "@/linkers";
+import { ElektroCell, ElektroNeuronModel } from "@/core/linkers";
 
 /**
  * The cell and section pages' title: the model's own overlay's place and

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { ParquetQueryEngine } from "@/lib/parquet/parquetEngine";
+import type { ParquetQueryEngine } from "@/core/lib/parquet/parquetEngine";
 import { ColumnControl, ColumnRole } from "@/mikro/api/graphql";
 
 import {

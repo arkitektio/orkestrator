@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { RekuestBlok } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { RekuestBlok } from "@/core/linkers";
 import {
   AgentFilter,
   OffsetPaginationInput,

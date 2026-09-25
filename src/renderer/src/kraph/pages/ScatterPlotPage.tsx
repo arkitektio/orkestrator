@@ -1,23 +1,23 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Button } from "@/components/ui/button";
-import { PageAction } from "@/components/ui/page-action";
-import { KraphGraphQuery, KraphScatterPlot } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Button } from "@/core/components/ui/button";
+import { PageAction } from "@/core/components/ui/page-action";
+import { KraphGraphQuery, KraphScatterPlot } from "@/core/linkers";
 import {
   useCreateScatterPlotMutation,
   useDeleteScatterPlotMutation,
   useGetScatterPlotQuery,
 } from "../api/graphql";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/core/components/ui/input";
+import { Label } from "@/core/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/core/components/ui/select";
+import { Textarea } from "@/core/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import * as React from "react";
 import { useNavigate } from "react-router-dom";

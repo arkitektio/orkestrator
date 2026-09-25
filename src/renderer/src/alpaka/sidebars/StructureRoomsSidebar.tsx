@@ -1,19 +1,19 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/core/components/ui/dropdown-menu";
 import {
   Empty,
   EmptyContent,
   EmptyDescription,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { Guard } from "@/app/Arkitekt";
-import { Identifier, Object } from "@/types";
+} from "@/core/components/ui/empty";
+import { Guard } from "@/core/app/Arkitekt";
+import { Identifier, Object } from "@/core/types";
 import { Check, Menu, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {

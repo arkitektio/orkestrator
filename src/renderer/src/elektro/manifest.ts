@@ -1,4 +1,4 @@
-import type { ModuleManifest } from "@/lib/module-spec";
+import type { ModuleManifest } from "@/core/lib/module-spec";
 
 /**
  * Elektro: what this module is, as data (module spec v1). The host reads

@@ -1,4 +1,4 @@
-import type { Object } from "@/types";
+import type { Object } from "@/core/types";
 import { useEffect, useRef } from "react";
 import { useRunForTaskQuery } from "../api/graphql";
 import { TrackFlow } from "../track/TrackFlow";

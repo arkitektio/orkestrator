@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { KabinetApp } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
+import { KabinetApp } from "@/core/linkers";
 import { Boxes, KeyRound, Layers, Tag } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
 import { useGetAppQuery, useListAppsQuery } from "../api/graphql";

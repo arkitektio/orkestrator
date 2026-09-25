@@ -1,10 +1,10 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { portToLabel } from "@/lib/ports/utils";
+} from "@/core/components/ui/tooltip";
+import { portToLabel } from "@/core/lib/ports/utils";
 import { PortKind } from "../api/graphql";
 import { StreamPort } from "@/fluss/types";
 

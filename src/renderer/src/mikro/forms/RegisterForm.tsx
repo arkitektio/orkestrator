@@ -1,12 +1,12 @@
-import { Guard } from "@/app/Arkitekt";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Guard } from "@/core/app/Arkitekt";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
 import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from "@/core/components/ui/dialog";
+import { Input } from "@/core/components/ui/input";
 import { useState } from "react";
 import {
   CoordinateSystemFragment,

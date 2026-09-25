@@ -1,18 +1,18 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/core/components/ui/accordion";
+import { Button } from "@/core/components/ui/button";
+import { Card } from "@/core/components/ui/card";
+import { Input } from "@/core/components/ui/input";
+import { Label } from "@/core/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/components/ui/select";
+import { Slider } from "@/core/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
 import { Check, Copy, GitBranch, HelpCircle, Pencil, Save, Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
-import { useDialog } from "@/app/dialog";
-import { toBase } from "@/lib/quantities";
+import { useDialog } from "@/core/app/dialog";
+import { toBase } from "@/core/lib/quantities";
 import { DetailNeuronModelFragment, SectionFragment } from "../api/graphql";
 import {
   EditableCompartment,
@@ -43,7 +43,7 @@ import { compartmentColors, sectionColor, sectionColors } from "./morphology/mod
 import { buildNetworkLayout } from "./morphology/model/networkLayout";
 import { createMorphologyStore, MorphologyStoreContext } from "./morphology/stores/morphologyStore";
 import { useWebGPUGate } from "./morphology/useWebGPUGate";
-import { QuantityInput } from "@/components/fields/QuantityInput";
+import { QuantityInput } from "@/core/components/fields/QuantityInput";
 
 const getParentInfo = (section: SectionFragment) => {
   if (!section.parent) return null;

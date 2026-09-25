@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { channelColorsFor } from "../../platform/stores/channelColors";
 import { coloursChannels } from "../../platform/model/channelColor";
-import { bindFields } from "@/lib/scene/stores/bindStore";
+import { bindFields } from "@/core/lib/scene/stores/bindStore";
 import { pixelAtTime } from "../../platform/camera/rangeToCamera";
 import { sampleAt } from "../../platform/probe/sampleAt";
 import {

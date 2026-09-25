@@ -1,7 +1,7 @@
 import type { ApolloClient, ApolloError, NormalizedCache } from "@apollo/client";
 import { useEffect, useState } from "react";
-import { useElektro } from "@/app/Arkitekt";
-import { ElektroArrayDataset } from "@/linkers";
+import { useElektro } from "@/core/app/Arkitekt";
+import { ElektroArrayDataset } from "@/core/linkers";
 import { useGetExperimentSceneQuery } from "../../api/graphql";
 import { findOrCreateExperimentForWorld } from "../../lib/openOnTimeline";
 import { ExperimentScene } from "../experiment/ExperimentScene";

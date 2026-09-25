@@ -1,7 +1,7 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardTitle } from "@/components/ui/card";
-import { MikroAnnotation, MikroScene } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { Card, CardTitle } from "@/core/components/ui/card";
+import { MikroAnnotation, MikroScene } from "@/core/linkers";
 import { Clapperboard } from "lucide-react";
 
 import { ListAnnotationFragment } from "../../api/graphql";

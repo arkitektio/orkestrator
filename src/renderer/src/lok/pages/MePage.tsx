@@ -1,5 +1,5 @@
-import { LoadingPage } from "@/app/components/fallbacks/LoadingPage";
-import { LokUser } from "@/linkers";
+import { LoadingPage } from "@/core/app/components/fallbacks/LoadingPage";
+import { LokUser } from "@/core/linkers";
 import { Navigate } from "react-router-dom";
 import { useMyContextQuery } from "../api/graphql";
 

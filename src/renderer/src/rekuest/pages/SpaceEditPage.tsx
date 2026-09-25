@@ -1,5 +1,5 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { RekuestSpace } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { RekuestSpace } from "@/core/linkers";
 import { useSpaceQuery } from "@/rekuest/api/graphql";
 import { SpaceEditScene, SpaceEditSceneProvider } from "../space-scene";
 

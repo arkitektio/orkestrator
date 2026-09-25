@@ -1,8 +1,8 @@
-import { QuietPage } from "@/app/components/fallbacks/QuietPage";
-import { ShellSignInNotice } from "@/app/components/shell/ShellSignInNotice";
-import { ConnectingFallback } from "@/app/components/fallbacks/Connecting";
-import { Guard } from "@/app/Arkitekt";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
+import { QuietPage } from "@/core/app/components/fallbacks/QuietPage";
+import { ShellSignInNotice } from "@/core/app/components/shell/ShellSignInNotice";
+import { ConnectingFallback } from "@/core/app/components/fallbacks/Connecting";
+import { Guard } from "@/core/app/Arkitekt";
+import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppPage from "./pages/AppPage";
@@ -26,7 +26,7 @@ import UserPage from "./pages/UserPage";
 import UsersPage from "./pages/UsersPage";
 import StandardPane from "./panes/StandardPane";
 import TeamHomePage from "./pages/TeamHomePage";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/app/components/fallbacks/NotFound";
 interface Props { }
 
 export const LokNextModule: React.FC<Props> = () => {

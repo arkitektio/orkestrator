@@ -1,6 +1,6 @@
-import { Card } from "@/components/ui/card";
-import { DialogButton } from "@/components/ui/dialog-button";
-import { KraphRelationCategory } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { DialogButton } from "@/core/components/ui/dialog-button";
+import { KraphRelationCategory } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import RelationCategoryList from "../components/lists/RelationCategoryList";

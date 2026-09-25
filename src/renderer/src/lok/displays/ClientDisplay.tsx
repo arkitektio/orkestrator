@@ -1,4 +1,4 @@
-import type { DisplayWidgetProps } from "@/lib/display/registry";
+import type { DisplayWidgetProps } from "@/core/lib/display/registry";
 import { AppAvatar } from "../components/AppAvatar";
 import { ClientImage, JustClientName } from "../components/ClientAvatar";
 import { useDetailClientQuery } from "../api/graphql";

@@ -1,16 +1,16 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
-import { PageAction, PageActionGroup } from "@/components/ui/page-action";
-import { DialogButton } from "@/components/ui/dialogbutton";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Button } from "@/core/components/ui/button";
+import { PageAction, PageActionGroup } from "@/core/components/ui/page-action";
+import { DialogButton } from "@/core/components/ui/dialogbutton";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RekuestTask } from "@/linkers";
+} from "@/core/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
+import { RekuestTask } from "@/core/linkers";
 import {
   DetailTaskFragment,
   useDetailTaskQuery,
@@ -22,7 +22,7 @@ import {
   DefaultRenderer,
   TaskTimeLine,
 } from "../components/task/TaskEventLog";
-import { PageSections } from "@/components/layout/PageSections";
+import { PageSections } from "@/core/components/layout/PageSections";
 import { useCancelTask } from "../hooks/useAssign";
 import { useReassign } from "../hooks/useReassign";
 import { isCancelable, isInterruptable } from "../lib/taskStatus";

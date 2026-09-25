@@ -1,6 +1,6 @@
-import { createList } from "@/components/layout/createList";
+import { createList } from "@/core/components/layout/createList";
 import { useListArrayDatasetsQuery } from "@/elektro/api/graphql";
-import { ElektroArrayDataset } from "@/linkers";
+import { ElektroArrayDataset } from "@/core/linkers";
 import ArrayDatasetCard from "../cards/ArrayDatasetCard";
 
 const ArrayDatasetList = createList({

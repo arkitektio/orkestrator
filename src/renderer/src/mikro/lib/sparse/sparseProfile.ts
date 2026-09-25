@@ -20,7 +20,7 @@
  * past the matrix's extent, a layout the store does not hold — must not take
  * the other hops of the point down with it.
  */
-import type { MikroClient } from "@/lib/zarr/store/types";
+import type { MikroClient } from "@/core/lib/zarr/store/types";
 import type {
   AttributePlanLike,
   AttributeRow,
@@ -29,7 +29,7 @@ import type {
 } from "../attributes/attributeTypes";
 import { hopKey } from "../attributes/attributeTypes";
 import type { SparseProfileReaderLike } from "../attributes/executePlan";
-import { LruMap } from "@/lib/generic/lruMap";
+import { LruMap } from "@/core/lib/generic/lruMap";
 import type { HeldValue } from "../attributes/planExec";
 import { openSparseLayout, readSparseSlice, unravel, type SparseLayoutChoice } from "./sparseSlice";
 

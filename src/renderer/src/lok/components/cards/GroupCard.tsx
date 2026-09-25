@@ -1,8 +1,8 @@
 import React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { LokGroup } from "@/linkers";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
+import { Card } from "@/core/components/ui/card";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { LokGroup } from "@/core/linkers";
 import { ListGroupFragment } from "../../api/graphql";
 
 interface Props {

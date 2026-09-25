@@ -1,8 +1,8 @@
-import { useDialog } from "@/app/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { RekuestTask } from "@/linkers";
-import type { Object } from "@/types";
+import { useDialog } from "@/core/app/dialog";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { RekuestTask } from "@/core/linkers";
+import type { Object } from "@/core/types";
 import { AlertTriangle, Bug } from "lucide-react";
 import {
   PostmanTaskFragment,

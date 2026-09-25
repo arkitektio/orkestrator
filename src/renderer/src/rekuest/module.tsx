@@ -1,5 +1,5 @@
-import { TaskHookRunner } from "@/lib/taskhooks/TaskHookRunner";
-import { defineModule } from "@/lib/module-host/define";
+import { TaskHookRunner } from "@/core/lib/taskhooks/TaskHookRunner";
+import { defineModule } from "@/core/lib/module-host/define";
 import { REKUEST_ACTIONS } from "./actions";
 import { UiCatalogRegistrar } from "./catalog/UiCatalogRegistrar";
 import { EnhanceButton } from "./components/EnhanceButton";

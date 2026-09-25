@@ -1,4 +1,4 @@
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/core/components/ui/separator";
 import { ConnectContextualParams, FlowNode } from "@/fluss/types";
 import { streamToReadable } from "@/fluss/utils";
 import { DemandKind } from "@/rekuest/api/graphql";
@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { useEditFlowStore, useEditNode } from "../context";
 import { midpointBetween } from "../store/placement";
 import { ActionSuggestions } from "./ActionSuggestions";
-import { ContextualContainer } from "@/components/ui/contextual-container";
+import { ContextualContainer } from "@/core/components/ui/contextual-container";
 import { ReactiveSuggestions } from "./ReactiveSuggestions";
 import { SearchForm, SearchValues } from "./SearchForm";
 import { connectSuggestions } from "./suggestions";

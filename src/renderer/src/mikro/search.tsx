@@ -1,8 +1,8 @@
 import { useGlobalSearchQuery } from "@/mikro/api/graphql";
 import { CommandGroup } from "cmdk";
 
-import { EntityRow } from "@/command/sources/entity/EntityRow";
-import { GroupHeading, PER_TYPE_LIMIT } from "@/command/sources/entity/shared";
+import { EntityRow } from "@/core/command/sources/entity/EntityRow";
+import { GroupHeading, PER_TYPE_LIMIT } from "@/core/command/sources/entity/shared";
 
 /**
  * Mikro's slice of the palette's entity search.

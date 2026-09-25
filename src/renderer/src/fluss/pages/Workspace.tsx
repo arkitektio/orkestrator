@@ -1,7 +1,7 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Card } from "@/components/ui/card";
-import { FlussFlow, FlussWorkspace } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Card } from "@/core/components/ui/card";
+import { FlussFlow, FlussWorkspace } from "@/core/linkers";
 import {
   useUpdateWorkspaceMutation,
   useWorkspaceQuery,

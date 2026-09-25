@@ -1,4 +1,4 @@
-import { useDatalayerEndpoint } from "@/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/app/Arkitekt";
 import { useCallback } from "react";
 
 const s3resolveWithEndpoint = (endpointUrl: string, key: string) => {

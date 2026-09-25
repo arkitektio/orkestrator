@@ -1,15 +1,15 @@
-import { AsyncCombobox } from "@/components/fields/AsyncCombobox";
-import { OrderedStringList } from "@/components/fields/OrderedFreeformListField";
-import { Option } from "@/components/fields/SearchField";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Label } from "@/components/ui/label";
+import { AsyncCombobox } from "@/core/components/fields/AsyncCombobox";
+import { OrderedStringList } from "@/core/components/fields/OrderedFreeformListField";
+import { Option } from "@/core/components/fields/SearchField";
+import { Alert, AlertDescription } from "@/core/components/ui/alert";
+import { Label } from "@/core/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/core/components/ui/select";
 import { AlertCircle } from "lucide-react";
 import { useCallback } from "react";
 import {

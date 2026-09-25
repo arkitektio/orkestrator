@@ -1,12 +1,12 @@
-import { useDialog } from "@/app/dialog";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Badge } from "@/components/ui/badge";
-import { PageAction } from "@/components/ui/page-action";
-import { Image } from "@/components/ui/image";
-import { Separator } from "@/components/ui/separator";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { PageSections } from "@/components/layout/PageSections";
-import { LokClient, LokDevice } from "@/linkers";
+import { useDialog } from "@/core/app/dialog";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Badge } from "@/core/components/ui/badge";
+import { PageAction } from "@/core/components/ui/page-action";
+import { Image } from "@/core/components/ui/image";
+import { Separator } from "@/core/components/ui/separator";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { PageSections } from "@/core/components/layout/PageSections";
+import { LokClient, LokDevice } from "@/core/linkers";
 import {
   Bug,
   ExternalLink,

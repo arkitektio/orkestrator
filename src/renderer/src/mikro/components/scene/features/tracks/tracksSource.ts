@@ -17,7 +17,7 @@ import {
   FLOATS_PER_SEGMENT,
   writeRunPairs,
   writeRunScalars,
-} from "@/lib/scene/gpu/lineBuffer";
+} from "@/core/lib/scene/gpu/lineBuffer";
 import { readTrackPositions, type TrackColumns } from "@/mikro/lib/attributes/columnarReads";
 import type { AttributeLookupEngine } from "@/mikro/lib/attributes/lookupEngine";
 import type { ParquetStoreLike } from "@/mikro/lib/attributes/attributeTypes";

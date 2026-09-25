@@ -1,4 +1,4 @@
-import { smartOf } from "@/providers/smart/fromManifest";
+import { smartOf } from "@/core/providers/smart/fromManifest";
 import { manifest } from "./manifest";
 
 // Fluss's smart objects (Smart cards, links, pages), built from the models

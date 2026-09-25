@@ -1,7 +1,7 @@
-import { HoverRow, HoverShell, HoverSkeleton } from "@/components/hover/HoverShell";
-import { formatShape } from "@/lib/arrays/formatShape";
-import { formatDisplay } from "@/lib/quantities";
-import { Object } from "@/types";
+import { HoverRow, HoverShell, HoverSkeleton } from "@/core/components/hover/HoverShell";
+import { formatShape } from "@/core/lib/arrays/formatShape";
+import { formatDisplay } from "@/core/lib/quantities";
+import { Object } from "@/core/types";
 import { useGetArrayDatasetQuery } from "../../api/graphql";
 
 export const ArrayDatasetHoverCard = ({ object }: { object: Object }) => {

@@ -1,4 +1,4 @@
-import { Guard } from "@/app/Arkitekt";
+import { Guard } from "@/core/app/Arkitekt";
 import { AppAvatar } from "../AppAvatar";
 
 export const AppInfo = (props: { clientId: string | undefined }) => {

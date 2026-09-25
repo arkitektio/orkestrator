@@ -1,13 +1,13 @@
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
-import { FancyInput } from "@/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
-import { useDebounce } from "@/hooks/use-debounce";
+import { SidebarLayout } from "@/core/components/layout/SidebarLayout";
+import { FancyInput } from "@/core/components/ui/fancy-input";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/components/ui/sidepane";
+import { useDebounce } from "@/core/hooks/use-debounce";
 import {
   KraphEntityCategory,
   KraphProtocolEventCategory,
   KraphRelationCategory,
   KraphStructureKind
-} from "@/linkers";
+} from "@/core/linkers";
 import {
   CatIcon,
   Divide,

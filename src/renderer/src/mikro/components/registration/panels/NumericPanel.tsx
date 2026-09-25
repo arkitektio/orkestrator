@@ -1,6 +1,6 @@
 import { Crosshair } from "lucide-react";
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import { useLayerWorldBoxGetter, useSceneDisplayMode, useSceneWorld } from "../../scene/sceneHost";
 import { constrainParts } from "../math/constraints";
 import { composeAboutPivot, decomposeAboutPivot, type DeltaParts } from "../math/decompose";

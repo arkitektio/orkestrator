@@ -1,12 +1,12 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { RekuestTask } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { PageAction } from "@/core/components/ui/page-action";
+import { RekuestTask } from "@/core/linkers";
 import {
   useDetailTaskQuery,
   useInterruptMutation,
 } from "@/rekuest/api/graphql";
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/components/ui/timestamp";
 import { useCancelTask } from "../../hooks/useAssign";
 import { useReassign } from "../../hooks/useReassign";
 import { isCancelable, isInterruptable } from "../../lib/taskStatus";

@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { MikroScene } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { MikroScene } from "@/core/linkers";
 import {
   FolderFilter,
   OffsetPaginationInput,

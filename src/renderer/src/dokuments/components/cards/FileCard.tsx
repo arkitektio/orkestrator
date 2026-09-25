@@ -1,7 +1,7 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { DokumentsFile } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { cn } from "@/core/lib/utils";
+import { DokumentsFile } from "@/core/linkers";
 import { ListFileFragment } from "../../api/graphql";
 
 

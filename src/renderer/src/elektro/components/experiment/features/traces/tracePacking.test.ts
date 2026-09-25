@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FLOATS_PER_SEGMENT } from "@/lib/scene/gpu/lineBuffer";
+import { FLOATS_PER_SEGMENT } from "@/core/lib/scene/gpu/lineBuffer";
 import type { DrawSegment, ResidentTile } from "../../platform/quality/traceResidency";
 import { packChannel, splitChannels } from "./tracePacking";
 

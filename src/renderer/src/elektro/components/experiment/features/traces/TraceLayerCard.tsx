@@ -1,5 +1,5 @@
 import { Scaling } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import { useAutoscale } from "../../platform/edits/useAutoscale";
 import { useLayerWrite } from "../../platform/edits/useLayerWrite";
 import { unplaceableMessage } from "../../platform/model/placeable";
@@ -16,7 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/core/components/ui/select";
 
 const CHANNEL_COLORING_OPTIONS: { value: ChannelColoring; label: string; title: string }[] = [
   { value: "OVERLAY", label: "In overlay", title: "Each channel its own colour when traces share one plot" },

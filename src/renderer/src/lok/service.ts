@@ -1,5 +1,5 @@
-import { LOK_TYPE_POLICIES } from "@/app/cachePolicies";
-import { createGraphQLServiceBuilder } from "@/lib/arkitekt/builders/graphQlServiceBuidler";
+import { LOK_TYPE_POLICIES } from "@/core/app/cachePolicies";
+import { createGraphQLServiceBuilder } from "@/core/lib/arkitekt/builders/graphQlServiceBuidler";
 import lokResult from "./api/fragments";
 
 /**

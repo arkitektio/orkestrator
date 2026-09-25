@@ -1,7 +1,7 @@
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { Link } from "@/components/ui/link";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { PageLayout } from "@/core/components/layout/PageLayout";
+import { HelpSidebar } from "@/core/components/sidebars/help";
+import { Link } from "@/core/components/ui/link";
 import React from "react";
 import { DashboardLayout } from "../components/sections/DashboardLayout";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";

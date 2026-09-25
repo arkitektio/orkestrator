@@ -1,14 +1,14 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Badge } from "@/components/ui/badge";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Badge } from "@/core/components/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { PageSections } from "@/components/layout/PageSections";
-import { KabinetPod } from "@/linkers";
+} from "@/core/components/ui/card";
+import { PageSections } from "@/core/components/layout/PageSections";
+import { KabinetPod } from "@/core/linkers";
 import { useGetPodQuery } from "../api/graphql";
 import ResourceCard from "../components/cards/ResourceCard";
 

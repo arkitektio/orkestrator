@@ -1,6 +1,6 @@
-import { FormDialog } from "@/components/dialog/FormDialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { FormDialog } from "@/core/components/dialog/FormDialog";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,20 +9,20 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+} from "@/core/components/ui/dropdown-menu";
+import { Input } from "@/core/components/ui/input";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
   PageActionGroup,
-} from "@/components/ui/page-action";
-import { cn } from "@/lib/utils";
-import { MikroArrayDataset, MikroFile, MikroFolder, MikroTableDataset } from "@/linkers";
+} from "@/core/components/ui/page-action";
+import { cn } from "@/core/lib/utils";
+import { MikroArrayDataset, MikroFile, MikroFolder, MikroTableDataset } from "@/core/linkers";
 
-import { useTabActions } from "@/command/tabs/TabsProvider";
-import { SmartObjectButtonProps } from "@/providers/smart/buildSmartAdapters";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useTabActions } from "@/core/command/tabs/TabsProvider";
+import { SmartObjectButtonProps } from "@/core/providers/smart/buildSmartAdapters";
+import { useDebounce } from "@/core/hooks/use-debounce";
 import {
   ChildrenQuery,
   FolderFragment,
@@ -33,11 +33,11 @@ import {
   usePutTableDatasetsInFolderMutation,
 } from "@/mikro/api/graphql";
 import { ViewType } from "@/mikro/pages/FolderPage";
-import { DragSession } from "@/lib/dnd/engine";
-import { useSelection } from "@/providers/selection/SelectionContext";
-import { smartDragStructures } from "@/providers/smart/dragPayload";
-import { useSmartCanDrop, useSmartDrop } from "@/providers/smart/hooks";
-import { Structure } from "@/types";
+import { DragSession } from "@/core/lib/dnd/engine";
+import { useSelection } from "@/core/providers/selection/SelectionContext";
+import { smartDragStructures } from "@/core/providers/smart/dragPayload";
+import { useSmartCanDrop, useSmartDrop } from "@/core/providers/smart/hooks";
+import { Structure } from "@/core/types";
 import {
   ArrowLeft,
   ArrowRight,

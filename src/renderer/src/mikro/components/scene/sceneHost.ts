@@ -20,12 +20,12 @@
  */
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { computeSceneWorldBox } from "./platform/camera/sceneFit";
-import { createRafCoalescer } from "@/lib/scene/perf/rafCoalesce";
+import { createRafCoalescer } from "@/core/lib/scene/perf/rafCoalesce";
 import { hostLayersKey, toHostLayers, type HostLayer } from "./platform/model/hostLayers";
 import { useModeStore, useModeStoreApi, type DisplayMode, type InteractionMode } from "./platform/stores/modeStore";
 import { useSceneStore, useSceneStoreApi, type SceneLayer } from "./platform/stores/sceneStore";
 import { useViewerStoreApi } from "./platform/stores/viewerStore";
-import { spatialAxisTriple } from "@/lib/scene/coords/transformGraph";
+import { spatialAxisTriple } from "@/core/lib/scene/coords/transformGraph";
 
 export type { DisplayMode, InteractionMode };
 

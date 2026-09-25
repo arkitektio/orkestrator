@@ -1,6 +1,6 @@
 import React from "react";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { RekuestBlok, RekuestMaterializedBlok } from "@/linkers";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
 
 import { ListMaterializedBlokFragment } from "@/rekuest/api/graphql";
 

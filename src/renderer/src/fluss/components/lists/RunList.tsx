@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { FlussRun } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { FlussRun } from "@/core/linkers";
 import {
   OffsetPaginationInput,
   RunFilter,

@@ -1,4 +1,4 @@
-import { MetadataOverlayFrame } from "@/lib/scene/metadata/MetadataChrome";
+import { MetadataOverlayFrame } from "@/core/lib/scene/metadata/MetadataChrome";
 import { memo, useState } from "react";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { LayerState, useSceneStore } from "../../platform/stores/sceneStore";

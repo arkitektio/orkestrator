@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { Arkitekt } from "@/app/Arkitekt";
-import { setBrandRemote } from "@/providers/settings/brandTheme";
+import { Arkitekt } from "@/core/app/Arkitekt";
+import { setBrandRemote } from "@/core/providers/settings/brandTheme";
 import { EMPTY_BRAND } from "../lib/membershipBrand";
 
 /**

@@ -1,17 +1,17 @@
-import { Guard } from "@/app/Arkitekt";
-import { AsyncCombobox } from "@/components/fields/AsyncCombobox";
-import { Option, SearchFunction } from "@/components/fields/SearchField";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Guard } from "@/core/app/Arkitekt";
+import { AsyncCombobox } from "@/core/components/fields/AsyncCombobox";
+import { Option, SearchFunction } from "@/core/components/fields/SearchField";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { Input } from "@/core/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useStructureOptions } from "@/app/hooks/useStructureOptions";
+} from "@/core/components/ui/select";
+import { useStructureOptions } from "@/core/app/hooks/useStructureOptions";
 import { Plus, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { ClaimField, ClaimOperator, useSearchEntityTermsLazyQuery } from "../../api/graphql";

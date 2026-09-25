@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphLink } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KraphLink } from "@/core/linkers";
 import { useGetLinkQuery } from "../api/graphql";
 
 /**

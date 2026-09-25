@@ -1,5 +1,5 @@
 import { createStore } from "zustand/vanilla";
-import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
 import { DEFAULT_WEIGHTS, type DominanceWeights } from "../../../lib/importance";
 import type { ColorBy } from "../model/colouring";
 import type { FocusContext } from "../model/focus";

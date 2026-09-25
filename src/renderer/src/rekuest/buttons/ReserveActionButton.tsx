@@ -1,4 +1,4 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/core/components/ui/dialog";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import { ReserveForm } from "../forms/ShortcutForm";
 

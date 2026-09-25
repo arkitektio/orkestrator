@@ -1,9 +1,9 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { DokumentsFile } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { DokumentsFile } from "@/core/linkers";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import { FileFilter, useListFilesQuery } from "@/dokuments/api/graphql";
-import type { OffsetPaginationInput } from "@/lib/pagination";
+import type { OffsetPaginationInput } from "@/core/lib/pagination";
 import FileCard from "../cards/FileCard";
 
 export type Props = {

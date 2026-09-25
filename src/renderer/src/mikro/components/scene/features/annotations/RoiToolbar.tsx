@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
+import { Button } from "@/core/components/ui/button";
+import { ButtonGroup } from "@/core/components/ui/button-group";
 import { useModeStore } from "../../platform/stores/modeStore";
 import {
   isEnhanceableTool,

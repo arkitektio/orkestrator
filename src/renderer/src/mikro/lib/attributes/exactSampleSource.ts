@@ -1,14 +1,14 @@
 import { type Array as ZarrArray, type DataType } from "zarrita";
-import { effectiveChunkShapeOf, getChunkWorker } from "@/lib/zarr/runner";
-import { openZarrArray } from "@/lib/zarr/openArray";
-import { ByteBudgetChunkCache } from "@/lib/zarr/caches/byteBudgetChunkCache";
-import { INTERACTIVE_FETCH_PRIORITY } from "@/lib/zarr/pool/types";
-import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
-import type { MikroClient, ZarrStore } from "@/lib/zarr/store/types";
-import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
+import { effectiveChunkShapeOf, getChunkWorker } from "@/core/lib/zarr/runner";
+import { openZarrArray } from "@/core/lib/zarr/openArray";
+import { ByteBudgetChunkCache } from "@/core/lib/zarr/caches/byteBudgetChunkCache";
+import { INTERACTIVE_FETCH_PRIORITY } from "@/core/lib/zarr/pool/types";
+import { ConfiguredS3Store } from "@/core/lib/zarr/store/s3Store";
+import type { MikroClient, ZarrStore } from "@/core/lib/zarr/store/types";
+import { workerPool } from "@/core/lib/zarr/pool/sharedWorkerPool";
 import { buildS3FetchConfig, getGeneralAccess } from "@/mikro/lib/zarr/access";
 import type { ZarrStoreLike } from "./attributeTypes";
-import { LruMap } from "@/lib/generic/lruMap";
+import { LruMap } from "@/core/lib/generic/lruMap";
 import type { HeldValue } from "./planExec";
 import { readTypedValue } from "./sampleSource";
 

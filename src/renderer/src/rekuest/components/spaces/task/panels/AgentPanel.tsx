@@ -4,13 +4,13 @@ import { useMemo } from "react";
 import { useSpaceViewStore } from "../store";
 import { SpaceGroupPlacement } from "../types";
 import * as THREE from "three";
-import { Card } from "@/components/ui/card";
-import { RekuestAgent } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { RekuestAgent } from "@/core/linkers";
 import { PatchFragment, StateFragment, useAgentQuery, useCheckoutAgentQuery } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
-import { AsyncBoundary } from "@/components/boundaries/AsyncBoundary";
-import { useDebounce } from "@/hooks/use-debounce";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
+import { AsyncBoundary } from "@/core/components/boundaries/AsyncBoundary";
+import { useDebounce } from "@/core/hooks/use-debounce";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/components/ui/collapsible";
 
 /**
  * Resolves a JSON Patch path to the matching state port and renders the

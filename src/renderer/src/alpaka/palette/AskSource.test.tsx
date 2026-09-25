@@ -4,22 +4,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 
 let query = "";
-vi.mock("@/command/CommandPaletteProvider", () => ({
+vi.mock("@/core/command/CommandPaletteProvider", () => ({
   useCommandPalette: () => ({ query }),
 }));
 
 const createRoom = vi.fn(async () => ({ data: { createRoom: { id: "room-9" } } }));
 vi.mock("@/alpaka/api/graphql", () => ({ useCreateRoomMutation: () => [createRoom] }));
-vi.mock("@/linkers", () => ({ AlpakaRoom: { linkBuilder: (id: string) => `/alpaka/rooms/${id}` } }));
+vi.mock("@/core/linkers", () => ({ AlpakaRoom: { linkBuilder: (id: string) => `/alpaka/rooms/${id}` } }));
 const navigate = vi.fn();
 vi.mock("react-router-dom", async (orig) => ({
   ...(await orig<typeof import("react-router-dom")>()),
   useNavigate: () => navigate,
 }));
 
-import { Command, CommandList } from "@/components/ui/command";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import type { Structure } from "@/types";
+import { Command, CommandList } from "@/core/components/ui/command";
+import { TooltipProvider } from "@/core/components/ui/tooltip";
+import type { Structure } from "@/core/types";
 import { AskSource } from "./AskSource";
 
 const onDone = vi.fn();

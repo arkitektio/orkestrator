@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { buttonVariants } from "@/components/ui/button";
-import { ElektroNeuronModel } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { buttonVariants } from "@/core/components/ui/button";
+import { ElektroNeuronModel } from "@/core/linkers";
 import { useDetailNeuronModelQuery } from "../api/graphql";
 import { NeuronModelTree } from "../components/tree/NeuronModelTree";
 

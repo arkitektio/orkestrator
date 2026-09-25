@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card } from "@/core/components/ui/card";
 import { ListServiceInstanceMappingFragment } from "@/lok/api/graphql";
 import {
   BaseEdge,

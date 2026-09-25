@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { MikroCoordinateSystem } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { MikroCoordinateSystem } from "@/core/linkers";
 import {
   CoordinateSystemFilter,
   OffsetPaginationInput,

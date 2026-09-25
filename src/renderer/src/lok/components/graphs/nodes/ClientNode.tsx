@@ -1,7 +1,7 @@
-import { Card } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { LokClient, LokUser } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { Image } from "@/core/components/ui/image";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { LokClient, LokUser } from "@/core/linkers";
 import { DetailClientFragment } from "@/lok/api/graphql";
 import { Handle, NodeProps, Position, Node } from "@xyflow/react";
 import { memo } from "react";

@@ -1,5 +1,5 @@
-import { TimeBucketChart } from "@/components/charts/TimeBucketChart";
-import { useNearViewport } from "@/lib/datalayer/useNearViewport";
+import { TimeBucketChart } from "@/core/components/charts/TimeBucketChart";
+import { useNearViewport } from "@/core/lib/datalayer/useNearViewport";
 import { Granularity, useActionUsageStatsQuery } from "@/rekuest/api/graphql";
 import { fillBuckets } from "@/rekuest/lib/actionBrowse";
 import { useMemo, useRef } from "react";

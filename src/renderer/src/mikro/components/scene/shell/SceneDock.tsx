@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/core/lib/utils'
 import { createContext, useContext, type ReactNode } from 'react'
 
 /**

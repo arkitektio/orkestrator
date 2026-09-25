@@ -1,10 +1,10 @@
-import { Guard } from "@/app/Arkitekt";
-import { useDialog } from "@/app/dialog";
-import { Button } from "@/components/ui/button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/use-debounce";
-import { cn } from "@/lib/utils";
+import { Guard } from "@/core/app/Arkitekt";
+import { useDialog } from "@/core/app/dialog";
+import { Button } from "@/core/components/ui/button";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
+import { Input } from "@/core/components/ui/input";
+import { useDebounce } from "@/core/hooks/use-debounce";
+import { cn } from "@/core/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
 import {

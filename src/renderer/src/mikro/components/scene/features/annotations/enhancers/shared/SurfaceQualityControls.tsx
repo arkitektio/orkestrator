@@ -1,5 +1,5 @@
-import { Slider } from "@/components/ui/slider";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Slider } from "@/core/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/core/components/ui/toggle-group";
 import { useBrushSkeletonStore } from "../brushSkeletonStore";
 import { MARCHER_IDS, MARCHERS, type MarcherId } from "../meshes/marcher";
 

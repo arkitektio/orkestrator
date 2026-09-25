@@ -1,4 +1,4 @@
-import { PageLayout } from "@/components/layout/PageLayout";
+import { PageLayout } from "@/core/components/layout/PageLayout";
 import React from "react";
 import RunList from "../components/lists/RunList";
 import RunCarousel from "../edit/carousels/RunCarousel";

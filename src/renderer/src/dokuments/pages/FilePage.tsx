@@ -1,11 +1,11 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Icons } from "@/components/icons";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PageAction } from "@/components/ui/page-action";
-import { Card } from "@/components/ui/card";
-import { DokumentsDocument, DokumentsFile, LovekitStream } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Icons } from "@/core/components/icons";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { PageAction } from "@/core/components/ui/page-action";
+import { Card } from "@/core/components/ui/card";
+import { DokumentsDocument, DokumentsFile, LovekitStream } from "@/core/linkers";
 import {
   DatabaseIcon,
   DownloadIcon,
@@ -13,7 +13,7 @@ import {
   FileTextIcon,
 } from "lucide-react";
 import { useGetFileQuery } from "../api/graphql";
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/core/components/ui/separator";
 
 // Helper for getting clean file extension
 const getFileExtension = (filename: string) => {

@@ -1,6 +1,6 @@
-import { StructureDisplay } from "@/components/display/StructureDisplay";
-import { Badge } from "@/components/ui/badge";
-import { LokUser } from "@/linkers";
+import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { Badge } from "@/core/components/ui/badge";
+import { LokUser } from "@/core/linkers";
 
 import { MentionType } from "../types";
 

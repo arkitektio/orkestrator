@@ -26,8 +26,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+} from "@/core/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
 import { useSparseColouringSourceQuery } from "@/mikro/api/graphql";
 import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import { matchPositions, readAxisPositions, type AxisPosition } from "@/mikro/lib/sparse/axisPositions";

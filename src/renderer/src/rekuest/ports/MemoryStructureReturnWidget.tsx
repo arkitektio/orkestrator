@@ -1,5 +1,5 @@
 import { useGetMemoryDrawerQuery } from "@/rekuest/api/graphql";
-import { ReturnWidgetProps } from "@/lib/ports/types";
+import { ReturnWidgetProps } from "@/core/lib/ports/types";
 import React from "react";
 
 const MemoryStructureReturnWidget: React.FC<ReturnWidgetProps> = ({ value }) => {

@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { useMeQuery, useMyContextQuery } from "../api/graphql";
 
 export const Me = () => {

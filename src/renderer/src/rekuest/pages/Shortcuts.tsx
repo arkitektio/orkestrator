@@ -1,4 +1,4 @@
-import { RekuestShortcut } from "@/linkers";
+import { RekuestShortcut } from "@/core/linkers";
 import ShortcutList from "../components/lists/ShortcutList";
 
 const Page = () => {

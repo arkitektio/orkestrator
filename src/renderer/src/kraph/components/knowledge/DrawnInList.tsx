@@ -1,5 +1,5 @@
 import type { KnowledgeInstanceFragment } from "@/kraph/api/graphql";
-import { KraphGraph, KraphNode } from "@/linkers";
+import { KraphGraph, KraphNode } from "@/core/linkers";
 
 /**
  * Where a claim is drawn. A claim names a word the organization owns; each

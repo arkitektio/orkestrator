@@ -1,14 +1,14 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/core/components/ui/badge";
 import {
   Card,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle
-} from "@/components/ui/card";
-import { DialogButton } from "@/components/ui/dialogbutton";
-import { RekuestImplementation } from "@/linkers";
+} from "@/core/components/ui/card";
+import { DialogButton } from "@/core/components/ui/dialogbutton";
+import { RekuestImplementation } from "@/core/linkers";
 
 
 import {

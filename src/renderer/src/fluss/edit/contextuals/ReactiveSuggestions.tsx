@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Card } from "@/core/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
 import { FlowNode, ReactiveNodeSuggestions } from "@/fluss/types";
 import clsx from "clsx";
 

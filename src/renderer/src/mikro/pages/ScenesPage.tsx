@@ -1,5 +1,5 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { MikroScene } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { MikroScene } from "@/core/linkers";
 import React from "react";
 import SceneList from "../components/lists/SceneList";
 

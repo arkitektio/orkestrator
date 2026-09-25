@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { Button } from "@/core/components/ui/button";
+import { Slider } from "@/core/components/ui/slider";
 import { useBrushSkeleton } from "../../paths/brushSkeleton/useBrushSkeleton";
 import { useBrushSkeletonStore } from "../../brushSkeletonStore";
 import { SurfaceQualityControls } from "../../shared/SurfaceQualityControls";

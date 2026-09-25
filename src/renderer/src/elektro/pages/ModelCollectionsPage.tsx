@@ -1,6 +1,6 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { PageAction } from "@/components/ui/page-action";
-import { ElektroModelCollection } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { PageAction } from "@/core/components/ui/page-action";
+import { ElektroModelCollection } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import ModelCollectionList from "../components/lists/ModelCollectionList";

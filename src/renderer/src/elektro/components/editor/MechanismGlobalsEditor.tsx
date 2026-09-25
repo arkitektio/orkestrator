@@ -1,8 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/core/components/ui/button";
+import { Input } from "@/core/components/ui/input";
 import { Plus, Trash2 } from "lucide-react";
 import { EditableMechanismGlobal } from "../../lib/modelSerialization";
-import { QuantityInput } from "@/components/fields/QuantityInput";
+import { QuantityInput } from "@/core/components/fields/QuantityInput";
 import { useMechanismParamMeta } from "./MechanismCatalog";
 
 const emptyGlobal = (): EditableMechanismGlobal => ({

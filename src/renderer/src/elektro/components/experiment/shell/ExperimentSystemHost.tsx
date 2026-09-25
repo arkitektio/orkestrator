@@ -1,6 +1,6 @@
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
 import { useEffect, useRef } from "react";
-import { useDatalayerEndpoint, useElektro } from "@/app/Arkitekt";
+import { useDatalayerEndpoint, useElektro } from "@/core/app/Arkitekt";
 import {
   GetTableDatasetDocument,
   type GetTableDatasetQuery,
@@ -10,7 +10,7 @@ import {
 import { useElektroParquetEngine } from "@/elektro/components/store/parquetEngine";
 import { elektroSparseAccess } from "@/elektro/components/store/sparseAccess";
 import { useElektroZarrStoreApi } from "@/elektro/components/store/zarrStore";
-import { blockNnz, openSparseLayout, readSparseBlock } from "@/lib/sparse/sparseReader";
+import { blockNnz, openSparseLayout, readSparseBlock } from "@/core/lib/sparse/sparseReader";
 import { createExperimentSystem, type ExperimentDeps, type ExperimentScopeStores } from "./experimentSystem";
 
 /**

@@ -7,7 +7,7 @@ import {
   MentionFragment,
   ReplyCommentFragment,
 } from "@/kraph/api/graphql";
-import { Identifier, Object } from "@/types";
+import { Identifier, Object } from "@/core/types";
 
 export type ListCommentType = ListCommentFragment;
 export type ReplyCommentType = ReplyCommentFragment;

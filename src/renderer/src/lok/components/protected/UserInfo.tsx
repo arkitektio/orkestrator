@@ -1,5 +1,5 @@
-import { Guard } from "@/app/Arkitekt";
-import { LokUser } from "@/linkers";
+import { Guard } from "@/core/app/Arkitekt";
+import { LokUser } from "@/core/linkers";
 import { UserAvatar } from "../UserAvatar";
 
 export const UserInfo = (props: { sub: string | undefined }) => {

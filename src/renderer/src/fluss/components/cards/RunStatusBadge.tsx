@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/core/components/ui/badge";
+import { cn } from "@/core/lib/utils";
 import { RunStatus } from "@/fluss/api/graphql";
 
 /** Small status pill for a run: a pulsing dot while running, muted once done. */

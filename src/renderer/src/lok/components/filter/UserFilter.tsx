@@ -1,16 +1,16 @@
-import { Guard } from "@/app/Arkitekt";
-import { GraphQLSearchField } from "@/components/fields/GraphQLSearchField";
-import { SwitchField } from "@/components/fields/SwitchField";
-import { AutoSubmitter } from "@/components/form/AutoSubmitter";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
+import { Guard } from "@/core/app/Arkitekt";
+import { GraphQLSearchField } from "@/core/components/fields/GraphQLSearchField";
+import { SwitchField } from "@/core/components/fields/SwitchField";
+import { AutoSubmitter } from "@/core/components/form/AutoSubmitter";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { Form } from "@/core/components/ui/form";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
+} from "@/core/components/ui/popover";
+import { Separator } from "@/core/components/ui/separator";
 import { useUserOptionsLazyQuery } from "@/lok/api/graphql";
 import { RotateCcw, User } from "lucide-react";
 import { useForm } from "react-hook-form";

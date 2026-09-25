@@ -1,4 +1,4 @@
-import { Slider } from "@/components/ui/slider";
+import { Slider } from "@/core/components/ui/slider";
 import { CircleDot } from "lucide-react";
 import { memo } from "react";
 import {
@@ -16,8 +16,8 @@ import {
   RowLabel,
   Segment,
   SegmentGroup,
-} from "@/lib/scene/layerui/cardControls";
-import { ColormapSelect } from "@/lib/scene/layerui/ColormapSelect";
+} from "@/core/lib/scene/layerui/cardControls";
+import { ColormapSelect } from "@/core/lib/scene/layerui/ColormapSelect";
 import { CONTINUOUS_COLORMAP_CHOICES } from "../../platform/layerui/colormap-utils";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";
 import { LayerCardActions } from "../../platform/layerui/LayerCardActions";

@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { RekuestInterface, RekuestToolbox } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { RekuestInterface, RekuestToolbox } from "@/core/linkers";
 import {
   useGetInterfaceQuery
 } from "@/rekuest/api/graphql";

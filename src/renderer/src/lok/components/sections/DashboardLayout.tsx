@@ -1,6 +1,6 @@
-import { useSelf } from "@/app/hooks/useSelf";
-import { SlotSections } from "@/components/layout/PageSections";
-import { Separator } from "@/components/ui/separator";
+import { useSelf } from "@/core/app/hooks/useSelf";
+import { SlotSections } from "@/core/components/layout/PageSections";
+import { Separator } from "@/core/components/ui/separator";
 import { Username } from "../Me";
 import { RecentAppsSection } from "./RecentAppsSection";
 

@@ -1,16 +1,16 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { CollapsibleSearch } from "@/components/ui/collapsible-search";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { PageLayout } from "@/core/components/layout/PageLayout";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { HelpSidebar } from "@/core/components/sidebars/help";
+import { Badge } from "@/core/components/ui/badge";
+import { Button, buttonVariants } from "@/core/components/ui/button";
+import { CollapsibleSearch } from "@/core/components/ui/collapsible-search";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
   PageActionPolicy,
-} from "@/components/ui/page-action";
+} from "@/core/components/ui/page-action";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,17 +23,17 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/core/components/ui/dropdown-menu";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { parseAsBoolean, parseAsString, useQueryState } from "@/hooks/use-search-param-state";
-import { RekuestAgent } from "@/linkers";
-import { useStructureOptionList } from "@/app/hooks/useStructureOptions";
+} from "@/core/components/ui/empty";
+import { parseAsBoolean, parseAsString, useQueryState } from "@/core/hooks/use-search-param-state";
+import { RekuestAgent } from "@/core/linkers";
+import { useStructureOptionList } from "@/core/app/hooks/useStructureOptions";
 import { ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
 import AgentCard from "@/rekuest/components/cards/AgentCard";
 import ActionList from "@/rekuest/components/lists/ActionList";

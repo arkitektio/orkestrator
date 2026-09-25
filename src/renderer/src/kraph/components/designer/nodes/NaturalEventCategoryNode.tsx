@@ -1,8 +1,8 @@
-import { Card } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
+import { Card } from "@/core/components/ui/card";
+import { Image } from "@/core/components/ui/image";
 import {
   KraphProtocolEventCategory
-} from "@/linkers";
+} from "@/core/linkers";
 import { NodeProps, NodeResizer } from "@xyflow/react";
 import { memo } from "react";
 import { Handles } from "../components/Handles";

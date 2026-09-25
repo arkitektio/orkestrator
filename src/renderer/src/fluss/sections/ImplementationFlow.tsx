@@ -1,5 +1,5 @@
 import { useImplementationQuery } from "@/rekuest/api/graphql";
-import type { Object } from "@/types";
+import type { Object } from "@/core/types";
 import { useFlowQuery } from "../api/graphql";
 import { ShowFlow } from "../show/ShowFlow";
 

@@ -1,4 +1,4 @@
-import { defineModule } from "@/lib/module-host/define";
+import { defineModule } from "@/core/lib/module-host/define";
 import { OMEROARK_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
 import { OMEROARK_NAV_LINKS } from "./navLinks";

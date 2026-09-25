@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Card } from "@/components/ui/card";
-import { ElektroMechanism } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Card } from "@/core/components/ui/card";
+import { ElektroMechanism } from "@/core/linkers";
 import { useDetailMechanismQuery } from "../api/graphql";
 
 export type IRepresentationScreenProps = {};

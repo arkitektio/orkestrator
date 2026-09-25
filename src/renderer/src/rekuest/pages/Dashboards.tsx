@@ -1,5 +1,5 @@
-import { PageAction } from "@/components/ui/page-action";
-import { RekuestDashboard } from "@/linkers";
+import { PageAction } from "@/core/components/ui/page-action";
+import { RekuestDashboard } from "@/core/linkers";
 import { useCreateDashboardMutation } from "../api/graphql";
 import DashboardList from "../components/lists/DashboardList";
 

@@ -4,10 +4,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { RekuestAgent } from "@/linkers";
+} from "@/core/components/ui/card";
+import { Badge } from "@/core/components/ui/badge";
+import { cn } from "@/core/lib/utils";
+import { RekuestAgent } from "@/core/linkers";
 import { SearchAgentFragment } from "@/rekuest/api/graphql";
 
 interface Props {

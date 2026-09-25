@@ -1,10 +1,10 @@
-import { AgentController } from "@/app/agent/AgentController";
-import { ListRender } from "@/components/layout/ListRender";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
-import { FancyInput } from "@/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
-import { cn } from "@/lib/utils";
-import { RekuestAgent, RekuestDashboard } from "@/linkers";
+import { AgentController } from "@/core/app/agent/AgentController";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { SidebarLayout } from "@/core/components/layout/SidebarLayout";
+import { FancyInput } from "@/core/components/ui/fancy-input";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/components/ui/sidepane";
+import { cn } from "@/core/lib/utils";
+import { RekuestAgent, RekuestDashboard } from "@/core/linkers";
 import { ListAgentFragment } from "@/rekuest/api/graphql";
 import { useDebounce } from "@uidotdev/usehooks";
 import { Box, FunctionSquare, Home, ShoppingCart } from "lucide-react";

@@ -1,4 +1,4 @@
-import { defineModule } from "@/lib/module-host/define";
+import { defineModule } from "@/core/lib/module-host/define";
 import { MIKRO_ACTIONS } from "./actions";
 import ArrayDatasetHoverCard from "./components/hovers/ArrayDatasetHoverCard";
 import FileHoverCard from "./components/hovers/FileHoverCard";

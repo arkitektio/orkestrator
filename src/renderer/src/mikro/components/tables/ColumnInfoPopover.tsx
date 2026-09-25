@@ -1,18 +1,18 @@
 import { Axis3d } from "lucide-react";
 import * as React from "react";
 
-import { HoverRow, HoverSectionLabel } from "@/components/hover/HoverShell";
-import { Button } from "@/components/ui/button";
+import { HoverRow, HoverSectionLabel } from "@/core/components/hover/HoverShell";
+import { Button } from "@/core/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Skeleton } from "@/components/ui/skeleton";
-import { describeColumnStatsError, type ColumnStatsFailure } from "@/lib/parquet/columnStats";
-import { HistogramSparkline } from "@/lib/scene/metadata/MetadataChrome";
-import { cn } from "@/lib/utils";
-import { MikroTableDataset } from "@/linkers";
+} from "@/core/components/ui/popover";
+import { Skeleton } from "@/core/components/ui/skeleton";
+import { describeColumnStatsError, type ColumnStatsFailure } from "@/core/lib/parquet/columnStats";
+import { HistogramSparkline } from "@/core/lib/scene/metadata/MetadataChrome";
+import { cn } from "@/core/lib/utils";
+import { MikroTableDataset } from "@/core/linkers";
 import {
   ColumnControl,
   ColumnRole,

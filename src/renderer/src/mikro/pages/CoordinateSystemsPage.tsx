@@ -1,5 +1,5 @@
-import { Explainer } from "@/components/explainer/Explainer";
-import { MikroCoordinateSystem } from "@/linkers";
+import { Explainer } from "@/core/components/explainer/Explainer";
+import { MikroCoordinateSystem } from "@/core/linkers";
 import React from "react";
 import CoordinateSystemList from "../components/lists/CoordinateSystemList";
 

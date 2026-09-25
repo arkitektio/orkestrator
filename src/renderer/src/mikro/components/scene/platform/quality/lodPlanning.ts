@@ -1,5 +1,5 @@
 import type { DataType } from "zarrita";
-import { mapDTypeToTextureBytes } from "@/lib/zarr/indexing/dtype";
+import { mapDTypeToTextureBytes } from "@/core/lib/zarr/indexing/dtype";
 import { BrickLayerFragment, ImageLayerFragment } from "../model/layerGuards";
 
 /**

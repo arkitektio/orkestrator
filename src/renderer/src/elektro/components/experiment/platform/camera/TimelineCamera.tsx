@@ -1,9 +1,9 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
-import { bindFields } from "@/lib/scene/stores/bindStore";
-import { createSettler } from "@/lib/scene/perf/settle";
-import { createRafCoalescer } from "@/lib/scene/perf/rafCoalesce";
+import { bindFields } from "@/core/lib/scene/stores/bindStore";
+import { createSettler } from "@/core/lib/scene/perf/settle";
+import { createRafCoalescer } from "@/core/lib/scene/perf/rafCoalesce";
 import { useExperimentStoreApi } from "../stores/experimentStore";
 import { panBy, useRangeStoreApi, zoomAbout } from "../stores/rangeStore";
 import { useViewerStoreApi } from "../stores/viewerStore";

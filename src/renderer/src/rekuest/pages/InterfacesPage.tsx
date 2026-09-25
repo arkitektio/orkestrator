@@ -1,4 +1,4 @@
-import { RekuestInterface } from "@/linkers";
+import { RekuestInterface } from "@/core/linkers";
 import InterfaceList from "../components/lists/InterfaceList";
 const Page = () => {
   return (

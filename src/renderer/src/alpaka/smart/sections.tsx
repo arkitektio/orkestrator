@@ -1,6 +1,6 @@
-import { Guard } from "@/app/Arkitekt";
+import { Guard } from "@/core/app/Arkitekt";
 import { MessageSquareMore } from "lucide-react";
-import type { SmartContextSection } from "@/providers/smart/extensions/section";
+import type { SmartContextSection } from "@/core/providers/smart/extensions/section";
 import { TalkAboutButton, talkTargets } from "./talk";
 import type { TalkTarget } from "./useTalkAbout";
 

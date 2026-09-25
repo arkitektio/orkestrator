@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { MikroFile } from "@/linkers";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardTitle } from "@/core/components/ui/card";
+import { MikroFile } from "@/core/linkers";
+import { cn } from "@/core/lib/utils";
 import { ListFileFragment } from "../../api/graphql";
 
 interface Props {

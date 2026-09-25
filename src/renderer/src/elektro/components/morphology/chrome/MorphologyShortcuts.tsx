@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { isTypingTarget } from "@/lib/input/keyboardTarget";
+import { Button } from "@/core/components/ui/button";
+import { isTypingTarget } from "@/core/lib/input/keyboardTarget";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 

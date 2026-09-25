@@ -1,7 +1,7 @@
 import { Maximize2, Waypoints } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/core/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/core/components/ui/toggle-group";
 import { useLayerWorldBoxGetter, useSceneHostLayers, useSceneWorld } from "../../scene/sceneHost";
 import { CONSTRAINTS, type Constraint } from "../math/constraints";
 import { fitDelta } from "../math/fit";

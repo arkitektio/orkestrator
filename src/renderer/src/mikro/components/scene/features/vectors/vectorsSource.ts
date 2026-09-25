@@ -31,14 +31,14 @@
  * store is an open server question, and a strided level-0 read is correct at every
  * answer.
  */
-import { ConfiguredS3Store } from "@/lib/zarr/store/s3Store";
-import type { MikroClient } from "@/lib/zarr/store/types";
+import { ConfiguredS3Store } from "@/core/lib/zarr/store/s3Store";
+import type { MikroClient } from "@/core/lib/zarr/store/types";
 import { buildS3FetchConfig, getGeneralAccess } from "@/mikro/lib/zarr/access";
 import { buildSliceMap, resolveFixedDimIndex } from "../../platform/coords/selection";
-import { openZarrArray } from "@/lib/zarr/openArray";
-import { readArrayWindow, type WindowRange } from "@/lib/zarr/readArrayWindow";
-import { ByteBudgetChunkCache } from "@/lib/zarr/caches/byteBudgetChunkCache";
-import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
+import { openZarrArray } from "@/core/lib/zarr/openArray";
+import { readArrayWindow, type WindowRange } from "@/core/lib/zarr/readArrayWindow";
+import { ByteBudgetChunkCache } from "@/core/lib/zarr/caches/byteBudgetChunkCache";
+import { workerPool } from "@/core/lib/zarr/pool/sharedWorkerPool";
 import type { VectorLayerFragment } from "../../platform/model/layerGuards";
 
 export type VectorField = {

@@ -1,9 +1,9 @@
-import { useDialog } from "@/app/dialog";
-import { ParagraphField } from "@/components/fields/ParagraphField";
-import { StringField } from "@/components/fields/StringField";
-import { Button } from "@/components/ui/button";
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { useDialog } from "@/core/app/dialog";
+import { ParagraphField } from "@/core/components/fields/ParagraphField";
+import { StringField } from "@/core/components/fields/StringField";
+import { Button } from "@/core/components/ui/button";
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
+import { Form } from "@/core/components/ui/form";
 import { useNotifyUserMutation } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";

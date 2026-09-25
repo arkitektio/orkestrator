@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphStructure } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KraphStructure } from "@/core/linkers";
 import { useGetStructureQuery } from "../api/graphql";
 
 export const StructureDisplay = (props: DisplayWidgetProps) => {

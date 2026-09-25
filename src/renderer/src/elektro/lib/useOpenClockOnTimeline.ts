@@ -2,8 +2,8 @@ import type { ApolloClient, NormalizedCache } from "@apollo/client";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useElektro } from "@/app/Arkitekt";
-import { ElektroExperiment } from "@/linkers";
+import { useElektro } from "@/core/app/Arkitekt";
+import { ElektroExperiment } from "@/core/linkers";
 import { findOrCreateExperimentForWorld } from "./openOnTimeline";
 
 /**

@@ -1,10 +1,10 @@
-import { ListRender } from "@/components/layout/ListRender";
+import { ListRender } from "@/core/components/layout/ListRender";
 
 import {
   ProviderFilter,
   useListProvidersQuery
 } from "@/alpaka/api/graphql";
-import type { OffsetPaginationInput } from "@/lib/pagination";
+import type { OffsetPaginationInput } from "@/core/lib/pagination";
 import ProviderCard from "../cards/ProviderCard";
 
 export type Props = {

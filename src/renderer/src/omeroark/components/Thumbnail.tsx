@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/app/Arkitekt";
+import { Arkitekt } from "@/core/app/Arkitekt";
 import React from "react";
 
 type ImageWithAuthProps = {

@@ -1,7 +1,7 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 import type * as THREE from "three";
-import { bindFields } from "@/lib/scene/stores/bindStore";
+import { bindFields } from "@/core/lib/scene/stores/bindStore";
 import { valueToY } from "../coords/rowMap";
 import { effectiveClim, useViewerStoreApi } from "../stores/viewerStore";
 

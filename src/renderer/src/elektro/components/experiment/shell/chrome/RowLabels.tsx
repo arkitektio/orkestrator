@@ -1,5 +1,5 @@
 import { ChannelTag } from "../../features/metadata/ChannelMetadata";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/lib/utils";
 import { ROW_PADDING } from "../../features/stacking/stackLayout";
 import { formatValue } from "../../platform/probe/formatValue";
 import { useChannelColors } from "../../platform/stores/channelColors";

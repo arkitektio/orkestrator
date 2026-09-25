@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { MikroScene } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { MikroScene } from "@/core/linkers";
 import { useParams } from "react-router-dom";
 import { useGetSceneQuery } from "../api/graphql";
 import { Registration } from "../components/registration/Registration";

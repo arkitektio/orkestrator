@@ -1,18 +1,18 @@
-import { AsyncCombobox } from "@/components/fields/AsyncCombobox";
-import { SearchFunction } from "@/components/fields/SearchField";
+import { AsyncCombobox } from "@/core/components/fields/AsyncCombobox";
+import { SearchFunction } from "@/core/components/fields/SearchField";
 import {
   ActionLabel,
   PageActionPolicy,
   useActionSlotSize,
-} from "@/components/ui/page-action";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from "@/core/components/ui/page-action";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+} from "@/core/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/core/components/ui/toggle-group";
 import { useListStructuresLazyQuery } from "@/rekuest/api/graphql";
 import { DemandDirection } from "@/rekuest/lib/actionBrowse";
 import { Shapes } from "lucide-react";

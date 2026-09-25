@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/core/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -6,8 +6,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { MikroCoordinateSystem } from "@/linkers";
+} from "@/core/components/ui/table";
+import { MikroCoordinateSystem } from "@/core/linkers";
 import { PlacementValidity } from "../../api/graphql";
 import { AnyTransformation, describeTransformation } from "./types";
 

@@ -1,5 +1,5 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { LokRedeemToken } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { LokRedeemToken } from "@/core/linkers";
 import { useGetRedeemTokenQuery } from "../api/graphql";
 
 export const RedeemTokenPage = asDetailQueryRoute(useGetRedeemTokenQuery, ({ data }) => {

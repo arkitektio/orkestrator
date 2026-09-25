@@ -1,4 +1,4 @@
-import { Guard } from "@/app/Arkitekt";
+import { Guard } from "@/core/app/Arkitekt";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { ParameterFragment, useListMechanismsQuery } from "../../api/graphql";
 

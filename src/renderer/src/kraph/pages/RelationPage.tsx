@@ -1,7 +1,7 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Badge } from "@/components/ui/badge";
-import { KraphReagent, KraphRelation } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { FormSheet } from "@/core/components/dialog/FormDialog";
+import { Badge } from "@/core/components/ui/badge";
+import { KraphReagent, KraphRelation } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetRelationQuery } from "../api/graphql";
 

@@ -1,10 +1,10 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
-import { Button } from "@/components/ui/button";
-import { FancyInput } from "@/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup, SidePaneNav } from "@/components/ui/sidepane";
-import { useDebounce } from "@/hooks/use-debounce";
-import { AlpakaRoom } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { SidebarLayout } from "@/core/components/layout/SidebarLayout";
+import { Button } from "@/core/components/ui/button";
+import { FancyInput } from "@/core/components/ui/fancy-input";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/components/ui/sidepane";
+import { useDebounce } from "@/core/hooks/use-debounce";
+import { AlpakaRoom } from "@/core/linkers";
 import { CubeIcon, PlusIcon } from "@radix-ui/react-icons";
 import { Home } from "lucide-react";
 import * as React from "react";

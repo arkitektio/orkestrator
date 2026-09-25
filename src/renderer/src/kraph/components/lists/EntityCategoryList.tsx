@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { KraphEntityCategory } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { KraphEntityCategory } from "@/core/linkers";
 import {
   EntityCategoryFilter,
   OffsetPaginationInput,

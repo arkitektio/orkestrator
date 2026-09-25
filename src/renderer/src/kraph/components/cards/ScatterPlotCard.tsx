@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { KraphScatterPlot } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { KraphScatterPlot } from "@/core/linkers";
 import {
   ListScatterPlotFragment
 } from "../../api/graphql";

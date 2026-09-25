@@ -1,12 +1,12 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
 import { buildAssignInput } from "@/rekuest/assign";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { ArgsContainer } from "@/components/ports/ArgsContainer";
-import { useActionDescription } from "@/lib/ports/ActionDescription";
-import { RekuestShortcut } from "@/linkers";
+import { Button } from "@/core/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { Form } from "@/core/components/ui/form";
+import { ArgsContainer } from "@/core/components/ports/ArgsContainer";
+import { useActionDescription } from "@/core/lib/ports/ActionDescription";
+import { RekuestShortcut } from "@/core/linkers";
 import {
   TaskEventKind,
   ShortcutFragment,
@@ -15,10 +15,10 @@ import {
 import { ArrowRight } from "lucide-react";
 import { useCallback } from "react";
 import { useAction } from "../hooks/useAction";
-import { usePortForm } from "@/lib/ports/usePortForm";
-import { ReturnsContainer } from "@/lib/ports/tailwind";
-import { portToLabel } from "@/lib/ports/utils";
-import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
+import { usePortForm } from "@/core/lib/ports/usePortForm";
+import { ReturnsContainer } from "@/core/lib/ports/tailwind";
+import { portToLabel } from "@/core/lib/ports/utils";
+import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
 
 export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
   const { assign, latestTask } = useAction({

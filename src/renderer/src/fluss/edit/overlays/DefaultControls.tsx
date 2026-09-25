@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Button } from "@/core/components/ui/button";
+import { Separator } from "@/core/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { cn } from "@/core/lib/utils";
 import { CircleHelp, Redo2, Tags, Undo2 } from "lucide-react";
 import React from "react";
 import { useEditFlowStore, useEditTemporal } from "../context";

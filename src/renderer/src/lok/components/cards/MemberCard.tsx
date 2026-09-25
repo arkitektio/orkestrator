@@ -1,8 +1,8 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
-import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { LokUser } from "@/linkers";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
+import { Card } from "@/core/components/ui/card";
+import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
+import { LokUser } from "@/core/linkers";
+import { cn } from "@/core/lib/utils";
 import React from "react";
 import { OrganizationFragment } from "../../api/graphql";
 

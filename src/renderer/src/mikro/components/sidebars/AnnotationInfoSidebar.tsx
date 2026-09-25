@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { MikroAnnotation, MikroCoordinateSystem, MikroScene } from "@/linkers";
+import { Badge } from "@/core/components/ui/badge";
+import { MikroAnnotation, MikroCoordinateSystem, MikroScene } from "@/core/linkers";
 
 import { GetAnnotationQuery } from "../../api/graphql";
 import { AnnotationGlyph } from "../annotations/AnnotationGlyph";

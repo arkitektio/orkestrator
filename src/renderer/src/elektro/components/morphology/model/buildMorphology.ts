@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { toBase } from "@/lib/quantities";
+import { toBase } from "@/core/lib/quantities";
 
 /**
  * A neuron model's morphology, in world µm — the one geometry both the viewer

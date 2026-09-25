@@ -1,5 +1,5 @@
-import { createList } from "@/components/layout/createList";
-import { MikroFile } from "@/linkers";
+import { createList } from "@/core/components/layout/createList";
+import { MikroFile } from "@/core/linkers";
 import {
   useGetFilesQuery,
 } from "../../api/graphql";

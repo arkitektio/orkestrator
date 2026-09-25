@@ -1,6 +1,6 @@
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageLayout } from "@/core/components/layout/PageLayout";
+import { Button } from "@/core/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
 import { ArrowRight, Github } from "lucide-react";
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";

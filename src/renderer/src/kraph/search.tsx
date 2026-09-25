@@ -1,8 +1,8 @@
 import { useGlobalSearchQuery } from "@/kraph/api/graphql";
 import { CommandGroup } from "cmdk";
 
-import { EntityRow } from "@/command/sources/entity/EntityRow";
-import { GroupHeading } from "@/command/sources/entity/shared";
+import { EntityRow } from "@/core/command/sources/entity/EntityRow";
+import { GroupHeading } from "@/core/command/sources/entity/shared";
 
 /**
  * Kraph's slice.

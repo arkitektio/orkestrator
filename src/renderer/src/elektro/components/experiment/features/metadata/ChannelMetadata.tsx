@@ -5,17 +5,17 @@ import {
   PopoutNote,
   PopoutSection,
   ThreeDPopoutCard,
-} from "@/components/popout/ThreeDPopoutCard";
+} from "@/core/components/popout/ThreeDPopoutCard";
 import { useGetExpLensAnchorsQuery, type ExpFullAnchorFragment } from "@/elektro/api/graphql";
 import { InlineSectionViewer } from "@/elektro/components/morphology/InlineSectionViewer";
-import { ElektroArrayDataset, ElektroNeuronModel } from "@/linkers";
-import { formatDisplay } from "@/lib/quantities";
+import { ElektroArrayDataset, ElektroNeuronModel } from "@/core/linkers";
+import { formatDisplay } from "@/core/lib/quantities";
 import {
   HistogramSparkline,
   settingValue,
   type ValueHistogramLike,
-} from "@/lib/scene/metadata/MetadataChrome";
-import { cn } from "@/lib/utils";
+} from "@/core/lib/scene/metadata/MetadataChrome";
+import { cn } from "@/core/lib/utils";
 import {
   anchorInView,
   anchorsForChannel,

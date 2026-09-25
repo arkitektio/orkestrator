@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { MikroSparseDataset } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { MikroSparseDataset } from "@/core/linkers";
 import { useGetSparseDatasetQuery } from "../api/graphql";
 import { sparseDatasetTitle } from "../components/sparse/sparseFacts";
 import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";

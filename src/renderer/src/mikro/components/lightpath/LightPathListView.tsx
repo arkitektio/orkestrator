@@ -1,7 +1,7 @@
 import { LightpathGraphFragment } from "@/mikro/api/graphql";
-import { formatDisplay } from "@/lib/quantities";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatDisplay } from "@/core/lib/quantities";
+import { Badge } from "@/core/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/core/components/ui/tooltip";
 import { Eye, Zap, Filter, Search, Camera, Sun, Microscope, Square, CircleDot, ChevronRight } from "lucide-react";
 
 type ElementType = LightpathGraphFragment['elements'][0];

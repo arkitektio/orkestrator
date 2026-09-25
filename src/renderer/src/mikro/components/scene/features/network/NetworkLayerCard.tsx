@@ -1,4 +1,4 @@
-import { Slider } from "@/components/ui/slider";
+import { Slider } from "@/core/components/ui/slider";
 import { Circle, MoveRight, Share2 } from "lucide-react";
 import { memo, useCallback, useMemo, useRef } from "react";
 import {
@@ -16,7 +16,7 @@ import {
   type NetworkLayerSessionState,
 } from "../../platform/stores/sceneStore";
 import { instancePaletteCSS } from "../../platform/layerui/colormap-utils";
-import { ColormapSelect, type ColormapChoice } from "@/lib/scene/layerui/ColormapSelect";
+import { ColormapSelect, type ColormapChoice } from "@/core/lib/scene/layerui/ColormapSelect";
 import {
   Badge,
   CardSection,
@@ -26,7 +26,7 @@ import {
   Segment,
   SegmentGroup,
   formatCount,
-} from "@/lib/scene/layerui/cardControls";
+} from "@/core/lib/scene/layerui/cardControls";
 import type { ColumnOptionSource } from "../../platform/layerui/ColumnOptionPicker";
 import {
   ColorBySection,

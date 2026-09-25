@@ -1,7 +1,7 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { LovekitSoloBroadcast } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { cn } from "@/core/lib/utils";
+import { LovekitSoloBroadcast } from "@/core/linkers";
 import { ListSoloBroadcastFragment } from "@/lovekit/api/graphql";
 
 

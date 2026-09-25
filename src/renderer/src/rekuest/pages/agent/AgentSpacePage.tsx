@@ -1,5 +1,5 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { RekuestAgent } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { RekuestAgent } from "@/core/linkers";
 import { useAgentQuery, useDetailTaskQuery } from "@/rekuest/api/graphql";
 import { ChildTaskUpdater } from "@/rekuest/components/updaters/ChildTaskUpdater";
 import { GanttTimeline } from "@/rekuest/components/timeline/GanttTimeline";

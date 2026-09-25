@@ -1,6 +1,6 @@
-import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
-import { RekuestTask } from "@/linkers";
-import { parseAsIsoDateTime, useQueryState } from "@/hooks/use-search-param-state";
+import { DateTimeRangePicker } from "@/core/components/ui/date-time-range-picker";
+import { RekuestTask } from "@/core/linkers";
+import { parseAsIsoDateTime, useQueryState } from "@/core/hooks/use-search-param-state";
 import { Ordering } from "../api/graphql";
 import TaskList from "../components/lists/TaskList";
 import { OrgTasksUpdater } from "../components/updaters/OrgTasksUpdater";

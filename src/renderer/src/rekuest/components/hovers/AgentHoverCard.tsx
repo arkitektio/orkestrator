@@ -3,12 +3,12 @@ import {
   HoverSectionLabel,
   HoverShell,
   HoverSkeleton,
-} from "@/components/hover/HoverShell";
-import { Badge } from "@/components/ui/badge";
-import { Object } from "@/types";
+} from "@/core/components/hover/HoverShell";
+import { Badge } from "@/core/components/ui/badge";
+import { Object } from "@/core/types";
 import { formatDistanceToNow } from "date-fns";
 import { Zap } from "lucide-react";
-import { RekuestAction } from "@/linkers";
+import { RekuestAction } from "@/core/linkers";
 import { useHoverAgentQuery } from "../../api/graphql";
 
 export const AgentHoverCard = ({ object }: { object: Object }) => {

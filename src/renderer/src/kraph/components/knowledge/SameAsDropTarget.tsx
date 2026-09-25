@@ -1,4 +1,4 @@
-import { useKraph } from "@/app/Arkitekt";
+import { useKraph } from "@/core/app/Arkitekt";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,17 +8,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/core/components/ui/alert-dialog";
 import {
   executeSameness,
   explainSameness,
   planSameness,
   type SamenessPlan,
 } from "@/kraph/lib/sameness";
-import { useCanDrop, useDropTarget } from "@/lib/dnd/react";
-import { cn } from "@/lib/utils";
-import { acceptsSmartDrag, resolveSmartDrop } from "@/providers/smart/dragPayload";
-import type { Structure } from "@/types";
+import { useCanDrop, useDropTarget } from "@/core/lib/dnd/react";
+import { cn } from "@/core/lib/utils";
+import { acceptsSmartDrag, resolveSmartDrop } from "@/core/providers/smart/dragPayload";
+import type { Structure } from "@/core/types";
 import { useState } from "react";
 import { toast } from "sonner";
 

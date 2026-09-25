@@ -1,15 +1,15 @@
-import { useDialog } from "@/app/dialog";
+import { useDialog } from "@/core/app/dialog";
 import { buildAssignInput } from "@/rekuest/assign";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/core/components/ui/dropdown-menu";
 import { DemandKind, PortKind, PrimaryActionFragment, useAllPrimaryActionsQuery } from "@/rekuest/api/graphql";
 import { useAssignWithCallback } from "@/rekuest/hooks/useAssign";
-import { Identifier, Object } from "@/types";
+import { Identifier, Object } from "@/core/types";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

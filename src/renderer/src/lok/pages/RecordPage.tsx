@@ -1,6 +1,6 @@
-import { LoadingPage } from "@/app/components/fallbacks/LoadingPage";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { LokUser } from "@/linkers";
+import { LoadingPage } from "@/core/app/components/fallbacks/LoadingPage";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { LokUser } from "@/core/linkers";
 import { useMeQuery } from "../api/graphql";
 import { MorseCodeRecorder } from "../components/MorseCodeRecorder";
 

@@ -1,17 +1,17 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/core/components/ui/button";
+import { Input } from "@/core/components/ui/input";
+import { Label } from "@/core/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/core/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { IonStyle } from "../../api/graphql";
 import { EditableIon } from "../../lib/modelSerialization";
-import { QuantityInput } from "@/components/fields/QuantityInput";
+import { QuantityInput } from "@/core/components/fields/QuantityInput";
 
 const ION_STYLES: { value: IonStyle; label: string }[] = [
   { value: IonStyle.FixedReversal, label: "Fixed reversal" },

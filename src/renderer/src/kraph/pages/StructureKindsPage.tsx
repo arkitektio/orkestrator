@@ -1,6 +1,6 @@
-import { Card } from "@/components/ui/card";
-import { DialogButton } from "@/components/ui/dialog-button";
-import { KraphEntityCategory, KraphStructureKind } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { DialogButton } from "@/core/components/ui/dialog-button";
+import { KraphEntityCategory, KraphStructureKind } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";

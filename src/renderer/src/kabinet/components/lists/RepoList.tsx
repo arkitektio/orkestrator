@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { KabinetRepo } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { KabinetRepo } from "@/core/linkers";
 import {
   GithubRepoFilter,
   OffsetPaginationInput,

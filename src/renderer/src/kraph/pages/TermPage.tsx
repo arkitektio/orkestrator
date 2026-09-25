@@ -1,10 +1,10 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { Card } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
-import { KraphTerm } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { FormSheet } from "@/core/components/dialog/FormDialog";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { PageAction } from "@/core/components/ui/page-action";
+import { Card } from "@/core/components/ui/card";
+import { Image } from "@/core/components/ui/image";
+import { KraphTerm } from "@/core/linkers";
 import { useGetTermQuery } from "../api/graphql";
 import UpdateTermForm from "../forms/UpdateTermForm";
 import { termKindLabel, termTint } from "../lib/terms";

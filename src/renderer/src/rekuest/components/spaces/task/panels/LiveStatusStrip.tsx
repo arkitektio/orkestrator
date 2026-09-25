@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { Button } from '@/core/components/ui/button'
 import { useSpaceViewStore } from '../store'
 import { classifyChild, type ChildStatusBucket } from './statusColors'
 import { CheckCircle2, CircleSlash, Loader2, Radio, XCircle } from 'lucide-react'

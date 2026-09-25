@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useCallback } from "react";
-import { useDialog } from "@/app/dialog";
-import { Button } from "@/components/ui/button";
+import { useDialog } from "@/core/app/dialog";
+import { Button } from "@/core/components/ui/button";
 import { useLayerWrite } from "../../platform/edits/useLayerWrite";
 import { reorderedOrders } from "../../platform/model/layerOrder";
 import {

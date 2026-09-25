@@ -1,6 +1,6 @@
 import "./index.css";
 
-import App from "@/app/App";
+import App from "@/core/app/App";
 
 /* This is a simple entrypoint wrapper */
 function WrappedApp() {

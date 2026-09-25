@@ -1,8 +1,8 @@
-import { KabinetApp } from "@/linkers";
+import { KabinetApp } from "@/core/linkers";
 import { Navigate, useParams } from "react-router-dom";
 import { useListAppsQuery } from "../api/graphql";
-import { LoadingPage } from "@/app/components/fallbacks/LoadingPage";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { LoadingPage } from "@/core/app/components/fallbacks/LoadingPage";
+import { NotFound } from "@/core/app/components/fallbacks/NotFound";
 
 /**
  * Where `kabinet/app-store/:identifier` used to land.

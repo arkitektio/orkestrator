@@ -1,7 +1,7 @@
-import { SearchField, SearchOptions } from "@/components/fields/SearchField";
+import { SearchField, SearchOptions } from "@/core/components/fields/SearchField";
 import { useSearchMemoryDrawerLazyQuery } from "@/rekuest/api/graphql";
-import { InputWidgetProps } from "@/lib/ports/types";
-import { pathToName } from "@/lib/ports/utils";
+import { InputWidgetProps } from "@/core/lib/ports/types";
+import { pathToName } from "@/core/lib/ports/utils";
 import { useCallback } from "react";
 
 const structureKey = (value: unknown): string | undefined =>

@@ -1,7 +1,7 @@
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/core/components/ui/input";
+import { Label } from "@/core/components/ui/label";
 import { EditableModelWide } from "../../lib/modelSerialization";
-import { QuantityInput } from "@/components/fields/QuantityInput";
+import { QuantityInput } from "@/core/components/fields/QuantityInput";
 import { IonListEditor } from "./IonListEditor";
 import { MechanismGlobalsEditor } from "./MechanismGlobalsEditor";
 

@@ -14,11 +14,11 @@ import {
 } from '@/elektro/api/graphql'
 import { useActiveWorkspaceStore } from '@/elektro/lib/activeWorkspaceStore'
 import { findOrCreateExperimentForWorld } from '@/elektro/lib/openOnTimeline'
-import { ElektroExperiment, ElektroModelWorkspace } from '@/linkers'
+import { ElektroExperiment, ElektroModelWorkspace } from '@/core/linkers'
 import { ApolloClient, NormalizedCache } from '@apollo/client'
 import { AudioLines, LayoutDashboard, Layers } from 'lucide-react'
-import { Action } from '@/lib/localactions/LocalActionProvider'
-import { buildDeleteAction } from '@/lib/localactions/builders/deleteAction'
+import { Action } from '@/core/lib/localactions/LocalActionProvider'
+import { buildDeleteAction } from '@/core/lib/localactions/builders/deleteAction'
 
 /**
  * Spin up a fresh workspace seeded with the selected neuron model, make it the

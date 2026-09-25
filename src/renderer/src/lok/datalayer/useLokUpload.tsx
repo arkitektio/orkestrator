@@ -1,4 +1,4 @@
-import { useCoordinationEndpoint, useLok } from "@/app/Arkitekt";
+import { useCoordinationEndpoint, useLok } from "@/core/app/Arkitekt";
 import {
   PresignedPostCredentialsFragment,
   RequestMediaUploadDocument,

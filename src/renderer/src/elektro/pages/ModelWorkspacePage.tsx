@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Card } from "@/components/ui/card";
-import { ElektroModelWorkspace, ElektroNeuronModel } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { Card } from "@/core/components/ui/card";
+import { ElektroModelWorkspace, ElektroNeuronModel } from "@/core/linkers";
 import { useEffect } from "react";
 import { useDetailModelWorkspaceQuery, useDetailNeuronModelQuery } from "../api/graphql";
 import { MorphologyScene } from "../components/morphology/MorphologyScene";

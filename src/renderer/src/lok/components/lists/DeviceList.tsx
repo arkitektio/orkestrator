@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { LokDevice } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { LokDevice } from "@/core/linkers";
 
 import {
   DeviceFilter,

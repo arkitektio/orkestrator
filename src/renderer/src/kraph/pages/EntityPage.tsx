@@ -1,8 +1,8 @@
 import { asGraphDetailQueryRoute } from "@/kraph/routes/graphRoutes";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { KraphEntity, KraphEntityCategory } from "@/linkers";
+import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Badge } from "@/core/components/ui/badge";
+import { Separator } from "@/core/components/ui/separator";
+import { KraphEntity, KraphEntityCategory } from "@/core/linkers";
 import { ActivityLogIcon } from "@radix-ui/react-icons";
 import { Database } from "lucide-react";
 import { useGetEntityQuery } from "../api/graphql";

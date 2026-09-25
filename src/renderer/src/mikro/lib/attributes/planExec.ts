@@ -21,8 +21,8 @@ import {
  */
 
 export type HeldValue = number | bigint;
-export type { BindParam } from "@/lib/parquet/sqlBind";
-import type { BindParam } from "@/lib/parquet/sqlBind";
+export type { BindParam } from "@/core/lib/parquet/sqlBind";
+import type { BindParam } from "@/core/lib/parquet/sqlBind";
 
 /** Background pixels (value 0) have no object — nothing to look up. */
 export const isBackground = (value: HeldValue): boolean =>

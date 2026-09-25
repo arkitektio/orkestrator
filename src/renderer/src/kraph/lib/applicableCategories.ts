@@ -9,7 +9,7 @@ import {
   StructureKindsMatchingDescriptorQuery,
   StructureKindsMatchingDescriptorQueryVariables,
 } from "@/kraph/api/graphql";
-import { useKraph } from "@/app/Arkitekt";
+import { useKraph } from "@/core/app/Arkitekt";
 
 /**
  * Which edge categories admit the two ends a user is pairing up.

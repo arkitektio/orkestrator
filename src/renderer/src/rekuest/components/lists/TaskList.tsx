@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { RekuestTask } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { RekuestTask } from "@/core/linkers";
 import { TaskFilter, TaskOrder, OffsetPaginationInput, useListTasksQuery } from "@/rekuest/api/graphql";
 import { ReactNode } from "react";
 import TaskCard from "../cards/TaskCard";

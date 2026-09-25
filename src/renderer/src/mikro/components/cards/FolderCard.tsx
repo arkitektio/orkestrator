@@ -1,7 +1,7 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { MikroFolder } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { cn } from "@/core/lib/utils";
+import { MikroFolder } from "@/core/linkers";
 import { ListFolderFragment } from "../../api/graphql";
 
 interface Props {

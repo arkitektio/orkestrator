@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { LokService } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { LokService } from "@/core/linkers";
 import { ListServiceFragment } from "../../api/graphql";
 
 interface Props {

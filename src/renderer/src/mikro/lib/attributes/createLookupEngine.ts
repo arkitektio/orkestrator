@@ -4,7 +4,7 @@ import {
   RequestParquetAccessDocument,
   RequestParquetAccessMutation,
 } from "@/mikro/api/graphql";
-import type { MikroClient } from "@/lib/zarr/store/types";
+import type { MikroClient } from "@/core/lib/zarr/store/types";
 import {
   ensureHttpfs,
   getDuckDb,

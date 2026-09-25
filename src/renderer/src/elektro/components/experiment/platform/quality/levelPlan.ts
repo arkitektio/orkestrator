@@ -1,5 +1,5 @@
-import { relativeLevelScaleFactors } from "@/lib/scene/coords/levelScale";
-import type { TransformLike } from "@/lib/scene/coords/transformGraph";
+import { relativeLevelScaleFactors } from "@/core/lib/scene/coords/levelScale";
+import type { TransformLike } from "@/core/lib/scene/coords/transformGraph";
 import type { TimeMap } from "../coords/timeMap";
 
 /**

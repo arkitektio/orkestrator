@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphStructureRelationCategory } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { KraphStructureRelationCategory } from "@/core/linkers";
 import { TermBadge } from "../components/TermBadge";
 import { useGetStructureRelationCategoryQuery } from "../api/graphql";
 

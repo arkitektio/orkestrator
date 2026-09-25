@@ -1,4 +1,4 @@
-import { defineModule } from "@/lib/module-host/define";
+import { defineModule } from "@/core/lib/module-host/define";
 import { LOK_ACTIONS } from "./actions";
 import { LOK_DIALOGS } from "./dialogRegistry";
 import { LokDashboardWidgets } from "./dashboard/LokDashboardWidgets";

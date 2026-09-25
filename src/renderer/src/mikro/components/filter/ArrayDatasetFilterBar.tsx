@@ -1,12 +1,12 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { CollapsibleSearch } from "@/components/ui/collapsible-search";
+import { Badge } from "@/core/components/ui/badge";
+import { Button } from "@/core/components/ui/button";
+import { CollapsibleSearch } from "@/core/components/ui/collapsible-search";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
-} from "@/components/ui/page-action";
-import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
+} from "@/core/components/ui/page-action";
+import { DateTimeRangePicker } from "@/core/components/ui/date-time-range-picker";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -16,7 +16,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/core/components/ui/dropdown-menu";
 import { useDebounce } from "@uidotdev/usehooks";
 import {
   ArrowDownWideNarrow,
@@ -32,7 +32,7 @@ import {
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
-} from "@/hooks/use-search-param-state";
+} from "@/core/hooks/use-search-param-state";
 import { useMemo } from "react";
 import {
   ArrayDatasetFilter,

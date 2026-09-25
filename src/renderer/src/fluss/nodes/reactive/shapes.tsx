@@ -1,11 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ActionDescription } from "@/lib/ports/ActionDescription";
-import { cn } from "@/lib/utils";
+import { Button } from "@/core/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { ActionDescription } from "@/core/lib/ports/ActionDescription";
+import { cn } from "@/core/lib/utils";
 import { ReactiveImplementation, ReactiveNodeFragment } from "@/fluss/api/graphql";
 import { FlowNodeData, ReactiveNodeData } from "@/fluss/types";
-import { portToLabel } from "@/lib/ports/utils";
+import { portToLabel } from "@/core/lib/ports/utils";
 import { useUpdateNodeInternals } from "@xyflow/react";
 import React from "react";
 import { useFlowAdapter } from "../adapter";

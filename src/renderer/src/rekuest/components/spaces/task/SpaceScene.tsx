@@ -1,4 +1,4 @@
-import { useSettings } from "@/providers/settings/SettingsContext";
+import { useSettings } from "@/core/providers/settings/SettingsContext";
 import { useSpaceViewStore } from "./store";
 import { Suspense, useMemo } from "react";
 import { CameraMatrixSync } from "./syncs/CameraMatrixSync";
@@ -8,7 +8,7 @@ import { AgentPanel } from "./panels/AgentPanel";
 import { SpaceGroupObject } from "./elements/SpaceGroupObject";
 import { CallingPathTubes } from "./elements/CallingPathTubes";
 import { Bug, Orbit } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/components/ui/button";
 import { TimeSlider } from "./panels/TimeSlider";
 import { SpaceGroup } from "./types";
 import { computeBrandColors } from "./elements/brandColors";

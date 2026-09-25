@@ -1,15 +1,15 @@
 import { titleFromPrompt } from "@/alpaka/recentRooms";
-import { useModifierState } from "@/app/hooks/modifierTracker";
+import { useModifierState } from "@/core/app/hooks/modifierTracker";
 import {
   talkTargetFromModifiers,
   useTalkAbout,
 } from "@/alpaka/smart/useTalkAbout";
-import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
-import type { PassDownProps } from "@/providers/smart/extensions/types";
+import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
+import type { PassDownProps } from "@/core/providers/smart/extensions/types";
 import { CommandGroup } from "cmdk";
 import { MessageSquareMore } from "lucide-react";
 
-import { useCommandPalette } from "@/command/CommandPaletteProvider";
+import { useCommandPalette } from "@/core/command/CommandPaletteProvider";
 
 /** cmdk keys rows by `value`; fixed, so the row keeps its place as you type. */
 const ASK_VALUE = "ask-an-agent";

@@ -1,5 +1,5 @@
-import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
-import { MikroArrayDataset, MikroCoordinateSystem } from "@/linkers";
+import { Empty, EmptyDescription, EmptyTitle } from "@/core/components/ui/empty";
+import { MikroArrayDataset, MikroCoordinateSystem } from "@/core/linkers";
 import { CornerDownRight } from "lucide-react";
 import { ParentEdge, parentDatasetOfEdge } from "./derivedGrouping";
 

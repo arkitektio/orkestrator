@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/card";
-import { KraphStructure } from "@/linkers";
+import { Card } from "@/core/components/ui/card";
+import { KraphStructure } from "@/core/linkers";
 import { useInformingStructuresQuery } from "../api/graphql";
 
 /**

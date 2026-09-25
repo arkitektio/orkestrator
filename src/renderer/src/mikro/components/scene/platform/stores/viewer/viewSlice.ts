@@ -1,5 +1,5 @@
 import type { SliceGet, SliceSet } from "./sliceTypes";
-import { fitCameraToObject } from "@/lib/scene/camera/cameraFit";
+import { fitCameraToObject } from "@/core/lib/scene/camera/cameraFit";
 import * as THREE from "three";
 import type { CanvasContext, LayerViewRange, TrackableObject, ViewSnapshot } from "../viewerStore";
 /**

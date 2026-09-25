@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { isSceneNavigationTarget } from "@/lib/input/keyboardTarget";
+import { Button } from "@/core/components/ui/button";
+import { isSceneNavigationTarget } from "@/core/lib/input/keyboardTarget";
 import {
   Background,
   ReactFlow,

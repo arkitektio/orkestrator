@@ -1,4 +1,4 @@
-import { Guard } from "@/app/Arkitekt";
+import { Guard } from "@/core/app/Arkitekt";
 import {
   DetailImplementationFragment,
   ListShortcutFragment,
@@ -15,9 +15,9 @@ import type {
   SectionItems,
   SmartContextSection,
   SmartSectionContext,
-} from "@/providers/smart/extensions/section";
-import type { SmartContextProps } from "@/providers/smart/extensions/types";
-import { useStableData } from "@/providers/smart/extensions/useStableData";
+} from "@/core/providers/smart/extensions/section";
+import type { SmartContextProps } from "@/core/providers/smart/extensions/types";
+import { useStableData } from "@/core/providers/smart/extensions/useStableData";
 import {
   AssignButton,
   BatchAssignButton,

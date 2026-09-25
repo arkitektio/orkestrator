@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { FlussFlow } from "@/linkers";
+import { ListRender } from "@/core/components/layout/ListRender";
+import { FlussFlow } from "@/core/linkers";
 import {
   FlowFilter,
   FlowOrder,

@@ -1,5 +1,5 @@
 import { WithMikroMediaUrl } from '@/mikro/datalayer/mikroAccess'
-import { cn } from '@/lib/utils'
+import { cn } from '@/core/lib/utils'
 import { SceneSnapshotFragment } from '../../api/graphql'
 
 /**

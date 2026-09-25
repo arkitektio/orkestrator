@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
-import { useDialog } from "@/app/dialog";
+import { Button } from "@/core/components/ui/button";
+import { Input } from "@/core/components/ui/input";
+import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
+import { useDialog } from "@/core/app/dialog";
 import { commitMeshDesign, type CommitProgress, type CommitResult, type WorldSystemLike } from "../commit/commitDesign";
 import { DESIGN_TRIANGLE_BUDGET, totalTriangles, type DesignMesh, type DesignOrigin } from "../store/meshDesignStore";
 

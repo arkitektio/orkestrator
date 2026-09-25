@@ -1,9 +1,9 @@
-import { Card } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
+import { Card } from "@/core/components/ui/card";
+import { Slider } from "@/core/components/ui/slider";
 import { useEffect, useState } from "react";
 import { FiPlay } from "react-icons/fi";
 import { RiStopLine } from "react-icons/ri";
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/components/ui/timestamp";
 import {
   DetailRunFragment,
   RunEventFragment,

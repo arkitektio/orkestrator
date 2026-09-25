@@ -1,10 +1,10 @@
-import { ListRender } from "@/components/layout/ListRender";
+import { ListRender } from "@/core/components/layout/ListRender";
 
 import {
   ChromaCollectionFilter,
   useListChromaCollectionsQuery
 } from "@/alpaka/api/graphql";
-import type { OffsetPaginationInput } from "@/lib/pagination";
+import type { OffsetPaginationInput } from "@/core/lib/pagination";
 import CollectionCard from "../cards/CollectionCard";
 
 export type Props = {

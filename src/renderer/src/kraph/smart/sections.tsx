@@ -1,6 +1,6 @@
-import { Guard } from "@/app/Arkitekt";
-import { useDialog } from "@/app/dialog";
-import { CommandItem } from "@/components/ui/command";
+import { Guard } from "@/core/app/Arkitekt";
+import { useDialog } from "@/core/app/dialog";
+import { CommandItem } from "@/core/components/ui/command";
 import {
   ListCandidateRelationCategoriesQuery,
   ListMeasurementCategoryWithGraphFragment,
@@ -21,9 +21,9 @@ import type {
   SectionStatus,
   SmartContextSection,
   SmartSectionContext,
-} from "@/providers/smart/extensions/section";
-import type { SmartContextProps } from "@/providers/smart/extensions/types";
-import { useStableData } from "@/providers/smart/extensions/useStableData";
+} from "@/core/providers/smart/extensions/section";
+import type { SmartContextProps } from "@/core/providers/smart/extensions/types";
+import { useStableData } from "@/core/providers/smart/extensions/useStableData";
 import {
   CreateMeasurementButton,
   EntityRelateButton,
