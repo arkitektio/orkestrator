@@ -62,6 +62,14 @@ export type ModelDecl = {
   path: string;
   /** service answers describe(identifier, id) */
   describe?: boolean;
+  /** ADDITION: one line about the model, for tooltips and palette rows */
+  description?: string;
+  /**
+   * ADDITION: where the same id lives when a scope is known (kraph draws a
+   * claim inside a graph): a template with `:scope` and `:id`. `path` stays
+   * the scope-free address every caller can reach.
+   */
+  scopedPath?: string;
 };
 
 export type ActionDecl = {

@@ -52,6 +52,21 @@ export const ownerOf = (path: string): string => {
 
 const isModule = (owner: string): boolean => !owner.startsWith("host:");
 
+/**
+ * A module's public face: the files the HOST may import. The manifest is
+ * data, `linkers` its smart objects, `service` its client binding and
+ * `module` its builtins. Everything else in a module is private to it.
+ */
+const PUBLIC_ENTRIES = ["manifest", "linkers", "service", "module"];
+
+export const isPublicEntry = (path: string): boolean => {
+  const owner = ownerOf(path);
+  const roots = MODULE_ROOTS[owner];
+  if (!roots) return false;
+  const stripped = path.replace(/\.(tsx?|jsx?)$/, "");
+  return PUBLIC_ENTRIES.some((entry) => stripped === `${roots[0]}/${entry}`);
+};
+
 const stripComments = (text: string): string =>
   text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 
@@ -106,6 +121,7 @@ export const collectEdges = (srcRoot: string): Map<string, string[]> => {
       if (target === null) continue;
       const to = ownerOf(target);
       if (from === to || !isModule(to)) continue;
+      if (!isModule(from) && isPublicEntry(target)) continue;
       const key = edgeKey(from, to);
       const files = edges.get(key) ?? [];
       if (!files.includes(rel)) files.push(rel);
@@ -141,6 +157,13 @@ describe("the boundary parser", () => {
     expect(ownerOf("lib/export/fileDownloaders.ts")).toBe("host:lib/export");
     expect(ownerOf("app/dialog.tsx")).toBe("host:app");
     expect(ownerOf("linkers.tsx")).toBe("host:root");
+  });
+
+  it("knows a module's public entries", () => {
+    expect(isPublicEntry("kraph/manifest")).toBe(true);
+    expect(isPublicEntry("kraph/module.tsx")).toBe(true);
+    expect(isPublicEntry("kraph/components/KnowledgeSidebar")).toBe(false);
+    expect(isPublicEntry("lib/kraph/manifest")).toBe(false);
   });
 
   it("resolves relative specifiers that escape a module", () => {

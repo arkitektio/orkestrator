@@ -23,6 +23,8 @@ export const modelDeclSchema = z.looseObject({
   datum: z.boolean(),
   path: z.string(),
   describe: z.boolean().optional(),
+  description: z.string().optional(),
+  scopedPath: z.string().optional(),
 });
 
 export const actionDeclSchema = z.looseObject({
