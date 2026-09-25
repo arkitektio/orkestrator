@@ -3,6 +3,7 @@ import { useSettings } from "@/providers/settings/SettingsContext";
 import React from "react";
 import { createSmartPrefetcher, type PrefetchClient } from "./extensions/prefetch";
 import { SmartPrefetchContext } from "./extensions/prefetchContext";
+import { resolveServiceClient } from "@/lib/module-host/operations";
 import { smartSections } from "./hostRegistries";
 
 /**
@@ -25,14 +26,8 @@ export const SmartPrefetchProvider = ({ children }: { children: React.ReactNode 
       enabled
         ? createSmartPrefetcher({
             getSections: () => smartSections().sections,
-            getClient: (service) => {
-              const state = store.getState();
-              if (state.serviceStates[service]?.status !== "ready") return undefined;
-              const services = state.connection?.serviceMap as
-                | Record<string, { client?: unknown } | undefined>
-                | undefined;
-              return services?.[service]?.client as PrefetchClient | undefined;
-            },
+            getClient: (service) =>
+              resolveServiceClient(store.getState(), service) as PrefetchClient | undefined,
           })
         : null,
     [store, enabled],

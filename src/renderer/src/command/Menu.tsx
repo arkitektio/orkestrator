@@ -26,7 +26,7 @@ import { useCommandPalette } from "./CommandPaletteProvider";
 import { usePaletteGrow } from "./usePaletteGrow";
 import { resolveContextObjects } from "./contextObjects";
 import { CyclingPlaceholder } from "./CyclingPlaceholder";
-import { ApplicableAsk } from "./sources/ApplicableAsk";
+import { ModulePaletteSources } from "@/app/modules/registries";
 import { ApplicableNavigation } from "./sources/ApplicableNavigation";
 import { ApplicableRecents } from "./sources/ApplicableRecents";
 import { ApplicableEntitySearch } from "./sources/entity/ApplicableEntitySearch";
@@ -368,7 +368,7 @@ export const CommandMenu = (props: {
                       nothing still has a row. Below what matched — a hit beats
                       a question — and above the entity search, whose late
                       results would otherwise push it around. */}
-                  <ApplicableAsk
+                  <ModulePaletteSources
                     filter={searchFilter}
                     objects={objects}
                     partners={props.partners}

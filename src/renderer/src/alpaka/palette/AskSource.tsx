@@ -1,4 +1,3 @@
-import { Guard } from "@/app/Arkitekt";
 import { titleFromPrompt } from "@/alpaka/recentRooms";
 import { useModifierState } from "@/app/hooks/modifierTracker";
 import {
@@ -10,7 +9,7 @@ import type { PassDownProps } from "@/providers/smart/extensions/types";
 import { CommandGroup } from "cmdk";
 import { MessageSquareMore } from "lucide-react";
 
-import { useCommandPalette } from "../CommandPaletteProvider";
+import { useCommandPalette } from "@/command/CommandPaletteProvider";
 
 /** cmdk keys rows by `value`; fixed, so the row keeps its place as you type. */
 const ASK_VALUE = "ask-an-agent";
@@ -78,10 +77,10 @@ const AskRow = ({
  * nothing is fetched here, and the row must carry the last keystroke even when
  * Enter follows it inside the debounce window.
  *
- * Alpaka GraphQL, so the row mounts under `Guard.Alpaka` — from outside, before
- * its mutation hook can run.
+ * Alpaka GraphQL: registered as alpaka's `paletteSources` builtin, so the host
+ * mounts it under alpaka's guard — from outside, before its mutation hook runs.
  */
-export const ApplicableAsk = ({ filter, objects, onDone, onError }: PassDownProps) => {
+export const AskSource = ({ filter, objects, onDone, onError }: PassDownProps) => {
   const { query } = useCommandPalette();
   const question = (query || filter || "").trim();
 
@@ -89,9 +88,5 @@ export const ApplicableAsk = ({ filter, objects, onDone, onError }: PassDownProp
     return null;
   }
 
-  return (
-    <Guard.Alpaka>
-      <AskRow question={question} objects={objects} onDone={onDone} onError={onError} />
-    </Guard.Alpaka>
-  );
+  return <AskRow question={question} objects={objects} onDone={onDone} onError={onError} />;
 };

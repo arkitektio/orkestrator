@@ -27,8 +27,8 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 import { FILE_DOWNLOADERS } from "@/app/modules/registries";
-import { structureLabel } from "../../lib/export/structureLabel";
-import { FILE_DOWNLOAD_HOOK } from "../../lib/export/taskHooks";
+import { structureLabel } from "@/lib/export/structureLabel";
+import { FILE_DOWNLOAD_HOOK } from "@/lib/export/taskHooks";
 
 export type ExportToFileDialogProps = {
   structure: Structure;

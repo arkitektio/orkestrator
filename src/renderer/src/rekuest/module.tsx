@@ -5,6 +5,7 @@ import { UiCatalogRegistrar } from "./catalog/UiCatalogRegistrar";
 import { EnhanceButton } from "./components/EnhanceButton";
 import { AgentUpdater } from "./components/functional/AgentUpdater";
 import { TaskUpdater } from "./components/functional/TaskUpdater";
+import { TaskIsland } from "./components/global/TaskIsland";
 import ActionHoverCard from "./components/hovers/ActionHoverCard";
 import AgentHoverCard from "./components/hovers/AgentHoverCard";
 import ImplementationHoverCard from "./components/hovers/ImplementationHoverCard";
@@ -13,10 +14,13 @@ import { LatestTasksDashboardWidget } from "./dashboard/LatestTasksDashboardWidg
 import { RekuestDashboardWidgets } from "./dashboard/RekuestDashboardWidgets";
 import { REKUEST_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { REKUEST_NAV_LINKS } from "./navLinks";
 import { REKUEST_PROFILE_SECTIONS } from "./profile/sections";
 import { RekuestEntitySearch } from "./search";
 import { ClientFailedTasks } from "./sections/ClientFailedTasks";
 import { DeviceAgents } from "./sections/DeviceAgents";
+import { BackendAgents, PodActions } from "./sections/KabinetAgents";
+import { KabinetInstallCard, KabinetInstallMenu } from "./sections/KabinetInstall";
 import { RunOnSubmenu } from "./smart/RunOnSubmenu";
 import { REKUEST_SECTIONS } from "./smart/sections";
 
@@ -25,6 +29,7 @@ export const REKUEST_MODULE = defineModule({
   builtins: {
     page: () => import("./RekuestNextModule"),
     nav: () => import("./panes/StandardPane"),
+    navLinks: REKUEST_NAV_LINKS,
     hovers: {
       "@rekuest/action": ActionHoverCard,
       "@rekuest/agent": AgentHoverCard,
@@ -57,6 +62,35 @@ export const REKUEST_MODULE = defineModule({
         match: { identifiers: ["@lok/device"] },
         Component: DeviceAgents,
       },
+      {
+        // kabinet: install a flavour/release through an installer agent.
+        id: "rekuest.kabinetinstall",
+        title: "Install",
+        placement: "card",
+        match: { identifiers: ["@kabinet/flavour", "@kabinet/release"] },
+        Component: KabinetInstallCard,
+      },
+      {
+        id: "rekuest.kabinetinstallmenu",
+        title: "Install",
+        placement: "menu",
+        match: { identifiers: ["@kabinet/flavour"] },
+        Component: KabinetInstallMenu,
+      },
+      {
+        id: "rekuest.backendagents",
+        title: "Agents",
+        placement: "actions",
+        match: { identifiers: ["@kabinet/backend"] },
+        Component: BackendAgents,
+      },
+      {
+        id: "rekuest.podactions",
+        title: "Pod actions",
+        placement: "actions",
+        match: { identifiers: ["@kabinet/pod"] },
+        Component: PodActions,
+      },
     ],
     sections: REKUEST_SECTIONS,
     // One "Run on" picker per menu, around (not inside) its command list.
@@ -71,5 +105,6 @@ export const REKUEST_MODULE = defineModule({
       TaskHookRunner,
     ],
     search: RekuestEntitySearch,
+    railIslands: [TaskIsland],
   },
 });

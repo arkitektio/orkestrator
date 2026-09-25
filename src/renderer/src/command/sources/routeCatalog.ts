@@ -1,9 +1,5 @@
-import { ADATASET_SPECS, arrayDatasetSpecLink } from "@/mikro/specs";
-import {
-  ARRAY_DATASET_SPECS as ELEKTRO_ARRAY_DATASET_SPECS,
-  arrayDatasetSpecLink as elektroArrayDatasetSpecLink,
-} from "@/elektro/specs";
-
+import { moduleNavLinks } from "@/app/modules/registries";
+import { derived } from "@/lib/module-host/lazy";
 import { rankByFilter } from "../filter";
 
 /** A page inside a module, as its rail pane links to it. */
@@ -16,111 +12,25 @@ export type CatalogRoute = {
   keywords?: string[];
 };
 
-/**
- * Every static page each module's pane links to, as data.
- *
- * The panes themselves are bespoke JSX (icons, groups, live sections), so the
- * palette cannot read them; this is the same list written down, so "tasks"
- * finds Rekuest › Tasks without opening a module first. `routeCatalog.test.ts`
- * parses the panes' source and fails the moment one of them adds, renames or
- * drops a link that is not mirrored here — the two cannot drift silently.
- *
- * Sections a pane GENERATES from data (Mikro's and Elektro's one-link-per-spec
- * lists: Images, Timeseries, …) are generated here from the same data, so those cannot
- * drift at all.
- */
-export const ROUTE_CATALOG: CatalogRoute[] = [
-  // mikro
-  { module: "mikro", label: "Dashboard", route: "/mikro/home", keywords: ["images", "home"] },
-  { module: "mikro", label: "Array Datasets", route: "/mikro/arraydatasets", keywords: ["images", "stacks"] },
-  // One page per array-dataset spec, exactly as the pane lists them.
-  ...ADATASET_SPECS.map<CatalogRoute>((spec) => ({
-    module: "mikro",
-    label: spec.label,
-    route: arrayDatasetSpecLink(spec.slug),
-    keywords: ["array datasets", "spec", spec.slug],
-  })),
-  { module: "mikro", label: "Coordinate Systems", route: "/mikro/coordinatesystems" },
-  { module: "mikro", label: "Table Datasets", route: "/mikro/tabledatasets", keywords: ["tables"] },
-  { module: "mikro", label: "Sparse Datasets", route: "/mikro/sparsedatasets", keywords: ["matrices", "sparse", "csr", "anndata"] },
-  { module: "mikro", label: "Annotations", route: "/mikro/annotations", keywords: ["rois", "labels"] },
-  { module: "mikro", label: "Folders", route: "/mikro/folders" },
-  { module: "mikro", label: "Files", route: "/mikro/files" },
-  { module: "mikro", label: "Scenes", route: "/mikro/scenes", keywords: ["3d", "viewer"] },
-  // rekuest
-  { module: "rekuest", label: "Home", route: "/rekuest/home" },
-  { module: "rekuest", label: "Actions", route: "/rekuest/actions", keywords: ["nodes", "functions"] },
-  { module: "rekuest", label: "Tasks", route: "/rekuest/tasks", keywords: ["assignations", "runs"] },
-  { module: "rekuest", label: "Org Tasks", route: "/rekuest/org-tasks", keywords: ["organization"] },
-  { module: "rekuest", label: "Implementations", route: "/rekuest/implementations", keywords: ["templates"] },
-  { module: "rekuest", label: "Toolboxes", route: "/rekuest/toolboxes" },
-  { module: "rekuest", label: "Spaces", route: "/rekuest/spaces" },
-  { module: "rekuest", label: "Dashboards", route: "/rekuest/dashboards" },
-  { module: "rekuest", label: "Bloks", route: "/rekuest/bloks" },
-  { module: "rekuest", label: "Shortcuts", route: "/rekuest/shortcuts" },
-  // kraph
-  { module: "kraph", label: "Dashboard", route: "/kraph/home", keywords: ["knowledge", "graph"] },
-  { module: "kraph", label: "Terms", route: "/kraph/terms" },
-  { module: "kraph", label: "Graphs", route: "/kraph/graphs" },
-  { module: "kraph", label: "Structures", route: "/kraph/structurekinds" },
-  { module: "kraph", label: "Entities", route: "/kraph/entitycategories" },
-  { module: "kraph", label: "Protocol Events", route: "/kraph/protocoleventcategories" },
-  { module: "kraph", label: "Natural Events", route: "/kraph/naturaleventcategories" },
-  { module: "kraph", label: "Relations", route: "/kraph/relationcategories" },
-  { module: "kraph", label: "Structure Relations", route: "/kraph/structurerelationcategories" },
-  { module: "kraph", label: "Metrics", route: "/kraph/metrickinds" },
-  { module: "kraph", label: "Measurements", route: "/kraph/measurementcategories", keywords: ["measurements"] },
-  // elektro
-  { module: "elektro", label: "Home", route: "/elektro" },
-  { module: "elektro", label: "Experiments", route: "/elektro/experiments" },
-  { module: "elektro", label: "Neuron models", route: "/elektro/neuronmodels" },
-  { module: "elektro", label: "Model Collections", route: "/elektro/modelcollections" },
-  { module: "elektro", label: "Workspaces", route: "/elektro/modelworkspaces" },
-  { module: "elektro", label: "Datasets", route: "/elektro/arraydatasets" },
-  { module: "elektro", label: "Files", route: "/elektro/files" },
-  // One page per elektro array-dataset spec, exactly as the pane lists them.
-  ...ELEKTRO_ARRAY_DATASET_SPECS.map<CatalogRoute>((spec) => ({
-    module: "elektro",
-    label: spec.label,
-    route: elektroArrayDatasetSpecLink(spec.slug),
-    keywords: ["datasets", "recordings", "spec", spec.slug],
-  })),
-  // kabinet
-  { module: "kabinet", label: "Dashboard", route: "/kabinet/home" },
-  { module: "kabinet", label: "App Store", route: "/kabinet/app-store", keywords: ["install", "apps"] },
-  { module: "kabinet", label: "Repos", route: "/kabinet/repos", keywords: ["repositories"] },
-  { module: "kabinet", label: "Pods", route: "/kabinet/pods", keywords: ["containers"] },
-  // alpaka
-  { module: "alpaka", label: "Home", route: "/alpaka" },
-  { module: "alpaka", label: "Rooms", route: "/alpaka/rooms", keywords: ["chat", "talk"] },
-  { module: "alpaka", label: "Collections", route: "/alpaka/collections" },
-  { module: "alpaka", label: "Models", route: "/alpaka/llmmodels", keywords: ["llm"] },
-  { module: "alpaka", label: "Providers", route: "/alpaka/providers" },
-  // team (the lok module)
-  { module: "lok", label: "Members", route: "/lok", keywords: ["people", "organization", "users"] },
-  { module: "lok", label: "Me", route: "/lok/me", keywords: ["profile", "account"] },
-  { module: "lok", label: "Overview", route: "/lok/overview", keywords: ["dashboard", "lok"] },
-  { module: "lok", label: "Users", route: "/lok/users" },
-  { module: "lok", label: "Apps", route: "/lok/apps", keywords: ["clients"] },
-  { module: "lok", label: "Services", route: "/lok/services" },
-  { module: "lok", label: "Instances", route: "/lok/instances" },
-  { module: "lok", label: "Redeem Tokens", route: "/lok/redeemtokens" },
-  { module: "lok", label: "Devices", route: "/lok/devices", keywords: ["compute", "nodes"] },
-  // lovekit
-  { module: "lovekit", label: "Dashboard", route: "/lovekit" },
-  { module: "lovekit", label: "Streams", route: "/lovekit/streams" },
-  { module: "lovekit", label: "Solo Broadcasts", route: "/lovekit/solobroadcasts" },
-  // omeroark
-  { module: "omeroark", label: "Dashboard", route: "/omeroark" },
-  { module: "omeroark", label: "Datasets", route: "/omeroark/datasets" },
-  { module: "omeroark", label: "Projects", route: "/omeroark/projects" },
-  // blok
+/** The host's own pages (blok is the host's renderer, not a module). */
+const HOST_ROUTES: CatalogRoute[] = [
   { module: "blok", label: "Dashboard", route: "/blok" },
   { module: "blok", label: "Dashboards", route: "/blok/dashboards" },
   { module: "blok", label: "Bloks", route: "/blok/bloks" },
-  // fluss
-  { module: "fluss", label: "Dashboard", route: "/fluss/home", keywords: ["workflows", "flows"] },
 ];
+
+/**
+ * Every static page each module's pane links to, as data: each module's
+ * `navLinks` builtin plus the host's own pages. Derived, so a module arriving
+ * brings its pages.
+ *
+ * The panes themselves are bespoke JSX (icons, groups, live sections), so the
+ * palette cannot read them; each module writes the same list down, so "tasks"
+ * finds Rekuest › Tasks without opening a module first. `routeCatalog.test.ts`
+ * parses the panes' source and fails the moment one of them adds, renames or
+ * drops a link that is not mirrored — the two cannot drift silently.
+ */
+export const routeCatalog = derived((): CatalogRoute[] => [...moduleNavLinks(), ...HOST_ROUTES]);
 
 /**
  * The pages worth offering for what was typed.

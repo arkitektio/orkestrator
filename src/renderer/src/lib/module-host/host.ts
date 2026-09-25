@@ -43,6 +43,7 @@ const claims = (builtins: ModuleBuiltins): Record<string, string[]> => ({
   "page section": (builtins.pageSections ?? []).map((section) => section.id),
   "menu section": (builtins.sections ?? []).map((section) => section.id),
   "profile section": (builtins.profileSections ?? []).map((section) => section.id),
+  operation: Object.keys(builtins.operations ?? {}),
 });
 
 /** Why `definition` cannot join `installed`, if anything. */

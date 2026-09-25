@@ -12,6 +12,8 @@ export const manifest: ModuleManifest = {
   version: "0.0.0",
   label: "Kabinet",
   icon: "shopping-basket",
+  // Installing a definition runs one of rekuest's installer actions.
+  requires: { services: ["rekuest"] },
   models: [
     { identifier: "@kabinet/definition", name: "Definition (Kabinet)", datum: false, path: "definitions/:id" },
     { identifier: "@kabinet/repo", name: "Repo", datum: false, path: "repos/:id" },

@@ -2,6 +2,7 @@ import { CreateShortcutDialog } from "./components/dialogs/CreateShortcutDialog"
 import { ActionAssignForm } from "./forms/ActionAssignForm";
 import { ImplementationAssignForm } from "./forms/ImplementationAssignForm";
 import { ExportToFileDialog } from "./dialogs/ExportToFileDialog";
+import { ReplyerAssignForm } from "./dialogs/ReplyerAssignForm";
 import { ReportBugDialog } from "./dialogs/ReportBugDialog";
 import { UpdateAgentForm } from "./forms/UpdateAgentForm";
 
@@ -17,6 +18,8 @@ export const REKUEST_DIALOGS = {
   updateagent: UpdateAgentForm,
   // a failed task → lok's report form, prefilled
   reportbug: ReportBugDialog,
+  // an action that answers an alpaka message, started on a fresh room
+  alpakareplyerassign: ReplyerAssignForm,
   // any smart model → a file on disk, through a rekuest exporter action
   // (drag-out to the desktop, "Export to file")
   exporttofile: ExportToFileDialog,

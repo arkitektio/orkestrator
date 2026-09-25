@@ -20,6 +20,7 @@ import { StructureRelationCategoryDisplay } from "./displays/StructureRelationCa
 import { TermDisplay } from "./displays/TermDisplay";
 import { KRAPH_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { KRAPH_NAV_LINKS } from "./navLinks";
 import { KnowledgeSidebar } from "./components/sidebars/KnowledgeSidebar";
 import { HomeMentions } from "./dashboard/HomeMentions";
 import { MentionNotifications } from "./dashboard/MentionNotifications";
@@ -31,6 +32,7 @@ export const KRAPH_MODULE = defineModule({
   builtins: {
     page: () => import("./KraphModule"),
     nav: () => import("./panes/StandardPane"),
+    navLinks: KRAPH_NAV_LINKS,
     displays: {
       // claims (organization grain, a bare uuid)
       "@kraph/instance": InstanceDisplay,

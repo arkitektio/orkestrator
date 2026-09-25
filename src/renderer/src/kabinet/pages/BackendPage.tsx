@@ -1,58 +1,12 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { KabinetBackend, RekuestAgent } from "@/linkers";
-import { useAgentsQuery } from "@/rekuest/api/graphql";
+import { PageSections } from "@/components/layout/PageSections";
+import { KabinetBackend } from "@/linkers";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { useGetBackendQuery } from "../api/graphql";
 import PodCard from "../components/cards/PodCard";
 import ResourceCard from "../components/cards/ResourceCard";
 import { IconForBackendKind } from "../components/IconForBackendKind";
-
-
-export const AgentForButton = ({
-  backendId,
-}: {
-  backendId: string;
-}) => {
-
-  const { data, error } = useAgentsQuery({
-    variables: {
-      filters: {
-        clientId: backendId
-      }
-    },
-  });
-
-  if (error) {
-    return <div>Error loading agent {error.message}</div>;
-  }
-
-
-
-
-  return (
-    <>
-      {data?.agents.map((agent) => (
-
-        <RekuestAgent.DetailLink
-          object={agent}
-          key={agent.id}
-          className="text-sm font-medium hover:underline"
-        >
-          <Button variant="ghost" size="sm">
-            {agent.connected ? (
-              <span className="text-green-400">● </span>
-            ) : (
-              <span className="text-red-400">● </span>
-            )}
-            {agent.name || "No Agent"}
-          </Button>
-        </RekuestAgent.DetailLink>
-      ))}
-    </>
-  );
-};
 
 
 export default asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
@@ -62,7 +16,12 @@ export default asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
       object={data?.backend}
       pageActions={
         <>
-          <AgentForButton backendId={data?.backend.clientId} />
+          {/* Other modules' actions on a backend (rekuest: its agents). */}
+          <PageSections
+            placement="actions"
+            identifier="@kabinet/backend"
+            object={{ id: data.backend.id, clientId: data.backend.clientId }}
+          />
           <KabinetBackend.ObjectButton alwaysShow object={data.backend} />
         </>
       }

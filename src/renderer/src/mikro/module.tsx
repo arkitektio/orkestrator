@@ -14,6 +14,7 @@ import { TableDatasetDisplay } from "./displays/TableDatasetDisplay";
 import { MIKRO_FILE_DOWNLOADERS } from "./downloads";
 import { MIKRO_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { MIKRO_NAV_LINKS } from "./navLinks";
 import { MIKRO_PROFILE_SECTIONS } from "./profile/sections";
 import { MikroEntitySearch } from "./search";
 
@@ -22,6 +23,7 @@ export const MIKRO_MODULE = defineModule({
   builtins: {
     page: () => import("./MikroNextModule"),
     nav: () => import("./panes/StandardPane"),
+    navLinks: MIKRO_NAV_LINKS,
     displays: {
       "@mikro/file": FileDisplay,
       "@mikro/scene": SceneDisplay,

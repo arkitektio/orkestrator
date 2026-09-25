@@ -4,6 +4,7 @@ import { Arkitekt } from "@/app/Arkitekt";
 import { findOptionSource } from "@/app/modules/registries";
 import type { SearchOptions } from "@/components/fields/SearchField";
 import { useModuleHostVersion } from "@/lib/module-host/host";
+import { resolveServiceClient } from "@/lib/module-host/operations";
 import type { StructureOption } from "@/lib/module-host/options";
 
 /**
@@ -20,18 +21,9 @@ export const useStructureOptions = (identifier: string, by?: string) => {
   return useMemo(() => {
     if (!source) return undefined;
     return async ({ search, values }: SearchOptions): Promise<StructureOption[]> => {
-      const state = store.getState();
-      const connection = state.connection as
-        | { selfService?: { client?: unknown }; serviceMap?: Record<string, { client?: unknown } | undefined> }
-        | undefined;
-      const client =
-        source.service === "lok"
-          ? connection?.selfService?.client
-          : state.serviceStates[source.service]?.status === "ready"
-            ? connection?.serviceMap?.[source.service]?.client
-            : undefined;
+      const client = resolveServiceClient(store.getState(), source.service);
       if (!client) return [];
-      return source.search(client as never, {
+      return source.search(client, {
         search: search || undefined,
         values: values?.map(String),
       });

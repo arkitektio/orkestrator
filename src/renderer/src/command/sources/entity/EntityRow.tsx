@@ -1,6 +1,5 @@
-import { Guard } from "@/app/Arkitekt";
 import { useModifierState } from "@/app/hooks/modifierTracker";
-import { talkTargetFromModifiers } from "@/alpaka/smart/useTalkAbout";
+import { ModulePaletteHitActions } from "@/app/modules/registries";
 import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
 import { smartRegistry } from "@/providers/smart/registry";
 import { Box } from "lucide-react";
@@ -8,7 +7,6 @@ import { useState } from "react";
 
 import { useCommandPalette } from "../../CommandPaletteProvider";
 import { useOpenTarget } from "../../useOpenTarget";
-import { TalkAboutHit } from "./TalkAboutHit";
 
 /**
  * One found thing.
@@ -22,10 +20,9 @@ import { TalkAboutHit } from "./TalkAboutHit";
  *
  * The third — the "Talk" chip, or ⌥+Enter — opens an Alpaka room about the
  * hit with what was typed as the opening message. Typing a question and
- * pressing ⌥⏎ on the thing it is about is the whole gesture. Alpaka-guarded
- * from the outside, so a deployment without it simply has no chip. Where the
- * room lands is the same choice the context menu spells out as rows: ⌥⇧⏎ puts
- * it beside this page, ⌥⌘⏎ in a window of its own.
+ * pressing ⌥⏎ on the thing it is about is the whole gesture. The chip is
+ * alpaka's (a `paletteHitActions` builtin, behind its guard), so a deployment
+ * without it simply has no chip.
  */
 export const EntityRow = ({
   identifier,
@@ -72,17 +69,14 @@ export const EntityRow = ({
         onDone?.();
       }}
       trailing={
-        <Guard.Alpaka unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
-          <TalkAboutHit
-            identifier={identifier}
-            id={id}
-            label={label}
-            prompt={query}
-            requested={talkRequested}
-            target={talkTargetFromModifiers(modifiers)}
-            onDone={onDone}
-          />
-        </Guard.Alpaka>
+        <ModulePaletteHitActions
+          identifier={identifier}
+          id={id}
+          label={label}
+          prompt={query}
+          requested={talkRequested}
+          onDone={onDone}
+        />
       }
     />
   );

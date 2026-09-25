@@ -3,6 +3,10 @@ import { ALPAKA_ACTIONS } from "./actions";
 import { MessageDisplay } from "./displays/MessageDisplay";
 import { ALPAKA_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { ALPAKA_OPERATIONS } from "./operations";
+import { ALPAKA_NAV_LINKS } from "./navLinks";
+import { AskSource } from "./palette/AskSource";
+import { TalkAboutHit } from "./palette/TalkAboutHit";
 import { StructureRoomsSidebar } from "./sidebars/StructureRoomsSidebar";
 import { ALPAKA_SECTIONS } from "./smart/sections";
 
@@ -11,6 +15,7 @@ export const ALPAKA_MODULE = defineModule({
   builtins: {
     page: () => import("./AlpakaModule"),
     nav: () => import("./panes/StandardPane"),
+    navLinks: ALPAKA_NAV_LINKS,
     displays: {
       "@alpaka/message": MessageDisplay,
     },
@@ -28,5 +33,8 @@ export const ALPAKA_MODULE = defineModule({
       },
     ],
     sections: ALPAKA_SECTIONS,
+    paletteSources: [AskSource],
+    operations: ALPAKA_OPERATIONS,
+    paletteHitActions: [TalkAboutHit],
   },
 });

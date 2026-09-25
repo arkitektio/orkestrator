@@ -1,7 +1,6 @@
-import {
-  useTalkAbout,
-  type TalkTarget,
-} from "@/alpaka/smart/useTalkAbout";
+import type { PaletteHitActionProps } from "@/lib/module-host/define";
+import { useModifierState } from "@/app/hooks/modifierTracker";
+import { talkTargetFromModifiers, useTalkAbout } from "../smart/useTalkAbout";
 import { cn } from "@/lib/utils";
 import { MessageSquareMore } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -11,15 +10,15 @@ import { useEffect, useRef } from "react";
  *
  * Opens an Alpaka room about the found structure with whatever was typed as
  * the first message — so "what is hela s3 about" finds the dataset AND asks the
- * question. Its own component, so `EntityRow` can wrap it in `Guard.Alpaka`:
- * the room mutation only exists when that service is up.
+ * question. Alpaka's `paletteHitActions` builtin: the host mounts it on every
+ * hit, behind alpaka's guard (the room mutation only exists when it is up).
  *
  * `requested` is a counter the row bumps on ⌥+Enter — the keyboard's way to
  * this chip, since the row itself is what has focus in the palette.
  *
- * `target` says where the room lands (⇧ beside this page, ⌘/ctrl in its own
- * window); the row reads it off the held modifiers, so the same ⌥⇧⏎ / ⌥⌘⏎
- * works for the keyboard and a ⇧- or ⌘-click works for the chip.
+ * Where the room lands (⇧ beside this page, ⌘/ctrl in its own window) is read
+ * off the held modifiers, so the same ⌥⇧⏎ / ⌥⌘⏎ works for the keyboard and a
+ * ⇧- or ⌘-click works for the chip.
  */
 export const TalkAboutHit = ({
   identifier,
@@ -27,17 +26,9 @@ export const TalkAboutHit = ({
   label,
   prompt,
   requested,
-  target = "here",
   onDone,
-}: {
-  identifier: string;
-  id: string;
-  label: string;
-  prompt?: string;
-  requested: number;
-  target?: TalkTarget;
-  onDone?: () => void;
-}) => {
+}: PaletteHitActionProps) => {
+  const target = talkTargetFromModifiers(useModifierState());
   const { openRoom, isOpening } = useTalkAbout({
     title: () => `Talk about ${label}`,
     onDone,

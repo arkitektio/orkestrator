@@ -9,11 +9,36 @@ import type {
   SectionPlacement,
   SurfaceDecl,
 } from "@/lib/module-spec";
+import type { OperationHandler } from "./operations";
 import type { OptionSource } from "./options";
 import type { ProfileSection } from "@/lib/profile/section";
 import type { TaskHook } from "@/lib/taskhooks/types";
 import type { SmartContextSection, SmartMenuWrapperProps } from "@/providers/smart/extensions/section";
+import type { PassDownProps } from "@/providers/smart/extensions/types";
 import type { Object } from "@/types";
+
+/** A page of the module, for the ⌘K palette's navigation rows. */
+export type NavLinkDecl = {
+  label: string;
+  route: string;
+  /** Extra words that should find the page but need not be shown. */
+  keywords?: string[];
+};
+
+/**
+ * A trailing action on every entity hit in the ⌘K palette (alpaka's "Talk").
+ * `requested` is a counter the row bumps on ⌥⏎, the keyboard's way to the
+ * action (the row itself has focus); act once per bump, never on mount.
+ */
+export type PaletteHitActionProps = {
+  identifier: string;
+  id: string;
+  label: string;
+  /** What was typed in the palette. */
+  prompt?: string;
+  requested: number;
+  onDone?: () => void;
+};
 
 /**
  * A contribution to ANOTHER model's page (spec: a `section` surface).
@@ -51,6 +76,8 @@ export type PageSection = {
 export type ModuleBuiltins = {
   /** The module's routes, mounted under `/<namespace>/*`. */
   page: () => Promise<{ default: ComponentType }>;
+  /** EXTENSION: its pages, for the palette (spec: could come from `surfaces` of kind page). */
+  navLinks?: readonly NavLinkDecl[];
   /** EXTENSION: its section of the rail. */
   nav?: () => Promise<{ NavigationPane: ComponentType<Record<string, never>> }>;
   /** `display` surfaces, by the identifier they render. */
@@ -65,6 +92,14 @@ export type ModuleBuiltins = {
   pageSections?: readonly PageSection[];
   /** EXTENSION: wrappers around the smart menu and palette (rekuest's "Run on"). */
   menuWrappers?: readonly ComponentType<SmartMenuWrapperProps>[];
+  /** EXTENSION: whole rows in the ⌘K palette for its query and context (alpaka's "Ask"). */
+  paletteSources?: readonly ComponentType<PassDownProps>[];
+  /** EXTENSION: a trailing action on every entity hit in the palette. */
+  paletteHitActions?: readonly ComponentType<PaletteHitActionProps>[];
+  /** EXTENSION: islands in the rail (live status), each behind the module's guard. */
+  railIslands?: readonly ComponentType[];
+  /** Named requests on its own service, by `"<namespace>.<name>"` (spec: `request`). */
+  operations?: Record<string, OperationHandler>;
   /** EXTENSION: its models as options for pickers in other modules' UI. */
   optionSources?: readonly OptionSource[];
   /** EXTENSION: sections of the smart context menu. */

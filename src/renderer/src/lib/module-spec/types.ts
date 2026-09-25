@@ -102,7 +102,12 @@ export type SurfaceKind =
   | "settings"
   | "section";
 
-export type SectionPlacement = "sidebar" | "main" | "actions";
+/**
+ * Where a section goes on the page it joins: its "sidebar", its "main"
+ * column, its "actions" row, the model's "card" in a list (ADDITION), or the
+ * model's "menu" (dropdown items, ADDITION).
+ */
+export type SectionPlacement = "sidebar" | "main" | "actions" | "card" | "menu";
 
 export type SurfaceRender =
   | { renderer: "builtin"; component: string }

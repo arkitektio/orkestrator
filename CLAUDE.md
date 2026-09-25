@@ -143,8 +143,11 @@ else from it:
   (`smartOf(manifest, "@kraph/graph")`). The root `@/linkers` is a barrel.
 - `service.ts` — its client binding (fakts requirement key + Apollo builder).
 - `module.tsx` — its **builtins**: `defineModule({ manifest, builtins })`
-  with `page`, `nav`, `displays`, `hovers`, `dialogs`, `actions`, `sections`,
-  `profileSections`, `background`, `search`, `taskHooks`, `fileDownloaders`.
+  with `page`, `nav`, `navLinks`, `displays`, `hovers`, `dialogs`, `actions`,
+  `pageSections`, `sections`, `menuWrappers`, `profileSections`,
+  `background`, `railIslands`, `search`, `paletteSources`,
+  `paletteHitActions`, `optionSources`, `operations`, `taskHooks`,
+  `fileDownloaders` (see `lib/module-host/define.ts`).
 
 The host derives every registry from these (`app/modules/`): `index.ts`
 (manifests + services, data only — `app/Arkitekt` reads it), `install.tsx`
@@ -187,7 +190,13 @@ the module host, `lib/module-host/host.ts`). Rules:
     `useStructureOptions("@lok/user")` / `useStructureOptionList(…)`
     (`app/hooks/useStructureOptions`); the owner answers through an
     `optionSources` builtin with its own client.
+  - **Asking another module to do something** that returns data (create a
+    room, …) is a named operation: its `operations` builtin
+    (`"alpaka.startRoom"`), called with `useOperation(name)`.
   - **The signed-in user** is the host's: `useSelf()` (`app/hooks/useSelf`),
     never a lok `me` query.
+  - A module that genuinely builds on another service declares it
+    (`manifest.requires.services`, e.g. fluss and kabinet on rekuest); that
+    edge is then "kept" in the allowlist, never silently tolerated.
 - `providers/smart` is host library: it reads app registries through
   `providers/smart/hostRegistries.ts`, never by importing `app/*`.

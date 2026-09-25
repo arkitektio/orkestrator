@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { Cpu, Download, Sparkles, Zap } from "lucide-react";
 import React from "react";
 import { StoreFlavourFragment } from "../../api/graphql";
-import { FlavourInstallTargets } from "../cards/FlavourCard";
+import { PageSections } from "@/components/layout/PageSections";
 import { selectorLabel, StoreApp } from "./storeModel";
 
 export const HardwareBadges = ({
@@ -104,7 +104,8 @@ export const InstallMenu = ({
                 {flavour.selectors.map(selectorLabel).join(", ") || "any backend"}
               </span>
             </DropdownMenuLabel>
-            <FlavourInstallTargets flavour={flavour.id} />
+            {/* Other modules' ways to install it (rekuest: its installers). */}
+            <PageSections placement="menu" identifier="@kabinet/flavour" object={{ id: flavour.id }} />
           </React.Fragment>
         ))}
       </DropdownMenuContent>

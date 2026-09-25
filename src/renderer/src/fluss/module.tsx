@@ -1,6 +1,7 @@
 import { defineModule } from "@/lib/module-host/define";
 import { FLUSS_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { FLUSS_NAV_LINKS } from "./navLinks";
 import { ImplementationFlow } from "./sections/ImplementationFlow";
 import { TaskFlow } from "./sections/TaskFlow";
 
@@ -9,6 +10,7 @@ export const FLUSS_MODULE = defineModule({
   builtins: {
     page: () => import("./ReaktionModule"),
     nav: () => import("./panes/SearchPane"),
+    navLinks: FLUSS_NAV_LINKS,
     dialogs: FLUSS_DIALOGS,
     pageSections: [
       {

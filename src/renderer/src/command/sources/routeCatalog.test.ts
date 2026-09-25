@@ -12,7 +12,10 @@ import {
   arrayDatasetSpecLink as elektroArrayDatasetSpecLink,
 } from "@/elektro/specs";
 
-import { ROUTE_CATALOG, searchRoutes } from "./routeCatalog";
+import "@/app/modules/install";
+import { routeCatalog, searchRoutes } from "./routeCatalog";
+
+const ROUTE_CATALOG = routeCatalog();
 
 /**
  * Where each module's pane lives. `dokuments` is left out on purpose: its pane

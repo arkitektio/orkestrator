@@ -2,17 +2,9 @@
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-/** Alpaka on or off — the row must follow the guard, never the code. */
-let alpakaReady = true;
-vi.mock("@/app/Arkitekt", () => ({
-  Guard: {
-    Alpaka: ({ children }: { children: React.ReactNode }) =>
-      alpakaReady ? <>{children}</> : null,
-  },
-}));
 
 let query = "";
-vi.mock("../CommandPaletteProvider", () => ({
+vi.mock("@/command/CommandPaletteProvider", () => ({
   useCommandPalette: () => ({ query }),
 }));
 
@@ -28,7 +20,7 @@ vi.mock("react-router-dom", async (orig) => ({
 import { Command, CommandList } from "@/components/ui/command";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Structure } from "@/types";
-import { ApplicableAsk } from "./ApplicableAsk";
+import { AskSource } from "./AskSource";
 
 const onDone = vi.fn();
 
@@ -37,7 +29,7 @@ const renderAsk = (objects: Structure[] = []) =>
     <TooltipProvider>
       <Command shouldFilter={false}>
         <CommandList>
-          <ApplicableAsk filter={query} objects={objects} onDone={onDone} />
+          <AskSource filter={query} objects={objects} onDone={onDone} />
         </CommandList>
       </Command>
     </TooltipProvider>,
@@ -50,7 +42,6 @@ const navigatedTo = () => new URL(navigate.mock.calls[0][0] as string, "http://a
 beforeEach(() => {
   // cmdk scrolls the selected item into view; jsdom has no layout.
   Element.prototype.scrollIntoView ??= () => {};
-  alpakaReady = true;
   query = "";
   localStorage.clear();
   vi.clearAllMocks();
@@ -95,10 +86,4 @@ describe("asking an agent from the palette", () => {
     expect(screen.queryByText("Ask an agent")).toBeNull();
   });
 
-  it("is not offered without alpaka", () => {
-    alpakaReady = false;
-    query = "whats that?";
-    renderAsk();
-    expect(screen.queryByText("Ask an agent")).toBeNull();
-  });
 });

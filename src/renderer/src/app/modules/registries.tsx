@@ -4,7 +4,13 @@ import { Arkitekt } from "@/app/Arkitekt";
 import type { DisplayWidgetProps } from "@/lib/display/registry";
 import type { FileDownloader } from "@/lib/export/fileDownloaders";
 import type { Action } from "@/lib/localactions/LocalActionProvider";
-import type { ModuleBuiltins, ModuleDefinition, PageSection } from "@/lib/module-host/define";
+import type {
+  ModuleBuiltins,
+  ModuleDefinition,
+  PageSection,
+  PaletteHitActionProps,
+} from "@/lib/module-host/define";
+import type { PassDownProps } from "@/providers/smart/extensions/types";
 import { installedModules, useModuleHostVersion } from "@/lib/module-host/host";
 import { derived, derivedRecord } from "@/lib/module-host/lazy";
 import type { ProfileSection } from "@/lib/profile/section";
@@ -160,11 +166,22 @@ export const moduleSections = derived(
 
 export const moduleMenuWrappers = derived(() => concat((builtins) => builtins.menuWrappers));
 
+export const MODULE_OPERATIONS = derivedRecord(() =>
+  mergeRecords((builtins) => builtins.operations, "Operation"),
+);
+
 export const moduleOptionSources = derived(() => concat((builtins) => builtins.optionSources));
 
 /** The module that answers options for `identifier` (keyed by `by`), if any. */
 export const findOptionSource = (identifier: string, by?: string) =>
   moduleOptionSources().find((source) => source.identifier === identifier && source.by === by);
+
+/** Every module's palette pages, tagged with the module they belong to. */
+export const moduleNavLinks = derived(() =>
+  (moduleDefinitions() as readonly ModuleDefinition[]).flatMap((definition) =>
+    (definition.builtins.navLinks ?? []).map((link) => ({ ...link, module: namespaceOf(definition) })),
+  ),
+);
 
 export const moduleProfileSections = derived(
   (): ProfileSection[] => concat((builtins) => builtins.profileSections),
@@ -244,6 +261,64 @@ export const moduleNavLoaders = derived(() =>
     ),
   ),
 );
+
+/** Renders `pick`'s components from every module, each module's behind its guard. */
+const PerModule = <P extends object>({
+  pick,
+  props,
+}: {
+  pick: (builtins: ModuleBuiltins) => readonly ComponentType<P>[] | undefined;
+  props: P;
+}) => {
+  useModuleHostVersion();
+  return (
+    <>
+      {(moduleDefinitions() as readonly ModuleDefinition[]).map((definition) => {
+        const components = pick(definition.builtins);
+        if (!components?.length) return null;
+        const Guard = moduleGuard(namespaceOf(definition));
+        return (
+          <Guard key={namespaceOf(definition)}>
+            {components.map((Component, index) => (
+              <Component key={index} {...props} />
+            ))}
+          </Guard>
+        );
+      })}
+    </>
+  );
+};
+
+/** Every module's rows in the ⌘K palette (alpaka: "Ask an agent"). */
+export const ModulePaletteSources = (props: PassDownProps) => (
+  <PerModule pick={(builtins) => builtins.paletteSources} props={props} />
+);
+
+/** Every module's trailing action on a palette hit (alpaka: "Talk"). */
+export const ModulePaletteHitActions = (props: PaletteHitActionProps) => (
+  <PerModule pick={(builtins) => builtins.paletteHitActions} props={props} />
+);
+
+/** Every module's rail islands, each module's behind its guard. */
+export const ModuleRailIslands = () => {
+  useModuleHostVersion();
+  return (
+    <>
+      {(moduleDefinitions() as readonly ModuleDefinition[]).map((definition) => {
+        const islands = definition.builtins.railIslands;
+        if (!islands?.length) return null;
+        const Guard = moduleGuard(namespaceOf(definition));
+        return (
+          <Guard key={namespaceOf(definition)}>
+            {islands.map((Island, index) => (
+              <Island key={index} />
+            ))}
+          </Guard>
+        );
+      })}
+    </>
+  );
+};
 
 /**
  * Every module's always-on components (updaters, dashboard widget

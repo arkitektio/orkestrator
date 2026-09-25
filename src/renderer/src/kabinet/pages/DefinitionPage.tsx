@@ -1,41 +1,11 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { ListRender } from "@/components/layout/ListRender";
 import { Sidebars } from "@/components/layout/Sidebars";
-import { Button } from "@/components/ui/button";
 import { useActionDescription } from "@/lib/ports/ActionDescription";
 import { KabinetDefinition } from "@/linkers";
-import { buildAssignInput } from "@/rekuest/assign";
-import { useImplementationAction } from "@/rekuest/hooks/useImplementationAction";
 import { useCallback } from "react";
 import { useGetDefinitionQuery } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
-
-export const AssignButton = (props: {
-  id: string;
-  pod: string;
-  refetch: () => void;
-}) => {
-  const { assign } = useImplementationAction({
-    id: props.id,
-  });
-
-  const doassign = async () => {
-    console.log(
-      await assign(buildAssignInput({
-        args: {
-          pod: props.pod,
-        },
-      })),
-      props.refetch(),
-    );
-  };
-
-  return (
-    <Button onClick={doassign} variant={"outline"} size="sm">
-      Refresh
-    </Button>
-  );
-};
 
 export const DefinitionPage = asDetailQueryRoute(
   useGetDefinitionQuery,

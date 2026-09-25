@@ -2,14 +2,19 @@
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-/** Alpaka on or off — the chip must follow the guard, never the code. */
+/**
+ * Alpaka on or off — the chip must follow its module's guard, never the code.
+ * The row renders every module's hit actions (alpaka's is the Talk chip)
+ * behind that module's guard; stand in for the host with just alpaka's.
+ */
 let alpakaReady = true;
-vi.mock("@/app/Arkitekt", () => ({
-  Guard: {
-    Alpaka: ({ children, unavailable }: { children: React.ReactNode; unavailable: React.ReactNode }) =>
-      alpakaReady ? <>{children}</> : <>{unavailable}</>,
-  },
-}));
+vi.mock("@/app/modules/registries", async () => {
+  const { TalkAboutHit } = await import("@/alpaka/palette/TalkAboutHit");
+  return {
+    ModulePaletteHitActions: (props: React.ComponentProps<typeof TalkAboutHit>) =>
+      alpakaReady ? <TalkAboutHit {...props} /> : null,
+  };
+});
 
 const modifiers = { shiftKey: false, altKey: false, metaKey: false, ctrlKey: false };
 vi.mock("@/app/hooks/modifierTracker", () => ({ useModifierState: () => modifiers }));

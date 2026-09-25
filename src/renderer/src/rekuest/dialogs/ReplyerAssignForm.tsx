@@ -12,16 +12,20 @@ import { ArgsContainer } from "@/components/ports/ArgsContainer";
 import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { usePortForm } from "@/lib/ports/usePortForm";
 import { useDetailActionQuery, PortKind } from "@/rekuest/api/graphql";
-import { useCreateRoomMutation, useSendMessageMutation } from "@/alpaka/api/graphql";
+import { useOperation } from "@/app/hooks/useOperation";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { submittedDataToRekuestFormat } from "@/lib/ports/utils";
-import { storeRoomTalkingAbout, toStructureInputs } from "../roomTalkingAbout";
+import { smartRegistry } from "@/providers/smart/registry";
 import { useNavigate } from "react-router-dom";
-import { AlpakaRoom } from "@/linkers";
 import { toast } from "sonner";
 import { useMemo, useState } from "react";
 
-export const AlpakaReplyerAssignForm = (props: {
+/**
+ * Start a "replyer": a rekuest action that answers an alpaka message. Alpaka
+ * opens the room and posts the first message (its `alpaka.startRoom`
+ * operation); rekuest then assigns the action with that message.
+ */
+export const ReplyerAssignForm = (props: {
   actionId: string;
   filter: string;
   objects: any[];
@@ -37,8 +41,7 @@ export const AlpakaReplyerAssignForm = (props: {
 
   const dialog = useDialog();
   const navigate = useNavigate();
-  const [createRoom] = useCreateRoomMutation();
-  const [sendMessage] = useSendMessageMutation();
+  const startRoom = useOperation<{ roomId: string; messageId: string }>("alpaka.startRoom");
   const { assign } = useAssign();
   const { registry } = useWidgetRegistry();
 
@@ -86,50 +89,16 @@ export const AlpakaReplyerAssignForm = (props: {
     setIsSubmitting(true);
 
     try {
-      // 1. Format talking about structures
-      const talkingAbout = toStructureInputs(props.objects);
-
-      if (props.objects.length > 0 && talkingAbout.length === 0) {
-        throw new Error("None of the selected structures can be attached");
-      }
-
-      // 2. Create room
-      const roomRes = await createRoom({
-        variables: {
-          input: {
-            title: `Room: ${props.filter}`,
-            description: `Auto-created room for replyer ${action?.name}`,
-            talkingAbout,
-          },
-        },
+      // 1–3. Alpaka opens the room about the selection and posts the message.
+      const { roomId, messageId } = await startRoom({
+        title: `Room: ${props.filter}`,
+        description: `Auto-created room for replyer ${action?.name}`,
+        text: props.filter || "",
+        about: props.objects.map((object: { identifier: string; id: string }) => ({
+          identifier: object.identifier,
+          id: object.id,
+        })),
       });
-
-      const roomId = roomRes.data?.createRoom.id;
-      if (!roomId) {
-        throw new Error("Failed to create room");
-      }
-
-      // Store in talkingAbout helper
-      if (talkingAbout.length > 0) {
-        storeRoomTalkingAbout(roomId, talkingAbout);
-      }
-
-      // 3. Send the message
-      const msgRes = await sendMessage({
-        variables: {
-          input: {
-            text: props.filter || "",
-            room: roomId,
-            agentId: "default",
-            attachStructures: talkingAbout,
-          },
-        },
-      });
-
-      const sentMessage = msgRes.data?.send;
-      if (!sentMessage) {
-        throw new Error("Failed to send message to room");
-      }
 
       // 4. Format and submit data to Rekuest
       const formattedFormValues = submittedDataToRekuestFormat(data, action?.args as any);
@@ -138,7 +107,7 @@ export const AlpakaReplyerAssignForm = (props: {
         ...formattedFormValues,
         [messageKey]: {
           __identifier: "@alpaka/message",
-          object: sentMessage.id,
+          object: messageId,
         },
       };
 
@@ -152,7 +121,8 @@ export const AlpakaReplyerAssignForm = (props: {
 
       props.onDone?.({ kind: "local" });
       dialog.closeDialog();
-      navigate(AlpakaRoom.linkBuilder(roomId));
+      const roomPath = smartRegistry.buildModelPath("@alpaka/room", roomId);
+      if (roomPath) navigate(roomPath.startsWith("/") ? roomPath : `/${roomPath}`);
     } catch (err: any) {
       console.error(err);
       const msg = err.message || "An error occurred";

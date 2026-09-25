@@ -7,7 +7,7 @@ import {
 } from "@/rekuest/api/graphql";
 import React from "react";
 import type { JSONObject, Structure } from "@/types";
-import type { SmartContextProps } from "../../providers/smart/extensions/types";
+import type { SmartContextProps } from "@/providers/smart/extensions/types";
 
 /**
  * The port demands the menu asks the servers with: "an action whose first arg

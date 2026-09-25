@@ -6,6 +6,7 @@ import { ClientDisplay } from "./displays/ClientDisplay";
 import { DeviceDisplay } from "./displays/DeviceDisplay";
 import { UserDisplay } from "./displays/UserDisplay";
 import { manifest } from "./manifest";
+import { LOK_NAV_LINKS } from "./navLinks";
 import { LOK_OPTION_SOURCES } from "./options";
 import { LokEntitySearch } from "./search";
 
@@ -14,6 +15,7 @@ export const LOK_MODULE = defineModule({
   builtins: {
     page: () => import("./LokNextModule"),
     nav: () => import("./panes/StandardPane"),
+    navLinks: LOK_NAV_LINKS,
     displays: {
       "@lok/user": UserDisplay,
       "@lok/client": ClientDisplay,

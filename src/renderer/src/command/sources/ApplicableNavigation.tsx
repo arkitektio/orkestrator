@@ -17,7 +17,7 @@ import { matchesFilter, rankByFilter } from "../filter";
 import { useOpenTarget } from "../useOpenTarget";
 import { useActiveTab, useTabActions } from "../tabs/TabsProvider";
 import { APP_COMMANDS } from "./appCommands";
-import { ROUTE_CATALOG, searchRoutes } from "./routeCatalog";
+import { routeCatalog, searchRoutes } from "./routeCatalog";
 import { breadcrumbText } from "@/lib/breadcrumbText";
 import { isElectron } from "@/lib/platform";
 
@@ -30,7 +30,7 @@ import { isElectron } from "@/lib/platform";
  *
  * Three kinds of destination: modules from `moduleRegistry` (filtered to the
  * ones whose service is actually ready, so we never offer a route that renders a
- * "not configured" screen), the pages inside them from `ROUTE_CATALOG` — so
+ * "not configured" screen), the pages inside them from `routeCatalog()` — so
  * typing "tasks" finds Rekuest › Tasks — and the 129 entity list pages from
  * `smartRegistry`.
  */
@@ -62,7 +62,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   const pageRows = useMemo(
     () =>
       searchRoutes(
-        ROUTE_CATALOG,
+        routeCatalog(),
         [
           // Team (lok) is the session's own service: signed in means it is up.
           { key: "lok", label: "Team" },

@@ -23,7 +23,7 @@ import { matchIcon } from "./moduleIcons";
 import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHover";
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
-import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
+import { ModuleRailIslands } from "@/app/modules/registries";
 import { UploadIsland } from "@/providers/upload/UploadProvider";
 import { DownloadIsland } from "@/providers/download/DownloadProvider";
 import { AgentIsland } from "@/app/agent/AgentIsland";
@@ -31,7 +31,6 @@ import { LocalActionIsland } from "@/app/components/rail/LocalActionIsland";
 import { RailIslandStack } from "@/app/components/rail/RailIsland";
 import { UpdateIsland } from "@/app/updates/UpdateIsland";
 import { VoiceIsland } from "@/voice";
-import { useSettings } from "@/providers/settings/SettingsContext";
 
 
 export type INavigationBarProps = {
@@ -306,7 +305,6 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
   // Keys, not module objects. Both of these are string lists compared
   // shallowly, so they hold their identity across a service health tick and the
   // grid redraws only when a module actually appears or becomes ready.
-  const { settings } = useSettings();
   const availableKeys = Arkitekt.useAvailableModuleKeys();
   const readyModules = Arkitekt.useReadyModuleKeys();
   const moduleOrder = Object.keys(moduleRegistry).filter((key) => availableKeys.includes(key));
@@ -375,17 +373,14 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           Ordered by how often they appear, rarest at the top: what shows up
           constantly (transfers) sits nearest the footer and the pointer, so a
           rare arrival above does not shove it around. The agent sits beside the
-          task island to share the one rekuest guard. */}
+          modules' islands (rekuest: tasks). */}
       <RailIslandStack>
         <UpdateIsland />
         <VoiceIsland />
         <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
           <AgentIsland />
-          {/* An experiment (Settings → General): gated from OUT here, not
-              inside the stack — the island runs the task query on mount, so
-              switching it off has to keep it from mounting at all. */}
-          {settings.experimentTaskIsland !== false && <TaskNotificationStack />}
         </Guard.Rekuest>
+        <ModuleRailIslands />
         <LocalActionIsland />
         <DownloadIsland />
         <UploadIsland />
