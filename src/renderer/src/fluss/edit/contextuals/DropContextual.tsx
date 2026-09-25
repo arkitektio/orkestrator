@@ -13,7 +13,7 @@ import { useEditFlowStore, useEditNode } from "../context";
 import { parentNode } from "../store/graph";
 import { positionInSubflow } from "../store/placement";
 import { ActionSuggestions } from "./ActionSuggestions";
-import { ContextualContainer } from "./ContextualContainer";
+import { ContextualContainer } from "@/components/ui/contextual-container";
 import { ReactiveSuggestions } from "./ReactiveSuggestions";
 import { SearchForm, SearchValues } from "./SearchForm";
 import { dropSuggestions } from "./suggestions";

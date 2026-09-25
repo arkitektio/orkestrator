@@ -1,4 +1,4 @@
-import { portHash } from "@/rekuest/widgets/utils";
+import { portHash } from "@/lib/ports/utils";
 import { useDialog } from "@/app/dialog";
 import { IntField } from "@/components/fields/IntField";
 import { StringField } from "@/components/fields/StringField";
@@ -21,17 +21,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormActionDescription } from "@/lib/rekuest/ActionDescription";
 import { notEmpty } from "@/lib/utils";
-import { EffectWrapper } from "@/rekuest/widgets/EffectWrapper";
-import { ArgsContainerProps } from "@/rekuest/widgets/tailwind";
-import { Port, PortGroup } from "@/rekuest/widgets/types";
+import { EffectWrapper } from "@/lib/ports/EffectWrapper";
+import { ArgsContainerProps } from "@/lib/ports/tailwind";
+import { Port, PortGroup } from "@/lib/ports/types";
 import React, { useMemo } from "react";
 import * as z from "zod";
 import {
   useCreateShortcutMutation,
   useDetailActionQuery,
 } from "../../api/graphql";
-import { usePortForm } from "../../hooks/usePortForm";
-import { useWidgetRegistry } from "../../widgets/WidgetsContext";
+import { usePortForm } from "@/lib/ports/usePortForm";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 
 export type FilledGroup = PortGroup & {
   filledPorts: Port[];

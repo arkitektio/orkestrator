@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Structure } from "../../types";
+import { Structure } from "@/types";
 import { createSelectionStore, selectFocus, type Selectable } from "./store";
 
 // `isSameStructure` compares `identifier` (string) AND `object` (by reference),

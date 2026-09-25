@@ -1,43 +1,43 @@
-import { ChoicesWidget } from "@/components/widgets/custom/ChoicesWidget";
-import { CustomWidget } from "@/components/widgets/custom/CustomWidget";
-import { ProxyWidget } from "@/components/widgets/custom/ProxyWidget";
-import { SearchWidget } from "@/components/widgets/custom/SearchWidget";
-import { SliderWidget } from "@/components/widgets/custom/SliderWidget";
-import { StateChoiceWidget } from "@/components/widgets/custom/StateChoiceWidget";
-import { HideEffect } from "@/components/widgets/effects/HideEffect";
-import { BoolWidget } from "@/components/widgets/fallbacks/BoolWidget";
-import { DateWidget } from "@/components/widgets/fallbacks/DateWidget";
-import { DictWidget } from "@/components/widgets/fallbacks/DictWidget";
-import { EnumWidget } from "@/components/widgets/fallbacks/EnumWidget";
-import { FloatWidget } from "@/components/widgets/fallbacks/FloatWidget";
-import { IntWidget } from "@/components/widgets/fallbacks/IntWidget";
-import { ListWidget } from "@/components/widgets/fallbacks/ListWidget";
-import { MemoryStructureWidget } from "@/components/widgets/fallbacks/MemoryStructureWidget";
-import { ModelWidget } from "@/components/widgets/fallbacks/ModelWidget";
-import { QuantityWidget } from "@/components/widgets/fallbacks/QuantityWidget";
-import { StringWidget } from "@/components/widgets/fallbacks/StringWidget";
-import { StructureWidget } from "@/components/widgets/fallbacks/StructureWidget";
-import { UnionWidget } from "@/components/widgets/fallbacks/UnionWidget";
-import { DelegatingStructureWidget } from "@/components/widgets/returns/DelegatingStructureWidget";
-import { BoolReturnWidget } from "@/components/widgets/returns/fallbacks/BoolReturnWidget";
-import { DateReturnWidget } from "@/components/widgets/returns/fallbacks/DateReturnWidget";
-import { EnumReturnWidget } from "@/components/widgets/returns/fallbacks/EnumReturnWidget";
-import { FloatReturnWidget } from "@/components/widgets/returns/fallbacks/FloatReturnWidget";
-import { IntReturnWidget } from "@/components/widgets/returns/fallbacks/IntReturnWidget";
-import { ListReturnWidget } from "@/components/widgets/returns/fallbacks/ListReturnWidget";
-import { MemoryStructureReturnWidget } from "@/components/widgets/returns/fallbacks/MemoryStructureReturnWidget";
-import { ModelReturnWidget } from "@/components/widgets/returns/fallbacks/ModelReturnWidget";
-import { QuantityReturnWidget } from "@/components/widgets/returns/fallbacks/QuantityReturnWidget";
-import { StringReturnWidget } from "@/components/widgets/returns/fallbacks/StringReturnWidget";
-import { UnionReturnWidget } from "@/components/widgets/returns/fallbacks/UnionReturnWidget";
+import { ChoicesWidget } from "@/components/ports/custom/ChoicesWidget";
+import { CustomWidget } from "@/components/ports/custom/CustomWidget";
+import { ProxyWidget } from "@/components/ports/custom/ProxyWidget";
+import { SearchWidget } from "@/components/ports/custom/SearchWidget";
+import { SliderWidget } from "@/components/ports/custom/SliderWidget";
+import { StateChoiceWidget } from "@/rekuest/ports/StateChoiceWidget";
+import { HideEffect } from "@/components/ports/effects/HideEffect";
+import { BoolWidget } from "@/components/ports/fallbacks/BoolWidget";
+import { DateWidget } from "@/components/ports/fallbacks/DateWidget";
+import { DictWidget } from "@/components/ports/fallbacks/DictWidget";
+import { EnumWidget } from "@/components/ports/fallbacks/EnumWidget";
+import { FloatWidget } from "@/components/ports/fallbacks/FloatWidget";
+import { IntWidget } from "@/components/ports/fallbacks/IntWidget";
+import { ListWidget } from "@/components/ports/fallbacks/ListWidget";
+import { MemoryStructureWidget } from "@/rekuest/ports/MemoryStructureWidget";
+import { ModelWidget } from "@/components/ports/fallbacks/ModelWidget";
+import { QuantityWidget } from "@/components/ports/fallbacks/QuantityWidget";
+import { StringWidget } from "@/components/ports/fallbacks/StringWidget";
+import { StructureWidget } from "@/components/ports/fallbacks/StructureWidget";
+import { UnionWidget } from "@/components/ports/fallbacks/UnionWidget";
+import { DelegatingStructureWidget } from "@/components/ports/returns/DelegatingStructureWidget";
+import { BoolReturnWidget } from "@/components/ports/returns/fallbacks/BoolReturnWidget";
+import { DateReturnWidget } from "@/components/ports/returns/fallbacks/DateReturnWidget";
+import { EnumReturnWidget } from "@/components/ports/returns/fallbacks/EnumReturnWidget";
+import { FloatReturnWidget } from "@/components/ports/returns/fallbacks/FloatReturnWidget";
+import { IntReturnWidget } from "@/components/ports/returns/fallbacks/IntReturnWidget";
+import { ListReturnWidget } from "@/components/ports/returns/fallbacks/ListReturnWidget";
+import { MemoryStructureReturnWidget } from "@/rekuest/ports/MemoryStructureReturnWidget";
+import { ModelReturnWidget } from "@/components/ports/returns/fallbacks/ModelReturnWidget";
+import { QuantityReturnWidget } from "@/components/ports/returns/fallbacks/QuantityReturnWidget";
+import { StringReturnWidget } from "@/components/ports/returns/fallbacks/StringReturnWidget";
+import { UnionReturnWidget } from "@/components/ports/returns/fallbacks/UnionReturnWidget";
 import { PortKind } from "@/rekuest/api/graphql";
-import { WidgetRegistry } from "@/rekuest/widgets/Registry";
+import { WidgetRegistry } from "@/lib/ports/Registry";
 import {
   EffectWidgetProps,
   InputWidgetProps,
   ReturnWidgetProps,
   WidgetRegistryType,
-} from "@/rekuest/widgets/types";
+} from "@/lib/ports/types";
 
 export const UnknownInputWidget = ({ port }: InputWidgetProps) => {
   return (

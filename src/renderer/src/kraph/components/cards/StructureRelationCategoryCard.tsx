@@ -5,7 +5,7 @@ import { ListStructureRelationCategoryFragment } from "@/kraph/api/graphql";
 import {
   KraphStructureRelationCategory
 } from "@/linkers";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 interface Props {
   item: ListStructureRelationCategoryFragment;

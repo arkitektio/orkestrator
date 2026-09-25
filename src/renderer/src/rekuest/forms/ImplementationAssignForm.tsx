@@ -5,7 +5,7 @@ import { Form } from "@/components/ui/form";
 import { useDialog } from "@/app/dialog";
 import { useMemo, useRef } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
+import { ArgsContainer } from "@/components/ports/ArgsContainer";
 import { useActionDescription } from "@/lib/rekuest/ActionDescription";
 import { ApolloError } from "@apollo/client";
 import { toast } from "sonner";
@@ -15,9 +15,9 @@ import {
 } from "../api/graphql";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { useImplementationForm } from "../hooks/useImplementationForm";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
-import { DependenciesContainer } from "@/components/widgets/DepenciesContainer";
-import { DependencyDefinitionsProvider } from "../widgets/DependencyContext";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
+import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
+import { DependencyDefinitionsProvider } from "@/lib/ports/DependencyContext";
 
 export type ImplementationAssignFormProps = {
   id: string;

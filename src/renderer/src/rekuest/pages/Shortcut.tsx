@@ -4,7 +4,7 @@ import { buildAssignInput } from "@/rekuest/assign";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
+import { ArgsContainer } from "@/components/ports/ArgsContainer";
 import { useActionDescription } from "@/lib/rekuest/ActionDescription";
 import { RekuestShortcut } from "@/linkers";
 import {
@@ -15,10 +15,10 @@ import {
 import { ArrowRight } from "lucide-react";
 import { useCallback } from "react";
 import { useAction } from "../hooks/useAction";
-import { usePortForm } from "../hooks/usePortForm";
-import { ReturnsContainer } from "../widgets/tailwind";
-import { portToLabel } from "../widgets/utils";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
+import { usePortForm } from "@/lib/ports/usePortForm";
+import { ReturnsContainer } from "@/lib/ports/tailwind";
+import { portToLabel } from "@/lib/ports/utils";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 
 export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
   const { assign, latestTask } = useAction({

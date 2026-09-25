@@ -4,7 +4,7 @@ import { useModifierState } from "@/app/hooks/modifierTracker";
 import {
   talkTargetFromModifiers,
   useTalkAbout,
-} from "@/providers/smart/extensions/alpaka/useTalkAbout";
+} from "@/alpaka/smart/useTalkAbout";
 import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
 import type { PassDownProps } from "@/providers/smart/extensions/types";
 import { CommandGroup } from "cmdk";

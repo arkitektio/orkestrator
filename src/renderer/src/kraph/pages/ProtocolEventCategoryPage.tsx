@@ -5,7 +5,7 @@ import { FormSheet } from "@/components/dialog/FormDialog";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { PageAction } from "@/components/ui/page-action";
 import { DragZone } from "@/components/upload/drag";
-import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
+import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import {
   KraphProtocolEventCategory,
   KraphProtocolStepTemplate,
@@ -15,7 +15,7 @@ import {
   useUpdateProtocolEventCategoryMutation,
 } from "../api/graphql";
 import LoadingCreateProtocolEventForm from "../forms/LoadingCreateProtocolEventForm";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 const Page =  asDetailQueryRoute(
   useGetProtocolEventCategoryQuery,

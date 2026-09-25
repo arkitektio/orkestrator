@@ -15,7 +15,7 @@ import {
   EditableNetStimulator,
   EditableNetSynapse,
 } from "../../lib/modelSerialization";
-import { QuantityInput } from "../QuantityInput";
+import { QuantityInput } from "@/components/fields/QuantityInput";
 
 export type NetworkEditorProps = {
   synapses: EditableNetSynapse[];

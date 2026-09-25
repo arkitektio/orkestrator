@@ -1,8 +1,8 @@
-import { ALPAKA_SECTIONS } from "@/providers/smart/extensions/alpaka/sections";
-import { KABINET_SECTIONS } from "@/providers/smart/extensions/kabinet/sections";
-import { KRAPH_SECTIONS } from "@/providers/smart/extensions/kraph/sections";
+import { ALPAKA_SECTIONS } from "@/alpaka/smart/sections";
+import { KABINET_SECTIONS } from "@/kabinet/smart/sections";
+import { KRAPH_SECTIONS } from "@/kraph/smart/sections";
 import { LOCAL_SECTIONS } from "@/providers/smart/extensions/local/sections";
-import { REKUEST_SECTIONS } from "@/providers/smart/extensions/rekuest/sections";
+import { REKUEST_SECTIONS } from "@/rekuest/smart/sections";
 import { createSmartSectionRegistry } from "@/providers/smart/extensions/sectionRegistry";
 
 /**

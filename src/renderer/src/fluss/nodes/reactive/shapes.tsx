@@ -5,7 +5,7 @@ import { ActionDescription } from "@/lib/rekuest/ActionDescription";
 import { cn } from "@/lib/utils";
 import { ReactiveImplementation, ReactiveNodeFragment } from "@/fluss/api/graphql";
 import { FlowNodeData, ReactiveNodeData } from "@/fluss/types";
-import { portToLabel } from "@/rekuest/widgets/utils";
+import { portToLabel } from "@/lib/ports/utils";
 import { useUpdateNodeInternals } from "@xyflow/react";
 import React from "react";
 import { useFlowAdapter } from "../adapter";

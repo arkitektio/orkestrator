@@ -4,7 +4,7 @@ import { NodeProps, NodeResizer } from "@xyflow/react";
 import { memo } from "react";
 import { Handles } from "../components/Handles";
 import { ReagentNode } from "../types";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const ReagentCategoryNode = memo(({ data, id, selected }: NodeProps<ReagentNode>) => {
   return (

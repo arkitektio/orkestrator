@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
 import { ListMeasurementCategoryFragment } from "@/kraph/api/graphql";
 import { KraphMeasurementCategory } from "@/linkers";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 interface Props {
   item: ListMeasurementCategoryFragment;

@@ -4,9 +4,7 @@ import {
   ProviderFilter,
   useListProvidersQuery
 } from "@/alpaka/api/graphql";
-import {
-  OffsetPaginationInput
-} from "@/lok/api/graphql";
+import type { OffsetPaginationInput } from "@/lib/pagination";
 import ProviderCard from "../cards/ProviderCard";
 
 export type Props = {

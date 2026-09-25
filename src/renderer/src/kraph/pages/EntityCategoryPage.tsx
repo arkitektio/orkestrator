@@ -5,7 +5,7 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { PageAction } from "@/components/ui/page-action";
 import { DialogButton } from "@/components/ui/dialogbutton";
 import { DragZone } from "@/components/upload/drag";
-import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
+import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import { KraphEntityCategory } from "@/linkers";
 import { Plus, Settings2 } from "lucide-react";
 import { useNavigate as useNavigateRouter } from "react-router-dom";
@@ -17,7 +17,7 @@ import {
 } from "../api/graphql";
 import { EntityList } from "../components/renderers/lists/EntityList";
 import { EntityCategorySidebar } from "../sidebars/EntityCategorySidebar";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const Page = asDetailQueryRoute(
   useGetEntityCategoryQuery,

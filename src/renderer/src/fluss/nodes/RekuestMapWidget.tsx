@@ -1,5 +1,5 @@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ReturnsContainer } from "@/components/widgets/returns/ReturnsContainer";
+import { ReturnsContainer } from "@/components/ports/returns/ReturnsContainer";
 import { ActionDescription, useActionDescription } from "@/lib/rekuest/ActionDescription";
 import { RunEventKind } from "@/fluss/api/graphql";
 import { Args } from "@/fluss/base/Args";
@@ -10,7 +10,7 @@ import { OutStream } from "@/fluss/base/Outstream";
 import { FlussArgPortFragment } from "@/fluss/api/graphql";
 import { RekuestMapNodeProps } from "@/fluss/types";
 import { ReturnPortFragment } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { GearIcon } from "@radix-ui/react-icons";
 import React, { useMemo } from "react";
 import { EditActions, useFlowAdapter } from "./adapter";

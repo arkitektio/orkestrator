@@ -6,8 +6,8 @@ import { DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form } from "@/components/ui/form";
 import { DetailClientFragment, useClientQuery } from "@/lok/api/graphql";
 import { DetailTaskFragment, PortKind, PostmanTaskFragment, useDetailTaskQuery } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
-import { WidgetRegistryType } from "@/rekuest/widgets/types";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
+import { WidgetRegistryType } from "@/lib/ports/types";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";

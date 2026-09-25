@@ -11,7 +11,7 @@ import {
   useCheckoutQuery,
 } from "@/rekuest/api/graphql";
 import { useAgentStates } from "@/rekuest/hooks/useLiveState";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { useMemo, useState } from "react";
 
 const AgentStateValueDisplay = ({

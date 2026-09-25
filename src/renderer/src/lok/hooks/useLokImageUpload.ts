@@ -1,5 +1,5 @@
 import type { CreateFunc, UploadFunc } from "@/components/upload/drag";
-import { LOK_MEDIA_ACCEPT, useLokUpload } from "@/datalayer/hooks/useLokUpload";
+import { LOK_MEDIA_ACCEPT, useLokUpload } from "@/lok/datalayer/useLokUpload";
 import type React from "react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";

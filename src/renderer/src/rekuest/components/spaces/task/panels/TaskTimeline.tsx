@@ -1,7 +1,7 @@
 import { SpaceViewStoreContext, useSpaceViewStore } from '../store'
 import { TaskEventKind, useNoChildrenDetailTaskQuery } from '@/rekuest/api/graphql'
-import { ReturnsContainer } from '@/components/widgets/returns/ReturnsContainer'
-import { useWidgetRegistry } from '@/rekuest/widgets/WidgetsContext'
+import { ReturnsContainer } from '@/components/ports/returns/ReturnsContainer'
+import { useWidgetRegistry } from '@/lib/ports/WidgetsContext'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {

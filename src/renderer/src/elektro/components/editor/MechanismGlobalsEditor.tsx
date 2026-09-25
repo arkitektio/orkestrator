@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2 } from "lucide-react";
 import { EditableMechanismGlobal } from "../../lib/modelSerialization";
-import { QuantityInput } from "../QuantityInput";
+import { QuantityInput } from "@/components/fields/QuantityInput";
 import { useMechanismParamMeta } from "./MechanismCatalog";
 
 const emptyGlobal = (): EditableMechanismGlobal => ({

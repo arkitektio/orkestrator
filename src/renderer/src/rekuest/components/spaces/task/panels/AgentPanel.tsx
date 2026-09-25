@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { Card } from "@/components/ui/card";
 import { RekuestAgent } from "@/linkers";
 import { PatchFragment, StateFragment, useAgentQuery, useCheckoutAgentQuery } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { AsyncBoundary } from "@/components/boundaries/AsyncBoundary";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";

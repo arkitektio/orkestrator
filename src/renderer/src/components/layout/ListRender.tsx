@@ -1,4 +1,4 @@
-import { OffsetPaginationInput } from "@/rekuest/api/graphql";
+import type { OffsetPaginationInput } from "@/lib/pagination";
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { ListOffsetter, ListTitle } from "../ui/list";
 import { Refetcher } from "../ui/refetcher";

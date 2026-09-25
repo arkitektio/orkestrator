@@ -2,7 +2,7 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { StringField } from "@/components/fields/StringField";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Form } from "@/components/ui/form";
-import { DelegatingStructureWidget } from "@/components/widgets/returns/DelegatingStructureWidget";
+import { DelegatingStructureWidget } from "@/components/ports/returns/DelegatingStructureWidget";
 import { AlpakaCollection, AlpakaLLMModel } from "@/linkers";
 import { PortKind } from "@/rekuest/api/graphql";
 import { useDebounce } from "@uidotdev/usehooks";

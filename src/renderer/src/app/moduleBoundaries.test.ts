@@ -11,10 +11,13 @@ import { EDGE_ALLOWLIST } from "./moduleBoundaries.allowlist";
  * folder plus its `lib/<namespace>` client wrappers). Everything outside every
  * root is the host. An EDGE is "some file in A imports something in B"; the
  * test fails on every edge that is not in `moduleBoundaries.allowlist.ts`.
+ *
+ * `datalayer` is deliberately NOT a module: it has no models or surfaces, only
+ * the generic S3 primitives every module uploads and resolves through. Each
+ * module requests its grants from its own service (`<module>/datalayer/`).
  */
 export const MODULE_ROOTS: Record<string, readonly string[]> = {
   alpaka: ["alpaka", "lib/alpaka"],
-  datalayer: ["datalayer", "lib/datalayer"],
   dokuments: ["dokuments", "lib/dokuments"],
   elektro: ["elektro", "lib/elektro"],
   fluss: ["fluss", "lib/fluss"],

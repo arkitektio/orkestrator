@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
 import { ListStructureKindFragment } from "@/kraph/api/graphql";
 import { KraphStructureKind } from "@/linkers";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 interface Props {
   item: ListStructureKindFragment;

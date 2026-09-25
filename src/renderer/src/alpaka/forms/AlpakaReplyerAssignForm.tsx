@@ -8,13 +8,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
-import { usePortForm } from "@/rekuest/hooks/usePortForm";
+import { ArgsContainer } from "@/components/ports/ArgsContainer";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
+import { usePortForm } from "@/lib/ports/usePortForm";
 import { useDetailActionQuery, PortKind } from "@/rekuest/api/graphql";
 import { useCreateRoomMutation, useSendMessageMutation } from "@/alpaka/api/graphql";
 import { useAssign } from "@/rekuest/hooks/useAssign";
-import { submittedDataToRekuestFormat } from "@/rekuest/widgets/utils";
+import { submittedDataToRekuestFormat } from "@/lib/ports/utils";
 import { storeRoomTalkingAbout, toStructureInputs } from "../roomTalkingAbout";
 import { useNavigate } from "react-router-dom";
 import { AlpakaRoom } from "@/linkers";

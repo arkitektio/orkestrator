@@ -1,6 +1,6 @@
 import {
 	ApplicableTalk as AlpakaApplicableTalk,
-} from "@/providers/smart/extensions/alpaka/sections";
+} from "@/alpaka/smart/sections";
 import {
 	ObjectButton as SmartObjectButton,
 	SmartContext as SmartContextComponent,
@@ -14,29 +14,29 @@ import {
 	CreateMeasurementButton as KraphCreateMeasurementButton,
 	MeasurementActions as KraphMeasurementActions,
 	StructureRelateButton as KraphStructureRelateButton,
-} from "@/providers/smart/extensions/kraph/relations";
+} from "@/kraph/smart/relations";
 import {
 	ApplicableMeasurements as KraphApplicableMeasurements,
 	ApplicableRelations as KraphApplicableRelations,
 	StructureRelationActions as KraphStructureRelationActions,
-} from "@/providers/smart/extensions/kraph/sections";
+} from "@/kraph/smart/sections";
 import {
 	AssignButton as RekuestAssignButton,
 	BatchImplementationAssignButton as RekuestBatchImplementationAssignButton,
 	BatchAssignButton as RekuestBatchAssignButton,
 	DirectImplementationAssignment as RekuestDirectImplementationAssignment,
 	ImplementationAssignButton as RekuestImplementationAssignButton,
-} from "@/providers/smart/extensions/rekuest/actions";
+} from "@/rekuest/smart/actions";
 import {
 	ApplicableActions as RekuestApplicableActions,
 	ApplicableBatchActions as RekuestApplicableBatchActions,
 	ApplicableBatchImplementations as RekuestApplicableBatchImplementations,
 	ApplicableImplementations as RekuestApplicableImplementations,
 	ApplicableShortcuts as RekuestApplicableShortcuts,
-} from "@/providers/smart/extensions/rekuest/sections";
-import { ShortcutButton as RekuestShortcutButton } from "@/providers/smart/extensions/rekuest/shortcuts";
-import { InstallButton as KabinetInstallButton } from "@/providers/smart/extensions/kabinet/definitions";
-import { ApplicableDefinitions as KabinetApplicableDefinitions } from "@/providers/smart/extensions/kabinet/sections";
+} from "@/rekuest/smart/sections";
+import { ShortcutButton as RekuestShortcutButton } from "@/rekuest/smart/shortcuts";
+import { InstallButton as KabinetInstallButton } from "@/kabinet/smart/definitions";
+import { ApplicableDefinitions as KabinetApplicableDefinitions } from "@/kabinet/smart/sections";
 import type {
 	ObjectButtonProps as SmartObjectButtonProps,
 	OnDone as SmartOnDone,

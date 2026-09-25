@@ -3,7 +3,7 @@ import { DokumentsFile } from "@/linkers";
 
 import { Button } from "@/components/ui/button";
 import { FileFilter, useListFilesQuery } from "@/dokuments/api/graphql";
-import { OffsetPaginationInput } from "@/lok/api/graphql";
+import type { OffsetPaginationInput } from "@/lib/pagination";
 import FileCard from "../cards/FileCard";
 
 export type Props = {

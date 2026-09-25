@@ -1,15 +1,15 @@
 import { KRAPH_ACTIONS } from "@/kraph/actions";
-import { ALPAKA_ACTIONS } from "@/lib/alpaka/actions";
-import { ELEKTRO_ACTIONS } from "@/lib/elektro/actions";
-import { KABINET_ACTIONS } from "@/lib/kabinet/actions";
+import { ALPAKA_ACTIONS } from "@/alpaka/actions";
+import { ELEKTRO_ACTIONS } from "@/elektro/actions";
+import { KABINET_ACTIONS } from "@/kabinet/actions";
 import {
   Action,
   ActionParams,
   createLocalActionProvider,
 } from "@/lib/localactions/LocalActionProvider";
-import { LOK_ACTIONS } from "@/lib/lok/actions";
-import { MIKRO_ACTIONS } from "@/lib/mikro/actions";
-import { REKUEST_ACTIONS } from "@/lib/rekuest/actions";
+import { LOK_ACTIONS } from "@/lok/actions";
+import { MIKRO_ACTIONS } from "@/mikro/actions";
+import { REKUEST_ACTIONS } from "@/rekuest/actions";
 import { linkBuilder } from "@/providers/smart/builder";
 import { smartRegistry } from "@/providers/smart/registry";
 import { structureTabTarget } from "@/providers/smart/tabTargets";

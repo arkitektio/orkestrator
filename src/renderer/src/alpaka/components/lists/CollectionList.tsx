@@ -4,9 +4,7 @@ import {
   ChromaCollectionFilter,
   useListChromaCollectionsQuery
 } from "@/alpaka/api/graphql";
-import {
-  OffsetPaginationInput
-} from "@/lok/api/graphql";
+import type { OffsetPaginationInput } from "@/lib/pagination";
 import CollectionCard from "../cards/CollectionCard";
 
 export type Props = {

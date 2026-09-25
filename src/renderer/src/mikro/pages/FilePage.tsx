@@ -2,7 +2,7 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
 import { PageAction } from "@/components/ui/page-action";
-import { useMikroBigFileDownload } from "@/datalayer/hooks/useMikroBigFileDownload";
+import { useMikroBigFileDownload } from "@/mikro/datalayer/useMikroBigFileDownload";
 import { MikroFile } from "@/linkers";
 import { useDownload } from "@/providers/download/DownloadProvider";
 import { DownloadIcon, FileIcon, Grid3x3 } from "lucide-react";

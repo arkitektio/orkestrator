@@ -1,7 +1,7 @@
 import { DisplayWidgetProps } from "@/lib/display/registry";
 import { KraphStructureKind } from "@/linkers";
 import { useGetStructureKindQuery } from "../api/graphql";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const StructureKindDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetStructureKindQuery({ variables: { id: props.object } });

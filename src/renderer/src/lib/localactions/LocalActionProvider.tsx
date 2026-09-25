@@ -8,8 +8,8 @@ import type { TabActions } from "@/command/tabs/TabsProvider";
 import { createScopedStoreHooks } from "@/lib/generic/createScopedStore";
 import { smartRegistry } from "@/providers/smart/registry";
 import type { Structure as AppStructure } from "@/types";
-import type { InferedServiceMap, ServiceBuilderMap } from "../arkitekt/types";
-import type { ServiceMap } from "../arkitekt/provider";
+import type { InferedServiceMap, ServiceBuilderMap } from "@/lib/arkitekt/types";
+import type { ServiceMap } from "@/lib/arkitekt/provider";
 import { useNavigate } from "react-router-dom";
 
 export type {

@@ -11,7 +11,7 @@ import {
   ConstantActionQuery,
   GraphNodeActionFragment
 } from "@/rekuest/api/graphql";
-import { portToDefaults } from "@/rekuest/widgets/utils";
+import { portToDefaults } from "@/lib/ports/utils";
 import { v4 as uuidv4 } from "uuid";
 import { FlowNode } from "../types";
 

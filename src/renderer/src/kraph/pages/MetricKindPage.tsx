@@ -3,7 +3,7 @@ import { FormSheet } from "@/components/dialog/FormDialog";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { PageAction } from "@/components/ui/page-action";
 import { DragZone } from "@/components/upload/drag";
-import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
+import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import { KraphMetricKind } from "@/linkers";
 import {
   useGetMetricKindQuery,

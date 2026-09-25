@@ -2,7 +2,7 @@ import { DisplayWidgetProps } from "@/lib/display/registry";
 import { KraphTerm } from "@/linkers";
 import { useGetTermQuery } from "../api/graphql";
 import { termKindLabel, termTint } from "../lib/terms";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const TermDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetTermQuery({ variables: { id: props.object } });

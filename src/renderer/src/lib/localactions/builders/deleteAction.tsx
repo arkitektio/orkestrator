@@ -6,7 +6,7 @@ import {
 } from "@apollo/client";
 import { Trash2 } from "lucide-react";
 import { Action, ResolveActionServices } from "../LocalActionProvider";
-import type { Service } from "../../arkitekt/types";
+import type { Service } from "@/lib/arkitekt/types";
 
 export const identifierFromSmartOrString = (identifier: Smart | string) => {
   if (typeof identifier === "string") {

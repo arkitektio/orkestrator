@@ -4,7 +4,7 @@ import * as React from "react";
 import { useEffect, useCallback, useMemo } from "react";
 import { Group, Matrix4 } from "three";
 import { MediaStoreFragment } from "@/rekuest/api/graphql";
-import { WithMediaUrl } from "@/lib/datalayer/rekuestAccess";
+import { WithMediaUrl } from "@/rekuest/datalayer/rekuestAccess";
 import { Center, useGLTF } from "@react-three/drei";
 import { InvertedHullOutline } from "./InvertedHullOutline";
 import { BrandColors } from "./brandColors";

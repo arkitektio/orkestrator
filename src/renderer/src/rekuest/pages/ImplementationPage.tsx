@@ -15,8 +15,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
-import { DependenciesContainer } from "@/components/widgets/DepenciesContainer";
+import { ArgsContainer } from "@/components/ports/ArgsContainer";
+import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
 import { ApolloError } from "@apollo/client";
 import {
   RekuestAction,
@@ -43,10 +43,10 @@ import TaskList from "../components/lists/TaskList";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { useImplementationForm } from "../hooks/useImplementationForm";
 import { ImplementationStatsSidebar } from "../sidebars/ImplementationStatistics";
-import { ReturnsContainer } from "../widgets/tailwind";
-import PortConstraintBadges from "../components/displays/PortConstraintBadges";
-import { portToLabel } from "../widgets/utils";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
+import { ReturnsContainer } from "@/lib/ports/tailwind";
+import PortConstraintBadges from "@/components/ports/PortConstraintBadges";
+import { portToLabel } from "@/lib/ports/utils";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 
 
 export const DoForm = ({ id }: { id: string }) => {

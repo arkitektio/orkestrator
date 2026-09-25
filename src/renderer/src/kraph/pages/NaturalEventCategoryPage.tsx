@@ -2,14 +2,14 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Card } from "@/components/ui/card";
 import { DragZone } from "@/components/upload/drag";
-import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
+import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import { KraphNaturalEventCategory } from "@/linkers";
 import {
   NaturalEventCategoryFragment,
   useGetNaturalEventCategoryQuery,
   useUpdateNaturalEventCategoryMutation,
 } from "../api/graphql";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export type IRepresentationScreenProps = {};
 

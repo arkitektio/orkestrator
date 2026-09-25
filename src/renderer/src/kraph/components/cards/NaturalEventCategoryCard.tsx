@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
 import { ListNaturalEventCategoryFragment } from "@/kraph/api/graphql";
 import { KraphNaturalEventCategory } from "@/linkers";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 interface Props {
   item: ListNaturalEventCategoryFragment;

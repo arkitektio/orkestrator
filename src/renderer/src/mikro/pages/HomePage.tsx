@@ -62,7 +62,7 @@ import FolderList from "../components/lists/FolderList";
 import FileList from "../components/lists/FileList";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { StatisticsSidebar } from "../components/sidebars/StatisticsSidebar";
-import { useMikroBigFileUpload } from "@/datalayer/hooks/useMikroBigFileUpload";
+import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
 import { parseAsIsoDateTime, parseAsString, parseAsStringLiteral, useQueryState } from "@/hooks/use-search-param-state";
 
 

@@ -4,7 +4,7 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { PageAction } from "@/components/ui/page-action";
 import { Image } from "@/components/ui/image";
 import { DragZone } from "@/components/upload/drag";
-import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
+import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import {
   KraphStructureKind
 } from "@/linkers";
@@ -14,7 +14,7 @@ import {
 } from "../api/graphql";
 import UpdateStructureKindForm from "../forms/UpdateStructureKindForm";
 import StructureList from "../components/renderers/lists/StructureList";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 const Page =  asDetailQueryRoute(
   useGetStructureKindQuery,

@@ -10,7 +10,7 @@ import {
   useGetStateQuery,
   useWatchStateSubscription,
 } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { useRef, useState } from "react";
 import { applyPatch } from "fast-json-patch";
 

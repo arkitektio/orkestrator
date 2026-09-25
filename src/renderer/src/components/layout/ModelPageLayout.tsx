@@ -1,7 +1,7 @@
 import { Guard } from "@/app/Arkitekt";
 import { StructureRoomsSidebar } from "@/alpaka/sidebars/StructureRoomsSidebar";
 import { CommandContext } from "@/command/CommandContext";
-import { ObjectButton } from "@/rekuest/buttons/ObjectButton";
+import { ObjectButton } from "@/providers/smart/ObjectButton";
 import { Identifier, Object } from "@/types";
 import {
   cloneElement,

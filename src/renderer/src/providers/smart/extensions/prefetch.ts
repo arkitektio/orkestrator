@@ -2,7 +2,7 @@ import type { ApolloClient, DocumentNode } from "@apollo/client";
 import { AllPrimaryActionsDocument, ShortcutsDocument } from "@/rekuest/api/graphql";
 import type { Structure } from "@/types";
 import { buildDemands } from "./demands";
-import { actionsVariables, shortcutsVariables } from "./rekuest/queries";
+import { actionsVariables, shortcutsVariables } from "@/rekuest/smart/queries";
 
 /**
  * Warms the Apollo cache for the two sections that carry the menu — primary

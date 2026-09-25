@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { WithMediaUrl } from "@/lib/datalayer/rekuestAccess";
+import { WithMediaUrl } from "@/rekuest/datalayer/rekuestAccess";
 import { useSmartDrop } from "@/providers/smart/hooks";
 import type { Structure } from "@/types";
 import {

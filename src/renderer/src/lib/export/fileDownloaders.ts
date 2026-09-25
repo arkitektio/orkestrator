@@ -1,5 +1,5 @@
-import { downloadElektroBigFile } from "@/datalayer/hooks/useElektroBigFileDownload";
-import { downloadMikroBigFile } from "@/datalayer/hooks/useMikroBigFileDownload";
+import { downloadElektroBigFile } from "@/elektro/datalayer/useElektroBigFileDownload";
+import { downloadMikroBigFile } from "@/mikro/datalayer/useMikroBigFileDownload";
 import {
   GetFileDocument as ElektroGetFileDocument,
   GetFileQuery as ElektroGetFileQuery,

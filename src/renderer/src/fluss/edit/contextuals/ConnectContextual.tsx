@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { useEditFlowStore, useEditNode } from "../context";
 import { midpointBetween } from "../store/placement";
 import { ActionSuggestions } from "./ActionSuggestions";
-import { ContextualContainer } from "./ContextualContainer";
+import { ContextualContainer } from "@/components/ui/contextual-container";
 import { ReactiveSuggestions } from "./ReactiveSuggestions";
 import { SearchForm, SearchValues } from "./SearchForm";
 import { connectSuggestions } from "./suggestions";

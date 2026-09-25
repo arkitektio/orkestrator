@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { useConnection } from "./hooks";
 import { Service, ServiceBuilderMap } from "./types";
 

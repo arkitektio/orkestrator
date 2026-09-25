@@ -43,7 +43,7 @@ import { compartmentColors, sectionColor, sectionColors } from "./morphology/mod
 import { buildNetworkLayout } from "./morphology/model/networkLayout";
 import { createMorphologyStore, MorphologyStoreContext } from "./morphology/stores/morphologyStore";
 import { useWebGPUGate } from "./morphology/useWebGPUGate";
-import { QuantityInput } from "./QuantityInput";
+import { QuantityInput } from "@/components/fields/QuantityInput";
 
 const getParentInfo = (section: SectionFragment) => {
   if (!section.parent) return null;

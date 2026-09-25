@@ -30,7 +30,7 @@ vi.mock("@/providers/smart/Drop", () => ({
 vi.mock("../knowledge/SameAsDropTarget", () => ({
   SameAsDropTarget: ({ term }: { term: string }) => <div data-testid="same-as-drop">{term}</div>,
 }));
-vi.mock("@/rekuest/buttons/ObjectButton", () => ({
+vi.mock("@/providers/smart/ObjectButton", () => ({
   ObjectButton: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 vi.mock("@/kraph/components/AssertionEvidence", () => ({ AssertionEvidence: () => null }));

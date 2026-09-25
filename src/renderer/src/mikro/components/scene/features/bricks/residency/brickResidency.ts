@@ -24,7 +24,7 @@ import {
   prefetchShardIndex,
   readArrayMetadataCached,
   type ArrayMetadata,
-} from "../../../../../../lib/zarr/runner/index";
+} from "@/lib/zarr/runner/index";
 import { workerPool } from "@/lib/zarr/pool/sharedWorkerPool";
 import { INTERACTIVE_FETCH_PRIORITY } from "@/lib/zarr/pool/types";
 import { getInitialVolumeTextureBudgetBytes } from "../../../platform/quality/lodPlanning";

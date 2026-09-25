@@ -1,7 +1,7 @@
 import {
   useTalkAbout,
   type TalkTarget,
-} from "@/providers/smart/extensions/alpaka/useTalkAbout";
+} from "@/alpaka/smart/useTalkAbout";
 import { cn } from "@/lib/utils";
 import { MessageSquareMore } from "lucide-react";
 import { useEffect, useRef } from "react";

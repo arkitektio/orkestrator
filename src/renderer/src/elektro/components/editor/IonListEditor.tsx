@@ -11,7 +11,7 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import { IonStyle } from "../../api/graphql";
 import { EditableIon } from "../../lib/modelSerialization";
-import { QuantityInput } from "../QuantityInput";
+import { QuantityInput } from "@/components/fields/QuantityInput";
 
 const ION_STYLES: { value: IonStyle; label: string }[] = [
   { value: IonStyle.FixedReversal, label: "Fixed reversal" },

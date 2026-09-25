@@ -2,7 +2,7 @@ import { DisplayWidgetProps } from "@/lib/display/registry";
 import { KraphProtocolEventCategory } from "@/linkers";
 import { TermBadge } from "../components/TermBadge";
 import { useGetProtocolEventCategoryQuery } from "../api/graphql";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const ProtocolEventCategoryDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetProtocolEventCategoryQuery({ variables: { id: props.object } });

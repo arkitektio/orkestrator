@@ -3,11 +3,11 @@ import { Form } from "@/components/ui/form";
 import { notEmpty } from "@/lib/utils";
 import { FlussArgPortFragment } from "@/fluss/api/graphql";
 import { AssignWidgetFragment } from "@/rekuest/api/graphql";
-import { usePortForm } from "@/rekuest/hooks/usePortForm";
-import { EffectWrapper } from "@/rekuest/widgets/EffectWrapper";
-import { ArgPort as RekuestArgPort } from "@/rekuest/widgets/types";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
-import { portHash, submittedDataToRekuestFormat } from "@/rekuest/widgets/utils";
+import { usePortForm } from "@/lib/ports/usePortForm";
+import { EffectWrapper } from "@/lib/ports/EffectWrapper";
+import { ArgPort as RekuestArgPort } from "@/lib/ports/types";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
+import { portHash, submittedDataToRekuestFormat } from "@/lib/ports/utils";
 import { useLatestRef } from "@/hooks/useLatestRef";
 
 import { ChevronUpIcon, DoubleArrowUpIcon } from "@radix-ui/react-icons";
@@ -42,10 +42,10 @@ export const ArgsContainer = ({
   path,
 }: {
   ports: FlussArgPortFragment[];
-  options?: import("@/rekuest/widgets/types").PortOptions;
+  options?: import("@/lib/ports/types").PortOptions;
   bound?: string;
   path: string[];
-  registry: import("@/rekuest/widgets/types").WidgetRegistryType;
+  registry: import("@/lib/ports/types").WidgetRegistryType;
   onToArg?: (port: FlussArgPortFragment) => void;
   onToGlobal?: (port: FlussArgPortFragment, key?: string | undefined) => void;
 }) => {

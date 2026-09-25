@@ -8,7 +8,7 @@ import { KraphTerm } from "@/linkers";
 import { useGetTermQuery } from "../api/graphql";
 import UpdateTermForm from "../forms/UpdateTermForm";
 import { termKindLabel, termTint } from "../lib/terms";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 const Page = asDetailQueryRoute(useGetTermQuery, ({ data, refetch }) => {
   const term = data.term;

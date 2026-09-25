@@ -1,4 +1,4 @@
-import { Structure } from "../../types";
+import { Structure } from "@/types";
 import { SelectionState, SelectionStore } from "./store";
 
 export type SelectionContextType = SelectionStore | null;

@@ -3,7 +3,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ReturnsContainer } from "@/components/widgets/returns/ReturnsContainer";
+import { ReturnsContainer } from "@/components/ports/returns/ReturnsContainer";
 import {
   TaskEventKind,
   DetailTaskFragment,
@@ -12,7 +12,7 @@ import {
 import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import Timestamp from "@/components/ui/timestamp";
-import { useWidgetRegistry } from "../../widgets/WidgetsContext";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { statusBarColor } from "../../lib/taskStatus";
 import {
   TimelineDependencyGroup,

@@ -3,7 +3,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { portToLabel } from "@/rekuest/widgets/utils";
+import { portToLabel } from "@/lib/ports/utils";
 import { Handle, Position } from "@xyflow/react";
 import { useState } from "react";
 import { StreamPort } from "@/fluss/types";

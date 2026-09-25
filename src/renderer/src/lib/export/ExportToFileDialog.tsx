@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
+import { ArgsContainer } from "@/components/ports/ArgsContainer";
 import { FormActionDescription } from "@/lib/rekuest/ActionDescription";
 import { usePendingHooksStore } from "@/lib/taskhooks/pendingHooksStore";
 import { smartRegistry } from "@/providers/smart/registry";
@@ -18,8 +18,8 @@ import {
 } from "@/rekuest/api/graphql";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useAction } from "@/rekuest/hooks/useAction";
-import { usePortForm } from "@/rekuest/hooks/usePortForm";
-import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
+import { usePortForm } from "@/lib/ports/usePortForm";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { Structure } from "@/types";
 import { ArrowLeft, Download } from "lucide-react";
 import { useState } from "react";

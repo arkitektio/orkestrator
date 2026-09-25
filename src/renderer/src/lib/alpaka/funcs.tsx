@@ -9,7 +9,7 @@ import {
   useQuery as useApolloQuery,
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
-import { onApolloError } from "../errorHandler";
+import { onApolloError } from "@/lib/errorHandler";
 
 type MutationFuncType = typeof useApolloMutation;
 type QueryFuncType = typeof useApolloQuery;

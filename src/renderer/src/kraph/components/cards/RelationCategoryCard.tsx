@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Image } from "@/components/ui/image";
 import { ListRelationCategoryFragment } from "@/kraph/api/graphql";
 import { KraphRelationCategory } from "@/linkers";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 interface Props {
   item: ListRelationCategoryFragment;

@@ -5,7 +5,7 @@ import { agentDisplayName, displayInitials } from "../agentName";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare, ArrowUpRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { DelegatingStructureWidget } from "@/components/widgets/returns/DelegatingStructureWidget";
+import { DelegatingStructureWidget } from "@/components/ports/returns/DelegatingStructureWidget";
 import { PortKind } from "@/rekuest/api/graphql";
 import { Markdown } from "@/components/ui/markdown";
 

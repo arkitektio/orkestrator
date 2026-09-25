@@ -4,7 +4,7 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { PageAction } from "@/components/ui/page-action";
 import { Image } from "@/components/ui/image";
 import { DragZone } from "@/components/upload/drag";
-import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
+import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import {
   KraphRelationCategory
 } from "@/linkers";
@@ -13,7 +13,7 @@ import {
   useUpdateRelationCategoryMutation
 } from "../api/graphql";
 import UpdateRelationCategoryForm from "../forms/UpdateRelationCategoryForm";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 const Page = asDetailQueryRoute(
   useGetRelationCategoryQuery,

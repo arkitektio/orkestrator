@@ -1,4 +1,4 @@
-import { portHash } from "@/rekuest/widgets/utils";
+import { portHash } from "@/lib/ports/utils";
 import { StringField } from "@/components/fields/StringField";
 import { SwitchField } from "@/components/fields/SwitchField";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +18,9 @@ import { Form } from "@/components/ui/form";
 import { ActionDescription, FormActionDescription } from "@/lib/rekuest/ActionDescription";
 import { notEmpty } from "@/lib/utils";
 import { RekuestShortcut } from "@/linkers";
-import { EffectWrapper } from "@/rekuest/widgets/EffectWrapper";
-import { ArgsContainerProps } from "@/rekuest/widgets/tailwind";
-import { Port, PortGroup } from "@/rekuest/widgets/types";
+import { EffectWrapper } from "@/lib/ports/EffectWrapper";
+import { ArgsContainerProps } from "@/lib/ports/tailwind";
+import { Port, PortGroup } from "@/lib/ports/types";
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import * as z from "zod";
@@ -28,8 +28,8 @@ import {
   useCreateShortcutMutation,
   useDetailActionQuery
 } from "../api/graphql";
-import { usePortForm } from "../hooks/usePortForm";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
+import { usePortForm } from "@/lib/ports/usePortForm";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 
 export type FilledGroup = PortGroup & {
   filledPorts: Port[];

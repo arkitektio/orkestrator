@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { PageAction } from "@/components/ui/page-action";
-import { useElektroBigFileDownload } from "@/datalayer/hooks/useElektroBigFileDownload";
+import { useElektroBigFileDownload } from "@/elektro/datalayer/useElektroBigFileDownload";
 import { ElektroFile } from "@/linkers";
 import { useDownload } from "@/providers/download/DownloadProvider";
 import { DownloadIcon, FileIcon } from "lucide-react";

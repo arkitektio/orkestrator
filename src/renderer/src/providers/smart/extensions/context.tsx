@@ -17,7 +17,7 @@ import { ArrowRight, PlayIcon } from "lucide-react";
 import React from "react";
 import { describeStructures } from "./describe";
 import { useSmartPrefetcher } from "./prefetchContext";
-import { RunOnSubmenu } from "./rekuest/RunOnSubmenu";
+import { RunOnSubmenu } from "@/rekuest/smart/RunOnSubmenu";
 import type { SmartSectionContext } from "./section";
 import { SectionHost } from "./SectionHost";
 import { resolveSections, SmartSectionRegistry } from "./sectionRegistry";

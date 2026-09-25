@@ -8,7 +8,7 @@ import { memo } from "react";
 import { Handles } from "../components/Handles";
 import { PathMarker } from "../components/PathMarker";
 import { NaturalEventNode } from "../types";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const NaturalEventCategoryNode = memo(({ data, id, selected }: NodeProps<NaturalEventNode>) => {
   return (

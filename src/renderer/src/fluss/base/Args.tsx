@@ -4,7 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { portToLabel } from "@/rekuest/widgets/utils";
+import { portToLabel } from "@/lib/ports/utils";
 import { PortKind } from "../api/graphql";
 import { StreamPort } from "@/fluss/types";
 

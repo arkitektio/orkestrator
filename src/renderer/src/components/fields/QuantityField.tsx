@@ -9,7 +9,7 @@ import {
 import {
   QuantityInput,
   QuantityInputProps,
-} from "@/elektro/components/QuantityInput";
+} from "@/components/fields/QuantityInput";
 import { useFormContext } from "react-hook-form";
 import { FieldProps } from "./types";
 

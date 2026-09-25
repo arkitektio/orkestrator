@@ -7,7 +7,7 @@ import { Handles } from "../components/Handles";
 import { NodeQueryControls } from "../components/NodeQueryControls";
 import { PathMarker } from "../components/PathMarker";
 import { GenericNode } from "../types";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const EntityCategoryNode = memo(({ data, id, selected }: NodeProps<GenericNode>) => {
   return (

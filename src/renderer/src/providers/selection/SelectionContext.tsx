@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useMemo } from "react";
 import { useStore } from "zustand";
 
-import { Structure } from "../../types";
+import { Structure } from "@/types";
 import { selectFocus, SelectionState } from "./store";
 import { SelectionContextType, SelectionSnapshot } from "./types";
 

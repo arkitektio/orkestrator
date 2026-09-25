@@ -107,7 +107,7 @@ a hardcoded list. A `SmartContextSection` (`extensions/section.ts`) has `id`
 the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
 `useItems(ctx)` → `{ items, status }`, `itemKey`, `searchParts?`, `Row`.
 
-- Each module exports its descriptors from `extensions/<module>/sections.tsx`;
+- Each module exports its descriptors from `<module>/smart/sections.tsx`;
   `app/smartcontext.tsx` merges them (like `app/localactions.tsx`).
 - `SectionHost` owns the guard, heading, empty rule, error line, stale-row
   narrowing and the status report; a section is just a query + a row.

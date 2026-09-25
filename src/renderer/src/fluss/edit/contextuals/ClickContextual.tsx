@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { useEditFlowStore } from "../context";
 import { buildAgentSubflowNode } from "../store/graph";
 import { ActionSuggestions } from "./ActionSuggestions";
-import { ContextualContainer } from "./ContextualContainer";
+import { ContextualContainer } from "@/components/ui/contextual-container";
 import { ReactiveSuggestions } from "./ReactiveSuggestions";
 import { SearchForm, SearchValues } from "./SearchForm";
 import { clickSuggestions } from "./suggestions";

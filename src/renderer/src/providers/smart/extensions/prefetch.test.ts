@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AllPrimaryActionsDocument, ShortcutsDocument } from "@/rekuest/api/graphql";
 import { buildDemands } from "./demands";
 import { createSmartPrefetcher, type PrefetchClient } from "./prefetch";
-import { actionsVariables, shortcutsVariables } from "./rekuest/queries";
+import { actionsVariables, shortcutsVariables } from "@/rekuest/smart/queries";
 
 const image = (id: string) => ({ identifier: "@mikro/image", object: { id } });
 

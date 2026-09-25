@@ -1,6 +1,6 @@
 import { Guard } from "@/app/Arkitekt";
 import { useModifierState } from "@/app/hooks/modifierTracker";
-import { talkTargetFromModifiers } from "@/providers/smart/extensions/alpaka/useTalkAbout";
+import { talkTargetFromModifiers } from "@/alpaka/smart/useTalkAbout";
 import { CommandActionRow } from "@/providers/smart/extensions/CommandActionRow";
 import { smartRegistry } from "@/providers/smart/registry";
 import { Box } from "lucide-react";

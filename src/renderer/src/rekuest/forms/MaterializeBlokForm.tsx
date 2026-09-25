@@ -10,7 +10,7 @@ import {
   useMaterializeBlokMutation
 } from "../api/graphql";
 import { useForm } from "react-hook-form";
-import { DependenciesContainer } from "@/components/widgets/DepenciesContainer";
+import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 

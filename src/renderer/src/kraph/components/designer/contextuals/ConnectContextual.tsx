@@ -17,7 +17,7 @@ import {
 } from "@/kraph/api/graphql";
 import { cn } from "@/lib/utils";
 import { smartRegistry } from "@/providers/smart/registry";
-import { ContextualContainer } from "@/fluss/edit/contextuals/ContextualContainer";
+import { ContextualContainer } from "@/components/ui/contextual-container";
 import { useForm } from "react-hook-form";
 import { ConnectContextualParams, StagingEdgeParams } from "../types";
 import { labelToEdgeAgeName } from "../utils";

@@ -1,4 +1,4 @@
-import { ObjectButton } from "@/rekuest/buttons/ObjectButton";
+import { ObjectButton } from "@/providers/smart/ObjectButton";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 

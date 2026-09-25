@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/empty";
 import { FileQuestion, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { OffsetPaginationInput } from "@/lok/api/graphql";
+import type { OffsetPaginationInput } from "@/lib/pagination";
 import { Smart } from "@/providers/smart/builder";
 import { BsCaretLeft, BsCaretRight } from "react-icons/bs";
 import { Refetcher } from "../ui/refetcher";

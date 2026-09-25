@@ -2,10 +2,10 @@ import { Guard } from "@/app/Arkitekt";
 import type { PassDownProps } from "@/providers/smart/extensions/types";
 import { useDebounce } from "@uidotdev/usehooks";
 
-import { KraphEntitySearch } from "./KraphEntitySearch";
-import { LokEntitySearch } from "./LokEntitySearch";
-import { MikroEntitySearch } from "./MikroEntitySearch";
-import { RekuestEntitySearch } from "./RekuestEntitySearch";
+import { KraphEntitySearch } from "@/kraph/search";
+import { LokEntitySearch } from "@/lok/search";
+import { MikroEntitySearch } from "@/mikro/search";
+import { RekuestEntitySearch } from "@/rekuest/search";
 import { MIN_TERM_LENGTH } from "./shared";
 
 /**

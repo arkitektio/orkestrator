@@ -7,16 +7,16 @@ import {
   useGetResolutionQuery
 } from "@/rekuest/api/graphql";
 import { useImplementationAction } from "../hooks/useImplementationAction";
-import { usePortForm } from "../hooks/usePortForm";
+import { usePortForm } from "@/lib/ports/usePortForm";
 import { toast } from "sonner";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { Form } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
+import { ArgsContainer } from "@/components/ports/ArgsContainer";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { ReturnsContainer } from "@/components/widgets/returns/ReturnsContainer";
-import { portToLabel } from "../widgets/utils";
+import { ReturnsContainer } from "@/components/ports/returns/ReturnsContainer";
+import { portToLabel } from "@/lib/ports/utils";
 import { ResolutionGraph } from "../components/global/ResolutionGraph";
 
 export const DoForm = ({ id, resolution }: { id: string, resolution: string }) => {

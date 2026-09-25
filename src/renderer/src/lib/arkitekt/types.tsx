@@ -13,7 +13,7 @@ import {
   StoredProfileBook,
 } from "./fakts/profileStorageSchema";
 import { TokenResponse } from "./fakts/tokenSchema";
-import type { Ward } from "@/rekuest/widgets/types";
+import type { Ward } from "@/lib/ports/types";
 
 export type AvailableService = {
   key: string;

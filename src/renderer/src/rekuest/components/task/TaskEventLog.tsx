@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ReturnsContainer } from "@/components/widgets/returns/ReturnsContainer";
+import { ReturnsContainer } from "@/components/ports/returns/ReturnsContainer";
 import { RekuestTask, RekuestImplementation, RekuestAgent } from "@/linkers";
 import {
   TaskEventFragment,
@@ -14,7 +14,7 @@ import { UnknownReturnWidget } from "@/app/shadCnWidgetRegistry";
 import { Clock } from "lucide-react";
 import { ReactNode, memo, useEffect, useMemo, useState } from "react";
 import Timestamp from "@/components/ui/timestamp";
-import { useWidgetRegistry } from "../../widgets/WidgetsContext";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 import { deriveLiveState } from "../../hooks/useTasks";
 import { isTerminalEvent } from "../../lib/taskTracker";
 import {

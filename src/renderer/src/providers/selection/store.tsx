@@ -1,7 +1,7 @@
 import { Box, boxesIntersect } from "@air/react-drag-to-select";
 import { createStore, StoreApi } from "zustand/vanilla";
 
-import { Structure } from "../../types";
+import { Structure } from "@/types";
 
 export interface Selectable {
   structure: Structure;

@@ -1,4 +1,4 @@
-import { WithMikroMediaUrl } from "@/lib/datalayer/mikroAccess";
+import { WithMikroMediaUrl } from "@/mikro/datalayer/mikroAccess";
 import { cn } from "@/lib/utils";
 import React from "react";
 

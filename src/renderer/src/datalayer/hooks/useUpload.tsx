@@ -1,15 +1,7 @@
-import {
-  useDatalayerEndpoint,
-  useKraph
-} from "@/app/Arkitekt";
-import {
-  MediaUploadGrantFragment,
-  RequestMediaUploadDocument,
-  RequestMediaUploadMutation,
-  RequestMediaUploadMutationVariables,
-} from "@/kraph/api/graphql";
-import { useCallback } from "react";
-
+/**
+ * The datalayer's generic upload primitives. Nothing here knows a module:
+ * grants come from the caller, who got them from its own service.
+ */
 export const uploadFetch = (
   url: RequestInfo | URL,
   options?:
@@ -68,10 +60,15 @@ export type UploadOptions = {
   id?: string;
 };
 
-const uploadToStore = async (
+/**
+ * Uploads `file` to the datalayer under a grant a module's own service
+ * issued. Generic on purpose: each module requests its grant from its own
+ * service (`useKraphMediaUpload`, `useLokUpload`, ...) and hands it here.
+ */
+export const uploadToStore = async (
   file: File,
   endpointUrl: string,
-  z: MediaUploadGrantFragment,
+  z: object,
   options?: UploadOptions,
 ) => {
   if (!z) {
@@ -114,41 +111,3 @@ const uploadToStore = async (
       });
   });
 };
-
-export const useKraphMediaUpload = () => {
-  const client = useKraph();
-  const datalayerEndpoint = useDatalayerEndpoint();
-
-  const upload = useCallback(
-    async (file: File) => {
-      if (!client) {
-        throw Error("No client configured");
-      }
-
-      const data = await client.mutate<
-        RequestMediaUploadMutation,
-        RequestMediaUploadMutationVariables
-      >({
-        mutation: RequestMediaUploadDocument,
-        variables: {
-          input: { originalFileName: file.name,  },
-        },
-      });
-
-      if (!data.data?.requestMediaUpload) {
-        throw Error("Failed to request upload");
-      }
-      if (!datalayerEndpoint) {
-        throw Error("No datalayer endpoint configured");
-      }
-
-      const z = data.data.requestMediaUpload;
-
-      return await uploadToStore(file, datalayerEndpoint, z, {});
-    },
-    [client, datalayerEndpoint],
-  );
-
-  return upload;
-};
-

@@ -25,7 +25,7 @@ import {
   WatchMessagesSubscription,
   WatchMessagesSubscriptionVariables,
 } from "../api/graphql";
-import { Chat } from "@/components/chat/chat";
+import { Chat } from "@/alpaka/chat/chat";
 import { storeRoomTalkingAbout, toStructureInput } from "../roomTalkingAbout";
 
 export type StructureRoomsSidebarProps = {

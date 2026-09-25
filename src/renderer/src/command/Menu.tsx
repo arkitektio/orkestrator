@@ -13,13 +13,13 @@ import { Command as CommandPrimitive } from "cmdk";
 import { Dialog } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { SmartLink } from "@/providers/smart/builder";
-import { ApplicableDefinitions } from "@/providers/smart/extensions/kabinet/sections";
+import { ApplicableDefinitions } from "@/kabinet/smart/sections";
 import { ApplicableLocalActions } from "@/providers/smart/extensions/local/sections";
-import { RunOnSubmenu } from "@/providers/smart/extensions/rekuest/RunOnSubmenu";
+import { RunOnSubmenu } from "@/rekuest/smart/RunOnSubmenu";
 import {
   ApplicableActions,
   ApplicableShortcuts,
-} from "@/providers/smart/extensions/rekuest/sections";
+} from "@/rekuest/smart/sections";
 import { Structure } from "@/types";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { DialogPortal } from "@radix-ui/react-dialog";

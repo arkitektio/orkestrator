@@ -1,5 +1,5 @@
 import CheckoutMaterializedBlokRenderer from "@/rekuest/components/CheckoutMaterializedBlokRenderer";
-import { WithMediaUrl } from "@/lib/datalayer/rekuestAccess";
+import { WithMediaUrl } from "@/rekuest/datalayer/rekuestAccess";
 import {
   Center,
   Environment,

@@ -2,7 +2,7 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
 import { UploadWrapper } from "@/components/upload/wrapper";
-import { useMikroBigFileUpload } from "@/datalayer/hooks/useMikroBigFileUpload";
+import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
 import { useCreateFile } from "@/lib/mikro/hooks";
 import { MikroFolder } from "@/linkers";
 import { useState } from "react";

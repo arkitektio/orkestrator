@@ -9,7 +9,7 @@ import {
 import { NodeContextualParams } from "@/fluss/types";
 import { useEditFlowStore, useEditNode } from "../context";
 import { parentNode } from "../store/graph";
-import { ContextualContainer } from "./ContextualContainer";
+import { ContextualContainer } from "@/components/ui/contextual-container";
 import { useActionNodeFactory } from "./subflow";
 import { useActionSearch } from "./useActionSearch";
 

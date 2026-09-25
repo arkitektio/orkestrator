@@ -9,13 +9,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
+import { ArgsContainer } from "@/components/ports/ArgsContainer";
 import { FormActionDescription } from "@/lib/rekuest/ActionDescription";
 import { v4 as uuidv4 } from "uuid";
 import { useHooksSearchLazyQuery } from "../api/graphql";
 import { useAction } from "../hooks/useAction";
-import { usePortForm } from "../hooks/usePortForm";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
+import { usePortForm } from "@/lib/ports/usePortForm";
+import { useWidgetRegistry } from "@/lib/ports/WidgetsContext";
 
 
 
