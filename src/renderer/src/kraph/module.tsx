@@ -21,6 +21,8 @@ import { TermDisplay } from "./displays/TermDisplay";
 import { KRAPH_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
 import { KnowledgeSidebar } from "./components/sidebars/KnowledgeSidebar";
+import { HomeMentions } from "./dashboard/HomeMentions";
+import { MentionNotifications } from "./dashboard/MentionNotifications";
 import { KraphEntitySearch } from "./search";
 import { KRAPH_SECTIONS } from "./smart/sections";
 
@@ -63,6 +65,24 @@ export const KRAPH_MODULE = defineModule({
         slot: "knowledge",
         match: { datum: true },
         Component: KnowledgeSidebar,
+      },
+      {
+        // The member's mentions on their home dashboard …
+        id: "kraph.homementions",
+        title: "Latest mentions",
+        placement: "main",
+        slot: "home",
+        match: { identifiers: ["@lok/user"] },
+        Component: HomeMentions,
+      },
+      {
+        // … and in the Notifications widget.
+        id: "kraph.mentionnotifications",
+        title: "Mentions",
+        placement: "main",
+        slot: "notifications",
+        match: { identifiers: ["@lok/user"] },
+        Component: MentionNotifications,
       },
     ],
     sections: KRAPH_SECTIONS,

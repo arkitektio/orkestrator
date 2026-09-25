@@ -8,7 +8,7 @@ import { PlaceExperimentLayerForm } from "./forms/PlaceExperimentLayerForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const ELEKTRO_DIALOGS = {
-      addexperimentlayer: AddExperimentLayerForm,
-      placeexperimentlayer: PlaceExperimentLayerForm,
-      neuroneditorhelp: NeuronEditorHelp,
+  addexperimentlayer: AddExperimentLayerForm,
+  placeexperimentlayer: PlaceExperimentLayerForm,
+  neuroneditorhelp: NeuronEditorHelp,
 };

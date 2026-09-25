@@ -96,7 +96,7 @@ const OpenToTheSideAction: Action = {
 
 /**
  * Bring a datum to disk. A file downloads straight away; anything else opens
- * the export dialog to pick an exporter (`lib/export/ExportToFileDialog.tsx`).
+ * the export dialog to pick an exporter (`rekuest/dialogs/ExportToFileDialog.tsx`).
  * The same as dragging the card out onto the desktop.
  */
 const ExportToFileAction: Action = {

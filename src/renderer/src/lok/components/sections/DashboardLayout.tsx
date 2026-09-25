@@ -1,10 +1,11 @@
-import { Guard } from "@/app/Arkitekt";
+import { useSelf } from "@/app/hooks/useSelf";
+import { SlotSections } from "@/components/layout/PageSections";
 import { Separator } from "@/components/ui/separator";
-import { LatestMentionsSection } from "@/kraph/components/sections/LatestMentionsSection";
 import { Username } from "../Me";
 import { RecentAppsSection } from "./RecentAppsSection";
 
 export const DashboardLayout = () => {
+  const { userId } = useSelf();
   return (
     <div className="space-y-8 p-4">
       {/* Header Section */}
@@ -19,12 +20,9 @@ export const DashboardLayout = () => {
 
       <Separator />
 
-      {/* Latest Mentions - Top Priority. Mentions come out of kraph now, so
-          the whole block sits out in a deployment without it. */}
-      <Guard.Kraph unavailable={<></>}>
-        <LatestMentionsSection />
-        <Separator />
-      </Guard.Kraph>
+      {/* What other modules put on a member's home (kraph: latest mentions,
+          top priority), each behind its own guard. */}
+      {userId && <SlotSections slot="home" identifier="@lok/user" object={{ id: userId }} />}
 
       <RecentAppsSection />
     </div>

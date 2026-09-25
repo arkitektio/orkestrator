@@ -102,7 +102,6 @@ import { AgentProvider } from "./agent/AgentProvider";
 import { WardRegistrar } from "@/lib/arkitekt/WardRegistrar";
 import { RefetchOnReactivate } from "@/hooks/use-refetch-on-reactivate";
 import { GcOnNavigate } from "@/hooks/use-gc-on-navigate";
-import { BuiltinDashboardWidgets } from "@/providers/dashboard/widgets/BuiltinDashboardWidgets";
 import { OrganizationBrandSync } from "@/lok/components/OrganizationBrandSync";
 import { ProfileIdentitySync } from "@/lok/components/ProfileIdentitySync";
 import { MeshSync } from "./components/mesh/MeshSync";
@@ -176,7 +175,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     <SmartSurface />
                                     <RefetchOnReactivate />
                                     <GcOnNavigate />
-                                    <BuiltinDashboardWidgets />
                                     <ExportHost />
                                     {/* Every module's always-on builtins (updaters,
                                         dashboard widgets), each behind its guard. */}

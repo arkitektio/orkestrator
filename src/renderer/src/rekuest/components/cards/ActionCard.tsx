@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ActionDescription } from "@/lib/rekuest/ActionDescription";
+import { ActionDescription } from "@/lib/ports/ActionDescription";
 import { RekuestAction } from "@/linkers";
 import { Play } from "lucide-react";
 

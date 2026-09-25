@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { ArgsContainer } from "@/components/ports/ArgsContainer";
-import { FormActionDescription } from "@/lib/rekuest/ActionDescription";
+import { FormActionDescription } from "@/lib/ports/ActionDescription";
 import { usePendingHooksStore } from "@/lib/taskhooks/pendingHooksStore";
 import { smartRegistry } from "@/providers/smart/registry";
 import {
@@ -27,8 +27,8 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 import { FILE_DOWNLOADERS } from "@/app/modules/registries";
-import { structureLabel } from "./structureLabel";
-import { FILE_DOWNLOAD_HOOK } from "./taskHooks";
+import { structureLabel } from "../../lib/export/structureLabel";
+import { FILE_DOWNLOAD_HOOK } from "../../lib/export/taskHooks";
 
 export type ExportToFileDialogProps = {
   structure: Structure;

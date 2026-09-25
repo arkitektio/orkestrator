@@ -1,4 +1,4 @@
-import { asGraphDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
+import { asGraphDetailQueryRoute } from "@/kraph/routes/graphRoutes";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

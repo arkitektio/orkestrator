@@ -6,5 +6,5 @@ import { CreateWorkspaceForm } from "./components/forms/CreateWorkspaceForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const FLUSS_DIALOGS = {
-      createworkspace: CreateWorkspaceForm,
+  createworkspace: CreateWorkspaceForm,
 };

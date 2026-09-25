@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ActionDescription } from "@/lib/rekuest/ActionDescription";
+import { ActionDescription } from "@/lib/ports/ActionDescription";
 import { KabinetDefinition } from "@/linkers";
 import { ListDefinitionFragment } from "../../api/graphql";
 

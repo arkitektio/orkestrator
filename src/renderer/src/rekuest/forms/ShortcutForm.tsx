@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { ActionDescription, FormActionDescription } from "@/lib/rekuest/ActionDescription";
+import { ActionDescription, FormActionDescription } from "@/lib/ports/ActionDescription";
 import { notEmpty } from "@/lib/utils";
 import { RekuestShortcut } from "@/linkers";
 import { EffectWrapper } from "@/lib/ports/EffectWrapper";

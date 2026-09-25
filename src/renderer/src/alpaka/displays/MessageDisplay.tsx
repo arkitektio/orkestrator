@@ -5,8 +5,7 @@ import { agentDisplayName, displayInitials } from "../agentName";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare, ArrowUpRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { DelegatingStructureWidget } from "@/components/ports/returns/DelegatingStructureWidget";
-import { PortKind } from "@/rekuest/api/graphql";
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { Markdown } from "@/components/ui/markdown";
 
 export const MessageDisplay = (props: DisplayWidgetProps) => {
@@ -97,16 +96,7 @@ export const MessageDisplay = (props: DisplayWidgetProps) => {
                     key={`${message.id}-${s.identifier}-${s.object}-${index}`}
                     className="overflow-hidden rounded-lg shadow-sm border bg-background"
                   >
-                    <DelegatingStructureWidget
-                      port={{
-                        kind: PortKind.Structure,
-                        identifier: s.identifier,
-                        __typename: "ReturnPort",
-                        key: index.toString(),
-                        nullable: false,
-                      }}
-                      value={s}
-                    />
+                    <StructureDisplay identifier={s.identifier} id={String(s.object)} small />
                   </div>
                 ))}
               </div>

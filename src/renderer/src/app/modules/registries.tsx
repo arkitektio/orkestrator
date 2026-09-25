@@ -55,15 +55,21 @@ const concat = <V,>(pick: (builtins: ModuleBuiltins) => readonly V[] | undefined
 
 // --- guards -----------------------------------------------------------------
 
-type GuardComponent = ComponentType<{ children: ReactNode }>;
+/** `fallback` is shown in every not-ready state; silent without one. */
+type GuardComponent = ComponentType<{ children: ReactNode; fallback?: ReactNode }>;
 
-const SILENT = { unavailable: <></>, unconfigured: <></>, configuring: <></>, challenging: <></> };
+const notReady = (fallback: ReactNode = <></>) => ({
+  unavailable: fallback,
+  unconfigured: fallback,
+  configuring: fallback,
+  challenging: fallback,
+});
 
 const SERVICE_KEYS: Record<string, string> = Object.fromEntries(
   MODULES.map(({ manifest, service }) => [manifest.namespace, service.key]),
 );
 
-const NoService = () => null;
+const NoService: GuardComponent = ({ fallback }) => <>{fallback ?? null}</>;
 
 /**
  * The guard for one module (CLAUDE.md §1), silent in every not-ready state.
@@ -73,8 +79,8 @@ const NoService = () => null;
  */
 const buildGuard = (namespace: string): GuardComponent => {
   if (namespace === SELF_MODULE.namespace) {
-    const SelfGuard = ({ children }: { children: ReactNode }) => (
-      <Arkitekt.Guard notConnectedFallback={<></>} connectingFallback={<></>}>
+    const SelfGuard: GuardComponent = ({ children, fallback = <></> }) => (
+      <Arkitekt.Guard notConnectedFallback={fallback} connectingFallback={fallback}>
         {children}
       </Arkitekt.Guard>
     );
@@ -83,7 +89,9 @@ const buildGuard = (namespace: string): GuardComponent => {
   const key = SERVICE_KEYS[namespace];
   if (!key) return NoService;
   const ServiceGuard = Arkitekt.buildServiceGuard(key as never);
-  const Guard = ({ children }: { children: ReactNode }) => <ServiceGuard {...SILENT}>{children}</ServiceGuard>;
+  const Guard: GuardComponent = ({ children, fallback }) => (
+    <ServiceGuard {...notReady(fallback)}>{children}</ServiceGuard>
+  );
   Guard.displayName = `Guard(${namespace})`;
   return Guard;
 };
@@ -97,8 +105,10 @@ export const moduleGuard = (namespace: string): GuardComponent =>
 const guarded = <P extends object>(namespace: string, Component: ComponentType<P>): ComponentType<P> => {
   const Guarded = (props: P) => {
     const Guard = moduleGuard(namespace);
+    // A display's `fallback` (see StructureDisplay) is shown while not ready.
+    const fallback = (props as { fallback?: ReactNode }).fallback;
     return (
-      <Guard>
+      <Guard fallback={fallback}>
         <Component {...props} />
       </Guard>
     );

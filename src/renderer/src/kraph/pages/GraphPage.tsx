@@ -1,4 +1,4 @@
-import { asGraphScopeQueryRoute } from "@/app/routes/DetailQueryRoute";
+import { asGraphScopeQueryRoute } from "@/kraph/routes/graphRoutes";
 import { FormSheet } from "@/components/dialog/FormDialog";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { KraphGraph } from "@/linkers";

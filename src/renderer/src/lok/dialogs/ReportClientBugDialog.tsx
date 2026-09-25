@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { DetailClientFragment } from "@/lok/api/graphql";
+import { DetailClientFragment, useClientQuery } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { clientAppIdentifier, clientAppVersion } from "@/lok/lib/clientLabels";
@@ -19,10 +19,23 @@ type ReportClientBugFormData = {
   additionalContext: string;
 };
 
-export interface ReportClientBugDialogProps {
-  client: DetailClientFragment;
-  issueUrl?: string;
-}
+/**
+ * A report another module prepared (rekuest: a failed task), to file against
+ * the client that ran it. Lok resolves the client and its issue tracker; the
+ * reporter never needs to know either.
+ */
+export type PreparedBugReport = {
+  title: string;
+  /** "the failed task: <b>Segment</b>" — what the report is about. */
+  subject: string;
+  context: string;
+  contextLabel?: string;
+  labels?: string[];
+};
+
+export type ReportClientBugDialogProps =
+  | { client: DetailClientFragment; issueUrl?: string }
+  | { clientId: string; report: PreparedBugReport };
 
 /**
  * Build a GitHub issue URL with pre-filled information
@@ -70,17 +83,53 @@ function formatClientInfo(client: DetailClientFragment): string {
   return info;
 }
 
-export const ReportClientBugDialog = ({
+export const ReportClientBugDialog = (props: ReportClientBugDialogProps) =>
+  "clientId" in props ? (
+    <PreparedReport clientId={props.clientId} report={props.report} />
+  ) : (
+    <ReportForm client={props.client} issueUrl={props.issueUrl} />
+  );
+
+/** A prepared report: look the client up by its OAuth id, then the same form. */
+const PreparedReport = ({ clientId, report }: { clientId: string; report: PreparedBugReport }) => {
+  const { closeDialog } = useDialog();
+  const { data, loading } = useClientQuery({ variables: { clientId } });
+
+  if (!data?.client) {
+    return (
+      <DialogHeader>
+        <DialogTitle>Report Bug</DialogTitle>
+        <div className="text-sm text-muted-foreground">
+          {loading ? "Looking up the client…" : "Unable to find the client this ran on."}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => closeDialog()}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogHeader>
+    );
+  }
+
+  return <ReportForm client={data.client} issueUrl={data.client.issueUrl || undefined} report={report} />;
+};
+
+const ReportForm = ({
   client,
   issueUrl,
-}: ReportClientBugDialogProps) => {
+  report,
+}: {
+  client: DetailClientFragment;
+  issueUrl?: string;
+  report?: PreparedBugReport;
+}) => {
   const { closeDialog } = useDialog();
 
   const form = useForm<ReportClientBugFormData>({
     defaultValues: {
-      title: `Bug in ${clientAppVersion(client)}`,
+      title: report?.title ?? `Bug in ${clientAppVersion(client)}`,
       description: "",
-      additionalContext: formatClientInfo(client),
+      additionalContext: report?.context ?? formatClientInfo(client),
     },
   });
 
@@ -105,7 +154,7 @@ export const ReportClientBugDialog = ({
         baseUrl: issueUrl,
         title,
         body: issueBody,
-        labels: ["bug", "client-reported"],
+        labels: report?.labels ?? ["bug", "client-reported"],
       });
 
       // Open the GitHub issue creation page in a new window
@@ -123,13 +172,22 @@ export const ReportClientBugDialog = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <DialogHeader>
-          <DialogTitle>Report Client Bug</DialogTitle>
+          <DialogTitle>{report ? "Report Bug" : "Report Client Bug"}</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="text-sm text-muted-foreground">
-            Report a general bug for the client:{" "}
-            <strong>{clientAppVersion(client)}</strong>
+            {report ? (
+              <>
+                Report a bug for {report.subject}, on{" "}
+                <strong>{clientAppVersion(client)}</strong>
+              </>
+            ) : (
+              <>
+                Report a general bug for the client:{" "}
+                <strong>{clientAppVersion(client)}</strong>
+              </>
+            )}
           </div>
 
           <StringField
@@ -148,8 +206,8 @@ export const ReportClientBugDialog = ({
 
           <ParagraphField
             name="additionalContext"
-            label="Client Information"
-            description="Auto-generated client information (you can edit this)"
+            label={report?.contextLabel ?? "Client Information"}
+            description="Auto-generated information (you can edit this)"
             placeholder="Client details..."
           />
 

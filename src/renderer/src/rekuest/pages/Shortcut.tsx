@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { ArgsContainer } from "@/components/ports/ArgsContainer";
-import { useActionDescription } from "@/lib/rekuest/ActionDescription";
+import { useActionDescription } from "@/lib/ports/ActionDescription";
 import { RekuestShortcut } from "@/linkers";
 import {
   TaskEventKind,

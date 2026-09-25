@@ -6,7 +6,7 @@ export const NEURON_MODEL_IDENTIFIER = "@elektro/neuronmodel";
 
 /**
  * Convenience button (used on the NeuronModel detail page) that opens the
- * generic export dialog (`lib/export/ExportToFileDialog.tsx`). The same dialog
+ * generic export dialog (`rekuest/dialogs/ExportToFileDialog.tsx`). The same dialog
  * is reached from the "Export to file" local action and by dragging the model
  * out onto the desktop.
  */

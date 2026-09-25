@@ -18,6 +18,8 @@ export type DisplayWidgetProps = {
    */
   variant?: DisplayVariant;
   className?: string;
+  /** Shown instead while the owning module's service is not ready. */
+  fallback?: React.ReactNode;
   context?: "command" | "widget"; // "command" = compact, "widget" = full display
 };
 

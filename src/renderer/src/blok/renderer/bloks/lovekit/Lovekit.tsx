@@ -1,6 +1,5 @@
 import * as React from "react";
-import { AsyncSoloBroadcastWidget } from "@/lovekit/widgets/SoloBroadcastWidget";
-import { Guard } from "@/app/Arkitekt";
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { createBlokComponent, useBlok, useValue } from "../../runtime";
 import * as z from "zod";
 import { LovekitSoloBroadcast } from "@/linkers";
@@ -42,23 +41,16 @@ export const StreamRenderBlok = createBlokComponent(
       return <UnavailableNotice>No broadcast selected.</UnavailableNotice>;
     }
 
-    // Convention #1: the lovekit Apollo client only exists once the service is
-    // ready, so the guard has to wrap the widget from the outside — guarding
-    // inside `AsyncSoloBroadcastWidget` would be too late, its query fires on
-    // mount. A deployment without lovekit degrades to a notice.
-    const unavailable = <UnavailableNotice>Lovekit is not available.</UnavailableNotice>;
-
+    // The broadcast is lovekit's to show: its display, behind lovekit's guard.
+    // A deployment without lovekit (or with it not ready) degrades to a notice.
     return (
-      <Guard.Lovekit
-        unavailable={unavailable}
-        unconfigured={unavailable}
-        configuring={unavailable}
-        challenging={unavailable}
-      >
-        <React.Suspense fallback={<UnavailableNotice>Loading stream…</UnavailableNotice>}>
-          <AsyncSoloBroadcastWidget id={broadcast.object} className={className} />
-        </React.Suspense>
-      </Guard.Lovekit>
+      <StructureDisplay
+        identifier={LovekitSoloBroadcast.identifier}
+        id={broadcast.object}
+        variant="card"
+        className={className}
+        fallback={<UnavailableNotice>Lovekit is not available.</UnavailableNotice>}
+      />
     );
   },
 );

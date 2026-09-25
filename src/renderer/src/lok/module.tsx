@@ -1,6 +1,7 @@
 import { defineModule } from "@/lib/module-host/define";
 import { LOK_ACTIONS } from "./actions";
 import { LOK_DIALOGS } from "./dialogRegistry";
+import { LokDashboardWidgets } from "./dashboard/LokDashboardWidgets";
 import { UserDisplay } from "./displays/UserDisplay";
 import { manifest } from "./manifest";
 import { LokEntitySearch } from "./search";
@@ -16,5 +17,7 @@ export const LOK_MODULE = defineModule({
     dialogs: LOK_DIALOGS,
     actions: LOK_ACTIONS,
     search: LokEntitySearch,
+    // The Notifications and Team dashboard widgets.
+    background: [LokDashboardWidgets],
   },
 });

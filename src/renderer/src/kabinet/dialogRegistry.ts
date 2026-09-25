@@ -6,5 +6,5 @@ import { CreateRepoForm } from "./forms/CreateRepoForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const KABINET_DIALOGS = {
-      createrepo: CreateRepoForm,
+  createrepo: CreateRepoForm,
 };

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ActionDescription } from "@/lib/rekuest/ActionDescription";
+import { ActionDescription } from "@/lib/ports/ActionDescription";
 import { cn } from "@/lib/utils";
 import { ReactiveImplementation, ReactiveNodeFragment } from "@/fluss/api/graphql";
 import { FlowNodeData, ReactiveNodeData } from "@/fluss/types";

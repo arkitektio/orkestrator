@@ -1,3 +1,4 @@
+import { ReportClientBugDialog } from "./dialogs/ReportClientBugDialog";
 import { AddUserToOrganizationDialog } from "./dialogs/AddUserToOrganization";
 import { CreateOrganizationForm } from "./dialogs/CreateOrganization";
 import { NotifyDialog } from "./dialogs/NotifyDialog";
@@ -11,10 +12,11 @@ import { UpdateServiceInstanceForm } from "./forms/UpdateServiceInstanceForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const LOK_DIALOGS = {
-      notifyusers: NotifyDialog,
-      addusertoorganization: AddUserToOrganizationDialog,
-      createorganization: CreateOrganizationForm,
-      createserviceinstance: CreateServiceInstanceForm,
-      updateserviceinstance: UpdateServiceInstanceForm,
-      createredeemtoken: CreateRedeemTokenForm,
+  notifyusers: NotifyDialog,
+  addusertoorganization: AddUserToOrganizationDialog,
+  createorganization: CreateOrganizationForm,
+  createserviceinstance: CreateServiceInstanceForm,
+  updateserviceinstance: UpdateServiceInstanceForm,
+  createredeemtoken: CreateRedeemTokenForm,
+  reportclientbug: ReportClientBugDialog,
 };

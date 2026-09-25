@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {describe, expect, it} from 'vitest';
-import {UI_CATALOG_NAME} from './catalog';
+import {UI_CATALOG_NAME} from '../../blok/renderer/catalog';
 import {buildCatalogExport} from './catalogExport';
 
 /**

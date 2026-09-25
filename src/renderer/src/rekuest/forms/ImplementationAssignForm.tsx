@@ -6,7 +6,7 @@ import { useDialog } from "@/app/dialog";
 import { useMemo, useRef } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { ArgsContainer } from "@/components/ports/ArgsContainer";
-import { useActionDescription } from "@/lib/rekuest/ActionDescription";
+import { useActionDescription } from "@/lib/ports/ActionDescription";
 import { ApolloError } from "@apollo/client";
 import { toast } from "sonner";
 import {

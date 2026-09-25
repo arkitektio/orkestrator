@@ -3,10 +3,9 @@ import {
   StructureInput,
 } from "@/alpaka/api/graphql";
 import { Card, CardContent } from "@/components/ui/card";
-import { useResolve } from "@/datalayer/hooks/useResolve";
 import { cn } from "@/lib/utils";
-import { useMeQuery } from "@/lok/api/graphql";
-import { PortKind } from "@/rekuest/api/graphql";
+import { useSelf } from "@/app/hooks/useSelf";
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2, CheckCircle2, AlertCircle, XCircle, X, Ban, RefreshCw } from "lucide-react";
 import { agentDisplayName, displayInitials } from "@/alpaka/agentName";
@@ -14,8 +13,7 @@ import { ActiveTask } from "./activeTasks";
 import { isUnconfirmed, settlePending, type PendingMessage } from "./pendingMessages";
 import React, { useCallback, useRef } from "react";
 import { useLatestRef } from "@/hooks/useLatestRef";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DelegatingStructureWidget } from "@/components/ports/returns/DelegatingStructureWidget";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ChatBottombar from "./chat-bottombar";
 import { Markdown } from "@/components/ui/markdown";
 
@@ -58,8 +56,11 @@ interface ChatMessageProps {
   isOwn: boolean;
   senderName: string;
   senderInitials: string;
-  /** Only your own rows have a picture; everyone else gets their initials. */
-  avatarSrc?: string;
+  /**
+   * Only your own rows have a picture (the member's avatar, drawn by lok's
+   * display); everyone else gets their initials.
+   */
+  ownAvatar?: React.ReactNode;
   /** Sent but not acknowledged yet: the bubble pulses until it is real. */
   isPending?: boolean;
   /**
@@ -101,7 +102,7 @@ const ChatMessage = React.memo(function ChatMessage({
   isOwn,
   senderName,
   senderInitials,
-  avatarSrc,
+  ownAvatar,
   isPending = false,
   layoutId,
   onRereply,
@@ -134,15 +135,15 @@ const ChatMessage = React.memo(function ChatMessage({
           transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
         />
       )}
-      <Avatar
-        size="lg"
-        className={cn(
-          "relative border shadow-sm",
-          isOwn ? "bg-background" : "bg-muted/60",
+      {ownAvatar ?? (
+        <Avatar
+          size="lg"
+          className={cn(
+            "relative border shadow-sm",
+            isOwn ? "bg-background" : "bg-muted/60",
         )}
         title={senderName}
       >
-        {avatarSrc && <AvatarImage src={avatarSrc} alt={senderName} />}
         <AvatarFallback
           className={cn(
             "bg-muted/60 text-xs font-semibold",
@@ -152,6 +153,7 @@ const ChatMessage = React.memo(function ChatMessage({
           {senderInitials}
         </AvatarFallback>
       </Avatar>
+      )}
     </motion.div>
   );
 
@@ -209,16 +211,7 @@ const ChatMessage = React.memo(function ChatMessage({
                       key={`${message.id}-${s.identifier}-${s.object}-${structureIndex}`}
                       className="overflow-hidden rounded-lg"
                     >
-                      <DelegatingStructureWidget
-                        port={{
-                          kind: PortKind.Structure,
-                          identifier: s.identifier,
-                          __typename: "ReturnPort",
-                          key: structureIndex.toString(),
-                          nullable: false,
-                        }}
-                        value={s}
-                      />
+                      <StructureDisplay identifier={s.identifier} id={String(s.object)} small />
                     </div>
                   ))}
                 </motion.div>
@@ -286,8 +279,7 @@ export function ChatList({
 }: ChatListProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
-  const { data: meData } = useMeQuery();
-  const resolve = useResolve();
+  const { userId, username: selfName } = useSelf();
 
   // The parent passes a fresh `onRereply` closure every render; route it
   // through a ref so the memoised rows only see a stable identity (and
@@ -299,10 +291,12 @@ export function ChatList({
   );
   const rereplyHandler = onRereply ? stableRereply : undefined;
 
-  const username = meData?.me?.username;
+  const username = selfName ?? undefined;
   const ownName = username || "You";
-  const ownAvatarSrc = resolve(meData?.me?.profile?.avatar?.presignedUrl);
   const ownInitials = displayInitials(username, "YO");
+  const ownAvatar = userId ? (
+    <StructureDisplay identifier="@lok/user" id={userId} variant="avatar" className="relative h-10 w-10 border shadow-sm" />
+  ) : undefined;
 
   // The first paint lands at the bottom instantly; everything after glides,
   // so an arriving message is seen moving in rather than appearing already
@@ -336,13 +330,13 @@ export function ChatList({
             name: currentAgentName,
             user: {
               __typename: "User" as const,
-              id: meData?.me?.id ?? "",
+              id: userId ?? "",
               preferredUsername: username ?? "",
             },
           },
         } satisfies ListMessageFragment,
       })),
-    [pendingMessages, messages, currentAgentName, meData?.me?.id, username],
+    [pendingMessages, messages, currentAgentName, userId, username],
   );
 
   React.useEffect(() => {
@@ -403,7 +397,7 @@ export function ChatList({
                 senderInitials={
                   isOwn ? ownInitials : displayInitials(senderName, "AI")
                 }
-                avatarSrc={isOwn ? ownAvatarSrc : undefined}
+                ownAvatar={isOwn ? ownAvatar : undefined}
                 onRereply={rereplyHandler}
               />
             );
@@ -416,7 +410,7 @@ export function ChatList({
               isOwn
               senderName={ownName}
               senderInitials={ownInitials}
-              avatarSrc={ownAvatarSrc}
+              ownAvatar={ownAvatar}
               isPending={isUnconfirmed(pending)}
             />
           ))}

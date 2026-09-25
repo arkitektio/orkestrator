@@ -12,12 +12,12 @@ import { UpdateFolderForm } from "./forms/UpdateFolderForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const MIKRO_DIALOGS = {
-      // the scene's mesh designer commit (features/meshDesign)
-      commitmeshdesign: CommitMeshDesignDialog,
-      addlayer: AddLayerForm,
-      register: RegisterForm,
-      calibrate: CalibrateForm,
-      createmikrofolder: CreateFolderForm,
-      movetofolder: MoveToFolderForm,
-      updatefolder: UpdateFolderForm,
+  // the scene's mesh designer commit (features/meshDesign)
+  commitmeshdesign: CommitMeshDesignDialog,
+  addlayer: AddLayerForm,
+  register: RegisterForm,
+  calibrate: CalibrateForm,
+  createmikrofolder: CreateFolderForm,
+  movetofolder: MoveToFolderForm,
+  updatefolder: UpdateFolderForm,
 };

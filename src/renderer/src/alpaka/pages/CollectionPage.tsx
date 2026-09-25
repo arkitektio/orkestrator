@@ -2,9 +2,8 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { StringField } from "@/components/fields/StringField";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Form } from "@/components/ui/form";
-import { DelegatingStructureWidget } from "@/components/ports/returns/DelegatingStructureWidget";
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { AlpakaCollection, AlpakaLLMModel } from "@/linkers";
-import { PortKind } from "@/rekuest/api/graphql";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -96,16 +95,7 @@ export const DocumentsExplorer = (props: {
           {data?.data?.documents?.map((doc) => (
             <div key={doc.id} className="border border-border p-2 rounded">
               {doc.structure ? (
-                <DelegatingStructureWidget
-                  port={{
-                    __typename: "ReturnPort",
-                    key: "object",
-                    nullable: true,
-                    kind: PortKind.Structure,
-                    identifier: doc.structure.identifier,
-                  }}
-                  value={doc.structure}
-                />
+                <StructureDisplay identifier={doc.structure.identifier} id={String(doc.structure.object)} small />
               ) : (
                 <>{doc.content}</>
               )}

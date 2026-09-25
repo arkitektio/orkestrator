@@ -25,8 +25,12 @@ export type PageSection = {
   /** The tab label / heading the host draws. */
   title: string;
   placement: SectionPlacement;
-  /** Host-owned sidebars: "knowledge" (claims, comments) and "chat" (conversations). */
-  slot?: "knowledge" | "chat";
+  /**
+   * Host-owned places: the "knowledge" (claims, comments) and "chat"
+   * (conversations) sidebars of every page, a member's "home" dashboard and
+   * the "notifications" widget (both matched on `@lok/user`, the member).
+   */
+  slot?: "knowledge" | "chat" | "home" | "notifications";
   /** Which pages: by identifier(s), and/or every datum. Empty = every model page. */
   match: { identifiers?: readonly string[]; datum?: boolean };
   /** `onChanged`: the section changed the object; the page should refetch. */

@@ -7,6 +7,6 @@ import { CreateProjectForm } from "./forms/CreateProjectForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const OMEROARK_DIALOGS = {
-      createproject: CreateProjectForm,
-      createomeroarkcataset: CreateDatasetForm,
+  createproject: CreateProjectForm,
+  createomeroarkcataset: CreateDatasetForm,
 };

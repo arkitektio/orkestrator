@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { ArgsContainer } from "@/components/ports/ArgsContainer";
-import { FormActionDescription } from "@/lib/rekuest/ActionDescription";
+import { FormActionDescription } from "@/lib/ports/ActionDescription";
 import { v4 as uuidv4 } from "uuid";
 import { useHooksSearchLazyQuery } from "../api/graphql";
 import { useAction } from "../hooks/useAction";

@@ -2,7 +2,7 @@ import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { ListRender } from "@/components/layout/ListRender";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { Button } from "@/components/ui/button";
-import { useActionDescription } from "@/lib/rekuest/ActionDescription";
+import { useActionDescription } from "@/lib/ports/ActionDescription";
 import { KabinetDefinition } from "@/linkers";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useImplementationAction } from "@/rekuest/hooks/useImplementationAction";

@@ -1,3 +1,4 @@
+import type React from "react";
 import { Suspense, type ComponentType } from "react";
 
 import { useDisplay } from "@/app/display";
@@ -19,6 +20,7 @@ export const StructureDisplay = ({
   small,
   className,
   link,
+  fallback = null,
 }: {
   identifier: string;
   /** Nothing to show without one (a creator that was never recorded). */
@@ -28,14 +30,27 @@ export const StructureDisplay = ({
   className?: string;
   /** Wrap it in a link to the structure's own page. */
   link?: boolean;
+  /**
+   * Shown when nothing can display it: no module displays this identifier,
+   * or the owning module's service is not ready.
+   */
+  fallback?: React.ReactNode;
 }) => {
   const { registry } = useDisplay();
   useModuleHostVersion();
   const Display = (registry as Record<string, ComponentType<DisplayWidgetProps> | undefined>)[identifier];
-  if (!Display || !id) return null;
+  if (!id) return null;
+  if (!Display) return <>{fallback}</>;
   const shown = (
     <Suspense fallback={null}>
-      <Display identifier={identifier} id={id} variant={variant} small={small} className={className} />
+      <Display
+        identifier={identifier}
+        id={id}
+        variant={variant}
+        small={small}
+        className={className}
+        fallback={fallback}
+      />
     </Suspense>
   );
   return link ? (

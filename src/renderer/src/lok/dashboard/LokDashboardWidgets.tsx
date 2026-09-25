@@ -1,23 +1,22 @@
-import { StructureDisplay } from "@/components/display/StructureDisplay";
-import { useRegisterDashboardWidget } from "../hooks";
-import { Guard } from "@/app/Arkitekt";
+import { SlotSections } from "@/components/layout/PageSections";
+import { NotificationCountProvider } from "@/providers/dashboard/notificationCount";
+import { useRegisterDashboardWidget } from "@/providers/dashboard/hooks";
+import { useSelf } from "@/app/hooks/useSelf";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMyMentionsQuery } from "@/kraph/api/graphql";
 import {
   useMyActiveMessagesQuery,
   useUsersQuery,
-} from "@/lok/api/graphql";
+} from "../api/graphql";
 
-import { Bell, MessageSquare, Users } from "lucide-react";
+import { Bell, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 // ── Notifications widget ──
 
-// Messages come from lok and mentions from kraph, and a component cannot guard
-// one of its own hooks — so the two halves are separate components, each behind
-// its own service. They report emptiness upward only so the widget can say
-// "nothing new" once rather than twice.
+// Lok's own messages, plus whatever other modules put in the member's
+// "notifications" slot (kraph: mentions), each behind its own guard. They
+// report their counts so the widget can say "nothing new" once, not per source.
 
 const MessagesList = ({ onCount }: { onCount: (n: number) => void }) => {
   const { data } = useMyActiveMessagesQuery({
@@ -44,53 +43,19 @@ const MessagesList = ({ onCount }: { onCount: (n: number) => void }) => {
   );
 };
 
-const MentionsList = ({ onCount }: { onCount: (n: number) => void }) => {
-  const { data } = useMyMentionsQuery({
-    fetchPolicy: "cache-and-network",
-  });
-
-  const count = data?.myMentions?.length ?? 0;
-  useEffect(() => onCount(count), [count, onCount]);
-
-  return (
-    <>
-      {(data?.myMentions ?? []).slice(0, 5).map((mention) => (
-        <div
-          key={mention.id}
-          className="p-2 rounded-lg bg-muted/50 flex items-start gap-2"
-        >
-          <MessageSquare className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">
-                <StructureDisplay identifier="@lok/user" id={mention.assertion.subject} variant="inline" />
-              </span>{" "}
-              mentioned you
-            </p>
-            {/* kraph renders the body to plain text for us — no walking the
-                descendant tree for a one-line preview. */}
-            <p className="text-xs text-muted-foreground truncate">
-              {mention.text}
-            </p>
-          </div>
-        </div>
-      ))}
-    </>
-  );
-};
-
 const NotificationsWidget = () => {
   const [messageCount, setMessageCount] = useState(0);
-  const [mentionCount, setMentionCount] = useState(0);
+  const [otherCount, setOtherCount] = useState(0);
+  const { userId } = useSelf();
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         <MessagesList onCount={setMessageCount} />
-        <Guard.Kraph unavailable={<></>}>
-          <MentionsList onCount={setMentionCount} />
-        </Guard.Kraph>
-        {messageCount === 0 && mentionCount === 0 && (
+        <NotificationCountProvider onTotal={setOtherCount}>
+          {userId && <SlotSections slot="notifications" identifier="@lok/user" object={{ id: userId }} />}
+        </NotificationCountProvider>
+        {messageCount === 0 && otherCount === 0 && (
           <p className="text-xs text-muted-foreground">No new notifications</p>
         )}
       </div>
@@ -139,9 +104,9 @@ const TeamWidget = () => {
   );
 };
 
-// ── Registration component ──
+// ── Registration component (lok's `background` builtin) ──
 
-export const BuiltinDashboardWidgets = () => {
+export const LokDashboardWidgets = () => {
   useRegisterDashboardWidget({
     key: "notifications",
     label: "Notifications",

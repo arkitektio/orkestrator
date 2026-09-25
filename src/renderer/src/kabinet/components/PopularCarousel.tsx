@@ -6,7 +6,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { ActionDescription } from "@/lib/rekuest/ActionDescription";
+import { ActionDescription } from "@/lib/ports/ActionDescription";
 import { ListDefinitionFragment, useListDefinitionsQuery } from "../api/graphql";
 import { logoFor, releaseIdentity } from "../appIdentity";
 import { AppIcon } from "./AppIcon";

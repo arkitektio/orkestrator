@@ -8,7 +8,7 @@ import { AlpakaReplyerAssignForm } from "./forms/AlpakaReplyerAssignForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const ALPAKA_DIALOGS = {
-      alpakareplyerassign: AlpakaReplyerAssignForm,
-      chat: ChatDialog,
-      usemodelfor: UseModelForDialog,
+  alpakareplyerassign: AlpakaReplyerAssignForm,
+  chat: ChatDialog,
+  usemodelfor: UseModelForDialog,
 };
