@@ -2,8 +2,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// `dropUtils` reaches for every module's local actions; none are run here.
-vi.mock("@/app/localactions", () => ({ registry: {} }));
 
 import { installDndEngine } from "@/lib/dnd/engine";
 import { FakeDataTransfer, fireDrag } from "@/lib/dnd/testing";

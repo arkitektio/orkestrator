@@ -1,16 +1,13 @@
-import { KRAPH_ACTIONS } from "@/kraph/actions";
-import { ALPAKA_ACTIONS } from "@/alpaka/actions";
-import { ELEKTRO_ACTIONS } from "@/elektro/actions";
-import { KABINET_ACTIONS } from "@/kabinet/actions";
 import {
   Action,
   ActionParams,
   createLocalActionProvider,
 } from "@/lib/localactions/LocalActionProvider";
-import { LOK_ACTIONS } from "@/lok/actions";
-import { MIKRO_ACTIONS } from "@/mikro/actions";
-import { REKUEST_ACTIONS } from "@/rekuest/actions";
+import { lazyRecord } from "@/lib/module-host/lazy";
 import { linkBuilder } from "@/providers/smart/builder";
+import { provideSmartRegistries } from "@/providers/smart/hostRegistries";
+import type { ModuleActions } from "./modules/install";
+import { MODULE_ACTIONS } from "./modules/registries";
 import { smartRegistry } from "@/providers/smart/registry";
 import { structureTabTarget } from "@/providers/smart/tabTargets";
 import { requestExport } from "@/lib/export/exportRequests";
@@ -219,6 +216,17 @@ const CopyPrivateLinkAction: Action = {
   collections: ["smart"],
 };
 
+/** Actions the host owns: they apply to any structure, whichever module it is from. */
+const HOST_ACTIONS = {
+  copylink: CopyLinkAction,
+  copyprivatelink: CopyPrivateLinkAction,
+  popout: PopOutAction,
+  newtab: OpenInNewTabAction,
+  opentotheside: OpenToTheSideAction,
+  exporttofile: ExportToFileAction,
+  navigate: NavigateAction,
+} as const;
+
 export const {
   LocalActionProvider,
   useAction,
@@ -232,19 +240,11 @@ export const {
   useUnpinnedMatchingActionEntries,
   registry,
 } =
-  createLocalActionProvider({
-    ...MIKRO_ACTIONS,
-    ...KRAPH_ACTIONS,
-    ...LOK_ACTIONS,
-    ...KABINET_ACTIONS,
-    ...REKUEST_ACTIONS,
-    ...ELEKTRO_ACTIONS,
-    ...ALPAKA_ACTIONS,
-    copylink: CopyLinkAction,
-    copyprivatelink: CopyPrivateLinkAction,
-    popout: PopOutAction,
-    newtab: OpenInNewTabAction,
-    opentotheside: OpenToTheSideAction,
-    exporttofile: ExportToFileAction,
-    navigate: NavigateAction,
-  } as const);
+  // Every module's `actions` builtin, then the host's own. Lazy, so importing
+  // this for a hook never evaluates a module's builtins (app/modules/registries).
+  createLocalActionProvider(
+    lazyRecord(() => ({ ...MODULE_ACTIONS, ...HOST_ACTIONS })) as ModuleActions & typeof HOST_ACTIONS,
+  );
+
+// Drop handling in `providers/smart` reads the actions through this.
+provideSmartRegistries({ actions: registry });

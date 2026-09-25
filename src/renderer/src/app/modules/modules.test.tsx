@@ -1,0 +1,63 @@
+// @vitest-environment jsdom
+import { describe, expect, it, vi } from "vitest";
+
+import { validateManifest } from "@/lib/module-spec";
+
+const MODULE_FILES = [
+  "@/alpaka/module",
+  "@/dokuments/module",
+  "@/elektro/module",
+  "@/fluss/module",
+  "@/kabinet/module",
+  "@/kraph/module",
+  "@/lok/module",
+  "@/lovekit/module",
+  "@/mikro/module",
+  "@/omeroark/module",
+  "@/rekuest/module",
+];
+
+describe("module manifests", () => {
+  it("are valid v1 manifests, builtins described", async () => {
+    const { MODULE_DEFINITIONS } = await import("./install");
+    for (const { manifest } of MODULE_DEFINITIONS) {
+      expect(validateManifest(manifest), manifest.namespace).toMatchObject({ ok: true });
+      expect(manifest.surfaces?.some((surface) => surface.kind === "page"), manifest.namespace).toBe(true);
+    }
+    // The first cold import of every module is slow under a loaded suite.
+  }, 60_000);
+
+  it("route every model under the module's own namespace", async () => {
+    const { MODULE_DEFINITIONS } = await import("./install");
+    for (const { manifest } of MODULE_DEFINITIONS) {
+      for (const model of manifest.models ?? []) {
+        expect(model.identifier.startsWith(`@${manifest.namespace}/`), model.identifier).toBe(true);
+        expect(model.path.endsWith("/:id"), model.identifier).toBe(true);
+      }
+    }
+  }, 60_000);
+});
+
+/**
+ * Whichever file the app happens to evaluate first, installing the modules
+ * and reading every registry must work: no registry may read a module
+ * binding while files are still being evaluated. Each case starts cold from
+ * a different module's builtins.
+ */
+describe("evaluation order", () => {
+  it.each(MODULE_FILES)("survives %s being evaluated first", async (first) => {
+    vi.resetModules();
+    await import(/* @vite-ignore */ first);
+    await import("./install");
+    const registries = await import("./registries");
+    const { registry: dialogs } = await import("@/app/dialog");
+    const { registry: actions } = await import("@/app/localactions");
+    const { SMART_SECTIONS } = await import("@/app/smartcontext");
+
+    expect(Object.keys(dialogs).length).toBeGreaterThan(40);
+    expect(Object.keys(actions).length).toBeGreaterThan(60);
+    expect(SMART_SECTIONS.sections.length).toBeGreaterThan(5);
+    expect(Object.keys(registries.MODULE_DISPLAYS).length).toBeGreaterThan(20);
+    expect(registries.modulePages().length).toBe(MODULE_FILES.length);
+  }, 60_000);
+});

@@ -1,15 +1,3 @@
-import { downloadElektroBigFile } from "@/elektro/datalayer/useElektroBigFileDownload";
-import { downloadMikroBigFile } from "@/mikro/datalayer/useMikroBigFileDownload";
-import {
-  GetFileDocument as ElektroGetFileDocument,
-  GetFileQuery as ElektroGetFileQuery,
-  GetFileQueryVariables as ElektroGetFileQueryVariables,
-} from "@/elektro/api/graphql";
-import {
-  GetFileDocument as MikroGetFileDocument,
-  GetFileQuery as MikroGetFileQuery,
-  GetFileQueryVariables as MikroGetFileQueryVariables,
-} from "@/mikro/api/graphql";
 import type { DownloadProps } from "@/providers/download/DownloadProvider";
 import type { ApolloClient, DocumentNode } from "@apollo/client";
 
@@ -32,6 +20,9 @@ type BigFileDownload = (
   },
 ) => Promise<string>;
 
+/** What a module's file query answers: a name and the big-file store it lives in. */
+type BigFileQuery = { file?: { name: string; store: { id: string } } | null };
+
 /** A smart model that IS a file, and how to bring it to disk. */
 export type FileDownloader = {
   identifier: string;
@@ -42,11 +33,15 @@ export type FileDownloader = {
 };
 
 /**
+ * Which file models can be downloaded is the modules' to say: each registers
+ * its downloaders as a builtin (`fileDownloaders`), and the host reads them
+ * from `FILE_DOWNLOADERS` in `app/modules/registries`.
+ *
  * Every `File` model in the datalayer has the same shape — a name and a big
  * file store — so one builder serves each module: look the file up, then
  * stream it through the module's own access grant.
  */
-const bigFileDownloader = (
+export const bigFileDownloader = (
   identifier: string,
   service: string,
   query: DocumentNode,
@@ -64,10 +59,10 @@ const bigFileDownloader = (
       throw new Error("No datalayer endpoint configured.");
     }
 
-    const res = await client.query<
-      MikroGetFileQuery | ElektroGetFileQuery,
-      MikroGetFileQueryVariables | ElektroGetFileQueryVariables
-    >({ query, variables: { id: fileId } });
+    const res = await client.query<BigFileQuery, { id: string }>({
+      query,
+      variables: { id: fileId },
+    });
     const file = res.data?.file;
     if (!file) {
       throw new Error("File not found");
@@ -79,29 +74,3 @@ const bigFileDownloader = (
     return file.name;
   },
 });
-
-export const MIKRO_FILE_IDENTIFIER = "@mikro/file";
-export const ELEKTRO_FILE_IDENTIFIER = "@elektro/file";
-
-/**
- * The file models the app can download, by smart identifier. `@dokuments/file`
- * is missing on purpose: dokuments has no access-grant mutation yet.
- */
-export const FILE_DOWNLOADERS: Record<string, FileDownloader> = {
-  [MIKRO_FILE_IDENTIFIER]: bigFileDownloader(
-    MIKRO_FILE_IDENTIFIER,
-    "mikro",
-    MikroGetFileDocument,
-    downloadMikroBigFile,
-  ),
-  [ELEKTRO_FILE_IDENTIFIER]: bigFileDownloader(
-    ELEKTRO_FILE_IDENTIFIER,
-    "elektro",
-    ElektroGetFileDocument,
-    downloadElektroBigFile,
-  ),
-};
-
-export const FILE_IDENTIFIERS = Object.keys(FILE_DOWNLOADERS);
-
-export const isDownloadableFile = (identifier: string) => identifier in FILE_DOWNLOADERS;

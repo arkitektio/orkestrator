@@ -1,100 +1,24 @@
-import { UseModelForDialog } from "@/alpaka/dialogs/UseModelForDialog";
-import { AlpakaReplyerAssignForm } from "@/alpaka/forms/AlpakaReplyerAssignForm";
-import { AddUserToOrganizationDialog } from "@/lok/dialogs/AddUserToOrganization";
-import { ChatDialog } from "@/alpaka/dialogs/ChatDialog";
-import { CreateEntityWithPropertiesDialog } from "@/kraph/dialogs/CreateEntityWithProperties";
-import { CreateNewMeasurement } from "@/kraph/dialogs/CreateNewMeasurement";
-import { CreateNewRelation } from "@/kraph/dialogs/CreateNewRelation";
-import { NotifyDialog } from "@/lok/dialogs/NotifyDialog";
-import { RelateStructures } from "@/kraph/dialogs/RelateStructures";
 import { ReportBugDialog } from "@/dialogs/ReportBugDialog";
 import { ReportClientBugDialog } from "@/dialogs/ReportClientBugDialog";
-import { SetAsMeasurement } from "@/kraph/dialogs/SetAsMeasurement";
-import { CreateRepoForm } from "@/kabinet/forms/CreateRepoForm";
-import CreateEntityCategoryForm from "@/kraph/forms/CreateEntityCategoryForm";
-import CreateEntityForm from "@/kraph/forms/CreateEntityForm";
-import CreateGraphForm from "@/kraph/forms/CreateGraphForm";
-import CreateNaturalEventCategoryForm from "@/kraph/forms/CreateNaturalEventCategoryForm";
-import CreateProtocolEventCategoryForm from "@/kraph/forms/CreateProtocolEventCategoryForm";
-import { TForm as CreateRelationCategoryForm } from "@/kraph/forms/CreateRelationCategoryForm";
-import { TForm as CreateStructureRelationCategoryForm } from "@/kraph/forms/CreateStructureRelationCategoryForm";
-import UpdateEntityCategoryForm from "@/kraph/forms/UpdateEntityCategoryForm";
-import { NeuronEditorHelp } from "@/elektro/components/NeuronEditorHelp";
-import { createDialogProvider } from "@/lib/generic/providers/DialogProvider";
-import { CreateOrganizationForm } from "@/lok/dialogs/CreateOrganization";
-import { CreateRedeemTokenForm } from "@/lok/forms/CreateRedeemTokenForm";
-import { CreateServiceInstanceForm } from "@/lok/forms/CreateServiceInstance";
-import { UpdateServiceInstanceForm } from "@/lok/forms/UpdateServiceInstanceForm";
-import { AddLayerForm } from "@/mikro/forms/AddLayerForm";
-import { CommitMeshDesignDialog } from "@/mikro/components/scene/features/meshDesign/ui/CommitMeshDesignDialog";
-import { CalibrateForm } from "@/mikro/forms/CalibrateForm";
-import { RegisterForm } from "@/mikro/forms/RegisterForm";
-import { CreateFolderForm as CreateMikroFolderForm } from "@/mikro/forms/CreateFolderForm";
-import { MoveToFolderForm } from "@/mikro/forms/MoveToFolderForm";
-import { UpdateFolderForm } from "@/mikro/forms/UpdateFolderForm";
-import { CreateDatasetForm as CreateOmeroDatasetForm } from "@/omeroark/forms/CreateDatasetForm";
-import { CreateProjectForm } from "@/omeroark/forms/CreateProjectForm";
-import { CreateWorkspaceForm } from "@/fluss/components/forms/CreateWorkspaceForm";
 import { ExportToFileDialog } from "@/lib/export/ExportToFileDialog";
-import { AddExperimentLayerForm } from "@/elektro/forms/AddExperimentLayerForm";
-import { PlaceExperimentLayerForm } from "@/elektro/forms/PlaceExperimentLayerForm";
-import { CreateShortcutDialog } from "@/rekuest/components/dialogs/CreateShortcutDialog";
-import { ActionAssignForm } from "@/rekuest/forms/ActionAssignForm";
-import { ImplementationAssignForm } from "@/rekuest/forms/ImplementationAssignForm";
-import { UpdateAgentForm } from "@/rekuest/forms/UpdateAgentForm";
+import { createDialogProvider } from "@/lib/generic/providers/DialogProvider";
+import { lazyRecord } from "@/lib/module-host/lazy";
+import { MODULE_DIALOGS } from "./modules/registries";
+import type { ModuleDialogs } from "./modules/dialogTypes";
 
-export const { DialogProvider, useDialog, registry } = createDialogProvider({
-  actionassign: ActionAssignForm,
-  alpakareplyerassign: AlpakaReplyerAssignForm,
-  implementationassign: ImplementationAssignForm,
-  relatestructure: RelateStructures,
-  createnewrelation: CreateNewRelation,
-  createnewmeasurement: CreateNewMeasurement,
-  setasmeasurement: SetAsMeasurement,
-  createshortcut: CreateShortcutDialog,
-  updateagent: UpdateAgentForm,
-  notifyusers: NotifyDialog,
-  addusertoorganization: AddUserToOrganizationDialog,
-  createentitywithproperties: CreateEntityWithPropertiesDialog,
-  createentitycategory: CreateEntityCategoryForm,
-  createprotocoleventcategory: CreateProtocolEventCategoryForm,
-  createentity: CreateEntityForm,
-  chat: ChatDialog,
+/** Dialogs the host owns: not one module's, reachable from anywhere. */
+const HOST_DIALOGS = {
   reportbug: ReportBugDialog,
   reportclientbug: ReportClientBugDialog,
-  editentitycategory: UpdateEntityCategoryForm,
-  usemodelfor: UseModelForDialog,
-  createorganization: CreateOrganizationForm,
-  // mikro scene: the mesh designer's commit (features/meshDesign)
-  commitmeshdesign: CommitMeshDesignDialog,
   // any smart model → a file on disk (drag-out to the desktop, "Export to file")
   exporttofile: ExportToFileDialog,
-  // elektro
-  addexperimentlayer: AddExperimentLayerForm,
-  placeexperimentlayer: PlaceExperimentLayerForm,
-  // kraph
-  creategraph: CreateGraphForm,
-  createnaturaleventcategory: CreateNaturalEventCategoryForm,
-  createrelationcategory: CreateRelationCategoryForm,
-  createstructurerelationcategory: CreateStructureRelationCategoryForm,
-  // lok-next
-  createserviceinstance: CreateServiceInstanceForm,
-  updateserviceinstance: UpdateServiceInstanceForm,
-  createredeemtoken: CreateRedeemTokenForm,
-  // kabinet
-  createrepo: CreateRepoForm,
-  // omero-ark
-  createproject: CreateProjectForm,
-  createomeroarkcataset: CreateOmeroDatasetForm,
-  // reaktion
-  createworkspace: CreateWorkspaceForm,
-  // elektro
-  neuroneditorhelp: NeuronEditorHelp,
-  // mikro-next
-  addlayer: AddLayerForm,
-  register: RegisterForm,
-  calibrate: CalibrateForm,
-  createmikrofolder: CreateMikroFolderForm,
-  movetofolder: MoveToFolderForm,
-  updatefolder: UpdateFolderForm,
-});
+};
+
+/**
+ * The dialog registry: the host's own plus every module's `dialogs` builtin
+ * (`<module>/module.tsx`). Lazy, so importing this for `useDialog` never
+ * evaluates a module's builtins (see `app/modules/registries`).
+ */
+export const { DialogProvider, useDialog, registry } = createDialogProvider(
+  lazyRecord(() => ({ ...HOST_DIALOGS, ...MODULE_DIALOGS })) as typeof HOST_DIALOGS & ModuleDialogs,
+);

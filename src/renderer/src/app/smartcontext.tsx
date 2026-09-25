@@ -1,19 +1,25 @@
-import { ALPAKA_SECTIONS } from "@/alpaka/smart/sections";
-import { KABINET_SECTIONS } from "@/kabinet/smart/sections";
-import { KRAPH_SECTIONS } from "@/kraph/smart/sections";
 import { LOCAL_SECTIONS } from "@/providers/smart/extensions/local/sections";
-import { REKUEST_SECTIONS } from "@/rekuest/smart/sections";
-import { createSmartSectionRegistry } from "@/providers/smart/extensions/sectionRegistry";
+import { provideSmartRegistries } from "@/providers/smart/hostRegistries";
+import {
+  createSmartSectionRegistry,
+  type SmartSectionRegistry,
+} from "@/providers/smart/extensions/sectionRegistry";
+import { lazyValue } from "@/lib/module-host/lazy";
+import { moduleSections } from "./modules/registries";
+
+const build = lazyValue(() => createSmartSectionRegistry([...LOCAL_SECTIONS, ...moduleSections()]));
 
 /**
- * The sections of the smart context menu, merged from every module the way
- * `app/localactions.tsx` merges local actions. Priority decides the order;
- * each section's `applies` decides whether it mounts for a given selection.
+ * The sections of the smart context menu: the host's local-actions section
+ * plus every module's `sections` builtin. Priority decides the order; each
+ * section's `applies` decides whether it mounts for a given selection.
+ * Built on first read (see `app/modules/registries`).
  */
-export const SMART_SECTIONS = createSmartSectionRegistry([
-  ...LOCAL_SECTIONS,
-  ...ALPAKA_SECTIONS,
-  ...REKUEST_SECTIONS,
-  ...KRAPH_SECTIONS,
-  ...KABINET_SECTIONS,
-]);
+export const SMART_SECTIONS: SmartSectionRegistry = {
+  get sections() {
+    return build().sections;
+  },
+};
+
+// The menu (`providers/smart/extensions/context`) reads the sections through this.
+provideSmartRegistries({ sections: SMART_SECTIONS });

@@ -324,11 +324,15 @@ export const  createLocalActionProvider = <TAppOrServices = ServiceMap, TRegistr
       : [];
 
     return Array.from(
-      new Set([...declaredPinnedActionIds, ...persistedPinnedActionIds]),
+      new Set([...declaredPinnedActionIds(), ...persistedPinnedActionIds]),
     );
   };
 
-  const declaredPinnedActionIds = getDeclaredPinnedActionIds(registry);
+  // Read on first use, not when the provider is created: the registry may be
+  // a lazy record that resolves the modules' builtins (see lib/module-host).
+  let declaredPinned: LocalActionId[] | undefined;
+  const declaredPinnedActionIds = () =>
+    (declaredPinned ??= getDeclaredPinnedActionIds(registry) as LocalActionId[]);
 
   const persistPinnedActionIds = (pinnedActionIds: LocalActionId[]) => {
     if (typeof window === "undefined") {
@@ -344,7 +348,7 @@ export const  createLocalActionProvider = <TAppOrServices = ServiceMap, TRegistr
   const createLocalActionStore = (): LocalActionStore => {
     const store = createStore<LocalActionStoreState>((set) => ({
       registry,
-      pinnedActionIds: declaredPinnedActionIds,
+      pinnedActionIds: declaredPinnedActionIds(),
       setPinnedActionIds: (ids) => {
         const pinnedActionIds = normalizePinnedActionIds(ids);
         persistPinnedActionIds(pinnedActionIds);
@@ -370,7 +374,7 @@ export const  createLocalActionProvider = <TAppOrServices = ServiceMap, TRegistr
           );
 
           if (!serializedPinnedActionIds) {
-            set({ pinnedActionIds: declaredPinnedActionIds });
+            set({ pinnedActionIds: declaredPinnedActionIds() });
             return;
           }
 

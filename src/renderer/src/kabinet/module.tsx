@@ -1,0 +1,20 @@
+import { defineModule } from "@/lib/module-host/define";
+import { KABINET_ACTIONS } from "./actions";
+import { PodDisplay } from "./displays/PodDisplay";
+import { KABINET_DIALOGS } from "./dialogRegistry";
+import { manifest } from "./manifest";
+import { KABINET_SECTIONS } from "./smart/sections";
+
+export const KABINET_MODULE = defineModule({
+  manifest,
+  builtins: {
+    page: () => import("./KabinetModule"),
+    nav: () => import("./panes/StandardPane"),
+    displays: {
+      "@kabinet/pod": PodDisplay,
+    },
+    dialogs: KABINET_DIALOGS,
+    actions: KABINET_ACTIONS,
+    sections: KABINET_SECTIONS,
+  },
+});

@@ -1,4 +1,4 @@
-import { registry as localActionRegistry } from "@/app/localactions";
+import { smartActions } from "./hostRegistries";
 import {
   Action,
   ActionState,
@@ -18,5 +18,5 @@ export const getMatchingActions = async (
     isCommand: false,
   };
 
-  return getActionsForState(localActionRegistry, state);
+  return getActionsForState(smartActions(), state);
 };

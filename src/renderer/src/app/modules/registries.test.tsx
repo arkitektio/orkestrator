@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 
+// As the app does: install the modules before anything reads a registry.
+import "@/app/modules/install";
+
 import { registry as DIALOGS } from "@/app/dialog";
 import { DISPLAY_REGISTRY } from "@/app/display";
 import { registry as ACTIONS } from "@/app/localactions";
 import { PROFILE_SECTIONS } from "@/app/profilesections";
 import { SMART_SECTIONS } from "@/app/smartcontext";
-import { FILE_DOWNLOADERS } from "@/lib/export/fileDownloaders";
+import { FILE_DOWNLOADERS } from "@/app/modules/registries";
 import { TASK_HOOKS } from "@/lib/taskhooks/registry";
 
 /**

@@ -1,11 +1,7 @@
-import { Guard } from "@/app/Arkitekt";
+import { moduleSearches } from "@/app/modules/registries";
 import type { PassDownProps } from "@/providers/smart/extensions/types";
 import { useDebounce } from "@uidotdev/usehooks";
 
-import { KraphEntitySearch } from "@/kraph/search";
-import { LokEntitySearch } from "@/lok/search";
-import { MikroEntitySearch } from "@/mikro/search";
-import { RekuestEntitySearch } from "@/rekuest/search";
 import { MIN_TERM_LENGTH } from "./shared";
 
 /**
@@ -15,7 +11,7 @@ import { MIN_TERM_LENGTH } from "./shared";
  * and results arriving a moment later must not shove the synchronous rows down
  * from under the user's cursor.
  *
- * Each module is wrapped in its own guard FROM THE OUTSIDE — convention #1 in
+ * Each module (its `search` builtin) is wrapped in its own guard FROM THE OUTSIDE — convention #1 in
  * CLAUDE.md, and load-bearing rather than decorative here. A deployment may ship
  * without any given module, and `useGlobalSearchQuery` fires on mount against an
  * Apollo client that only exists once that service is ready; guarding inside the
@@ -34,20 +30,14 @@ export const ApplicableEntitySearch = ({ filter, onDone }: PassDownProps) => {
 
   const done = () => onDone?.({ kind: "local" });
 
+  // Every module's `search` builtin, each inside its module's guard.
   return (
     <>
-      <Guard.Mikro unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
-        <MikroEntitySearch term={term} onDone={done} />
-      </Guard.Mikro>
-      <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
-        <RekuestEntitySearch term={term} onDone={done} />
-      </Guard.Rekuest>
-      <Guard.Kraph unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
-        <KraphEntitySearch term={term} onDone={done} />
-      </Guard.Kraph>
-      <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
-        <LokEntitySearch term={term} onDone={done} />
-      </Guard.Lok>
+      {moduleSearches().map(({ namespace, Guard, Search }) => (
+        <Guard key={namespace}>
+          <Search term={term} onDone={done} />
+        </Guard>
+      ))}
     </>
   );
 };

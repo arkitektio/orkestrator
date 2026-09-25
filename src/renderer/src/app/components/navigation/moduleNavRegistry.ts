@@ -1,5 +1,8 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 
+import { moduleNavLoaders } from "@/app/modules/registries";
+import { lazyRecord } from "@/lib/module-host/lazy";
+
 /**
  * Each module's in-module navigation, hoisted into the rail.
  *
@@ -16,20 +19,11 @@ import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 type NavComponent = LazyExoticComponent<ComponentType>;
 type PaneLoader = () => Promise<{ NavigationPane: ComponentType<Record<string, never>> }>;
 
-const LOADERS: Record<string, PaneLoader> = {
-  mikro: () => import("@/mikro/panes/StandardPane"),
-  rekuest: () => import("@/rekuest/panes/StandardPane"),
-  kraph: () => import("@/kraph/panes/StandardPane"),
-  elektro: () => import("@/elektro/panes/StandardPane"),
-  kabinet: () => import("@/kabinet/panes/StandardPane"),
-  alpaka: () => import("@/alpaka/panes/StandardPane"),
-  lok: () => import("@/lok/panes/StandardPane"),
-  lovekit: () => import("@/lovekit/panes/StandardPane"),
-  dokuments: () => import("@/dokuments/panes/StandardPane"),
-  omeroark: () => import("@/omeroark/panes/StandardPane"),
-  fluss: () => import("@/fluss/panes/SearchPane"),
+/** Every module's `nav` builtin, plus the host's own blok pane. Read lazily. */
+const loaders = (): Record<string, PaneLoader> => ({
+  ...(moduleNavLoaders() as Record<string, PaneLoader>),
   blok: () => import("@/blok/panes/StandardPane"),
-};
+});
 
 /**
  * One promise per module, shared by `lazy` and `preloadModuleNav`: a chunk
@@ -40,7 +34,7 @@ const pending = new Map<string, ReturnType<PaneLoader>>();
 const load = (key: string) => {
   let promise = pending.get(key);
   if (!promise) {
-    promise = LOADERS[key]();
+    promise = loaders()[key]();
     // A failed fetch (offline, a redeploy) should be retried on the next hover,
     // not cached as a permanent failure.
     promise.catch(() => pending.delete(key));
@@ -51,15 +45,15 @@ const load = (key: string) => {
 
 /** Fetch a module's pane chunk ahead of its card opening. */
 export const preloadModuleNav = (key: string): void => {
-  if (key in LOADERS) void load(key).catch(() => undefined);
+  if (key in loaders()) void load(key).catch(() => undefined);
 };
 
-export const MODULE_NAV: Record<string, NavComponent> = Object.fromEntries(
-  Object.keys(LOADERS).map((key) => [
+export const MODULE_NAV: Record<string, NavComponent> = lazyRecord(() => Object.fromEntries(
+  Object.keys(loaders()).map((key) => [
     key,
     lazy(async () => ({ default: (await load(key)).NavigationPane as ComponentType })),
   ]),
-);
+));
 
 /**
  * Which module a path belongs to.

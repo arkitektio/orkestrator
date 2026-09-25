@@ -1,14 +1,13 @@
-import { ELEKTRO_TASK_HOOKS } from "@/elektro/hooks/taskHooks";
+import { moduleTaskHooks } from "@/app/modules/registries";
 import { fileDownloadHook } from "@/lib/export/taskHooks";
+import { lazyRecord } from "@/lib/module-host/lazy";
 import { TaskHook } from "./types";
 
 /**
- * All registered task hooks, merged from per-module maps (mirrors the per-module
- * local-action maps in `app/localactions.tsx`). Add a module's hooks by spreading
- * its array here. Keyed by `type` for O(1) dispatch in the runner.
+ * All registered task hooks: the host's file download plus every module's
+ * `taskHooks` builtin. Keyed by `type` for O(1) dispatch in the runner, and
+ * built on first read (see `app/modules/registries`).
  */
-const ALL_TASK_HOOKS: TaskHook[] = [fileDownloadHook, ...ELEKTRO_TASK_HOOKS];
-
-export const TASK_HOOKS: Record<string, TaskHook> = Object.fromEntries(
-  ALL_TASK_HOOKS.map((hook) => [hook.type, hook]),
+export const TASK_HOOKS: Record<string, TaskHook> = lazyRecord(() =>
+  Object.fromEntries([fileDownloadHook, ...moduleTaskHooks()].map((hook) => [hook.type, hook])),
 );

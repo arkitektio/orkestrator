@@ -1,7 +1,7 @@
 import { fileDownloadHook } from "@/lib/export/taskHooks";
 import { TaskHook } from "@/lib/taskhooks/types";
 
-export { ELEKTRO_FILE_IDENTIFIER } from "@/lib/export/fileDownloaders";
+export { ELEKTRO_FILE_IDENTIFIER } from "../downloads";
 export const ELEKTRO_DOWNLOAD_HOOK = "elektro.download";
 
 /**

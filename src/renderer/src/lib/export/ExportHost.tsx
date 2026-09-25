@@ -8,7 +8,8 @@ import { toast } from "sonner";
 
 import { useLatestRef } from "@/hooks/useLatestRef";
 
-import { FILE_DOWNLOADERS, FileDownloadContext } from "./fileDownloaders";
+import { FILE_DOWNLOADERS } from "@/app/modules/registries";
+import type { FileDownloadContext } from "./fileDownloaders";
 import { subscribeExportRequests } from "./exportRequests";
 import { structureLabel } from "./structureLabel";
 

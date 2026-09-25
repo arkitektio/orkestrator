@@ -26,7 +26,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-import { FILE_IDENTIFIERS } from "./fileDownloaders";
+import { FILE_DOWNLOADERS } from "@/app/modules/registries";
 import { structureLabel } from "./structureLabel";
 import { FILE_DOWNLOAD_HOOK } from "./taskHooks";
 
@@ -90,7 +90,7 @@ export const ExportToFileDialog = ({ structure }: ExportToFileDialogProps) => {
  * AND, so each file type is its own query; the list is the union.
  */
 const useExporters = (identifier: string) => {
-  const results = FILE_IDENTIFIERS.map((fileIdentifier) =>
+  const results = Object.keys(FILE_DOWNLOADERS).map((fileIdentifier) =>
     // The list is a module constant, so the hooks are called in a fixed order.
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useAllPrimaryActionsQuery({

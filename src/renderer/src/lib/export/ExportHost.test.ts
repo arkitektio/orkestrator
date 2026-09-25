@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const download = vi.hoisted(() => vi.fn(async () => "file.bin"));
-vi.mock("./fileDownloaders", () => ({
+vi.mock("@/app/modules/registries", () => ({
   FILE_DOWNLOADERS: {
     "@mikro/file": { identifier: "@mikro/file", service: "mikro", download },
     "@elektro/file": { identifier: "@elektro/file", service: "elektro", download },

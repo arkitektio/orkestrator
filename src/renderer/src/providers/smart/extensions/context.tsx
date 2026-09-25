@@ -1,4 +1,4 @@
-import { SMART_SECTIONS } from "@/app/smartcontext";
+import { smartSections } from "../hostRegistries";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -98,7 +98,7 @@ const SmartContextHeader = ({ objects, partners }: SmartContextProps) => {
  * and only then may the menu say there is nothing to do.
  */
 export const SmartContext = ({
-  registry = SMART_SECTIONS,
+  registry = smartSections(),
   ...props
 }: SmartContextProps & { registry?: SmartSectionRegistry }) => {
   const { objects, partners, returns, collection, sections, onDone, onError } = props;

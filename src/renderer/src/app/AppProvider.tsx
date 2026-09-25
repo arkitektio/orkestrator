@@ -1,5 +1,10 @@
 import { Arkitekt, Guard } from "@/app/Arkitekt";
+// Installs every module's builtins; must precede anything that reads a registry.
+import "@/app/modules/install";
+import { ModuleBackground } from "@/app/modules/registries";
 import "@/app/configureSmartBuilder";
+// Hands the menu its sections (providers/smart/hostRegistries).
+import "@/app/smartcontext";
 import { DialogProvider } from "@/app/dialog";
 import { LocalActionProvider } from "@/app/localactions";
 import { ModuleLayout } from "@/components/layout/ModuleLayout";
@@ -17,11 +22,7 @@ import { SettingsProvider } from "@/providers/settings/SettingsProvider";
 import { SmartProvider } from "@/providers/smart/provider";
 import { SmartPrefetchProvider } from "@/providers/smart/SmartPrefetchProvider";
 import { SmartSurface } from "@/providers/smart/SmartSurface";
-import { TaskUpdater } from "@/rekuest/components/functional/TaskUpdater";
-import { TaskHookRunner } from "@/lib/taskhooks/TaskHookRunner";
 import { ExportHost } from "@/lib/export/ExportHost";
-import { AgentUpdater } from "@/rekuest/components/functional/AgentUpdater";
-import { UiCatalogRegistrar } from "@/rekuest/catalog/UiCatalogRegistrar";
 import { WidgetRegistryProvider } from "@/lib/ports/WidgetsProvider";
 import React from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
@@ -102,10 +103,6 @@ import { WardRegistrar } from "@/lib/arkitekt/WardRegistrar";
 import { RefetchOnReactivate } from "@/hooks/use-refetch-on-reactivate";
 import { GcOnNavigate } from "@/hooks/use-gc-on-navigate";
 import { BuiltinDashboardWidgets } from "@/providers/dashboard/widgets/BuiltinDashboardWidgets";
-import { RekuestDashboardWidgets } from "@/rekuest/dashboard/RekuestDashboardWidgets";
-import { MikroDashboardWidgets } from "@/mikro/dashboard/MikroDashboardWidgets";
-import { LatestTasksDashboardWidget } from "@/rekuest/dashboard/LatestTasksDashboardWidget";
-import { LatestArrayDatasetsDashboardWidget } from "@/mikro/dashboard/LatestArrayDatasetsDashboardWidget";
 import { OrganizationBrandSync } from "@/lok/components/OrganizationBrandSync";
 import { ProfileIdentitySync } from "@/lok/components/ProfileIdentitySync";
 import { MeshSync } from "./components/mesh/MeshSync";
@@ -181,14 +178,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     <GcOnNavigate />
                                     <BuiltinDashboardWidgets />
                                     <ExportHost />
-                                    <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
-                                      <TaskUpdater />
-                                      <AgentUpdater />
-                                      <UiCatalogRegistrar />
-                                      <RekuestDashboardWidgets />
-                                      <LatestTasksDashboardWidget />
-                                      <TaskHookRunner />
-                                    </Guard.Rekuest>
+                                    {/* Every module's always-on builtins (updaters,
+                                        dashboard widgets), each behind its guard. */}
+                                    <ModuleBackground />
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
                                       <ProfileIdentitySync />
                                     </Guard.Lok>
@@ -196,10 +188,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                     {/* One subscription to the app updater, for
                                         the rail island and the settings card. */}
                                     <UpdateListener />
-                                    <Guard.Mikro unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
-                                      <MikroDashboardWidgets />
-                                      <LatestArrayDatasetsDashboardWidget />
-                                    </Guard.Mikro>
                                     <BackNavigationErrorCatcher>
                                       {children}
                                     </BackNavigationErrorCatcher>

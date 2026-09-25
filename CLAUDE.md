@@ -27,9 +27,10 @@ the query already ran. Put `<Guard.X>` around the component so it never mounts
 until the service is ready.
 
 Examples in-tree:
-- `app/configureSmartBuilder.tsx` `renderHover` pairs each hover card with its
-  module guard (`{ Component, Guard }`) and renders
-  `<ModuleGuard><Suspense>…</Suspense></ModuleGuard>`.
+- Builtins the host mounts for a module (displays, hover cards, palette
+  search, background components) are wrapped in that module's guard by the
+  host (`moduleGuard` in `app/modules/registries.tsx`); a module does not
+  guard its own builtins.
 - `providers/smart/extensions/SectionHost.tsx` wraps each menu section's query
   in the section's `Guard` (declared on its descriptor, see §4).
 - The dialog provider wraps every dialog in `<Guard.Rekuest>`.
@@ -41,10 +42,11 @@ Dialogs are a central **id registry**, not ad-hoc `<Dialog>` instances.
 - **Factory:** `createDialogProvider(registry)` in
   `src/renderer/src/lib/generic/providers/DialogProvider.tsx` → returns
   `{ DialogProvider, useDialog, registry }`.
-- **Registry:** instantiated once in `src/renderer/src/app/dialog.tsx` — a map of
-  string id → component (e.g. `createshortcut: CreateShortcutDialog`,
-  `actionassign: ActionAssignForm`, `createentity: CreateEntityForm`). It is
-  type-safe: `openDialog`'s props are inferred per id from the component.
+- **Registry:** `src/renderer/src/app/dialog.tsx` merges the host's own dialogs
+  with every module's `<module>/dialogRegistry.ts` (a map of string id →
+  component, e.g. `createentity: CreateEntityForm`), passed in as the
+  module's `dialogs` builtin. It is type-safe: `openDialog`'s props are
+  inferred per id from the component (`app/modules/dialogTypes.ts`).
 - **Use:**
   ```ts
   const { openDialog, openSheet, closeDialog } = useDialog();
@@ -59,8 +61,8 @@ Dialogs are a central **id registry**, not ad-hoc `<Dialog>` instances.
   `closeDialog()` itself (e.g. after a successful mutation).
 
 **To add a dialog:** build the component (own props, `closeDialog` on success),
-register it in the `app/dialog.tsx` registry, then open it by id from anywhere
-with `useDialog()`.
+add it to its module's `<module>/dialogRegistry.ts`, then open it by id from
+anywhere with `useDialog()`. Host-owned dialogs go in `app/dialog.tsx`.
 
 ## 3. Local actions are the primary way to add model-specific actions
 
@@ -78,10 +80,10 @@ Model-specific actions (open a dialog, navigate, run a mutation) should be
   abortSignal, modifiers, location }`. `state.left` / `state.right` are the
   selected / partner `Structure[]`. Open a dialog with
   `dialog.openDialog("createX", {...})`.
-- **Registration:** per-module action maps (`MIKRO_ACTIONS`, `REKUEST_ACTIONS`,
-  `KRAPH_ACTIONS`, `KABINET_ACTIONS`, `ALPAKA_ACTIONS`, `LOK_ACTIONS`,
-  `ELEKTRO_ACTIONS`) are merged in `src/renderer/src/app/localactions.tsx` via
-  `createLocalActionProvider({...})`. Example: `kraph/actions.tsx`
+- **Registration:** each module's action map (`<module>/actions.ts`,
+  e.g. `MIKRO_ACTIONS`) is its `actions` builtin in `<module>/module.tsx`;
+  `app/localactions.tsx` merges every module's with the host's own via
+  `createLocalActionProvider(...)`. Example: `kraph/actions.tsx`
   `NewEntityAction` → `dialog.openDialog("createentity", { category: graph })`.
 
 **Why it must be a local action:** both surfaces consume the same
@@ -107,8 +109,9 @@ a hardcoded list. A `SmartContextSection` (`extensions/section.ts`) has `id`
 the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
 `useItems(ctx)` → `{ items, status }`, `itemKey`, `searchParts?`, `Row`.
 
-- Each module exports its descriptors from `<module>/smart/sections.tsx`;
-  `app/smartcontext.tsx` merges them (like `app/localactions.tsx`).
+- Each module exports its descriptors from `<module>/smart/sections.tsx` and
+  passes them as its `sections` builtin; `app/smartcontext.tsx` merges them
+  with the host's local-actions section.
 - `SectionHost` owns the guard, heading, empty rule, error line, stale-row
   narrowing and the status report; a section is just a query + a row.
 - Remote `useItems` go through `useSmartDemands` + the `queries.ts` variable
@@ -118,3 +121,39 @@ the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
 - Callers narrow the menu with `sections={{ only | exclude }}`, never with a
   new `disableX` prop. Per-row Radix roots are out: the "Run on" picker is one
   `RunOnSubmenu` per menu, shortcut keys go through `bindShortcutKey`.
+
+## 5. Module boundaries
+
+Every module (a backend service: mikro, kraph, rekuest, …) is one folder
+named after its identifier namespace (`@kraph/*` lives in `kraph/`, routes
+under `/kraph`). Its public face is four files; the host imports nothing
+else from it:
+
+- `manifest.ts` — **data only** (module spec v1, `lib/module-spec`):
+  namespace, fakts service, label, and its models (identifier, name, route,
+  datum). The single source for a model's route and name.
+- `linkers.tsx` — its smart objects, built from the manifest's models
+  (`smartOf(manifest, "@kraph/graph")`). The root `@/linkers` is a barrel.
+- `service.ts` — its client binding (fakts requirement key + Apollo builder).
+- `module.tsx` — its **builtins**: `defineModule({ manifest, builtins })`
+  with `page`, `nav`, `displays`, `hovers`, `dialogs`, `actions`, `sections`,
+  `profileSections`, `background`, `search`, `taskHooks`, `fileDownloaders`.
+
+The host derives every registry from these (`app/modules/`): `index.ts`
+(manifests + services, data only — `app/Arkitekt` reads it), `install.tsx`
+(imports every `module.tsx`, installed once by `AppProvider`), and
+`registries.tsx` (a leaf: reads the installed modules **lazily**). Rules:
+
+- **Adding a module** is a folder with those four files plus one line in
+  `app/modules/index.ts` and `app/modules/install.tsx`.
+- **Registries are lazy.** A file a module component imports for a hook
+  (`app/dialog`, `app/localactions`, …) must never import module code or read
+  a registry while being evaluated (`lib/module-host/lazy.ts`,
+  `app/modules/modules.test.tsx` checks every entry order).
+- **Only Structures cross.** `Structure = { identifier, id, descriptors?,
+  label? }`, compared by value (`lib/structure.ts`). A module never imports
+  another module's components or GraphQL; `app/moduleBoundaries.test.ts`
+  fails on any edge not in `moduleBoundaries.allowlist.ts`, and that list only
+  shrinks. Cross-module UI goes through host slots (displays by identifier).
+- `providers/smart` is host library: it reads app registries through
+  `providers/smart/hostRegistries.ts`, never by importing `app/*`.

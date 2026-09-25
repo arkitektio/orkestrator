@@ -12,19 +12,24 @@ const lokQuery = vi.fn();
 // that is NOT ready must never run its query.
 const ready = { mikro: true, rekuest: true, kraph: true, lok: true };
 
-vi.mock("@/app/Arkitekt", () => {
+// The palette loops over every module's `search` builtin, each inside its
+// module's guard. Give it the real searches behind guards driven by `ready`.
+vi.mock("@/app/modules/registries", async () => {
+  const { MikroEntitySearch } = await import("@/mikro/search");
+  const { RekuestEntitySearch } = await import("@/rekuest/search");
+  const { KraphEntitySearch } = await import("@/kraph/search");
+  const { LokEntitySearch } = await import("@/lok/search");
   const guard =
     (key: keyof typeof ready) =>
-    ({ children, unavailable, notConnectedFallback }: Record<string, React.ReactNode>) =>
-      ready[key] ? <>{children}</> : <>{unavailable ?? notConnectedFallback ?? null}</>;
-
+    ({ children }: { children: React.ReactNode }) =>
+      ready[key] ? <>{children}</> : null;
   return {
-    Guard: {
-      Mikro: guard("mikro"),
-      Rekuest: guard("rekuest"),
-      Kraph: guard("kraph"),
-      Lok: guard("lok"),
-    },
+    moduleSearches: () => [
+      { namespace: "mikro", Guard: guard("mikro"), Search: MikroEntitySearch },
+      { namespace: "rekuest", Guard: guard("rekuest"), Search: RekuestEntitySearch },
+      { namespace: "kraph", Guard: guard("kraph"), Search: KraphEntitySearch },
+      { namespace: "lok", Guard: guard("lok"), Search: LokEntitySearch },
+    ],
   };
 });
 
